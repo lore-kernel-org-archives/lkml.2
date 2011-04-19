@@ -1,266 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab1DSOts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:49:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48195 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752911Ab1DSOtr (ORCPT
+	id S1753394Ab1DSOtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:49:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59436 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab1DSOtv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:49:47 -0400
-From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 8/8] gma500: allow non stolen page backed framebuffer
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 19 Apr 2011 15:28:45 +0100
-Message-ID: <20110419142837.16479.67731.stgit@localhost.localdomain>
-In-Reply-To: <20110419142432.16479.89255.stgit@localhost.localdomain>
-References: <20110419142432.16479.89255.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 19 Apr 2011 10:49:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTin0krYi+MqngSQ5n-752vDa_a8ZtA@mail.gmail.com>
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu>
+ <20110418160658.GD23814@pengutronix.de> <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
+ <20110419061121.GB5252@ponder.secretlab.ca> <BANLkTin0krYi+MqngSQ5n-752vDa_a8ZtA@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 19 Apr 2011 08:49:31 -0600
+X-Google-Sender-Auth: o17EpOTzDk-yb953ecxTjHOIOTI
+Message-ID: <BANLkTin-qL3ppG1jRjBu3S16SWcNjD=3kA@mail.gmail.com>
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+To: John Williams <john.williams@petalogix.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Moorestown at least we may not have stolen RAM with which to back the
-initial framebuffer. Allow a GEM backing.
+On Tue, Apr 19, 2011 at 6:37 AM, John Williams
+<john.williams@petalogix.com> wrote:
+> On Tue, Apr 19, 2011 at 4:11 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Tue, Apr 19, 2011 at 11:58:25AM +1000, John Williams wrote:
+>>> On Tue, Apr 19, 2011 at 2:06 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+>>> > Hi,
+>>> >
+>>> >> For example with "uio" compatible string:
+>>> >> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+>>> >>       { .compatible = "uio", },
+>>> >>       { /* empty for now */ },
+>>> >> };
+>>> >
+>>> > Please use a proper example with "vendor,device".
+>>> > (And after that it won't be empty anymore)
+>>>
+>>> My vote is, and always has been 'generic-uio' :)
+>>>
+>>> Putting some random vendor/device string in there is just nuts. Do you
+>>> really want a kernel patch every time some one binds their device to
+>>> it?
+>>>
+>>> Or, is there no expectation that anybody would attempt to merge such a
+>>> pointless patch to begin with?
+>>>
+>>> As we discussed at ELC, putting a real vendor/device in there is also
+>>> broken because all instances in the system wil bind to the generic
+>>> uio, which is not necessarily what is desired.
+>>>
+>>> I know the arguments against the 'generic-uio' tag, but come on, let's
+>>> look at the lesser of two evils here!  I call BS on this DTS purity.
+>>
+>> Call it what you like, but the reasons are well founded.  The alternative
+>> that has been proposed which I am in agreement with is to investigate
+>> giving userspace the hook to tell the kernel at runtime which devices
+>> should be picked up by the uio driver.
+>
+> OK, so let's talk about this interface.  As I see it, it must be able
+> to handle bind per-instance, not per compatibility.
+>
+> For example, we make systems with multiple, identical timers.  One
+> will be used as the system timer, the others need to be (optionally)
+> bound to generic UIO.
+>
+> Therefore, it's not OK to just do
+>
+> echo "vendor,device" >> /sys/class/something/generic-uio/compatlist
+>
+> or whatever, as this would bind all instances matching vendor,device.
+>
+> So, the question I have is, how to handle bind per-instance?
 
-At this point we should have all the bits in place needed to make it work once
-it has been debugged.
+By manipulating a property on the device instance of course!  :-)
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Something like:  echo "generic-uio" >>
+/sys/devices/path/to/device/a-property-that-changes-the-driver-it-will-bind-to.
 
- drivers/staging/gma500/psb_fb.c            |   43 ++++++++++++++++++++++++++--
- drivers/staging/gma500/psb_gem.c           |    2 +
- drivers/staging/gma500/psb_gtt.c           |    1 -
- drivers/staging/gma500/psb_intel_display.c |   36 +++++++++++++++--------
- 4 files changed, 65 insertions(+), 17 deletions(-)
+>> In the mean time, explicitly modifying the match table is an okay
+>> compromise.
+>
+> My mind is still boggling that in this day and age it could possibly
+> be preferred to modify code, instead of a data structure.  However,
+> clearly this is a lost cause!
 
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index f36e83f..ae097cd 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -336,6 +336,38 @@ err:
- }
- 
- /**
-+ *	psbfb_alloc		-	allocate frame buffer memory
-+ *	@dev: the DRM device
-+ *	@aligned_size: space needed
-+ *
-+ *	Allocate the frame buffer. In the usual case we get a GTT range that
-+ *	is stolen memory backed and life is simple. If there isn't sufficient
-+ *	stolen memory or the system has no stolen memory we allocate a range
-+ *	and back it with a GEM object.
-+ *
-+ *	In this case the GEM object has no handle. 
-+ */
-+static struct gtt_range *psbfb_alloc(struct drm_device *dev, int aligned_size)
-+{
-+	struct gtt_range *backing;
-+	/* Begin by trying to use stolen memory backing */
-+	backing = psb_gtt_alloc_range(dev, aligned_size, "fb", 1);
-+	if (backing)
-+		return backing;
-+	/* Next try using GEM host memory */
-+	backing = psb_gtt_alloc_range(dev, aligned_size, "fb(gem)", 0);
-+	if (backing == NULL)
-+		return NULL;
-+
-+	/* Now back it with an object */
-+	if (drm_gem_object_init(dev, &backing->gem, aligned_size) != 0) {
-+		psb_gtt_free_range(dev, backing);
-+		return NULL;
-+	}
-+	return backing;
-+}
-+	
-+/**
-  *	psbfb_create		-	create a framebuffer
-  *	@fbdev: the framebuffer device
-  *	@sizes: specification of the layout
-@@ -368,7 +400,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	aligned_size = ALIGN(size, PAGE_SIZE);
- 
- 	/* Allocate the framebuffer in the GTT with stolen page backing */
--	backing = psb_gtt_alloc_range(dev, aligned_size, "fb", 1);
-+	backing = psbfb_alloc(dev, aligned_size);
- 	if (backing == NULL)
- 	        return -ENOMEM;
- 
-@@ -523,7 +555,13 @@ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
- 
- 	if (fbdev->psb_fb_helper.fbdev) {
- 		info = fbdev->psb_fb_helper.fbdev;
--		psb_gtt_free_range(dev, psbfb->gtt);
-+		/* FIXME: this is a bit more inside knowledge than I'd like
-+		   but I don't see how to make a fake GEM object of the
-+		   stolen space nicely */
-+		if (psbfb->gtt->stolen)
-+			psb_gtt_free_range(dev, psbfb->gtt);
-+		else
-+			drm_gem_object_unreference(&psbfb->gtt->gem);
- 		unregister_framebuffer(info);
- 		iounmap(info->screen_base);
- 		framebuffer_release(info);
-@@ -571,7 +609,6 @@ void psb_fbdev_fini(struct drm_device *dev)
- 	dev_priv->fbdev = NULL;
- }
- 
--
- static void psbfb_output_poll_changed(struct drm_device *dev)
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
-diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
-index 0438bf4..d47c187 100644
---- a/drivers/staging/gma500/psb_gem.c
-+++ b/drivers/staging/gma500/psb_gem.c
-@@ -39,6 +39,8 @@ int psb_gem_init_object(struct drm_gem_object *obj)
- 
- void psb_gem_free_object(struct drm_gem_object *obj)
- {
-+	struct gtt_range *gtt = container_of(obj, struct gtt_range, gem);
-+	psb_gtt_free_range(obj->dev, gtt);
- 	drm_gem_object_release(obj);
- }
- 
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index a991c12..10d772a 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -298,7 +298,6 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- 	return NULL;
- }
- 
--
- static void psb_gtt_destroy(struct kref *kref)
- {
- 	struct gtt_range *gt = container_of(kref, struct gtt_range, kref);
-diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index b5a36d2..9e1446f 100644
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -361,7 +361,13 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 	if (!gma_power_begin(dev, true))
- 		return 0;
- 
-+	/* We are displaying this buffer, make sure it is actually loaded
-+	   into the GTT */
-+	ret = psb_gtt_pin(dev, psbfb->gtt);
-+	if (ret < 0)
-+		goto psb_intel_pipe_set_base_exit;
- 	start = psbfb->gtt->offset;
-+
- 	offset = y * crtc->fb->pitch + x * (crtc->fb->bits_per_pixel / 8);
- 
- 	REG_WRITE(dspstride, crtc->fb->pitch);
-@@ -386,10 +392,12 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 	default:
- 		DRM_ERROR("Unknown color depth\n");
- 		ret = -EINVAL;
-+		psb_gtt_unpin(dev, psbfb->gtt);
- 		goto psb_intel_pipe_set_base_exit;
- 	}
- 	REG_WRITE(dspcntr_reg, dspcntr);
- 
-+
- 	DRM_DEBUG("Writing base %08lX %08lX %d %d\n", start, offset, x, y);
- 	if (0 /* FIXMEAC - check what PSB needs */) {
- 		REG_WRITE(dspbase, offset);
-@@ -401,10 +409,12 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 		REG_READ(dspbase);
- 	}
- 
--psb_intel_pipe_set_base_exit:
-+	/* If there was a previous display we can now unpin it */
-+	if (old_fb)
-+		psb_gtt_unpin(dev, to_psb_fb(old_fb)->gtt);
- 
-+psb_intel_pipe_set_base_exit:
- 	gma_power_end(dev);
--
- 	return ret;
- }
- 
-@@ -1037,7 +1047,7 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 		/* turn off the cursor */
- 		temp = CURSOR_MODE_DISABLE;
- 
--        	if (gma_power_begin(dev, false)) {
-+		if (gma_power_begin(dev, false)) {
- 			REG_WRITE(control, temp);
- 			REG_WRITE(base, 0);
- 			gma_power_end(dev);
-@@ -1045,8 +1055,8 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 
- 		/* Unpin the old GEM object */
- 		if (psb_intel_crtc->cursor_obj) {
--                	gt = container_of(psb_intel_crtc->cursor_obj,
--                	                        struct gtt_range, gem);
-+			gt = container_of(psb_intel_crtc->cursor_obj,
-+							struct gtt_range, gem);
- 			psb_gtt_unpin(crtc->dev, gt);
- 			drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
- 			psb_intel_crtc->cursor_obj = NULL;
-@@ -1089,7 +1099,7 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	temp |= (pipe << 28);
- 	temp |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
- 
--       	if (gma_power_begin(dev, false)) {
-+	if (gma_power_begin(dev, false)) {
- 		REG_WRITE(control, temp);
- 		REG_WRITE(base, addr);
- 		gma_power_end(dev);
-@@ -1097,8 +1107,8 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 
- 	/* unpin the old bo */
- 	if (psb_intel_crtc->cursor_obj && psb_intel_crtc->cursor_obj != obj) {
--               	gt = container_of(psb_intel_crtc->cursor_obj,
--               	                        struct gtt_range, gem);
-+		gt = container_of(psb_intel_crtc->cursor_obj,
-+							struct gtt_range, gem);
- 		psb_gtt_unpin(crtc->dev, gt);
- 		drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
- 		psb_intel_crtc->cursor_obj = obj;
-@@ -1130,7 +1140,7 @@ static int psb_intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
- 
- 	addr = psb_intel_crtc->cursor_addr;
- 
--       	if (gma_power_begin(dev, false)) {
-+	if (gma_power_begin(dev, false)) {
- 		REG_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
- 		REG_WRITE((pipe == 0) ? CURABASE : CURBBASE, addr);
- 		gma_power_end(dev);
-@@ -1183,7 +1193,7 @@ static int psb_intel_crtc_clock_get(struct drm_device *dev,
- 	bool is_lvds;
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 
--       	if (gma_power_begin(dev, false)) {
-+	if (gma_power_begin(dev, false)) {
- 		dpll = REG_READ((pipe == 0) ? DPLL_A : DPLL_B);
- 		if ((dpll & DISPLAY_RATE_SELECT_FPA1) == 0)
- 			fp = REG_READ((pipe == 0) ? FPA0 : FPB0);
-@@ -1262,7 +1272,7 @@ struct drm_display_mode *psb_intel_crtc_mode_get(struct drm_device *dev,
- 	int vsync;
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 
--       	if (gma_power_begin(dev, false)) {
-+	if (gma_power_begin(dev, false)) {
- 		htot = REG_READ((pipe == 0) ? HTOTAL_A : HTOTAL_B);
- 		hsync = REG_READ((pipe == 0) ? HSYNC_A : HSYNC_B);
- 		vtot = REG_READ((pipe == 0) ? VTOTAL_A : VTOTAL_B);
-@@ -1387,10 +1397,10 @@ void psb_intel_crtc_init(struct drm_device *dev, int pipe,
- 	psb_intel_crtc->cursor_addr = 0;
- 
- 	if (IS_MRST(dev))
--        	drm_crtc_helper_add(&psb_intel_crtc->base,
-+		drm_crtc_helper_add(&psb_intel_crtc->base,
- 				    &mrst_helper_funcs);
- 	else
--        	drm_crtc_helper_add(&psb_intel_crtc->base,
-+		drm_crtc_helper_add(&psb_intel_crtc->base,
- 				    &psb_intel_helper_funcs);
- 
- 	/* Setup the array of drm_connector pointer array */
+I don't think anybody wants this as a long term solution.  It is
+merely a stop-gap so that development is not stalled while working out
+a real interface.
 
+g.
