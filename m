@@ -1,57 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab1DSLrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 07:47:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3940 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab1DSLro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 07:47:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=a5wuXLZlFMUW9hFCTqUN3COO061OxZKko/6x99OvDudTRcqeoMOlggcIsYlYB/mLnB
-         3s3UNJYx8FjIwboLsmUQ==
+	id S1754201Ab1DSLvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 07:51:10 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42154 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752561Ab1DSLvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 07:51:09 -0400
+Message-ID: <4DAD772F.3060906@kernel.dk>
+Date: Tue, 19 Apr 2011 13:51:11 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <4DAD6D22.7000002@parallels.com>
-References: <20110419100739.8464.80475.stgit@localhost6> <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com>
- <4DAD6D22.7000002@parallels.com>
-From: Paul Menage <menage@google.com>
-Date: Tue, 19 Apr 2011 13:47:21 +0200
-Message-ID: <BANLkTi=4vb5bm0xD=XVJGGD06_BHz+Ciyw@mail.gmail.com>
-Subject: Re: [PATCH] cpuset: allow empty cpu/node masks
-To: Konstantin Khlebnikov <khlebnikov@parallels.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Liu Yuan <namei.unix@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block, blk-sysfs: Fix an err return path in blk_register_queue()
+References: <1303201038-11222-1-git-send-email-namei.unix@gmail.com>
+In-Reply-To: <1303201038-11222-1-git-send-email-namei.unix@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 1:08 PM, Konstantin Khlebnikov
-<khlebnikov@parallels.com> wrote:
-> Is cgroup.clone_children=1 planned to be default?
+On 2011-04-19 10:17, Liu Yuan wrote:
+> From: Liu Yuan <tailai.ly@taobao.com>
+> 
+> We do not call blk_trace_remove_sysfs() in err return path
+> if kobject_add() fails. This path fixes it.
 
-I don't think so. It would be a user-visible API change, for no
-significant benefit.
+Thanks, applied.
 
->
-> So, I just want to make cgroup worked out of the box:
->
-> mount -t cgroup cgroup /cgroup
-> mkdir /cgroup/foo
-> echo $$ > /cgroup/foo/tasks
+-- 
+Jens Axboe
 
-Just because cgroups has a very simple filesystem-based ASCII API,
-that doesn't stop it from being a complex and
-barely-human-comprehendable system. :-)
-
-I'm not sure what we gain by making that approach work - to do useful
-stuff with cgroups (rather than simply playing around with moving
-tasks into cgroups) you do need to have a better understanding of
-what's going on. It's not too hard to make the initial instructions
-explain how to only mount the subsystems that you want, or pass the
-clone_children option.
-
-Paul
