@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1DSDF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 23:05:58 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:53640 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab1DSDFz (ORCPT
+	id S1754209Ab1DSDFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 23:05:45 -0400
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:38246 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab1DSDFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 23:05:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=YQ1IF45rYQNhsxtVcwqVYHZ7UUL8sW3trF4HAqmQ/RHLnBkfIwhEXiRZuoNZBAvZPQ
-         o8a9vDEmXOBkzMDHVp/Rm5ClR6V+lPBmGBaI4ClUe2CjJ+MgbiTMgtgFEC3n+fwGLgVH
-         1Z8uFt9sYdxtbWeNw7TGFPcCCEcs0zYL7Rf5s=
-MIME-Version: 1.0
-Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
-References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
-Date: Tue, 19 Apr 2011 11:05:54 +0800
-X-Google-Sender-Auth: Wku5FaiDBQH7ZaG5tfpI-P4QLNU
-Message-ID: <BANLkTingpBu6Xnpd8QdGX7LfUb3UDKj59w@mail.gmail.com>
-Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Apr 2011 23:05:43 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 6/6] overlay: overlay filesystem documentation
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, hramrach@centrum.cz, Miklos Szeredi <mszeredi@suse.cz>
+In-Reply-To: <1303142440-26328-7-git-send-email-miklos@szeredi.hu>
+References: <1303142440-26328-1-git-send-email-miklos@szeredi.hu> <1303142440-26328-7-git-send-email-miklos@szeredi.hu>
+Date: Tue, 19 Apr 2011 12:05:17 +0900
+Message-ID: <7795.1303182317@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/19/11, Hui Zhu <teawater@gmail.com> wrote:
-> Cannot connect to any outside devices through bluetooth.
->
-> And I think this is not a bug of low level driver.  Because both my
-> laptop and a usb bluetooth card cannot work.
->
-> Thanks,
-> Hui
-Maybe this patch can fix ?
-http://userweb.kernel.org/~akpm/mmotm/broken-out/bluetooth-fix-build-warnings-on-defconfigs.patch
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+
+Hello Miklos,
+
+Miklos Szeredi:
+> +The lower filesystem can be any filesystem supported by Linux and does
+> +not need to be writable.  The lower filesystem can even be another
+> +overlayfs.  ...
+
+When user mounts overlayfs over and over like this,
+# mount -t overlayfs -o upper=/rw1,lower=/ro1 none /ovl1
+# mount -t overlayfs -o upper=/rw2,lower=/ovl1 none /ovl2
+	:::
+# mount -t overlayfs -o upper=/rwN,lower=/ovl{N-1} none /ovlN
+
+And if he modify a file in the bottom RO layer, then overlayfs copies-up
+the file into each RW layer?
+- 'fileA' exists in only /ro1.
+- nested mounts.
+- run "echo append >> /ovlN/fileA"
+- is fileA copied-up to /rw1, and then to /rw2, and then ... to /rwN?
+
+If user specify a single dir as every upper laery, then the copyup will
+be done only once, or such RW layers are not allowed?
+
+
+J. R. Okajima
