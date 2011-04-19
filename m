@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1DSIcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:32:50 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:49133 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab1DSIcm (ORCPT
+	id S1754053Ab1DSIcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:32:48 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:51033 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803Ab1DSIch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:32:42 -0400
+	Tue, 19 Apr 2011 04:32:37 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linux-kernel@vger.kernel.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
 Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <amit.goel@st.com>, <viresh.linux@gmail.com>,
         <linus.walleij@linaro.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2 5/7] dmaengine/dw_dmac: set residue as total len in dwc_tx_status if status is !DMA_SUCCESS
-Date: Tue, 19 Apr 2011 14:02:10 +0530
-Message-ID: <f84891a00ad93d2592981cb0119b99f0242d8b35.1303194836.git.viresh.kumar@st.com>
+Subject: [PATCH V2 3/7] dmaengine/dw_dmac: call dwc_descriptor_complete from dwc_control with lock held
+Date: Tue, 19 Apr 2011 14:02:08 +0530
+Message-ID: <c19b6c33e8a04b652e78252fa96021bcd39047e4.1303194835.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1303194835.git.viresh.kumar@st.com>
 References: <cover.1303194835.git.viresh.kumar@st.com>
@@ -25,31 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If transfer status is !=DMA_SUCCESS, return total transfer len as residue,
-instead of zero.
+dwc_descriptor_complete must always be called with channel lock held. This patch
+moves unlock code, in dwc_control(), untill after dwc_descriptor_complete is
+called.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index d8aad28..f4779e2 100644
+index 66d7f1b..c211460 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -864,7 +864,11 @@ dwc_tx_status(struct dma_chan *chan,
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	}
+@@ -825,12 +825,12 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	list_splice_init(&dwc->queue, &list);
+ 	list_splice_init(&dwc->active_list, &list);
  
--	dma_set_tx_state(txstate, last_complete, last_used, 0);
-+	if (ret != DMA_SUCCESS)
-+		dma_set_tx_state(txstate, last_complete, last_used,
-+				dwc_first_active(dwc)->len);
-+	else
-+		dma_set_tx_state(txstate, last_complete, last_used, 0);
+-	spin_unlock_irqrestore(&dwc->lock, dwc->lflags);
+-
+ 	/* Flush all pending and queued descriptors */
+ 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
+ 		dwc_descriptor_complete(dwc, desc);
  
- 	return ret;
++	spin_unlock_irqrestore(&dwc->lock, dwc->lflags);
++
+ 	return 0;
  }
+ 
 -- 
 1.7.2.2
 
