@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1DSWZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:25:31 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51576 "EHLO smtps.tip.net.au"
+	id S1753942Ab1DSW0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:26:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42203 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1DSWZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:25:30 -0400
-Date: Wed, 20 Apr 2011 08:25:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the kbuild tree
-Message-Id: <20110420082514.a9ec4d68.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz"
+	id S1751906Ab1DSW0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:26:32 -0400
+Date: Tue, 19 Apr 2011 15:26:26 -0700
+From: Chris Wright <chrisw@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Chris Wright <chrisw@redhat.com>, pugs@ieee.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        qemu-devel@nongnu.org, aafabbri@cisco.com, dwang2@cisco.com,
+        benve@cisco.com
+Subject: Re: [PATCH] vfio: Add an ioctl to reset the device
+Message-ID: <20110419222626.GP12133@x200.localdomain>
+References: <20110419203234.4254.94914.stgit@s20.home>
+ <20110419220743.GO12133@x200.localdomain>
+ <1303251751.3110.129.camel@x201>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303251751.3110.129.camel@x201>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Alex Williamson (alex.williamson@redhat.com) wrote:
+> On Tue, 2011-04-19 at 15:07 -0700, Chris Wright wrote:
+> > * Alex Williamson (alex.williamson@redhat.com) wrote:
+> > > When using VFIO to assign a device to a guest, we want to make sure
+> > > the device is quiesced on VM reset to stop all DMA within the guest
+> > > mapped memory.  Add an ioctl which just calls pci_reset_function()
+> > > and returns whether it succeeds.
+> > 
+> > Shouldn't there be a reset when binding/unbinding vfio to/from a pci
+> > device?
+> 
+> There's already one when the /dev/vfioX file is opened, we should add
+> another on release, and probably add the same PCI save state store/load
+> that I'm proposing for KVM across those.  Thanks,
 
-Hi Michal,
-
-After merging the kbuild tree, today's linux-next build (s390 allnoconfig)
-failed like this:
-
-/opt/crosstool/gcc-4.3.2-nolibc/bin/s390x-linux-ar: illegal option -- D
-
-Caused by commit 09ff9fecc039 ("kbuild: Use the deterministic mode of ar").
-
-$ /opt/crosstool/gcc-4.3.2-nolibc/bin/s390x-linux-ar --version
-GNU ar (GNU Binutils) 2.19
-
-I presume that this version of ar is now too old to build the kernel?
-Documentation/Changes only mentions Binutils verion 2.12.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNrgvKAAoJEDMEi1NhKgbsmX8H/RIDsoJBV2FXM/xkLZGWOgbe
-/p0Fxunh3nC9ytJ/nohImQTll73NbhG1MVg+nS1BKGuI5tGXkbgn1ZwzhNM0SoPM
-Eu53Wl6GflYZicCMRE/zHTjxBXyf1U9mORXaE/M0/DXKPI6k+sFlwVo8Pb5TWk/X
-EyvcSF+snV+E4UkBbYP+0BcKZOxTh2zZR00fRH29IBOo7VDkft0wLjWFYAEb4d2i
-jpXPK/TmtMlIeHGVyaH7iGX8Ji/7u2jQ2IhI5FWgX7oZKbUEz3+nOoipnfBbLFXV
-IJEGu9dJPVExCIeFZ24JqVQTHMbwvmwp0yxfdkwKlyQnvxTw4nKzG/6mVmyvu0Q=
-=8Yvr
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz--
+Hmm, I looked and didn't see it, hence the question.
