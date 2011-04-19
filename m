@@ -1,93 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab1DSSai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 14:30:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab1DSSah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 14:30:37 -0400
-Date: Tue, 19 Apr 2011 14:30:22 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        lsf@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup IO throttling and filesystem ordered mode (Was: Re: [Lsf]
- IO less throttling and cgroup aware writeback (Was: Re: Preliminary Agenda
- and Activities for LSF))
-Message-ID: <20110419183022.GN31712@redhat.com>
-References: <20110406235039.GL31057@dastard>
- <20110407175537.GD27778@redhat.com>
- <20110411013630.GM30279@dastard>
- <20110415210750.GC28323@redhat.com>
- <20110416030602.GA26191@redhat.com>
- <20110418215844.GA15428@quack.suse.cz>
- <20110418225118.GM30783@redhat.com>
- <20110419003339.GA23985@dastard>
- <20110419143022.GB31712@redhat.com>
- <20110419171723.GM31712@redhat.com>
+	id S1754226Ab1DSSfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 14:35:13 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40303 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753084Ab1DSSfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 14:35:10 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Dcpx3YEVM1keBj99gb7ds8mL27WxlYw5m8sqx5SJa0suAdr
+ JHZUbabeMkeyYla6UagcnRMggDy5XtkH5dzRmGqESTfBoDmm6cge1JbRcAwK
+ W_pO6VNr98ubQNBqcs9VJXsli.w23uzg_l7ovp9AVYj6YkdqopbsDrMmJGja
+ VgRMqoWPFTV0z5t4TAzXuqXWrWtzdVH3Z3pVfyFs3o7HIuJNJBdnIxY7.umd
+ .F4Ys5qcSxp5HrbcIDdnCO7TX40lnrEp2iRpAgBXaxwKQEfNlHQDFq0sRSO3
+ rL1msys5yRbzF43SFulkCBV_i1Jvv5qiWpuw97f46y3syGR.FrEHLwsEsFCn
+ O2zMegZ6mJun1pCSVgB4zam2W
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 19 Apr 2011 13:35:06 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <1303237217.3171.39.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1104191325470.19358@router.home>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>  <alpine.LSU.2.00.1104171952040.22679@sister.anvils>  <20110418100131.GD8925@tiehlicka.suse.cz>  <20110418135637.5baac204.akpm@linux-foundation.org>  <20110419111004.GE21689@tiehlicka.suse.cz> 
+ <1303228009.3171.18.camel@mulgrave.site>  <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>  <1303233088.3171.26.camel@mulgrave.site>  <alpine.DEB.2.00.1104191213120.17888@router.home>  <1303235306.3171.33.camel@mulgrave.site> 
+ <alpine.DEB.2.00.1104191254300.19358@router.home> <1303237217.3171.39.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419171723.GM31712@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 01:17:23PM -0400, Vivek Goyal wrote:
-> On Tue, Apr 19, 2011 at 10:30:22AM -0400, Vivek Goyal wrote:
-> 
-> [..]
-> > > 
-> > > In XFS, you could probably do this at the transaction reservation
-> > > stage where log space is reserved. We know everything about the
-> > > transaction at this point in time, and we throttle here already when
-> > > the journal is full. Adding cgroup transaction limits to this point
-> > > would be the place to do it, but the control parameter for it would
-> > > be very XFS specific (i.e. number of transactions/s). Concurrency is
-> > > not an issue - the XFS transaction subsystem is only limited in
-> > > concurrency by the space available in the journal for reservations
-> > > (hundred to thousands of concurrent transactions).
-> > 
-> > Instead of transaction per second, can we implement some kind of upper
-> > limit of pending transactions per cgroup. And that limit does not have
-> > to be user tunable to begin with. The effective transactions/sec rate
-> > will automatically be determined by IO throttling rate of the cgroup
-> > at the end nodes.
-> > 
-> > I think effectively what we need is that the notion of parallel
-> > transactions so that transactions of one cgroup can make progress
-> > independent of transactions of other cgroup. So if a process does
-> > an fsync and it is throttled then it should block transaction of 
-> > only that cgroup and not other cgroups.
-> > 
-> > You mentioned that concurrency is not an issue in XFS and hundreds of
-> > thousands of concurrent trasactions can progress depending on log space
-> > available. If that's the case, I think to begin with we might not have
-> > to do anything at all. Processes can still get blocked but as long as
-> > we have enough log space, this might not be a frequent event. I will
-> > do some testing with XFS and see can I livelock the system with very
-> > low IO limits.
-> 
-> Wow, XFS seems to be doing pretty good here. I created a group of
-> 1 bytes/sec limit and wrote few bytes in a file and write quit it (vim).
-> That led to an fsync and process got blocked. From a different cgroup, in the
-> same directory I seem to be able to do all other regular operations like ls,
-> opening a new file, editing it etc.
-> 
-> ext4 will lockup immediately. So concurrent transactions do seem to work in
-> XFS.
+On Tue, 19 Apr 2011, James Bottomley wrote:
 
-Well, I used tedso's fsync tester test case which wrote a file of 1MB
-and then did fsync. I launched this test case in two cgroups. One is 
-throttled and other is not. Looks like unthrottled one gets blocked
-somewhere and can't make progress. So there are dependencies somewhere
-even with XFS.
+> > }
+> >
+> > How in the world did you get a zone setup in node 1 with a !NUMA config?
+>
+> I told you ... I forced an allocation into the first discontiguous
+> region.  That will return 1 for page_to_nid().
 
-Thanks
-Vivek
-> 
-> Thanks
-> Vivek
+How? The kernel has no concept of a node 1 without CONFIG_NUMA and so you
+cannot tell the page allocator to allocate from node 1.
+
+zone_to_nid is used as a fallback mechanism for page_to_nid() and as shown
+will always return 0 for !NUMA configs.
+
+page_to_nid(x) == zone_to_nid(page_zone(x)) must hold true. It is not
+here.
+
+> > The problem seems to be that the kernel seems to allow a
+> > definition of a page_to_nid() function that returns non zero in the !NUMA
+> > case.
+>
+> This is called reality, yes.
+
+There you have the bug. Fix that and things will work fine.
+
+> right, that's what I told you: slub is broken because it's making a
+> wrong assumption.  Look in asm-generic/memory_model.h it shows how the
+> page_to_nid() is used in finding the pfn array.  DISCONTIGMEM uses some
+> of the numa properties (including assigning zones to the discontiguous
+> regions).
+
+Bitrotted code? If it uses numa properties then it must use a zone field
+in struct zone. So DISCONTIGMEM seems to require CONFIG_NUMA.
+
+> > If you think that is broken then we have brokenness all over the kernel
+> > whenever we determine the node from a page and use that to do a lookup.
+>
+> Not really.  The rest of the kernel uses the proper macros.  in
+> DISCONTIGMEM but !NUMA configs, the numa macros expand correctly.
+> You've cut across that with all the CONFIG_NUMA checks in slub.
+
+What are "the proper macros"? AFAICT page_to_nid() is the proper way to
+access the node of a page. If page_to_nid() returns 1 then you have a zone
+that the kernel knows of as being in node 0 having a page on a different
+node.
+
+We can likely force page_to_nid to ignore the node information that have
+been erroneously placed there but this looks like something deeper is
+wrong here. The node field in struct page is not only used for the Linux
+support of a NUMA node but also for blocks of memory. Those should be
+separate things.
+
+---
+ include/linux/mm.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux-2.6/include/linux/mm.h
+===================================================================
+--- linux-2.6.orig/include/linux/mm.h	2011-04-19 13:20:20.092521248 -0500
++++ linux-2.6/include/linux/mm.h	2011-04-19 13:21:05.962521196 -0500
+@@ -665,6 +665,7 @@ static inline int zone_to_nid(struct zon
+ #endif
+ }
+
++#ifdef CONFIG_NUMA
+ #ifdef NODE_NOT_IN_PAGE_FLAGS
+ extern int page_to_nid(struct page *page);
+ #else
+@@ -673,6 +674,9 @@ static inline int page_to_nid(struct pag
+ 	return (page->flags >> NODES_PGSHIFT) & NODES_MASK;
+ }
+ #endif
++#else
++#define page_to_nid(x) 0
++#endif
+
+ static inline struct zone *page_zone(struct page *page)
+ {
