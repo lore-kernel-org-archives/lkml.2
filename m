@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab1DSLhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 07:37:19 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:56232 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab1DSLhR (ORCPT
+	id S1752424Ab1DSLlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 07:41:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63012 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab1DSLlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 07:37:17 -0400
-From: Haojian Zhuang <hzhuang1@marvell.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
-        "cbou@mail.ru" <cbou@mail.ru>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-Date: Tue, 19 Apr 2011 04:34:52 -0700
-Subject: RE: [PATCH 14/14] regulator: 88pm8607: avoid to use constraint name
- in driver
-Thread-Topic: [PATCH 14/14] regulator: 88pm8607: avoid to use constraint
- name in driver
-Thread-Index: Acv+aZcEhBi7bbe1SsiAZum3e1LIwwAHB3Ng
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B52A@SC-VEXCH1.marvell.com>
-References: <1303135451-26362-15-git-send-email-haojian.zhuang@marvell.com>
- <20110418143044.GF2466@opensource.wolfsonmicro.com>
- <BANLkTi=EFdzNN5GYNbGn+B8H=13C6W7s3A@mail.gmail.com>
- <20110418160247.GF1765@opensource.wolfsonmicro.com>
- <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B425@SC-VEXCH1.marvell.com>
- <20110419081303.GD16357@opensource.wolfsonmicro.com>
-In-Reply-To: <20110419081303.GD16357@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Tue, 19 Apr 2011 07:41:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ipJmb6Za8C3+7HxS0ZwX3sLR9CT4wfp8vkvjsDAJOZ9bfqeWOwijSiVKkdFJprgoGP
+         aGR1rdnapi6029Ubbn2CV5hKeZ0rvGI6ppxIu/KW8x/tMrsNTJqCuJ3YjyZIDea7yzrj
+         EQ4FEf1nSIHAUAcTc1jVcFbgkKhAG9i4u8b+A=
 MIME-Version: 1.0
+Date: Tue, 19 Apr 2011 20:41:07 +0900
+Message-ID: <BANLkTi=1svkDQt+HyaHgnann1Vre7CLUNQ@mail.gmail.com>
+Subject: SPI read problem
+From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3JBbRLR012945
 
+Hello there,
+I have a device which is Written_to/Read_from using SPI Bus.
 
+I initialize the device like this:
 
->-----Original Message-----
->From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
->Sent: 2011Äê4ÔÂ19ÈÕ 4:13 PM
->To: Haojian Zhuang
->Cc: Haojian Zhuang; sameo@linux.intel.com; linux-kernel@vger.kernel.org;
->dmitry.torokhov@gmail.com; a.zummo@towertech.it; johnpol@2ka.mipt.ru;
->cbou@mail.ru; dwmw2@infradead.org; lrg@slimlogic.co.uk
->Subject: Re: [PATCH 14/14] regulator: 88pm8607: avoid to use constraint
->name in driver
->
->On Mon, Apr 18, 2011 at 07:45:06PM -0700, Haojian Zhuang wrote:
->
->> >I assume that by "platform driver" you mean the machine driver for
->the
->> >system?  What I'm saying is that instead of using a string to match
->it'd
->> >be more normal to use an enum in the driver header, that way if
->someone
->> >typos the string or something then there will be a build failure
->whereas
->> >with strings like this there will only be a runtime failure.
->
->> It's nearly same whatever it's string or index number. In machine
->driver,
->> it's more convenient on using string. Otherwise, I still need to
->create
->
->You're saying it's more convenient but you're not saying why.  I'd say
->that the lack of build time checking I mentioned is actually unhelpful.
->
->> a new integer array to store index since I transfer them into
->regulator data
->> by driver_data parameter in regulator_init_data.
->
->You already need to add a char * to store the name, adding an enum
->instead isn't a substantial difference...
+static int __init myDEV_init(void)
+{
+    return spi_register_driver(&myDEV_driver);
+}
+module_init(myDEV_init);
 
-OK. So I just need to switch to ID instead of name on these two patches.
-Is it right?
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+My myDEV_probe() function looks like this:
+
+static int __devinit myDEV_probe(struct spi_device *spi)
+{
+.....
+.....
+/*when my CPU receives a particular IRQ, I have to do a spi_read() and
+do couple of spi_write(), I am using like this:*/
+err = request_threaded_irq (MY_DEV_IRQ, NULL, myDEV_irq_thread,
+            IRQF_TRIGGER_RISING, "MYDEV", NULL);
+
+return 0;
+}
+
+When the Interrupt is received by the CPU, myDEV_irq_thread is being called.
+However, in the ISR I have to do  spi_read(). This is always returning
+"Timed out".
+
+To verify if the device is not at all working, along with registering
+for the IRQ, I also created a char device through I did a IOCTL.
+The IOCTL command in turn does spi_read(). In this case spi_read() is
+successful.
+
+Since it is necessary to do spi_read() in my ISR, I searched around
+and found some information that
+spi_read() is callable only from contexts that can sleep.
+
+How can I make my ISR sleep? or is there any other way of doing this?
+
+Any help is highly appreciated.
+Thanks & regards
+Murali
