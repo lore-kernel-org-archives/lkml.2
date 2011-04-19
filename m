@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1DSG0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:26:08 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:45809 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752278Ab1DSG0F (ORCPT
+	id S1752508Ab1DSGeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:34:15 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:50478 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab1DSGeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:26:05 -0400
-Message-ID: <4DAD2AE9.7060106@st.com>
-Date: Tue, 19 Apr 2011 11:55:45 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 19 Apr 2011 02:34:13 -0400
+Date: Tue, 19 Apr 2011 08:34:01 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: linux-s390@vger.kernel.org, Stephen Powell <zlinuxman@wowway.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [OOPS s390] Unable to handle kernel pointer dereference at
+ virtual kernel address (null)
+Message-ID: <20110419063400.GA2878@osiris.boeblingen.de.ibm.com>
+References: <2099315211.286690.1302917498637.JavaMail.root@md01.wow.synacor.com>
+ <20110416014811.GA6150@elie>
 MIME-Version: 1.0
-To: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/6] dmaengine/dw_dmac: Replace spin_lock_bh with irqsave
- variants
-References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com>
-In-Reply-To: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110416014811.GA6150@elie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2011 04:19 PM, Viresh KUMAR wrote:
-> dmaengine routines can be called from interrupt context and with interrupts
-> disabled.  Whereas spin_unlock_bh can't be called from such contexts. So this
-> patch converts all spin_*_bh routines to irqsave variants.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
->  drivers/dma/dw_dmac.c      |   56 +++++++++++++++++++++++++------------------
->  drivers/dma/dw_dmac_regs.h |    1 +
->  2 files changed, 33 insertions(+), 24 deletions(-)
-> 
-> 
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index 720f821..c89fd83 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -173,6 +173,7 @@ struct dw_dma {
->  	void __iomem		*regs;
->  	struct tasklet_struct	tasklet;
->  	struct clk		*clk;
-> +	unsigned long		flags; /* for spin_lock_irqsave */
+On Fri, Apr 15, 2011 at 08:48:40PM -0500, Jonathan Nieder wrote:
+> > I installed linux-image-2.6.38-2-s390x version 2.6.38-3 on my up-to-date Wheezy
+> > system today.  It runs in a virtual machine under z/VM 5.4.0 running in an LPAR
+> > on an IBM z/890.  It IPLed just fine.  After the IPL, the system fell idle for a while.
+> > Then a CRON job kicked off, which caused a page fault, which caused a kernel oops.
+> > Here is the log:
 
-Oops!!!
-This must have been added in dw_dma_chan instead :(
-Will resend it.
+Ok, I was able to reproduce it and could verify that my patch fixes the bug.
+Thanks for reporting! The patch below will go upstream:
 
--- 
-viresh
+Subject: [S390] pfault: fix token handling
+
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+
+f6649a7e "[S390] cleanup lowcore access from external interrupts" changed
+handling of external interrupts. Instead of letting the external interrupt
+handlers accessing the per cpu lowcore the entry code of the kernel reads
+already all fields that are necessary and passes them to the handlers.
+The pfault interrupt handler was incorrectly converted. It tries to
+dereference a value which used to be a pointer to a lowcore field. After
+the conversion however it is not anymore the pointer to the field but its
+content. So instead of a dereference only a cast is needed to get the
+task pointer that caused the pfault.
+
+Fixes a NULL pointer dereference and a subsequent kernel crash:
+
+Unable to handle kernel pointer dereference at virtual kernel address (null)
+Oops: 0004 [#1] SMP
+Modules linked in: nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss sunrpc
+                   loop qeth_l3 qeth vmur ccwgroup ext3 jbd mbcache dm_mod
+                   dasd_eckd_mod dasd_diag_mod dasd_mod
+CPU: 0 Not tainted 2.6.38-2-s390x #1
+Process cron (pid: 1106, task: 000000001f962f78, ksp: 000000001fa0f9d0)
+Krnl PSW : 0404200180000000 000000000002c03e (pfault_interrupt+0xa2/0x138)
+           R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
+Krnl GPRS: 0000000000000000 0000000000000001 0000000000000000 0000000000000001
+           000000001f962f78 0000000000518968 0000000090000002 000000001ff03280
+           0000000000000000 000000000064f000 000000001f962f78 0000000000002603
+           0000000006002603 0000000000000000 000000001ff7fe68 000000001ff7fe48
+Krnl Code: 000000000002c036: 5820d010            l       %r2,16(%r13)
+           000000000002c03a: 1832                lr      %r3,%r2
+           000000000002c03c: 1a31                ar      %r3,%r1
+          >000000000002c03e: ba23d010            cs      %r2,%r3,16(%r13)
+           000000000002c042: a744fffc            brc     4,2c03a
+           000000000002c046: a7290002            lghi    %r2,2
+           000000000002c04a: e320d0000024        stg     %r2,0(%r13)
+           000000000002c050: 07f0                bcr     15,%r0
+Call Trace:
+ ([<000000001f962f78>] 0x1f962f78)
+  [<000000000001acda>] do_extint+0xf6/0x138
+  [<000000000039b6ca>] ext_no_vtime+0x30/0x34
+  [<000000007d706e04>] 0x7d706e04
+Last Breaking-Event-Address:
+  [<0000000000000000>] 0x0
+
+For stable maintainers:
+the first kernel which contains this bug is 2.6.37.
+
+Reported-by: Stephen Powell <zlinuxman@wowway.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: stable@kernel.org
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+
+ arch/s390/mm/fault.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
+index 9217e33..4cf85fe 100644
+--- a/arch/s390/mm/fault.c
++++ b/arch/s390/mm/fault.c
+@@ -558,9 +558,9 @@ static void pfault_interrupt(unsigned int ext_int_code,
+ 	 * Get the token (= address of the task structure of the affected task).
+ 	 */
+ #ifdef CONFIG_64BIT
+-	tsk = *(struct task_struct **) param64;
++	tsk = (struct task_struct *) param64;
+ #else
+-	tsk = *(struct task_struct **) param32;
++	tsk = (struct task_struct *) param32;
+ #endif
+ 
+ 	if (subcode & 0x0080) {
