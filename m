@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab1DSUrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:47:22 -0400
-Received: from kroah.org ([198.145.64.141]:58970 "EHLO coco.kroah.org"
+	id S1754565Ab1DSUmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:42:42 -0400
+Received: from kroah.org ([198.145.64.141]:58923 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab1DSUmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
-Message-Id: <20110419204118.289404460@clark.kroah.org>
+	id S1754254Ab1DSUmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:17 2011
+Message-Id: <20110419204117.350095345@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:53 -0700
+Date: Tue, 19 Apr 2011 13:30:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Simon <simon@swine.de>
-Subject: [15/28] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
+        Jeff Mahoney <jeffm@suse.com>, Tony Luck <tony.luck@intel.com>
+Subject: [06/28] [IA64] tioca: Fix assignment from incompatible pointer warnings
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Simon <simon@swine.de>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
+commit b4a6b3436531f6c5256e6d60d388c3c28ff1a0e9 upstream.
 
-I added new ProdutIds for two devices from CTI GmbH Leipzig.
+The prototype for sn_pci_provider->{dma_map,dma_map_consistent} expects
+an unsigned long instead of a u64.
 
-Signed-off-by: Christian Simon <simon@swine.de>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
- 2 files changed, 11 insertions(+)
+ arch/ia64/sn/pci/tioca_provider.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -155,6 +155,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
-  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
+--- a/arch/ia64/sn/pci/tioca_provider.c
++++ b/arch/ia64/sn/pci/tioca_provider.c
+@@ -517,7 +517,7 @@ tioca_dma_unmap(struct pci_dev *pdev, dm
+  * use the GART mapped mode.
   */
- static struct usb_device_id id_table_combined [] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1147,3 +1147,12 @@
- #define QIHARDWARE_VID			0x20B7
- #define MILKYMISTONE_JTAGSERIAL_PID	0x0713
+ static u64
+-tioca_dma_map(struct pci_dev *pdev, u64 paddr, size_t byte_count, int dma_flags)
++tioca_dma_map(struct pci_dev *pdev, unsigned long paddr, size_t byte_count, int dma_flags)
+ {
+ 	u64 mapaddr;
  
-+/*
-+ * CTI GmbH RS485 Converter http://www.cti-lean.com/
-+ */
-+/* USB-485-Mini*/
-+#define FTDI_CTI_MINI_PID	0xF608
-+/* USB-Nano-485*/
-+#define FTDI_CTI_NANO_PID	0xF60B
-+
-+
 
 
