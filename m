@@ -1,64 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab1DSJDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:03:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21451 "EHLO mx1.redhat.com"
+	id S1754512Ab1DSJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754217Ab1DSJCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:02:38 -0400
+	id S1754146Ab1DSJCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:02:37 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3/4] GFS2: Don't try to deallocate unlinked inodes when mounted ro
-Date: Tue, 19 Apr 2011 09:40:08 +0100
-Message-Id: <1303202409-3317-4-git-send-email-swhiteho@redhat.com>
+Cc: Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 2/4] GFS2: directly write blocks past i_size
+Date: Tue, 19 Apr 2011 09:40:07 +0100
+Message-Id: <1303202409-3317-3-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1303202409-3317-1-git-send-email-swhiteho@redhat.com>
 References: <1303202409-3317-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a couple of missing tests to avoid read-only nodes
-from attempting to deallocate unlinked inodes.
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
+GFS2 was relying on the writepage code to write out the zeroed data for
+fallocate.  However, with FALLOC_FL_KEEP_SIZE set, this may be past i_size.
+If it is, it will be ignored.  To work around this, gfs2 now calls
+write_dirty_buffer directly on the buffer_heads when FALLOC_FL_KEEP_SIZE
+is set, and it's writing past i_size.
+
+This version is just a cleanup of my last version
+
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Reported-by: Michel Andre de la Porte <madelaporte@ubi.com>
 
-diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-index 3754e3c..25eeb2b 100644
---- a/fs/gfs2/glops.c
-+++ b/fs/gfs2/glops.c
-@@ -385,6 +385,10 @@ static int trans_go_demote_ok(const struct gfs2_glock *gl)
- static void iopen_go_callback(struct gfs2_glock *gl)
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index b2682e0..e483108 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -617,18 +617,51 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	return generic_file_aio_write(iocb, iov, nr_segs, pos);
+ }
+ 
+-static void empty_write_end(struct page *page, unsigned from,
+-			   unsigned to)
++static int empty_write_end(struct page *page, unsigned from,
++			   unsigned to, int mode)
  {
- 	struct gfs2_inode *ip = (struct gfs2_inode *)gl->gl_object;
-+	struct gfs2_sbd *sdp = gl->gl_sbd;
+-	struct gfs2_inode *ip = GFS2_I(page->mapping->host);
++	struct inode *inode = page->mapping->host;
++	struct gfs2_inode *ip = GFS2_I(inode);
++	struct buffer_head *bh;
++	unsigned offset, blksize = 1 << inode->i_blkbits;
++	pgoff_t end_index = i_size_read(inode) >> PAGE_CACHE_SHIFT;
+ 
+ 	zero_user(page, from, to-from);
+ 	mark_page_accessed(page);
+ 
+-	if (!gfs2_is_writeback(ip))
+-		gfs2_page_add_databufs(ip, page, from, to);
++	if (page->index < end_index || !(mode & FALLOC_FL_KEEP_SIZE)) {
++		if (!gfs2_is_writeback(ip))
++			gfs2_page_add_databufs(ip, page, from, to);
 +
-+	if (sdp->sd_vfs->s_flags & MS_RDONLY)
-+		return;
++		block_commit_write(page, from, to);
++		return 0;
++	}
++
++	offset = 0;
++	bh = page_buffers(page);
++	while (offset < to) {
++		if (offset >= from) {
++			set_buffer_uptodate(bh);
++			mark_buffer_dirty(bh);
++			clear_buffer_new(bh);
++			write_dirty_buffer(bh, WRITE);
++		}
++		offset += blksize;
++		bh = bh->b_this_page;
++	}
  
- 	if (gl->gl_demote_state == LM_ST_UNLOCKED &&
- 	    gl->gl_state == LM_ST_SHARED && ip) {
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index a4e23d6..5b2cb81 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -1318,12 +1318,13 @@ static int gfs2_show_options(struct seq_file *s, struct vfsmount *mnt)
+-	block_commit_write(page, from, to);
++	offset = 0;
++	bh = page_buffers(page);
++	while (offset < to) {
++		if (offset >= from) {
++			wait_on_buffer(bh);
++			if (!buffer_uptodate(bh))
++				return -EIO;
++		}
++		offset += blksize;
++		bh = bh->b_this_page;
++	}
++	return 0;
+ }
  
- static void gfs2_evict_inode(struct inode *inode)
+ static int needs_empty_write(sector_t block, struct inode *inode)
+@@ -643,7 +676,8 @@ static int needs_empty_write(sector_t block, struct inode *inode)
+ 	return !buffer_mapped(&bh_map);
+ }
+ 
+-static int write_empty_blocks(struct page *page, unsigned from, unsigned to)
++static int write_empty_blocks(struct page *page, unsigned from, unsigned to,
++			      int mode)
  {
--	struct gfs2_sbd *sdp = inode->i_sb->s_fs_info;
-+	struct super_block *sb = inode->i_sb;
-+	struct gfs2_sbd *sdp = sb->s_fs_info;
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_holder gh;
- 	int error;
+ 	struct inode *inode = page->mapping->host;
+ 	unsigned start, end, next, blksize;
+@@ -668,7 +702,9 @@ static int write_empty_blocks(struct page *page, unsigned from, unsigned to)
+ 							  gfs2_block_map);
+ 				if (unlikely(ret))
+ 					return ret;
+-				empty_write_end(page, start, end);
++				ret = empty_write_end(page, start, end, mode);
++				if (unlikely(ret))
++					return ret;
+ 				end = 0;
+ 			}
+ 			start = next;
+@@ -682,7 +718,9 @@ static int write_empty_blocks(struct page *page, unsigned from, unsigned to)
+ 		ret = __block_write_begin(page, start, end - start, gfs2_block_map);
+ 		if (unlikely(ret))
+ 			return ret;
+-		empty_write_end(page, start, end);
++		ret = empty_write_end(page, start, end, mode);
++		if (unlikely(ret))
++			return ret;
+ 	}
  
--	if (inode->i_nlink)
-+	if (inode->i_nlink || (sb->s_flags & MS_RDONLY))
- 		goto out;
+ 	return 0;
+@@ -731,7 +769,7 @@ static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
  
- 	error = gfs2_glock_nq_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
+ 		if (curr == end)
+ 			to = end_offset;
+-		error = write_empty_blocks(page, from, to);
++		error = write_empty_blocks(page, from, to, mode);
+ 		if (!error && offset + to > inode->i_size &&
+ 		    !(mode & FALLOC_FL_KEEP_SIZE)) {
+ 			i_size_write(inode, offset + to);
 -- 
 1.7.4
 
