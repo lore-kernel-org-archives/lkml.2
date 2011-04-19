@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab1DSQKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:10:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58950 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1DSQKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:10:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
-Date: Tue, 19 Apr 2011 18:10:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, ohad@wizery.com,
-        linux-kernel@vger.kernel.org
-References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org> <201104172239.57362.arnd@arndb.de> <4DADB2F1.1080405@linaro.org>
-In-Reply-To: <4DADB2F1.1080405@linaro.org>
+	id S1753361Ab1DSQNv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:13:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752205Ab1DSQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:13:51 -0400
+Date: Tue, 19 Apr 2011 18:13:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Stas Sergeev <stsp@aknet.ru>, Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
+Message-ID: <20110419161301.GA23914@redhat.com>
+References: <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104191810.18170.arnd@arndb.de>
-X-Provags-ID: V02:K0:K8i1T/mB6aExqcqfS6by7pkA9m6mLwqr0oHBzN9J+dh
- bLjCGMq651FMmc0f+BEqQYD33Q8uFCKGv+08UMPA3cL+hfukW3
- 2B2xfqADAY0TpT8ggB+L389p4k6nErxEt67kZiKsz1+BQzeGMz
- NeqTFpLDd3EVr0OnHferpC1FdWvaQDYJd/pRSlesI9eVtyqhoX
- eB0BWYQBsoyDPpyi0CIEQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419165429.71cb1508@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011, Mathieu Poirier wrote:
-> > One more thing I just noticed: the hwspinlock_internal.h file defines
-> > the hwspinlock->id field as "a global, unique, system-wide, index of
-> > the lock", but the u8500 hsem just sets it to an integer starting
-> > at zero. If there are multiple devices providing hwspinlocks in the
-> > same system, that cannot work.
-> >
-> I have to admit I'm not sure of what your asking here.  Hwspinlocks 
-> should be administered by only one entity and this is what this driver 
-> is doing.
-> 
-> Please get back to me with a clarification.
+On 04/19, Alan Cox wrote:
+>
+> > The use case is to daemonize the process with threads.
+> > You first need to detach it from its parent, then use TIOCNOTTY
+> > ioctl to detach from the tty (TIOCNOTTY_GRP doesn't seem
+> > to exist too, though, but might be easy to implement).
+> > There are a few workarounds to that that I am aware of,
+> > but what exactly interfaces do you have in mind? I have
+> > found nothing that allows to do the same without a workarounds
+> > like this:
+> > https://lkml.org/lkml/2011/4/8/278
+> > The current way of detaching, which is a fork/exit combo,
+> > loses all threads, so, when you call daemon() and you had
+> > threads, you are a toast.
+>
+> Yes - you need to detach then create the threads.
+>
+> The reason I ask is you appear to add overhead to various hot paths
 
-You could have a system with multiple instances of the hardware block
-that holds your spinlock. I've seen SMP systems that basically take
-multiple SOCs and put them into a common address space.
+... and complicates this code.
 
-More importantly, there could be a device on an external bus that also
-provides a hwspinlock. The API can deal with this, but your driver will
-conflict with any other driver trying to do the same.
+> and
+> you add 48 bytes to each task struct if I read the code right. Thats half
+> a megabyte on a server running a pile of java gunge !
 
-	Arnd
+... to add the non-portable (and _imho_ unneeded) feauture.
+
+IOW, personally I do not like this change in any case. But I am not
+going to argue if someone acks this new feauture.
+
+
+
+
+I'll try to check these patches from the correctness pov tomorrow,
+but to be honest I hope someone will nack them before I start ;)
+
+Oleg.
+
