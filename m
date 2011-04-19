@@ -1,98 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1DSOUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:20:20 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59731 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab1DSOUS convert rfc822-to-8bit (ORCPT
+	id S1752384Ab1DSOXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:23:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41231 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab1DSOXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:20:18 -0400
+	Tue, 19 Apr 2011 10:23:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ExMH8y4FgoaLpFFnrnfa3WnEgPQc6S8WS0HABL41w7XJ6n6OWRjkC0A1LiirpVnK8X
-         j2AMCWPulanYSv/qqqu03D97WjVpmozG29zaBcL7TPUbb/FCt7l1LMbw8qgbCykQsOXQ
-         aLG4EMD2QCxu4F6YFAMzCA5GsobjP9ntPtPSk=
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=kcWguZDaiMpKrN1buGUXT269RacTjBrVJyGTGU4J3upgHlTQl+QO8SGPElfbwheZza
+         poChevjPmgtjAcr8vWkosKAIIe53aXk4GaNXVpPNShvbP0UuC8zIkp1yayKfshTEm6sb
+         CEjU1lSalIgyE4eobzsHowApCZRBcllSzVCoE=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
+Cc: stern@rowland.harvard.edu, m-sonasath@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] usb: gadget: composite: Allow function drivers to
+ defer setup responses
+References: <1303220033-5274-1-git-send-email-roger.quadros@nokia.com>
+ <1303220033-5274-2-git-send-email-roger.quadros@nokia.com>
+Date: Tue, 19 Apr 2011 16:23:41 +0200
 MIME-Version: 1.0
-In-Reply-To: <op.vt6ufu1n3ri7v4@arend-laptop>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	<1302892585.30441.12.camel@dev.znau.edu.ua>
-	<BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
-	<201104171938.12834.arnd@arndb.de>
-	<op.vt6ufu1n3ri7v4@arend-laptop>
-Date: Tue, 19 Apr 2011 16:20:17 +0200
-Message-ID: <BANLkTimcR9Z54kgHDK63=jL1U-yvWspjRg@mail.gmail.com>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, George Kashperko <george@znau.edu.ua>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vt6vlrdf3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1303220033-5274-2-git-send-email-roger.quadros@nokia.com>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 19 kwietnia 2011 15:58 użytkownik Arend van Spriel
-<arend@broadcom.com> napisał:
-> On Sun, 17 Apr 2011 19:38:12 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> Hi Rafał,
->
-> As you probably expected I tried to integrate and use your bcmai/bcmaxi/?
-> driver with our brcm80211 driver (making progress). In the mean time I tried
-> to follow the discussions going on, but I am still catching up.
->
->> Compare this to the PCI bus type, which essentially deals with devices
->> that have a PCI configuration space that contains generic (irq, memory,
->> vendor/device ID, ...) registers along with device specific registers.
->
-> How much alike is the (BCM)AXI bus type? My assumption was that each
-> registered PCI device is handled by a single driver module. In the
-> current(?) bcmai implementation each device driver is called with the
-> appropriate device structure reference, but it will also have the bus
-> structure reference and through that can also access other cores on the
-> (bcm)axi bus. This seems to me a potential issue when there are no
-> synchronization mechanisms in place (whether in a SoC configuration or
-> PCI-hosted). Does the PCI bus type allow driver for device A access
-> device B?
+On Tue, 19 Apr 2011 15:33:52 +0200, Roger Quadros  
+<roger.quadros@nokia.com> wrote:
+> @@ -895,6 +904,14 @@ composite_setup(struct usb_gadget *gadget, const  
+> struct usb_ctrlrequest *ctrl)
+>  		if (w_value && !f->set_alt)
+>  			break;
+>  		value = f->set_alt(f, w_index, w_value);
+> +		if (value == USB_GADGET_DELAYED_STATUS) {
+> +			DBG(cdev,
+> +			 "%s: interface %d (%s) requested delayed status\n",
+> +					__func__, intf, f->name);
+> +			cdev->delayed_status++;
 
-There are bus-specific infos that have to be available for drivers,
-like board id, sprom, CC access. So bcmai(?) drivers have to have
-access to bus struct.
+Do we need it to be a counter? Won't simple flag do?
 
-One core driver should never touch other core, like 80211 touching ETH
-or USB or anything. Exception is CC and maybe PCI(e).
+> +			DBG(cdev, "delayed_status count %d\n",
+> +					cdev->delayed_status);
+> +		}
+>  		break;
+>  	case USB_REQ_GET_INTERFACE:
+>  		if (ctrl->bRequestType != (USB_DIR_IN|USB_RECIP_INTERFACE))
 
-I still have to make use of all windows to improve cores access.
+> @@ -1289,3 +1310,41 @@ void usb_composite_unregister(struct  
+> usb_composite_driver *driver)
+>  		return;
+>  	usb_gadget_unregister_driver(&composite_driver);
+>  }
+> +
+> +/**
+> + * usb_composite_setup_continue() - Continue the delayed setup transfer
+> + * @cdev: the composite device who's setup transfer was delayed
+> + *
+> + * This function must be called by the USB function driver to continue
+> + * with the setup transfer's data/status phase in case it had requested  
+> to
+> + * delay the status phase. A USB function's setup handler (e.g.  
+> set_alt())
+> + * can request the composite framework to delay the setup request's  
+> status phase
+> + * by returning USB_GADGET_DELAYED_STATUS.
+> + */
+> +void usb_composite_setup_continue(struct usb_composite_dev *cdev)
+> +{
+> +	int			value;
+> +	struct usb_request	*req = cdev->req;
+> +	unsigned long		flags;
+> +
+> +	DBG(cdev, "%s\n", __func__);
+> +	spin_lock_irqsave(&cdev->lock, flags);
+> +
+> +	if (cdev->delayed_status == 0) {
+> +		WARN(cdev, "%s: Unexpected call\n", __func__);
+> +
+> +	} else if (--cdev->delayed_status == 0) {
+> +		DBG(cdev, "%s: Completing delayed status\n", __func__);
+> +		req->length = 0;
+> +		req->zero = 1;
+> +		value = usb_ep_queue(cdev->gadget->ep0, req, GFP_ATOMIC);
+> +		if (value < 0) {
+> +			DBG(cdev, "ep_queue --> %d\n", value);
+> +			req->status = 0;
+> +			composite_setup_complete(cdev->gadget->ep0, req);
+> +		}
+> +	}
+> +
+> +	spin_unlock_irqrestore(&cdev->lock, flags);
+> +}
 
+It's just my opinion but I dislike how it looks almost identical to the end
+of composite_setup.  I would rather make it more general (take value as
+argument for instance) and let composite_setup() call it.
 
->> A new bus_type really only makes sense if you expect a lot of devices
->> to use this and you want to have the probing in the bus. If you only
->> want to have a way to enumerate devices that get created by the
->> parent driver, you can also use platform devices.
->
-> The main assumption of the (bcm)axi driver seems to be that each core can
-> be considered as a device. Correct me if I am wrong, but I consider a
-> device to be an entity providing a particular system function. So an
-> ethernet device provides ethernet connectivity function, a mixer device
-> provides sound mixing function, and so on. The cores within a chip are not
-> always self-contained like this. To clarify let's say a system function is
-> realized by programming core A, core B, and finally trigger core A to set
-> the function in motion. This implies the need of coordination between the
-> programming steps on those cores.
+> diff --git a/include/linux/usb/composite.h @@ -37,6 +37,15 @@
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> +/*
+> + * USB function drivers should return USB_GADGET_DELAYED_STATUS if they
+> + * wish to delay the status phase of the setup transfer till they are
+> + * ready. The composite framework will then delay the data/status phase
+> + * of the setup transfer till all the function drivers that requested  
+> for
+> + * USB_GADGET_DELAYED_STAUS, invoke usb_composite_setup_continue().
+> + *
+> + */
+> +#define USB_GADGET_DELAYED_STATUS       0x7fff	/* Impossibly large  
+> value */
 
-What cores may need to access each other? AFAIK so far we didn't meet
-such a cores.
+I was wondering if we could change it to something like EDELAYED and put  
+it to
+<include/linux/errno.h>.  Just thinking, it may be a bad idea.
 
 -- 
-Rafał
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
