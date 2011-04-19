@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab1DSPYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 11:24:54 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43530 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1DSPYx (ORCPT
+	id S1752821Ab1DSPev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 11:34:51 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:63500 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab1DSPeu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 11:24:53 -0400
-From: "M. Mohan Kumar" <mohan@in.ibm.com>
-To: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-Subject: Re: [V9fs-developer] [PATCH] net/9p: Handle get_user_pages_fast return properly
-Date: Tue, 19 Apr 2011 20:54:49 +0530
-User-Agent: KMail/1.13.6 (Linux/2.6.35.11-83.fc14.i686.PAE; KDE/4.5.5; i686; ; )
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1302856173-10566-1-git-send-email-mohan@in.ibm.com> <4DA85BDC.5030407@linux.vnet.ibm.com>
-In-Reply-To: <4DA85BDC.5030407@linux.vnet.ibm.com>
+	Tue, 19 Apr 2011 11:34:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=iRbQ089y3WkKHLgJE6aD1g34E6nA5FHTWgAJc5rYJXu7FvZy91xZlnpqSba/XWBgPJ
+         T6p2IcgiNDymB8x5lDjlJ42W1an2Kqp/ex1b5kpppwbVmRSPCbNkLj2to+k/xaXOOrlS
+         PeEk31NWbh7AgYTU5uAo9WV84io0j7vilc9Qo=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104192054.49797.mohan@in.ibm.com>
+In-Reply-To: <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
+References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com> <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 19 Apr 2011 23:34:30 +0800
+Message-ID: <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
+Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 April 2011 8:23:16 pm Venkateswararao Jujjuri wrote:
-> > 
-> > -		if (err != -ERESTARTSYS)
-> > +		if (err != -ERESTARTSYS&&  err != -EFAULT)
-> 
-> Please analyze other errors that could be returned by
-> c->trans_mod->request()
-> if they need any handling here.
+Do you part is OK?
 
-Thanks JV, but we don't need to handle other errors as of now.
+I think it will be very easy to reproduce.
 
-I will post a V2 patch with retaining printing error message.
-----
-M. Mohan Kumar
+Thanks,
+Hui
+
+On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
+> On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
+>> Cannot connect to any outside devices through bluetooth.
+>>
+>> And I think this is not a bug of low level driver.  Because both my
+>> laptop and a usb bluetooth card cannot work.
+>
+> Hi, please explain the "cannot work" in detail,
+> Firstly check dmesg and hciconfig to see if there's anything wrong.
+>
+> --
+> Regards
+> dave
+>
