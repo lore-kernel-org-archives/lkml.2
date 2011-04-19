@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1DSBO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:14:59 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59787 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab1DSBO6 convert rfc822-to-8bit (ORCPT
+	id S1753761Ab1DSBP3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:15:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42559 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab1DSBP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:14:58 -0400
+	Mon, 18 Apr 2011 21:15:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q00sm4LGS3vy/HqRodamKkj7uJy69bPei7/pmRi2+6hWfhc/HDKQqRhqWzL08UzDOl
-         zJ+oW/AdS/PU7viZAiGPxStSBm/fbZnieq6pSTMb2ty0X3LK0swAEtThdMcycs8mBp7y
-         crvofSMFO5Fb6Ba689FpxD/fx/2/NJPEdWK/Q=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=OXMWGDsgQ75oW3MIDdPqU8zIUJReMhTdFWcCPDJ8erE3eb+75jctrVvrkBCby0muvd
+         kt1ys2nqYr36vm596ZRg==
+Date: Mon, 18 Apr 2011 18:15:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH incremental] cpusets: initialize spread rotor lazily
+In-Reply-To: <20110418212915.GA17376@tiehlicka.suse.cz>
+Message-ID: <alpine.DEB.2.00.1104181814320.7351@chino.kir.corp.google.com>
+References: <20110414065146.GA19685@tiehlicka.suse.cz> <20110414160145.0830.A69D9226@jp.fujitsu.com> <20110415161831.12F8.A69D9226@jp.fujitsu.com> <20110415082051.GB8828@tiehlicka.suse.cz> <alpine.DEB.2.00.1104151639080.3967@chino.kir.corp.google.com>
+ <20110418084248.GB8925@tiehlicka.suse.cz> <alpine.DEB.2.00.1104181316110.31186@chino.kir.corp.google.com> <20110418212915.GA17376@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110418220232.GA15967@hallyn.com>
-References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
-	<20110417180722.GA21112@hallyn.com>
-	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
-	<20110418082838.GA30088@hallyn.com>
-	<BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
-	<20110418220232.GA15967@hallyn.com>
-Date: Tue, 19 Apr 2011 10:14:57 +0900
-Message-ID: <BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
-Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
- from root or to another non-root uid from a non-root uid.
-From: crocket <crockabiscuit@gmail.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is there an existing utility that sets SECBIT_NO_SETUID_FIXUP?
-Or is there a way to set it without writing a C wrapper program?
+On Mon, 18 Apr 2011, Michal Hocko wrote:
 
-On Tue, Apr 19, 2011 at 7:02 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting crocket (crockabiscuit@gmail.com):
->> I have several questions.
->>
->> 1) How do I set SECBIT_NO_SETUID_FIXUP?
->
-> prctl(PR_SET_SECUREBITS, SECBIT_NO_SETUID_FIXUP | SECBIT_NO_SETUID_FIXUP_LOCKED)
->
-> see capabilities(7) for details.
->
->> 2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
->
-> Yes, because it's what userspace expects.  If you prefer to run in
-> a full POSIX capabilities environment with unprivileged root, you
-> can have init set SECBIT_NO_SETUID_FIXUP and SECBIT_NOROOT and
-> tune userspace to do the right thing, but it's not trivial.
->
-> -serge
->
+> From: Michal Hocko <mhocko@suse.cz>
+> Subject: cpusets: initialize spread mem/slab rotor lazily
+> 
+> Kosaki Motohiro raised a concern that copy_process is hot path and we do
+> not want to initialize cpuset_{mem,slab}_spread_rotor if they are not
+> used most of the time.
+> 
+> I think that we should rather initialize it lazily when rotors are used
+> for the first time.
+> This will also catch the case when we set up spread mem/slab later.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+Thanks Michal!
+
+> Index: linus_tree/kernel/cpuset.c
+> ===================================================================
+> --- linus_tree.orig/kernel/cpuset.c	2011-04-18 10:33:15.000000000 +0200
+> +++ linus_tree/kernel/cpuset.c	2011-04-18 23:24:02.000000000 +0200
+> @@ -2460,11 +2460,19 @@ static int cpuset_spread_node(int *rotor
+>  
+>  int cpuset_mem_spread_node(void)
+>  {
+> +	if (current->cpuset_mem_spread_rotor == NUMA_NO_NODE)
+> +		current->cpuset_mem_spread_rotor =
+> +			node_random(&current->mems_allowed);
+> +
+>  	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
+>  }
+>  
+>  int cpuset_slab_spread_node(void)
+>  {
+> +	if (current->cpuset_slab_spread_rotor == NUMA_NO_NODE)
+> +		current->cpuset_slab_spread_rotor =
+> +			node_random(&current->mems_allowed);
+> +
+>  	return cpuset_spread_node(&current->cpuset_slab_spread_rotor);
+>  }
+>  
+> Index: linus_tree/kernel/fork.c
+> ===================================================================
+> --- linus_tree.orig/kernel/fork.c	2011-04-18 10:33:15.000000000 +0200
+> +++ linus_tree/kernel/fork.c	2011-04-18 10:33:56.000000000 +0200
+> @@ -1126,8 +1126,8 @@ static struct task_struct *copy_process(
+>  	mpol_fix_fork_child_flag(p);
+>  #endif
+>  #ifdef CONFIG_CPUSETS
+> -	p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
+> -	p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
+> +	p->cpuset_mem_spread_rotor = NUMA_NO_NODE;
+> +	p->cpuset_slab_spread_rotor = NUMA_NO_NODE;
+>  #endif
+>  #ifdef CONFIG_TRACE_IRQFLAGS
+>  	p->irq_events = 0;
