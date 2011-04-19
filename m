@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1DSQtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:49:03 -0400
-Received: from kroah.org ([198.145.64.141]:59746 "EHLO coco.kroah.org"
+	id S1753518Ab1DSQtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:49:07 -0400
+Received: from kroah.org ([198.145.64.141]:59760 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1DSQtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:49:01 -0400
-Date: Tue, 19 Apr 2011 09:10:24 -0700
+	id S1753473Ab1DSQtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:49:03 -0400
+Date: Tue, 19 Apr 2011 09:21:57 -0700
 From: Greg KH <greg@kroah.com>
-To: Sven-Haegar Koch <haegar@sdinet.de>
-Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org,
-        Linux-Kernel-Mailinglist <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [stable] Linux 2.6.32.37
-Message-ID: <20110419161024.GA23196@kroah.com>
-References: <20110415164914.GA10357@kroah.com>
- <alpine.DEB.2.02.1104152256340.7559@aurora>
+To: Vasiliy Kulikov <segoon@openwall.com>, David Airlie <airlied@linux.ie>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
+Message-ID: <20110419162157.GD23196@kroah.com>
+References: <1302800120-31560-1-git-send-email-segoon@openwall.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1104152256340.7559@aurora>
+In-Reply-To: <1302800120-31560-1-git-send-email-segoon@openwall.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 11:00:45PM +0200, Sven-Haegar Koch wrote:
-> On Fri, 15 Apr 2011, Greg KH wrote:
+On Thu, Apr 14, 2011 at 08:55:19PM +0400, Vasiliy Kulikov wrote:
+> page_count is copied from userspace.  agp_allocate_memory() tries to
+> check whether this number is too big, but doesn't take into account the
+> wrap case.  Also agp_create_user_memory() doesn't check whether
+> alloc_size is calculated from num_agp_pages variable without overflow.
+> This may lead to allocation of too small buffer with following buffer
+> overflow.
 > 
-> > I'm announcing the release of the 2.6.32.37 kernel.
+> Another problem in agp code is not addressed in the patch - kernel memory
+> exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
+> whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
+> Each allocation is limited to 16KB, though, there is no per-process limit.
+> This might lead to OOM situation, which is not even solved in case of the
+> caller death by OOM killer - the memory is allocated for another (faked) process.
 > 
-> > Vasiliy Kulikov (13):
-> >       net: ax25: fix information leak to userland
-> 
-> 2.6.32.37 contains fe10ae53384e48c51996941b7720ee16995cbcb7, but seems 
-> to miss 5b919f833d9d60588d026ad82d17f17e8872c7a9 which fixes this fix.
-> 
-> (Found by checking why Ubuntu had a different fix here than 2.6.32.37)
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-Thanks, I've queued this up as well now.
+David, what ever happened to this, and the other agp bugfix from
+Vasiliy?
+
+thanks,
 
 greg k-h
+
+> ---
+>  drivers/char/agp/generic.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
+> index 745e7ba..342df51 100644
+> --- a/drivers/char/agp/generic.c
+> +++ b/drivers/char/agp/generic.c
+> @@ -115,6 +115,9 @@ static struct agp_memory *agp_create_user_memory(unsigned long num_agp_pages)
+>  	struct agp_memory *new;
+>  	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
+>  
+> +	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
+> +		return NULL;
+> +
+>  	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
+>  	if (new == NULL)
+>  		return NULL;
+> @@ -234,11 +237,14 @@ struct agp_memory *agp_allocate_memory(struct agp_bridge_data *bridge,
+>  	int scratch_pages;
+>  	struct agp_memory *new;
+>  	size_t i;
+> +	int cur_memory;
+>  
+>  	if (!bridge)
+>  		return NULL;
+>  
+> -	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
+> +	cur_memory = atomic_read(&bridge->current_memory_agp);
+> +	if ((cur_memory + page_count > bridge->max_memory_agp) ||
+> +	    (cur_memory + page_count < page_count))
+>  		return NULL;
+>  
+>  	if (type >= AGP_USER_TYPES) {
+> -- 
+> 1.7.0.4
+> 
+> _______________________________________________
+> Security mailing list
+> Security@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/security
