@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab1DSOzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:55:15 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:36153 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab1DSOzO (ORCPT
+	id S1752545Ab1DSO5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:57:40 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34998 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752223Ab1DSO5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:55:14 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjDUQEj/5/g==
-X-RZG-CLASS-ID: mo00
-Date: Tue, 19 Apr 2011 16:55:08 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: dtor@mail.ru, xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [Xen-devel] [PATCH] [PV Xen] Mouse stuck after save/restore of
- guest.
-Message-ID: <20110419145507.GA28999@aepfle.de>
-References: <1302795907-321-1-git-send-email-imammedo@redhat.com>
- <20110414155915.GA23629@dumpdata.com>
- <20110414172649.GA7569@aepfle.de>
- <20110414183804.GB1467@dumpdata.com>
- <20110415093737.GA15122@aepfle.de>
- <20110419134629.GA8590@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110419134629.GA8590@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Apr 2011 10:57:39 -0400
+Date: Tue, 19 Apr 2011 15:58:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
+Message-ID: <20110419155830.7ad33312@lxorguk.ukuu.org.uk>
+In-Reply-To: <4DADA22A.1010205@aknet.ru>
+References: <20110224132906.GA15733@redhat.com>
+	<4D6675B0.2010700@aknet.ru>
+	<20110224153221.GA22770@redhat.com>
+	<4D94A788.1050806@aknet.ru>
+	<20110331170244.GA13271@redhat.com>
+	<4D99D6E6.4070008@aknet.ru>
+	<20110404160351.GA23655@redhat.com>
+	<4D9A24A0.5050105@aknet.ru>
+	<20110405151549.GB17490@redhat.com>
+	<4D9B4265.6080403@aknet.ru>
+	<20110405164557.GA23248@redhat.com>
+	<4DADA22A.1010205@aknet.ru>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, Konrad Rzeszutek Wilk wrote:
+On Tue, 19 Apr 2011 18:54:34 +0400
+Stas Sergeev <stsp@aknet.ru> wrote:
 
-> > > Was wondering if you are OK pushing this for 2.6.39-rc3 or whether you are OK
-> > > with me doing. It fixes a regression introduced by the last hunk of 
-> > > 5ea5254aa0ad269cfbd2875c973ef25ab5b5e9db
-> > 
-> > Looking through my backlog, I noticed that the patch went also to
-> > stable@kernel.org and is now in various trees already.
-> > So please forward this revert also to stable@suse.de
-> 
-> OK. The upstream git commit is c36b58e8a9112017c2bcc322cc98e71241814303.
-> 
-> Which stable tree did it go through? 2.6.38 only I presume?
+> The attached patch implements the PR_DETACH prctl
+> command. It detaches the entire process group from
+> its parent, allowing the parent to still read the detach
+> code with normal wait(). If the process then exits, the
+> notification of the new parent is delayed till the old parent
+> does either wait() to read the detach code, or exits.
 
-All longterm versions, 2.6.32 and up.
-
-Olaf
+What is the use case for this and why won't existing process group
+interfaces do the job ?
