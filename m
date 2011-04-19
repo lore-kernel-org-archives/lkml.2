@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1DSVsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:48:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39046 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752660Ab1DSVsi (ORCPT
+	id S1756040Ab1DSVtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:49:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45791 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab1DSVts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:48:38 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <alpine.DEB.2.00.1104191627040.23077@router.home>
-References: <20110415135144.GE8828@tiehlicka.suse.cz>
-	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
-	 <20110418100131.GD8925@tiehlicka.suse.cz>
-	 <20110418135637.5baac204.akpm@linux-foundation.org>
-	 <20110419111004.GE21689@tiehlicka.suse.cz>
-	 <1303228009.3171.18.camel@mulgrave.site>
-	 <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
-	 <1303233088.3171.26.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191213120.17888@router.home>
-	 <1303235306.3171.33.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191254300.19358@router.home>
-	 <1303237217.3171.39.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191325470.19358@router.home>
-	 <1303242580.11237.10.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191530040.23077@router.home>
-	 <1303248103.11237.16.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191627040.23077@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 16:48:36 -0500
-Message-ID: <1303249716.11237.26.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Apr 2011 17:49:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=JYhkWhgk+2GoPUc7XYiYYxXWsuJZwO2px3OQUMcbVhiCidMcnYhgPikLsHhUAuiIDy
+         kYIZhVOnozZU9/zYj4PzGyZGvol6QELMR9PVFDuEUnmgLCdlZCo2KTZw/ckOHhC4JSSL
+         76hknc4NrraxhN/FQlaC9l4rThej4hpayaZYg=
+Date: Tue, 19 Apr 2011 23:47:47 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kyle Spaans <kspaans@uwaterloo.ca>, linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+        dri-devel@lists.freedesktop.org, mjg@redhat.com,
+        maciej.rutecki@gmail.com, nouveau@lists.freedesktop.org,
+        Nigel Cunningham <lkml@nigelcunningham.com.au>,
+        Nick Piggin <npiggin@gmail.com>
+Subject: Re: 2.6.39-rc1 nouveau(?) regression (bisected)
+Message-ID: <20110419214747.GA2965@joi.lan>
+References: <20110414190117.GA3493@joi.lan>
+ <20110415061136.GA21979@isilmar-3.linta.de>
+ <4DAA1453.5000604@nigelcunningham.com.au>
+ <20110416235028.GA6096@taurine.csclub.uwaterloo.ca>
+ <20110417151204.GA24519@taurine.csclub.uwaterloo.ca>
+ <20110417154557.GA2871@joi.lan>
+ <20110417162427.GB25242@taurine.csclub.uwaterloo.ca>
+ <20110417164920.GA2626@joi.lan>
+ <20110418200204.GA2522@joi.lan>
+ <BANLkTi=Oo03CQchHYh4EvEsk+wZy7akLNw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=Oo03CQchHYh4EvEsk+wZy7akLNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 16:39 -0500, Christoph Lameter wrote:
-> On Tue, 19 Apr 2011, James Bottomley wrote:
-> 
-> > > I guess DISCONTIGMEM is typically used together with NUMA. Otherwise we
-> > > would have run into this before.
+On Mon, Apr 18, 2011 at 01:27:10PM -0700, Linus Torvalds wrote:
+> On Mon, Apr 18, 2011 at 1:02 PM, Marcin Slusarz
+> <marcin.slusarz@gmail.com> wrote:
 > >
-> > Which bit of my telling you that six architectures already use it this
-> > way did you not get?  I'm not really interested in reconciling your
-> > theories with how we currently operate.  If you want to require NUMA
-> > with DISCONTIGMEM, fine, we'll just define SLUB as broken if that's not
-> > true ... that will fix my boot panic reports.
+> > It's some nasty corruption:
 > 
-> Which part of me telling you that you will break lots of other things in
-> the core kernel dont you get?
+> Looks like something wrote 0xffffffff to free'd memory.
+> 
+> Enabling DEBUG_PAGEALLOC *might* show where it happens.
+> 
+> >
+> > [    6.523867] =============================================================================
+> > [    6.523916] BUG sysfs_dir_cache: Poison overwritten
+> > [    6.523949] -----------------------------------------------------------------------------
+> > [    6.523950]
+> > [    6.524016] INFO: 0xffff8801bb47df4c-0xffff8801bb47df4f. First byte 0xff instead of 0x6b
+> > [    6.524061] INFO: Slab 0xffffea00060f7b58 objects=22 used=21 fp=0xffff8801bb47df18 flags=0x80000000000000c1
+> > [    6.524110] INFO: Object 0xffff8801bb47df18 @offset=3864 fp=0x          (null)
+> > [    6.524111]
+> > [    6.524170] Bytes b4 0xffff8801bb47df08:  00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ........ZZZZZZZZ
+> > [    6.524516]   Object 0xffff8801bb47df18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > [    6.524862]   Object 0xffff8801bb47df28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > [    6.525208]   Object 0xffff8801bb47df38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > [    6.525556]   Object 0xffff8801bb47df48:  6b 6b 6b 6b ff ff ff ff 6b 6b 6b 6b 6b 6b 6b 6b kkkk<FF><FF><FF><FF>kkkkkkkk
+> 
+> So here the 0xffffffff is pretty obvious.
+> 
+> > and in another boot:
+> >
+> > [    6.704786] BUG: unable to handle kernel paging request at ffffffffbc70b058
+> 
+> Here it is less obvious, but it was _probably_ a regular kernel
+> pointer of the type 0xffff8801bc70b058 before the high bits were
+> overwritten by a 0xffffffff.
+> 
+> So then sysfs_refresh_inode() follows that pointer, and crashes.
+> 
+> Just a guess, obviously, but it looks rather likely.
 
-I get that you tell me this ... however, the systems that, according to
-you, should be failing to get to boot prompt do, in fact, manage it.
+Thanks. It helped a bit.
+I'll send two patches in response to this message, one of which fixes this bug.
 
->  If you were able to get to a command prompt
-> with SLAB then lets all be happy for as long as it lasts.
-
-We can't re-engineer DISCONTIGMEM as a bug fix, so something like this
-has to be done for stable regardless.
-
-James
-
+Marcin
 
