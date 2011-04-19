@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1DSNCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 09:02:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49349 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab1DSNC3 (ORCPT
+	id S1752607Ab1DSNCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 09:02:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60273 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab1DSNCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 09:02:29 -0400
-Date: Tue, 19 Apr 2011 14:02:01 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-kernel@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Ramesh Gupta <grgupta@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2
-	cache
-Message-ID: <20110419130201.GA24972@n2100.arm.linux.org.uk>
-References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com> <201104181613.43572.arnd@arndb.de> <BANLkTi=dpqMFjW_B5-YsmoCJf62b8djj5g@mail.gmail.com> <201104191401.34818.arnd@arndb.de> <BANLkTim_30SbVhPLFOaq-KYwz5N6NGCe6A@mail.gmail.com>
+	Tue, 19 Apr 2011 09:02:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: John Williams <john.williams@petalogix.com>
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+Date: Tue, 19 Apr 2011 15:02:37 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <20110419061121.GB5252@ponder.secretlab.ca> <BANLkTin0krYi+MqngSQ5n-752vDa_a8ZtA@mail.gmail.com>
+In-Reply-To: <BANLkTin0krYi+MqngSQ5n-752vDa_a8ZtA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTim_30SbVhPLFOaq-KYwz5N6NGCe6A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104191502.37396.arnd@arndb.de>
+X-Provags-ID: V02:K0:Z1SMPFnmYQbIq0XuPFAn3n6vJMD+b0nzAWxaafkATlK
+ OJNLBdQ4nRjEw2c9pNe+UVG8WJy6WlerPvP+k9B33Tbr67oWU6
+ +yl/AVrR2gjCWwDET36BNqV13lKGGMaXzi1A0j95Nllt1/SMd2
+ kt1vwAlDKS4v+G6g2+QTlYmh3uJps9XbaqvpWtsRVYFqYkf9KO
+ k6oWUAQXoNFf98/do9wZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 09:35:56PM +0900, Kyungmin Park wrote:
-> On Tue, Apr 19, 2011 at 9:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 19 April 2011, Kyungmin Park wrote:
-> >> On Mon, Apr 18, 2011 at 11:13 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> > On Monday 18 April 2011, Kyungmin Park wrote:
-> >> >> On Mon, Apr 18, 2011 at 8:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> >> >
-> >> >> > One missing piece is still a way for a platform to provide both
-> >> >> > the iommu and the dma-mapping API in a unified driver. Right now,
-> >> >> > you have to export both interface for a generic solution.
-> >> >>
-> >> >> Actually MSM and we (Michal, Marek) tried to merge the generic IOMMU
-> >> >> implementation into mm, but MM did't accept it.
-> >> >
-> >> > I'm confused. What do you mean with MM?
-> >> linux/mm, Memory Management.
-> >
-> > I'm still confused. What were you suggesting to merge in there?
-> > Do you have a link to a mailing list discussion?
+On Tuesday 19 April 2011, John Williams wrote:
+> OK, so let's talk about this interface.  As I see it, it must be able
+> to handle bind per-instance, not per compatibility.
+
+Yes.
+
+> For example, we make systems with multiple, identical timers.  One
+> will be used as the system timer, the others need to be (optionally)
+> bound to generic UIO.
 > 
-> First, Zach Pfeffer <zpfeffer@codeaurora.org> sent the patch
-> https://patchwork.kernel.org/patch/108736/
+> Therefore, it's not OK to just do
 > 
-> Second, Michal tried it.
-> http://lkml.org/lkml/2010/9/6/41
+> echo "vendor,device" >> /sys/class/something/generic-uio/compatlist
 > 
-> http://lwn.net/Articles/403643/
-> https://patchwork.kernel.org/patch/157451/
+> or whatever, as this would bind all instances matching vendor,device.
+> 
+> So, the question I have is, how to handle bind per-instance?
+> 
+> I can accept that the generic-uio idea is permanently blocked, but
+> please can we have some concrete suggestions on an approach that would
+> be acceptable?
 
-This shows why ARM is in such a problem.  People love to create new
-frameworks and infrastructure where they find existing stuff lacking,
-rather than looking at what other architectures do and adapt.
+I think nobody has had a good idea so far, unfortunately. It would
+be nice if you could research how libusb, vfio and qemu pci passthrough
+work. Hopefully one of these uses a method that we can do here, too.
 
-As I'm sure has already mentioned, the kernel already has support for
-IOMMUs in the DMA path with several non-ARM architectures, and this
-support is managed through the existing DMA API.
+> > In the mean time, explicitly modifying the match table is an okay
+> > compromise.
+> 
+> My mind is still boggling that in this day and age it could possibly
+> be preferred to modify code, instead of a data structure.  However,
+> clearly this is a lost cause!
 
-When you want a device behind an IOMMU to perform DMA, the driver
-uses the DMA API in the standard way as if there was no IOMMU there.
-As part of the DMA API, particularly the SG list part, the DMA API
-is allowed to coalesce the SG entries together if it can arrange
-the IOMMU mappings to achieve a continguous mapping for the device.
-Remember, dma_map_sg() is allowed to return _fewer_ entries in the
-scatterlist than was passed to it for this very purpose.
+It's preferred to do a local modification to a single kernel build over
+introducing an interface that we have to maintain compatibility with
+when we already know we don't want it.
 
-In order to transition ARM over to this, we need to modify the
-scatterlist structure by enabling CONFIG_NEED_SG_DMA_LENGTH.  We
-then need to arrange for the DMA API to have the hooks _both_ into
-the DMA cache coherency code (to ensure that the data hits memory)
-and the IOMMU code (this part is missing from ARM.)  The current
-abstractions in the generic header files don't allow for this.
-
-I don't believe there's any need for any major new framework - and I
-don't think I'm alone in thinking that, especially as this point has
-been raised more than once when this framework has been submitted.
-
-I see no reason why ARM should be any different from other architectures
-which have IOMMUs, and I don't see why ARM should have to invent a whole
-new framework to handle IOMMUs.  And I see no explanation why the
-existing hooks are unsuitable - at least as the _initial_ starting point.
-
-So, can you please explain why your IOMMU code can not be hidden behind
-the DMA API.  (Please omit any complaints about the mechanics of hooking
-it in there, such things are solvable.)
-
+	Arnd
