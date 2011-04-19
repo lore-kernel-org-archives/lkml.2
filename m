@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1DSUZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:25:05 -0400
-Received: from kroah.org ([198.145.64.141]:35578 "EHLO coco.kroah.org"
+	id S1752525Ab1DSUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:25:58 -0400
+Received: from kroah.org ([198.145.64.141]:35554 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab1DSURU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:20 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:47 2011
-Message-Id: <20110419201047.141793102@clark.kroah.org>
+	id S1754687Ab1DSURR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:46 2011
+Message-Id: <20110419201046.789176223@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:46 -0700
+Date: Tue, 19 Apr 2011 13:08:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Liu <lliubbo@gmail.com>, Hugh Dickins <hughd@google.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [37/70] ramfs: fix memleak on no-mmu arch
+        Darren Hart <dvhart@linux.intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [34/70] futex: Set FLAGS_HAS_TIMEOUT during futex_wait restart setup
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Liu <lliubbo@gmail.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit b836aec53e2bce71de1d5415313380688c851477 upstream.
+commit 0cd9c6494ee5c19aef085152bc37f3a4e774a9e1 upstream.
 
-On no-mmu arch, there is a memleak during shmem test.  The cause of this
-memleak is ramfs_nommu_expand_for_mapping() added page refcount to 2
-which makes iput() can't free that pages.
+The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
+restart futex_wait() without a timeout after a signal.
 
-The simple test file is like this:
+Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
+removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
+of the restart block. Restore the originaly behavior.
 
-  int main(void)
-  {
-	int i;
-	key_t k = ftok("/etc", 42);
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
 
-	for ( i=0; i<100; ++i) {
-		int id = shmget(k, 10000, 0644|IPC_CREAT);
-		if (id == -1) {
-			printf("shmget error\n");
-		}
-		if(shmctl(id, IPC_RMID, NULL ) == -1) {
-			printf("shm  rm error\n");
-			return -1;
-		}
-	}
-	printf("run ok...\n");
-	return 0;
-  }
-
-And the result:
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        17912        42408            0            0
-  -/+ buffers:              17912        42408
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        19096        41224            0            0
-  -/+ buffers:              19096        41224
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        20296        40024            0            0
-  -/+ buffers:              20296        40024
-  ...
-
-After this patch the test result is:(no memleak anymore)
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Tim Smith <tsmith201104@yahoo.com>
+Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: John Kacur <jkacur@redhat.com>
+Link: http://lkml.kernel.org/r/%3Cdaac0eb3af607f72b9a4d3126b2ba8fb5ed3b883.1302820917.git.dvhart%40linux.intel.com%3E
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ramfs/file-nommu.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -112,6 +112,7 @@ int ramfs_nommu_expand_for_mapping(struc
- 		SetPageDirty(page);
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1886,7 +1886,7 @@ retry:
+ 	restart->futex.val = val;
+ 	restart->futex.time = abs_time->tv64;
+ 	restart->futex.bitset = bitset;
+-	restart->futex.flags = flags;
++	restart->futex.flags = flags | FLAGS_HAS_TIMEOUT;
  
- 		unlock_page(page);
-+		put_page(page);
- 	}
+ 	ret = -ERESTART_RESTARTBLOCK;
  
- 	return 0;
 
 
