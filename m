@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1DSIcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:32:42 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:58667 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753771Ab1DSIch (ORCPT
+	id S1754084Ab1DSIcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:32:50 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:49133 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753847Ab1DSIcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:32:37 -0400
+	Tue, 19 Apr 2011 04:32:42 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linux-kernel@vger.kernel.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
 Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <amit.goel@st.com>, <viresh.linux@gmail.com>,
         <linus.walleij@linaro.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2 2/7] dmaengine/dw_dmac: Enable resubmission from callback routine.
-Date: Tue, 19 Apr 2011 14:02:07 +0530
-Message-ID: <1643d6236b00c03b39186c8789be7d75839c8d91.1303194835.git.viresh.kumar@st.com>
+Subject: [PATCH V2 5/7] dmaengine/dw_dmac: set residue as total len in dwc_tx_status if status is !DMA_SUCCESS
+Date: Tue, 19 Apr 2011 14:02:10 +0530
+Message-ID: <f84891a00ad93d2592981cb0119b99f0242d8b35.1303194836.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1303194835.git.viresh.kumar@st.com>
 References: <cover.1303194835.git.viresh.kumar@st.com>
@@ -25,44 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmission of new transfer must be allowed from callbacks. For this release
-lock before calling callback routine and enable them again.
+If transfer status is !=DMA_SUCCESS, return total transfer len as residue,
+instead of zero.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/dma/dw_dmac.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c4040dd..66d7f1b 100644
+index d8aad28..f4779e2 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -197,8 +197,8 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
- static void
- dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
- {
--	dma_async_tx_callback		callback;
--	void				*param;
-+	dma_async_tx_callback		callback = NULL;
-+	void				*param = NULL;
- 	struct dma_async_tx_descriptor	*txd = &desc->txd;
- 	struct dw_desc			*child;
- 
-@@ -238,12 +238,10 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
- 		}
+@@ -864,7 +864,11 @@ dwc_tx_status(struct dma_chan *chan,
+ 		ret = dma_async_is_complete(cookie, last_complete, last_used);
  	}
  
--	/*
--	 * The API requires that no submissions are done from a
--	 * callback, so we don't need to drop the lock here
--	 */
-+	spin_unlock_irqrestore(&dwc->lock, dw->flags);
- 	if (callback)
- 		callback(param);
-+	spin_lock_irqsave(&dwc->lock, dw->flags);
- }
+-	dma_set_tx_state(txstate, last_complete, last_used, 0);
++	if (ret != DMA_SUCCESS)
++		dma_set_tx_state(txstate, last_complete, last_used,
++				dwc_first_active(dwc)->len);
++	else
++		dma_set_tx_state(txstate, last_complete, last_used, 0);
  
- static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 	return ret;
+ }
 -- 
 1.7.2.2
 
