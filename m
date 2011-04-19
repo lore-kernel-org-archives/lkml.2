@@ -1,97 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1DSMGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:06:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38419 "EHLO hera.kernel.org"
+	id S1754904Ab1DSMOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:14:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39404 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754681Ab1DSMG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:06:29 -0400
-Date: Tue, 19 Apr 2011 12:06:04 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-057f3fadb347e9c51b07e1b277bbdda79f976768@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1302882741.2388.241.camel@twins>
-References: <1302882741.2388.241.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix sched_domain iterations vs. RCU
-Git-Commit-ID: 057f3fadb347e9c51b07e1b277bbdda79f976768
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751794Ab1DSMOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 08:14:18 -0400
+Date: Tue, 19 Apr 2011 14:14:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] memcg: update documentation to describe usage_in_bytes
+Message-ID: <20110419121414.GF21689@tiehlicka.suse.cz>
+References: <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
+ <20110323133517.de33d624.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110328085508.c236e929.nishimura@mxp.nes.nec.co.jp>
+ <20110328132550.08be4389.nishimura@mxp.nes.nec.co.jp>
+ <20110328074341.GA5693@tiehlicka.suse.cz>
+ <20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110328094820.GC5693@tiehlicka.suse.cz>
+ <20110328193108.07965b4a.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110329101511.d30f3518.nishimura@mxp.nes.nec.co.jp>
+ <20110329072122.GA30671@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Apr 2011 12:06:05 +0000 (UTC)
+In-Reply-To: <20110329072122.GA30671@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  057f3fadb347e9c51b07e1b277bbdda79f976768
-Gitweb:     http://git.kernel.org/tip/057f3fadb347e9c51b07e1b277bbdda79f976768
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 18 Apr 2011 11:24:34 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 19 Apr 2011 10:56:54 +0200
+Hi,
 
-sched: Fix sched_domain iterations vs. RCU
+On Tue 29-03-11 09:21:22, Michal Hocko wrote:
+> On Tue 29-03-11 10:15:11, Daisuke Nishimura wrote:
+> [...]
+> > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > 
+> > Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
+> > (delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
+> > charging via percpu storage), we have percpu cache for res_counter.
+> > 
+> > These changes improved performance of memory cgroup very much, but made
+> > res_counter->usage usually have a bigger value than the actual value of memory usage.
+> > So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
+> > values of memory(and swap) usage anymore.
+> > 
+> > Instead of removing these files completely(because we cannot know res_counter->usage
+> > without them), this patch updates the meaning of those files.
+> > 
+> > Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > ---
+> >  Documentation/cgroups/memory.txt |   15 +++++++++++++--
+> >  1 files changed, 13 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> > index 7781857..4f49d91 100644
+> > --- a/Documentation/cgroups/memory.txt
+> > +++ b/Documentation/cgroups/memory.txt
+> > @@ -52,8 +52,10 @@ Brief summary of control files.
+> >   tasks				 # attach a task(thread) and show list of threads
+> >   cgroup.procs			 # show list of processes
+> >   cgroup.event_control		 # an interface for event_fd()
+> > - memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
+> > - memory.memsw.usage_in_bytes	 # show current memory+Swap usage
+> > + memory.usage_in_bytes		 # show current res_counter usage for memory
+> > +				 (See 5.5 for details)
+> > + memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+> > +				 (See 5.5 for details)
+> >   memory.limit_in_bytes		 # set/show limit of memory usage
+> >   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+> >   memory.failcnt			 # show the number of memory usage hits limits
+> > @@ -453,6 +455,15 @@ memory under it will be reclaimed.
+> >  You can reset failcnt by writing 0 to failcnt file.
+> >  # echo 0 > .../memory.failcnt
+> >  
+> > +5.5 usage_in_bytes
+> > +
+> > +For efficiency, as other kernel components, memory cgroup uses some optimization
+> > +to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
+> > +method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
+> > +value for efficient access. (Of course, when necessary, it's synchronized.)
+> > +If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
+> > +value in memory.stat(see 5.2).
+> > +
+> >  6. Hierarchy support
+> >  
+> >  The memory controller supports a deep hierarchy and hierarchical accounting.
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Although I would like to see a mention about what is the reason for
+> keeping that file(s) if their usage is very limited. Something like.
+> "We are keeping the file because we want to be consistent with other
+> cgroups implementations and all of them export usage counter in some
+> way. Make sure you exactly know the meaning before you use the value
+> in userspace."
+> 
+> If nobody else feels that this is that important then please forget
+> about this comment.
 
-Vladis Kletnieks reported a new RCU debug warning in the scheduler.
+I am wondering what happened to the patch. Do you have any plans to
+update/push it?
 
-Since commit dce840a08702b ("sched: Dynamically allocate sched_domain/
-sched_group data-structures") the sched_domain trees are protected by
-RCU instead of RCU-sched.
-
-This means that we need to include rcu_read_lock() protection when we
-iterate them since disabling preemption doesn't suffice anymore.
-
-Reported-by: Valdis.Kletnieks@vt.edu
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1302882741.2388.241.camel@twins
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0cfe031..27d3e73 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1208,11 +1208,17 @@ int get_nohz_timer_target(void)
- 	int i;
- 	struct sched_domain *sd;
- 
-+	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
--		for_each_cpu(i, sched_domain_span(sd))
--			if (!idle_cpu(i))
--				return i;
-+		for_each_cpu(i, sched_domain_span(sd)) {
-+			if (!idle_cpu(i)) {
-+				cpu = i;
-+				goto unlock;
-+			}
-+		}
- 	}
-+unlock:
-+	rcu_read_unlock();
- 	return cpu;
- }
- /*
-@@ -2415,12 +2421,14 @@ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
- 		struct sched_domain *sd;
- 
- 		schedstat_inc(p, se.statistics.nr_wakeups_remote);
-+		rcu_read_lock();
- 		for_each_domain(this_cpu, sd) {
- 			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
- 				schedstat_inc(sd, ttwu_wake_remote);
- 				break;
- 			}
- 		}
-+		rcu_read_unlock();
- 	}
- #endif /* CONFIG_SMP */
- 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
