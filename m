@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1DSJKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:10:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab1DSJKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:10:45 -0400
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 19 Apr 2011 10:13:11 +0100
-Message-ID: <1303204391.2702.9.camel@dolmen>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754320Ab1DSJLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:11:04 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43814 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab1DSJLB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:11:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=PQj6NFifKu5NHPBc/0Q1XiS1fPOdckPQILRvsRhNGCga8biHOZHZESwFSyxVwq3c/f
+         o5qjDSNwjNawXnlPZhnUGdjIqA5Qqcjbm+Xz3rfzQhHPfAP79uwAgVg86FekmLC3UAB3
+         Y+s4GUTm8w2bVMJ763BZIobZLUIRTkpQJir1A=
+MIME-Version: 1.0
+In-Reply-To: <201104181613.43572.arnd@arndb.de>
+References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com>
+	<201104181358.53521.arnd@arndb.de>
+	<BANLkTimc20N0nh9O0FaSXizW+bYOMx9Ddw@mail.gmail.com>
+	<201104181613.43572.arnd@arndb.de>
+Date: Tue, 19 Apr 2011 18:11:00 +0900
+X-Google-Sender-Auth: WJKKd6wrOZgCsq7dOHKfFd440SI
+Message-ID: <BANLkTi=dpqMFjW_B5-YsmoCJf62b8djj5g@mail.gmail.com>
+Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
+From: Kyungmin Park <kmpark@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hari Kanigeri <h-kanigeri2@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-kernel@vger.kernel.org,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Ramesh Gupta <grgupta@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 18, 2011 at 11:13 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 18 April 2011, Kyungmin Park wrote:
+>> On Mon, Apr 18, 2011 at 8:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >
+>> > One missing piece is still a way for a platform to provide both
+>> > the iommu and the dma-mapping API in a unified driver. Right now,
+>> > you have to export both interface for a generic solution.
+>>
+>> Actually MSM and we (Michal, Marek) tried to merge the generic IOMMU
+>> implementation into mm, but MM did't accept it.
+>
+> I'm confused. What do you mean with MM?
+linux/mm, Memory Management.
 
-Please consider pulling the following four GFS2 fixes,
-
-Steve.
-
---------------------------------------------------------------------------------------
-
-The following changes since commit a1b49cb7e2a7961ec3aa8b64860bf480d4ec9077:
-
-  Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging (2011-04-17 17:37:02 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git master
-
-Benjamin Marzinski (1):
-      GFS2: directly write blocks past i_size
-
-Bob Peterson (2):
-      GFS2: write_end error path fails to unlock transaction lock
-      GFS2: filesystem hang caused by incorrect lock order
-
-Steven Whitehouse (1):
-      GFS2: Don't try to deallocate unlinked inodes when mounted ro
-
- fs/gfs2/aops.c       |    2 +-
- fs/gfs2/dir.c        |    2 +-
- fs/gfs2/file.c       |   58 +++++++++++++++++++++++++++++++++++++++++--------
- fs/gfs2/glops.c      |    4 +++
- fs/gfs2/inode.c      |   56 +++++++++++++++++++++++++++++++++++-------------
- fs/gfs2/inode.h      |    3 +-
- fs/gfs2/ops_fstype.c |    2 +-
- fs/gfs2/rgrp.c       |    4 +-
- fs/gfs2/super.c      |   14 +++++++++--
- 9 files changed, 111 insertions(+), 34 deletions(-)
-
-
+Thank you,
+Kyungmin Park
+>
+>> So now it's implemented at each SoCs. I think it's good chance to make
+>> a generic IOMMU feature for ARM consolidation.
+>>
+>> Before this idea, can you review our implementation at above URL?
+>
+> I've commented on the main implementation for the IOMMU now.
+>
+>        Arnd
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
