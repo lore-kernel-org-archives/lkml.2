@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab1DSTvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 15:51:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53701 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab1DSTvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 15:51:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: brace@beardog.cce.hp.com
-Subject: Re: How to create a kernel virtual mapping for physical addresses.
-Date: Tue, 19 Apr 2011 21:51:41 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
-References: <20110408220321.GA777@beardog.cce.hp.com>
-In-Reply-To: <20110408220321.GA777@beardog.cce.hp.com>
+	id S1753850Ab1DSTw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 15:52:29 -0400
+Received: from svc.spearhead.de ([85.214.96.164]:36929 "EHLO mx.spearhead.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752483Ab1DSTw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 15:52:28 -0400
+From: Nicos Gollan <ngollan@spearhead.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Mysterious freezes after 2.6.35, no NMI
+Date: Tue, 19 Apr 2011 21:52:25 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.35-trunk-amd64; KDE/4.6.1; x86_64; ; )
+References: <201104121939.59910.ngollan@spearhead.de> <20110419143031.GA21993@redhat.com>
+In-Reply-To: <20110419143031.GA21993@redhat.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104192151.41511.arnd@arndb.de>
-X-Provags-ID: V02:K0:Z2dG4J/ZjutiFdl2pCjtW5SAnL+jaWQUZNE+Tgv4zf6
- b2s9suZWAUrHvMkHsK2f1Her16DVXIttRwHjjSS1U2cIj6fce0
- JG+iR4hVIy2P3UU/FcbhiTf4VlskHJWawNsAsYer0Fh2msW1nf
- 9AslfMzb31ELK9+aLdVMpgharVmzrJw9h9d8z2WhI/jaibU/pq
- WQSR45AdofvfzP/kQCKmA==
+Message-Id: <201104192152.25628.ngollan@spearhead.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 09 April 2011 00:03:21 brace@beardog.cce.hp.com wrote:
-> Given a physical address and a length (which may span contiguous pages), how
-> does one go about creating a virtual mapping for that address? That address may
-> be in high memory (above 4GB) in a 32bit system.
+Hi,
+
+On Tuesday 19 April 2011 16:30:31 Don Zickus wrote:
+> On Tue, Apr 12, 2011 at 07:39:59PM +0200, Nicos Gollan wrote:
+> > To add insult to injury, at least in the 2.6.38 series, the NMI watchdog
+> > is broken. The counters in /proc/interrupts always show 0, but will
+> > count up quite happily on 2.6.35.
 > 
-> ioremap() wants a 32bit physical address on 32bit systems. kmap() and
-> kmap_atomic() wants a struct page which I am not sure how to get from a physical
-> address.
+> The nmi watchdog changed for 2.6.36, such that it increments every 60
+> seconds instead of every second.  Using cpuspeed and a lightly loaded
+> system, will delay it even longer.  This is a good thing as you don't need
+> nmi interrupts firing all the time.
 
-Use kmap() on the page you get from pfn_to_page().
+In how far does that change the time until the watchdog would trigger after a 
+freeze? Would it react on the first or second execution after the freeze? That 
+would make it "two minutes or even longer", depending on the CPU frequency 
+that was set when the control daemon died.
 
-> If there already is a kernel mapping, then using the existing kernel mapping
-> would be fine if I could figure out how to get it, but if there is not one,
-> then I need to make one.
-> 
-> I think setting the DMA mask to 32bit would mean that I do not have to deal
-> with highmem addresses in my particular case, but I still do not know how to
-> get a virtual address from a physical.
- 
-DMA mask is only about devices doing DMA to your data, not about the
-kernel touching it.
+IMO that slow and nondeterministic behaviour is detrimental to the watchdog's 
+declared function. With those changes, there's no idea how long one would have 
+to wait after a freeze. There should at least be a fixed upper limit on the 
+execution period, and according changes to Documentation/nmi_watchdog.txt
 
-	Arnd
+Regards,
+Nicos
