@@ -1,547 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1DSOow (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:44:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53892 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab1DSOou convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:44:50 -0400
+	id S1752971Ab1DSOpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:45:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45262 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713Ab1DSOpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 10:45:45 -0400
+Date: Tue, 19 Apr 2011 16:45:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Greg Thelen <gthelen@google.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        lsf@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup IO throttling and filesystem ordered mode (Was: Re:
+ [Lsf] IO less throttling and cgroup aware writeback (Was: Re: Preliminary
+ Agenda and Activities for LSF))
+Message-ID: <20110419144542.GA9556@quack.suse.cz>
+References: <20110406153715.GA18777@redhat.com>
+ <20110406235039.GL31057@dastard>
+ <20110407175537.GD27778@redhat.com>
+ <20110411013630.GM30279@dastard>
+ <20110415210750.GC28323@redhat.com>
+ <20110416030602.GA26191@redhat.com>
+ <20110418215844.GA15428@quack.suse.cz>
+ <20110418225118.GM30783@redhat.com>
+ <20110419003339.GA23985@dastard>
+ <20110419143022.GB31712@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110419145303.111aead7@endymion.delvare>
-References: <20110419145303.111aead7@endymion.delvare>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 19 Apr 2011 08:44:29 -0600
-X-Google-Sender-Auth: TGhSOfpg66QajCw-KYOxrmJ8BdM
-Message-ID: <BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419143022.GB31712@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 6:53 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> I need this to handle SMBus multiplexing on my Asus Z8NA-D6 board. It
-> has an ICH10, I've added support for older ICH chips in case someone
-> needs it, as it was relatively simply to do that.
->
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> Note 1: On early ICH chips, some pins are exclusively inputs or
-> outputs. The driver doesn't currently enforce this.
+On Tue 19-04-11 10:30:22, Vivek Goyal wrote:
+> On Tue, Apr 19, 2011 at 10:33:39AM +1000, Dave Chinner wrote:
+> > If you want to throttle journal operations, then we probably need to
+> > throttle metadata operations that commit to the journal, not the
+> > journal IO itself.  The journal is a shared global resource that all
+> > cgroups use, so throttling journal IO inappropriately will affect
+> > the performance of all cgroups, not just the one that is "hogging"
+> > it.
+> 
+> Agreed.
+> 
+> > 
+> > In XFS, you could probably do this at the transaction reservation
+> > stage where log space is reserved. We know everything about the
+> > transaction at this point in time, and we throttle here already when
+> > the journal is full. Adding cgroup transaction limits to this point
+> > would be the place to do it, but the control parameter for it would
+> > be very XFS specific (i.e. number of transactions/s). Concurrency is
+> > not an issue - the XFS transaction subsystem is only limited in
+> > concurrency by the space available in the journal for reservations
+> > (hundred to thousands of concurrent transactions).
+> 
+> Instead of transaction per second, can we implement some kind of upper
+> limit of pending transactions per cgroup. And that limit does not have
+> to be user tunable to begin with. The effective transactions/sec rate
+> will automatically be determined by IO throttling rate of the cgroup
+> at the end nodes.
+> 
+> I think effectively what we need is that the notion of parallel
+> transactions so that transactions of one cgroup can make progress
+> independent of transactions of other cgroup. So if a process does
+> an fsync and it is throttled then it should block transaction of 
+> only that cgroup and not other cgroups.
+> 
+> You mentioned that concurrency is not an issue in XFS and hundreds of
+> thousands of concurrent trasactions can progress depending on log space
+> available. If that's the case, I think to begin with we might not have
+> to do anything at all. Processes can still get blocked but as long as
+> we have enough log space, this might not be a frequent event. I will
+> do some testing with XFS and see can I livelock the system with very
+> low IO limits.
+> 
+> > 
+> > FWIW, this would even allow per-bdi-flusher thread transaction
+> > throttling parameters to be set, so writeback triggered metadata IO
+> > could possibly be limited as well.
+> 
+> How does writeback trigger metadata IO?
+  Because by writing data, you may need to do block allocation or mark
+blocks as written on disk, or similar changes to metadata...
 
-I'm not at all concerned about this.  Users *must* know what a pin is
-when they start fiddling with it.  If you ask a pin to do something
-that it cannot do, then it just isn't going to work.  There's no real
-point in trying to enforce any behaviour in the API.
+> In the first step I was looking to not throttle meta data IO as that
+> will require even more changes in file system layer. I was thinking
+> that if we provide throttling only for data and do changes in filesystems
+> so that concurrent transactions can exist and make progress and file
+> system IO does not serialize behind slow throttled cgroup.
+  Yes, I think not throttling metadata is a good start.
 
->
-> Note 2: I'm not yet sure if we want a module alias for this driver.
-> Many systems have the device but only a few of them will need the
-> driver (and an ACPI resource conflict will be reported for many
-> others, especially laptops I suspect.) So it might make more sense to
-> let consumer drivers request the i801_gpio driver as needed (which they
-> should do anyway, as you can't assume udev is always up and running on
-> all systems.)
->
-> Note 3: This is my first GPIO driver, so while it works fine for me, it
-> might not be perfect. I welcome comments on how to improve it.
+> This leads to weaker isolation but atleast we don't run into livelocking
+> or filesystem scalability issues. Once that's resolved, we can handle the
+> case of throttling meta data IO also.
+> 
+> In fact if metadata is dependent on data (in ordered mode) and if we are
+> throttling data, then we automatically throttle meata for select cases.
+> 
+> > 
+> > I'm not sure whether this is possible with other filesystems, and
+> > ext3/4 would still have the issue of ordered writeback causing much
+> > more writeback than expected at times (e.g. fsync), but I suspect
+> > there is nothing that can really be done about this.
+> 
+> Can't this be modified so that multiple per cgroup transactions can make
+> progress. So if one fsync is blocked, then processes in other cgroup
+> should still be able to do IO using a separate transaction and be able
+> to commit it.
+  Not really. Ext3/4 has always a single running transaction and all
+metadata updates from all threads are recorded in it. When the transaction
+grows large/old enough, we commit it and start a new transaction. The fact
+that there is always just one running transaction is heavily used in the
+journaling code so it would need serious rewrite of JBD2...
 
-Your timing is impeccable.  You're getting caught up in the big gpio
-driver consolidation.  :-)
-
-Most gpio drivers end up looking pretty darn similar.  Instead of
-writing the same types of drivers over and over again, the new
-approach is to try and consolidate the mmio drivers down to using
-basic_mmio_gpio.c.
-
-In this particular case, you've got a PCI device which looks to be
-going into config space to get some information about how the chip is
-layed out.  What I would do is keep your existing pci probe & remove
-hooks, but use them to create and register child basic_mmio_gpio
-platform_devices for each gpio bank.
-
-g.
-
->
->  drivers/gpio/Kconfig     |    7
->  drivers/gpio/Makefile    |    1
->  drivers/gpio/i801_gpio.c |  432 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 440 insertions(+)
->
-> --- linux-2.6.39-rc3.orig/drivers/gpio/Kconfig  2011-04-18 19:41:51.000000000 +0200
-> +++ linux-2.6.39-rc3/drivers/gpio/Kconfig       2011-04-18 22:36:41.000000000 +0200
-> @@ -322,6 +322,13 @@ config GPIO_BT8XX
->
->          If unsure, say N.
->
-> +config GPIO_I801
-> +       tristate "Intel 82801 (ICH) GPIO"
-> +       depends on PCI
-> +       help
-> +         This driver is for the GPIO pins of Intel 82801 south bridges
-> +         (aka ICH).
-> +
->  config GPIO_LANGWELL
->        bool "Intel Langwell/Penwell GPIO support"
->        depends on PCI && X86
-> --- linux-2.6.39-rc3.orig/drivers/gpio/Makefile 2011-04-18 19:41:51.000000000 +0200
-> +++ linux-2.6.39-rc3/drivers/gpio/Makefile      2011-04-18 22:36:41.000000000 +0200
-> @@ -11,6 +11,7 @@ obj-$(CONFIG_GPIOLIB)         += gpiolib.o
->  obj-$(CONFIG_GPIO_ADP5520)     += adp5520-gpio.o
->  obj-$(CONFIG_GPIO_ADP5588)     += adp5588-gpio.o
->  obj-$(CONFIG_GPIO_BASIC_MMIO)  += basic_mmio_gpio.o
-> +obj-$(CONFIG_GPIO_I801)                += i801_gpio.o
->  obj-$(CONFIG_GPIO_LANGWELL)    += langwell_gpio.o
->  obj-$(CONFIG_GPIO_MAX730X)     += max730x.o
->  obj-$(CONFIG_GPIO_MAX7300)     += max7300.o
-> --- /dev/null   1970-01-01 00:00:00.000000000 +0000
-> +++ linux-2.6.39-rc3/drivers/gpio/i801_gpio.c   2011-04-19 13:55:25.000000000 +0200
-> @@ -0,0 +1,432 @@
-> +/*
-> + * Linux kernel driver for the Intel 82801 GPIO pins
-> + * Copyright (C) 2011 Jean Delvare <khali@linux-fr.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/acpi.h>
-> +#include <linux/bitops.h>
-> +#include <linux/gpio.h>
-> +#include <linux/io.h>
-> +#include <linux/ioport.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/pci.h>
-> +
-> +static int force;
-> +module_param(force, int, 0444);
-> +MODULE_PARM_DESC(force, "Forcibly enable access to GPIO");
-> +
-> +enum chips { ICH2, ICH4, ICH6, ICH10_CORP };
-> +
-> +/* Register definitions */
-> +static const u8 REG_GPIO_USE_SEL[3]    = { 0x00, 0x30, 0x40 };
-> +static const u8 REG_GP_IO_SEL[3]       = { 0x04, 0x34, 0x44 };
-> +static const u8 REG_GP_LVL[3]          = { 0x0C, 0x38, 0x48 };
-> +
-> +/**
-> + * struct i801_gpio_data - 82801 GPIO private data
-> + * @base:              Base I/O port
-> + * @io_size:           I/O region size (64 or 128)
-> + * @gpio:              Data for GPIO infrastructure
-> + * @lock:              Mutex to serialize read-modify-write cycles
-> + */
-> +struct i801_gpio_data {
-> +       u32 base;
-> +       u32 io_size;
-> +       u32 use_sel[3];
-> +       struct gpio_chip gpio;
-> +       struct mutex lock;
-> +};
-> +
-> +static int i801_gpio_request(struct gpio_chip *gpio, unsigned nr)
-> +{
-> +       struct i801_gpio_data *data;
-> +       int group = nr >> 5;
-> +
-> +       data = container_of(gpio, struct i801_gpio_data, gpio);
-> +       nr &= 0x1f;
-> +
-> +       if (data->use_sel[group] & BIT(nr))
-> +               return 0;
-> +       else
-> +               return -EINVAL;
-> +}
-> +
-> +static void i801_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
-> +{
-> +       struct i801_gpio_data *data;
-> +       int group = nr >> 5;
-> +       u32 reg_val;
-> +
-> +       data = container_of(gpio, struct i801_gpio_data, gpio);
-> +       nr &= 0x1f;
-> +
-> +       mutex_lock(&data->lock);
-> +       reg_val = inl(data->base + REG_GP_LVL[group]);
-> +       if (val)
-> +               reg_val |= BIT(nr);
-> +       else
-> +               reg_val &= ~BIT(nr);
-> +       outl(reg_val, data->base + REG_GP_LVL[group]);
-> +       mutex_unlock(&data->lock);
-> +}
-> +
-> +static int i801_gpio_get(struct gpio_chip *gpio, unsigned nr)
-> +{
-> +       struct i801_gpio_data *data;
-> +       int group = nr >> 5;
-> +
-> +       data = container_of(gpio, struct i801_gpio_data, gpio);
-> +       nr &= 0x1f;
-> +
-> +       return (inl(data->base + REG_GP_LVL[group]) >> nr) & 1;
-> +}
-> +
-> +static int i801_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
-> +                                     int val)
-> +{
-> +       struct i801_gpio_data *data;
-> +       int group = nr >> 5;
-> +       u32 reg_val;
-> +
-> +       data = container_of(gpio, struct i801_gpio_data, gpio);
-> +       nr &= 0x1f;
-> +
-> +       mutex_lock(&data->lock);
-> +       reg_val = inl(data->base + REG_GP_IO_SEL[group]);
-> +       reg_val &= ~BIT(nr);
-> +       outl(reg_val, data->base + REG_GP_IO_SEL[group]);
-> +
-> +       reg_val = inl(data->base + REG_GP_LVL[group]);
-> +       if (val)
-> +               reg_val |= BIT(nr);
-> +       else
-> +               reg_val &= ~BIT(nr);
-> +       outl(reg_val, data->base + REG_GP_LVL[group]);
-> +       mutex_unlock(&data->lock);
-> +
-> +       return 0;
-> +}
-> +
-> +static int i801_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
-> +{
-> +       struct i801_gpio_data *data;
-> +       int group = nr >> 5;
-> +       u32 reg_val;
-> +
-> +       data = container_of(gpio, struct i801_gpio_data, gpio);
-> +       nr &= 0x1f;
-> +
-> +       mutex_lock(&data->lock);
-> +       reg_val = inl(data->base + REG_GP_IO_SEL[group]);
-> +       reg_val |= BIT(nr);
-> +       outl(reg_val, data->base + REG_GP_IO_SEL[group]);
-> +       mutex_unlock(&data->lock);
-> +
-> +       return 0;
-> +}
-> +
-> +static void __devinit i801_gpio_setup(struct gpio_chip *gpio,
-> +                                     struct device *dev, int ngpio)
-> +{
-> +       gpio->label = "i801_gpio";
-> +       gpio->dev = dev;
-> +       gpio->owner = THIS_MODULE;
-> +       gpio->request = i801_gpio_request;
-> +       gpio->direction_input = i801_gpio_direction_input;
-> +       gpio->get = i801_gpio_get;
-> +       gpio->direction_output = i801_gpio_direction_output;
-> +       gpio->set = i801_gpio_set;
-> +       gpio->base = -1;
-> +       gpio->ngpio = ngpio;
-> +}
-> +
-> +/*
-> + * On the ICH/ICH0, ICH3, ICH4 and ICH5, some selection bits control more
-> + * than one GPIO.
-> + */
-> +static void __devinit i801_gpio_sel_fixup(struct i801_gpio_data *data,
-> +                                         u32 device)
-> +{
-> +       switch (device) {
-> +       case PCI_DEVICE_ID_INTEL_82801AA_0:
-> +       case PCI_DEVICE_ID_INTEL_82801AB_0:
-> +       case PCI_DEVICE_ID_INTEL_82801CA_0:
-> +       case PCI_DEVICE_ID_INTEL_82801CA_12:
-> +       case PCI_DEVICE_ID_INTEL_82801DB_0:
-> +       case PCI_DEVICE_ID_INTEL_82801DB_12:
-> +       case PCI_DEVICE_ID_INTEL_82801EB_0:
-> +               if (data->use_sel[0] & BIT(0))
-> +                       data->use_sel[0] |= BIT(16);
-> +               if (data->use_sel[0] & BIT(1))
-> +                       data->use_sel[0] |= BIT(17);
-> +               if (data->use_sel[0] & BIT(27))
-> +                       data->use_sel[0] |= BIT(28);
-> +               break;
-> +       }
-> +}
-> +
-> +static __devinitdata
-> +const struct {
-> +       int ngroup;
-> +       int io_size;
-> +       u8 reg_gpiobase;
-> +       u8 reg_gc;
-> +} i801_gpio_cfg[] = {
-> +       [ICH2]          = { 1,  64, 0x58, 0x5C },
-> +       [ICH4]          = { 2,  64, 0x58, 0x5C },
-> +       [ICH6]          = { 2,  64, 0x48, 0x4C },
-> +       [ICH10_CORP]    = { 3, 128, 0x48, 0x4C },
-> +};
-> +
-> +static void __devinit i801_gpio_print_state(struct i801_gpio_data *data,
-> +                                           struct device *dev, int ngroup)
-> +{
-> +       int i, group;
-> +       u32 io_sel, lvl;
-> +
-> +       dev_dbg(dev, "Current state of GPIO pins:\n");
-> +       for (group = 0; group < ngroup; group++) {
-> +               io_sel = inl(data->base + REG_GP_IO_SEL[group]);
-> +               lvl = inl(data->base + REG_GP_LVL[group]);
-> +
-> +               for (i = 0; i < 32; i++) {
-> +                       if (!(data->use_sel[group] & BIT(i)))
-> +                               continue;
-> +
-> +                       dev_dbg(dev, "GPIO%d: %s, level %d\n", group * 32 + i,
-> +                               io_sel & BIT(i) ? "input" : "output",
-> +                               !!(lvl & BIT(i)));
-> +               }
-> +       }
-> +}
-> +
-> +static int __devinit i801_gpio_probe(struct pci_dev *pdev,
-> +                                    const struct pci_device_id *id)
-> +{
-> +       struct i801_gpio_data *data;
-> +       u32 gpiobase;
-> +       u8 gc;
-> +       int type = id->driver_data;
-> +       int group, ngroup, err;
-> +
-> +       data = kzalloc(sizeof(struct i801_gpio_data), GFP_KERNEL);
-> +       if (!data)
-> +               return -ENOMEM;
-> +
-> +       err = pci_enable_device(pdev);
-> +       if (err) {
-> +               dev_err(&pdev->dev, "Failed to enable device (%d)\n", err);
-> +               goto err_free;
-> +       }
-> +
-> +       /* Get the base I/O address */
-> +       err = pci_read_config_dword(pdev, i801_gpio_cfg[type].reg_gpiobase,
-> +                                   &gpiobase);
-> +       if (err) {
-> +               dev_err(&pdev->dev, "Couldn't read %s value (%d)\n",
-> +                       "GPIOBASE", err);
-> +               goto err_disable;
-> +       }
-> +       data->base = gpiobase & ~BIT(0);
-> +       if (!data->base) {
-> +               dev_err(&pdev->dev, "GPIOBASE not set\n");
-> +               err = -ENODEV;
-> +               goto err_disable;
-> +       }
-> +
-> +       /* Check configuration */
-> +       err = pci_read_config_byte(pdev, i801_gpio_cfg[type].reg_gc, &gc);
-> +       if (err) {
-> +               dev_err(&pdev->dev, "Couldn't read %s value (%d)\n",
-> +                       "GC", err);
-> +               goto err_disable;
-> +       }
-> +       if (gc & BIT(0)) {
-> +               dev_err(&pdev->dev, "GPIO function is %s\n", "locked");
-> +               err = -EBUSY;
-> +               goto err_disable;
-> +       }
-> +       if (!(gc & BIT(4))) {
-> +               if (!force) {
-> +                       dev_err(&pdev->dev, "GPIO function is %s\n",
-> +                               "disabled");
-> +                       err = -ENODEV;
-> +                       goto err_disable;
-> +               }
-> +
-> +               gc |= BIT(4);
-> +               err = pci_write_config_byte(pdev,
-> +                                           i801_gpio_cfg[type].reg_gc, gc);
-> +               if (err) {
-> +                       dev_err(&pdev->dev,
-> +                               "Failed to enable GPIO function (%d)\n",
-> +                               err);
-> +                       err = -ENODEV;
-> +                       goto err_disable;
-> +               }
-> +               dev_info(&pdev->dev, "Enabling GPIO function\n");
-> +       }
-> +
-> +       /*
-> +        * "Corporate" incarnations of the ICH10 have an I/O region of size
-> +        * 128 and 73 GPIO pins. Others ("consumer") have an I/O region of
-> +        * size only 64 and 61 GPIO pins, as the ICH6, ICH7, ICH8 and ICH9
-> +        * had.
-> +        */
-> +       data->io_size = i801_gpio_cfg[type].io_size;
-> +       if (!force) {
-> +               err = acpi_check_region(data->base, data->io_size, "i801_gpio");
-> +               if (err)
-> +                       goto err_disable;
-> +       }
-> +       if (!request_region(data->base, data->io_size, "i801_gpio")) {
-> +               dev_err(&pdev->dev, "Failed to request I/O ports (%d)", err);
-> +               err = -EBUSY;
-> +               goto err_disable;
-> +       }
-> +
-> +       ngroup = i801_gpio_cfg[type].ngroup;
-> +       for (group = 0; group < ngroup; group++)
-> +               data->use_sel[group] = inl(data->base +
-> +                                          REG_GPIO_USE_SEL[group]);
-> +       i801_gpio_sel_fixup(data, id->device);
-> +       mutex_init(&data->lock);
-> +
-> +       i801_gpio_setup(&data->gpio, &pdev->dev, ngroup * 32);
-> +       i801_gpio_print_state(data, &pdev->dev, ngroup);
-> +
-> +       pci_set_drvdata(pdev, data);
-> +       err = gpiochip_add(&data->gpio);
-> +       if (err) {
-> +               dev_err(&pdev->dev, "Failed to register GPIO (%d)\n", err);
-> +               goto err_release;
-> +       }
-> +
-> +       return 0;
-> +
-> + err_release:
-> +       release_region(data->base, data->io_size);
-> +
-> + err_disable:
-> +       pci_disable_device(pdev);
-> +
-> + err_free:
-> +       kfree(data);
-> +       return err;
-> +}
-> +
-> +static void __devexit i801_gpio_remove(struct pci_dev *pdev)
-> +{
-> +       struct i801_gpio_data *data = pci_get_drvdata(pdev);
-> +       int err;
-> +
-> +       err = gpiochip_remove(&data->gpio);
-> +       if (err)
-> +               dev_err(&pdev->dev, "Failed to unregister GPIO (%d)\n", err);
-> +
-> +       release_region(data->base, data->io_size);
-> +       pci_disable_device(pdev);
-> +       kfree(data);
-> +}
-> +
-> +/* driver_data is the number of GPIO groups */
-> +static DEFINE_PCI_DEVICE_TABLE(i801_gpio_pcidev_id) = {
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801AA_0),
-> +         .driver_data = ICH2 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801AB_0),
-> +         .driver_data = ICH2 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801BA_0),
-> +         .driver_data = ICH2 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801BA_10),
-> +         .driver_data = ICH2 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801CA_0),
-> +         .driver_data = ICH4 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801CA_12),
-> +         .driver_data = ICH4 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801DB_0),
-> +         .driver_data = ICH4 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801DB_12),
-> +         .driver_data = ICH4 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801EB_0),
-> +         .driver_data = ICH4 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_0),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_1),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_31),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_0),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_1),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_2),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_3),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_4),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_1),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_2),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_4),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_5),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_8),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0),
-> +         .driver_data = ICH10_CORP },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2),
-> +         .driver_data = ICH6 },
-> +       { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3),
-> +         .driver_data = ICH10_CORP },
-> +       { 0, }
-> +};
-> +MODULE_DEVICE_TABLE(pci, i801_gpio_pcidev_id);
-> +
-> +static struct pci_driver i801_gpio_driver = {
-> +       .name           = "i801_gpio",
-> +       .id_table       = i801_gpio_pcidev_id,
-> +       .probe          = i801_gpio_probe,
-> +       .remove         = __devexit_p(i801_gpio_remove),
-> +};
-> +
-> +static int __init i801_gpio_pci_init(void)
-> +{
-> +       return pci_register_driver(&i801_gpio_driver);
-> +}
-> +module_init(i801_gpio_pci_init);
-> +
-> +static void __exit i801_gpio_pci_exit(void)
-> +{
-> +       pci_unregister_driver(&i801_gpio_driver);
-> +}
-> +module_exit(i801_gpio_pci_exit);
-> +
-> +MODULE_AUTHOR("Jean Delvare <khali@linux-fr.org>");
-> +MODULE_DESCRIPTION("Intel 82801 (ICH) GPIO driver");
-> +MODULE_LICENSE("GPL");
->
->
-> --
-> Jean Delvare
->
-
-
-
+								Honza
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
