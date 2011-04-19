@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab1DSVE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:29 -0400
-Received: from kroah.org ([198.145.64.141]:39410 "EHLO coco.kroah.org"
+	id S1755801Ab1DSVGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:06:42 -0400
+Received: from kroah.org ([198.145.64.141]:39418 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755505Ab1DSVE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:27 -0400
+	id S1755590Ab1DSVE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:29 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:24 2011
-Message-Id: <20110419210323.999860138@clark.kroah.org>
+Message-Id: <20110419210324.191919601@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:32 -0700
+Date: Tue, 19 Apr 2011 14:02:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [16/26] USB: ftdi_sio: add PID for OCT DK201 docking station
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: [18/26] next_pidmap: fix overflow condition
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
+commit c78193e9c7bcbf25b8237ad0dec82f805c4ea69b upstream.
 
-Add PID 0x0103 for serial port of the OCT DK201 docking station.
+next_pidmap() just quietly accepted whatever 'last' pid that was passed
+in, which is not all that safe when one of the users is /proc.
 
-Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Admittedly the proc code should do some sanity checking on the range
+(and that will be the next commit), but that doesn't mean that the
+helper functions should just do that pidmap pointer arithmetic without
+checking the range of its arguments.
+
+So clamp 'last' to PID_MAX_LIMIT.  The fact that we then do "last+1"
+doesn't really matter, the for-loop does check against the end of the
+pidmap array properly (it's only the actual pointer arithmetic overflow
+case we need to worry about, and going one bit beyond isn't going to
+overflow).
+
+[ Use PID_MAX_LIMIT rather than pid_max as per Eric Biederman ]
+
+Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Analyzed-by: Robert Święcki <robert@swiecki.net>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@openvz.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ include/linux/pid.h |    2 +-
+ kernel/pid.c        |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -527,6 +527,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
- 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
- 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
-+	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -559,6 +559,7 @@
- /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
- /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
- /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
-+#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
- #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+--- a/include/linux/pid.h
++++ b/include/linux/pid.h
+@@ -117,7 +117,7 @@ extern struct pid *find_vpid(int nr);
+  */
+ extern struct pid *find_get_pid(int nr);
+ extern struct pid *find_ge_pid(int nr, struct pid_namespace *);
+-int next_pidmap(struct pid_namespace *pid_ns, int last);
++int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
  
- /*
+ extern struct pid *alloc_pid(struct pid_namespace *ns);
+ extern void free_pid(struct pid *pid);
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -183,11 +183,14 @@ static int alloc_pidmap(struct pid_names
+ 	return -1;
+ }
+ 
+-int next_pidmap(struct pid_namespace *pid_ns, int last)
++int next_pidmap(struct pid_namespace *pid_ns, unsigned int last)
+ {
+ 	int offset;
+ 	struct pidmap *map, *end;
+ 
++	if (last >= PID_MAX_LIMIT)
++		return -1;
++
+ 	offset = (last + 1) & BITS_PER_PAGE_MASK;
+ 	map = &pid_ns->pidmap[(last + 1)/BITS_PER_PAGE];
+ 	end = &pid_ns->pidmap[PIDMAP_ENTRIES];
 
 
