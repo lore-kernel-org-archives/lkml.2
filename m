@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab1DSNkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 09:40:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38009 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab1DSNkE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 09:40:04 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 15/26] 15: uprobes: Handing int3 and
- singlestep exception.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	id S1752523Ab1DSNoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 09:44:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52330 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab1DSNoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 09:44:23 -0400
+Message-ID: <4DAD919A.3080102@kernel.org>
+Date: Tue, 19 Apr 2011 06:43:54 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Ingo Molnar <mingo@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110401143527.15455.32854.sendpatchset@localhost6.localdomain6>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143527.15455.32854.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Apr 2011 15:39:19 +0200
-Message-ID: <1303220359.8345.1.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem above
+ 1TB
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-5-git-send-email-joerg.roedel@amd.com> <4DAC4EC0.80008@zytor.com> <4DAC5099.4010403@kernel.org> <20110418145941.GJ2192@amd.com> <20110418155033.GC8623@elte.hu> <20110419061259.GL2192@amd.com> <20110419072520.GD25353@elte.hu>
+In-Reply-To: <20110419072520.GD25353@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 20:05 +0530, Srikar Dronamraju wrote:
-> +               probept = uprobes_get_bkpt_addr(regs);
-> +               down_read(&mm->mmap_sem);
-> +               for (vma = mm->mmap; vma; vma = vma->vm_next) {
-> +                       if (!valid_vma(vma))
-> +                               continue;
-> +                       if (probept < vma->vm_start || probept > vma->vm_end)
-> +                               continue;
-> +                       u = find_uprobe(vma->vm_file->f_mapping->host,
-> +                                       probept - vma->vm_start);
-> +                       break;
-> +               }
+On 04/19/2011 12:25 AM, Ingo Molnar wrote:
+>>>>
+>>>> Yes, this file mostly contains the dma-ops implementation that uses the
+>>>> K8 gart plus some k8-gart specific initialization functions.
+>>>
+>>> Does the file want to be renamed to pci-amd_gart_64.c or so?
+>>
+>> Hmm, that seems long. How about just amd64_gart.c?
+> 
 
-Why the linear vma walk? Surely the find_vma() suffices since there can
-only be one vma that matches a particular vaddr.
+Arguably we call this the k8_nb in other places, so my suggestion would
+be k8_gart.c
 
-> +               up_read(&mm->mmap_sem); 
+	-hpa
