@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1DSU2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:28:34 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:10739 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752184Ab1DSU2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754577Ab1DSU2c (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Apr 2011 16:28:32 -0400
-Message-ID: <4DADF06F.9070304@bluewatersys.com>
-Date: Wed, 20 Apr 2011 08:28:31 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, greg@kroah.com,
-        adobriyan@gmail.com
-Subject: Re: [PATCH 1/3] Add a strtobool function matching semantics of existing
- in kernel equivalents
-References: <a> <1303213427-12798-2-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1303213427-12798-2-git-send-email-jic23@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Received: from kroah.org ([198.145.64.141]:47651 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab1DSURG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:45 2011
+Message-Id: <20110419201045.486120877@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 19 Apr 2011 13:08:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [22/70] net ipv6: Fix duplicate /proc/sys/net/ipv6/neigh directory entries.
+In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 11:43 PM, Jonathan Cameron wrote:
-> This is a rename of the usr_strtobool proposal, which was a renamed,
-> relocated and fixed version of previous kstrtobool RFC
-> 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  include/linux/string.h |    1 +
->  lib/string.c           |   29 +++++++++++++++++++++++++++++
->  2 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/string.h b/include/linux/string.h
-> index a716ee2..a176db2 100644
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -123,6 +123,7 @@ extern char **argv_split(gfp_t gfp, const char *str, int *argcp);
->  extern void argv_free(char **argv);
->  
->  extern bool sysfs_streq(const char *s1, const char *s2);
-> +extern int strtobool(const char *s, bool *res);
->  
->  #ifdef CONFIG_BINARY_PRINTF
->  int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
-> diff --git a/lib/string.c b/lib/string.c
-> index f71bead..01fad9b 100644
-> --- a/lib/string.c
-> +++ b/lib/string.c
-> @@ -535,6 +535,35 @@ bool sysfs_streq(const char *s1, const char *s2)
->  }
->  EXPORT_SYMBOL(sysfs_streq);
->  
-> +/**
-> + * strtobool - convert common user inputs into boolean values
-> + * @s: input string
-> + * @res: result
-> + *
-> + * This routine returns 0 iff the first character is one of 'Yy1Nn0'.
-> + * Otherwise it will return -EINVAL.  Value pointed to by res is
-> + * updated upon finding a match.
-> + */
-> +int strtobool(const char *s, bool *res)
-> +{
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-Might be worth doing:
-
-	if (!s)
-		return -EINVAL;
-
-here to avoid blowing up if we get passed a NULL string.
-
-~Ryan
-
-> +	switch (s[0]) {
-> +	case 'y':
-> +	case 'Y':
-> +	case '1':
-> +		*res = true;
-> +		break;
-> +	case 'n':
-> +	case 'N':
-> +	case '0':
-> +		*res = false;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(strtobool);
-> +
->  #ifndef __HAVE_ARCH_MEMSET
->  /**
->   * memset - Fill a region of memory with the given value
+------------------
 
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+From: Eric W. Biederman <ebiederm@aristanetworks.com>
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+[ Upstream commit 9d2a8fa96a44ba242de3a6f56acaef7a40a97b97 ]
+
+When I was fixing issues with unregisgtering tables under /proc/sys/net/ipv6/neigh
+by adding a mount point it appears I missed a critical ordering issue, in the
+ipv6 initialization.  I had not realized that ipv6_sysctl_register is called
+at the very end of the ipv6 initialization and in particular after we call
+neigh_sysctl_register from ndisc_init.
+
+"neigh" needs to be initialized in ipv6_static_sysctl_register which is
+the first ipv6 table to initialized, and definitely before ndisc_init.
+This removes the weirdness of duplicate tables while still providing a
+"neigh" mount point which prevents races in sysctl unregistering.
+
+This was initially reported at https://bugzilla.kernel.org/show_bug.cgi?id=31232
+Reported-by: sunkan@zappa.cx
+Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ net/ipv6/sysctl_net_ipv6.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+--- a/net/ipv6/sysctl_net_ipv6.c
++++ b/net/ipv6/sysctl_net_ipv6.c
+@@ -17,6 +17,16 @@
+ 
+ static struct ctl_table empty[1];
+ 
++static ctl_table ipv6_static_skeleton[] = {
++	{
++		.procname	= "neigh",
++		.maxlen		= 0,
++		.mode		= 0555,
++		.child		= empty,
++	},
++	{ }
++};
++
+ static ctl_table ipv6_table_template[] = {
+ 	{
+ 		.procname	= "route",
+@@ -37,12 +47,6 @@ static ctl_table ipv6_table_template[] =
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
+-	{
+-		.procname	= "neigh",
+-		.maxlen		= 0,
+-		.mode		= 0555,
+-		.child		= empty,
+-	},
+ 	{ }
+ };
+ 
+@@ -160,7 +164,7 @@ static struct ctl_table_header *ip6_base
+ 
+ int ipv6_static_sysctl_register(void)
+ {
+-	ip6_base = register_sysctl_paths(net_ipv6_ctl_path, empty);
++	ip6_base = register_sysctl_paths(net_ipv6_ctl_path, ipv6_static_skeleton);
+ 	if (ip6_base == NULL)
+ 		return -ENOMEM;
+ 	return 0;
+
+
