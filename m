@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1DSKUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 06:20:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35262 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1DSKUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 06:20:19 -0400
-Date: Tue, 19 Apr 2011 12:20:16 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
- was written
-Message-ID: <20110419102016.GD5257@quack.suse.cz>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.778889102@intel.com>
+	id S1754721Ab1DSKUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 06:20:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51348 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703Ab1DSKUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 06:20:30 -0400
+Date: Tue, 19 Apr 2011 12:20:31 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
+ self registered
+Message-ID: <20110419102031.GA4164@pengutronix.de>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
 Content-Disposition: inline
-In-Reply-To: <20110419030532.778889102@intel.com>
+In-Reply-To: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-04-11 11:00:08, Wu Fengguang wrote:
-> writeback_inodes_wb()/__writeback_inodes_sb() are not aggressive in that
-> they only populate possibly a subset of elegible inodes into b_io at
-> entrance time. When the queued set of inodes are all synced, they just
-> return, possibly with all queued inode pages written but still
-> wbc.nr_to_write > 0.
-> 
-> For kupdate and background writeback, there may be more eligible inodes
-> sitting in b_dirty when the current set of b_io inodes are completed. So
-> it is necessary to try another round of writeback as long as we made some
-> progress in this round. When there are no more eligible inodes, no more
-> inodes will be enqueued in queue_io(), hence nothing could/will be
-> synced and we may safely bail.
-  Let me understand your concern here: You are afraid that if we do
-for_background or for_kupdate writeback and we write less than
-MAX_WRITEBACK_PAGES, we stop doing writeback although there could be more
-inodes to write at the time we are stopping writeback - the two realistic
-cases I can think of are:
-a) when inodes just freshly expired during writeback
-b) when bdi has less than MAX_WRITEBACK_PAGES of dirty data but we are over
-  background threshold due to data on some other bdi. And then while we are
-  doing writeback someone does dirtying at our bdi.
-Or do you see some other case as well?
 
-The a) case does not seem like a big issue to me after your changes to
-move_expired_inodes(). The b) case maybe but do you think it will make any
-difference? 
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-								Honza
-> 
-> Jan raised the concern
-> 
-> 	I'm just afraid that in some pathological cases this could
-> 	result in bad writeback pattern - like if there is some process
-> 	which manages to dirty just a few pages while we are doing
-> 	writeout, this looping could result in writing just a few pages
-> 	in each round which is bad for fragmentation etc.
-> 
-> However it requires really strong timing to make that to (continuously)
-> happen.  In practice it's very hard to produce such a pattern even if
-> it's possible in theory. I actually tried to write 1 page per 1ms with
-> this command
-> 
-> 	write-and-fsync -n10000 -S 1000 -c 4096 /fs/test
-> 
-> and do sync(1) at the same time. The sync completes quickly on ext4,
-> xfs, btrfs. The readers could try other write-and-sleep patterns and
-> check if it can block sync for longer time.
-> 
-> CC: Jan Kara <jack@suse.cz>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/fs-writeback.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> --- linux-next.orig/fs/fs-writeback.c	2011-04-19 10:18:30.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2011-04-19 10:18:31.000000000 +0800
-> @@ -750,23 +750,23 @@ static long wb_writeback(struct bdi_writ
->  		wrote += write_chunk - wbc.nr_to_write;
->  
->  		/*
-> -		 * If we consumed everything, see if we have more
-> +		 * Did we write something? Try for more
-> +		 *
-> +		 * Dirty inodes are moved to b_io for writeback in batches.
-> +		 * The completion of the current batch does not necessarily
-> +		 * mean the overall work is done. So we keep looping as long
-> +		 * as made some progress on cleaning pages or inodes.
->  		 */
-> -		if (wbc.nr_to_write <= 0)
-> +		if (wbc.nr_to_write < write_chunk)
->  			continue;
->  		if (wbc.inodes_cleaned)
->  			continue;
->  		/*
-> -		 * Didn't write everything and we don't have more IO, bail
-> +		 * No more inodes for IO, bail
->  		 */
->  		if (!wbc.more_io)
->  			break;
->  		/*
-> -		 * Did we write something? Try for more
-> -		 */
-> -		if (wbc.nr_to_write < write_chunk)
-> -			continue;
-> -		/*
->  		 * Nothing written. Wait for some inode to
->  		 * become available for writeback. Otherwise
->  		 * we'll just busyloop.
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Hi Shawn,
+
+On Fri, Mar 25, 2011 at 04:48:46PM +0800, Shawn Guo wrote:
+> Here are what the patch set does.
+>=20
+> * Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
+>   a pure common helper function providers.
+> * Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
+>   sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
+>   registered with calling helper functions created above.
+> * Migrate the use of sdhci_of_host and sdhci_of_data to
+>   sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
+>   data structure works can be saved, and pltfm version works for both
+>   cases.
+> * Add OF common helper stuff into sdhci-pltfm.c, and make OF version
+>   sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
+>   registered as well, so that sdhci-of-core.c and sdhci-of.h can be
+>   removed.
+> * Consolidate the OF and pltfm esdhc drivers into one with sharing
+>   the same pair of .probe and .remove hooks.  As a result,
+>   sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
+>   sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
+> * Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
+>   drivers/mmc/host/sdhci-pltfm.h.
+>=20
+> And the benefits we gain from the changes are:
+>=20
+> * Get the sdhci device driver follow the Linux trend that driver
+>   makes the registration by its own.
+> * sdhci-pltfm.c becomes simple and clean as it only has common helper
+>   stuff there now.
+> * All sdhci device specific things are going back its own driver.
+> * The dt and non-dt drivers are consolidated to use the same pair of
+>   .probe and .remove hooks.
+> * SDHCI driver for Freescale eSDHC controller found on both MPCxxx
+>   and i.MX platforms is consolidated to use the same one .probe
+>   function.
+>=20
+> The patch set works against the tree below, and was only tested on
+> i.mx51 babbage board, all other targets were build tested.
+>=20
+>   git://git.secretlab.ca/git/linux-2.6.git devicetree/test
+>=20
+> Comments are welcomed and appreciated.
+
+First of all, thanks _a lot_ for doing this! Many people have promised
+to do such an approach, but you finally made it!
+
+Sorry for the long delay in reviewing it, I didn't want to rush a review
+so I needed some time for it which I didn't have much in the last weeks.
+Let's hope my battery will have enough power on my flight back to
+Germany ;) So, this is for now a purely "visual" review. I hope I can
+check V2 on real hardware then.
+
+The approach seems sensible, so have a look at my (mostly minor)
+comments inside the patches. However, there is one bigger piece missing.
+You converted all the drivers which had a seperate source-file and
+hooked into sdhci-pltfm.c. However, those are only those users which
+need additional code to work around the quirks. There are also users
+which can take the plain pltfm-driver with a properly set
+platform_data (check the thread "[PATCH] mmc: add SDHCI driver for STM
+platforms (V2)" for an example). Those have to be converted, too.
+Now the discussion could be if every of those users gets its own
+pltfm-<something>.c or if we create something similat to
+sdhci-pltfm-generic, which can also be setup with platform_data like the
+old driver (/me likes the latter a bit more. If we don't change the name
+of the driver (not talking about the sourcefile) and keep it
+"sdhci-pltfm", then you wouldn't need to change all those users if you
+ensured it behaves the same.
+
+Also, I think the next version of this series should have all makers of
+a sdhci-pltfm user CCed so we give them a chance to report breakage. Or
+donate acks or tested-by.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk2tYe8ACgkQD27XaX1/VRsCRgCgkp+BmJJsLsKllKL0OI/BnO9F
+PRkAn1BpnXBv1exnkJFlqFAPe5O2Yt8w
+=GSqA
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
