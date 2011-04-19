@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1DSVEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:30 -0400
-Received: from kroah.org ([198.145.64.141]:39406 "EHLO coco.kroah.org"
+	id S1755771Ab1DSVFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:05:17 -0400
+Received: from kroah.org ([198.145.64.141]:39448 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755562Ab1DSVE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:23 2011
-Message-Id: <20110419210323.884112249@clark.kroah.org>
+	id S1755666Ab1DSVEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:24 2011
+Message-Id: <20110419210324.794101717@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:31 -0700
+Date: Tue, 19 Apr 2011 14:02:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Simon <simon@swine.de>
-Subject: [15/26] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [24/26] x86, cpu: Fix regression in AMD errata checking code
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Simon <simon@swine.de>
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 
-commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
+commit 07a7795ca2e6e66d00b184efb46bd0e23d90d3fe upstream.
 
-I added new ProdutIds for two devices from CTI GmbH Leipzig.
+A bug in the family-model-stepping matching code caused the presence of
+errata to go undetected when OSVW was not used. This causes hangs on
+some K8 systems because the E400 workaround is not enabled.
 
-Signed-off-by: Christian Simon <simon@swine.de>
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+LKML-Reference: <1282141190-930137-1-git-send-email-hans.rosenfeld@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
- 2 files changed, 11 insertions(+)
+ arch/x86/kernel/cpu/amd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -155,6 +155,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
-  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
-  */
- static struct usb_device_id id_table_combined [] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1093,3 +1093,12 @@
- #define XVERVE_SIGNALYZER_SH2_PID	0xBCA2
- #define XVERVE_SIGNALYZER_SH4_PID	0xBCA4
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -687,7 +687,7 @@ bool cpu_has_amd_erratum(const int *erra
+ 	}
  
-+/*
-+ * CTI GmbH RS485 Converter http://www.cti-lean.com/
-+ */
-+/* USB-485-Mini*/
-+#define FTDI_CTI_MINI_PID	0xF608
-+/* USB-Nano-485*/
-+#define FTDI_CTI_NANO_PID	0xF60B
-+
-+
+ 	/* OSVW unavailable or ID unknown, match family-model-stepping range */
+-	ms = (cpu->x86_model << 8) | cpu->x86_mask;
++	ms = (cpu->x86_model << 4) | cpu->x86_mask;
+ 	while ((range = *erratum++))
+ 		if ((cpu->x86 == AMD_MODEL_RANGE_FAMILY(range)) &&
+ 		    (ms >= AMD_MODEL_RANGE_START(range)) &&
 
 
