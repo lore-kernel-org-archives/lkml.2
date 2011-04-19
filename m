@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab1DSVRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:17:13 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:40241 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab1DSVRL (ORCPT
+	id S1755869Ab1DSVSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:18:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57941 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab1DSVSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:17:11 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-References: <20110412143559.186613198@clark.kroah.org>
-	<87pqokx6lr.fsf@devron.myhome.or.jp>
-	<BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
-	<20110418153236.GC20935@pad.home.fieldses.org>
-	<87ipubwnj3.fsf@devron.myhome.or.jp>
-	<8762qbwnf1.fsf@devron.myhome.or.jp>
-	<87zknnv7id.fsf@devron.myhome.or.jp>
-	<87vcybgt6u.fsf@devron.myhome.or.jp>
-	<87hb9uhcre.fsf@devron.myhome.or.jp>
-	<20110419204349.GB8228@fieldses.org>
-Date: Wed, 20 Apr 2011 06:17:03 +0900
-In-Reply-To: <20110419204349.GB8228@fieldses.org> (J. Bruce Fields's message
-	of "Tue, 19 Apr 2011 16:43:49 -0400")
-Message-ID: <87aafmgcvk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 19 Apr 2011 17:18:21 -0400
+Subject: Re: [BUG] perf_event: sampling buffer format cannot handle
+ multi-event sampling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        Paul Mackerras <paulus@samba.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <BANLkTi=GX3JGw-Dq+ejsCguV0A+9w2eCjQ@mail.gmail.com>
+References: <BANLkTi=g6iPgdctAmuZ=bb8J6FqNJA-vZQ@mail.gmail.com>
+	 <1303240935.8345.7.camel@twins>
+	 <BANLkTi=GX3JGw-Dq+ejsCguV0A+9w2eCjQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 23:20:56 +0200
+Message-ID: <1303248056.2035.66.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+On Tue, 2011-04-19 at 21:16 +0000, Stephane Eranian wrote:
+> > Or simply don't mix different sample_types in the same buffer?
+> >
+> Does the kernel disallow this when you merge the output via that
+> ioctl()? 
 
-> On Tue, Apr 19, 2011 at 05:21:57PM +0900, OGAWA Hirofumi wrote:
->> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->> 
->> >> I'll start test of this patch, and see what happens.
->> >
->> > OK. Although filp slabs are still slightly increasing (I'm not sure yet
->> > whether this is leak of filp on system). But watching before/after
->> > patch, the graph of filp slabs is clearly different.
->> >
->> > As far as I can say patches are fine.
->> 
->> slightly increasing was stopped at 2200-2300. filp leak seems to be fixed.
->
-> Another thing to check is whether you can always unmount the exported
-> filesystem on the server after running your test.  So something like:
->
-> 	service nfs stop
-> 	unmount /exports/fs
->
-> should always succeed; if you get an inexplicable EBUSY on the final
-> unmount then we likely still have a leak someplace.
+No, it will happily comply and provide you with hard to parse output.
+Just don't do that if you're not willing to untangle it ;-)
 
-It succeeded.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
