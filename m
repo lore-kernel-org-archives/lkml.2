@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab1DSVHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:07:35 -0400
-Received: from kroah.org ([198.145.64.141]:39401 "EHLO coco.kroah.org"
+	id S1755829Ab1DSVHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:07:55 -0400
+Received: from kroah.org ([198.145.64.141]:39398 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab1DSVEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755542Ab1DSVEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Apr 2011 17:04:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:23 2011
-Message-Id: <20110419210323.778372899@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:30 -0700
+Date: Tue, 19 Apr 2011 14:03:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [14/26] x86, amd: Disable GartTlbWlkErr when BIOS forgets it
-In-Reply-To: <20110419210333.GA17417@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/26] 2.6.33.12-longterm review
+Message-ID: <20110419210333.GA17417@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.33.12 release.
+There are 26 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Thursday, April 21, 2011, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.12-rc1.gz
+and the diffstat can be found below.
 
-commit 5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e upstream.
+thanks,
 
-This patch disables GartTlbWlk errors on AMD Fam10h CPUs if
-the BIOS forgets to do is (or is just too old). Letting
-these errors enabled can cause a sync-flood on the CPU
-causing a reboot.
+greg k-h
 
-The AMD BKDG recommends disabling GART TLB Wlk Error completely.
-
-This patch is the fix for
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=33012
-
-on my machine.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/20110415131152.GJ18463@8bytes.org
-Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/include/asm/msr-index.h |    4 ++++
- arch/x86/kernel/cpu/amd.c        |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+)
-
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -82,11 +82,15 @@
- #define MSR_IA32_MC0_ADDR		0x00000402
- #define MSR_IA32_MC0_MISC		0x00000403
- 
-+#define MSR_AMD64_MC0_MASK		0xc0010044
-+
- #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
- #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
- #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
- #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
- 
-+#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
-+
- /* These are consecutive and not in the normal 4er MCE bank block */
- #define MSR_IA32_MC0_CTL2		0x00000280
- #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -568,6 +568,25 @@ static void __cpuinit init_amd(struct cp
- 	/* As a rule processors have APIC timer running in deep C states */
- 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
-+
-+	/*
-+	 * Disable GART TLB Walk Errors on Fam10h. We do this here
-+	 * because this is always needed when GART is enabled, even in a
-+	 * kernel which has no MCE support built in.
-+	 */
-+	if (c->x86 == 0x10) {
-+		/*
-+		 * BIOS should disable GartTlbWlk Errors themself. If
-+		 * it doesn't do it here as suggested by the BKDG.
-+		 *
-+		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
-+		 */
-+		u64 mask;
-+
-+		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+		mask |= (1 << 10);
-+		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+	}
- }
- 
- #ifdef CONFIG_X86_32
-
-
+ MAINTAINERS                                |    1 -
+ Makefile                                   |    2 +-
+ arch/ia64/kernel/mca.c                     |    3 +-
+ arch/ia64/sn/pci/tioca_provider.c          |    2 +-
+ arch/x86/include/asm/msr-index.h           |    4 +
+ arch/x86/include/asm/processor.h           |   19 ++++++
+ arch/x86/kernel/cpu/amd.c                  |   88 ++++++++++++++++++++++++++++
+ arch/x86/kernel/process.c                  |   39 +------------
+ arch/x86/lib/semaphore_32.S                |    2 +-
+ drivers/media/video/sn9c102/sn9c102_core.c |    6 +-
+ drivers/net/usb/cdc-phonet.c               |    9 +--
+ drivers/usb/core/devices.c                 |   10 ++-
+ drivers/usb/host/ehci-q.c                  |   15 +++--
+ drivers/usb/host/xhci-mem.c                |   85 +++++++++++++++++++-------
+ drivers/usb/host/xhci.h                    |    6 +-
+ drivers/usb/serial/ftdi_sio.c              |    5 ++
+ drivers/usb/serial/ftdi_sio_ids.h          |   12 ++++
+ fs/cifs/connect.c                          |    2 +-
+ fs/proc/base.c                             |    9 ++-
+ fs/ramfs/file-nommu.c                      |    1 +
+ fs/ubifs/debug.c                           |    6 +-
+ fs/ubifs/file.c                            |    3 +
+ include/linux/pid.h                        |    2 +-
+ kernel/pid.c                               |    5 +-
+ net/ax25/af_ax25.c                         |    2 +-
+ net/rds/rdma.c                             |   11 ++++
+ 26 files changed, 253 insertions(+), 96 deletions(-)
