@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab1DSN5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 09:57:33 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:14809 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab1DSN5c (ORCPT
+	id S1752338Ab1DSN6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 09:58:50 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4111 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab1DSN6s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 09:57:32 -0400
-X-SpamScore: -25
-X-BigFish: VPS-25(zzbb2cK1444M179dN1432N98dKef8Kzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJWK1W-01-5QB-02
-X-M-MSG: 
-Date: Tue, 19 Apr 2011 15:55:18 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
- overlapping counters
-Message-ID: <20110419135518.GZ31407@erda.amd.com>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
- <1302913676-14352-5-git-send-email-robert.richter@amd.com>
- <20110419102600.GU31407@erda.amd.com>
- <20110419112933.GA18660@elte.hu>
+	Tue, 19 Apr 2011 09:58:48 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+cc: "George Kashperko" <george@znau.edu.ua>,
+        "Hauke Mehrtens" <hauke@hauke-m.de>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Jonas Gorski" <jonas.gorski@gmail.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "Greg KH" <greg@kroah.com>, "Andy Botting" <andy@andybotting.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom
+ bus?
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+ <1302892585.30441.12.camel@dev.znau.edu.ua>
+ <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+ <201104171938.12834.arnd@arndb.de>
+Date: Tue, 19 Apr 2011 15:58:32 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110419112933.GA18660@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vt6ufu1n3ri7v4@arend-laptop>
+In-Reply-To: <201104171938.12834.arnd@arndb.de>
+User-Agent: Opera Mail/11.10 (Linux)
+X-WSS-ID: 61B34A4E3I813626422-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.04.11 07:29:33, Ingo Molnar wrote:
-> 
-> * Robert Richter <robert.richter@amd.com> wrote:
-> 
-> > +				if (!state)
-> > +					/* no events to reschedule */
-> > +					goto done;
-> 
-> Hm, that's 5 levels of indentation. Would it be possible to factor out the gist 
-> of the logic into a helper and such? My eyes would be much happier!
+On Sun, 17 Apr 2011 19:38:12 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Hmm, I was thinking about this too, but it is not easy since we
-control also the loops with goto's and updates of the loop
-states. Refactoring out the inner block would mean to update state
-varables via pointers and to introduce return codes which contains
-control flow information. Don't think this will become easier.
+Hi Rafał,
 
-We could probably merge both for-loops in one while-loop but also on
-costs of code readability.
+As you probably expected I tried to integrate and use your bcmai/bcmaxi/?
+driver with our brcm80211 driver (making progress). In the mean time I  
+tried to follow the discussions going on, but I am still catching up.
 
--Robert
+> Compare this to the PCI bus type, which essentially deals with devices
+> that have a PCI configuration space that contains generic (irq, memory,
+> vendor/device ID, ...) registers along with device specific registers.
 
+How much alike is the (BCM)AXI bus type? My assumption was that each
+registered PCI device is handled by a single driver module. In the
+current(?) bcmai implementation each device driver is called with the
+appropriate device structure reference, but it will also have the bus
+structure reference and through that can also access other cores on the
+(bcm)axi bus. This seems to me a potential issue when there are no
+synchronization mechanisms in place (whether in a SoC configuration or
+PCI-hosted). Does the PCI bus type allow driver for device A access
+device B?
+
+> A new bus_type really only makes sense if you expect a lot of devices
+> to use this and you want to have the probing in the bus. If you only
+> want to have a way to enumerate devices that get created by the
+> parent driver, you can also use platform devices.
+
+The main assumption of the (bcm)axi driver seems to be that each core can
+be considered as a device. Correct me if I am wrong, but I consider a
+device to be an entity providing a particular system function. So an
+ethernet device provides ethernet connectivity function, a mixer device
+provides sound mixing function, and so on. The cores within a chip are not
+always self-contained like this. To clarify let's say a system function is
+realized by programming core A, core B, and finally trigger core A to set
+the function in motion. This implies the need of coordination between the
+programming steps on those cores.
+
+Is my view on what is a device wrong? Does a platform device differ in
+this respect from a regular device?
+
+Gr. AvS
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
 
