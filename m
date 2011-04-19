@@ -1,264 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1DSXUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:20:20 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:57886 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751413Ab1DSXUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:20:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=kP9XOM9OVdW9CtbJYc+xhUGvk9p8/r9HHR/9DsOyYZlYjQwg/eu6sTT9/PP3AtkU8FYmFcghGe/+W1YibJeLtRLHu8EZQ4F71tapwYwB9qHvLhm0cXhUMDuLEyFn4s9G;
-Date: Tue, 19 Apr 2011 16:20:15 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: james_p_freyensee@linux.intel.com
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 4/4] n_tracerouter and n_tracesink ldisc additions.
-Message-Id: <20110419162015.e4446442.rdunlap@xenotime.net>
-In-Reply-To: <1303253889-10074-5-git-send-email-james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
-	<1303253889-10074-5-git-send-email-james_p_freyensee@linux.intel.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1752811Ab1DSXWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:22:15 -0400
+Received: from kroah.org ([198.145.64.141]:52411 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945Ab1DSXWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 19:22:14 -0400
+Date: Tue, 19 Apr 2011 16:21:41 -0700
+From: Greg KH <greg@kroah.com>
+To: John Linn <John.Linn@xilinx.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110419232141.GA27491@kroah.com>
+References: <e35578a9-909d-4594-bbe4-41d89b5f9b3e@VA3EHSMHS014.ehs.local>
+ <20110419221530.7370d013@lxorguk.ukuu.org.uk>
+ <8d05c32c-9ff1-4eda-9563-6857ede6541a@VA3EHSMHS020.ehs.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8d05c32c-9ff1-4eda-9563-6857ede6541a@VA3EHSMHS020.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011 15:58:09 -0700 james_p_freyensee@linux.intel.com wrote:
-
->  drivers/tty/Kconfig         |   31 ++++++
->  drivers/tty/Makefile        |    2 +
->  drivers/tty/n_tracerouter.c |  241 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/tty/n_tracesink.c   |  244 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/tty/n_tracesink.h   |   36 +++++++
->  include/linux/tty.h         |    2 +
->  6 files changed, 556 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/tty/n_tracerouter.c
->  create mode 100644 drivers/tty/n_tracesink.c
->  create mode 100644 drivers/tty/n_tracesink.h
+On Tue, Apr 19, 2011 at 04:22:00PM -0600, John Linn wrote:
+> > -----Original Message-----
+> > From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> > Sent: Tuesday, April 19, 2011 3:16 PM
+> > To: John Linn
+> > Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
+> > Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
+> > 
+> > On Tue, 19 Apr 2011 14:14:52 -0600
+> > John Linn <john.linn@xilinx.com> wrote:
+> > 
+> > > The Xilinx PS Uart is used on the new ARM based SoC. This
+> > > UART is not compatible with others such that a seperate
+> > > driver is required.
+> > 
+> > Joyous. I wish people would standardise.
+> > 
+> > > +		 213 = /dev/ttyPS0		Xilinx PS serial port 0
+> > > +		 214 = /dev/ttyPS1		Xilinx PS serial port 1
+> > > +		 215 = /dev/ttyPS2		Xilinx PS serial port 2
+> > > +		 216 = /dev/ttyPS3		Xilinx PS serial port 3
+> > 
+> > Is there a specific reason you need fixed minor numbers ? If not
+> please
+> > use a dynamic range and keep Linus happy.
 > 
-> diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
-> index 3fd7199..d1ab9c0 100644
-> --- a/drivers/tty/Kconfig
-> +++ b/drivers/tty/Kconfig
-> @@ -319,3 +319,34 @@ config N_GSM
->  	  This line discipline provides support for the GSM MUX protocol and
->  	  presents the mux as a set of 61 individual tty devices.
->  
-> +config TRACE_ROUTER
-> +	tristate "Trace data router for MIPI P1149.7 cJTAG standard"
-> +	depends on TRACE_SINK
-> +	default Y
+> Hi Alan,
+> 
+> I hope you don't mind me asking a bit more to better understand.  Here's
+> my
+> concerns (maybe not valid).
+> 
+> It seems like since this is a console it can get hard to debug with
+> dynamic 
+> nodes for this driver.
+> 
+> This driver is for an embedded device where we don't want to require
+> udev 
+> or mdev to assign nodes. 
 
-Don't add default Y misc drivers.
+Why not use devtmpfs?  There's no need to use udev or mdev at all.
 
-> +	help
-> +	  The trace router uses the Linux tty line discipline framework to
-> +	  route trace data coming from a tty port (say UART for example) to
-> +	  the trace sink line discipline driver and to another tty port(say 
-> +	  USB). This is part of a solution for the MIPI P1149.7, compact JTAG,
-> +	  standard, which is for debugging mobile devices. The PTI driver in
-> +	  drivers/misc/pti.c defines the majority of this MIPI solution.
-> +
-> +	  You should select this driver if the target kernel is meant for
-> +	  a mobile device containing a modem.  Then you will need to select
-> +	  "Trace data sink for MIPI P1149.7 cJTAG standard" line discipline
-> +	  driver.
-> +
-> +config TRACE_SINK
-> +	tristate "Trace data sink for MIPI P1149.7 cJTAG standard"
-> +	default Y
+thanks,
 
-ditto.
-
-> +	help
-> +	  The trace sink uses the Linux line discipline framework to receive
-> +	  trace data coming from the trace router line discipline driver
-> +	  to a user-defined tty port target, like USB.
-> +	  This is to provide a way to extract modem trace data on
-> +	  devices that do not have a PTI HW module, or just need modem
-> +	  trace data to come out of a different HW output port.
-> +	  This is part of a solution for the P1149.7, compact JTAG, standard.
-> +
-> +	  If you select this option, you need to select
-> +	  "Trace data router for MIPI P1149.7 cJTAG standard".
-
-> diff --git a/drivers/tty/n_tracerouter.c b/drivers/tty/n_tracerouter.c
-> new file mode 100644
-> index 0000000..7295799
-> --- /dev/null
-> +++ b/drivers/tty/n_tracerouter.c
-> @@ -0,0 +1,241 @@
-> +/*
-> + *  n_tracerouter.c - Trace data router through tty space
-> + *
-> + *  Copyright (C) Intel 2011
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2
-> + *  as published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This trace router uses the Linux line discipline framework to route
-> + * trace data coming from a HW Modem to a PTI (Parallel Trace Module) port.
-> + * The solution is not specific to a HW modem and this line disciple can
-> + * be used to route any stream of data in kernel space.
-> + * This is part of a solution for the P1149.7, compact JTAG, standard.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/ioctl.h>
-> +#include <linux/tty.h>
-> +#include <linux/tty_ldisc.h>
-> +#include <linux/errno.h>
-> +#include <linux/string.h>
-> +#include <linux/mutex.h>
-> +#include <linux/slab.h>
-> +#include <asm-generic/bug.h>
-> +#include "n_tracesink.h"
-> +
-> +/* Other ldisc drivers use 65536 which basically means,
-> + * 'I can always accept 64k' and flow control is off.
-> + * This number is deemed appropriate for this driver.
-> + */
-
-Fix multi-line comment style throughout.
-
-> +#define RECEIVE_ROOM	65536
-> +#define DRIVERNAME	"n_tracerouter"
-> +
-> +/* struct to hold private configuration data for this ldisc.
-> + * opencalled is used to hold if this ldisc has been opened.
-> + * kref_tty holds the tty reference the ldisc sits on top of.
-> + */
-> +struct tracerouter_data {
-> +	u8 opencalled;
-> +	struct tty_struct *kref_tty;
-> +};
-> +static struct tracerouter_data *tr_data;
-> +
-> +/* lock for when tty reference is being used */
-> +static DEFINE_MUTEX(routelock);
-
-
-> +/* Flush buffer is not impelemented as the ldisc has no internal buffering
-> + * so the tty_driver_flush_buffer() is sufficient for this driver's needs.
-> + */
-> +
-> +static struct tty_ldisc_ops tty_ptirouter_ldisc = {
-> +	.owner		= THIS_MODULE,
-> +	.magic		= TTY_LDISC_MAGIC,
-> +	.name		= DRIVERNAME,
-> +	.open		= n_tracerouter_open,
-> +	.close		= n_tracerouter_close,
-> +	.read		= n_tracerouter_read,
-> +	.write		= n_tracerouter_write,
-> +	.receive_buf	= n_tracerouter_receivebuf
-> +};
-
-> diff --git a/drivers/tty/n_tracesink.c b/drivers/tty/n_tracesink.c
-> new file mode 100644
-> index 0000000..4c40127
-> --- /dev/null
-> +++ b/drivers/tty/n_tracesink.c
-> @@ -0,0 +1,244 @@
-> +/*
-> + *  n_tracesink.c - Trace data router and sink path through tty space.
-> + *
-> + *  Copyright (C) Intel 2011
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2
-> + *  as published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * The trace sink uses the Linux line discipline framework to receive
-> + * trace data coming from the PTI source line discipline driver
-> + * to a user-desired tty port, like USB.
-> + * This is to provide a way to extract modem trace data on
-> + * devices that do not have a PTI HW module, or just need modem
-> + * trace data to come out of a different HW output port.
-> + * This is part of a solution for the P1149.7, compact JTAG, standard.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/ioctl.h>
-> +#include <linux/tty.h>
-> +#include <linux/tty_ldisc.h>
-> +#include <linux/errno.h>
-> +#include <linux/string.h>
-> +#include <asm-generic/bug.h>
-> +#include "n_tracesink.h"
-> +
-> +/* Other ldisc drivers use 65536 which basically means,
-> + * 'I can always accept 64k' and flow control is off.
-> + * This number is deemed appropriate for this driver.
-> + */
-
-Fix multi-line comment style throughout.
-
-> +#define RECEIVE_ROOM	65536
-> +#define DRIVERNAME	"n_tracesink"
-> +
-> +/* there is a quirk with this ldisc is he can write data
-> + * to a tty from anyone calling his kernel API, which
-> + * meets customer requirements in the drivers/misc/pti.c
-> + * project.  So he needs to know when he can and cannot write when
-> + * the API is called. In theory, the API can be called
-> + * after an init() but before a successful open() which
-> + * would crash the system if tty is not checked.
-> + */
-> +static struct tty_struct *this_tty;
-> +static DEFINE_MUTEX(writelock);
-
-> +/* Flush buffer is not impelemented as the ldisc has no internal buffering
-> + * so the tty_driver_flush_buffer() is sufficient for this driver's needs.
-> + */
-> +
-> +/*
-> + * tty_ldisc function operations for this driver.
-> + */
-> +static struct tty_ldisc_ops tty_n_tracesink = {
-> +	.owner		= THIS_MODULE,
-> +	.magic		= TTY_LDISC_MAGIC,
-> +	.name		= DRIVERNAME,
-> +	.open		= n_tracesink_open,
-> +	.close		= n_tracesink_close,
-> +	.read		= n_tracesink_read,
-> +	.write		= n_tracesink_write
-> +};
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
