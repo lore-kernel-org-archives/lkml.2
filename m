@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1DSUVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:21:53 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:44282 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055Ab1DSUVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:21:50 -0400
-Date: Tue, 19 Apr 2011 22:22:12 +0200
-From: Tino Keitel <tino.keitel@tikei.de>
-To: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
-Message-ID: <20110419202212.GA15438@mac.home>
-Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-	Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <201104150053.37037.rjw@sisk.pl>
- <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org>
- <20110415145457.GA27650@eazy.amigager.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415145457.GA27650@eazy.amigager.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755158Ab1DSUWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:22:17 -0400
+Received: from kroah.org ([198.145.64.141]:35674 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754920Ab1DSURe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
+Message-Id: <20110419201048.725890936@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 19 Apr 2011 13:09:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [52/70] USB: ftdi_sio: add PID for OCT DK201 docking station
+In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-I reverted some wakeup and ACPI related commits. When I reverted commit
-7fa69baf29de8c77a6b32c054df2abb8f11f8aa4, wakeup using the keyboard
-worked again and /proc/acpi/wakeup behaved as expected.
+------------------
 
-So check this, I reverted the following commits to avoid conflicts and
-build failures:
+From: Johan Hovold <jhovold@gmail.com>
 
-c19f9a84ec807da57fd75bbd9a3f2b8269611f79
-5190726765b40774c069e187a958e10ccd970e65
-2a5d24286e8bdafdc272b37ec5bdd9e977b3767c
-f2b56bc808addb908a5bf435d9b942c02af9a7c4
-7fa69baf29de8c77a6b32c054df2abb8f11f8aa4
+commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
 
-Regards,
-Tino
+Add PID 0x0103 for serial port of the OCT DK201 docking station.
+
+Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -527,6 +527,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
+ 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
++	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -572,6 +572,7 @@
+ /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
+ /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
+ /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
++#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
+ #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+ 
+ /*
+
+
