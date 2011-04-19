@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1DSMUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:20:13 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:45716 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754579Ab1DSMUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:20:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BtgNpAHsDwha0AytZhGYKGlZKNf+LR6NKJ++8904223QYc0lMfVhR/Js7S3+vwfW+9
-         8QPS8+q5DtDYLr9dG7/OHD7XknIMXjyjUghOn7fxyrw4d53PQJvI0MCzbhP+RIR1GnpM
-         K8rqMiEJgve2cnapqB8C1TlONA5JJzp65BCOc=
+	id S1753661Ab1DSM3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:29:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:56319 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995Ab1DSM3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 08:29:11 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH 4/4] module: Use the binary search for symbols resolution
+In-Reply-To: <4DACE8F4.2050807@gmail.com>
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org> <1302960373-5309-5-git-send-email-abogani@kernel.org> <BANLkTik9oekjUH6YXTda1P_dM231nEHQqA@mail.gmail.com> <87liz73tso.fsf@rustcorp.com.au> <4DACE8F4.2050807@gmail.com>
+User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Tue, 19 Apr 2011 21:05:49 +0930
+Message-ID: <87aafmo4mi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <70E876B0EA86DD4BAF101844BC814DFE093FB40998@Cloud.RL.local>
-References: <BANLkTi=7DbMrbo0nQU+268LC_2258q-_DA@mail.gmail.com>
-	<70E876B0EA86DD4BAF101844BC814DFE093FB40998@Cloud.RL.local>
-Date: Tue, 19 Apr 2011 08:20:09 -0400
-Message-ID: <BANLkTinTMi76GmgO6HJ0+ifCXsHE3Mjsvg@mail.gmail.com>
-Subject: Re: [PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Jon Povey <Jon.Povey@racelogic.co.uk>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bastian Ruppert <Bastian.Ruppert@sewerin.de>,
-        "Griffis, Brad" <bgriffis@ti.com>, Philby John <pjohn@in.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
+On Tue, 19 Apr 2011 09:44:20 +0800, Wanlong Gao <wanlong.gao@gmail.com> wrote:
+>   2011-4-19 9:37, Rusty Russell wroted:
+> > On Sat, 16 Apr 2011 22:32:08 +0800, Wanlong Gao<wanlong.gao@gmail.com>  wrote:
+> >>> +	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
+> >> As the bsearch func, why not change the syms->stop to syms->end ?
+> >> Hmm..Just a stupid suggestion.
+> >
+> >
+> > The names are derived from the linker symbols for end of sections, which
+> > is __stop_<sectionname>.
+> >
+> > Cheers,
+> > Rusty.
+> As this , why not change the bsearch's "end" to "stop", too ? It will be 
+> more readable.
 
-On Mon, Apr 18, 2011 at 9:47 PM, Jon Povey <Jon.Povey@racelogic.co.uk> wrote:
-> Ben Gardiner wrote:
->
->>>> When creating this series I noticed that there are obvious
->>>> similarities between the existing recovery routine implemented by
->>>> Philby John and John Povey
->
->> I'm not sure how the 20us in the existing method was derived -- I
->> wonder if Philby John or John Povey could comment?
->
-> I've been a little bemused about why I am getting credited for I2C
-> bus recovery work. I don't remember doing any work on that.
+I'm confused.  bsearch uses a count, not an end pointer...
 
-My mistake -- sorry. Also sorry for getting your name wrong repeatedly.
-
-> I did a couple of patches to fix a race when setting up a TX, but
-> those are, afaik, unrelated.
-
-In "i2c-davinci: Fix race when setting up for TX" and "i2c-davinci:
-Fix TX setup for more SoCs" you mention testing on DM355 -- is there
-any you have hardware on which the recovery procedure is executed on
-occasion and that you would be available to test modifications to the
-current implementation?
-
-> All I know about the bus recovery stuff is looking at it a while back
-> and thinking hmm, that seems to wiggle gpio without changing the
-> pinmuxing, so it can't possibly work.
-
-:) Probably not then.
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+Rusty.
