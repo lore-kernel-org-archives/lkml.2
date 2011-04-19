@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab1DSUTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:19:35 -0400
-Received: from kroah.org ([198.145.64.141]:35735 "EHLO coco.kroah.org"
+	id S1755115Ab1DSURt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:49 -0400
+Received: from kroah.org ([198.145.64.141]:35746 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab1DSURo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
-Message-Id: <20110419201049.821823047@clark.kroah.org>
+	id S1754954Ab1DSURq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:50 2011
+Message-Id: <20110419201050.036629672@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:11 -0700
+Date: Tue, 19 Apr 2011 13:09:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [62/70] USB: EHCI: unlink unused QHs when the controller is stopped
+        Dmitry Torokhov <dtor@vmware.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [64/70] USB: xhci - fix unsafe macro definitions
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,76 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Dmitry Torokhov <dtor@vmware.com>
 
-commit 94ae4976e253757e9b03a44d27d41b20f1829d80 upstream.
+commit 5a6c2f3ff039154872ce597952f8b8900ea0d732 upstream.
 
-This patch (as1458) fixes a problem affecting ultra-reliable systems:
-When hardware failover of an EHCI controller occurs, the data
-structures do not get released correctly.  This is because the routine
-responsible for removing unused QHs from the async schedule assumes
-the controller is running properly (the frame counter is used in
-determining how long the QH has been idle) -- but when a failover
-causes the controller to be electronically disconnected from the PCI
-bus, obviously it stops running.
+Macro arguments used in expressions need to be enclosed in parenthesis
+to avoid unpleasant surprises.
 
-The solution is simple: Allow scan_async() to remove a QH from the
-async schedule if it has been idle for long enough _or_ if the
-controller is stopped.
+This should be queued for kernels back to 2.6.31
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-Tested-by: Dan Duval <dan.duval@stratus.com>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -1245,24 +1245,27 @@ static void start_unlink_async (struct e
- 
- static void scan_async (struct ehci_hcd *ehci)
- {
-+	bool			stopped;
- 	struct ehci_qh		*qh;
- 	enum ehci_timer_action	action = TIMER_IO_WATCHDOG;
- 
- 	ehci->stamp = ehci_readl(ehci, &ehci->regs->frame_index);
- 	timer_action_done (ehci, TIMER_ASYNC_SHRINK);
- rescan:
-+	stopped = !HC_IS_RUNNING(ehci_to_hcd(ehci)->state);
- 	qh = ehci->async->qh_next.qh;
- 	if (likely (qh != NULL)) {
- 		do {
- 			/* clean any finished work for this qh */
--			if (!list_empty (&qh->qtd_list)
--					&& qh->stamp != ehci->stamp) {
-+			if (!list_empty(&qh->qtd_list) && (stopped ||
-+					qh->stamp != ehci->stamp)) {
- 				int temp;
- 
- 				/* unlinks could happen here; completion
- 				 * reporting drops the lock.  rescan using
- 				 * the latest schedule, but don't rescan
--				 * qhs we already finished (no looping).
-+				 * qhs we already finished (no looping)
-+				 * unless the controller is stopped.
- 				 */
- 				qh = qh_get (qh);
- 				qh->stamp = ehci->stamp;
-@@ -1283,9 +1286,9 @@ rescan:
- 			 */
- 			if (list_empty(&qh->qtd_list)
- 					&& qh->qh_state == QH_STATE_LINKED) {
--				if (!ehci->reclaim
--					&& ((ehci->stamp - qh->stamp) & 0x1fff)
--						>= (EHCI_SHRINK_FRAMES * 8))
-+				if (!ehci->reclaim && (stopped ||
-+					((ehci->stamp - qh->stamp) & 0x1fff)
-+						>= EHCI_SHRINK_FRAMES * 8))
- 					start_unlink_async(ehci, qh);
- 				else
- 					action = TIMER_ASYNC_SHRINK;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -232,7 +232,7 @@ struct xhci_op_regs {
+  * notification type that matches a bit set in this bit field.
+  */
+ #define	DEV_NOTE_MASK		(0xffff)
+-#define ENABLE_DEV_NOTE(x)	(1 << x)
++#define ENABLE_DEV_NOTE(x)	(1 << (x))
+ /* Most of the device notification types should only be used for debug.
+  * SW does need to pay attention to function wake notifications.
+  */
+@@ -601,11 +601,11 @@ struct xhci_ep_ctx {
+ #define EP_STATE_STOPPED	3
+ #define EP_STATE_ERROR		4
+ /* Mult - Max number of burtst within an interval, in EP companion desc. */
+-#define EP_MULT(p)		((p & 0x3) << 8)
++#define EP_MULT(p)		(((p) & 0x3) << 8)
+ /* bits 10:14 are Max Primary Streams */
+ /* bit 15 is Linear Stream Array */
+ /* Interval - period between requests to an endpoint - 125u increments. */
+-#define EP_INTERVAL(p)		((p & 0xff) << 16)
++#define EP_INTERVAL(p)		(((p) & 0xff) << 16)
+ #define EP_INTERVAL_TO_UFRAMES(p)		(1 << (((p) >> 16) & 0xff))
+ #define EP_MAXPSTREAMS_MASK	(0x1f << 10)
+ #define EP_MAXPSTREAMS(p)	(((p) << 10) & EP_MAXPSTREAMS_MASK)
 
 
