@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab1DSATp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 20:19:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38117 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab1DSATn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 20:19:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 3/3] mm: convert mm->cpu_vm_cpumask into cpumask_var_t
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110418211950.9365.A69D9226@jp.fujitsu.com>
-References: <20110418211455.9359.A69D9226@jp.fujitsu.com> <20110418211950.9365.A69D9226@jp.fujitsu.com>
-Message-Id: <20110419091947.936D.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 19 Apr 2011 09:19:37 +0900 (JST)
+	id S1753111Ab1DSAcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 20:32:07 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:46740 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751662Ab1DSAcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 20:32:06 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>, linux-arm-kernel@lists.infradead.org,
+        amit.goel@st.com, armando.visconti@st.com, shiraz.hashim@st.com,
+        linux-serial@vger.kernel.org, viresh.linux@gmail.com,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] dmaengine: implement pause and resume for dw_dmac
+Date: Tue, 19 Apr 2011 02:31:32 +0200
+Message-Id: <1303173092-21785-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  Documentation/cachetlb.txt |    2 +-
->  include/linux/mm_types.h   |    9 ++++++---
->  include/linux/sched.h      |    1 +
->  init/main.c                |    2 ++
->  kernel/fork.c              |   37 ++++++++++++++++++++++++++++++++++---
->  mm/init-mm.c               |    1 -
->  6 files changed, 44 insertions(+), 8 deletions(-)
-> 
-> This patch don't touch x86/kerrnel/tboot.c. because it can't be compiled.
+It seems that the SPEAr needs this.
 
-My bad. I confounded CONFIG_HAVE_INTEL_TXT with CONFIG_INTEL_TXT. Proper
-fixing (and incremental) patch is here.
-
-
-
->From 0b443d8dbdf7ce97f92e6622840585ca41abca83 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 19 Apr 2011 08:38:01 +0900
-Subject: [PATCH 4/4] fix tboot
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/x86/kernel/tboot.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c      |   22 ++++++++++++++++++++--
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index 998e972..0f0d1a3 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -110,7 +110,6 @@ static struct mm_struct tboot_mm = {
- 	.mmap_sem       = __RWSEM_INITIALIZER(init_mm.mmap_sem),
- 	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
- 	.mmlist         = LIST_HEAD_INIT(init_mm.mmlist),
--	.cpu_vm_mask    = CPU_MASK_ALL,
- };
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 9c25c7d..60ac779 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -801,8 +801,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	struct dw_desc		*desc, *_desc;
+ 	LIST_HEAD(list);
  
- static inline void switch_to_tboot_pt(void)
-@@ -337,9 +336,18 @@ static struct notifier_block tboot_cpu_notifier __cpuinitdata =
+-	/* Only supports DMA_TERMINATE_ALL */
+-	if (cmd != DMA_TERMINATE_ALL)
++	if (cmd != DMA_TERMINATE_ALL && cmd != DMA_PAUSE && cmd != DMA_RESUME)
+ 		return -ENXIO;
  
- static __init int tboot_late_init(void)
- {
-+	int ret;
-+
- 	if (!tboot_enabled())
- 		return 0;
+ 	/*
+@@ -813,11 +812,30 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	 */
+ 	spin_lock_bh(&dwc->lock);
  
-+	ret = mm_init_cpumask(&tboot_mm, 0);
-+	if (ret) {
-+		pr_warning("tboot: Allocation failure, disable tboot.\n");
-+		tboot = NULL;
-+		return ret;
++	if (cmd == DMA_RESUME) {
++		if (dwc->paused) {
++			channel_set_bit(dw, CH_EN, dwc->mask);
++			while (!dma_readl(dw, CH_EN) & dwc->mask)
++				cpu_relax();
++		}
++		spin_unlock_bh(&dwc->lock);
++		return 0;
 +	}
 +
- 	tboot_create_trampoline();
+ 	channel_clear_bit(dw, CH_EN, dwc->mask);
  
- 	atomic_set(&ap_wfs_count, 0);
+ 	while (dma_readl(dw, CH_EN) & dwc->mask)
+ 		cpu_relax();
+ 
++	if (cmd == DMA_PAUSE) {
++		dwc->paused = true;
++		spin_unlock_bh(&dwc->lock);
++		return 0;
++	}
++
++	/* Terminating a paused transfer */
++	dwc->paused = false;
++
+ 	/* active_list entries will end up before queued entries */
+ 	list_splice_init(&dwc->queue, &list);
+ 	list_splice_init(&dwc->active_list, &list);
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 720f821..c968597 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -138,6 +138,7 @@ struct dw_dma_chan {
+ 	void __iomem		*ch_regs;
+ 	u8			mask;
+ 	u8			priority;
++	bool			paused;
+ 
+ 	spinlock_t		lock;
+ 
 -- 
-1.7.3.1
-
-
-
+1.7.4
 
