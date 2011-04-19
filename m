@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1DSVEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:23 -0400
-Received: from kroah.org ([198.145.64.141]:39356 "EHLO coco.kroah.org"
+	id S1755816Ab1DSVIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:08:30 -0400
+Received: from kroah.org ([198.145.64.141]:39385 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491Ab1DSVEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:20 -0400
+	id S1755530Ab1DSVEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:23 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:23 2011
-Message-Id: <20110419210323.123191265@clark.kroah.org>
+Message-Id: <20110419210323.555255148@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:24 -0700
+Date: Tue, 19 Apr 2011 14:02:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Liu <lliubbo@gmail.com>, Hugh Dickins <hughd@google.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [08/26] ramfs: fix memleak on no-mmu arch
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [12/26] x86, cpu: AMD errata checking framework
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +26,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Liu <lliubbo@gmail.com>
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 
-commit b836aec53e2bce71de1d5415313380688c851477 upstream.
+commit d78d671db478eb8b14c78501c0cee1cc7baf6967 upstream.
 
-On no-mmu arch, there is a memleak during shmem test.  The cause of this
-memleak is ramfs_nommu_expand_for_mapping() added page refcount to 2
-which makes iput() can't free that pages.
+Errata are defined using the AMD_LEGACY_ERRATUM() or AMD_OSVW_ERRATUM()
+macros. The latter is intended for newer errata that have an OSVW id
+assigned, which it takes as first argument. Both take a variable number
+of family-specific model-stepping ranges created by AMD_MODEL_RANGE().
 
-The simple test file is like this:
+Iff an erratum has an OSVW id, OSVW is available on the CPU, and the
+OSVW id is known to the hardware, it is used to determine whether an
+erratum is present. Otherwise, the model-stepping ranges are matched
+against the current CPU to find out whether the erratum applies.
 
-  int main(void)
-  {
-	int i;
-	key_t k = ftok("/etc", 42);
+For certain special errata, the code using this framework might have to
+conduct further checks to make sure an erratum is really (not) present.
 
-	for ( i=0; i<100; ++i) {
-		int id = shmget(k, 10000, 0644|IPC_CREAT);
-		if (id == -1) {
-			printf("shmget error\n");
-		}
-		if(shmctl(id, IPC_RMID, NULL ) == -1) {
-			printf("shm  rm error\n");
-			return -1;
-		}
-	}
-	printf("run ok...\n");
-	return 0;
-  }
-
-And the result:
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        17912        42408            0            0
-  -/+ buffers:              17912        42408
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        19096        41224            0            0
-  -/+ buffers:              19096        41224
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        20296        40024            0            0
-  -/+ buffers:              20296        40024
-  ...
-
-After this patch the test result is:(no memleak anymore)
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+LKML-Reference: <1280336972-865982-1-git-send-email-hans.rosenfeld@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ramfs/file-nommu.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/include/asm/processor.h |   18 +++++++++++
+ arch/x86/kernel/cpu/amd.c        |   60 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+)
 
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -111,6 +111,7 @@ int ramfs_nommu_expand_for_mapping(struc
- 		SetPageDirty(page);
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -1031,4 +1031,22 @@ unsigned long calc_aperfmperf_ratio(stru
+ 	return ratio;
+ }
  
- 		unlock_page(page);
-+		put_page(page);
- 	}
++/*
++ * AMD errata checking
++ */
++#ifdef CONFIG_CPU_SUP_AMD
++extern bool cpu_has_amd_erratum(const int *);
++
++#define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
++#define AMD_OSVW_ERRATUM(osvw_id, ...)	{ osvw_id, __VA_ARGS__, 0 }
++#define AMD_MODEL_RANGE(f, m_start, s_start, m_end, s_end) \
++	((f << 24) | (m_start << 16) | (s_start << 12) | (m_end << 4) | (s_end))
++#define AMD_MODEL_RANGE_FAMILY(range)	(((range) >> 24) & 0xff)
++#define AMD_MODEL_RANGE_START(range)	(((range) >> 12) & 0xfff)
++#define AMD_MODEL_RANGE_END(range)	((range) & 0xfff)
++
++#else
++#define cpu_has_amd_erratum(x)	(false)
++#endif /* CONFIG_CPU_SUP_AMD */
++
+ #endif /* _ASM_X86_PROCESSOR_H */
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -612,3 +612,63 @@ static const struct cpu_dev __cpuinitcon
+ };
  
- 	return 0;
+ cpu_dev_register(amd_cpu_dev);
++
++/*
++ * AMD errata checking
++ *
++ * Errata are defined as arrays of ints using the AMD_LEGACY_ERRATUM() or
++ * AMD_OSVW_ERRATUM() macros. The latter is intended for newer errata that
++ * have an OSVW id assigned, which it takes as first argument. Both take a
++ * variable number of family-specific model-stepping ranges created by
++ * AMD_MODEL_RANGE(). Each erratum also has to be declared as extern const
++ * int[] in arch/x86/include/asm/processor.h.
++ *
++ * Example:
++ *
++ * const int amd_erratum_319[] =
++ *	AMD_LEGACY_ERRATUM(AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0x4, 0x2),
++ *			   AMD_MODEL_RANGE(0x10, 0x8, 0x0, 0x8, 0x0),
++ *			   AMD_MODEL_RANGE(0x10, 0x9, 0x0, 0x9, 0x0));
++ */
++
++bool cpu_has_amd_erratum(const int *erratum)
++{
++	struct cpuinfo_x86 *cpu = &current_cpu_data;
++	int osvw_id = *erratum++;
++	u32 range;
++	u32 ms;
++
++	/*
++	 * If called early enough that current_cpu_data hasn't been initialized
++	 * yet, fall back to boot_cpu_data.
++	 */
++	if (cpu->x86 == 0)
++		cpu = &boot_cpu_data;
++
++	if (cpu->x86_vendor != X86_VENDOR_AMD)
++		return false;
++
++	if (osvw_id >= 0 && osvw_id < 65536 &&
++	    cpu_has(cpu, X86_FEATURE_OSVW)) {
++		u64 osvw_len;
++
++		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, osvw_len);
++		if (osvw_id < osvw_len) {
++			u64 osvw_bits;
++
++			rdmsrl(MSR_AMD64_OSVW_STATUS + (osvw_id >> 6),
++			    osvw_bits);
++			return osvw_bits & (1ULL << (osvw_id & 0x3f));
++		}
++	}
++
++	/* OSVW unavailable or ID unknown, match family-model-stepping range */
++	ms = (cpu->x86_model << 8) | cpu->x86_mask;
++	while ((range = *erratum++))
++		if ((cpu->x86 == AMD_MODEL_RANGE_FAMILY(range)) &&
++		    (ms >= AMD_MODEL_RANGE_START(range)) &&
++		    (ms <= AMD_MODEL_RANGE_END(range)))
++			return true;
++
++	return false;
++}
 
 
