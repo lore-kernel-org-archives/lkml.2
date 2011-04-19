@@ -1,29 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab1DSHBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:01:35 -0400
-Received: from linux-sh.org ([111.68.239.195]:60026 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab1DSHBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:01:34 -0400
-Date: Tue, 19 Apr 2011 16:01:14 +0900
-From: Paul Mundt <lethal@linux-sh.org>
+	id S1753605Ab1DSHDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:03:39 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:39557 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752217Ab1DSHDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 03:03:36 -0400
+Subject: Re: linux-next: manual merge of the omap_dss2 tree with the
+ fbdev-current tree
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Archit Taneja <archit@ti.com>
-Subject: Re: linux-next: manual merge of the omap_dss2 tree with the fbdev-current tree
-Message-ID: <20110419070114.GA7582@linux-sh.org>
-References: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Archit Taneja <archit@ti.com>, Paul Mundt <lethal@linux-sh.org>
 In-Reply-To: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.4.1i
+References: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 10:03:30 +0300
+Message-ID: <1303196610.2141.14.camel@deskari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 01:27:20PM +1000, Stephen Rothwell wrote:
+Hi Stephen,
+
+On Tue, 2011-04-19 at 13:27 +1000, Stephen Rothwell wrote:
 > Hi Tomi,
 > 
 > Today's linux-next merge of the omap_dss2 tree got a conflict in
@@ -35,4 +39,10 @@ On Tue, Apr 19, 2011 at 01:27:20PM +1000, Stephen Rothwell wrote:
 > 
 > I fixed it up (see below) and can carry the fix as necessary.
 
-Hmm, both changes came from the omap_dss2 tree, I wonder what's going on?
+This was actually my mistake, sorry. I had wrong commits in my for-next
+branch. I've update it to latest correct stuff, and the problem should
+disappear.
+
+ Tomi
+
+
