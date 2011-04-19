@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab1DSKjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 06:39:37 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.186]:49622
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754299Ab1DSKjf (ORCPT
+	id S1754721Ab1DSKvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 06:51:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37174 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab1DSKvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 06:39:35 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2cK1432N98dKzz1202hzz8275bhz32i668h839h64h)
-X-Spam-TCS-SCL: 3:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJWAXT-01-3J4-02
-X-M-MSG: 
-Date: Tue, 19 Apr 2011 12:39:27 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] perf, x86: Use ALTERNATIVE() to check for
- X86_FEATURE_PERFCTR_CORE
-Message-ID: <20110419103927.GV31407@erda.amd.com>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
- <1302913676-14352-4-git-send-email-robert.richter@amd.com>
- <m27har9vnq.fsf@firstfloor.org>
+	Tue, 19 Apr 2011 06:51:10 -0400
+Date: Tue, 19 Apr 2011 11:51:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Haojian Zhuang <hzhuang1@marvell.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
+        "cbou@mail.ru" <cbou@mail.ru>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 13/14] regulator: check name in initialization of
+	max8925
+Message-ID: <20110419105103.GF9462@sirena.org.uk>
+References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com> <20110418142855.GE2466@opensource.wolfsonmicro.com> <BANLkTim1QHe-hpyt0yQxKt2SBwtOAPQ3Bg@mail.gmail.com> <20110418160424.GG1765@opensource.wolfsonmicro.com> <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com> <20110419080919.GC16357@opensource.wolfsonmicro.com> <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B4CC@SC-VEXCH1.marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m27har9vnq.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B4CC@SC-VEXCH1.marvell.com>
+X-Cookie: APL hackers do it in the quad.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.04.11 16:00:57, Andi Kleen wrote:
-> Robert Richter <robert.richter@amd.com> writes:
-> 
-> > Using ALTERNATIVE() when checking for X86_FEATURE_PERFCTR_CORE avoids
-> > an extra pointer chase and data cache hit.
-> 
-> Is that really a performance critical path?
-> 
-> Seems more like unnecessary obfuscation to me.
+On Tue, Apr 19, 2011 at 01:28:23AM -0700, Haojian Zhuang wrote:
 
-We hotest path is in perf_pmu_disable(), which happens at least with
-every task switch when calling the event scheduler.
+> >> 	There's issue in max8925_core.c since we can't assume regulator[0]
+> >always declared in machine driver.
 
--Robert
+> >What is the issue?  It's trivial to skip the regulator if the data is
+> >null.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+> It skiped all regulators if regulator[0] isn't decleared.
+> 	(pdata == NULL) || (pdata->regulator[0] == NULL)
 
+> So it's a bug.
+
+Surely the obvious fix is to fix the issue and not skip all the
+regulators if an individual regulator has no data?
