@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab1DSV21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:28:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36589 "EHLO ogre.sisk.pl"
+	id S1755975Ab1DSVdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:33:43 -0400
+Received: from fieldses.org ([174.143.236.118]:48581 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771Ab1DSV2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:28:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
-Date: Tue, 19 Apr 2011 23:28:52 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <201104150053.37037.rjw@sisk.pl> <20110415145457.GA27650@eazy.amigager.de> <20110419202212.GA15438@mac.home>
-In-Reply-To: <20110419202212.GA15438@mac.home>
+	id S1753701Ab1DSVdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:33:42 -0400
+Date: Tue, 19 Apr 2011 17:33:31 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [105/105] nfsd4: fix oops on lock failure
+Message-ID: <20110419213331.GA9998@fieldses.org>
+References: <87pqokx6lr.fsf@devron.myhome.or.jp>
+ <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
+ <20110418153236.GC20935@pad.home.fieldses.org>
+ <87ipubwnj3.fsf@devron.myhome.or.jp>
+ <8762qbwnf1.fsf@devron.myhome.or.jp>
+ <87zknnv7id.fsf@devron.myhome.or.jp>
+ <87vcybgt6u.fsf@devron.myhome.or.jp>
+ <87hb9uhcre.fsf@devron.myhome.or.jp>
+ <20110419204349.GB8228@fieldses.org>
+ <87aafmgcvk.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104192328.52652.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87aafmgcvk.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 19, 2011, Tino Keitel wrote:
-> Hi,
+On Wed, Apr 20, 2011 at 06:17:03AM +0900, OGAWA Hirofumi wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
 > 
-> I reverted some wakeup and ACPI related commits. When I reverted commit
-> 7fa69baf29de8c77a6b32c054df2abb8f11f8aa4, wakeup using the keyboard
-> worked again and /proc/acpi/wakeup behaved as expected.
-
-Oh, I doubt that this particular one is the problem.
-
-> So check this, I reverted the following commits to avoid conflicts and
-> build failures:
+> > On Tue, Apr 19, 2011 at 05:21:57PM +0900, OGAWA Hirofumi wrote:
+> >> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+> >> 
+> >> >> I'll start test of this patch, and see what happens.
+> >> >
+> >> > OK. Although filp slabs are still slightly increasing (I'm not sure yet
+> >> > whether this is leak of filp on system). But watching before/after
+> >> > patch, the graph of filp slabs is clearly different.
+> >> >
+> >> > As far as I can say patches are fine.
+> >> 
+> >> slightly increasing was stopped at 2200-2300. filp leak seems to be fixed.
+> >
+> > Another thing to check is whether you can always unmount the exported
+> > filesystem on the server after running your test.  So something like:
+> >
+> > 	service nfs stop
+> > 	unmount /exports/fs
+> >
+> > should always succeed; if you get an inexplicable EBUSY on the final
+> > unmount then we likely still have a leak someplace.
 > 
-> c19f9a84ec807da57fd75bbd9a3f2b8269611f79
-> 5190726765b40774c069e187a958e10ccd970e65
-> 2a5d24286e8bdafdc272b37ec5bdd9e977b3767c
-> f2b56bc808addb908a5bf435d9b942c02af9a7c4
-> 7fa69baf29de8c77a6b32c054df2abb8f11f8aa4
+> It succeeded.
 
-OK, thanks for narrowing this down, I'll have a look at it shortly.
-
-Rafael
+Good, thanks.--b.
