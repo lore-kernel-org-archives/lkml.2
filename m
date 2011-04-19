@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1DSIJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:09:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48009 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751490Ab1DSIJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:09:10 -0400
-Date: Tue, 19 Apr 2011 09:09:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <hzhuang1@marvell.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
-        "cbou@mail.ru" <cbou@mail.ru>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 13/14] regulator: check name in initialization of max8925
-Message-ID: <20110419080919.GC16357@opensource.wolfsonmicro.com>
-References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
- <20110418142855.GE2466@opensource.wolfsonmicro.com>
- <BANLkTim1QHe-hpyt0yQxKt2SBwtOAPQ3Bg@mail.gmail.com>
- <20110418160424.GG1765@opensource.wolfsonmicro.com>
- <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753493Ab1DSILG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:11:06 -0400
+Received: from lo.gmane.org ([80.91.229.12]:51604 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753318Ab1DSILD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 04:11:03 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Frank Kingswood <frank@kingswood-consulting.co.uk>
+Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
+Date: Tue, 19 Apr 2011 09:10:38 +0100
+Message-ID: <4DAD437E.6090302@kingswood-consulting.co.uk>
+References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
+X-Gmane-NNTP-Posting-Host: 193.122.140.26
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+In-Reply-To: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 07:42:09PM -0700, Haojian Zhuang wrote:
-> 	Machine driver:
-> 		Platform data:
-> 			.regulator[0]	= xxx
-> 			.regulator[1]	= xxx
+On 18/04/11 20:32, Andrew Lutomirski wrote:
+> Hi all-
+>
+> I'd appreciate some help testing rdtsc's ordering wrt memory on
+> various hardware.  You can download evil-clock-test code at:
+>
+> https://gitorious.org/linux-test-utils/linux-clock-tests/blobs/raw/master/evil-clock-test.cc
 
-> 	The index of regulator array is id of buck and ldo.
-> 	There's issue in max8925_core.c since we can't assume regulator[0] always declared in machine driver.
+A low power core2 server:
 
-What is the issue?  It's trivial to skip the regulator if the data is
-null.
+CPU vendor   : GenuineIntel
+CPU model    : Intel(R) Core(TM)2 Duo CPU     T8100  @ 2.10GHz
+CPU stepping : 6
+TSC flags    : tsc constant_tsc
+Using lfence_rdtsc because you have an Intel CPU
+Will test the "lfence;rdtsc" clock.
+Now test passed  : margin 84 with 39213496 samples
+Load3 test passed: margin 20947164 with 15 samples
+Load test passed : margin 52 with 12466437 samples
+Store test failed as expected: worst error 1397 with 11151528 samples
+
+That margin number seemed a bit high, rerunning gives:
+
+CPU vendor   : GenuineIntel
+CPU model    : Intel(R) Core(TM)2 Duo CPU     T8100  @ 2.10GHz
+CPU stepping : 6
+TSC flags    : tsc constant_tsc
+Using lfence_rdtsc because you have an Intel CPU
+Will test the "lfence;rdtsc" clock.
+Now test passed  : margin 84 with 39201440 samples
+Load3 test passed: margin 7991 with 15 samples
+Load test passed : margin 52 with 12482714 samples
+Store test failed as expected: worst error 2457 with 11129294 samples
+
+Frank
+
