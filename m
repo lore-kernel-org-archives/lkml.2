@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab1DSUWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:22:46 -0400
-Received: from kroah.org ([198.145.64.141]:35658 "EHLO coco.kroah.org"
+	id S1754869Ab1DSURb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:31 -0400
+Received: from kroah.org ([198.145.64.141]:35569 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754772Ab1DSURc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.383674360@clark.kroah.org>
+	id S1754772Ab1DSURZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:25 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:47 2011
+Message-Id: <20110419201047.666094453@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:58 -0700
+Date: Tue, 19 Apr 2011 13:08:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [49/70] brk: COMPAT_BRK: fix detection of randomized brk
+        Joerg Roedel <joerg.roedel@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [42/70] x86, amd: Disable GartTlbWlkErr when BIOS forgets it
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,87 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 4471a675dfc7ca676c165079e91c712b09dc9ce4 upstream.
+commit 5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e upstream.
 
-5520e89 ("brk: fix min_brk lower bound computation for COMPAT_BRK")
-tried to get the whole logic of brk randomization for legacy
-(libc5-based) applications finally right.
+This patch disables GartTlbWlk errors on AMD Fam10h CPUs if
+the BIOS forgets to do is (or is just too old). Letting
+these errors enabled can cause a sync-flood on the CPU
+causing a reboot.
 
-It turns out that the way to detect whether brk has actually been
-randomized in the end or not introduced by that patch still doesn't work
-for those binaries, as reported by Geert:
+The AMD BKDG recommends disabling GART TLB Wlk Error completely.
 
-: /sbin/init from my old m68k ramdisk exists prematurely.
-:
-: Before the patch:
-:
-: | brk(0x80005c8e)                         = 0x80006000
-:
-: After the patch:
-:
-: | brk(0x80005c8e)                         = 0x80005c8e
-:
-: Old libc5 considers brk() to have failed if the return value is not
-: identical to the requested value.
+This patch is the fix for
 
-I don't like it, but currently see no better option than a bit flag in
-task_struct to catch the CONFIG_COMPAT_BRK && randomize_va_space == 2
-case.
+	https://bugzilla.kernel.org/show_bug.cgi?id=33012
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+on my machine.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Link: http://lkml.kernel.org/r/20110415131152.GJ18463@8bytes.org
+Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/binfmt_elf.c       |    6 +++++-
- include/linux/sched.h |    3 +++
- mm/mmap.c             |    2 +-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/msr-index.h |    4 ++++
+ arch/x86/kernel/cpu/amd.c        |   19 +++++++++++++++++++
+ 2 files changed, 23 insertions(+)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -941,9 +941,13 @@ static int load_elf_binary(struct linux_
- 	current->mm->start_stack = bprm->p;
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -92,11 +92,15 @@
+ #define MSR_IA32_MC0_ADDR		0x00000402
+ #define MSR_IA32_MC0_MISC		0x00000403
  
- #ifdef arch_randomize_brk
--	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1))
-+	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
- 		current->mm->brk = current->mm->start_brk =
- 			arch_randomize_brk(current->mm);
-+#ifdef CONFIG_COMPAT_BRK
-+		current->brk_randomized = 1;
-+#endif
++#define MSR_AMD64_MC0_MASK		0xc0010044
++
+ #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
+ #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
+ #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
+ #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
+ 
++#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
++
+ /* These are consecutive and not in the normal 4er MCE bank block */
+ #define MSR_IA32_MC0_CTL2		0x00000280
+ #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -598,6 +598,25 @@ static void __cpuinit init_amd(struct cp
+ 	/* As a rule processors have APIC timer running in deep C states */
+ 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
++
++	/*
++	 * Disable GART TLB Walk Errors on Fam10h. We do this here
++	 * because this is always needed when GART is enabled, even in a
++	 * kernel which has no MCE support built in.
++	 */
++	if (c->x86 == 0x10) {
++		/*
++		 * BIOS should disable GartTlbWlk Errors themself. If
++		 * it doesn't do it here as suggested by the BKDG.
++		 *
++		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
++		 */
++		u64 mask;
++
++		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
++		mask |= (1 << 10);
++		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
 +	}
- #endif
+ }
  
- 	if (current->personality & MMAP_PAGE_ZERO) {
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1254,6 +1254,9 @@ struct task_struct {
- #endif
- 
- 	struct mm_struct *mm, *active_mm;
-+#ifdef CONFIG_COMPAT_BRK
-+	unsigned brk_randomized:1;
-+#endif
- #if defined(SPLIT_RSS_COUNTING)
- 	struct task_rss_stat	rss_stat;
- #endif
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -259,7 +259,7 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
- 	 * randomize_va_space to 2, which will still cause mm->start_brk
- 	 * to be arbitrarily shifted
- 	 */
--	if (mm->start_brk > PAGE_ALIGN(mm->end_data))
-+	if (current->brk_randomized)
- 		min_brk = mm->start_brk;
- 	else
- 		min_brk = mm->end_data;
+ #ifdef CONFIG_X86_32
 
 
