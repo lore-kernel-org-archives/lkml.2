@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1DSInl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:43:41 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36694 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753318Ab1DSInk (ORCPT
+	id S1754054Ab1DSIoC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:44:02 -0400
+Received: from ausc60pc101.us.dell.com ([143.166.85.206]:63477 "EHLO
+	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab1DSIn7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:43:40 -0400
-Date: Tue, 19 Apr 2011 09:44:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] Implement /dev/byte (a generic byte source similiar
- to /dev/zero)
-Message-ID: <20110419094436.0b667410@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DAD48FC.5040003@ahsoftware.de>
-References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>
-	<BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>
-	<4DAD48FC.5040003@ahsoftware.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Apr 2011 04:43:59 -0400
+X-Loopcount0: from 10.175.216.251
+From: <Narendra_K@Dell.com>
+To: <mingo@elte.hu>
+CC: <viro@zeniv.linux.org.uk>, <jbarnes@virtuousgeek.org>, <mjg@redhat.com>,
+        <sfr@canb.auug.org.au>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <Shyam_Iyer@Dell.com>,
+        <Matt_Domsch@Dell.com>, <Charles_Rose@Dell.com>,
+        <Jordan_Hargrave@Dell.com>
+Date: Tue, 19 Apr 2011 01:43:53 -0700
+Subject: RE: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Index: Acv+WADOASDkhDDqSBaf8InHTEVvdgAFLQMw
+Message-ID: <E31FB011129F30488D5861F3839049151DA2EC035A@BLRX7MCDC201.AMER.DELL.COM>
+References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
+ <20110419060641.GA26624@elte.hu>
+In-Reply-To: <20110419060641.GA26624@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As for /dev/zero there are many other possible reasons to use such a 
-> device, besides filling something with a value. For me it's as 
-> reasonable as dev/zero, just that it offers a bit more flexibility and 
-> provides another, at least for me useful, default value. Maybe 
-> /dev/nzero would have been a good name too. ;)
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo@elte.hu]
+> Sent: Tuesday, April 19, 2011 11:37 AM
+> To: K, Narendra
+> Cc: viro@zeniv.linux.org.uk; jbarnes@virtuousgeek.org; mjg@redhat.com;
+> sfr@canb.auug.org.au; linux-kernel@vger.kernel.org; linux-
+> next@vger.kernel.org; Iyer, Shyam; Domsch, Matt; Rose, Charles; Hargrave,
+> Jordan
+> Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+> allmodconfig
+> 
+> 
+> * Narendra_K@Dell.com <Narendra_K@Dell.com> wrote:
+> 
+> > This patch fixes the following build breakage introduced by the patch
+> > '[PATCH V3] Export ACPI _DSM provided firmware instance number and
+> > string to sysfs'.
+> >
+> > drivers/built-in.o: In function `T.647':
+> > pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+> 
+> btw., this build bug still triggers upstream with .39-rc4 - any plans on when
+> this regression will be fixed?
 
-/dev/zero exists not to put \0's into files as such but because it is
-very useful to be able to map the zero page (a read only, or
-copy-on-write blank page) into programs. The mmap is the reason it is
-there.
+Hi,
 
-> But I don't really care about inclusion into the kernel, it's just 
-> something I had lying around (and needed only marginally work to 
-> finalize as a proper patch) and I thought someone else could find it 
-> usefull and I should share that here.
+The commit  8a226e00eeed8db843d4a580013a49ae3559bcd7 in linux-next fixes it (PCI: pci-label: Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig).
+It is not in .39-rc4.
 
-Implementationwise I think I would have gone for allocating a new device
-and range of 256 minors - that would avoid the funky stuff setting what
-it fills with as you'd just fill with the minor number.
+With regards,
+Narendra K
 
-Alan
