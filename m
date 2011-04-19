@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1DSUrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:47:00 -0400
-Received: from kroah.org ([198.145.64.141]:58975 "EHLO coco.kroah.org"
+	id S1755473Ab1DSUrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:47:22 -0400
+Received: from kroah.org ([198.145.64.141]:58970 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754653Ab1DSUmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:44 -0400
+	id S1754254Ab1DSUmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:43 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
-Message-Id: <20110419204118.397606140@clark.kroah.org>
+Message-Id: <20110419204118.289404460@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:54 -0700
+Date: Tue, 19 Apr 2011 13:30:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [16/28] USB: ftdi_sio: add PID for OCT DK201 docking station
+        Christian Simon <simon@swine.de>
+Subject: [15/28] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Christian Simon <simon@swine.de>
 
-commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
+commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
 
-Add PID 0x0103 for serial port of the OCT DK201 docking station.
+I added new ProdutIds for two devices from CTI GmbH Leipzig.
 
-Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Christian Simon <simon@swine.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
+ 2 files changed, 11 insertions(+)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -531,6 +531,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
- 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
- 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
-+	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
+@@ -155,6 +155,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
+  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
+  */
+ static struct usb_device_id id_table_combined [] = {
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
 --- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -579,6 +579,7 @@
- /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
- /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
- /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
-+#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
- #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+@@ -1147,3 +1147,12 @@
+ #define QIHARDWARE_VID			0x20B7
+ #define MILKYMISTONE_JTAGSERIAL_PID	0x0713
  
- /*
++/*
++ * CTI GmbH RS485 Converter http://www.cti-lean.com/
++ */
++/* USB-485-Mini*/
++#define FTDI_CTI_MINI_PID	0xF608
++/* USB-Nano-485*/
++#define FTDI_CTI_NANO_PID	0xF60B
++
++
 
 
