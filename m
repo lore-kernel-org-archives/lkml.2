@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1DSXYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:24:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41674 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab1DSXYh (ORCPT
+	id S1752855Ab1DSX0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:26:41 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:35950 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751761Ab1DSX0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:24:37 -0400
-Date: Wed, 20 Apr 2011 00:24:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
-Subject: Re: [PATCH] leds: provide helper to register "leds-gpio" devices
-Message-ID: <20110419232420.GA3673@n2100.arm.linux.org.uk>
-References: <20110405073030.GI13963@pengutronix.de> <1301992655-8514-1-git-send-email-u.kleine-koenig@pengutronix.de> <20110405163338.GA11832@n2100.arm.linux.org.uk> <20110419161913.a1c18599.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419161913.a1c18599.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 19 Apr 2011 19:26:40 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=K2wnc6rEBcb/NbJVWNct590ggajAVtCzhEz+FCT2D2C2O4pJ02espMI6ju9O+3h0/+uRgoGPf4nOFY79cfIK14cHNc9/iWmQu3L60WepFYtPEOhnescUloYfBsZ18FKb;
+Date: Tue, 19 Apr 2011 16:26:37 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: james_p_freyensee@linux.intel.com
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 2/4] Kernel documentation for the PTI feature.
+Message-Id: <20110419162637.cd29a016.rdunlap@xenotime.net>
+In-Reply-To: <1303253889-10074-3-git-send-email-james_p_freyensee@linux.intel.com>
+References: <james_p_freyensee@linux.intel.com>
+	<1303253889-10074-3-git-send-email-james_p_freyensee@linux.intel.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 04:19:13PM -0700, Andrew Morton wrote:
-> On Tue, 5 Apr 2011 17:33:39 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On Tue, 19 Apr 2011 15:58:07 -0700 james_p_freyensee@linux.intel.com wrote:
+
+> From: J Freyensee <james_p_freyensee@linux.intel.com>
 > 
-> > On Tue, Apr 05, 2011 at 10:37:35AM +0200, Uwe Kleine-K__nig wrote:
-> > > +struct platform_device *__init gpio_led_register_device(
-> > > +		const struct gpio_led_platform_data *pdata);
-> > 
-> > Please don't add __init annotations to declarations.
+> This provides Kernel documentation for the PTI
+> feature and setting line discipline drivers
+> on top of tty's for Linux mobile solutions.
 > 
-> Reasons?
+> Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> ---
+>  Documentation/pti/pti_intel_mid.txt |   99 +++++++++++++++++++++++++++++++++++
+>  1 files changed, 99 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/pti/pti_intel_mid.txt
+> 
+> diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
+> new file mode 100644
+> index 0000000..900f6db
+> --- /dev/null
+> +++ b/Documentation/pti/pti_intel_mid.txt
+> @@ -0,0 +1,99 @@
+> +The Intel MID PTI project is HW implemented in Intel Atom
+> +system-on-a-chip designs based on the Parallel Trace
+> +Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
+> +for this platform involves the following files:
+> +
+> +./include/linux/pti.h
+> +./drivers/.../n_tracesink.h
+> +./drivers/.../n_tracerouter.c
+> +./drivers/.../n_tracesink.c
+> +./drivers/.../pti.c
+> +
+> +pti.c is the driver that enables various debugging features
+> +popular on certain mobile manufacturers.
 
-It's noise.
+   popular on devices | platforms | chips | whatever from certain mobile
+   manufacturers.
 
-> A year or so ago we had to *add* an __init to a declaration, because
-> one architecture was generating a short-mode-addressing relative branch
-> to the callee, assuming the target was in the same section as the call
-> site.  When the linker went to resolve the branch, it discovered that
-> the target was in fact in a different section and was too far away to
-> be able to use the short-mode addressing.  IIRC, that architecture was
-> arm.
 
-I'm not aware of ARM ever requiring that.  If it was, we'd have to add
-a heck of a lot of those annotations.  And those annotations don't tell
-the compiler that it might be far away.
-
-We _do_ have a problem if someone decides to include a big ramdisk or
-initramfs image in the discarded section, which is something I have a
-patch kicking around to completely change the vmlinux layout to resolve.
-That's taking something of a low priority at the moment though as we've
-been turned upside down by Linus...
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
