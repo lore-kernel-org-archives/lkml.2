@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1DSJLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:11:04 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43814 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab1DSJLB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:11:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=PQj6NFifKu5NHPBc/0Q1XiS1fPOdckPQILRvsRhNGCga8biHOZHZESwFSyxVwq3c/f
-         o5qjDSNwjNawXnlPZhnUGdjIqA5Qqcjbm+Xz3rfzQhHPfAP79uwAgVg86FekmLC3UAB3
-         Y+s4GUTm8w2bVMJ763BZIobZLUIRTkpQJir1A=
+	id S1754299Ab1DSJNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:13:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53601 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753344Ab1DSJNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:13:32 -0400
+Date: Tue, 19 Apr 2011 11:13:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alan Ott <alan@signal11.us>
+Subject: Re: [PATCH -next] hid-example: fix some build issues
+Message-ID: <20110419091329.GB13661@sepie.suse.cz>
+References: <201104142149.p3ELnnoF008424@imap1.linux-foundation.org>
+ <20110418111251.8a922b6b.randy.dunlap@oracle.com>
+ <alpine.LNX.2.00.1104191047090.12035@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <201104181613.43572.arnd@arndb.de>
-References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com>
-	<201104181358.53521.arnd@arndb.de>
-	<BANLkTimc20N0nh9O0FaSXizW+bYOMx9Ddw@mail.gmail.com>
-	<201104181613.43572.arnd@arndb.de>
-Date: Tue, 19 Apr 2011 18:11:00 +0900
-X-Google-Sender-Auth: WJKKd6wrOZgCsq7dOHKfFd440SI
-Message-ID: <BANLkTi=dpqMFjW_B5-YsmoCJf62b8djj5g@mail.gmail.com>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
-From: Kyungmin Park <kmpark@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Hari Kanigeri <h-kanigeri2@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-kernel@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Ramesh Gupta <grgupta@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1104191047090.12035@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 11:13 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 18 April 2011, Kyungmin Park wrote:
->> On Mon, Apr 18, 2011 at 8:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >
->> > One missing piece is still a way for a platform to provide both
->> > the iommu and the dma-mapping API in a unified driver. Right now,
->> > you have to export both interface for a generic solution.
->>
->> Actually MSM and we (Michal, Marek) tried to merge the generic IOMMU
->> implementation into mm, but MM did't accept it.
->
-> I'm confused. What do you mean with MM?
-linux/mm, Memory Management.
+On Tue, Apr 19, 2011 at 10:48:26AM +0200, Jiri Kosina wrote:
+> 
+> [ adding Michal Marek to CC ]
+> 
+> On Mon, 18 Apr 2011, Randy Dunlap wrote:
+> 
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > samples/hid-example.o needs some Kconfig and Makefile additions
+> > in order to build.  It should use <linux/*.h> headers from
+> > the build tree, so use HEADERS_CHECK to require that those
+> > header files be present.
+> > 
+> > Change the kconfig symbol from tristate to bool since
+> > userspace cannot be built as loadable modules.
+> > 
+> > However, I don't understand why the userspace header files are
+> > not present as reported in Andrew's build log, since it builds
+> > OK on x86_64 without any of these changes.
+> 
+> Yes, I have no idea how the build failure Andrew is reporting happens. 
+> Andrew -- what exact command are you using that leads to that failure?
 
-Thank you,
-Kyungmin Park
->
->> So now it's implemented at each SoCs. I think it's good chance to make
->> a generic IOMMU feature for ARM consolidation.
->>
->> Before this idea, can you review our implementation at above URL?
->
-> I've commented on the main implementation for the IOMMU now.
->
->        Arnd
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+I believe Andrew was trying to build samples/hidraw/hid-example.o
+directly, which unfortunatelly does not work (kbuild limitation). For
+reference, this is the reply I sent privately to Andrew:
+
+| The samples/hidraw/ directory does not appear in the output, I I guess 
+| samples/hidraw/hid-example already existed? Back to the original 
+| problem, I can reproduce the bug with
+| 
+| $ make  samples/hidraw/hid-example.o
+|    CHK     include/linux/version.h
+|    CHK     include/generated/utsrelease.h
+|    CALL    scripts/checksyscalls.sh
+|    CC      samples/hidraw/hid-example.o
+| samples/hidraw/hid-example.c:29:23: fatal error: sys/ioctl.h: No such 
+| file or directory
+| 
+| Because for %.o there is a rule in the toplevel Makefile passes control 
+| to scripts/Makefile.build, while you would need scripts/Makefile.host in 
+| this case. I don't know how to fix this, when Makefile.build is told to 
+| build foo.o, it builds it as kernel code, it doesn't inspect the 
+| hostprogs-y variable to see if perhaps foo.o is in the foodchain of some 
+| host program. However, 'make  samples/hidraw/' works fine for me. So 
+| what command exactly did you use?
+
+Michal
