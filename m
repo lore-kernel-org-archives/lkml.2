@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab1DSRlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:41:06 -0400
-Received: from mail.aknet.ru ([78.158.192.28]:36687 "EHLO mail.aknet.ru"
+	id S1753814Ab1DSRnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:43:19 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:33528 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753663Ab1DSRlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:41:05 -0400
-Message-ID: <4DADC92E.3010409@aknet.ru>
-Date: Tue, 19 Apr 2011 21:41:02 +0400
-From: Stas Sergeev <stsp@aknet.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1752480Ab1DSRnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 13:43:17 -0400
+X-ASG-Debug-ID: 1303234996-03d6a569fbdc5b0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DADC9B3.6030208@fusionio.com>
+Date: Tue, 19 Apr 2011 19:43:15 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
-References: <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <20110419161301.GA23914@redhat.com> <20110419162909.GC23914@redhat.com> <4DADBE31.7000400@aknet.ru> <20110419172036.GA27213@redhat.com>
-In-Reply-To: <20110419172036.GA27213@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
+        David Dillow <dave@thedillows.org>
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera> <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com> <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com> <4DAC2429.5000105@fusionio.com> <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com> <4DAC82E6.3020809@fusionio.com> <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com> <4DAD5156.2050300@fusionio.com> <4DAD6EF2.5070405@fusionio.com> <BANLkTimLOgY1opmAt+rxmYtLa-6adL98wg@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [Bug #32982] Kernel locks up a few minutes after boot
+In-Reply-To: <BANLkTimLOgY1opmAt+rxmYtLa-6adL98wg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1303234996
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61329
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.04.2011 21:20, Oleg Nesterov wrote:
+On 2011-04-19 18:13, Bart Van Assche wrote:
+> The same test with an initiator running 2.6.39-rc4 +
+> git://git.kernel.dk/linux-2.6-block.git for-linus + the above patch
+> yields about 155.000 IOPS on my test setup, or the same performance as
+> with 2.6.38.3. I'm running the above patch through an I/O stress test
+> now.
 
->>> do_signal_parent() must not return DEATH_REAP (this means that
->>> leader->exit_signal becomes -1), but this can happen and this is bug.
->>>
->> Could you please clarify this a bit: according to the comments
->> in signal.c:
->> ---
->>                   * We are exiting and our parent doesn't care.  POSIX.1
->>                   * defines special semantics for setting SIGCHLD to SIG_IGN
->>                   * or setting the SA_NOCLDWAIT flag: we should be reaped
->>                   * automatically and not left for our parent's wait4 call.
->> ---
->> That's how I understand it: if DEATH_REAP is returned, the
->> parent ignores SIGCHILD, and in this case I am not allowing
->> it to read the detach code with wait(). What is the bug?
-> Indeed. But, once again, that is why do_notify_parent() expects the dead
-> tsk! Please note that if it returns DEATH_REAP it sets ->exit_signal = -1.
-> And this is _only_ allowed if the leader is already dead and we are going
-> to reap it.
-Ah, so, by saying "do_signal_parent() must not return DEATH_REAP (this means that
-leader->exit_signal becomes -1)", you actually meant
-"do_signal_parent(), when returning DEATH_REAP, must not
-set ->exit_signal = -1, because only do_notify_parent()
-can do that"? In other words, do_signal_parent() can return
-DEATH_REAP after all?
-If so - will fix, thanks.
+OK, so parity, that's good. With the above patch, I can take a single
+device from ~400K IOPS on 2.6.38 to ~440K IOPS on 2.6.39-rc4+patches.
+
+-- 
+Jens Axboe
 
