@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab1DSVGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:06:42 -0400
-Received: from kroah.org ([198.145.64.141]:39418 "EHLO coco.kroah.org"
+	id S1755584Ab1DSVHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:07:03 -0400
+Received: from kroah.org ([198.145.64.141]:39415 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab1DSVE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:29 -0400
+	id S1755569Ab1DSVE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:24 2011
-Message-Id: <20110419210324.191919601@clark.kroah.org>
+Message-Id: <20110419210324.094665306@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:34 -0700
+Date: Tue, 19 Apr 2011 14:02:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: [18/26] next_pidmap: fix overflow condition
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [17/26] USB: ftdi_sio: add ids for Hameg HO720 and HO730
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +24,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Paul Friedrich <Paul.Friedrich@hameg.com>
 
-commit c78193e9c7bcbf25b8237ad0dec82f805c4ea69b upstream.
+commit c53c2fab40cf16e13af66f40bfd27200cda98d2f upstream.
 
-next_pidmap() just quietly accepted whatever 'last' pid that was passed
-in, which is not all that safe when one of the users is /proc.
+usb serial: ftdi_sio: add two missing USB ID's for Hameg interfaces HO720
+and HO730
 
-Admittedly the proc code should do some sanity checking on the range
-(and that will be the next commit), but that doesn't mean that the
-helper functions should just do that pidmap pointer arithmetic without
-checking the range of its arguments.
-
-So clamp 'last' to PID_MAX_LIMIT.  The fact that we then do "last+1"
-doesn't really matter, the for-loop does check against the end of the
-pidmap array properly (it's only the actual pointer arithmetic overflow
-case we need to worry about, and going one bit beyond isn't going to
-overflow).
-
-[ Use PID_MAX_LIMIT rather than pid_max as per Eric Biederman ]
-
-Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Analyzed-by: Robert Święcki <robert@swiecki.net>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/pid.h |    2 +-
- kernel/pid.c        |    5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/include/linux/pid.h
-+++ b/include/linux/pid.h
-@@ -117,7 +117,7 @@ extern struct pid *find_vpid(int nr);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -789,6 +789,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO720_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO730_PID) },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO870_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_GENERIC_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -280,6 +280,8 @@
+  * Hameg HO820 and HO870 interface (using VID 0x0403)
   */
- extern struct pid *find_get_pid(int nr);
- extern struct pid *find_ge_pid(int nr, struct pid_namespace *);
--int next_pidmap(struct pid_namespace *pid_ns, int last);
-+int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
+ #define        HAMEG_HO820_PID         0xed74
++#define HAMEG_HO730_PID			0xed73
++#define HAMEG_HO720_PID			0xed72
+ #define        HAMEG_HO870_PID         0xed71
  
- extern struct pid *alloc_pid(struct pid_namespace *ns);
- extern void free_pid(struct pid *pid);
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -183,11 +183,14 @@ static int alloc_pidmap(struct pid_names
- 	return -1;
- }
- 
--int next_pidmap(struct pid_namespace *pid_ns, int last)
-+int next_pidmap(struct pid_namespace *pid_ns, unsigned int last)
- {
- 	int offset;
- 	struct pidmap *map, *end;
- 
-+	if (last >= PID_MAX_LIMIT)
-+		return -1;
-+
- 	offset = (last + 1) & BITS_PER_PAGE_MASK;
- 	map = &pid_ns->pidmap[(last + 1)/BITS_PER_PAGE];
- 	end = &pid_ns->pidmap[PIDMAP_ENTRIES];
+ /*
 
 
