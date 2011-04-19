@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1DSUX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:23:56 -0400
-Received: from kroah.org ([198.145.64.141]:35625 "EHLO coco.kroah.org"
+	id S1754799Ab1DSUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:27 -0400
+Received: from kroah.org ([198.145.64.141]:35598 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609Ab1DSUR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:28 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201047.963193415@clark.kroah.org>
+	id S1754609Ab1DSURX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:47 2011
+Message-Id: <20110419201047.451610546@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:54 -0700
+Date: Tue, 19 Apr 2011 13:08:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [45/70] i2c-algo-bit: Call pre/post_xfer for bit_test
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [40/70] UBIFS: fix oops when R/O file-system is fsynced
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,81 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit d3b3e15da14ded61c9654db05863b04a2435f4cc upstream.
+commit 78530bf7f2559b317c04991b52217c1608d5a58d upstream.
 
-Apparently some distros set i2c-algo-bit.bit_test to 1 by
-default.  In some cases this causes i2c_bit_add_bus
-to fail and prevents the i2c bus from being added.  In the
-radeon case, we fail to add the ddc i2c buses which prevents
-the driver from being able to detect attached monitors.
-The i2c bus works fine even if bit_test fails.  This is likely
-due to gpio switching that is required and handled in the
-pre/post_xfer hooks, so call the pre/post_xfer hooks in the
-bit test as well.
+This patch fixes severe UBIFS bug: UBIFS oopses when we 'fsync()' an
+file on R/O-mounter file-system. We (the UBIFS authors) incorrectly
+thought that VFS would not propagate 'fsync()' down to the file-system
+if it is read-only, but this is not the case.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=36221
+It is easy to exploit this bug using the following simple perl script:
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+use strict;
+use File::Sync qw(fsync sync);
+
+die "File path is not specified" if not defined $ARGV[0];
+my $path = $ARGV[0];
+
+open FILE, "<", "$path" or die "Cannot open $path: $!";
+fsync(\*FILE) or die "cannot fsync $path: $!";
+close FILE or die "Cannot close $path: $!";
+
+Thanks to Reuben Dowle <Reuben.Dowle@navico.com> for reporting about this
+issue.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reported-by: Reuben Dowle <Reuben.Dowle@navico.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/algos/i2c-algo-bit.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ fs/ubifs/file.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/i2c/algos/i2c-algo-bit.c
-+++ b/drivers/i2c/algos/i2c-algo-bit.c
-@@ -232,9 +232,17 @@ static int i2c_inb(struct i2c_adapter *i
-  * Sanity check for the adapter hardware - check the reaction of
-  * the bus lines only if it seems to be idle.
-  */
--static int test_bus(struct i2c_algo_bit_data *adap, char *name)
-+static int test_bus(struct i2c_adapter *i2c_adap)
- {
--	int scl, sda;
-+	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
-+	const char *name = i2c_adap->name;
-+	int scl, sda, ret;
-+
-+	if (adap->pre_xfer) {
-+		ret = adap->pre_xfer(i2c_adap);
-+		if (ret < 0)
-+			return -ENODEV;
-+	}
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1309,6 +1309,9 @@ int ubifs_fsync(struct file *file, int d
  
- 	if (adap->getscl == NULL)
- 		pr_info("%s: Testing SDA only, SCL is not readable\n", name);
-@@ -297,11 +305,19 @@ static int test_bus(struct i2c_algo_bit_
- 		       "while pulling SCL high!\n", name);
- 		goto bailout;
- 	}
-+
-+	if (adap->post_xfer)
-+		adap->post_xfer(i2c_adap);
-+
- 	pr_info("%s: Test OK\n", name);
- 	return 0;
- bailout:
- 	sdahi(adap);
- 	sclhi(adap);
-+
-+	if (adap->post_xfer)
-+		adap->post_xfer(i2c_adap);
-+
- 	return -ENODEV;
- }
+ 	dbg_gen("syncing inode %lu", inode->i_ino);
  
-@@ -607,7 +623,7 @@ static int __i2c_bit_add_bus(struct i2c_
- 	int ret;
- 
- 	if (bit_test) {
--		ret = test_bus(bit_adap, adap->name);
-+		ret = test_bus(adap);
- 		if (ret < 0)
- 			return -ENODEV;
- 	}
++	if (inode->i_sb->s_flags & MS_RDONLY)
++		return 0;
++
+ 	/*
+ 	 * VFS has already synchronized dirty pages for this inode. Synchronize
+ 	 * the inode unless this is a 'datasync()' call.
 
 
