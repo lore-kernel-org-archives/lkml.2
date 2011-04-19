@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1DSIc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:32:57 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:39645 "EHLO
+	id S1754121Ab1DSIdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:33:15 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:39537 "EHLO
 	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab1DSIcw (ORCPT
+	by vger.kernel.org with ESMTP id S1753819Ab1DSIcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:32:52 -0400
+	Tue, 19 Apr 2011 04:32:48 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linux-kernel@vger.kernel.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
 Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <amit.goel@st.com>, <viresh.linux@gmail.com>,
         <linus.walleij@linaro.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2 4/7] dmaengine/dw_dmac: don't call callback routine in case dmaengine_terminate_all() is called
-Date: Tue, 19 Apr 2011 14:02:09 +0530
-Message-ID: <14106a88c7c86261732080be3e08b1dd5a826362.1303194836.git.viresh.kumar@st.com>
+Subject: [PATCH V2 6/7] dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater than DWC_MAX_COUNT
+Date: Tue, 19 Apr 2011 14:02:11 +0530
+Message-ID: <16fcd2b821f4785ac9ed8afdec4ce54afecd6f2f.1303194836.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1303194835.git.viresh.kumar@st.com>
 References: <cover.1303194835.git.viresh.kumar@st.com>
@@ -25,95 +25,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If dmaengine_terminate_all() is called for dma channel, then it doesn't make
-much sense to call registered callback routine. While in case of success or
-failure it must be called.
+If len passed in sg for slave_sg transfers is greater than DWC_MAX_COUNT, then
+driver programmes controller incorrectly.  This patch adds code to handle this
+situation by allocation more than one desc for same sg.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |   27 ++++++++++++++++-----------
- 1 files changed, 16 insertions(+), 11 deletions(-)
+ drivers/dma/dw_dmac.c |   65 +++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c211460..d8aad28 100644
+index f4779e2..c30f0ba 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -195,7 +195,8 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
- /*----------------------------------------------------------------------*/
+@@ -697,9 +697,15 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		reg = dws->tx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+-			u32		len;
+-			u32		mem;
++			u32		len, dlen, mem;
  
- static void
--dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
-+dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
-+		bool callback_required)
- {
- 	dma_async_tx_callback		callback = NULL;
- 	void				*param = NULL;
-@@ -205,8 +206,10 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
- 	dev_vdbg(chan2dev(&dwc->chan), "descriptor %u complete\n", txd->cookie);
++			mem = sg_phys(sg);
++			len = sg_dma_len(sg);
++			mem_width = 2;
++			if (unlikely(mem & 3 || len & 3))
++				mem_width = 0;
++
++slave_sg_todev_fill_desc:
+ 			desc = dwc_desc_get(dwc);
+ 			if (!desc) {
+ 				dev_err(chan2dev(chan),
+@@ -707,16 +713,19 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 				goto err_desc_get;
+ 			}
  
- 	dwc->completed = txd->cookie;
--	callback = txd->callback;
--	param = txd->callback_param;
-+	if (callback_required) {
-+		callback = txd->callback;
-+		param = txd->callback_param;
-+	}
+-			mem = sg_phys(sg);
+-			len = sg_dma_len(sg);
+-			mem_width = 2;
+-			if (unlikely(mem & 3 || len & 3))
+-				mem_width = 0;
+-
+ 			desc->lli.sar = mem;
+ 			desc->lli.dar = reg;
+ 			desc->lli.ctllo = ctllo | DWC_CTLL_SRC_WIDTH(mem_width);
+-			desc->lli.ctlhi = len >> mem_width;
++			if ((len >> mem_width) > DWC_MAX_COUNT) {
++				dlen = DWC_MAX_COUNT << mem_width;
++				mem += dlen;
++				len -= dlen;
++			} else {
++				dlen = len;
++				len = 0;
++			}
++
++			desc->lli.ctlhi = dlen >> mem_width;
  
- 	dwc_sync_desc_for_cpu(dwc, desc);
- 
-@@ -238,10 +241,12 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
+ 			if (!first) {
+ 				first = desc;
+@@ -730,7 +739,10 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 						&first->tx_list);
+ 			}
+ 			prev = desc;
+-			total_len += len;
++			total_len += dlen;
++
++			if (len)
++				goto slave_sg_todev_fill_desc;
  		}
- 	}
+ 		break;
+ 	case DMA_FROM_DEVICE:
+@@ -743,15 +755,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		reg = dws->rx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+-			u32		len;
+-			u32		mem;
+-
+-			desc = dwc_desc_get(dwc);
+-			if (!desc) {
+-				dev_err(chan2dev(chan),
+-					"not enough descriptors available\n");
+-				goto err_desc_get;
+-			}
++			u32		len, dlen, mem;
  
--	spin_unlock_irqrestore(&dwc->lock, dw->flags);
--	if (callback)
--		callback(param);
--	spin_lock_irqsave(&dwc->lock, dw->flags);
-+	if (callback_required) {
-+		spin_unlock_irqrestore(&dwc->lock, dwc->lflags);
-+		if (callback)
-+			callback(param);
-+		spin_lock_irqsave(&dwc->lock, dwc->lflags);
-+	}
- }
+ 			mem = sg_phys(sg);
+ 			len = sg_dma_len(sg);
+@@ -759,10 +763,26 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 			if (unlikely(mem & 3 || len & 3))
+ 				mem_width = 0;
  
- static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
-@@ -270,7 +275,7 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 	}
++slave_sg_fromdev_fill_desc:
++			desc = dwc_desc_get(dwc);
++			if (!desc) {
++				dev_err(chan2dev(chan),
++						"not enough descriptors available\n");
++				goto err_desc_get;
++			}
++
+ 			desc->lli.sar = reg;
+ 			desc->lli.dar = mem;
+ 			desc->lli.ctllo = ctllo | DWC_CTLL_DST_WIDTH(mem_width);
+-			desc->lli.ctlhi = len >> reg_width;
++			if ((len >> reg_width) > DWC_MAX_COUNT) {
++				dlen = DWC_MAX_COUNT << reg_width;
++				mem += dlen;
++				len -= dlen;
++			} else {
++				dlen = len;
++				len = 0;
++			}
++			desc->lli.ctlhi = dlen >> reg_width;
  
- 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
--		dwc_descriptor_complete(dwc, desc);
-+		dwc_descriptor_complete(dwc, desc, 1);
- }
- 
- static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-@@ -320,7 +325,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		 * No descriptors so far seem to be in progress, i.e.
- 		 * this one must be done.
- 		 */
--		dwc_descriptor_complete(dwc, desc);
-+		dwc_descriptor_complete(dwc, desc, 1);
- 	}
- 
- 	dev_dbg(chan2dev(&dwc->chan),
-@@ -382,7 +387,7 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		dwc_dump_lli(dwc, &child->lli);
- 
- 	/* Pretend the descriptor completed successfully */
--	dwc_descriptor_complete(dwc, bad_desc);
-+	dwc_descriptor_complete(dwc, bad_desc, 1);
- }
- 
- /* --------------------- Cyclic DMA API extensions -------------------- */
-@@ -827,7 +832,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 
- 	/* Flush all pending and queued descriptors */
- 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
--		dwc_descriptor_complete(dwc, desc);
-+		dwc_descriptor_complete(dwc, desc, 0);
- 
- 	spin_unlock_irqrestore(&dwc->lock, dwc->lflags);
- 
+ 			if (!first) {
+ 				first = desc;
+@@ -776,7 +796,10 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 						&first->tx_list);
+ 			}
+ 			prev = desc;
+-			total_len += len;
++			total_len += dlen;
++
++			if (len)
++				goto slave_sg_fromdev_fill_desc;
+ 		}
+ 		break;
+ 	default:
 -- 
 1.7.2.2
 
