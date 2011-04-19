@@ -1,136 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1DSN66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 09:58:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36498 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab1DSN65 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 09:58:57 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 18/26] 18: uprobes: commonly used
- filters.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110401143602.15455.82211.sendpatchset@localhost6.localdomain6>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143602.15455.82211.sendpatchset@localhost6.localdomain6>
+	id S1752408Ab1DSN7R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 09:59:17 -0400
+Received: from mail.perches.com ([173.55.12.10]:4836 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab1DSN7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 09:59:13 -0400
+Subject: RE: [rfc patch] treewide: Convert "static const char <*> foo[] ="
+ to "static const char <*> const foo[] ="
+From: Joe Perches <joe@perches.com>
+To: ym cheng <yongmingcheng@hotmail.com>
+Cc: vapier.adi@gmail.com,
+        Linux-kernel =?UTF-8?Q?=E9=82=AE=E4=BB=B6=E5=88=97=E8=A1=A8?= 
+	<zeuux-linux-request@zeuux.org>,
+        lkml <majordomo@vger.kernel.org>, "Stephen A.Rago" <sar@apuebook.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <SNT104-W3438BE3FC4EAC0A537D57EBA900@phx.gbl>
+References: <1284056536.24986.182.camel@Joe-Laptop>
+	 ,<AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
+	 ,<1284058127.24986.199.camel@Joe-Laptop>
+	 ,<AANLkTimzAOvP62VnhpSmKoazKkPc30-YTy09g2eYPGBg@mail.gmail.com>
+	 ,<1284060808.24986.231.camel@Joe-Laptop>
+	 ,<AANLkTikm_ROCEZco0UMX47aD28O0EALh=WYfNwSX=fVa@mail.gmail.com>
+	 ,<1284061730.24986.238.camel@Joe-Laptop>
+	 ,<AANLkTinDTkW9oAG_i30YHc_Ox8ZmWU6YcNouKWYrU=Zr@mail.gmail.com>
+	 ,<1284062744.24986.244.camel@Joe-Laptop>
+	 <SNT104-W3438BE3FC4EAC0A537D57EBA900@phx.gbl>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Apr 2011 15:57:57 +0200
-Message-ID: <1303221477.8345.6.camel@twins>
+Date: Tue, 19 Apr 2011 06:59:12 -0700
+Message-ID: <1303221552.31723.67.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 20:06 +0530, Srikar Dronamraju wrote:
-> Provides most commonly used filters that most users of uprobes can
-> reuse.  However this would be useful once we can dynamically associate a
-> filter with a uprobe-event tracer.
+On Tue, 2011-04-19 at 07:24 +0000, ym cheng wrote:
+>   CC      arch/arm/plat-s3c24xx/gpio.o
+>   CC      arch/arm/plat-s3c24xx/gpiolib.o
+>   CC      arch/arm/plat-s3c24xx/time.o
+> arch/arm/plat-s3c24xx/time.c:258: error: unknown field 'offset'
+> specified in initializer
+> arch/arm/plat-s3c24xx/time.c:258: warning: initialization from
+> incompatible pointer type
+> make[1]: *** [arch/arm/plat-s3c24xx/time.o] 错误 1
+> make: *** [arch/arm/plat-s3c24xx] 错误 2
 > 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  include/linux/uprobes.h |    5 +++++
->  kernel/uprobes.c        |   50 +++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 55 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 26c4d78..34b989f 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -65,6 +65,11 @@ struct uprobe_consumer {
->  	struct uprobe_consumer *next;
->  };
->  
-> +struct uprobe_simple_consumer {
-> +	struct uprobe_consumer consumer;
-> +	pid_t fvalue;
-> +};
-> +
->  struct uprobe {
->  	struct rb_node		rb_node;	/* node in the rb tree */
->  	atomic_t		ref;
-> diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-> index cdd52d0..c950f13 100644
-> --- a/kernel/uprobes.c
-> +++ b/kernel/uprobes.c
-> @@ -1389,6 +1389,56 @@ int uprobe_post_notifier(struct pt_regs *regs)
->  	return 0;
->  }
->  
-> +bool uprobes_pid_filter(struct uprobe_consumer *self, struct task_struct *t)
-> +{
-> +	struct uprobe_simple_consumer *usc;
-> +
-> +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
-> +	if (t->tgid == usc->fvalue)
-> +		return true;
-> +	return false;
-> +}
-> +
-> +bool uprobes_tid_filter(struct uprobe_consumer *self, struct task_struct *t)
-> +{
-> +	struct uprobe_simple_consumer *usc;
-> +
-> +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
-> +	if (t->pid == usc->fvalue)
-> +		return true;
-> +	return false;
-> +}
+> error: unknown field 'offset' specified in initializer??????????why???
+> I do not know why?
+> my board is TQ2440,which is S3C2440.I want to  support hrtimer.what
+> can I do now?
 
-Pretty much everything using t->pid/t->tgid is doing it wrong.
+time.c was moved to plat-s3c in 2008.
+Use a more current version?
 
-> +bool uprobes_ppid_filter(struct uprobe_consumer *self, struct task_struct *t)
-> +{
-> +	pid_t pid;
-> +	struct uprobe_simple_consumer *usc;
-> +
-> +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
-> +	rcu_read_lock();
-> +	pid = task_tgid_vnr(t->real_parent);
-> +	rcu_read_unlock();
-> +
-> +	if (pid == usc->fvalue)
-> +		return true;
-> +	return false;
-> +}
-> +
-> +bool uprobes_sid_filter(struct uprobe_consumer *self, struct task_struct *t)
-> +{
-> +	pid_t pid;
-> +	struct uprobe_simple_consumer *usc;
-> +
-> +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
-> +	rcu_read_lock();
-> +	pid = pid_vnr(task_session(t));
-> +	rcu_read_unlock();
-> +
-> +	if (pid == usc->fvalue)
-> +		return true;
-> +	return false;
-> +}
+commit b915a125112b2500d5c6fd752948afc170a49cef
+Author: Ben Dooks <ben-linux@fluff.org>
+Date:   Tue Oct 21 14:06:53 2008 +0100
 
-And there things go haywire too.
-
-What you want is to save the pid-namespace of the task creating the
-filter in your uprobe_simple_consumer and use that to obtain the task's
-pid for matching with the provided number.
+    [ARM] S3C: Move time.c to arch/arm/plat-s3c
+    
+    Move time.c to arch/arm/plat-s3c
+    to be shared with the S3C64XX implementations.
+    
+    Signed-off-by: Ben Dooks <ben-linux@fluff.org>
 
 
 
