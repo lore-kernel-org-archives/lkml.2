@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1DSGXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:23:55 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:56460 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752251Ab1DSGXx (ORCPT
+	id S1752849Ab1DSG0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:26:08 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:45809 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752278Ab1DSG0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:23:53 -0400
-Message-ID: <4DAD2A61.4020406@st.com>
-Date: Tue, 19 Apr 2011 11:53:29 +0530
+	Tue, 19 Apr 2011 02:26:05 -0400
+Message-ID: <4DAD2AE9.7060106@st.com>
+Date: Tue, 19 Apr 2011 11:55:45 +0530
 From: viresh kumar <viresh.kumar@st.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
+To: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         Armando VISCONTI <armando.visconti@st.com>,
@@ -22,36 +22,41 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
         "jamie@jamieiles.com" <jamie@jamieiles.com>,
         "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 2/6] dmaengine/dw_dmac: Enable resubmission from callback
- routine.
-References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com> <cf350c267897bd4eaf5a027c659771eee117ac74.1303123511.git.viresh.kumar@st.com> <438BB0150E931F4B9CE701519A44630108519E1BE6@bgsmsx502.gar.corp.intel.com>
-In-Reply-To: <438BB0150E931F4B9CE701519A44630108519E1BE6@bgsmsx502.gar.corp.intel.com>
+Subject: Re: [PATCH 1/6] dmaengine/dw_dmac: Replace spin_lock_bh with irqsave
+ variants
+References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com>
+In-Reply-To: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 11:42 AM, Koul, Vinod wrote:
-> On 04/18/2011 04:20 PM, viresh kumar wrote:
->>
->> Resubmission of new transfer must be allowed from callbacks. For this release
->> lock before calling callback routine and enable them again.
-> Why would you like to do that?
+On 04/18/2011 04:19 PM, Viresh KUMAR wrote:
+> dmaengine routines can be called from interrupt context and with interrupts
+> disabled.  Whereas spin_unlock_bh can't be called from such contexts. So this
+> patch converts all spin_*_bh routines to irqsave variants.
 > 
-> IMO it's not a good thing as you are essentially doing it in your tasklet...
-> Make sure the submit() is done by client before this and you use it to start
-> next transaction in you tasklet and let client know in callback txn is
-> finished.
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  drivers/dma/dw_dmac.c      |   56 +++++++++++++++++++++++++------------------
+>  drivers/dma/dw_dmac_regs.h |    1 +
+>  2 files changed, 33 insertions(+), 24 deletions(-)
 > 
+> 
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index 720f821..c89fd83 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -173,6 +173,7 @@ struct dw_dma {
+>  	void __iomem		*regs;
+>  	struct tasklet_struct	tasklet;
+>  	struct clk		*clk;
+> +	unsigned long		flags; /* for spin_lock_irqsave */
 
-Vinod,
-
-I initiated this discussion few days back on a separate thread:
-
-http://www.spinics.net/lists/arm-kernel/msg121139.html
-
-And so implemented this.
+Oops!!!
+This must have been added in dw_dma_chan instead :(
+Will resend it.
 
 -- 
 viresh
