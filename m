@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1DSXWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:22:22 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:29999 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab1DSXWU (ORCPT
+	id S1752691Ab1DSXYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:24:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41674 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1DSXYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:22:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=LRZ9KB6F9LsQ3E+OhMfygqg0r1m3FpHU888sDgXZq5UWk+chYjxnsg7xEHwsvO+XxD
-         EhTA56tBRtOM5Al+7qFg==
-Date: Tue, 19 Apr 2011 16:22:15 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: james_p_freyensee@linux.intel.com
-cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-In-Reply-To: <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
-Message-ID: <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com> <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 19 Apr 2011 19:24:37 -0400
+Date: Wed, 20 Apr 2011 00:24:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
+Subject: Re: [PATCH] leds: provide helper to register "leds-gpio" devices
+Message-ID: <20110419232420.GA3673@n2100.arm.linux.org.uk>
+References: <20110405073030.GI13963@pengutronix.de> <1301992655-8514-1-git-send-email-u.kleine-koenig@pengutronix.de> <20110405163338.GA11832@n2100.arm.linux.org.uk> <20110419161913.a1c18599.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419161913.a1c18599.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011, james_p_freyensee@linux.intel.com wrote:
-
-> From: J Freyensee <james_p_freyensee@linux.intel.com>
+On Tue, Apr 19, 2011 at 04:19:13PM -0700, Andrew Morton wrote:
+> On Tue, 5 Apr 2011 17:33:39 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> This allows drivers who call this function to be compiled modularly.
-> Otherwise, a driver who is interested in this type of functionality
-> has to implement their own get_task_comm() call, causing code
-> duplication in the Linux source tree.
+> > On Tue, Apr 05, 2011 at 10:37:35AM +0200, Uwe Kleine-K__nig wrote:
+> > > +struct platform_device *__init gpio_led_register_device(
+> > > +		const struct gpio_led_platform_data *pdata);
+> > 
+> > Please don't add __init annotations to declarations.
 > 
-> Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> Reasons?
 
-Acked-by: David Rientjes <rientjes@google.com>
+It's noise.
 
-There've been some other patchsets proposed recently that need to print a 
-thread's comm and since /proc/pid/comm can change the comm's of other 
-threads out from under them, it's necessary to serialize access to it with 
-task_lock().  This patch certainly makes it easier for modules to do so 
-correctly, thanks!
+> A year or so ago we had to *add* an __init to a declaration, because
+> one architecture was generating a short-mode-addressing relative branch
+> to the callee, assuming the target was in the same section as the call
+> site.  When the linker went to resolve the branch, it discovered that
+> the target was in fact in a different section and was too far away to
+> be able to use the short-mode addressing.  IIRC, that architecture was
+> arm.
+
+I'm not aware of ARM ever requiring that.  If it was, we'd have to add
+a heck of a lot of those annotations.  And those annotations don't tell
+the compiler that it might be far away.
+
+We _do_ have a problem if someone decides to include a big ramdisk or
+initramfs image in the discarded section, which is something I have a
+patch kicking around to completely change the vmlinux layout to resolve.
+That's taking something of a low priority at the moment though as we've
+been turned upside down by Linus...
