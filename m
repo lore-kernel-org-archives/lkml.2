@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1DSHfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:35:38 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49798 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab1DSHfe convert rfc822-to-8bit (ORCPT
+	id S1753098Ab1DSHlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:41:46 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38379
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750795Ab1DSHln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:35:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iexXL4EdKPyXij7wTXy1dE16SLvulHBVV1/BCiHe0nFndRyDz5w5YJ111V+GmqYBni
-         PsuxIhSLbw+r4hg0btKPn7KnwuFSxuPjpuAWJkZxYc4fOUdyVJMvGBrMZaBsoaibNcEv
-         inwIg7/sKZ4M5YkWzSx1TGI7EpP0Yb1ZplgcI=
-MIME-Version: 1.0
-In-Reply-To: <4DAD327B.4030904@suse.cz>
-References: <BANLkTikYuYVvXiHvi_kr2H7n29k=veThtw@mail.gmail.com>
-	<4DAD327B.4030904@suse.cz>
-Date: Tue, 19 Apr 2011 15:35:33 +0800
-Message-ID: <BANLkTikspr9jVNF-VZbnc_MxUYNWad7Kkg@mail.gmail.com>
-Subject: Re: LOCALVERSION in setlocalversion
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Apr 2011 03:41:43 -0400
+Date: Tue, 19 Apr 2011 00:41:08 -0700 (PDT)
+Message-Id: <20110419.004108.246512359.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yanivr@broadcom.com,
+        shemminger@vyatta.com
+Subject: Re: linux-next: manual merge of the net tree with the net-current
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110419131618.a474326a.sfr@canb.auug.org.au>
+References: <20110419131618.a474326a.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 2:58 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 19.4.2011 08:42, Haojian Zhuang wrote:
->> In scripts/setlocalversion under linux kernel tree, the scripts seems
->> a little strange.
-> [...]
->>         # append a plus sign if the repository is not in a clean
->>         # annotated or signed tagged state (as git describe only
->>         # looks at signed or annotated tags - git tag -a/-s) and
->>         # LOCALVERSION= is not specified
->>         if test "${LOCALVERSION+set}" != "set"; then
->>                 scm=$(scm_version --short)
->>                 res="$res${scm:++}"
->>         fi
->> fi
->>
->> LOCALVERSION isn't assigned in any place. Only CONFIG_LOCALVERSION
->> can be assigned in .config file.
->> Why do we need to check LOCALVERSION at here?
->
-> It can be set on the commandline:
->
-> make LOCALVERSION=something
->
-> Michal
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 19 Apr 2011 13:16:18 +1000
 
-Thanks a lot. It works.
+> Today's linux-next merge of the net tree got a conflict in
+> drivers/net/bnx2x/bnx2x_ethtool.c between commit 70dda99c41fc ("bnx2x:
+> Fix port identification problem") from the net-current tree and commit
+> 32d3613475d8 ("bnx2x: convert to set_phys_id") from the net tree.
+> 
+> I fixed it up (maybe - see below) and can carry the fix as necessary.
 
-I still have a question. I can't find the semantic of
-${LOCALVERSION+set} in some
-shell tutorials. Could you help me to figure out a link of introducing this?
+Your conflict resolution was pretty much perfect :-)
 
-Best Regards
-Haojian
+I've merged net-2.6 into net-next-2.6 to fix this up.
+
+Thanks!
