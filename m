@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab1DSURK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:10 -0400
-Received: from kroah.org ([198.145.64.141]:47636 "EHLO coco.kroah.org"
+	id S1754356Ab1DSU1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:27:51 -0400
+Received: from kroah.org ([198.145.64.141]:47668 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab1DSURE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:04 -0400
+	id S1753985Ab1DSURJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:09 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:45 2011
-Message-Id: <20110419201045.272386599@clark.kroah.org>
+Message-Id: <20110419201045.813029835@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:29 -0700
+Date: Tue, 19 Apr 2011 13:08:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Dubov <oakad@yahoo.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [20/70] gianfar: Fall back to software tcp/udp checksum on older controllers
+        "David S. Miller" <davem@davemloft.net>
+Subject: [25/70] sctp: Pass __GFP_NOWARN to hash table allocation attempts.
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Dubov <oakad@yahoo.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 4363c2fddb1399b728ef21ee8101c148a311ea45 ]
+[ Upstream commit a84b50ceb7d640437d0dc28a2bef0d0de054de89 ]
 
-As specified by errata eTSEC49 of MPC8548 and errata eTSEC12 of MPC83xx,
-older revisions of gianfar controllers will be unable to calculate a TCP/UDP
-packet checksum for some alignments of the appropriate FCB. This patch checks
-for FCB alignment on such controllers and falls back to software checksumming
-if the alignment is known to be bad.
+Like DCCP and other similar pieces of code, there are mechanisms
+here to try allocating smaller hash tables if the allocation
+fails.  So pass in __GFP_NOWARN like the others do instead of
+emitting a scary message.
 
-Signed-off-by: Alex Dubov <oakad@yahoo.com>
+Reported-by: Dave Jones <davej@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/gianfar.c |   16 ++++++++++++++--
- drivers/net/gianfar.h |    1 +
- 2 files changed, 15 insertions(+), 2 deletions(-)
+ net/sctp/protocol.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -950,6 +950,11 @@ static void gfar_detect_errata(struct gf
- 			(pvr == 0x80861010 && (mod & 0xfff9) == 0x80c0))
- 		priv->errata |= GFAR_ERRATA_A002;
- 
-+	/* MPC8313 Rev < 2.0, MPC8548 rev 2.0 */
-+	if ((pvr == 0x80850010 && mod == 0x80b0 && rev < 0x0020) ||
-+			(pvr == 0x80210020 && mod == 0x8030 && rev == 0x0020))
-+		priv->errata |= GFAR_ERRATA_12;
-+
- 	if (priv->errata)
- 		dev_info(dev, "enabled errata workarounds, flags: 0x%x\n",
- 			 priv->errata);
-@@ -2156,8 +2161,15 @@ static int gfar_start_xmit(struct sk_buf
- 	/* Set up checksumming */
- 	if (CHECKSUM_PARTIAL == skb->ip_summed) {
- 		fcb = gfar_add_fcb(skb);
--		lstatus |= BD_LFLAG(TXBD_TOE);
--		gfar_tx_checksum(skb, fcb);
-+		/* as specified by errata */
-+		if (unlikely(gfar_has_errata(priv, GFAR_ERRATA_12)
-+			     && ((unsigned long)fcb % 0x20) > 0x18)) {
-+			__skb_pull(skb, GMAC_FCB_LEN);
-+			skb_checksum_help(skb);
-+		} else {
-+			lstatus |= BD_LFLAG(TXBD_TOE);
-+			gfar_tx_checksum(skb, fcb);
-+		}
- 	}
- 
- 	if (vlan_tx_tag_present(skb)) {
---- a/drivers/net/gianfar.h
-+++ b/drivers/net/gianfar.h
-@@ -1039,6 +1039,7 @@ enum gfar_errata {
- 	GFAR_ERRATA_74		= 0x01,
- 	GFAR_ERRATA_76		= 0x02,
- 	GFAR_ERRATA_A002	= 0x04,
-+	GFAR_ERRATA_12		= 0x08, /* a.k.a errata eTSEC49 */
- };
- 
- /* Struct stolen almost completely (and shamelessly) from the FCC enet source
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1204,7 +1204,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 		if ((sctp_assoc_hashsize > (64 * 1024)) && order > 0)
+ 			continue;
+ 		sctp_assoc_hashtable = (struct sctp_hashbucket *)
+-					__get_free_pages(GFP_ATOMIC, order);
++			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+ 	} while (!sctp_assoc_hashtable && --order > 0);
+ 	if (!sctp_assoc_hashtable) {
+ 		pr_err("Failed association hash alloc\n");
+@@ -1237,7 +1237,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 		if ((sctp_port_hashsize > (64 * 1024)) && order > 0)
+ 			continue;
+ 		sctp_port_hashtable = (struct sctp_bind_hashbucket *)
+-					__get_free_pages(GFP_ATOMIC, order);
++			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+ 	} while (!sctp_port_hashtable && --order > 0);
+ 	if (!sctp_port_hashtable) {
+ 		pr_err("Failed bind hash alloc\n");
 
 
