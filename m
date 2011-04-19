@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1DSUVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:21:38 -0400
-Received: from kroah.org ([198.145.64.141]:35705 "EHLO coco.kroah.org"
+	id S1755278Ab1DSUUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:20:07 -0400
+Received: from kroah.org ([198.145.64.141]:35724 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754973Ab1DSURj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:39 -0400
+	id S1753569Ab1DSURm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
-Message-Id: <20110419201049.290532779@clark.kroah.org>
+Message-Id: <20110419201049.614535681@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:06 -0700
+Date: Tue, 19 Apr 2011 13:09:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [57/70] powerpc: Fix oops if scan_dispatch_log is called too early
+        Steven Hardy <shardy@redhat.com>
+Subject: [60/70] usb: qcserial avoid pointing to freed memory
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Steven Hardy <shardy@redhat.com>
 
-commit 84ffae55af79d7b8834fd0c08d0d1ebf2c77f91e upstream.
+commit 99ab3f9e4eaec35fd2d7159c31b71f17f7e613e3 upstream.
 
-We currently enable interrupts before the dispatch log for the boot
-cpu is setup. If a timer interrupt comes in early enough we oops in
-scan_dispatch_log:
+Rework the qcprobe logic such that serial->private is not set when
+qcprobe exits with -ENODEV, otherwise serial->private will point to freed
+memory on -ENODEV
 
-Unable to handle kernel paging request for data at address 0x00000010
-
-...
-
-.scan_dispatch_log+0xb0/0x170
-.account_system_vtime+0xa0/0x220
-.irq_enter+0x88/0xc0
-.do_IRQ+0x48/0x230
-
-The patch below adds a check to scan_dispatch_log to ensure the
-dispatch log has been allocated.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Steven Hardy <shardy@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/time.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/qcserial.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -229,6 +229,9 @@ static u64 scan_dispatch_log(u64 stop_tb
- 	u64 stolen = 0;
- 	u64 dtb;
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -111,7 +111,7 @@ static int qcprobe(struct usb_serial *se
+ 	ifnum = intf->desc.bInterfaceNumber;
+ 	dbg("This Interface = %d", ifnum);
  
-+	if (!dtl)
-+		return 0;
-+
- 	if (i == vpa->dtl_idx)
- 		return 0;
- 	while (i < vpa->dtl_idx) {
+-	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
++	data = kzalloc(sizeof(struct usb_wwan_intf_private),
+ 					 GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+@@ -134,8 +134,10 @@ static int qcprobe(struct usb_serial *se
+ 		    usb_endpoint_is_bulk_out(&intf->endpoint[1].desc)) {
+ 			dbg("QDL port found");
+ 
+-			if (serial->interface->num_altsetting == 1)
+-				return 0;
++			if (serial->interface->num_altsetting == 1) {
++				retval = 0; /* Success */
++				break;
++			}
+ 
+ 			retval = usb_set_interface(serial->dev, ifnum, 1);
+ 			if (retval < 0) {
+@@ -145,7 +147,6 @@ static int qcprobe(struct usb_serial *se
+ 				retval = -ENODEV;
+ 				kfree(data);
+ 			}
+-			return retval;
+ 		}
+ 		break;
+ 
+@@ -177,7 +178,6 @@ static int qcprobe(struct usb_serial *se
+ 				retval = -ENODEV;
+ 				kfree(data);
+ 			}
+-			return retval;
+ 		} else if (ifnum==3) {
+ 			/*
+ 			 * NMEA (serial line 9600 8N1)
+@@ -199,9 +199,12 @@ static int qcprobe(struct usb_serial *se
+ 		dev_err(&serial->dev->dev,
+ 			"unknown number of interfaces: %d\n", nintf);
+ 		kfree(data);
+-		return -ENODEV;
++		retval = -ENODEV;
+ 	}
+ 
++	/* Set serial->private if not returning -ENODEV */
++	if (retval != -ENODEV)
++		usb_set_serial_data(serial, data);
+ 	return retval;
+ }
+ 
 
 
