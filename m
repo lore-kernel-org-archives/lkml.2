@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1DSLIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 07:08:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40140 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab1DSLIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 07:08:19 -0400
-Message-ID: <4DAD6D22.7000002@parallels.com>
-Date: Tue, 19 Apr 2011 15:08:18 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+	id S1754834Ab1DSLKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 07:10:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37072 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754616Ab1DSLJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 07:09:58 -0400
+Date: Tue, 19 Apr 2011 13:09:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH followup] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+Message-ID: <20110419110956.GD21689@tiehlicka.suse.cz>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+ <20110418100131.GD8925@tiehlicka.suse.cz>
+ <20110418135637.5baac204.akpm@linux-foundation.org>
+ <20110419091022.GA21689@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Paul Menage <menage@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpuset: allow empty cpu/node masks
-References: <20110419100739.8464.80475.stgit@localhost6> <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com>
-In-Reply-To: <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419091022.GA21689@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Menage wrote:
-> On Tue, Apr 19, 2011 at 12:07 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org>  wrote:
->>
->> This aimed to fix attaching tasks to the newly created cgroups in hierarchies with
->> cpuset subsystem. Cpuset always require initializing cpuset.cpus and cpuset.mems,
->> because they are empty by default, this fact block task attaching with -ENOSPC.
->
-> You can set the cgroup.clone_children to 1 to get the parent masks
-> automatically copied into the child. So I don't think this patch is
-> needed.
+While I am in the cleanup mode. We should use VM_GROWSUP rather than
+tricky CONFIG_STACK_GROWSUP||CONFIG_IA64.
 
-cgroup.clone_children does not work if ns_cgroup is mounted,
-but it is ok if ns_cgroup is alredy scheduled to remove soon.
+What do you think?
+--- 
+>From fd832dd46b4918718901f2ebe994f4662f167999 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 19 Apr 2011 11:11:41 +0200
+Subject: [PATCH] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
 
-However, I still think that all cgroups must have reasonable default state.
-Is cgroup.clone_children=1 planned to be default?
+IA64 needs some trickery for Register Backing Store so we have to
+export expand_stack_upwards for it even though the architecture expands
+its stack downwards normally. To avoid
+we have defined VM_GROWSUP which is defined only for the above
+configuration.
 
-So, I just want to make cgroup worked out of the box:
+We still have places which use the original ifdefs so let's get rid of
+them finally.
 
-mount -t cgroup cgroup /cgroup
-mkdir /cgroup/foo
-echo $$ > /cgroup/foo/tasks
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/mmap.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Initialization before tasks attaching should be optional.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 29c68b0..3ff9edf 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1726,7 +1726,7 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
+ 	return 0;
+ }
+ 
+-#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
++#if VM_GROWSUP
+ /*
+  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
+  * vma is the last one with address > vma->vm_end.  Have to extend vma.
+@@ -1777,7 +1777,7 @@ int expand_stack_upwards(struct vm_area_struct *vma, unsigned long address)
+ 	khugepaged_enter_vma_merge(vma);
+ 	return error;
+ }
+-#endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
++#endif /* VM_GROWSUP */
+ 
+ /*
+  * vma is the first one with address < vma->vm_start.  Have to extend vma.
+-- 
+1.7.4.1
 
->
-> Paul
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
