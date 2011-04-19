@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1DSHdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:33:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52166 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab1DSHdO (ORCPT
+	id S1752924Ab1DSHfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:35:33 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:8628 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750795Ab1DSHf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:33:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
-Date: Tue, 19 Apr 2011 09:32:31 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: John Williams <john.williams@petalogix.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        hjk@hansjkoch.de
-References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com> <20110419061121.GB5252@ponder.secretlab.ca>
-In-Reply-To: <20110419061121.GB5252@ponder.secretlab.ca>
+	Tue, 19 Apr 2011 03:35:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhMEAJQ6rU15LHHJgWdsb2JhbAClQRUBARYmJcVtDoVjBA
+Date: Tue, 19 Apr 2011 17:35:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110419073523.GF23985@dastard>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.515923886@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104190932.31777.arnd@arndb.de>
-X-Provags-ID: V02:K0:Mcfm6HB4C546mDgBlHLZP0bzXxqt7+/tv8oyeq37AjB
- mrRdzxaOec735q22q3INwJotWOon80xsXOSH4KtL5nzzDMqgnK
- NsJVhkdYT9BwKgenVOI2ZmB9/hLa/RiGeHi29vi4IGE0lw1lZi
- Fityjj8R9muVjP/WCDumyNKOmnU2nikYzOsr0y1ngbifseT+AL
- F1W6xKOfAfvigxeu9xm0w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419030532.515923886@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011, Grant Likely wrote:
-> On Tue, Apr 19, 2011 at 11:58:25AM +1000, John Williams wrote:
-> >
-> > I know the arguments against the 'generic-uio' tag, but come on, let's
-> > look at the lesser of two evils here!  I call BS on this DTS purity.
+On Tue, Apr 19, 2011 at 11:00:06AM +0800, Wu Fengguang wrote:
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
+> 
+> The policy is
+> - enqueue all newly expired inodes at each queue_io() time
+> - enqueue all dirty inodes if there are no more expired inodes to sync
+> 
+> This will help reduce the number of dirty pages encountered by page
+> reclaim, eg. the pageout() calls. Normally older inodes contain older
+> dirty pages, which are more close to the end of the LRU lists. So
+> syncing older inodes first helps reducing the dirty pages reached by
+> the page reclaim code.
 
-Both a specific device ID and something like "generic-uio" are
-equally broken:
+Once again I think this is the wrong place to be changing writeback
+policy decisions. for_background writeback only goes through
+wb_writeback() and writeback_inodes_wb() (same as for_kupdate
+writeback), so a decision to change from expired inodes to fresh
+inodes, IMO, should be made in wb_writeback.
 
-If you have generic-uio, it is impossible to write an in-kernel driver
-for the same hardware without changing the device tree, meaning that
-it is impossible to correctly describe the hardware in the device tree.
+That is, for_background and for_kupdate writeback start with the
+same policy (older_than_this set) to writeback expired inodes first,
+then when background writeback runs out of expired inodes, it should
+switch to all remaining inodes by clearing older_than_this instead
+of refreshing it for the next loop.
 
-If you put a meaningful identifier into the match table, it is also
-impossible to have an in-kernel driver for the hardware, because now
-you have no way to choose whether to handle the device with UIO
-or an in-kernel driver.
+This keeps all the policy decisions in the one place, all using the
+same (existing) mechanism, and all relatively simple to understand,
+and easy to tracepoint for debugging.  Changing writeback policy
+deep in the writeback stack is not a good idea as it will make
+extending writeback policies in future (e.g. for cgroup awareness)
+very messy.
 
-There may be cases where you have two instances of the same device
-in a machine and  want one of them to be driven by UIO and the other
-by another driver. A common example of this would be a virtual machine
-where one device is passed through to the guest and the other is
-used by the host. I've done this for USB input devices and PCI network
-interfaces.
- 
-> Call it what you like, but the reasons are well founded.  The alternative
-> that has been proposed which I am in agreement with is to investigate
-> giving userspace the hook to tell the kernel at runtime which devices
-> should be picked up by the uio driver.
+> @@ -585,7 +597,8 @@ void writeback_inodes_wb(struct bdi_writ
+>  	if (!wbc->wb_start)
+>  		wbc->wb_start = jiffies; /* livelock avoidance */
+>  	spin_lock(&inode_wb_list_lock);
+> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> +
+> +	if (list_empty(&wb->b_io))
+>  		queue_io(wb, wbc);
+>  
+>  	while (!list_empty(&wb->b_io)) {
+> @@ -612,7 +625,7 @@ static void __writeback_inodes_sb(struct
+>  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+>  
+>  	spin_lock(&inode_wb_list_lock);
+> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> +	if (list_empty(&wb->b_io))
+>  		queue_io(wb, wbc);
+>  	writeback_sb_inodes(sb, wb, wbc, true);
+>  	spin_unlock(&inode_wb_list_lock);
 
-Yes, I believe this is the best option.
+That changes the order in which we queue inodes for writeback.
+Instead of calling every time to move b_more_io inodes onto the b_io
+list and expiring more aged inodes, we only ever do it when the list
+is empty. That is, it seems to me that this will tend to give
+b_more_io inodes a smaller share of writeback because they are being
+moved back to the b_io list less frequently where there are lots of
+other inodes being dirtied. Have you tested the impact of this
+change on mixed workload performance? Indeed, can you starve
+writeback of a large file simply by creating lots of small files in
+another thread?
 
-> In the mean time, explicitly modifying the match table is an okay
-> compromise.
+Cheers,
 
-Agreed.
-
-	Arnd
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
