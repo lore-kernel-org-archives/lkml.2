@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1DSJFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:05:24 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:54976 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab1DSJFX (ORCPT
+	id S1754287Ab1DSJDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:03:49 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37999 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab1DSJDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:05:23 -0400
-Message-ID: <4DAD5046.3030008@ahsoftware.de>
-Date: Tue, 19 Apr 2011 11:05:10 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] Implement /dev/byte (a generic byte source similiar
- to /dev/zero)
-References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>	<BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>	<4DAD48FC.5040003@ahsoftware.de> <20110419094436.0b667410@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110419094436.0b667410@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Apr 2011 05:03:47 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation
+ for uprobes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110419062654.GB10698@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	 <20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
+	 <1303145171.32491.886.camel@twins>
+	 <20110419062654.GB10698@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 19 Apr 2011 11:02:26 +0200
+Message-ID: <1303203746.32491.913.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 2011-04-19 at 11:56 +0530, Srikar Dronamraju wrote:
+> > > +   /*
+> > > +    * Find the end of the top mapping and skip a page.
+> > > +    * If there is no space for PAGE_SIZE above
+> > > +    * that, mmap will ignore our address hint.
+> > > +    *
+> > > +    * We allocate a "fake" unlinked shmem file because
+> > > +    * anonymous memory might not be granted execute
+> > > +    * permission when the selinux security hooks have
+> > > +    * their way.
+> > > +    */
+> > 
+> > That just annoys me, so we're working around some stupid sekurity crap,
+> > executable anonymous maps are perfectly fine, also what do JITs do?
+> 
+> Yes, we are working around selinux security hooks, but do we have a
+> choice. 
 
-Am 19.04.2011 10:44, schrieb Alan Cox:
->> As for /dev/zero there are many other possible reasons to use such a
->> device, besides filling something with a value. For me it's as
->> reasonable as dev/zero, just that it offers a bit more flexibility and
->> provides another, at least for me useful, default value. Maybe
->> /dev/nzero would have been a good name too. ;)
->
-> /dev/zero exists not to put \0's into files as such but because it is
-> very useful to be able to map the zero page (a read only, or
-> copy-on-write blank page) into programs. The mmap is the reason it is
-> there.
+Of course you have a choice, mark selinux broken and let them sort
+it ;-)
 
-Thanks for the explanation.
+Anyway, it looks like install_special_mapping() the thing I think you
+ought to use (and I'm sure I said that before) also wobbles around
+selinux by using security_file_mmap() even though its very clearly not a
+file mmap (hint: vm_file == NULL).
 
->> But I don't really care about inclusion into the kernel, it's just
->> something I had lying around (and needed only marginally work to
->> finalize as a proper patch) and I thought someone else could find it
->> usefull and I should share that here.
->
-> Implementationwise I think I would have gone for allocating a new device
-> and range of 256 minors - that would avoid the funky stuff setting what
-> it fills with as you'd just fill with the minor number.
 
-I thought about that too, but that would have been to easy (and static). ;)
-
-And the usage of file descriptors was the only idea I've come up with, 
-which is multitasking and multiuser aware.
-
-Regards,
-
-Alexander
