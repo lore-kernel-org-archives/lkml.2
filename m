@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1DSUR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:29 -0400
-Received: from kroah.org ([198.145.64.141]:35604 "EHLO coco.kroah.org"
+	id S1753170Ab1DSUXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:23:42 -0400
+Received: from kroah.org ([198.145.64.141]:35632 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754769Ab1DSURY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:47 2011
-Message-Id: <20110419201047.560550482@clark.kroah.org>
+	id S1754817Ab1DSUR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:29 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
+Message-Id: <20110419201048.063316928@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:50 -0700
+Date: Tue, 19 Apr 2011 13:08:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Mark Langsdorf <mark.langsdorf@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [41/70] x86, AMD: Set ARAT feature on AMD processors
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Frysinger <vapier@gentoo.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [46/70] RTC: add missing "return 0" in new alarm func for rtc-bfin.c
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit b87cf80af3ba4b4c008b4face3c68d604e1715c6 upstream.
+commit 8c122b96866580c99e44f3f07ac93a993d964ec3 upstream.
 
-Support for Always Running APIC timer (ARAT) was introduced in
-commit db954b5898dd3ef3ef93f4144158ea8f97deb058. This feature
-allows us to avoid switching timers from LAPIC to something else
-(e.g. HPET) and go into timer broadcasts when entering deep
-C-states.
+The new bfin_rtc_alarm_irq_enable function forgot to add a "return 0" to
+the end leading to the build warning:
+	drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
+	drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
 
-AMD processors don't provide a CPUID bit for that feature but
-they also keep APIC timers running in deep C-states (except for
-cases when the processor is affected by erratum 400). Therefore
-we should set ARAT feature bit on AMD CPUs.
-
-Tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-LKML-Reference: <1300205624-4813-1-git-send-email-ostr@amd64.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/amd.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/rtc/rtc-bfin.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -594,6 +594,10 @@ static void __cpuinit init_amd(struct cp
- 		}
- 	}
- #endif
+--- a/drivers/rtc/rtc-bfin.c
++++ b/drivers/rtc/rtc-bfin.c
+@@ -276,6 +276,8 @@ static int bfin_rtc_alarm_irq_enable(str
+ 		bfin_rtc_int_set_alarm(rtc);
+ 	else
+ 		bfin_rtc_int_clear(~(RTC_ISTAT_ALARM | RTC_ISTAT_ALARM_DAY));
 +
-+	/* As a rule processors have APIC timer running in deep C states */
-+	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-+		set_cpu_cap(c, X86_FEATURE_ARAT);
++	return 0;
  }
  
- #ifdef CONFIG_X86_32
+ static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
 
 
