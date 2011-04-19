@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab1DSURw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:52 -0400
-Received: from kroah.org ([198.145.64.141]:35764 "EHLO coco.kroah.org"
+	id S1755192Ab1DSUR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:56 -0400
+Received: from kroah.org ([198.145.64.141]:35782 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755110Ab1DSURt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:49 -0400
+	id S1755155Ab1DSURw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:52 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:50 2011
-Message-Id: <20110419201050.358510687@clark.kroah.org>
+Message-Id: <20110419201050.665258193@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:16 -0700
+Date: Tue, 19 Apr 2011 13:09:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [67/70] USB: Fix unplug of device with active streams
+        Ingo Molnar <mingo@redhat.com>, Kyle McMartin <kyle@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [70/70] perf tool: Fix gcc 4.6.0 issues
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +27,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Wilcox <willy@linux.intel.com>
+From: Kyle McMartin <kyle@mcmartin.ca>
 
-commit b214f191d95ba4b5a35aebd69cd129cf7e3b1884 upstream.
+commit fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822 upstream.
 
-If I unplug a device while the UAS driver is loaded, I get an oops
-in usb_free_streams().  This is because usb_unbind_interface() calls
-usb_disable_interface() which calls usb_disable_endpoint() which sets
-ep_out and ep_in to NULL.  Then the UAS driver calls usb_pipe_endpoint()
-which returns a NULL pointer and passes an array of NULL pointers to
-usb_free_streams().
+GCC 4.6.0 in Fedora rawhide turned up some compile errors in tools/perf
+due to the -Werror=unused-but-set-variable flag.
 
-I think the correct fix for this is to check for the NULL pointer
-in usb_free_streams() rather than making the driver check for this
-situation.  My original patch for this checked for dev->state ==
-USB_STATE_NOTATTACHED, but the call to usb_disable_interface() is
-conditional, so not all drivers would want this check.
+I've gone through and annotated some of the assignments that had side
+effects (ie: return value from a function) with the __used annotation,
+and in some cases, just removed unused code.
 
-Note from Sarah Sharp: This patch does avoid a potential dereference,
-but the real fix (which will be implemented later) is to set the
-.soft_unbind flag in the usb_driver structure for the UAS driver, and
-all drivers that allocate streams.  The driver should free any streams
-when it is unbound from the interface.  This avoids leaking stream rings
-in the xHCI driver when usb_disable_interface() is called.
+In a few cases, we were assigning something useful, but not using it in
+later parts of the function.
 
-This should be queued for stable trees back to 2.6.35.
+kyle@dreadnought:~/src% gcc --version
+gcc (GCC) 4.6.0 20110122 (Red Hat 4.6.0-0.3)
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+LKML-Reference: <20110124161304.GK27353@bombadil.infradead.org>
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+[ committer note: Fixed up the annotation fixes, as that code moved recently ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[Backported to 2.6.38.2 by deleting unused but set variables]
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/bench/sched-pipe.c                          |    2 +-
+ tools/perf/builtin-sched.c                             |   12 +++---------
+ tools/perf/builtin-top.c                               |    5 +----
+ tools/perf/util/header.c                               |    2 +-
+ tools/perf/util/hist.c                                 |    3 ---
+ tools/perf/util/scripting-engines/trace-event-python.c |    3 +--
+ tools/perf/util/symbol.c                               |    4 ++--
+ tools/perf/util/trace-event-parse.c                    |    2 +-
+ tools/perf/util/ui/browsers/map.c                      |    2 +-
+ 9 files changed, 11 insertions(+), 24 deletions(-)
 
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1885,7 +1885,7 @@ void usb_free_streams(struct usb_interfa
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -55,7 +55,7 @@ int bench_sched_pipe(int argc, const cha
+ 	 * discarding returned value of read(), write()
+ 	 * causes error in building environment for perf
+ 	 */
+-	int ret, wait_stat;
++	int __used ret, wait_stat;
+ 	pid_t pid, retpid;
  
- 	/* Streams only apply to bulk endpoints. */
- 	for (i = 0; i < num_eps; i++)
--		if (!usb_endpoint_xfer_bulk(&eps[i]->desc))
-+		if (!eps[i] || !usb_endpoint_xfer_bulk(&eps[i]->desc))
- 			return;
+ 	argc = parse_options(argc, argv, options,
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -369,11 +369,6 @@ static void
+ process_sched_event(struct task_desc *this_task __used, struct sched_atom *atom)
+ {
+ 	int ret = 0;
+-	u64 now;
+-	long long delta;
+-
+-	now = get_nsecs();
+-	delta = start_time + atom->timestamp - now;
  
- 	hcd->driver->free_streams(hcd, dev, eps, num_eps, mem_flags);
+ 	switch (atom->type) {
+ 		case SCHED_EVENT_RUN:
+@@ -562,7 +557,7 @@ static void wait_for_tasks(void)
+ 
+ static void run_one_test(void)
+ {
+-	u64 T0, T1, delta, avg_delta, fluct, std_dev;
++	u64 T0, T1, delta, avg_delta, fluct;
+ 
+ 	T0 = get_nsecs();
+ 	wait_for_tasks();
+@@ -578,7 +573,6 @@ static void run_one_test(void)
+ 	else
+ 		fluct = delta - avg_delta;
+ 	sum_fluct += fluct;
+-	std_dev = sum_fluct / nr_runs / sqrt(nr_runs);
+ 	if (!run_avg)
+ 		run_avg = delta;
+ 	run_avg = (run_avg*9 + delta)/10;
+@@ -799,7 +793,7 @@ replay_switch_event(struct trace_switch_
+ 		    u64 timestamp,
+ 		    struct thread *thread __used)
+ {
+-	struct task_desc *prev, *next;
++	struct task_desc *prev, __used *next;
+ 	u64 timestamp0;
+ 	s64 delta;
+ 
+@@ -1404,7 +1398,7 @@ map_switch_event(struct trace_switch_eve
+ 		 u64 timestamp,
+ 		 struct thread *thread __used)
+ {
+-	struct thread *sched_out, *sched_in;
++	struct thread *sched_out __used, *sched_in;
+ 	int new_shortname;
+ 	u64 timestamp0;
+ 	s64 delta;
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -183,7 +183,6 @@ static int parse_source(struct sym_entry
+ 	FILE *file;
+ 	char command[PATH_MAX*2];
+ 	const char *path;
+-	u64 len;
+ 
+ 	if (!syme)
+ 		return -1;
+@@ -212,8 +211,6 @@ static int parse_source(struct sym_entry
+ 	}
+ 	path = map->dso->long_name;
+ 
+-	len = sym->end - sym->start;
+-
+ 	sprintf(command,
+ 		"objdump --start-address=%#0*" PRIx64 " --stop-address=%#0*" PRIx64 " -dS %s",
+ 		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->start),
+@@ -1296,7 +1293,7 @@ static int __cmd_top(void)
+ {
+ 	pthread_t thread;
+ 	struct perf_evsel *counter;
+-	int i, ret;
++	int i, ret __used;
+ 	/*
+ 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
+ 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1144,7 +1144,7 @@ int event__synthesize_tracing_data(int f
+ {
+ 	event_t ev;
+ 	ssize_t size = 0, aligned_size = 0, padding;
+-	int err = 0;
++	int err __used = 0;
+ 
+ 	memset(&ev, 0, sizeof(ev));
+ 
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -1095,7 +1095,6 @@ int hist_entry__annotate(struct hist_ent
+ 	char command[PATH_MAX * 2];
+ 	FILE *file;
+ 	int err = 0;
+-	u64 len;
+ 	char symfs_filename[PATH_MAX];
+ 
+ 	if (filename) {
+@@ -1140,8 +1139,6 @@ fallback:
+ 		 filename, sym->name, map->unmap_ip(map, sym->start),
+ 		 map->unmap_ip(map, sym->end));
+ 
+-	len = sym->end - sym->start;
+-
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -248,8 +248,7 @@ static void python_process_event(int cpu
+ 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
+ 
+ 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+-	PyTuple_SetItem(t, n++,
+-			PyCObject_FromVoidPtr(scripting_context, NULL));
++	PyTuple_SetItem(t, n++, context);
+ 
+ 	if (handler) {
+ 		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1525,8 +1525,8 @@ int dso__load(struct dso *self, struct m
+ 			     symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_GUEST_KMODULE:
+-			if (map->groups && map->groups->machine)
+-				root_dir = map->groups->machine->root_dir;
++			if (map->groups && machine)
++				root_dir = machine->root_dir;
+ 			else
+ 				root_dir = "";
+ 			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -153,7 +153,7 @@ void parse_proc_kallsyms(char *file, uns
+ 	char *next = NULL;
+ 	char *addr_str;
+ 	char ch;
+-	int ret;
++	int ret __used;
+ 	int i;
+ 
+ 	line = strtok_r(file, "\n", &next);
+--- a/tools/perf/util/ui/browsers/map.c
++++ b/tools/perf/util/ui/browsers/map.c
+@@ -41,7 +41,7 @@ static int ui_entry__read(const char *ti
+ out_free_form:
+ 	newtPopWindow();
+ 	newtFormDestroy(form);
+-	return 0;
++	return err;
+ }
+ 
+ struct map_browser {
 
 
