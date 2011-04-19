@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1DSMOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:14:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39404 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab1DSMOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:14:18 -0400
-Date: Tue, 19 Apr 2011 14:14:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] memcg: update documentation to describe usage_in_bytes
-Message-ID: <20110419121414.GF21689@tiehlicka.suse.cz>
-References: <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
- <20110323133517.de33d624.kamezawa.hiroyu@jp.fujitsu.com>
- <20110328085508.c236e929.nishimura@mxp.nes.nec.co.jp>
- <20110328132550.08be4389.nishimura@mxp.nes.nec.co.jp>
- <20110328074341.GA5693@tiehlicka.suse.cz>
- <20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
- <20110328094820.GC5693@tiehlicka.suse.cz>
- <20110328193108.07965b4a.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329101511.d30f3518.nishimura@mxp.nes.nec.co.jp>
- <20110329072122.GA30671@tiehlicka.suse.cz>
+	id S1754970Ab1DSMRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:17:38 -0400
+Received: from relay.parallels.com ([195.214.232.42]:49102 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab1DSMRh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 08:17:37 -0400
+Message-ID: <4DAD7D5F.7040407@parallels.com>
+Date: Tue, 19 Apr 2011 16:17:35 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329072122.GA30671@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Menage <menage@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpuset: allow empty cpu/node masks
+References: <20110419100739.8464.80475.stgit@localhost6> <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com> <4DAD6D22.7000002@parallels.com> <BANLkTi=4vb5bm0xD=XVJGGD06_BHz+Ciyw@mail.gmail.com>
+In-Reply-To: <BANLkTi=4vb5bm0xD=XVJGGD06_BHz+Ciyw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Paul Menage wrote:
+> On Tue, Apr 19, 2011 at 1:08 PM, Konstantin Khlebnikov
+> <khlebnikov@parallels.com>  wrote:
+>> Is cgroup.clone_children=1 planned to be default?
+>
+> I don't think so. It would be a user-visible API change, for no
+> significant benefit.
+>
+>>
+>> So, I just want to make cgroup worked out of the box:
+>>
+>> mount -t cgroup cgroup /cgroup
+>> mkdir /cgroup/foo
+>> echo $$>  /cgroup/foo/tasks
+>
+> Just because cgroups has a very simple filesystem-based ASCII API,
+> that doesn't stop it from being a complex and
+> barely-human-comprehendable system. :-)
+>
+> I'm not sure what we gain by making that approach work - to do useful
+> stuff with cgroups (rather than simply playing around with moving
+> tasks into cgroups) you do need to have a better understanding of
+> what's going on. It's not too hard to make the initial instructions
+> explain how to only mount the subsystems that you want, or pass the
+> clone_children option.
+>
 
-On Tue 29-03-11 09:21:22, Michal Hocko wrote:
-> On Tue 29-03-11 10:15:11, Daisuke Nishimura wrote:
-> [...]
-> > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > 
-> > Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
-> > (delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
-> > charging via percpu storage), we have percpu cache for res_counter.
-> > 
-> > These changes improved performance of memory cgroup very much, but made
-> > res_counter->usage usually have a bigger value than the actual value of memory usage.
-> > So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
-> > values of memory(and swap) usage anymore.
-> > 
-> > Instead of removing these files completely(because we cannot know res_counter->usage
-> > without them), this patch updates the meaning of those files.
-> > 
-> > Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > ---
-> >  Documentation/cgroups/memory.txt |   15 +++++++++++++--
-> >  1 files changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > index 7781857..4f49d91 100644
-> > --- a/Documentation/cgroups/memory.txt
-> > +++ b/Documentation/cgroups/memory.txt
-> > @@ -52,8 +52,10 @@ Brief summary of control files.
-> >   tasks				 # attach a task(thread) and show list of threads
-> >   cgroup.procs			 # show list of processes
-> >   cgroup.event_control		 # an interface for event_fd()
-> > - memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
-> > - memory.memsw.usage_in_bytes	 # show current memory+Swap usage
-> > + memory.usage_in_bytes		 # show current res_counter usage for memory
-> > +				 (See 5.5 for details)
-> > + memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
-> > +				 (See 5.5 for details)
-> >   memory.limit_in_bytes		 # set/show limit of memory usage
-> >   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-> >   memory.failcnt			 # show the number of memory usage hits limits
-> > @@ -453,6 +455,15 @@ memory under it will be reclaimed.
-> >  You can reset failcnt by writing 0 to failcnt file.
-> >  # echo 0 > .../memory.failcnt
-> >  
-> > +5.5 usage_in_bytes
-> > +
-> > +For efficiency, as other kernel components, memory cgroup uses some optimization
-> > +to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
-> > +method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
-> > +value for efficient access. (Of course, when necessary, it's synchronized.)
-> > +If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
-> > +value in memory.stat(see 5.2).
-> > +
-> >  6. Hierarchy support
-> >  
-> >  The memory controller supports a deep hierarchy and hierarchical accounting.
-> 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Although I would like to see a mention about what is the reason for
-> keeping that file(s) if their usage is very limited. Something like.
-> "We are keeping the file because we want to be consistent with other
-> cgroups implementations and all of them export usage counter in some
-> way. Make sure you exactly know the meaning before you use the value
-> in userspace."
-> 
-> If nobody else feels that this is that important then please forget
-> about this comment.
+Ok, then the problem is that the cgroupfs can be mounted without the
+specifying set of subsystems. Thus this operation is unsafe for future compatibily.
 
-I am wondering what happened to the patch. Do you have any plans to
-update/push it?
+I think it is best to oblige all subsystems to initialize their css
+by default with reasonable unlimited values or to inherit they from parent.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Currently cpuset is only one cgroup that "does not work by default",
+and I see no reason why it should be special.
