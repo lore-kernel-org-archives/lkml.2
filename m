@@ -1,34 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab1DSXhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:37:51 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48068 "EHLO
+	id S1753076Ab1DSXif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:38:35 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48271 "EHLO
 	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab1DSXhu (ORCPT
+	with ESMTP id S1752651Ab1DSXie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:37:50 -0400
-Date: Wed, 20 Apr 2011 08:24:34 +0900
+	Tue, 19 Apr 2011 19:38:34 -0400
+Date: Wed, 20 Apr 2011 08:35:32 +0900
 From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] memcg: update documentation to describe
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: [PATCH v2(resend)] memcg: update documentation to describe
  usage_in_bytes
-Message-Id: <20110420082434.55839f06.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110419121414.GF21689@tiehlicka.suse.cz>
-References: <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
-	<20110323133517.de33d624.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110328085508.c236e929.nishimura@mxp.nes.nec.co.jp>
-	<20110328132550.08be4389.nishimura@mxp.nes.nec.co.jp>
-	<20110328074341.GA5693@tiehlicka.suse.cz>
-	<20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110328094820.GC5693@tiehlicka.suse.cz>
-	<20110328193108.07965b4a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110329101511.d30f3518.nishimura@mxp.nes.nec.co.jp>
-	<20110329072122.GA30671@tiehlicka.suse.cz>
-	<20110419121414.GF21689@tiehlicka.suse.cz>
+Message-Id: <20110420083532.abd3ada5.nishimura@mxp.nes.nec.co.jp>
 Organization: NEC Soft, Ltd.
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -38,87 +27,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+resend the patch I sent in https://lkml.org/lkml/2011/3/28/560.
 
-On Tue, 19 Apr 2011 14:14:14 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-> Hi,
-> 
-> On Tue 29-03-11 09:21:22, Michal Hocko wrote:
-> > On Tue 29-03-11 10:15:11, Daisuke Nishimura wrote:
-> > [...]
-> > > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > > 
-> > > Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
-> > > (delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
-> > > charging via percpu storage), we have percpu cache for res_counter.
-> > > 
-> > > These changes improved performance of memory cgroup very much, but made
-> > > res_counter->usage usually have a bigger value than the actual value of memory usage.
-> > > So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
-> > > values of memory(and swap) usage anymore.
-> > > 
-> > > Instead of removing these files completely(because we cannot know res_counter->usage
-> > > without them), this patch updates the meaning of those files.
-> > > 
-> > > Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > > ---
-> > >  Documentation/cgroups/memory.txt |   15 +++++++++++++--
-> > >  1 files changed, 13 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > > index 7781857..4f49d91 100644
-> > > --- a/Documentation/cgroups/memory.txt
-> > > +++ b/Documentation/cgroups/memory.txt
-> > > @@ -52,8 +52,10 @@ Brief summary of control files.
-> > >   tasks				 # attach a task(thread) and show list of threads
-> > >   cgroup.procs			 # show list of processes
-> > >   cgroup.event_control		 # an interface for event_fd()
-> > > - memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
-> > > - memory.memsw.usage_in_bytes	 # show current memory+Swap usage
-> > > + memory.usage_in_bytes		 # show current res_counter usage for memory
-> > > +				 (See 5.5 for details)
-> > > + memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
-> > > +				 (See 5.5 for details)
-> > >   memory.limit_in_bytes		 # set/show limit of memory usage
-> > >   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-> > >   memory.failcnt			 # show the number of memory usage hits limits
-> > > @@ -453,6 +455,15 @@ memory under it will be reclaimed.
-> > >  You can reset failcnt by writing 0 to failcnt file.
-> > >  # echo 0 > .../memory.failcnt
-> > >  
-> > > +5.5 usage_in_bytes
-> > > +
-> > > +For efficiency, as other kernel components, memory cgroup uses some optimization
-> > > +to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
-> > > +method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
-> > > +value for efficient access. (Of course, when necessary, it's synchronized.)
-> > > +If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
-> > > +value in memory.stat(see 5.2).
-> > > +
-> > >  6. Hierarchy support
-> > >  
-> > >  The memory controller supports a deep hierarchy and hierarchical accounting.
-> > 
-> > Acked-by: Michal Hocko <mhocko@suse.cz>
-> > 
-> > Although I would like to see a mention about what is the reason for
-> > keeping that file(s) if their usage is very limited. Something like.
-> > "We are keeping the file because we want to be consistent with other
-> > cgroups implementations and all of them export usage counter in some
-> > way. Make sure you exactly know the meaning before you use the value
-> > in userspace."
-> > 
-> > If nobody else feels that this is that important then please forget
-> > about this comment.
-> 
-> I am wondering what happened to the patch. Do you have any plans to
-> update/push it?
-> 
-Ouch! Thank you for your reminding me..
+Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
+(delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
+charging via percpu storage), we have percpu cache for res_counter.
 
-I'll resend this to Andrew soon.
+These changes improved performance of memory cgroup very much, but made
+res_counter->usage usually have a bigger value than the actual value of memory usage.
+So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
+values of memory(and swap) usage anymore.
 
-Thanks,
-Daisuke Nishimura.
+Instead of removing these files completely(because we cannot know res_counter->usage
+without them), this patch updates the meaning of those files.
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ Documentation/cgroups/memory.txt |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 7781857..4f49d91 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -52,8 +52,10 @@ Brief summary of control files.
+  tasks				 # attach a task(thread) and show list of threads
+  cgroup.procs			 # show list of processes
+  cgroup.event_control		 # an interface for event_fd()
+- memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
+- memory.memsw.usage_in_bytes	 # show current memory+Swap usage
++ memory.usage_in_bytes		 # show current res_counter usage for memory
++				 (See 5.5 for details)
++ memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
++				 (See 5.5 for details)
+  memory.limit_in_bytes		 # set/show limit of memory usage
+  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+  memory.failcnt			 # show the number of memory usage hits limits
+@@ -453,6 +455,15 @@ memory under it will be reclaimed.
+ You can reset failcnt by writing 0 to failcnt file.
+ # echo 0 > .../memory.failcnt
+ 
++5.5 usage_in_bytes
++
++For efficiency, as other kernel components, memory cgroup uses some optimization
++to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
++method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
++value for efficient access. (Of course, when necessary, it's synchronized.)
++If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
++value in memory.stat(see 5.2).
++
+ 6. Hierarchy support
+ 
+ The memory controller supports a deep hierarchy and hierarchical accounting.
+-- 
+1.7.1
