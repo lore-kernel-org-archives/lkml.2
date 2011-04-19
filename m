@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1DSXif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:38:35 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48271 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab1DSXie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:38:34 -0400
-Date: Wed, 20 Apr 2011 08:35:32 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: [PATCH v2(resend)] memcg: update documentation to describe
- usage_in_bytes
-Message-Id: <20110420083532.abd3ada5.nishimura@mxp.nes.nec.co.jp>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753118Ab1DSXje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:39:34 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:44549 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752911Ab1DSXjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 19:39:33 -0400
+Date: Wed, 20 Apr 2011 01:39:05 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
+Message-ID: <20110419233905.GA2333@cmpxchg.org>
+References: <20110414211656.GB1700@cmpxchg.org>
+ <20110419093118.GB23041@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419093118.GB23041@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-resend the patch I sent in https://lkml.org/lkml/2011/3/28/560.
+On Tue, Apr 19, 2011 at 10:31:18AM +0100, Mel Gorman wrote:
+> On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
+> > Space in a vmap block that was once allocated is considered dirty and
+> > not made available for allocation again before the whole block is
+> > recycled.
+> > 
+> > The result is that free space within a vmap block is always contiguous
+> > and the allocation bitmap can be replaced by remembering the offset of
+> > free space in the block.
+> > 
+> > The fragmented block purging was never invoked from vb_alloc() either,
+> > as it skips blocks that do not have enough free space for the
+> > allocation in the first place.  According to the above, it is
+> > impossible for a block to have enough free space and still fail the
+> > allocation.  Thus, this dead code is removed.  Partially consumed
+> > blocks will be reclaimed anyway when an attempt is made to allocate a
+> > new vmap block altogether and no free space is found.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Nick Piggin <npiggin@kernel.dk>
+> > Cc: Mel Gorman <mel@csn.ul.ie>
+> > Cc: Hugh Dickins <hughd@google.com>
+> 
+> I didn't see a problem with the patch per-se but I wonder if your patch
+> is the intended behaviour. It looks like the intention was that dirty
+> blocks could be flushed from the TLB and made available for allocations
+> leading to the possibility of fragmented vmap blocks.
+>
+> It's this check that is skipping over blocks without taking dirty into
+> account.
+> 
+>   		spin_lock(&vb->lock);
+>  		if (vb->free < 1UL << order)
+>  			goto next;
+> 
+> It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
+> but is there any possibility that this is what should be fixed instead?
 
-===
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+I would like to emphasize that the quoted check only made it clear
+that the allocation bitmap is superfluous.  There is no partial
+recycling of a block with live allocations, not even before this
+commit.
 
-Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
-(delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
-charging via percpu storage), we have percpu cache for res_counter.
+> Do we know what the consequences of blocks only getting flushed when
+> they have been fully allocated are?
 
-These changes improved performance of memory cgroup very much, but made
-res_counter->usage usually have a bigger value than the actual value of memory usage.
-So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
-values of memory(and swap) usage anymore.
+Note that it can get recycled earlier if there is no outstanding
+allocation on it, even if only a small amount of it is dirty (the
+purge_fragmented_blocks code does this).
 
-Instead of removing these files completely(because we cannot know res_counter->usage
-without them), this patch updates the meaning of those files.
+A single outstanding allocation prevents the block from being
+recycled, blocking the reuse of the dirty area.
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- Documentation/cgroups/memory.txt |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+Theoretically, we could end up with all possible vmap blocks being
+pinned by single allocations with most of their area being dirty and
+not reusable.  But I believe this is unlikely to happen.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 7781857..4f49d91 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -52,8 +52,10 @@ Brief summary of control files.
-  tasks				 # attach a task(thread) and show list of threads
-  cgroup.procs			 # show list of processes
-  cgroup.event_control		 # an interface for event_fd()
-- memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
-- memory.memsw.usage_in_bytes	 # show current memory+Swap usage
-+ memory.usage_in_bytes		 # show current res_counter usage for memory
-+				 (See 5.5 for details)
-+ memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
-+				 (See 5.5 for details)
-  memory.limit_in_bytes		 # set/show limit of memory usage
-  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-  memory.failcnt			 # show the number of memory usage hits limits
-@@ -453,6 +455,15 @@ memory under it will be reclaimed.
- You can reset failcnt by writing 0 to failcnt file.
- # echo 0 > .../memory.failcnt
- 
-+5.5 usage_in_bytes
-+
-+For efficiency, as other kernel components, memory cgroup uses some optimization
-+to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
-+method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
-+value for efficient access. (Of course, when necessary, it's synchronized.)
-+If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
-+value in memory.stat(see 5.2).
-+
- 6. Hierarchy support
- 
- The memory controller supports a deep hierarchy and hierarchical accounting.
--- 
-1.7.1
+Would you be okay with printing out block usage statistics on
+allocation errors for the time being, so we can identify this case if
+problems show up?
+
+And consider this patch an optimization/simplification of a status quo
+that does not appear problematic?  We can still revert it and
+implement live block recycling when it turns out to be necessary.
+
+	Hannes
