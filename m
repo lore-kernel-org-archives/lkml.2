@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab1DSPev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 11:34:51 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:63500 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1DSPeu convert rfc822-to-8bit (ORCPT
+	id S1752859Ab1DSPgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 11:36:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27585 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab1DSPgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 11:34:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=iRbQ089y3WkKHLgJE6aD1g34E6nA5FHTWgAJc5rYJXu7FvZy91xZlnpqSba/XWBgPJ
-         T6p2IcgiNDymB8x5lDjlJ42W1an2Kqp/ex1b5kpppwbVmRSPCbNkLj2to+k/xaXOOrlS
-         PeEk31NWbh7AgYTU5uAo9WV84io0j7vilc9Qo=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
-References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com> <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 19 Apr 2011 23:34:30 +0800
-Message-ID: <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
-Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Apr 2011 11:36:17 -0400
+Date: Tue, 19 Apr 2011 08:35:46 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] driver core: syscore exports for modular APM
+Message-Id: <20110419083546.e8981e49.randy.dunlap@oracle.com>
+In-Reply-To: <20110419150641.644638d5.sfr@canb.auug.org.au>
+References: <20110419150641.644638d5.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4DADABD5.00F8:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do you part is OK?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I think it will be very easy to reproduce.
+When CONFIG_APM=m, build fails with:
 
-Thanks,
-Hui
+ERROR: "syscore_suspend" [arch/x86/kernel/apm.ko] undefined!
+ERROR: "syscore_resume" [arch/x86/kernel/apm.ko] undefined!
 
-On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
->> Cannot connect to any outside devices through bluetooth.
->>
->> And I think this is not a bug of low level driver.  Because both my
->> laptop and a usb bluetooth card cannot work.
->
-> Hi, please explain the "cannot work" in detail,
-> Firstly check dmesg and hciconfig to see if there's anything wrong.
->
-> --
-> Regards
-> dave
->
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/base/syscore.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- linux-next-20110419.orig/drivers/base/syscore.c
++++ linux-next-20110419/drivers/base/syscore.c
+@@ -73,6 +73,7 @@ int syscore_suspend(void)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(syscore_suspend);
+ 
+ /**
+  * syscore_resume - Execute all the registered system core resume callbacks.
+@@ -95,6 +96,7 @@ void syscore_resume(void)
+ 				"Interrupts enabled after %pF\n", ops->resume);
+ 		}
+ }
++EXPORT_SYMBOL_GPL(syscore_resume);
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ /**
