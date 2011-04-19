@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1DSJNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:13:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53601 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab1DSJNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:13:32 -0400
-Date: Tue, 19 Apr 2011 11:13:29 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Ott <alan@signal11.us>
-Subject: Re: [PATCH -next] hid-example: fix some build issues
-Message-ID: <20110419091329.GB13661@sepie.suse.cz>
-References: <201104142149.p3ELnnoF008424@imap1.linux-foundation.org>
- <20110418111251.8a922b6b.randy.dunlap@oracle.com>
- <alpine.LNX.2.00.1104191047090.12035@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1104191047090.12035@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754098Ab1DSJNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:13:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35620 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab1DSJNC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:13:02 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation
+ for uprobes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110419062654.GB10698@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	 <20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
+	 <1303145171.32491.886.camel@twins>
+	 <20110419062654.GB10698@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 19 Apr 2011 11:11:48 +0200
+Message-ID: <1303204308.32491.923.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 10:48:26AM +0200, Jiri Kosina wrote:
-> 
-> [ adding Michal Marek to CC ]
-> 
-> On Mon, 18 Apr 2011, Randy Dunlap wrote:
-> 
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > samples/hid-example.o needs some Kconfig and Makefile additions
-> > in order to build.  It should use <linux/*.h> headers from
-> > the build tree, so use HEADERS_CHECK to require that those
-> > header files be present.
-> > 
-> > Change the kconfig symbol from tristate to bool since
-> > userspace cannot be built as loadable modules.
-> > 
-> > However, I don't understand why the userspace header files are
-> > not present as reported in Andrew's build log, since it builds
-> > OK on x86_64 without any of these changes.
-> 
-> Yes, I have no idea how the build failure Andrew is reporting happens. 
-> Andrew -- what exact command are you using that leads to that failure?
+(Dropped the systemtap list since its mis-behaving, please leave it out on future postings)
 
-I believe Andrew was trying to build samples/hidraw/hid-example.o
-directly, which unfortunatelly does not work (kbuild limitation). For
-reference, this is the reply I sent privately to Andrew:
+On Tue, 2011-04-19 at 11:56 +0530, Srikar Dronamraju wrote:
+> > > TODO: On massively threaded processes (or if a huge number of processes
+> > > share the same mm), there is a possiblilty of running out of slots.
+> > > One alternative could be to extend the slots as when slots are required.
+> > 
+> > As long as you're single stepping things and not using boosted probes
+> > you can fully serialize the slot usage. Claim a slot on trap and release
+> > the slot on finish. Claiming can wait on a free slot since you already
+> > have the whole SLEEPY thing.
+> > 
+> 
+> Yes, thats certainly one approach but that approach makes every
+> breakpoint hit contend for spinlock. (Infact we will have to change it
+> to mutex lock (as you rightly pointed out) so that we allow threads to
+> wait when slots are not free). Assuming a 4K page, we would be taxing
+> applications that have less than 32 threads (which is probably the
+> default case). If we continue with the current approach, then we
+> could only add additional page(s) for apps which has more than 32
+> threads and only when more than 32 __live__ threads have actually hit a
+> breakpoint. 
 
-| The samples/hidraw/ directory does not appear in the output, I I guess 
-| samples/hidraw/hid-example already existed? Back to the original 
-| problem, I can reproduce the bug with
-| 
-| $ make  samples/hidraw/hid-example.o
-|    CHK     include/linux/version.h
-|    CHK     include/generated/utsrelease.h
-|    CALL    scripts/checksyscalls.sh
-|    CC      samples/hidraw/hid-example.o
-| samples/hidraw/hid-example.c:29:23: fatal error: sys/ioctl.h: No such 
-| file or directory
-| 
-| Because for %.o there is a rule in the toplevel Makefile passes control 
-| to scripts/Makefile.build, while you would need scripts/Makefile.host in 
-| this case. I don't know how to fix this, when Makefile.build is told to 
-| build foo.o, it builds it as kernel code, it doesn't inspect the 
-| hostprogs-y variable to see if perhaps foo.o is in the foodchain of some 
-| host program. However, 'make  samples/hidraw/' works fine for me. So 
-| what command exactly did you use?
+That very much depends on what you do, some folks think its entirely
+reasonable for processes to have thousands of threads. Now I completely
+agree with you that that is not 'normal', but then I think using Java
+isn't normal either ;-)
 
-Michal
+Anyway, avoiding that spinlock/mutex for each trap isn't hard, avoiding
+a process wide cacheline bounce is slightly harder but still not
+impossible. 
+
+With 32 slots in 4k you have 128 bytes to play with, all we need is a
+single bit per slot to mark it being in-use. If a task remembers what
+slot it used last and tries to claim that using an atomic test and set
+for that bit it will, in the 'normal' case, never contend on a process
+wide cacheline.
+
+In case it does find the slot taken, it'll have to go the slow route and
+scan for a free slot and possibly wait for one to become free.
+
