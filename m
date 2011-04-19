@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab1DSX7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:59:37 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:60080 "EHLO e5.ny.us.ibm.com"
+	id S1754375Ab1DSX75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:59:57 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:56715 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753947Ab1DSX7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:59:35 -0400
+	id S1753671Ab1DSX64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 19:58:56 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 3/4] timers: Introduce in-kernel alarm-timer interface
-Date: Tue, 19 Apr 2011 16:58:29 -0700
-Message-Id: <1303257510-15054-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 4/4] timers: posix interface for alarm-timers
+Date: Tue, 19 Apr 2011 16:58:30 -0700
+Message-Id: <1303257510-15054-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1303257510-15054-1-git-send-email-john.stultz@linaro.org>
 References: <1303257510-15054-1-git-send-email-john.stultz@linaro.org>
@@ -25,464 +25,465 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the in kernel interface and infrastructure for
-alarm-timers.
+This patch exposes alarm-timers to userland via the posix clock
+and timers interface, using two new clockids: CLOCK_REALTIME_ALARM
+and CLOCK_BOOTTIME_ALARM. Both clockids behave identically to
+CLOCK_REALTIME and CLOCK_BOOTTIME, respectively, but timers
+set against the _ALARM suffixed clockids will wake the system if
+it is suspended.
 
-Alarm-timers are a hybrid style timer, similar to hrtimers,
-but when the system is suspended, the RTC device is set to
-fire and wake the system for when the soonest alarm-timer
-expires.
+Some background can be found here:
+	https://lwn.net/Articles/429925/
 
 The concept for Alarm-timers was inspired by the Android Alarm
 driver (by Arve Hjønnevåg) found in the Android kernel tree.
 
 See: http://android.git.kernel.org/?p=kernel/common.git;a=blob;f=drivers/rtc/alarm.c;h=1250edfbdf3302f5e4ea6194847c6ef4bb7beb1c;hb=android-2.6.36
 
-This in-kernel interface should be fairly compatible with the
-Android alarm driver in-kernel interface, but has the advantage
-of utilizing the new RTC timerqueue code instead of doing direct
-RTC manipulation.
+While the in-kernel interface is pretty similar between
+alarm-timers and Android alarm driver, the user-space interface
+for the Android alarm driver is via ioctls to a new char device.
+As mentioned above, I've instead chosen to export this functionality
+via the posix interface, as it seemed a little simpler and avoids
+creating duplicate interfaces to things like CLOCK_REALTIME and
+CLOCK_MONOTONIC under alternate names (ie:ANDROID_ALARM_RTC and
+ANDROID_ALARM_SYSTEMTIME).
+
+The semantics of the Android alarm driver are different from what
+this posix interface provides. For instance, threads other then
+the thread waiting on the Android alarm driver are able to modify
+the alarm being waited on. Also this interface does not allow
+the same wakelock semantics that the Android driver provides
+(ie: kernel takes a wakelock on RTC alarm-interupt, and holds it
+through process wakeup, and while the process runs, until the
+process either closes the char device or calls back in to wait
+on a new alarm).
+
+One potential way to implement similar semantics may be via
+the timerfd infrastructure, but this needs more research.
+
+There may also need to be some sort of sysfs system level policy
+hooks that allow alarm timers to be disabled to keep them
+from firing at inappropriate times (ie: laptop in a well insulated
+bag, mid-flight).
 
 CC: Arve Hjønnevåg <arve@android.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/alarmtimer.h |   30 ++++
- kernel/time/Makefile       |    2 +-
- kernel/time/alarmtimer.c   |  375 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 406 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/alarmtimer.h
- create mode 100644 kernel/time/alarmtimer.c
+ include/linux/capability.h   |    7 +-
+ include/linux/posix-timers.h |    2 +
+ include/linux/time.h         |    2 +
+ kernel/time/alarmtimer.c     |  330 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 340 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/alarmtimer.h b/include/linux/alarmtimer.h
-new file mode 100644
-index 0000000..6861f28
---- /dev/null
-+++ b/include/linux/alarmtimer.h
-@@ -0,0 +1,30 @@
-+#ifndef _LINUX_ALARMTIMER_H
-+#define _LINUX_ALARMTIMER_H
-+
-+#include <linux/time.h>
-+#include <linux/hrtimer.h>
-+#include <linux/timerqueue.h>
-+#include <linux/rtc.h>
-+
-+enum alarmtimer_type {
-+	ALARM_REALTIME,
-+	ALARM_BOOTTIME,
-+
-+	ALARM_NUMTYPE,
-+};
-+
-+struct alarm {
-+	struct timerqueue_node node;
-+	ktime_t period;
-+	void (*function)(struct alarm *);
-+	enum alarmtimer_type type;
-+	char enabled;
-+	void *data;
-+};
-+
-+void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
-+		void (*function)(struct alarm *));
-+void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period);
-+void alarm_cancel(struct alarm *alarm);
-+
-+#endif
-diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index b042599..e2fd74b 100644
---- a/kernel/time/Makefile
-+++ b/kernel/time/Makefile
-@@ -1,5 +1,5 @@
- obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o
--obj-y += timeconv.o posix-clock.o
-+obj-y += timeconv.o posix-clock.o alarmtimer.o
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 16ee8b4..7cb23ea 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -355,7 +355,12 @@ struct cpu_vfs_cap_data {
  
- obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
- obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-new file mode 100644
-index 0000000..4d91f0e
---- /dev/null
-+++ b/kernel/time/alarmtimer.c
-@@ -0,0 +1,375 @@
-+/*
-+ * Alarmtimer interface
-+ *
-+ * This interface provides a timer which is similarto hrtimers,
-+ * but triggers a RTC alarm if the box is suspend.
-+ *
-+ * This interface is influenced by the Android RTC Alarm timer
-+ * interface.
-+ *
-+ * Copyright (C) 2010 IBM Corperation
-+ *
-+ * Author: John Stultz <john.stultz@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/time.h>
-+#include <linux/hrtimer.h>
-+#include <linux/timerqueue.h>
-+#include <linux/rtc.h>
+ #define CAP_SYSLOG           34
+ 
+-#define CAP_LAST_CAP         CAP_SYSLOG
++/* Allow triggering something that will wake the system */
++
++#define CAP_WAKE_ALARM            35
++
++
++#define CAP_LAST_CAP         CAP_WAKE_ALARM
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index d51243a..808227d 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -5,6 +5,7 @@
+ #include <linux/list.h>
+ #include <linux/sched.h>
+ #include <linux/timex.h>
 +#include <linux/alarmtimer.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/posix-timers.h>
-+#include <linux/workqueue.h>
-+#include <linux/freezer.h>
-+
-+
-+static struct alarm_base {
-+	spinlock_t lock;
-+	struct timerqueue_head timerqueue;
-+	struct hrtimer timer;
-+	ktime_t (*gettime)(void);
-+	clockid_t base_clockid;
-+	struct work_struct irqwork;
-+} alarm_bases[ALARM_NUMTYPE];
-+
-+static struct rtc_timer rtctimer;
-+static struct rtc_device *rtcdev;
-+
-+static ktime_t freezer_delta;
-+static DEFINE_SPINLOCK(freezer_delta_lock);
-+
-+
-+/**************************************************************************
-+ * alarmtimer management code
-+ */
-+
-+/*
-+ * alarmtimer_enqueue - Adds an alarm timer to an alarm_base timerqueue
-+ * @base: pointer to the base where the timer is being run
-+ * @alarm: pointer to alarm being enqueued.
-+ *
-+ * Adds alarm to a alarm_base timerqueue and if necessary sets
-+ * an hrtimer to run.
-+ *
-+ * Must hold base->lock when calling.
-+ */
-+static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
+ 
+ union cpu_time_count {
+ 	cputime_t cpu;
+@@ -80,6 +81,7 @@ struct k_itimer {
+ 			unsigned long incr;
+ 			unsigned long expires;
+ 		} mmtimer;
++		struct alarm alarmtimer;
+ 	} it;
+ };
+ 
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 4ea5a75..b306178 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -295,6 +295,8 @@ struct itimerval {
+ #define CLOCK_REALTIME_COARSE		5
+ #define CLOCK_MONOTONIC_COARSE		6
+ #define CLOCK_BOOTTIME			7
++#define CLOCK_REALTIME_ALARM		8
++#define CLOCK_BOOTTIME_ALARM		9
+ 
+ /*
+  * The IDs of various hardware clocks:
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index 4d91f0e..5fec899 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -215,6 +215,21 @@ static int alarmtimer_suspend(struct device *dev)
+ }
+ 
+ 
++static void alarmtimer_freezerset(ktime_t absexp, enum alarmtimer_type type)
 +{
-+	timerqueue_add(&base->timerqueue, &alarm->node);
-+	if (&alarm->node == timerqueue_getnext(&base->timerqueue)) {
-+		hrtimer_try_to_cancel(&base->timer);
-+		hrtimer_start(&base->timer, alarm->node.expires,
-+				HRTIMER_MODE_ABS);
-+	}
-+}
-+
-+/*
-+ * alarmtimer_remove - Removes an alarm timer from an alarm_base timerqueue
-+ * @base: pointer to the base where the timer is running
-+ * @alarm: pointer to alarm being removed
-+ *
-+ * Removes alarm to a alarm_base timerqueue and if necessary sets
-+ * a new timer to run.
-+ *
-+ * Must hold base->lock when calling.
-+ */
-+static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
-+{
-+	struct timerqueue_node *next = timerqueue_getnext(&base->timerqueue);
-+
-+	timerqueue_del(&base->timerqueue, &alarm->node);
-+	if (next == &alarm->node) {
-+		hrtimer_try_to_cancel(&base->timer);
-+		next = timerqueue_getnext(&base->timerqueue);
-+		if (!next)
-+			return;
-+		hrtimer_start(&base->timer, next->expires, HRTIMER_MODE_ABS);
-+	}
-+}
-+
-+/*
-+ * alarmtimer_do_work - Handles alarm being fired.
-+ * @work: pointer to workqueue being run
-+ *
-+ * When a timer fires, this runs through the timerqueue to see
-+ * which alarm timers, and run those that expired. If there are
-+ * more alarm timers queued, we set the hrtimer to fire in the
-+ * future.
-+ */
-+void alarmtimer_do_work(struct work_struct *work)
-+{
-+	struct alarm_base *base = container_of(work, struct alarm_base,
-+						irqwork);
-+	struct timerqueue_node *next;
++	ktime_t delta;
 +	unsigned long flags;
-+	ktime_t now;
++	struct alarm_base *base = &alarm_bases[type];
 +
-+	spin_lock_irqsave(&base->lock, flags);
-+	now = base->gettime();
-+	while ((next = timerqueue_getnext(&base->timerqueue))) {
-+		struct alarm *alarm;
-+		ktime_t expired = next->expires;
-+
-+		if (expired.tv64 >= now.tv64)
-+			break;
-+
-+		alarm = container_of(next, struct alarm, node);
-+
-+		timerqueue_del(&base->timerqueue, &alarm->node);
-+		alarm->enabled = 0;
-+		/* Re-add periodic timers */
-+		if (alarm->period.tv64) {
-+			alarm->node.expires = ktime_add(expired, alarm->period);
-+			timerqueue_add(&base->timerqueue, &alarm->node);
-+			alarm->enabled = 1;
-+		}
-+		spin_unlock_irqrestore(&base->lock, flags);
-+		if (alarm->function)
-+			alarm->function(alarm);
-+		spin_lock_irqsave(&base->lock, flags);
-+	}
-+
-+	if (next) {
-+		hrtimer_start(&base->timer, next->expires,
-+				HRTIMER_MODE_ABS);
-+	}
-+	spin_unlock_irqrestore(&base->lock, flags);
-+}
-+
-+
-+/*
-+ * alarmtimer_fired - Handles alarm hrtimer being fired.
-+ * @timer: pointer to hrtimer being run
-+ *
-+ * When a timer fires, this schedules the do_work function to
-+ * be run.
-+ */
-+static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
-+{
-+	struct alarm_base *base = container_of(timer, struct alarm_base, timer);
-+	schedule_work(&base->irqwork);
-+	return HRTIMER_NORESTART;
-+}
-+
-+
-+/*
-+ * alarmtimer_suspend - Suspend time callback
-+ * @dev: unused
-+ * @state: unused
-+ *
-+ * When we are going into suspend, we look through the bases
-+ * to see which is the soonest timer to expire. We then
-+ * set an rtc timer to fire that far into the future, which
-+ * will wake us from suspend.
-+ */
-+static int alarmtimer_suspend(struct device *dev)
-+{
-+	struct rtc_time tm;
-+	ktime_t min, now;
-+	unsigned long flags;
-+	int i;
++	delta = ktime_sub(absexp, base->gettime());
 +
 +	spin_lock_irqsave(&freezer_delta_lock, flags);
-+	min = freezer_delta;
-+	freezer_delta = ktime_set(0, 0);
++	if (!freezer_delta.tv64 || (delta.tv64 < freezer_delta.tv64))
++		freezer_delta = delta;
 +	spin_unlock_irqrestore(&freezer_delta_lock, flags);
++}
 +
-+	/* If we have no rtcdev, just return */
-+	if (!rtcdev)
-+		return 0;
 +
-+	/* Find the soonest timer to expire*/
-+	for (i = 0; i < ALARM_NUMTYPE; i++) {
-+		struct alarm_base *base = &alarm_bases[i];
-+		struct timerqueue_node *next;
-+		ktime_t delta;
+ /**************************************************************************
+  * alarm kernel interface code
+  */
+@@ -279,6 +294,309 @@ void alarm_cancel(struct alarm *alarm)
+ }
+ 
+ 
++/**************************************************************************
++ * alarm posix interface code
++ */
 +
-+		spin_lock_irqsave(&base->lock, flags);
-+		next = timerqueue_getnext(&base->timerqueue);
-+		spin_unlock_irqrestore(&base->lock, flags);
-+		if (!next)
-+			continue;
-+		delta = ktime_sub(next->expires, base->gettime());
-+		if (!min.tv64 || (delta.tv64 < min.tv64))
-+			min = delta;
-+	}
-+	if (min.tv64 == 0)
-+		return 0;
++/*
++ * clock2alarm - helper that converts from clockid to alarmtypes
++ * @clockid: clockid.
++ *
++ * Helper function that converts from clockids to alarmtypes
++ */
++static enum alarmtimer_type clock2alarm(clockid_t clockid)
++{
++	if (clockid == CLOCK_REALTIME_ALARM)
++		return ALARM_REALTIME;
++	if (clockid == CLOCK_BOOTTIME_ALARM)
++		return ALARM_BOOTTIME;
++	return -1;
++}
 +
-+	/* XXX - Should we enforce a minimum sleep time? */
-+	WARN_ON(min.tv64 < NSEC_PER_SEC);
++/*
++ * alarm_handle_timer - Callback for posix timers
++ * @alarm: alarm that fired
++ *
++ * Posix timer callback for expired alarm timers.
++ */
++static void alarm_handle_timer(struct alarm *alarm)
++{
++	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
++						it.alarmtimer);
++	if (posix_timer_event(ptr, 0) != 0)
++		ptr->it_overrun++;
++}
 +
-+	/* Setup an rtc timer to fire that far in the future */
-+	rtc_timer_cancel(rtcdev, &rtctimer);
-+	rtc_read_time(rtcdev, &tm);
-+	now = rtc_tm_to_ktime(tm);
-+	now = ktime_add(now, min);
++/*
++ * alarm_clock_getres - posix getres interface
++ * @which_clock: clockid
++ * @tp: timespec to fill
++ *
++ * Returns the granularity of underlying alarm base clock
++ */
++static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
++{
++	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
 +
-+	rtc_timer_start(rtcdev, &rtctimer, now, ktime_set(0, 0));
++	return hrtimer_get_res(baseid, tp);
++}
 +
++/**
++ * alarm_clock_get - posix clock_get interface
++ * @which_clock: clockid
++ * @tp: timespec to fill.
++ *
++ * Provides the underlying alarm base time.
++ */
++static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
++{
++	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
++
++	*tp = ktime_to_timespec(base->gettime());
 +	return 0;
 +}
 +
-+
-+/**************************************************************************
-+ * alarm kernel interface code
-+ */
-+
-+/*
-+ * alarm_init - Initialize an alarm structure
-+ * @alarm: ptr to alarm to be initialized
-+ * @type: the type of the alarm
-+ * @function: callback that is run when the alarm fires
++/**
++ * alarm_timer_create - posix timer_create interface
++ * @new_timer: k_itimer pointer to manage
 + *
-+ * In-kernel interface to initializes the alarm structure.
++ * Initializes the k_itimer structure.
 + */
-+void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
-+		void (*function)(struct alarm *))
++static int alarm_timer_create(struct k_itimer *new_timer)
 +{
-+	timerqueue_init(&alarm->node);
-+	alarm->period = ktime_set(0, 0);
-+	alarm->function = function;
-+	alarm->type = type;
-+	alarm->enabled = 0;
++	enum  alarmtimer_type type;
++	struct alarm_base *base;
++
++	if (!capable(CAP_WAKE_ALARM))
++		return -EPERM;
++
++	type = clock2alarm(new_timer->it_clock);
++	base = &alarm_bases[type];
++	alarm_init(&new_timer->it.alarmtimer, type, alarm_handle_timer);
++	return 0;
 +}
-+
-+/*
-+ * alarm_start - Sets an alarm to fire
-+ * @alarm: ptr to alarm to set
-+ * @start: time to run the alarm
-+ * @period: period at which the alarm will recur
-+ *
-+ * In-kernel interface set an alarm timer.
-+ */
-+void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&base->lock, flags);
-+	if (alarm->enabled)
-+		alarmtimer_remove(base, alarm);
-+	alarm->node.expires = start;
-+	alarm->period = period;
-+	alarmtimer_enqueue(base, alarm);
-+	alarm->enabled = 1;
-+	spin_unlock_irqrestore(&base->lock, flags);
-+}
-+
-+/*
-+ * alarm_cancel - Tries to cancel an alarm timer
-+ * @alarm: ptr to alarm to be canceled
-+ *
-+ * In-kernel interface to cancel an alarm timer.
-+ */
-+void alarm_cancel(struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&base->lock, flags);
-+	if (alarm->enabled)
-+		alarmtimer_remove(base, alarm);
-+	alarm->enabled = 0;
-+	spin_unlock_irqrestore(&base->lock, flags);
-+}
-+
-+
-+
-+/**************************************************************************
-+ * alarmtimer initialization code
-+ */
-+
-+/* Suspend hook structures */
-+static const struct dev_pm_ops alarmtimer_pm_ops = {
-+	.suspend = alarmtimer_suspend,
-+};
-+
-+static struct platform_driver alarmtimer_driver = {
-+	.driver = {
-+		.name = "alarmtimer",
-+		.pm = &alarmtimer_pm_ops,
-+	}
-+};
 +
 +/**
-+ * alarmtimer_init - Initialize alarm timer code
++ * alarm_timer_get - posix timer_get interface
++ * @new_timer: k_itimer pointer
++ * @cur_setting: itimerspec data to fill
 + *
-+ * This function initializes the alarm bases and registers
-+ * the posix clock ids.
++ * Copies the itimerspec data out from the k_itimer
 + */
-+static int __init alarmtimer_init(void)
++static void alarm_timer_get(struct k_itimer *timr,
++				struct itimerspec *cur_setting)
 +{
-+	int error = 0;
-+	int i;
-+
-+	/* Initialize alarm bases */
-+	alarm_bases[ALARM_REALTIME].base_clockid = CLOCK_REALTIME;
-+	alarm_bases[ALARM_REALTIME].gettime = &ktime_get_real;
-+	alarm_bases[ALARM_BOOTTIME].base_clockid = CLOCK_BOOTTIME;
-+	alarm_bases[ALARM_BOOTTIME].gettime = &ktime_get_boottime;
-+	for (i = 0; i < ALARM_NUMTYPE; i++) {
-+		timerqueue_init_head(&alarm_bases[i].timerqueue);
-+		spin_lock_init(&alarm_bases[i].lock);
-+		hrtimer_init(&alarm_bases[i].timer,
-+				alarm_bases[i].base_clockid,
-+				HRTIMER_MODE_ABS);
-+		alarm_bases[i].timer.function = alarmtimer_fired;
-+		INIT_WORK(&alarm_bases[i].irqwork, alarmtimer_do_work);
-+	}
-+	error = platform_driver_register(&alarmtimer_driver);
-+	platform_device_register_simple("alarmtimer", -1, NULL, 0);
-+
-+	return error;
++	cur_setting->it_interval =
++			ktime_to_timespec(timr->it.alarmtimer.period);
++	cur_setting->it_value =
++			ktime_to_timespec(timr->it.alarmtimer.node.expires);
++	return;
 +}
-+device_initcall(alarmtimer_init);
 +
 +/**
-+ * has_wakealarm - check rtc device has wakealarm ability
-+ * @dev: current device
-+ * @name_ptr: name to be returned
++ * alarm_timer_del - posix timer_del interface
++ * @timr: k_itimer pointer to be deleted
 + *
-+ * This helper function checks to see if the rtc device can wake
-+ * from suspend.
++ * Cancels any programmed alarms for the given timer.
 + */
-+static int __init has_wakealarm(struct device *dev, void *name_ptr)
++static int alarm_timer_del(struct k_itimer *timr)
 +{
-+	struct rtc_device *candidate = to_rtc_device(dev);
++	alarm_cancel(&timr->it.alarmtimer);
++	return 0;
++}
 +
-+	if (!candidate->ops->set_alarm)
-+		return 0;
-+	if (!device_may_wakeup(candidate->dev.parent))
-+		return 0;
++/**
++ * alarm_timer_set - posix timer_set interface
++ * @timr: k_itimer pointer to be deleted
++ * @flags: timer flags
++ * @new_setting: itimerspec to be used
++ * @old_setting: itimerspec being replaced
++ *
++ * Sets the timer to new_setting, and starts the timer.
++ */
++static int alarm_timer_set(struct k_itimer *timr, int flags,
++				struct itimerspec *new_setting,
++				struct itimerspec *old_setting)
++{
++	/* Save old values */
++	old_setting->it_interval =
++			ktime_to_timespec(timr->it.alarmtimer.period);
++	old_setting->it_value =
++			ktime_to_timespec(timr->it.alarmtimer.node.expires);
 +
-+	*(const char **)name_ptr = dev_name(dev);
++	/* If the timer was already set, cancel it */
++	alarm_cancel(&timr->it.alarmtimer);
++
++	/* start the timer */
++	alarm_start(&timr->it.alarmtimer,
++			timespec_to_ktime(new_setting->it_value),
++			timespec_to_ktime(new_setting->it_interval));
++	return 0;
++}
++
++/**
++ * alarmtimer_nsleep_wakeup - Wakeup function for alarm_timer_nsleep
++ * @alarm: ptr to alarm that fired
++ *
++ * Wakes up the task that set the alarmtimer
++ */
++static void alarmtimer_nsleep_wakeup(struct alarm *alarm)
++{
++	struct task_struct *task = (struct task_struct *)alarm->data;
++
++	alarm->data = NULL;
++	if (task)
++		wake_up_process(task);
++}
++
++/**
++ * alarmtimer_do_nsleep - Internal alarmtimer nsleep implementation
++ * @alarm: ptr to alarmtimer
++ * @absexp: absolute expiration time
++ *
++ * Sets the alarm timer and sleeps until it is fired or interrupted.
++ */
++static int alarmtimer_do_nsleep(struct alarm *alarm, ktime_t absexp)
++{
++	alarm->data = (void *)current;
++	do {
++		set_current_state(TASK_INTERRUPTIBLE);
++		alarm_start(alarm, absexp, ktime_set(0, 0));
++		if (likely(alarm->data))
++			schedule();
++
++		alarm_cancel(alarm);
++	} while (alarm->data && !signal_pending(current));
++
++	__set_current_state(TASK_RUNNING);
++
++	return (alarm->data == NULL);
++}
++
++
++/**
++ * update_rmtp - Update remaining timespec value
++ * @exp: expiration time
++ * @type: timer type
++ * @rmtp: user pointer to remaining timepsec value
++ *
++ * Helper function that fills in rmtp value with time between
++ * now and the exp value
++ */
++static int update_rmtp(ktime_t exp, enum  alarmtimer_type type,
++			struct timespec __user *rmtp)
++{
++	struct timespec rmt;
++	ktime_t rem;
++
++	rem = ktime_sub(exp, alarm_bases[type].gettime());
++
++	if (rem.tv64 <= 0)
++		return 0;
++	rmt = ktime_to_timespec(rem);
++
++	if (copy_to_user(rmtp, &rmt, sizeof(*rmtp)))
++		return -EFAULT;
++
 +	return 1;
++
 +}
 +
 +/**
-+ * alarmtimer_init_late - Late initializing of alarmtimer code
++ * alarm_timer_nsleep_restart - restartblock alarmtimer nsleep
++ * @restart: ptr to restart block
 + *
-+ * This function locates a rtc device to use for wakealarms.
-+ * Run as late_initcall to make sure rtc devices have been
-+ * registered.
++ * Handles restarted clock_nanosleep calls
 + */
-+static int __init alarmtimer_init_late(void)
++static long __sched alarm_timer_nsleep_restart(struct restart_block *restart)
 +{
-+	char *str;
++	enum  alarmtimer_type type = restart->nanosleep.index;
++	ktime_t exp;
++	struct timespec __user  *rmtp;
++	struct alarm alarm;
++	int ret = 0;
 +
-+	/* Find an rtc device and init the rtc_timer */
-+	class_find_device(rtc_class, NULL, &str, has_wakealarm);
-+	if (str)
-+		rtcdev = rtc_class_open(str);
-+	if (!rtcdev) {
-+		printk(KERN_WARNING "No RTC device found, ALARM timers will"
-+			" not wake from suspend");
++	exp.tv64 = restart->nanosleep.expires;
++	alarm_init(&alarm, type, alarmtimer_nsleep_wakeup);
++
++	if (alarmtimer_do_nsleep(&alarm, exp))
++		goto out;
++
++	if (freezing(current))
++		alarmtimer_freezerset(exp, type);
++
++	rmtp = restart->nanosleep.rmtp;
++	if (rmtp) {
++		ret = update_rmtp(exp, type, rmtp);
++		if (ret <= 0)
++			goto out;
 +	}
-+	rtc_timer_init(&rtctimer, NULL, NULL);
 +
-+	return 0;
++
++	/* The other values in restart are already filled in */
++	ret = -ERESTART_RESTARTBLOCK;
++out:
++	return ret;
 +}
-+late_initcall(alarmtimer_init_late);
++
++/**
++ * alarm_timer_nsleep - alarmtimer nanosleep
++ * @which_clock: clockid
++ * @flags: determins abstime or relative
++ * @tsreq: requested sleep time (abs or rel)
++ * @rmtp: remaining sleep time saved
++ *
++ * Handles clock_nanosleep calls against _ALARM clockids
++ */
++static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
++		     struct timespec *tsreq, struct timespec __user *rmtp)
++{
++	enum  alarmtimer_type type = clock2alarm(which_clock);
++	struct alarm alarm;
++	ktime_t exp;
++	int ret = 0;
++	struct restart_block *restart;
++
++	if (!capable(CAP_WAKE_ALARM))
++		return -EPERM;
++
++	alarm_init(&alarm, type, alarmtimer_nsleep_wakeup);
++
++	exp = timespec_to_ktime(*tsreq);
++	/* Convert (if necessary) to absolute time */
++	if (flags != TIMER_ABSTIME) {
++		ktime_t now = alarm_bases[type].gettime();
++		exp = ktime_add(now, exp);
++	}
++
++	if (alarmtimer_do_nsleep(&alarm, exp))
++		goto out;
++
++	if (freezing(current))
++		alarmtimer_freezerset(exp, type);
++
++	/* abs timers don't set remaining time or restart */
++	if (flags == TIMER_ABSTIME) {
++		ret = -ERESTARTNOHAND;
++		goto out;
++	}
++
++	if (rmtp) {
++		ret = update_rmtp(exp, type, rmtp);
++		if (ret <= 0)
++			goto out;
++	}
++
++	restart = &current_thread_info()->restart_block;
++	restart->fn = alarm_timer_nsleep_restart;
++	restart->nanosleep.index = type;
++	restart->nanosleep.expires = exp.tv64;
++	restart->nanosleep.rmtp = rmtp;
++	ret = -ERESTART_RESTARTBLOCK;
++
++out:
++	return ret;
++}
+ 
+ /**************************************************************************
+  * alarmtimer initialization code
+@@ -306,6 +624,18 @@ static int __init alarmtimer_init(void)
+ {
+ 	int error = 0;
+ 	int i;
++	struct k_clock alarm_clock = {
++		.clock_getres = alarm_clock_getres,
++		.clock_get = alarm_clock_get,
++		.timer_create = alarm_timer_create,
++		.timer_set = alarm_timer_set,
++		.timer_del = alarm_timer_del,
++		.timer_get = alarm_timer_get,
++		.nsleep = alarm_timer_nsleep,
++	};
++
++	posix_timers_register_clock(CLOCK_REALTIME_ALARM, &alarm_clock);
++	posix_timers_register_clock(CLOCK_BOOTTIME_ALARM, &alarm_clock);
+ 
+ 	/* Initialize alarm bases */
+ 	alarm_bases[ALARM_REALTIME].base_clockid = CLOCK_REALTIME;
 -- 
 1.7.3.2.146.gca209
 
