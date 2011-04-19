@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1DSHlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:41:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38379
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750795Ab1DSHln (ORCPT
+	id S1753111Ab1DSHqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:46:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38399 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab1DSHqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:41:43 -0400
-Date: Tue, 19 Apr 2011 00:41:08 -0700 (PDT)
-Message-Id: <20110419.004108.246512359.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yanivr@broadcom.com,
-        shemminger@vyatta.com
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110419131618.a474326a.sfr@canb.auug.org.au>
-References: <20110419131618.a474326a.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Apr 2011 03:46:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dSz51rDaq60gELG97bMEsf4OGliL9KN+bS8UN5pR6TGPsEidiFpmrohWYy1NMcUO+B
+         N68tiGQ/0gRNzroP6EzZfHfaIk/sst1VJEntGKbGhzvzTfD+rxwsbOmA8q0IiC2n9Kv7
+         vjEDD0K6jbyK0yr1EkAkH501m7Br5/S+ysibA=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
+References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
+Date: Tue, 19 Apr 2011 15:46:17 +0800
+Message-ID: <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
+Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 19 Apr 2011 13:16:18 +1000
+On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
+> Cannot connect to any outside devices through bluetooth.
+>
+> And I think this is not a bug of low level driver.  Because both my
+> laptop and a usb bluetooth card cannot work.
 
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/net/bnx2x/bnx2x_ethtool.c between commit 70dda99c41fc ("bnx2x:
-> Fix port identification problem") from the net-current tree and commit
-> 32d3613475d8 ("bnx2x: convert to set_phys_id") from the net tree.
-> 
-> I fixed it up (maybe - see below) and can carry the fix as necessary.
+Hi, please explain the "cannot work" in detail,
+Firstly check dmesg and hciconfig to see if there's anything wrong.
 
-Your conflict resolution was pretty much perfect :-)
-
-I've merged net-2.6 into net-next-2.6 to fix this up.
-
-Thanks!
+-- 
+Regards
+dave
