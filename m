@@ -1,188 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1DSVCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:02:35 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47188 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab1DSVCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:02:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=R/kG6pWUgGofefd+8YLJCW/FuV8u2YErrEk4ZwwMERD4JRkytnKQoflW24LwhObX/
-	uXdrFY9LI632B8oJrDI4A==
-From: Mike Waychison <mikew@google.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Raymond Yau <superquad.vortex2@gmail.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Mike Waychison <mikew@google.com>,
-        Luke Yelavich <luke.yelavich@canonical.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Cc: Mike Waychison <mikew@google.com>
-Subject: [PATCH] ALSA: hda - Fix unused warnings when !SND_HDA_NEEDS_RESUME
+	id S1754522Ab1DSVEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:04:14 -0400
+Received: from kroah.org ([198.145.64.141]:39316 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753231Ab1DSVEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:22 2011
+Message-Id: <20110419210322.362418298@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
 Date: Tue, 19 Apr 2011 14:02:17 -0700
-Message-Id: <1303246937-11302-1-git-send-email-mikew@google.com>
-X-Mailer: git-send-email 1.7.3.1
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [01/26] cifs: always do is_path_accessible check in cifs_mount
+In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When SND_HDA_NEEDS_RESUME is not defined, the compiler identifies that
-the following symbols are static but not used:
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-  restore_shutup_pins
-  hda_cleanup_all_streams
-  ad198x_power_eapd
-  ad198x_power_eapd_write
+------------------
 
-Fix warnings by moving the above functions to be SND_HDA_NEEDS_RESUME
-guards.
+From: Jeff Layton <jlayton@redhat.com>
 
-Signed-off-by: Mike Waychison <mikew@google.com>
+commit 70945643722ffeac779d2529a348f99567fa5c33 upstream.
+
+Currently, we skip doing the is_path_accessible check in cifs_mount if
+there is no prefixpath. I have a report of at least one server however
+that allows a TREE_CONNECT to a share that has a DFS referral at its
+root. The reporter in this case was using a UNC that had no prefixpath,
+so the is_path_accessible check was not triggered and the box later hit
+a BUG() because we were chasing a DFS referral on the root dentry for
+the mount.
+
+This patch fixes this by removing the check for a zero-length
+prefixpath.  That should make the is_path_accessible check be done in
+this situation and should allow the client to chase the DFS referral at
+mount time instead.
+
+Reported-and-Tested-by: Yogesh Sharma <ysharma@cymer.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
-Applies to v2.6.39-rc4.
-Compile tested with and without CONFIG_SND_HDA_POWER_SAVE.
----
- sound/pci/hda/hda_codec.c    |   58 +++++++++++++++++++++---------------------
- sound/pci/hda/patch_analog.c |   28 ++++++++++----------
- 2 files changed, 43 insertions(+), 43 deletions(-)
+ fs/cifs/connect.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index 430f41d..fbb046f 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -937,23 +937,6 @@ void snd_hda_shutup_pins(struct hda_codec *codec)
- }
- EXPORT_SYMBOL_HDA(snd_hda_shutup_pins);
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2554,7 +2554,7 @@ try_mount_again:
  
--/* Restore the pin controls cleared previously via snd_hda_shutup_pins() */
--static void restore_shutup_pins(struct hda_codec *codec)
--{
--	int i;
--	if (!codec->pins_shutup)
--		return;
--	if (codec->bus->shutdown)
--		return;
--	for (i = 0; i < codec->init_pins.used; i++) {
--		struct hda_pincfg *pin = snd_array_elem(&codec->init_pins, i);
--		snd_hda_codec_write(codec, pin->nid, 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL,
--				    pin->ctrl);
--	}
--	codec->pins_shutup = 0;
--}
--
- static void init_hda_cache(struct hda_cache_rec *cache,
- 			   unsigned int record_size);
- static void free_hda_cache(struct hda_cache_rec *cache);
-@@ -1329,18 +1312,6 @@ static void purify_inactive_streams(struct hda_codec *codec)
- 	}
- }
- 
--/* clean up all streams; called from suspend */
--static void hda_cleanup_all_streams(struct hda_codec *codec)
--{
--	int i;
--
--	for (i = 0; i < codec->cvt_setups.used; i++) {
--		struct hda_cvt_setup *p = snd_array_elem(&codec->cvt_setups, i);
--		if (p->stream_tag)
--			really_cleanup_stream(codec, p);
--	}
--}
--
- /*
-  * amp access functions
-  */
-@@ -3049,6 +3020,18 @@ static inline void hda_exec_init_verbs(struct hda_codec *codec) {}
- #endif
- 
- #ifdef SND_HDA_NEEDS_RESUME
-+/* clean up all streams; called from suspend */
-+static void hda_cleanup_all_streams(struct hda_codec *codec)
-+{
-+	int i;
-+
-+	for (i = 0; i < codec->cvt_setups.used; i++) {
-+		struct hda_cvt_setup *p = snd_array_elem(&codec->cvt_setups, i);
-+		if (p->stream_tag)
-+			really_cleanup_stream(codec, p);
-+	}
-+}
-+
- /*
-  * call suspend and power-down; used both from PM and power-save
-  */
-@@ -3069,6 +3052,23 @@ static void hda_call_codec_suspend(struct hda_codec *codec)
- #endif
- }
- 
-+/* Restore the pin controls cleared previously via snd_hda_shutup_pins() */
-+static void restore_shutup_pins(struct hda_codec *codec)
-+{
-+	int i;
-+	if (!codec->pins_shutup)
-+		return;
-+	if (codec->bus->shutdown)
-+		return;
-+	for (i = 0; i < codec->init_pins.used; i++) {
-+		struct hda_pincfg *pin = snd_array_elem(&codec->init_pins, i);
-+		snd_hda_codec_write(codec, pin->nid, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pin->ctrl);
-+	}
-+	codec->pins_shutup = 0;
-+}
-+
- /*
-  * kick up codec; used both from PM and power-save
-  */
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index 2942d2a..bcabcee 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -507,6 +507,20 @@ static void ad198x_free_kctls(struct hda_codec *codec)
- 	snd_array_free(&spec->kctls);
- }
- 
-+static void ad198x_free(struct hda_codec *codec)
-+{
-+	struct ad198x_spec *spec = codec->spec;
-+
-+	if (!spec)
-+		return;
-+
-+	ad198x_shutup(codec);
-+	ad198x_free_kctls(codec);
-+	kfree(spec);
-+	snd_hda_detach_beep_device(codec);
-+}
-+
-+#ifdef SND_HDA_NEEDS_RESUME
- static void ad198x_power_eapd_write(struct hda_codec *codec, hda_nid_t front,
- 				hda_nid_t hp)
- {
-@@ -547,20 +561,6 @@ static void ad198x_power_eapd(struct hda_codec *codec)
- 	}
- }
- 
--static void ad198x_free(struct hda_codec *codec)
--{
--	struct ad198x_spec *spec = codec->spec;
--
--	if (!spec)
--		return;
--
--	ad198x_shutup(codec);
--	ad198x_free_kctls(codec);
--	kfree(spec);
--	snd_hda_detach_beep_device(codec);
--}
--
--#ifdef SND_HDA_NEEDS_RESUME
- static int ad198x_suspend(struct hda_codec *codec, pm_message_t state)
- {
- 	ad198x_shutup(codec);
--- 
-1.7.3.1
+ remote_path_check:
+ 	/* check if a whole path (including prepath) is not remote */
+-	if (!rc && cifs_sb->prepathlen && tcon) {
++	if (!rc && tcon) {
+ 		/* build_path_to_root works only when we have a valid tcon */
+ 		full_path = cifs_build_path_to_root(cifs_sb);
+ 		if (full_path == NULL) {
+
 
