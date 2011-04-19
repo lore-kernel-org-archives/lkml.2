@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab1DSO1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:27:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43923 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab1DSO1J convert rfc822-to-8bit (ORCPT
+	id S1752676Ab1DSO34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:29:56 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:9994 "EHLO
+	VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752079Ab1DSO3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:27:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=U0C4K3xXcl5xFaAIytjreha51hn+YbHKPj8wy1HCKErOZaHgk7PPX9JdHrGjxiEMd7
-         ww7mFm81iGjnNMX69T8ovJ5gE0jIQ+wwWapMZUiNYP6M2TZz+CBTEJHYt163JBd46cEk
-         UxjZjFsDNDJdSMU6H9axmC1u+HTBYtSGY9sfk=
+	Tue, 19 Apr 2011 10:29:55 -0400
+X-SpamScore: -34
+X-BigFish: VPS-34(zzbb2dK9371O179dN1432N98dKzz1202hzz15d4Rz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJWLLP-02-0L2-02
+X-M-MSG: 
+Date: Tue, 19 Apr 2011 16:29:04 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "H. Peter Anvin" <hpa@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem
+ above 1TB
+Message-ID: <20110419142904.GT2192@amd.com>
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
+ <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
+ <4DAC4EC0.80008@zytor.com>
+ <4DAC5099.4010403@kernel.org>
+ <20110418145941.GJ2192@amd.com>
+ <20110418155033.GC8623@elte.hu>
+ <20110419061259.GL2192@amd.com>
+ <20110419072520.GD25353@elte.hu>
+ <4DAD919A.3080102@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
-References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
-	<20110417180722.GA21112@hallyn.com>
-	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
-	<20110418082838.GA30088@hallyn.com>
-	<BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
-	<20110418220232.GA15967@hallyn.com>
-	<BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
-Date: Tue, 19 Apr 2011 23:27:07 +0900
-Message-ID: <BANLkTimELd0WhNYkaQOQuV1vnr+5jAgTZA@mail.gmail.com>
-Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
- from root or to another non-root uid from a non-root uid.
-From: crocket <crockabiscuit@gmail.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4DAD919A.3080102@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the precious information.
+On Tue, Apr 19, 2011 at 09:43:54AM -0400, H. Peter Anvin wrote:
+> On 04/19/2011 12:25 AM, Ingo Molnar wrote:
+> >>>>
+> >>>> Yes, this file mostly contains the dma-ops implementation that uses the
+> >>>> K8 gart plus some k8-gart specific initialization functions.
+> >>>
+> >>> Does the file want to be renamed to pci-amd_gart_64.c or so?
+> >>
+> >> Hmm, that seems long. How about just amd64_gart.c?
+> > 
+> 
+> Arguably we call this the k8_nb in other places, so my suggestion would
+> be k8_gart.c
 
-I think capsh should be introduced somewhere in some manuals.
+The k8_nb was renamed to amd_nb recently. The NB is implemented in all
+64 bit AMD processors and there are more today then K8. The k8_nb was
+historically chosen and misleading today.
 
-On Tue, Apr 19, 2011 at 10:14 AM, crocket <crockabiscuit@gmail.com> wrote:
-> Is there an existing utility that sets SECBIT_NO_SETUID_FIXUP?
-> Or is there a way to set it without writing a C wrapper program?
->
-> On Tue, Apr 19, 2011 at 7:02 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
->> Quoting crocket (crockabiscuit@gmail.com):
->>> I have several questions.
->>>
->>> 1) How do I set SECBIT_NO_SETUID_FIXUP?
->>
->> prctl(PR_SET_SECUREBITS, SECBIT_NO_SETUID_FIXUP | SECBIT_NO_SETUID_FIXUP_LOCKED)
->>
->> see capabilities(7) for details.
->>
->>> 2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
->>
->> Yes, because it's what userspace expects.  If you prefer to run in
->> a full POSIX capabilities environment with unprivileged root, you
->> can have init set SECBIT_NO_SETUID_FIXUP and SECBIT_NOROOT and
->> tune userspace to do the right thing, but it's not trivial.
->>
->> -serge
->>
->
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
