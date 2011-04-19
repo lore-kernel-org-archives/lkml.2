@@ -1,143 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1DSMrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:47:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34708 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754436Ab1DSMrX convert rfc822-to-8bit (ORCPT
+	id S1754391Ab1DSMs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:48:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60387 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab1DSMs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:47:23 -0400
+	Tue, 19 Apr 2011 08:48:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DrOkhwp/4NeSvSxo7wDH0w/Q2okVXhpklwGRpmcVYy0aK1ywT3u0iH1bf0Y4yUz0Wp
-         ZAMWql+zlazOCMRlvkgGbJgITlB7FlXWEjaLUJeu5qlxzIM9swjxwFc7dcBThHQDz2yz
-         SeZsczIOBnPucGn1RoxM1Lgvc58d7z2e5U/50=
-MIME-Version: 1.0
-In-Reply-To: <20110419102031.GA4164@pengutronix.de>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
-	<20110419102031.GA4164@pengutronix.de>
-Date: Tue, 19 Apr 2011 21:47:22 +0900
-X-Google-Sender-Auth: FQnBcvGCtUp184DDQJF32sPgW0Q
-Message-ID: <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
- self registered
-From: Kyungmin Park <kmpark@infradead.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
-        sameo@linux.intel.com, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:date:content-type:x-mailer
+         :content-transfer-encoding:message-id:mime-version;
+        b=KtJaYDBrb26HPUD+GpVjtynPuBWlLRJNaDAwFys1nsTTuEsNbQuBDIRO6bEMCVrlhp
+         PCidCkszLa5AkV2AXgqbK95JrZ1kskyKsu9emp8lJNpa5eJRozn3BjfkINOuvtcZyl4y
+         a0ieB4mVhQ3N8PttKOqfypW0XjSvkD6ZRHles=
+Subject: Re: PROBLEM: some unknown oops (?)
+From: "solsTiCe d'Hiver" <solstice.dhiver@gmail.com>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 19 Apr 2011 14:48:20 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.0 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1303217301.26866.1.camel@soho.example.org>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+here is some more:
+Apr 19 13:47:21 soho kernel: privoxy         D f7304280     0 29584
+1 0x00000000
+Apr 19 13:47:21 soho kernel: da9dff50 00000086 f6a08900 f7304280
+f6de94e0 aebf8fff dc877aec aebf9000
+Apr 19 13:47:21 soho kernel: db0f8450 7d1a7067 f5fb8e00 db383d10
+00000000 f5a06380 c14c0380 db0f8450
+Apr 19 13:47:21 soho kernel: db0f8614 ee7ef174 000057a2 c14c0380
+f5a06380 db0f8450 dba20cf0 aebf9000
+Apr 19 13:47:21 soho kernel: Call Trace:
+Apr 19 13:47:21 soho kernel: [<c10dbb76>] ? zap_page_range+0xe6/0x100
+Apr 19 13:47:21 soho kernel: [<c10d8fd7>] ? sys_madvise+0xa7/0x610
+Apr 19 13:47:21 soho kernel: [<c111ded9>] ? mntput_no_expire+0x89/0xd0
+Apr 19 13:47:21 soho kernel: [<c1319b25>] rwsem_down_failed_common
++0x95/0xe0
+Apr 19 13:47:21 soho kernel: [<c1319b82>] rwsem_down_write_failed
++0x12/0x20
+Apr 19 13:47:21 soho kernel: [<c1319bea>] call_rwsem_down_write_failed
++0x6/0x8
+Apr 19 13:47:21 soho kernel: [<c1319395>] ? down_write+0x15/0x17
+Apr 19 13:47:21 soho kernel: [<c10e14cf>] sys_munmap+0x2f/0x60
+Apr 19 13:47:21 soho kernel: [<c10037df>] sysenter_do_call+0x12/0x28
+Apr 19 13:47:21 soho kernel: privoxy         D c12bfbdd     0 29585
+1 0x00000000
+Apr 19 13:47:21 soho kernel: dc9a3ee4 00000086 dc9a3e78 c12bfbdd
+01b7b76a 00000286 da96d400 da96d4b0
+Apr 19 13:47:21 soho kernel: 00000000 dc9a3e64 c127079f da96d4b0
+dc9a3e78 f5a06380 c14c0380 db1a9e30
+Apr 19 13:47:21 soho kernel: db1a9ff4 ef11a29e 000057a2 c14c0380
+f5a06380 db1a9e30 dba20cf0 00000286
+Apr 19 13:47:21 soho kernel: Call Trace:
+Apr 19 13:47:21 soho kernel: [<c12bfbdd>] ? tcp_transmit_skb+0x35d/0x800
+Apr 19 13:47:21 soho kernel: [<c127079f>] ? sk_reset_timer+0xf/0x20
+Apr 19 13:47:21 soho kernel: [<c10059f6>] ? do_IRQ+0x46/0xb0
+Apr 19 13:47:21 soho kernel: [<c1319b25>] rwsem_down_failed_common
++0x95/0xe0
+Apr 19 13:47:21 soho kernel: [<c1319ba2>] rwsem_down_read_failed
++0x12/0x14
+Apr 19 13:47:21 soho kernel: [<c1319bdf>] call_rwsem_down_read_failed
++0x7/0xc
+Apr 19 13:47:21 soho kernel: [<c131937d>] ? down_read+0xd/0x10
+Apr 19 13:47:21 soho kernel: [<c10d8f8f>] sys_madvise+0x5f/0x610
+Apr 19 13:47:21 soho kernel: [<c111ded9>] ? mntput_no_expire+0x89/0xd0
+Apr 19 13:47:21 soho kernel: [<c111df33>] ? mntput+0x13/0x20
+Apr 19 13:47:21 soho kernel: [<c1105c54>] ? fput+0x134/0x1d0
+Apr 19 13:47:21 soho kernel: [<c1103349>] ? filp_close+0x49/0x70
+Apr 19 13:47:21 soho kernel: [<c11033df>] ? sys_close+0x6f/0xc0
+Apr 19 13:47:21 soho kernel: [<c10037df>] sysenter_do_call+0x12/0x28
+Apr 19 13:48:38 soho kernel: gnome-settings-[25863]: segfault at
+b448c160 ip b448c160 sp bfa6a73c error 4 in libdbus-1.so.3.5.3[b44c0000
++3b000]
+Apr 19 13:48:46 soho shutdown[29680]: shutting down for system reboot
+Apr 19 13:48:50 soho init: Switching to runlevel: 6
+Apr 19 13:49:14 soho shutdown[29738]: shutting down for system reboot
+Apr 19 13:49:16 soho shutdown[29740]: shutting down for system reboot
+Apr 19 13:49:17 soho shutdown[29742]: shutting down for system reboot
+Apr 19 13:49:17 soho shutdown[29744]: shutting down for system reboot
+Apr 19 13:49:18 soho shutdown[29746]: shutting down for system reboot
+Apr 19 13:49:18 soho shutdown[29748]: shutting down for system reboot
+Apr 19 13:49:18 soho shutdown[29750]: shutting down for system reboot
+Apr 19 13:49:18 soho shutdown[29752]: shutting down for system reboot
+Apr 19 13:49:21 soho kernel: preload         D 00000000     0  2695
+1 0x00000000
+Apr 19 13:49:21 soho kernel: f3c01ee0 00000086 f38eb810 00000000
+dc56e880 f3c01f00 dc56e100 f3c01e78
+Apr 19 13:49:21 soho kernel: c110ed4d 0000416d 00000001 f449ef00
+f3c01e78 f5806380 c14c0380 f38eb810
+Apr 19 13:49:21 soho kernel: f38eb9d4 5d461119 000057a6 c14c0380
+f5806380 f38eb810 db85ef70 f5fb4660
+Apr 19 13:49:21 soho kernel: Call Trace:
+Apr 19 13:49:21 soho kernel: [<c110ed4d>] ? do_lookup+0xdd/0x260
+Apr 19 13:49:21 soho kernel: [<c111de75>] ? mntput_no_expire+0x25/0xd0
+Apr 19 13:49:21 soho kernel: [<c111df33>] ? mntput+0x13/0x20
+Apr 19 13:49:21 soho kernel: [<c1319b25>] rwsem_down_failed_common
++0x95/0xe0
+Apr 19 13:49:21 soho kernel: [<c1319ba2>] rwsem_down_read_failed
++0x12/0x14
+Apr 19 13:49:21 soho kernel: [<c1319bdf>] call_rwsem_down_read_failed
++0x7/0xc
+Apr 19 13:49:21 soho kernel: [<c131937d>] ? down_read+0xd/0x10
+Apr 19 13:49:21 soho kernel: [<c114e968>] get_mm_exe_file+0x18/0x40
+Apr 19 13:49:21 soho kernel: [<c114e9ce>] proc_exe_link+0x3e/0x90
+Apr 19 13:49:21 soho kernel: [<c114ccef>] proc_pid_readlink+0x2f/0xc0
+Apr 19 13:49:21 soho kernel: [<c1119abc>] ? touch_atime+0x5c/0x140
+Apr 19 13:49:21 soho kernel: [<c111df33>] ? mntput+0x13/0x20
+Apr 19 13:49:21 soho kernel: [<c1108e89>] sys_readlinkat+0x89/0x90
+Apr 19 13:49:21 soho kernel: [<c1108eb7>] sys_readlink+0x27/0x30
+Apr 19 13:49:21 soho kernel: [<c10037df>] sysenter_do_call+0x12/0x28
+Apr 19 13:49:21 soho kernel: privoxy         D c12bfbdd     0 29559
+1 0x00000000
+Apr 19 13:49:21 soho kernel: f358bee4 00000086 f358be78 c12bfbdd
+dba99910 f358be64 00000006 00000020
+Apr 19 13:49:21 soho kernel: 00008000 00000002 00000000 01b7f3b2
+01b7f3b2 f5806380 c14c0380 da92d140
+Apr 19 13:49:21 soho kernel: da92d304 f5c60ef9 000057ae c14c0380
+f5806380 da92d140 f3c35e30 00000286
+Apr 19 13:49:21 soho kernel: Call Trace:
+Apr 19 13:49:21 soho kernel: [<c12bfbdd>] ? tcp_transmit_skb+0x35d/0x800
+Apr 19 13:49:21 soho kernel: [<c10f379e>] ? add_partial+0x3e/0x70
+Apr 19 13:49:21 soho kernel: [<c13150df>] ? __slab_free+0x8c/0x122
+Apr 19 13:49:21 soho kernel: [<c1319b25>] rwsem_down_failed_common
++0x95/0xe0
+Apr 19 13:49:21 soho kernel: [<c1319ba2>] rwsem_down_read_failed
++0x12/0x14
+Apr 19 13:49:21 soho kernel: [<c1319bdf>] call_rwsem_down_read_failed
++0x7/0xc
+Apr 19 13:49:21 soho kernel: [<c131937d>] ? down_read+0xd/0x10
+Apr 19 13:49:21 soho kernel: [<c10d8f8f>] sys_madvise+0x5f/0x610
+Apr 19 13:49:21 soho kernel: [<c111ded9>] ? mntput_no_expire+0x89/0xd0
 
-BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle it.
-
-Thank you,
-Kyungmin Park
-
-On Tue, Apr 19, 2011 at 7:20 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi Shawn,
->
-> On Fri, Mar 25, 2011 at 04:48:46PM +0800, Shawn Guo wrote:
->> Here are what the patch set does.
->>
->> * Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
->>   a pure common helper function providers.
->> * Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
->>   sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
->>   registered with calling helper functions created above.
->> * Migrate the use of sdhci_of_host and sdhci_of_data to
->>   sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
->>   data structure works can be saved, and pltfm version works for both
->>   cases.
->> * Add OF common helper stuff into sdhci-pltfm.c, and make OF version
->>   sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
->>   registered as well, so that sdhci-of-core.c and sdhci-of.h can be
->>   removed.
->> * Consolidate the OF and pltfm esdhc drivers into one with sharing
->>   the same pair of .probe and .remove hooks.  As a result,
->>   sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
->>   sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
->> * Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
->>   drivers/mmc/host/sdhci-pltfm.h.
->>
->> And the benefits we gain from the changes are:
->>
->> * Get the sdhci device driver follow the Linux trend that driver
->>   makes the registration by its own.
->> * sdhci-pltfm.c becomes simple and clean as it only has common helper
->>   stuff there now.
->> * All sdhci device specific things are going back its own driver.
->> * The dt and non-dt drivers are consolidated to use the same pair of
->>   .probe and .remove hooks.
->> * SDHCI driver for Freescale eSDHC controller found on both MPCxxx
->>   and i.MX platforms is consolidated to use the same one .probe
->>   function.
->>
->> The patch set works against the tree below, and was only tested on
->> i.mx51 babbage board, all other targets were build tested.
->>
->>   git://git.secretlab.ca/git/linux-2.6.git devicetree/test
->>
->> Comments are welcomed and appreciated.
->
-> First of all, thanks _a lot_ for doing this! Many people have promised
-> to do such an approach, but you finally made it!
->
-> Sorry for the long delay in reviewing it, I didn't want to rush a review
-> so I needed some time for it which I didn't have much in the last weeks.
-> Let's hope my battery will have enough power on my flight back to
-> Germany ;) So, this is for now a purely "visual" review. I hope I can
-> check V2 on real hardware then.
->
-> The approach seems sensible, so have a look at my (mostly minor)
-> comments inside the patches. However, there is one bigger piece missing.
-> You converted all the drivers which had a seperate source-file and
-> hooked into sdhci-pltfm.c. However, those are only those users which
-> need additional code to work around the quirks. There are also users
-> which can take the plain pltfm-driver with a properly set
-> platform_data (check the thread "[PATCH] mmc: add SDHCI driver for STM
-> platforms (V2)" for an example). Those have to be converted, too.
-> Now the discussion could be if every of those users gets its own
-> pltfm-<something>.c or if we create something similat to
-> sdhci-pltfm-generic, which can also be setup with platform_data like the
-> old driver (/me likes the latter a bit more. If we don't change the name
-> of the driver (not talking about the sourcefile) and keep it
-> "sdhci-pltfm", then you wouldn't need to change all those users if you
-> ensured it behaves the same.
->
-> Also, I think the next version of this series should have all makers of
-> a sdhci-pltfm user CCed so we give them a chance to report breakage. Or
-> donate acks or tested-by.
->
-> Regards,
->
->   Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
->
-> iEYEARECAAYFAk2tYe8ACgkQD27XaX1/VRsCRgCgkp+BmJJsLsKllKL0OI/BnO9F
-> PRkAn1BpnXBv1exnkJFlqFAPe5O2Yt8w
-> =GSqA
-> -----END PGP SIGNATURE-----
->
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
->
->
