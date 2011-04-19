@@ -1,62 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1DSQNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:13:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab1DSQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:13:51 -0400
-Date: Tue, 19 Apr 2011 18:13:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stas Sergeev <stsp@aknet.ru>, Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
-Message-ID: <20110419161301.GA23914@redhat.com>
-References: <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk>
+	id S1753441Ab1DSQOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:14:02 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34363 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab1DSQN7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:13:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=LIDg7YpYXwHmsJk6oW2sJeQV6snfHEXmFmnosgqycqewFMxk+1n8n6iflVJinteTOP
+         zdMLsRHcpEE0JR8fGo0Fviu72m/MU6SgzrqzInRpAwwKa6m6Aa65ncROuar2Xlanbjyq
+         UUlqdqotIEit59uyGiuqGiYQsjj13HW0sydE0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419165429.71cb1508@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4DAD6EF2.5070405@fusionio.com>
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera>
+ <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com> <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
+ <4DAC2429.5000105@fusionio.com> <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com>
+ <4DAC82E6.3020809@fusionio.com> <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com>
+ <4DAD5156.2050300@fusionio.com> <4DAD6EF2.5070405@fusionio.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 19 Apr 2011 18:13:17 +0200
+X-Google-Sender-Auth: v9kn8RJB1V2aNjuASzSYcM72oSI
+Message-ID: <BANLkTimLOgY1opmAt+rxmYtLa-6adL98wg@mail.gmail.com>
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
+        David Dillow <dave@thedillows.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19, Alan Cox wrote:
+On Tue, Apr 19, 2011 at 1:16 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-04-19 11:09, Jens Axboe wrote:
+> > On 2011-04-18 20:32, Bart Van Assche wrote:
+> >> On Mon, Apr 18, 2011 at 8:28 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> >>> On 2011-04-18 20:21, Bart Van Assche wrote:
+> >>>> a performance regression in the block layer not related to the md
+> >>>> issue. If I run a small block IOPS test on a block device created by
+> >>>> ib_srp (NOOP scheduler) I see about 11% less IOPS than with 2.6.38.3
+> >>>> (155.000 IOPS with 2.6.38.3 and 140.000 IOPS with 2.6.39-rc3+).
+> >>>
+> >>> That's not good. What's the test case?
+> >>
+> >> Nothing more than a fio IOPS test:
+> >>
+> >> fio --bs=512 --ioengine=libaio --buffered=0 --rw=read --thread
+> >> --iodepth=64 --numjobs=2 --loops=10000 --group_reporting --size=1G
+> >>     --gtod_reduce=1 --name=iops-test --filename=/dev/${dev} --invalidate=1
+> >
+> > Bart, can you try the below:
 >
-> > The use case is to daemonize the process with threads.
-> > You first need to detach it from its parent, then use TIOCNOTTY
-> > ioctl to detach from the tty (TIOCNOTTY_GRP doesn't seem
-> > to exist too, though, but might be easy to implement).
-> > There are a few workarounds to that that I am aware of,
-> > but what exactly interfaces do you have in mind? I have
-> > found nothing that allows to do the same without a workarounds
-> > like this:
-> > https://lkml.org/lkml/2011/4/8/278
-> > The current way of detaching, which is a fork/exit combo,
-> > loses all threads, so, when you call daemon() and you had
-> > threads, you are a toast.
+> Here's a more complete variant. James, lets get rid of this REENTER
+> crap. It's completely bogus and triggers falsely for a variety of
+> reasons. The below will work, but there may be room for improvement on
+> the SCSI side.
 >
-> Yes - you need to detach then create the threads.
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 5fa3dd2..4e49665 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -303,15 +303,7 @@ void __blk_run_queue(struct request_queue *q)
+>        if (unlikely(blk_queue_stopped(q)))
+>                return;
 >
-> The reason I ask is you appear to add overhead to various hot paths
+> -       /*
+> -        * Only recurse once to avoid overrunning the stack, let the unplug
+> -        * handling reinvoke the handler shortly if we already got there.
+> -        */
+> -       if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
+> -               q->request_fn(q);
+> -               queue_flag_clear(QUEUE_FLAG_REENTER, q);
+> -       } else
+> -               queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
+> +       q->request_fn(q);
+>  }
+>  EXPORT_SYMBOL(__blk_run_queue);
+>
+> @@ -328,6 +320,7 @@ void blk_run_queue_async(struct request_queue *q)
+>        if (likely(!blk_queue_stopped(q)))
+>                queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
+>  }
+> +EXPORT_SYMBOL(blk_run_queue_async);
+>
+>  /**
+>  * blk_run_queue - run a single device queue
+> diff --git a/block/blk.h b/block/blk.h
+> index c9df8fc..6126346 100644
+> --- a/block/blk.h
+> +++ b/block/blk.h
+> @@ -22,7 +22,6 @@ void blk_rq_timed_out_timer(unsigned long data);
+>  void blk_delete_timer(struct request *);
+>  void blk_add_timer(struct request *);
+>  void __generic_unplug_device(struct request_queue *);
+> -void blk_run_queue_async(struct request_queue *q);
+>
+>  /*
+>  * Internal atomic flags for request handling
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index ab55c2f..e9901b8 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -411,8 +411,6 @@ static void scsi_run_queue(struct request_queue *q)
+>        list_splice_init(&shost->starved_list, &starved_list);
+>
+>        while (!list_empty(&starved_list)) {
+> -               int flagset;
+> -
+>                /*
+>                 * As long as shost is accepting commands and we have
+>                 * starved queues, call blk_run_queue. scsi_request_fn
+> @@ -435,20 +433,7 @@ static void scsi_run_queue(struct request_queue *q)
+>                        continue;
+>                }
+>
+> -               spin_unlock(shost->host_lock);
+> -
+> -               spin_lock(sdev->request_queue->queue_lock);
+> -               flagset = test_bit(QUEUE_FLAG_REENTER, &q->queue_flags) &&
+> -                               !test_bit(QUEUE_FLAG_REENTER,
+> -                                       &sdev->request_queue->queue_flags);
+> -               if (flagset)
+> -                       queue_flag_set(QUEUE_FLAG_REENTER, sdev->request_queue);
+> -               __blk_run_queue(sdev->request_queue);
+> -               if (flagset)
+> -                       queue_flag_clear(QUEUE_FLAG_REENTER, sdev->request_queue);
+> -               spin_unlock(sdev->request_queue->queue_lock);
+> -
+> -               spin_lock(shost->host_lock);
+> +               blk_run_queue_async(sdev->request_queue);
+>        }
+>        /* put any unprocessed entries back */
+>        list_splice(&starved_list, &shost->starved_list);
+> diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+> index 28c3350..815069d 100644
+> --- a/drivers/scsi/scsi_transport_fc.c
+> +++ b/drivers/scsi/scsi_transport_fc.c
+> @@ -3816,28 +3816,17 @@ fail_host_msg:
+>  static void
+>  fc_bsg_goose_queue(struct fc_rport *rport)
+>  {
+> -       int flagset;
+> -       unsigned long flags;
+> -
+>        if (!rport->rqst_q)
+>                return;
+>
+> +       /*
+> +        * This get/put dance makes no sense
+> +        */
+>        get_device(&rport->dev);
+> -
+> -       spin_lock_irqsave(rport->rqst_q->queue_lock, flags);
+> -       flagset = test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags) &&
+> -                 !test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags);
+> -       if (flagset)
+> -               queue_flag_set(QUEUE_FLAG_REENTER, rport->rqst_q);
+> -       __blk_run_queue(rport->rqst_q);
+> -       if (flagset)
+> -               queue_flag_clear(QUEUE_FLAG_REENTER, rport->rqst_q);
+> -       spin_unlock_irqrestore(rport->rqst_q->queue_lock, flags);
+> -
+> +       blk_run_queue_async(rport->rqst_q);
+>        put_device(&rport->dev);
+>  }
+>
+> -
+>  /**
+>  * fc_bsg_rport_dispatch - process rport bsg requests and dispatch to LLDD
+>  * @q:         rport request queue
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index cbbfd98..2ad95fa 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -388,20 +388,19 @@ struct request_queue
+>  #define        QUEUE_FLAG_SYNCFULL     3       /* read queue has been filled */
+>  #define QUEUE_FLAG_ASYNCFULL   4       /* write queue has been filled */
+>  #define QUEUE_FLAG_DEAD                5       /* queue being torn down */
+> -#define QUEUE_FLAG_REENTER     6       /* Re-entrancy avoidance */
+> -#define QUEUE_FLAG_ELVSWITCH   7       /* don't use elevator, just do FIFO */
+> -#define QUEUE_FLAG_BIDI                8       /* queue supports bidi requests */
+> -#define QUEUE_FLAG_NOMERGES     9      /* disable merge attempts */
+> -#define QUEUE_FLAG_SAME_COMP   10      /* force complete on same CPU */
+> -#define QUEUE_FLAG_FAIL_IO     11      /* fake timeout */
+> -#define QUEUE_FLAG_STACKABLE   12      /* supports request stacking */
+> -#define QUEUE_FLAG_NONROT      13      /* non-rotational device (SSD) */
+> +#define QUEUE_FLAG_ELVSWITCH   6       /* don't use elevator, just do FIFO */
+> +#define QUEUE_FLAG_BIDI                7       /* queue supports bidi requests */
+> +#define QUEUE_FLAG_NOMERGES     8      /* disable merge attempts */
+> +#define QUEUE_FLAG_SAME_COMP   9       /* force complete on same CPU */
+> +#define QUEUE_FLAG_FAIL_IO     10      /* fake timeout */
+> +#define QUEUE_FLAG_STACKABLE   11      /* supports request stacking */
+> +#define QUEUE_FLAG_NONROT      12      /* non-rotational device (SSD) */
+>  #define QUEUE_FLAG_VIRT        QUEUE_FLAG_NONROT /* paravirt device */
+> -#define QUEUE_FLAG_IO_STAT     15      /* do IO stats */
+> -#define QUEUE_FLAG_DISCARD     16      /* supports DISCARD */
+> -#define QUEUE_FLAG_NOXMERGES   17      /* No extended merges */
+> -#define QUEUE_FLAG_ADD_RANDOM  18      /* Contributes to random pool */
+> -#define QUEUE_FLAG_SECDISCARD  19      /* supports SECDISCARD */
+> +#define QUEUE_FLAG_IO_STAT     13      /* do IO stats */
+> +#define QUEUE_FLAG_DISCARD     14      /* supports DISCARD */
+> +#define QUEUE_FLAG_NOXMERGES   15      /* No extended merges */
+> +#define QUEUE_FLAG_ADD_RANDOM  16      /* Contributes to random pool */
+> +#define QUEUE_FLAG_SECDISCARD  17      /* supports SECDISCARD */
+>
+>  #define QUEUE_FLAG_DEFAULT     ((1 << QUEUE_FLAG_IO_STAT) |            \
+>                                 (1 << QUEUE_FLAG_STACKABLE)    |       \
+> @@ -699,6 +698,7 @@ extern void blk_sync_queue(struct request_queue *q);
+>  extern void __blk_stop_queue(struct request_queue *q);
+>  extern void __blk_run_queue(struct request_queue *q);
+>  extern void blk_run_queue(struct request_queue *);
+> +extern void blk_run_queue_async(struct request_queue *q);
+>  extern int blk_rq_map_user(struct request_queue *, struct request *,
+>                           struct rq_map_data *, void __user *, unsigned long,
+>                           gfp_t);
 
-... and complicates this code.
+Hello Jens,
 
-> and
-> you add 48 bytes to each task struct if I read the code right. Thats half
-> a megabyte on a server running a pile of java gunge !
+The same test with an initiator running 2.6.39-rc4 +
+git://git.kernel.dk/linux-2.6-block.git for-linus + the above patch
+yields about 155.000 IOPS on my test setup, or the same performance as
+with 2.6.38.3. I'm running the above patch through an I/O stress test
+now.
 
-... to add the non-portable (and _imho_ unneeded) feauture.
-
-IOW, personally I do not like this change in any case. But I am not
-going to argue if someone acks this new feauture.
-
-
-
-
-I'll try to check these patches from the correctness pov tomorrow,
-but to be honest I hope someone will nack them before I start ;)
-
-Oleg.
-
+Bart.
