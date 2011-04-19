@@ -1,114 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab1DSWKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:10:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36727 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1DSWKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:10:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [Update][PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
-Date: Wed, 20 Apr 2011 00:10:50 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@suse.de>
-References: <201104130205.26988.rjw@sisk.pl> <201104192342.26670.rjw@sisk.pl> <20110419215944.GA10031@linux-sh.org>
-In-Reply-To: <20110419215944.GA10031@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104200010.50656.rjw@sisk.pl>
+	id S1756136Ab1DSWPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:15:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:10146 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab1DSWPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:15:06 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Cc: Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH] i2c: i2c-tegra: fix possible race condition after tx
+Date: Tue, 19 Apr 2011 18:14:36 -0400
+Message-Id: <1303251276-18768-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 19, 2011, Paul Mundt wrote:
-> On Tue, Apr 19, 2011 at 11:42:26PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, April 19, 2011, Magnus Damm wrote:
-> > > Do you have any plans to add support for multiple clocks per struct
-> > > device? I had some plans to play around with that myself, but if we're
-> > > moving the code to a common place then this obviously becomes a bit
-> > > more complicated.
-> > > 
-> > > It's rather common that each hardware block in an SoC is connected to
-> > > more than a single clock. This needs to be managed by software
-> > > somehow.
-> > > 
-> > > So if the plan is to make to the code generic, how about allowing the
-> > > architecture to associate clocks with each struct device somehow?
-> > 
-> > Hmm.  For now, my patchset generally reorganizes the existing code without
-> > adding new functionality.  Of course, it is possible to add new functionality
-> > on top of it, but I'd prefer to focus on the "real" power domains support
-> > first (which I think should be done in a generic way too).
-> > 
-> Multiple clocks is not new functionality, it's the common case for the
-> bulk of the platforms, and something that is already presently handled.
+In tegra_i2c_fill_tx_fifo, once we have finished pushing all the bytes
+to the I2C hardware controller, the interrupt might happen before we
+have updated i2c_dev->msg_buf_remaining at the end of the function.
+Then, in tegra_i2c_isr, we will call again tegra_i2c_fill_tx_fifo
+triggering weird behaviour.
+Of course, this is unlikely since the I2C bus is slow and thus the ISR
+is called several hundreds of microseconds after the last register
+write.
 
-OK
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+ drivers/i2c/busses/i2c-tegra.c |   54 ++++++++++++++++++++++-----------------
+ 1 files changed, 30 insertions(+), 24 deletions(-)
 
-> > The plan is to share as much code as it makes sense between platforms and
-> > architectures.
-> 
-> An admirable plan, but the framework needs to be able to provide at least
-> the current required level of functionality in order for it to be
-> adopted, too.
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index b4ab39b..c1b119b 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -125,7 +125,7 @@ struct tegra_i2c_dev {
+ 	struct completion msg_complete;
+ 	int msg_err;
+ 	u8 *msg_buf;
+-	size_t msg_buf_remaining;
++	atomic_t msg_buf_remaining;
+ 	int msg_read;
+ 	unsigned long bus_clk_rate;
+ 	bool is_suspended;
+@@ -213,38 +213,41 @@ static int tegra_i2c_empty_rx_fifo(struct tegra_i2c_dev *i2c_dev)
+ 	u32 val;
+ 	int rx_fifo_avail;
+ 	u8 *buf = i2c_dev->msg_buf;
+-	size_t buf_remaining = i2c_dev->msg_buf_remaining;
+ 	int words_to_transfer;
++	int bytes_to_transfer;
+ 
+ 	val = i2c_readl(i2c_dev, I2C_FIFO_STATUS);
+ 	rx_fifo_avail = (val & I2C_FIFO_STATUS_RX_MASK) >>
+ 		I2C_FIFO_STATUS_RX_SHIFT;
+ 
+ 	/* Rounds down to not include partial word at the end of buf */
+-	words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
++	words_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining) /
++		BYTES_PER_FIFO_WORD;
+ 	if (words_to_transfer > rx_fifo_avail)
+ 		words_to_transfer = rx_fifo_avail;
+ 
++	atomic_sub(words_to_transfer * BYTES_PER_FIFO_WORD,
++		&i2c_dev->msg_buf_remaining);
+ 	i2c_readsl(i2c_dev, buf, I2C_RX_FIFO, words_to_transfer);
+ 
+ 	buf += words_to_transfer * BYTES_PER_FIFO_WORD;
+-	buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
+ 	rx_fifo_avail -= words_to_transfer;
+ 
+ 	/*
+ 	 * If there is a partial word at the end of buf, handle it manually to
+ 	 * prevent overwriting past the end of buf
+ 	 */
+-	if (rx_fifo_avail > 0 && buf_remaining > 0) {
+-		BUG_ON(buf_remaining > 3);
++	bytes_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining);
++	if (rx_fifo_avail > 0 && bytes_to_transfer > 0) {
++		BUG_ON(bytes_to_transfer > 3);
++		atomic_set(&i2c_dev->msg_buf_remaining, 0);
+ 		val = i2c_readl(i2c_dev, I2C_RX_FIFO);
+-		memcpy(buf, &val, buf_remaining);
+-		buf_remaining = 0;
++		memcpy(buf, &val, bytes_to_transfer);
+ 		rx_fifo_avail--;
+ 	}
+ 
+-	BUG_ON(rx_fifo_avail > 0 && buf_remaining > 0);
+-	i2c_dev->msg_buf_remaining = buf_remaining;
++	BUG_ON(rx_fifo_avail > 0 &&
++		atomic_read(&i2c_dev->msg_buf_remaining) > 0);
+ 	i2c_dev->msg_buf = buf;
+ 	return 0;
+ }
+@@ -254,22 +257,24 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
+ 	u32 val;
+ 	int tx_fifo_avail;
+ 	u8 *buf = i2c_dev->msg_buf;
+-	size_t buf_remaining = i2c_dev->msg_buf_remaining;
+ 	int words_to_transfer;
++	int bytes_to_transfer;
+ 
+ 	val = i2c_readl(i2c_dev, I2C_FIFO_STATUS);
+ 	tx_fifo_avail = (val & I2C_FIFO_STATUS_TX_MASK) >>
+ 		I2C_FIFO_STATUS_TX_SHIFT;
+ 
+ 	/* Rounds down to not include partial word at the end of buf */
+-	words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
++	words_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining) /
++		BYTES_PER_FIFO_WORD;
+ 	if (words_to_transfer > tx_fifo_avail)
+ 		words_to_transfer = tx_fifo_avail;
+ 
++	atomic_sub(words_to_transfer * BYTES_PER_FIFO_WORD,
++		&i2c_dev->msg_buf_remaining);
+ 	i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
+ 
+ 	buf += words_to_transfer * BYTES_PER_FIFO_WORD;
+-	buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
+ 	tx_fifo_avail -= words_to_transfer;
+ 
+ 	/*
+@@ -277,16 +282,17 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
+ 	 * prevent reading past the end of buf, which could cross a page
+ 	 * boundary and fault.
+ 	 */
+-	if (tx_fifo_avail > 0 && buf_remaining > 0) {
+-		BUG_ON(buf_remaining > 3);
+-		memcpy(&val, buf, buf_remaining);
++	bytes_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining);
++	if (tx_fifo_avail > 0 && bytes_to_transfer > 0) {
++		BUG_ON(bytes_to_transfer > 3);
++		memcpy(&val, buf, bytes_to_transfer);
++		atomic_set(&i2c_dev->msg_buf_remaining, 0);
+ 		i2c_writel(i2c_dev, val, I2C_TX_FIFO);
+-		buf_remaining = 0;
+ 		tx_fifo_avail--;
+ 	}
+ 
+-	BUG_ON(tx_fifo_avail > 0 && buf_remaining > 0);
+-	i2c_dev->msg_buf_remaining = buf_remaining;
++	BUG_ON(tx_fifo_avail > 0 &&
++		atomic_read(&i2c_dev->msg_buf_remaining) > 0);
+ 	i2c_dev->msg_buf = buf;
+ 	return 0;
+ }
+@@ -364,21 +370,21 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	if (i2c_dev->msg_read && (status & I2C_INT_RX_FIFO_DATA_REQ)) {
+-		if (i2c_dev->msg_buf_remaining)
++		if (atomic_read(&i2c_dev->msg_buf_remaining))
+ 			tegra_i2c_empty_rx_fifo(i2c_dev);
+ 		else
+ 			BUG();
+ 	}
+ 
+ 	if (!i2c_dev->msg_read && (status & I2C_INT_TX_FIFO_DATA_REQ)) {
+-		if (i2c_dev->msg_buf_remaining)
++		if (atomic_read(&i2c_dev->msg_buf_remaining))
+ 			tegra_i2c_fill_tx_fifo(i2c_dev);
+ 		else
+ 			tegra_i2c_mask_irq(i2c_dev, I2C_INT_TX_FIFO_DATA_REQ);
+ 	}
+ 
+ 	if ((status & I2C_INT_PACKET_XFER_COMPLETE) &&
+-			!i2c_dev->msg_buf_remaining)
++			!atomic_read(&i2c_dev->msg_buf_remaining))
+ 		complete(&i2c_dev->msg_complete);
+ 
+ 	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
+@@ -408,7 +414,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 		return -EINVAL;
+ 
+ 	i2c_dev->msg_buf = msg->buf;
+-	i2c_dev->msg_buf_remaining = msg->len;
++	atomic_set(&i2c_dev->msg_buf_remaining, msg->len);
+ 	i2c_dev->msg_err = I2C_ERR_NONE;
+ 	i2c_dev->msg_read = (msg->flags & I2C_M_RD);
+ 	INIT_COMPLETION(i2c_dev->msg_complete);
+@@ -440,7 +446,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
+ 	if (msg->flags & I2C_M_RD)
+ 		int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
+-	else if (i2c_dev->msg_buf_remaining)
++	else if (atomic_read(&i2c_dev->msg_buf_remaining))
+ 		int_mask |= I2C_INT_TX_FIFO_DATA_REQ;
+ 	tegra_i2c_unmask_irq(i2c_dev, int_mask);
+ 	dev_dbg(i2c_dev->dev, "unmasked irq: %02x\n",
+-- 
+1.7.3.1
 
-Sure.
-
-> On Mon, Apr 18, 2011 at 09:57:28PM +0200, Rafael J. Wysocki wrote:
-> > @@ -24,23 +24,18 @@
-> >  #ifdef CONFIG_PM_RUNTIME
-> >  static int omap1_pm_runtime_suspend(struct device *dev)
-> >  {
-> > -	struct clk *iclk, *fclk;
-> > -	int ret = 0;
-> > +	int ret;
-> >  
-> >  	dev_dbg(dev, "%s\n", __func__);
-> >  
-> >  	ret = pm_generic_runtime_suspend(dev);
-> > +	if (ret)
-> > +		return ret;
-> >  
-> > -	fclk = clk_get(dev, "fck");
-> > -	if (!IS_ERR(fclk)) {
-> > -		clk_disable(fclk);
-> > -		clk_put(fclk);
-> > -	}
-> > -
-> > -	iclk = clk_get(dev, "ick");
-> > -	if (!IS_ERR(iclk)) {
-> > -		clk_disable(iclk);
-> > -		clk_put(iclk);
-> > +	ret = pm_runtime_clock_suspend(dev);
-> > +	if (ret) {
-> > +		pm_generic_runtime_resume(dev);
-> > +		return ret;
-> >  	}
-> >  
-> >  	return 0;
-> 
-> The before and after changes here are not functionally equivalent. You've
-> gone from an explicit multi-clock scheme to a single encapsulated one via
-> pm_runtime_clock_suspend().
-
-You're refferring to the OMAP changes I suppose?
-
-> Almost every single SH IP block is likewise abstracted in to a function
-> and interface clock, and OMAP and others are where we modelled this
-> abstraction on top of in the first place, so there are certainly users
-> there too.
-
-In fact, the shmobile runtime PM code in arch/arm/mach-shmobile/pm_runtime.c
-uses only one clock right now.
-
-Or am I missing anything?
-
-Rafael
