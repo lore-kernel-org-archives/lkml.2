@@ -1,54 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1DSWhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40612 "EHLO mx1.redhat.com"
+	id S1752508Ab1DSWuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:50:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36811 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab1DSWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:37:19 -0400
-Date: Tue, 19 Apr 2011 15:37:03 -0700
-From: Chris Wright <chrisw@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Chris Wright <chrisw@redhat.com>, pugs@ieee.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        qemu-devel@nongnu.org, aafabbri@cisco.com, dwang2@cisco.com,
-        benve@cisco.com
-Subject: Re: [PATCH] vfio: Add an ioctl to reset the device
-Message-ID: <20110419223703.GQ12133@x200.localdomain>
-References: <20110419203234.4254.94914.stgit@s20.home>
- <20110419220743.GO12133@x200.localdomain>
- <1303251751.3110.129.camel@x201>
- <20110419222626.GP12133@x200.localdomain>
- <1303252237.3110.131.camel@x201>
+	id S1751567Ab1DSWt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:49:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [Update][PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
+Date: Wed, 20 Apr 2011 00:50:04 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@suse.de>
+References: <201104130205.26988.rjw@sisk.pl> <201104200010.50656.rjw@sisk.pl> <20110419222004.GA9664@linux-sh.org>
+In-Reply-To: <20110419222004.GA9664@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303252237.3110.131.camel@x201>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104200050.04347.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alex Williamson (alex.williamson@redhat.com) wrote:
-> On Tue, 2011-04-19 at 15:26 -0700, Chris Wright wrote:
-> > * Alex Williamson (alex.williamson@redhat.com) wrote:
-> > > On Tue, 2011-04-19 at 15:07 -0700, Chris Wright wrote:
-> > > > * Alex Williamson (alex.williamson@redhat.com) wrote:
-> > > > > When using VFIO to assign a device to a guest, we want to make sure
-> > > > > the device is quiesced on VM reset to stop all DMA within the guest
-> > > > > mapped memory.  Add an ioctl which just calls pci_reset_function()
-> > > > > and returns whether it succeeds.
+On Wednesday, April 20, 2011, Paul Mundt wrote:
+> On Wed, Apr 20, 2011 at 12:10:50AM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, April 19, 2011, Paul Mundt wrote:
+> > > On Tue, Apr 19, 2011 at 11:42:26PM +0200, Rafael J. Wysocki wrote:
+> > > > On Tuesday, April 19, 2011, Magnus Damm wrote:
+> > > > > Do you have any plans to add support for multiple clocks per struct
+> > > > > device? I had some plans to play around with that myself, but if we're
+> > > > > moving the code to a common place then this obviously becomes a bit
+> > > > > more complicated.
+> > > > > 
+> > > > > It's rather common that each hardware block in an SoC is connected to
+> > > > > more than a single clock. This needs to be managed by software
+> > > > > somehow.
+> > > > > 
+> > > > > So if the plan is to make to the code generic, how about allowing the
+> > > > > architecture to associate clocks with each struct device somehow?
 > > > > 
-> > > > Shouldn't there be a reset when binding/unbinding vfio to/from a pci
-> > > > device?
-> > > 
-> > > There's already one when the /dev/vfioX file is opened, we should add
-> > > another on release, and probably add the same PCI save state store/load
-> > > that I'm proposing for KVM across those.  Thanks,
+> > > > Hmm.  For now, my patchset generally reorganizes the existing code without
+> > > > adding new functionality.  Of course, it is possible to add new functionality
+> > > > on top of it, but I'd prefer to focus on the "real" power domains support
+> > > > first (which I think should be done in a generic way too).
+> > > > 
+> > > Multiple clocks is not new functionality, it's the common case for the
+> > > bulk of the platforms, and something that is already presently handled.
 > > 
-> > Hmm, I looked and didn't see it, hence the question.
+> > OK
+> > 
+> > > > The plan is to share as much code as it makes sense between platforms and
+> > > > architectures.
+> > > 
+> > > An admirable plan, but the framework needs to be able to provide at least
+> > > the current required level of functionality in order for it to be
+> > > adopted, too.
+> > 
+> > Sure.
+> > 
+> > > On Mon, Apr 18, 2011 at 09:57:28PM +0200, Rafael J. Wysocki wrote:
+> > > > @@ -24,23 +24,18 @@
+> > > >  #ifdef CONFIG_PM_RUNTIME
+> > > >  static int omap1_pm_runtime_suspend(struct device *dev)
+> > > >  {
+> > > > -	struct clk *iclk, *fclk;
+> > > > -	int ret = 0;
+> > > > +	int ret;
+> > > >  
+> > > >  	dev_dbg(dev, "%s\n", __func__);
+> > > >  
+> > > >  	ret = pm_generic_runtime_suspend(dev);
+> > > > +	if (ret)
+> > > > +		return ret;
+> > > >  
+> > > > -	fclk = clk_get(dev, "fck");
+> > > > -	if (!IS_ERR(fclk)) {
+> > > > -		clk_disable(fclk);
+> > > > -		clk_put(fclk);
+> > > > -	}
+> > > > -
+> > > > -	iclk = clk_get(dev, "ick");
+> > > > -	if (!IS_ERR(iclk)) {
+> > > > -		clk_disable(iclk);
+> > > > -		clk_put(iclk);
+> > > > +	ret = pm_runtime_clock_suspend(dev);
+> > > > +	if (ret) {
+> > > > +		pm_generic_runtime_resume(dev);
+> > > > +		return ret;
+> > > >  	}
+> > > >  
+> > > >  	return 0;
+> > > 
+> > > The before and after changes here are not functionally equivalent. You've
+> > > gone from an explicit multi-clock scheme to a single encapsulated one via
+> > > pm_runtime_clock_suspend().
+> > 
+> > You're refferring to the OMAP changes I suppose?
 > 
-> vfio_open() -> pci_reset_function()
-> https://github.com/pugs/vfio-linux-2.6/blob/vfio/drivers/vfio/vfio_main.c
+> Yes, but we have similar use cases on SH, too.
+> 
+> > > Almost every single SH IP block is likewise abstracted in to a function
+> > > and interface clock, and OMAP and others are where we modelled this
+> > > abstraction on top of in the first place, so there are certainly users
+> > > there too.
+> > 
+> > In fact, the shmobile runtime PM code in arch/arm/mach-shmobile/pm_runtime.c
+> > uses only one clock right now.
+> > 
+> That's more due to general laziness than design. The code in
+> arch/sh/kernel/cpu/shmobile/pm_runtime.c goes through a hwblk abstraction
+> that functionally maps out for some CPUs via one API what is the function
+> clock on other CPUs. The hwblk API was never carried over to the ARM
+> side, and so a simplistic single clock case was implemented instead, and
+> the drivers with multiple clocks all performed manual clock gating on
+> their multiple clocks outside of the context of runtime PM.
+> 
+> OMAP1 clearly has a demonstratable case for multiple clocks that are
+> runtime PM managed, and this is exactly the sort of use case that SH
+> requires, too. If we can migrate off of and kill off some short-lived
+> ill-conceived APIs in the process, great. IOW, if you solve the OMAP1
+> problem then we can easily fix up ARM SH/R-Mobile and regular SH parts to
+> comply uniformly.
 
-Got it, thanks Alex.
+OK, I'll extend the generic code to cover the OMAP case.
+
+Thanks,
+Rafael
