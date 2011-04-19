@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab1DSUq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:46:29 -0400
-Received: from kroah.org ([198.145.64.141]:58978 "EHLO coco.kroah.org"
+	id S1755447Ab1DSUqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:46:47 -0400
+Received: from kroah.org ([198.145.64.141]:58976 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778Ab1DSUmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:46 -0400
+	id S1754247Ab1DSUmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
-Message-Id: <20110419204118.600700383@clark.kroah.org>
+Message-Id: <20110419204118.494216404@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:56 -0700
+Date: Tue, 19 Apr 2011 13:30:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Enrico Mioso <mrkiko.rs@gmail.com>
-Subject: [18/28] USB: option: Add new ONDA vendor id and product id for ONDA MT825UP
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [17/28] USB: ftdi_sio: add ids for Hameg HO720 and HO730
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +24,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
+From: Paul Friedrich <Paul.Friedrich@hameg.com>
 
-commit c6991b6fd2b4201174dc4620d0c8c4f5ff27b36f upstream.
+commit c53c2fab40cf16e13af66f40bfd27200cda98d2f upstream.
 
-This patch, adds to the option driver the Onda Communication
-(http://www.ondacommunication.com) vendor id, and the MT825UP modem
-device id.
+usb serial: ftdi_sio: add two missing USB ID's for Hameg interfaces HO720
+and HO730
 
-Note that many variants of this same device are being release here in
-Italy (at least one or two per telephony operator).
-
-These devices are perfectly equivalent except for some predefined
-settings (which can be changed of course).
-
-It should be noted that most ONDA devices are allready supported (they
-used other vendor's ids in the past). The patch seems working fine here,
-and the rest of the driver seems uninfluenced.
-
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -388,6 +388,12 @@ static int  option_resume(struct usb_ser
- #define CELOT_VENDOR_ID				0x211f
- #define CELOT_PRODUCT_CT680M			0x6801
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -793,6 +793,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO720_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO730_PID) },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO870_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_GENERIC_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -300,6 +300,8 @@
+  * Hameg HO820 and HO870 interface (using VID 0x0403)
+  */
+ #define        HAMEG_HO820_PID         0xed74
++#define HAMEG_HO730_PID			0xed73
++#define HAMEG_HO720_PID			0xed72
+ #define        HAMEG_HO870_PID         0xed71
  
-+/* ONDA Communication vendor id */
-+#define ONDA_VENDOR_ID       0x1ee8
-+
-+/* ONDA MT825UP HSDPA 14.2 modem */
-+#define ONDA_MT825UP         0x000b
-+
- static struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -917,6 +923,7 @@ static struct usb_device_id option_ids[]
- 
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
-+	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ /*
 
 
