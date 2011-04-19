@@ -1,59 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1DSOxQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:53:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43083 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751399Ab1DSOxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:53:14 -0400
-Date: Tue, 19 Apr 2011 15:54:06 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-Message-ID: <20110419155406.1da0e7fb@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-References: <20110419145303.111aead7@endymion.delvare>
-	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752189Ab1DSOyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:54:37 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:39268 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399Ab1DSOyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 10:54:36 -0400
+Message-ID: <4DADA22A.1010205@aknet.ru>
+Date: Tue, 19 Apr 2011 18:54:34 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
+References: <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com>
+In-Reply-To: <20110405164557.GA23248@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------040807020808000303010706"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm not at all concerned about this.  Users *must* know what a pin is
-> when they start fiddling with it.  If you ask a pin to do something
-> that it cannot do, then it just isn't going to work.  There's no real
-> point in trying to enforce any behaviour in the API.
+This is a multi-part message in MIME format.
+--------------040807020808000303010706
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Disagree 8) - errors are better than silently and undetectably failing.
-That might not be an error code but ideally it would WARN() or
-similar so that errors get caught and fixed and you don't instead find
-out something was poking the wrong pin and worked by chance a year later.
+The attached patch implements the PR_DETACH prctl
+command. It detaches the entire process group from
+its parent, allowing the parent to still read the detach
+code with normal wait(). If the process then exits, the
+notification of the new parent is delayed till the old parent
+does either wait() to read the detach code, or exits.
 
-> In this particular case, you've got a PCI device which looks to be
-> going into config space to get some information about how the chip is
-> layed out.  What I would do is keep your existing pci probe & remove
-> hooks, but use them to create and register child basic_mmio_gpio
-> platform_devices for each gpio bank.
+--------------040807020808000303010706
+Content-Type: text/plain;
+ name="pr_detach4.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="pr_detach4.diff"
 
-That means more devices, weird sysfs heirarchies and lots of mess with
-runtime power management in the general case.
+commit c95ea73afce29a9c47bab29787d6eb014a8de9e6
+Author: Stas <stas@stas.(none)>
+Date:   Mon Apr 11 15:06:33 2011 +0400
 
-If the basic_mmio_gpio code is properly abstracted it ought not to need
-magic extra platform devices.
+    implement PR_DETACH
 
-That aside it'll be less code to keep it separate than do all the messing
-around with platform devices so it seems to be a gross overdoing of 'lets
-make everything use the same code however big a hammer is needed'
+diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+index 942d30b..1da9c20 100644
+--- a/include/asm-generic/siginfo.h
++++ b/include/asm-generic/siginfo.h
+@@ -218,7 +218,8 @@ typedef struct siginfo {
+ #define CLD_TRAPPED	(__SI_CHLD|4)	/* traced child has trapped */
+ #define CLD_STOPPED	(__SI_CHLD|5)	/* child has stopped */
+ #define CLD_CONTINUED	(__SI_CHLD|6)	/* stopped child has continued */
+-#define NSIGCHLD	6
++#define CLD_DETACHED	(__SI_CHLD|7)	/* child has detached */
++#define NSIGCHLD	7
+ 
+ /*
+  * SIGPOLL si_codes
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index caa151f..fdf71a9 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -158,6 +158,8 @@ extern struct cred init_cred;
+ 	.parent		= &tsk,						\
+ 	.children	= LIST_HEAD_INIT(tsk.children),			\
+ 	.sibling	= LIST_HEAD_INIT(tsk.sibling),			\
++	.detached_children	= LIST_HEAD_INIT(tsk.detached_children),\
++	.detached_sibling	= LIST_HEAD_INIT(tsk.detached_sibling),	\
+ 	.group_leader	= &tsk,						\
+ 	RCU_INIT_POINTER(.real_cred, &init_cred),			\
+ 	RCU_INIT_POINTER(.cred, &init_cred),				\
+diff --git a/include/linux/prctl.h b/include/linux/prctl.h
+index a3baeb2..fbd2451 100644
+--- a/include/linux/prctl.h
++++ b/include/linux/prctl.h
+@@ -102,4 +102,6 @@
+ 
+ #define PR_MCE_KILL_GET 34
+ 
++#define PR_DETACH 35
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e74882f..c8a1741 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1260,6 +1260,9 @@ struct task_struct {
+ /* task state */
+ 	int exit_state;
+ 	int exit_code, exit_signal;
++	int detach_code;
++	int detaching;
++	int is_detaching:1;
+ 	int pdeath_signal;  /*  The signal sent when the parent dies  */
+ 	/* ??? */
+ 	unsigned int personality;
+@@ -1292,6 +1295,8 @@ struct task_struct {
+ 	 */
+ 	struct list_head children;	/* list of my children */
+ 	struct list_head sibling;	/* linkage in my parent's children list */
++	struct list_head detached_children;	/* list of my detached children */
++	struct list_head detached_sibling;	/* linkage in my parent's detached children list */
+ 	struct task_struct *group_leader;	/* threadgroup leader */
+ 
+ 	/*
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 2aa64e8..a2c5cfb 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -69,6 +69,7 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+ 
+ 		list_del_rcu(&p->tasks);
+ 		list_del_init(&p->sibling);
++		list_del_init(&p->detached_sibling);
+ 		__this_cpu_dec(process_counts);
+ 	}
+ 	list_del_rcu(&p->thread_group);
+@@ -804,6 +805,17 @@ static void forget_original_parent(struct task_struct *father)
+ 		} while_each_thread(p, t);
+ 		reparent_leader(father, p, &dead_children);
+ 	}
++	list_for_each_entry_safe(p, n, &father->detached_children,
++			detached_sibling) {
++		int signal;
++		p->detaching = 0;
++		p->is_detaching = 0;
++		list_del_init(&p->detached_sibling);
++		if (p->exit_state == EXIT_ZOMBIE) {
++			signal = do_notify_parent(p, SIGCHLD);
++			BUG_ON(signal == DEATH_REAP);
++		}
++	}
+ 	write_unlock_irq(&tasklist_lock);
+ 
+ 	BUG_ON(!list_empty(&father->children));
+@@ -858,7 +870,8 @@ static void exit_notify(struct task_struct *tsk, int group_dead)
+ 		tsk->exit_signal = SIGCHLD;
+ 
+ 	signal = tracehook_notify_death(tsk, &cookie, group_dead);
+-	if (signal >= 0)
++	/* delay parent notification for detaching tasks */
++	if (signal >= 0 && !tsk->is_detaching)
+ 		signal = do_notify_parent(tsk, signal);
+ 
+ 	tsk->exit_state = signal == DEATH_REAP ? EXIT_DEAD : EXIT_ZOMBIE;
+@@ -1507,6 +1520,54 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+ 	return retval;
+ }
+ 
++static int wait_task_detached(struct wait_opts *wo, struct task_struct *p)
++{
++	int dt, signal, retval = 0;
++	pid_t pid;
++	uid_t uid;
++
++	if (!likely(wo->wo_flags & WEXITED))
++		return 0;
++
++	if (unlikely(wo->wo_flags & WNOWAIT)) {
++		get_task_struct(p);
++		read_unlock(&tasklist_lock);
++		pid = task_pid_vnr(p);
++		uid = __task_cred(p)->uid;
++		return wait_noreap_copyout(wo, p, pid, uid, CLD_DETACHED,
++			p->detach_code >> 8);
++	}
++
++	dt = xchg(&p->detaching, 0);
++	if (dt != 1)
++		return 0;
++	get_task_struct(p);
++	read_unlock(&tasklist_lock);
++
++	write_lock_irq(&tasklist_lock);
++	list_del_init(&p->detached_sibling);
++	if (p->exit_state == EXIT_ZOMBIE) {
++		signal = do_notify_parent(p, SIGCHLD);
++		BUG_ON(signal == DEATH_REAP);
++	}
++	p->is_detaching = 0;
++	write_unlock_irq(&tasklist_lock);
++
++	if (wo->wo_stat)
++		retval = put_user(p->detach_code, wo->wo_stat);
++
++	if (!retval) {
++		pid = task_pid_vnr(p);
++		uid = __task_cred(p)->uid;
++		retval = wait_noreap_copyout(wo, p, pid, uid, CLD_DETACHED,
++			p->detach_code >> 8);
++	} else {
++		put_task_struct(p);
++	}
++
++	return retval;
++}
++
+ static int can_wait_task_common(struct wait_opts *wo, struct task_struct *p)
+ {
+ 	int ret = eligible_child(wo, p);
+@@ -1572,7 +1633,8 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 	/*
+ 	 * We don't reap group leaders with subthreads.
+ 	 */
+-	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
++	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p) &&
++			!p->is_detaching)
+ 		return wait_task_zombie(wo, p);
+ 
+ 	/*
+@@ -1610,6 +1672,15 @@ static int do_wait_thread(struct wait_opts *wo, struct task_struct *tsk)
+ 			return ret;
+ 	}
+ 
++	list_for_each_entry(p, &tsk->detached_children, detached_sibling) {
++		ret = can_wait_task(wo, p);
++		if (!ret)
++			continue;
++		ret = wait_task_detached(wo, p);
++		if (ret)
++			return ret;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 25e4291..feadef7 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1070,6 +1070,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	copy_flags(clone_flags, p);
+ 	INIT_LIST_HEAD(&p->children);
+ 	INIT_LIST_HEAD(&p->sibling);
++	INIT_LIST_HEAD(&p->detached_children);
++	INIT_LIST_HEAD(&p->detached_sibling);
+ 	rcu_copy_process(p);
+ 	p->vfork_done = NULL;
+ 	spin_lock_init(&p->alloc_lock);
+@@ -1233,6 +1235,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->exit_signal = (clone_flags & CLONE_THREAD) ? -1 : (clone_flags & CSIGNAL);
+ 	p->pdeath_signal = 0;
+ 	p->exit_state = 0;
++	p->detaching = 0;
++	p->is_detaching = 0;
+ 
+ 	/*
+ 	 * Ok, make it visible to the rest of the system.
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 18da702..1d88ee8 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -28,6 +28,7 @@
+ #include <linux/suspend.h>
+ #include <linux/tty.h>
+ #include <linux/signal.h>
++#include <linux/tracehook.h>
+ #include <linux/cn_proc.h>
+ #include <linux/getcpu.h>
+ #include <linux/task_io_accounting_ops.h>
+@@ -1736,6 +1737,41 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			else
+ 				error = PR_MCE_KILL_DEFAULT;
+ 			break;
++		case PR_DETACH: {
++			struct task_struct *p, *leader;
++			int notif;
++			struct pid_namespace *pid_ns = task_active_pid_ns(me);
++			error = -EPERM;
++			/* not detaching from init */
++			if (same_thread_group(me->real_parent,
++					pid_ns->child_reaper))
++				break;
++			if (arg2 & ~0x7f)
++				break;
++			write_lock_irq(&tasklist_lock);
++			leader = me->group_leader;
++			leader->detach_code = arg2 << 8;
++			notif = do_signal_parent(leader, leader->exit_signal,
++					CLD_DETACHED, arg2);
++			if (notif != DEATH_REAP) {
++				list_add_tail(&leader->detached_sibling,
++					&leader->real_parent->detached_children);
++				leader->detaching = 1;
++				leader->is_detaching = 1;
++			}
++			p = leader;
++			do {
++				if (!task_ptrace(p))
++					p->parent = pid_ns->child_reaper;
++				p->real_parent = pid_ns->child_reaper;
++			} while_each_thread(leader, p);
++			list_move_tail(&leader->sibling,
++					&leader->real_parent->children);
++			leader->exit_signal = SIGCHLD;
++			write_unlock_irq(&tasklist_lock);
++			error = 0;
++			break;
++		}
+ 		default:
+ 			error = -EINVAL;
+ 			break;
 
-If it was a platform device it might make sense, if the config was
-platform config to create a device it would certainly make sense, in the
-PCI case it's smaller, cleaner and saner not to add insane layers of glue
-and indirection IMHO.
-
-Alan
+--------------040807020808000303010706--
