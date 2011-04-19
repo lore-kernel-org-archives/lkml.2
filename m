@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1DSWXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:23:52 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20136
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751617Ab1DSWXu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:23:50 -0400
-X-SpamScore: -30
-X-BigFish: VPS-30(zz1803M9371O542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh95h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] tty/serial: add support for Xilinx PS UART
-Date: Tue, 19 Apr 2011 16:22:00 -0600
-In-Reply-To: <20110419221530.7370d013@lxorguk.ukuu.org.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] tty/serial: add support for Xilinx PS UART
-Thread-Index: Acv+1sssSnFxRt9QTa61MFxv9kDe+AABt4FQ
-References: <e35578a9-909d-4594-bbe4-41d89b5f9b3e@VA3EHSMHS014.ehs.local> <20110419221530.7370d013@lxorguk.ukuu.org.uk>
-From: John Linn <John.Linn@xilinx.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
-X-OriginalArrivalTime: 19 Apr 2011 22:21:54.0643 (UTC) FILETIME=[30494A30:01CBFEE0]
-X-RCIS-Action: ALLOW
-Message-ID: <8d05c32c-9ff1-4eda-9563-6857ede6541a@VA3EHSMHS020.ehs.local>
-X-OriginatorOrg: xilinx.com
+	id S1752849Ab1DSWZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:25:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51576 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399Ab1DSWZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:25:30 -0400
+Date: Wed, 20 Apr 2011 08:25:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the kbuild tree
+Message-Id: <20110420082514.a9ec4d68.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
-> Sent: Tuesday, April 19, 2011 3:16 PM
-> To: John Linn
-> Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
-> Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
-> 
-> On Tue, 19 Apr 2011 14:14:52 -0600
-> John Linn <john.linn@xilinx.com> wrote:
-> 
-> > The Xilinx PS Uart is used on the new ARM based SoC. This
-> > UART is not compatible with others such that a seperate
-> > driver is required.
-> 
-> Joyous. I wish people would standardise.
-> 
-> > +		 213 = /dev/ttyPS0		Xilinx PS serial port 0
-> > +		 214 = /dev/ttyPS1		Xilinx PS serial port 1
-> > +		 215 = /dev/ttyPS2		Xilinx PS serial port 2
-> > +		 216 = /dev/ttyPS3		Xilinx PS serial port 3
-> 
-> Is there a specific reason you need fixed minor numbers ? If not
-please
-> use a dynamic range and keep Linus happy.
+--Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Alan,
+Hi Michal,
 
-I hope you don't mind me asking a bit more to better understand.  Here's
-my
-concerns (maybe not valid).
+After merging the kbuild tree, today's linux-next build (s390 allnoconfig)
+failed like this:
 
-It seems like since this is a console it can get hard to debug with
-dynamic 
-nodes for this driver.
+/opt/crosstool/gcc-4.3.2-nolibc/bin/s390x-linux-ar: illegal option -- D
 
-This driver is for an embedded device where we don't want to require
-udev 
-or mdev to assign nodes. 
+Caused by commit 09ff9fecc039 ("kbuild: Use the deterministic mode of ar").
 
-It seems like the static device nodes are typical for serial consoles in
-the 
-drivers. I'm still digging in on the subject.
+$ /opt/crosstool/gcc-4.3.2-nolibc/bin/s390x-linux-ar --version
+GNU ar (GNU Binutils) 2.19
 
-Thanks,
-John
+I presume that this version of ar is now too old to build the kernel?
+Documentation/Changes only mentions Binutils verion 2.12.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+--Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJNrgvKAAoJEDMEi1NhKgbsmX8H/RIDsoJBV2FXM/xkLZGWOgbe
+/p0Fxunh3nC9ytJ/nohImQTll73NbhG1MVg+nS1BKGuI5tGXkbgn1ZwzhNM0SoPM
+Eu53Wl6GflYZicCMRE/zHTjxBXyf1U9mORXaE/M0/DXKPI6k+sFlwVo8Pb5TWk/X
+EyvcSF+snV+E4UkBbYP+0BcKZOxTh2zZR00fRH29IBOo7VDkft0wLjWFYAEb4d2i
+jpXPK/TmtMlIeHGVyaH7iGX8Ji/7u2jQ2IhI5FWgX7oZKbUEz3+nOoipnfBbLFXV
+IJEGu9dJPVExCIeFZ24JqVQTHMbwvmwp0yxfdkwKlyQnvxTw4nKzG/6mVmyvu0Q=
+=8Yvr
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Apr_2011_08_25_14_+1000_Bty42tOrsUGVi8wz--
