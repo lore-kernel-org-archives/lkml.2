@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1DSGrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:47:17 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:59066 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751542Ab1DSGrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:47:14 -0400
-Message-ID: <4DAD2FD3.5010103@st.com>
-Date: Tue, 19 Apr 2011 12:16:43 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 2/6] dmaengine/dw_dmac: Enable resubmission from callback
- routine.
-References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com> <cf350c267897bd4eaf5a027c659771eee117ac74.1303123511.git.viresh.kumar@st.com> <438BB0150E931F4B9CE701519A44630108519E1BE6@bgsmsx502.gar.corp.intel.com> <4DAD2A61.4020406@st.com> <438BB0150E931F4B9CE701519A44630108519E1C1D@bgsmsx502.gar.corp.intel.com>
-In-Reply-To: <438BB0150E931F4B9CE701519A44630108519E1C1D@bgsmsx502.gar.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753460Ab1DSGvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:51:36 -0400
+Received: from linux-sh.org ([111.68.239.195]:47774 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126Ab1DSGvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 02:51:35 -0400
+Date: Tue, 19 Apr 2011 15:51:20 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] [resend] s3fb: add DDC support
+Message-ID: <20110419065120.GC28271@linux-sh.org>
+References: <201104181214.57501.linux@rainbow-software.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104181214.57501.linux@rainbow-software.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 12:03 PM, Koul, Vinod wrote:
-> On 04/19/2011 11:53 AM, viresh kumar wrote:
->> On 04/19/2011 11:42 AM, Koul, Vinod wrote:
->>> On 04/18/2011 04:20 PM, viresh kumar wrote:
->> Vinod,
->>
->> I initiated this discussion few days back on a separate thread:
->>
->> http://www.spinics.net/lists/arm-kernel/msg121139.html
->>
->> And so implemented this.
-> Ahhh, on the road, catching up on email...
+On Mon, Apr 18, 2011 at 12:14:57PM +0200, Ondrej Zary wrote:
+> Add I2C support for the DDC bus and also default mode initialization by
+> reading monitor EDID to the s3fb driver.
 > 
-> This was a dma engine requirement, not absolute for slave-dma.
-> But would be good idea to resist this. What is your reason for this?
-
-Mainline drivers using dmaengine are already submitting new transfers from
-callback routines. For example: amba-pl011.
-And i have to use pl011 with DMA, so faced this issue in dw_dmac.
-
--- 
-viresh
+> Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
+> Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+> 
+> Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
+> looks different from the other cards but the DDC pins on the VGA connector
+> are not connected.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
+Applied, thanks.
