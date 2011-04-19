@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab1DSUUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:20:33 -0400
-Received: from kroah.org ([198.145.64.141]:35718 "EHLO coco.kroah.org"
+	id S1754985Ab1DSURk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:40 -0400
+Received: from kroah.org ([198.145.64.141]:35691 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab1DSURl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:41 -0400
+	id S1754949Ab1DSURh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:37 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
-Message-Id: <20110419201049.503992462@clark.kroah.org>
+Message-Id: <20110419201049.065148901@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:08 -0700
+Date: Tue, 19 Apr 2011 13:09:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Hardy <shardy@redhat.com>
-Subject: [59/70] usb: Fix qcserial memory leak on rmmod
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: [55/70] next_pidmap: fix overflow condition
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Hardy <shardy@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 10c9ab15d6aee153968d150c05b3ee3df89673de upstream.
+commit c78193e9c7bcbf25b8237ad0dec82f805c4ea69b upstream.
 
-qcprobe function allocates serial->private but this is never freed, this
-patch adds a new function qc_release() which frees serial->private, after
-calling usb_wwan_release
+next_pidmap() just quietly accepted whatever 'last' pid that was passed
+in, which is not all that safe when one of the users is /proc.
 
-Signed-off-by: Steven Hardy <shardy@redhat.com>
+Admittedly the proc code should do some sanity checking on the range
+(and that will be the next commit), but that doesn't mean that the
+helper functions should just do that pidmap pointer arithmetic without
+checking the range of its arguments.
+
+So clamp 'last' to PID_MAX_LIMIT.  The fact that we then do "last+1"
+doesn't really matter, the for-loop does check against the end of the
+pidmap array properly (it's only the actual pointer arithmetic overflow
+case we need to worry about, and going one bit beyond isn't going to
+overflow).
+
+[ Use PID_MAX_LIMIT rather than pid_max as per Eric Biederman ]
+
+Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Analyzed-by: Robert Święcki <robert@swiecki.net>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@openvz.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/qcserial.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ include/linux/pid.h |    2 +-
+ kernel/pid.c        |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -205,6 +205,18 @@ static int qcprobe(struct usb_serial *se
- 	return retval;
+--- a/include/linux/pid.h
++++ b/include/linux/pid.h
+@@ -117,7 +117,7 @@ extern struct pid *find_vpid(int nr);
+  */
+ extern struct pid *find_get_pid(int nr);
+ extern struct pid *find_ge_pid(int nr, struct pid_namespace *);
+-int next_pidmap(struct pid_namespace *pid_ns, int last);
++int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
+ 
+ extern struct pid *alloc_pid(struct pid_namespace *ns);
+ extern void free_pid(struct pid *pid);
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -217,11 +217,14 @@ static int alloc_pidmap(struct pid_names
+ 	return -1;
  }
  
-+static void qc_release(struct usb_serial *serial)
-+{
-+	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
+-int next_pidmap(struct pid_namespace *pid_ns, int last)
++int next_pidmap(struct pid_namespace *pid_ns, unsigned int last)
+ {
+ 	int offset;
+ 	struct pidmap *map, *end;
+ 
++	if (last >= PID_MAX_LIMIT)
++		return -1;
 +
-+	dbg("%s", __func__);
-+
-+	/* Call usb_wwan release & free the private data allocated in qcprobe */
-+	usb_wwan_release(serial);
-+	usb_set_serial_data(serial, NULL);
-+	kfree(priv);
-+}
-+
- static struct usb_serial_driver qcdevice = {
- 	.driver = {
- 		.owner     = THIS_MODULE,
-@@ -222,7 +234,7 @@ static struct usb_serial_driver qcdevice
- 	.chars_in_buffer     = usb_wwan_chars_in_buffer,
- 	.attach		     = usb_wwan_startup,
- 	.disconnect	     = usb_wwan_disconnect,
--	.release	     = usb_wwan_release,
-+	.release	     = qc_release,
- #ifdef CONFIG_PM
- 	.suspend	     = usb_wwan_suspend,
- 	.resume		     = usb_wwan_resume,
+ 	offset = (last + 1) & BITS_PER_PAGE_MASK;
+ 	map = &pid_ns->pidmap[(last + 1)/BITS_PER_PAGE];
+ 	end = &pid_ns->pidmap[PIDMAP_ENTRIES];
 
 
