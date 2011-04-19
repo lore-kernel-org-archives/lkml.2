@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1DSWAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:00:25 -0400
-Received: from linux-sh.org ([111.68.239.195]:36840 "EHLO linux-sh.org"
+	id S1756109Ab1DSWAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:00:31 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:55650 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab1DSWAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:00:24 -0400
-Date: Wed, 20 Apr 2011 06:59:44 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [Update][PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
-Message-ID: <20110419215944.GA10031@linux-sh.org>
-References: <201104130205.26988.rjw@sisk.pl> <201104170143.28980.rjw@sisk.pl> <20110418081809.GA32457@linux-sh.org> <201104182157.28373.rjw@sisk.pl> <201104130205.26988.rjw@sisk.pl> <201104182159.54316.rjw@sisk.pl> <BANLkTimZpXAH7uGTDmYJSJJWgX=H5md0JQ@mail.gmail.com> <201104192342.26670.rjw@sisk.pl>
-Mime-Version: 1.0
+	id S1756078Ab1DSWA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:00:29 -0400
+Date: Wed, 20 Apr 2011 00:00:18 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, w.sang@pengutronix.de, arnd@arndb.de
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+Message-ID: <20110419220018.GB2772@local>
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu>
+ <20110419060816.GA5252@ponder.secretlab.ca>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201104182157.28373.rjw@sisk.pl> <201104192342.26670.rjw@sisk.pl>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <20110419060816.GA5252@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 11:42:26PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 19, 2011, Magnus Damm wrote:
-> > Do you have any plans to add support for multiple clocks per struct
-> > device? I had some plans to play around with that myself, but if we're
-> > moving the code to a common place then this obviously becomes a bit
-> > more complicated.
+On Tue, Apr 19, 2011 at 12:08:16AM -0600, Grant Likely wrote:
+> On Mon, Apr 18, 2011 at 10:50:54AM +0200, Michal Simek wrote:
+> > Adding OF binding to genirq.
+> > Version string is setup to the "devicetree".
 > > 
-> > It's rather common that each hardware block in an SoC is connected to
-> > more than a single clock. This needs to be managed by software
-> > somehow.
+> > Compatible string is not setup for now but you can add your
+> > custom compatible string to uio_of_genirq_match structure.
 > > 
-> > So if the plan is to make to the code generic, how about allowing the
-> > architecture to associate clocks with each struct device somehow?
+> > For example with "uio" compatible string:
+> > static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> > 	{ .compatible = "uio", },
+> > 	{ /* empty for now */ },
+> > };
+> > 
+> > Signed-off-by: Michal Simek <monstr@monstr.eu>
+> > 
+> > ---
+> > 
+> > v3: Fix irq binding
+> >     Use "devicetree" as version string
+> > 
+> > v2: Remove additional resource binding
+> >     Setup correct version string
+> >     Clear compatible string
+> > ---
+> >  drivers/uio/uio_pdrv_genirq.c |   42 +++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 42 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> > index 7174d51..c8d565a 100644
+> > --- a/drivers/uio/uio_pdrv_genirq.c
+> > +++ b/drivers/uio/uio_pdrv_genirq.c
+> > @@ -23,6 +23,10 @@
+> >  #include <linux/pm_runtime.h>
+> >  #include <linux/slab.h>
+> >  
+> > +#include <linux/of.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/of_address.h>
+> > +
+> >  #define DRIVER_NAME "uio_pdrv_genirq"
+> >  
+> >  struct uio_pdrv_genirq_platdata {
+> > @@ -97,6 +101,30 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+> >  	int ret = -EINVAL;
+> >  	int i;
+> >  
+> > +	if (!uioinfo) {
+> > +		int irq;
+> > +
+> > +		/* alloc uioinfo for one device */
+> > +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> > +		if (!uioinfo) {
+> > +			ret = -ENOMEM;
+> > +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> > +			goto bad2;
+> > +		}
+> > +		uioinfo->name = pdev->dev.of_node->name;
+> > +		uioinfo->version = "devicetree";
+> > +
+> > +		/* Multiple IRQs are not supported */
+> > +		irq = platform_get_irq(pdev, 0);
+> > +		if (irq < 0) {
 > 
-> Hmm.  For now, my patchset generally reorganizes the existing code without
-> adding new functionality.  Of course, it is possible to add new functionality
-> on top of it, but I'd prefer to focus on the "real" power domains support
-> first (which I think should be done in a generic way too).
-> 
-Multiple clocks is not new functionality, it's the common case for the
-bulk of the platforms, and something that is already presently handled.
+> PowerPC and x86 will return 0 for an unassigned IRQ, as will most platforms.
 
-> The plan is to share as much code as it makes sense between platforms and
-> architectures.
+That might be right for these architectures. On ARM SoCs, IRQ0 is often a
+normal irq like any other (e.g. "Audio DMA Controller 1" on Telechips TCC8000).
 
-An admirable plan, but the framework needs to be able to provide at least
-the current required level of functionality in order for it to be
-adopted, too.
+We've had this discussion before. In my original uio_driver.h, UIO_IRQ_NONE
+was #defined as -1. There was heavy opposition against that, and I finally
+accepted a patch changing UIO_IRQ_NONE to 0. It's a tradeoff between 0 being
+a valid interrupt number on most archs and the convenience of the compiler
+automatically inserting a 0 into an unassigned variable.
 
-On Mon, Apr 18, 2011 at 09:57:28PM +0200, Rafael J. Wysocki wrote:
-> @@ -24,23 +24,18 @@
->  #ifdef CONFIG_PM_RUNTIME
->  static int omap1_pm_runtime_suspend(struct device *dev)
->  {
-> -	struct clk *iclk, *fclk;
-> -	int ret = 0;
-> +	int ret;
->  
->  	dev_dbg(dev, "%s\n", __func__);
->  
->  	ret = pm_generic_runtime_suspend(dev);
-> +	if (ret)
-> +		return ret;
->  
-> -	fclk = clk_get(dev, "fck");
-> -	if (!IS_ERR(fclk)) {
-> -		clk_disable(fclk);
-> -		clk_put(fclk);
-> -	}
-> -
-> -	iclk = clk_get(dev, "ick");
-> -	if (!IS_ERR(iclk)) {
-> -		clk_disable(iclk);
-> -		clk_put(iclk);
-> +	ret = pm_runtime_clock_suspend(dev);
-> +	if (ret) {
-> +		pm_generic_runtime_resume(dev);
-> +		return ret;
->  	}
->  
->  	return 0;
+The above line
 
-The before and after changes here are not functionally equivalent. You've
-gone from an explicit multi-clock scheme to a single encapsulated one via
-pm_runtime_clock_suspend().
+if (irq < 0) {
 
-Almost every single SH IP block is likewise abstracted in to a function
-and interface clock, and OMAP and others are where we modelled this
-abstraction on top of in the first place, so there are certainly users
-there too.
+is probably a copy-paste leftover of some older code. Today, irq < 0 should
+never be true in UIO, so the line is wrong.
+
+Thanks for pointing to it,
+Hans
+
+
