@@ -1,166 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab1DSBnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:43:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27981 "EHLO mga03.intel.com"
+	id S1753871Ab1DSBnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:43:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13384 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab1DSBnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:43:45 -0400
+	id S1751985Ab1DSBns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:43:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
-   d="scan'208";a="421595171"
+   d="scan'208";a="421595192"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 1/4] HWPoison: add memory_failure_queue()
-Date: Tue, 19 Apr 2011 09:43:36 +0800
-Message-Id: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: [RFC 3/4] PCIe, AER, add aer_recover_queue
+Date: Tue, 19 Apr 2011 09:43:38 +0800
+Message-Id: <1303177419-22466-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
+References: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_failure() is the entry point for HWPoison memory error
-recovery.  It must be called in process context.  But commonly
-hardware memory errors are notified via MCE or NMI, so some delayed
-execution mechanism must be used.  In MCE handler, a work queue + ring
-buffer mechanism is used.
+In addition to native PCIe AER, now APEI (ACPI Platform Error
+Interface) GHES (Generic Hardware Error Source) can be used to report
+PCIe AER errors too.  To add support to APEI GHES PCIe AER recovery,
+aer_recover_queue is added to export the recovery function in native
+PCIe AER driver.
 
-In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
-(Generic Hardware Error Source) can be used to report memory errors
-too.  To add support to APEI GHES memory recovery, a mechanism similar
-to that of MCE is implemented.  memory_failure_queue() is the new
-entry point that can be called in IRQ context.  The next step is to
-make MCE handler uses this interface too.
+Recoverable PCIe AER errors are reported via NMI in APEI GHES.  Then
+APEI GHES uses irq_work to delay the error processing into an IRQ
+handler.  But PCIe AER recovery can be very time-consuming, so
+aer_recover_queue, which can be used in IRQ handler, delays the real
+recovery action into the process context, that is, work queue.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Zhang Yanmin <yanmin.zhang@intel.com>
 ---
- include/linux/mm.h  |    1 
- mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+)
+ drivers/pci/pcie/aer/aerdrv_core.c     |   76 +++++++++++++++++++++++++++++----
+ drivers/pci/pcie/aer/aerdrv_errprint.c |    3 -
+ include/linux/aer.h                    |    3 +
+ 3 files changed, 74 insertions(+), 8 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1641,6 +1641,7 @@ enum mf_flags {
- };
- extern void memory_failure(unsigned long pfn, int trapno);
- extern int __memory_failure(unsigned long pfn, int trapno, int flags);
-+extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
- extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
- extern int sysctl_memory_failure_recovery;
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -52,6 +52,7 @@
- #include <linux/swapops.h>
- #include <linux/hugetlb.h>
- #include <linux/memory_hotplug.h>
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -24,6 +24,7 @@
+ #include <linux/suspend.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
 +#include <linux/kfifo.h>
- #include "internal.h"
+ #include "aerdrv.h"
  
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1182,6 +1183,97 @@ void memory_failure(unsigned long pfn, i
- 	__memory_failure(pfn, trapno, 0);
+ static int forceload;
+@@ -445,8 +446,7 @@ static struct pcie_port_service_driver *
+ 	return drv;
  }
  
-+#define MEMORY_FAILURE_FIFO_ORDER	4
-+#define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
+-static pci_ers_result_t reset_link(struct pcie_device *aerdev,
+-		struct pci_dev *dev)
++static pci_ers_result_t reset_link(struct pci_dev *dev)
+ {
+ 	struct pci_dev *udev;
+ 	pci_ers_result_t status;
+@@ -486,7 +486,6 @@ static pci_ers_result_t reset_link(struc
+ 
+ /**
+  * do_recovery - handle nonfatal/fatal error recovery process
+- * @aerdev: pointer to a pcie_device data structure of root port
+  * @dev: pointer to a pci_dev data structure of agent detecting an error
+  * @severity: error severity type
+  *
+@@ -494,8 +493,7 @@ static pci_ers_result_t reset_link(struc
+  * error detected message to all downstream drivers within a hierarchy in
+  * question and return the returned code.
+  */
+-static void do_recovery(struct pcie_device *aerdev, struct pci_dev *dev,
+-		int severity)
++static void do_recovery(struct pci_dev *dev, int severity)
+ {
+ 	pci_ers_result_t status, result = PCI_ERS_RESULT_RECOVERED;
+ 	enum pci_channel_state state;
+@@ -511,7 +509,7 @@ static void do_recovery(struct pcie_devi
+ 			report_error_detected);
+ 
+ 	if (severity == AER_FATAL) {
+-		result = reset_link(aerdev, dev);
++		result = reset_link(dev);
+ 		if (result != PCI_ERS_RESULT_RECOVERED)
+ 			goto failed;
+ 	}
+@@ -576,9 +574,73 @@ static void handle_error_source(struct p
+ 			pci_write_config_dword(dev, pos + PCI_ERR_COR_STATUS,
+ 					info->status);
+ 	} else
+-		do_recovery(aerdev, dev, info->severity);
++		do_recovery(dev, info->severity);
+ }
+ 
++#ifdef CONFIG_ACPI_APEI_PCIEAER
++static void aer_recover_work_func(struct work_struct *work);
 +
-+struct memory_failure_entry {
-+	unsigned long pfn;
-+	int trapno;
-+	int flags;
-+};
++#define AER_RECOVER_RING_ORDER		4
++#define AER_RECOVER_RING_SIZE		(1 << AER_RECOVER_RING_ORDER)
 +
-+struct memory_failure_cpu {
-+	DECLARE_KFIFO(fifo, struct memory_failure_entry,
-+		      MEMORY_FAILURE_FIFO_SIZE);
-+	spinlock_t lock;
-+	struct work_struct work;
-+};
-+
-+static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
-+
-+/**
-+ * memory_failure_queue - Schedule handling memory failure of a page.
-+ * @pfn: Page Number of the corrupted page
-+ * @trapno: Trap number reported in the signal to user space.
-+ * @flags: Flags for memory failure handling
-+ *
-+ * This function is called by the low level hardware error handler
-+ * when it detects hardware memory corruption of a page. It schedules
-+ * the recovering of error page, including dropping pages, killing
-+ * processes etc.
-+ *
-+ * The function is primarily of use for corruptions that
-+ * happen outside the current execution context (e.g. when
-+ * detected by a background scrubber)
-+ *
-+ * Can run in IRQ context.
-+ */
-+void memory_failure_queue(unsigned long pfn, int trapno, int flags)
++struct aer_recover_entry
 +{
-+	struct memory_failure_cpu *mf_cpu;
-+	unsigned long proc_flags;
-+	struct memory_failure_entry entry = {
-+		.pfn =		pfn,
-+		.trapno =	trapno,
-+		.flags =	flags,
++	u8	bus;
++	u8	devfn;
++	u16	domain;
++	int	severity;
++};
++
++static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
++		    AER_RECOVER_RING_SIZE);
++/*
++ * Mutual exclusion for writers of aer_recover_ring, reader side don't
++ * need lock, because there is only one reader and lock is not needed
++ * between reader and writer.
++ */
++static DEFINE_SPINLOCK(aer_recover_ring_lock);
++static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
++
++void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
++		       int severity)
++{
++	unsigned long flags;
++	struct aer_recover_entry entry = {
++		.bus		= bus,
++		.devfn		= devfn,
++		.domain		= domain,
++		.severity	= severity,
 +	};
 +
-+	mf_cpu = &get_cpu_var(memory_failure_cpu);
-+	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-+	if (kfifo_put(&mf_cpu->fifo, &entry))
-+		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	spin_lock_irqsave(&aer_recover_ring_lock, flags);
++	if (kfifo_put(&aer_recover_ring, &entry))
++		schedule_work(&aer_recover_work);
 +	else
-+		pr_err("Memory failure: buffer overflow when recovering memory failure at 0x%#lx\n",
-+		       pfn);
-+	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-+	put_cpu_var(memory_failure_cpu);
++		pr_err("AER recover: Buffer overflow when recovering AER for %04x:%02x:%02x:%x\n",
++		       domain, bus, PCI_SLOT(devfn), PCI_FUNC(devfn));
++	spin_unlock_irqrestore(&aer_recover_ring_lock, flags);
 +}
-+EXPORT_SYMBOL_GPL(memory_failure_queue);
++EXPORT_SYMBOL_GPL(aer_recover_queue);
 +
-+static void memory_failure_work_func(struct work_struct *work)
++static void aer_recover_work_func(struct work_struct *work)
 +{
-+	struct memory_failure_cpu *mf_cpu;
-+	struct memory_failure_entry entry = { 0, };
-+	unsigned long proc_flags;
-+	int gotten;
++	struct aer_recover_entry entry;
++	struct pci_dev *pdev;
 +
-+	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	for (;;) {
-+		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-+		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-+		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-+		if (!gotten)
-+			break;
-+		__memory_failure(entry.pfn, entry.trapno, entry.flags);
++	while (kfifo_get(&aer_recover_ring, &entry)) {
++		pdev = pci_get_domain_bus_and_slot(entry.domain, entry.bus,
++						   entry.devfn);
++		if (!pdev) {
++			pr_err("AER recover: Can not find pci_dev for %04x:%02x:%02x:%x\n",
++			       entry.domain, entry.bus,
++			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
++			continue;
++		}
++		do_recovery(pdev, entry.severity);
 +	}
 +}
-+
-+static int __init memory_failure_init(void)
-+{
-+	struct memory_failure_cpu *mf_cpu;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		mf_cpu = &per_cpu(memory_failure_cpu, cpu);
-+		spin_lock_init(&mf_cpu->lock);
-+		INIT_KFIFO(mf_cpu->fifo);
-+		INIT_WORK(&mf_cpu->work, memory_failure_work_func);
-+	}
-+
-+	return 0;
-+}
-+core_initcall(memory_failure_init);
++#endif
 +
  /**
-  * unpoison_memory - Unpoison a previously poisoned page
-  * @pfn: Page number of the to be unpoisoned page
+  * get_device_error_info - read error status from dev and store it to info
+  * @dev: pointer to the device expected to have a error record
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -204,7 +204,7 @@ void aer_print_port_info(struct pci_dev
+ }
+ 
+ #ifdef CONFIG_ACPI_APEI_PCIEAER
+-static int cper_severity_to_aer(int cper_severity)
++int cper_severity_to_aer(int cper_severity)
+ {
+ 	switch (cper_severity) {
+ 	case CPER_SEV_RECOVERABLE:
+@@ -215,6 +215,7 @@ static int cper_severity_to_aer(int cper
+ 		return AER_CORRECTABLE;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(cper_severity_to_aer);
+ 
+ void cper_print_aer(const char *prefix, int cper_severity,
+ 		    struct aer_capability_regs *aer)
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -51,5 +51,8 @@ static inline int pci_cleanup_aer_uncorr
+ 
+ extern void cper_print_aer(const char *prefix, int cper_severity,
+ 			   struct aer_capability_regs *aer);
++extern int cper_severity_to_aer(int cper_severity);
++extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
++			      int severity);
+ #endif //_AER_H_
+ 
