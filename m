@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab1DSHDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:03:39 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:39557 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752217Ab1DSHDg (ORCPT
+	id S1753738Ab1DSHGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:06:32 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:4103 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751943Ab1DSHGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:03:36 -0400
-Subject: Re: linux-next: manual merge of the omap_dss2 tree with the
- fbdev-current tree
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Archit Taneja <archit@ti.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
-References: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 10:03:30 +0300
-Message-ID: <1303196610.2141.14.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Apr 2011 03:06:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhMEAIQzrU15LHHJgWdsb2JhbAClQhUBARYmJcV9DoVjBA
+Date: Tue, 19 Apr 2011 17:02:47 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/6] writeback: the kupdate expire timestamp should be
+ a moving target
+Message-ID: <20110419070247.GE23985@dastard>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.392203618@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419030532.392203618@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Tue, 2011-04-19 at 13:27 +1000, Stephen Rothwell wrote:
-> Hi Tomi,
+On Tue, Apr 19, 2011 at 11:00:05AM +0800, Wu Fengguang wrote:
+> Dynamically compute the dirty expire timestamp at queue_io() time.
 > 
-> Today's linux-next merge of the omap_dss2 tree got a conflict in
-> drivers/video/omap2/dss/dss_features.c
-> drivers/video/omap2/dss/dss_features.h between commit 0b41136c0d2f
-> ("OMAP: DSS2: DSI: Fix DSI PLL power bug") from the fbdev-current tree
-> and commit 0f7d043bd56b ("OMAP4: DSS2: Register configuration changes for
-> DSI") from the omap_dss2 tree.
+> writeback_control.older_than_this used to be determined at entrance to
+> the kupdate writeback work. This _static_ timestamp may go stale if the
+> kupdate work runs on and on. The flusher may then stuck with some old
+> busy inodes, never considering newly expired inodes thereafter.
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> This has two possible problems:
+> 
+> - It is unfair for a large dirty inode to delay (for a long time) the
+>   writeback of small dirty inodes.
+> 
+> - As time goes by, the large and busy dirty inode may contain only
+>   _freshly_ dirtied pages. Ignoring newly expired dirty inodes risks
+>   delaying the expired dirty pages to the end of LRU lists, triggering
+>   the evil pageout(). Nevertheless this patch merely addresses part
+>   of the problem.
 
-This was actually my mistake, sorry. I had wrong commits in my for-next
-branch. I've update it to latest correct stuff, and the problem should
-disappear.
+When wb_writeback() is called with for_kupdate set, it initialises
+wbc->older_than_this appropriately outside the writeback loop.
+queue_io() is called once per writeback_inodes_wb() call, which is
+once per loop in wb_writeback. All your change does is re-initialise
+older_than_this once per loop in wb_writeback, jus tin a different
+and very non-obvious place.
 
- Tomi
+So why didn't you just re-initialise it inside the loop in
+wb_writeback() and leave all the other code alone?
 
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
