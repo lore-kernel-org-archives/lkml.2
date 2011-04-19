@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1DSQyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:54:23 -0400
-Received: from sous-sol.org ([216.99.217.87]:48450 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752783Ab1DSQyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:54:21 -0400
-Date: Tue, 19 Apr 2011 09:54:11 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Alexander Hoogerhuis <alexh@boxed.no>
-Cc: Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kaber@trash.net
-Subject: Re: A patch you wrote some time ago (aka: "[patch 41/54] ICMP: Fix
- icmp_errors_use_inbound_ifaddr sysctl")
-Message-ID: <20110419165411.GO9569@sequoia.sous-sol.org>
+	id S1753452Ab1DSQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:58:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26453 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab1DSQ6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:58:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,240,1301900400"; 
+   d="scan'208";a="421988416"
+Date: Tue, 19 Apr 2011 09:58:01 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
+Cc: stable@kernel.org, giridhar.malavali@qlogic.com, James.Bottomley@suse.de,
+        linux-kernel@vger.kernel.org, andrew.vasquez@qlogic.com
+Subject: Re: [BISECTED] QLogic Corp. ISP2532-based 8Gb Fibre Channel not
+ working on 2.6.35.y
+Message-ID: <20110419165801.GA17788@tassilo.jf.intel.com>
+References: <4DAD5495.5060704@pardus.org.tr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DADBBBC.6020803@boxed.no>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4DAD5495.5060704@pardus.org.tr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alexander Hoogerhuis (alexh@boxed.no) wrote:
-> I hope you (or anyone else) can spare half a minute to have a quick
-> look at a patch you wrote a few years ago:
+> From 2f0f3f4f06f7cfadebf58b70bd9e7f71d8fd96e4 Mon Sep 17 00:00:00 2001
+> From: Madhuranath Iyengar <madhuranath.iyengar@qlogic.com>
+> Date: Fri, 23 Jul 2010 15:28:24 +0500
+> Subject: [PATCH 021/107] [SCSI] qla2xxx: Appropriately log FCP
+> priority data messages
 > 
-> >http://lkml.org/lkml/2007/6/8/124
+> Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+> Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+> 
+> 
+> -------
+> 
+> So I think at least the first commit that I've mentioned should be
+> queued for the next 2.6.35.y to fix this issue.
 
-I actually did not write that patch, rather added it to the -stable tree.
-Patrick (CCd) wrote it.
+Thanks for the bisection.
 
-> I've been tracking down a case of ICMP Redirects originating from
-> the wrong IPs, and as far I can tell, you patch is the last to touch
-> this code (net/ipv4/icmp.c:507):
-> 
-> > if (rt->fl.iif && net->ipv4.sysctl_icmp_errors_use_inbound_ifaddr)
-> >        dev = dev_get_by_index_rcu(net, rt->fl.iif);
-> >
-> >if (dev)
-> >        saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
-> >else
-> >        saddr = 0;
-> 
-> In a plain world this would work, but I have come across a case that
-> seems to be not handled by this.
-> 
-> I have two machines set up with VRRP to act as routers out of a
-> subnet, and they have IPs x.x.x.13/28 and x.x.x.14/28, with VRRP
-> holding on to x.x.x.1/28.
-> 
-> If a node in x.x.x.0/28 needs to get a ICMP redirect from x.x.x.1/28
-> (to reach another subnet behind a  different gateway in x.x.x.0/28),
-> then the source IP on the ICMP redirect is chosen as the primary IP
-> on the interface that the packet arrived at.
-> 
-> This is as far as I can tell from RFCs and colleagues fine for most
-> things after you're routed one hop or more, but in the case of ICMP
-> redirect it means that the redirect is not adhered to by the client,
-> as it will get the reidrect from x.x.x.13/28, not x.x.x.1/28.
-> 
-> inet_select_addr seems to be explicitly looking for the primary IP
-> in all cases (./net/ipv4/devinet.c:875), and in the case of sending
-> ICMP recdirect when in an VRRP setup, that would not work well. It
-> should try to match the actual inbound IP.
-> 
-> Judging by the comments from your patch I am not sure if the source
-> IP that triggers the ICMP redirect is available at this point any
-> more.
-> 
-> The way I understand it should pick adress is this way:
-> 
-> >  if (rt->fl.iif && net->ipv4.sysctl_icmp_errors_use_inbound_ifaddr)
-> >         dev = dev_get_by_index_rcu(net, rt->fl.iif);
-> >
-> > if (dev == fl.iif)
-> >         saddr = iph->daddr;
-> >
-> > if (dev != fl.iif)
-> >         saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
-> > else
-> >         saddr = 0;
-> 
-> I.e. if we are replying to something that is from a local network
-> segment, then iph->daddr would be a more correct source. My C skill
-> is prehistoric so what I've written likely is far from correct, but
-> the general gist is that there is a special case for replying to
-> something local.
-> 
-> As it stands today (I'm on 2.6.35.11), ICMP redirects when using
-> VRRP are broken, and I'm hoping I may have found out why. :)
-> 
-> mvh,
-> A
-> -- 
-> Alexander Hoogerhuis | http://no.linkedin.com/in/alexh
-> Boxed Solutions AS   | +47 908 21 485 - alexh@boxed.no
-> "Given enough eyeballs, all bugs are shallow." -Eric S. Raymond
+Can I get an ack for that from the driver or SCSI maintainer or
+patch author first please?
+I don't understand the driver well enough to make a call myself.
+
+Thanks,
+
+-Andi
