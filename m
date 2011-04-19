@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab1DSPHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 11:07:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58870 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1DSPHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 11:07:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
-Date: Tue, 19 Apr 2011 17:07:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: John Williams <john.williams@petalogix.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        hjk@hansjkoch.de
-References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <BANLkTin0krYi+MqngSQ5n-752vDa_a8ZtA@mail.gmail.com> <BANLkTin-qL3ppG1jRjBu3S16SWcNjD=3kA@mail.gmail.com>
-In-Reply-To: <BANLkTin-qL3ppG1jRjBu3S16SWcNjD=3kA@mail.gmail.com>
+	id S1752608Ab1DSPI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 11:08:57 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:42671 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab1DSPI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 11:08:56 -0400
+Message-ID: <4DADA581.9060700@aknet.ru>
+Date: Tue, 19 Apr 2011 19:08:49 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
+References: <20110224132906.GA15733@redhat.com>	<4D6675B0.2010700@aknet.ru>	<20110224153221.GA22770@redhat.com>	<4D94A788.1050806@aknet.ru>	<20110331170244.GA13271@redhat.com>	<4D99D6E6.4070008@aknet.ru>	<20110404160351.GA23655@redhat.com>	<4D9A24A0.5050105@aknet.ru>	<20110405151549.GB17490@redhat.com>	<4D9B4265.6080403@aknet.ru>	<20110405164557.GA23248@redhat.com>	<4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110419155830.7ad33312@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104191707.40456.arnd@arndb.de>
-X-Provags-ID: V02:K0:807IXlnJuz5H1KUHHCob8IWtfBoOgTJUOkOS/suriXB
- llVE+9y7+GyDxMst7UcN5Y9Mz702e6w2SRbVtYulAOAVQbU+BI
- iIC4TVZ8Ft48+3pUS183+u61J/3DQgXFVlSjnanCG/L+ZOPrqv
- H4mSz+NiIdpYhX/LvLjspTsEGiQFiW1XeaMZd649fcrByHgy4z
- zMOQQoSpVsTg5R9xr1+tw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011, Grant Likely wrote:
-> > or whatever, as this would bind all instances matching vendor,device.
-> >
-> > So, the question I have is, how to handle bind per-instance?
-> 
-> By manipulating a property on the device instance of course!  :-)
-> 
-> Something like:  echo "generic-uio" >>
-> /sys/devices/path/to/device/a-property-that-changes-the-driver-it-will-bind-to.
-> 
-
-But what code would create that in sysfs, and based on what properties
-of the device? Should we do that for every platform device, or perhaps
-for every one that has any resources?
-
-	Arnd
+19.04.2011 18:58, Alan Cox wrote:
+>> The attached patch implements the PR_DETACH prctl
+>> command. It detaches the entire process group from
+>> its parent, allowing the parent to still read the detach
+>> code with normal wait(). If the process then exits, the
+>> notification of the new parent is delayed till the old parent
+>> does either wait() to read the detach code, or exits.
+> What is the use case for this and why won't existing process group
+> interfaces do the job ?
+The use case is to daemonize the process with threads.
+You first need to detach it from its parent, then use TIOCNOTTY
+ioctl to detach from the tty (TIOCNOTTY_GRP doesn't seem
+to exist too, though, but might be easy to implement).
+There are a few workarounds to that that I am aware of,
+but what exactly interfaces do you have in mind? I have
+found nothing that allows to do the same without a workarounds
+like this:
+https://lkml.org/lkml/2011/4/8/278
+The current way of detaching, which is a fork/exit combo,
+loses all threads, so, when you call daemon() and you had
+threads, you are a toast.
