@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab1DSURA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:00 -0400
-Received: from kroah.org ([198.145.64.141]:47580 "EHLO coco.kroah.org"
+	id S1754578Ab1DSURI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:08 -0400
+Received: from kroah.org ([198.145.64.141]:47644 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356Ab1DSUQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:16:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:44 2011
-Message-Id: <20110419201044.248256921@clark.kroah.org>
+	id S1754545Ab1DSURF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:05 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:45 2011
+Message-Id: <20110419201045.386193187@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:19 -0700
+Date: Tue, 19 Apr 2011 13:08:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [10/70] ALSA: hda - Fix pin-config of Gigabyte mobo
+        James Chapman <jchapman@katalix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [21/70] l2tp: fix possible oops on l2tp_eth module unload
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
 
-commit c6b358748e19ce7e230b0926ac42696bc485a562 upstream.
+From: James Chapman <jchapman@katalix.com>
 
-Use pin-fix instead of the static quirk for Gigabyte mobos 1458:a002.
+[ Upstream commit 8aa525a9340da4227797a06221ca08399006635f ]
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=677256
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+A struct used in the l2tp_eth driver for registering network namespace
+ops was incorrectly marked as __net_initdata, leading to oops when
+module unloaded.
+
+BUG: unable to handle kernel paging request at ffffffffa00ec098
+IP: [<ffffffff8123dbd8>] ops_exit_list+0x7/0x4b
+PGD 142d067 PUD 1431063 PMD 195da8067 PTE 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/module/l2tp_eth/refcnt
+Call Trace:
+ [<ffffffff8123dc94>] ? unregister_pernet_operations+0x32/0x93
+ [<ffffffff8123dd20>] ? unregister_pernet_device+0x2b/0x38
+ [<ffffffff81068b6e>] ? sys_delete_module+0x1b8/0x222
+ [<ffffffff810c7300>] ? do_munmap+0x254/0x318
+ [<ffffffff812c64e5>] ? page_fault+0x25/0x30
+ [<ffffffff812c6952>] ? system_call_fastpath+0x16/0x1b
+
+Signed-off-by: James Chapman <jchapman@katalix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/pci/hda/patch_realtek.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ net/l2tp/l2tp_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -9932,7 +9932,6 @@ static struct snd_pci_quirk alc882_cfg_t
- 	SND_PCI_QUIRK(0x1071, 0x8258, "Evesham Voyaeger", ALC883_LAPTOP_EAPD),
- 	SND_PCI_QUIRK(0x10f1, 0x2350, "TYAN-S2350", ALC888_6ST_DELL),
- 	SND_PCI_QUIRK(0x108e, 0x534d, NULL, ALC883_3ST_6ch),
--	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte P35 DS3R", ALC882_6ST_DIG),
+--- a/net/l2tp/l2tp_eth.c
++++ b/net/l2tp/l2tp_eth.c
+@@ -283,7 +283,7 @@ static __net_init int l2tp_eth_init_net(
+ 	return 0;
+ }
  
- 	SND_PCI_QUIRK(0x1462, 0x0349, "MSI", ALC883_TARGA_2ch_DIG),
- 	SND_PCI_QUIRK(0x1462, 0x040d, "MSI", ALC883_TARGA_2ch_DIG),
-@@ -10769,6 +10768,7 @@ enum {
- 	PINFIX_LENOVO_Y530,
- 	PINFIX_PB_M5210,
- 	PINFIX_ACER_ASPIRE_7736,
-+	PINFIX_GIGABYTE_880GM,
- };
- 
- static const struct alc_fixup alc882_fixups[] = {
-@@ -10800,6 +10800,13 @@ static const struct alc_fixup alc882_fix
- 		.type = ALC_FIXUP_SKU,
- 		.v.sku = ALC_FIXUP_SKU_IGNORE,
- 	},
-+	[PINFIX_GIGABYTE_880GM] = {
-+		.type = ALC_FIXUP_PINS,
-+		.v.pins = (const struct alc_pincfg[]) {
-+			{ 0x14, 0x1114410 }, /* set as speaker */
-+			{ }
-+		}
-+	},
- };
- 
- static struct snd_pci_quirk alc882_fixup_tbl[] = {
-@@ -10807,6 +10814,7 @@ static struct snd_pci_quirk alc882_fixup
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Y530", PINFIX_LENOVO_Y530),
- 	SND_PCI_QUIRK(0x147b, 0x107a, "Abit AW9D-MAX", PINFIX_ABIT_AW9D_MAX),
- 	SND_PCI_QUIRK(0x1025, 0x0296, "Acer Aspire 7736z", PINFIX_ACER_ASPIRE_7736),
-+	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte", PINFIX_GIGABYTE_880GM),
- 	{}
- };
- 
-@@ -18851,8 +18859,6 @@ static struct snd_pci_quirk alc662_cfg_t
- 		      ALC662_3ST_6ch_DIG),
- 	SND_PCI_QUIRK(0x1179, 0xff6e, "Toshiba NB20x", ALC662_AUTO),
- 	SND_PCI_QUIRK(0x144d, 0xca00, "Samsung NC10", ALC272_SAMSUNG_NC10),
--	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte 945GCM-S2L",
--		      ALC662_3ST_6ch_DIG),
- 	SND_PCI_QUIRK(0x152d, 0x2304, "Quanta WH1", ALC663_ASUS_H13),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar TA780G M2+", ALC662_3ST_6ch_DIG),
- 	SND_PCI_QUIRK(0x1631, 0xc10c, "PB RS65", ALC663_ASUS_M51VA),
-@@ -19526,6 +19532,7 @@ enum {
- 	ALC662_FIXUP_IDEAPAD,
- 	ALC272_FIXUP_MARIO,
- 	ALC662_FIXUP_CZC_P10T,
-+	ALC662_FIXUP_GIGABYTE,
- };
- 
- static const struct alc_fixup alc662_fixups[] = {
-@@ -19554,12 +19561,20 @@ static const struct alc_fixup alc662_fix
- 			{}
- 		}
- 	},
-+	[ALC662_FIXUP_GIGABYTE] = {
-+		.type = ALC_FIXUP_PINS,
-+		.v.pins = (const struct alc_pincfg[]) {
-+			{ 0x14, 0x1114410 }, /* set as speaker */
-+			{ }
-+		}
-+	},
- };
- 
- static struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x0308, "Acer Aspire 8942G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
-+	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte", ALC662_FIXUP_GIGABYTE),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
+-static __net_initdata struct pernet_operations l2tp_eth_net_ops = {
++static struct pernet_operations l2tp_eth_net_ops = {
+ 	.init = l2tp_eth_init_net,
+ 	.id   = &l2tp_eth_net_id,
+ 	.size = sizeof(struct l2tp_eth_net),
 
 
