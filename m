@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1DSURM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:12 -0400
-Received: from kroah.org ([198.145.64.141]:47654 "EHLO coco.kroah.org"
+	id S1754021Ab1DSU1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:27:10 -0400
+Received: from kroah.org ([198.145.64.141]:47690 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab1DSURH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:45 2011
-Message-Id: <20110419201045.607760009@clark.kroah.org>
+	id S1754614Ab1DSURM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:12 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:46 2011
+Message-Id: <20110419201046.138225658@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:32 -0700
+Date: Tue, 19 Apr 2011 13:08:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Siemon <dan@coverfire.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        =?ISO-8859-15?q?Dave=20T=C3=A4ht?= <d@taht.net>,
-        Jonathan Morton <chromatix99@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [23/70] net_sched: fix ip_tos2prio
+Subject: [28/70] vlan: should take into account needed_headroom
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,42 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Dan Siemon <dan@coverfire.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 4a2b9c3756077c05dd8666e458a751d2248b61b6 ]
+[ Upstream commit d870bfb9d366c5d466c0f5419a4ec95a3f71ea8a ]
 
-ECN support incorrectly maps ECN BESTEFFORT packets to TC_PRIO_FILLER
-(1) instead of TC_PRIO_BESTEFFORT (0)
+Commit c95b819ad7 (gre: Use needed_headroom)
+made gre use needed_headroom instead of hard_header_len
 
-This means ECN enabled flows are placed in pfifo_fast/prio low priority
-band, giving ECN enabled flows [ECT(0) and CE codepoints] higher drop
-probabilities.
+This uncover a bug in vlan code.
 
-This is rather unfortunate, given we would like ECN being more widely
-used.
+We should make sure vlan devices take into account their
+real_dev->needed_headroom or we risk a crash in ipgre_header(), because
+we dont have enough room to push IP header in skb.
 
-Ref : http://www.coverfire.com/archives/2011/03/13/pfifo_fast-and-ecn/
-
-Signed-off-by: Dan Siemon <dan@coverfire.com>
+Reported-by: Diddi Oscarsson <diddi@diddi.se>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dave Täht <d@taht.net>
-Cc: Jonathan Morton <chromatix99@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/route.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/8021q/vlan_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -171,7 +171,7 @@ static struct dst_ops ipv4_dst_ops = {
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -707,6 +707,7 @@ static int vlan_dev_init(struct net_devi
+ 	dev->fcoe_ddp_xid = real_dev->fcoe_ddp_xid;
+ #endif
  
- const __u8 ip_tos2prio[16] = {
- 	TC_PRIO_BESTEFFORT,
--	ECN_OR_COST(FILLER),
-+	ECN_OR_COST(BESTEFFORT),
- 	TC_PRIO_BESTEFFORT,
- 	ECN_OR_COST(BESTEFFORT),
- 	TC_PRIO_BULK,
++	dev->needed_headroom = real_dev->needed_headroom;
+ 	if (real_dev->features & NETIF_F_HW_VLAN_TX) {
+ 		dev->header_ops      = real_dev->header_ops;
+ 		dev->hard_header_len = real_dev->hard_header_len;
 
 
