@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1DSJcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:32:51 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33345 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab1DSJcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:32:48 -0400
-Message-ID: <4DAD56B9.8020909@ahsoftware.de>
-Date: Tue, 19 Apr 2011 11:32:41 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1753828Ab1DSJbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:31:48 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57055 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab1DSJbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:31:46 -0400
+Date: Tue, 19 Apr 2011 10:31:18 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
+Message-ID: <20110419093118.GB23041@csn.ul.ie>
+References: <20110414211656.GB1700@cmpxchg.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] Implement /dev/byte (a generic byte source similiar
- to /dev/zero)
-References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>	<BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>	<4DAD48FC.5040003@ahsoftware.de> <20110419094436.0b667410@lxorguk.ukuu.org.uk> <4DAD5046.3030008@ahsoftware.de>
-In-Reply-To: <4DAD5046.3030008@ahsoftware.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110414211656.GB1700@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
+> Space in a vmap block that was once allocated is considered dirty and
+> not made available for allocation again before the whole block is
+> recycled.
+> 
+> The result is that free space within a vmap block is always contiguous
+> and the allocation bitmap can be replaced by remembering the offset of
+> free space in the block.
+> 
+> The fragmented block purging was never invoked from vb_alloc() either,
+> as it skips blocks that do not have enough free space for the
+> allocation in the first place.  According to the above, it is
+> impossible for a block to have enough free space and still fail the
+> allocation.  Thus, this dead code is removed.  Partially consumed
+> blocks will be reclaimed anyway when an attempt is made to allocate a
+> new vmap block altogether and no free space is found.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
 
-Am 19.04.2011 11:05, schrieb Alexander Holler:
+I didn't see a problem with the patch per-se but I wonder if your patch
+is the intended behaviour. It looks like the intention was that dirty
+blocks could be flushed from the TLB and made available for allocations
+leading to the possibility of fragmented vmap blocks.
 
->> Implementationwise I think I would have gone for allocating a new device
->> and range of 256 minors - that would avoid the funky stuff setting what
->> it fills with as you'd just fill with the minor number.
->
-> I thought about that too, but that would have been to easy (and static). ;)
->
-> And the usage of file descriptors was the only idea I've come up with,
-> which is multitasking and multiuser aware.
+It's this check that is skipping over blocks without taking dirty into
+account.
 
-If I add the possibility to use minors to set the default value (but 
-still leave the possibility to change the default dynamically), would 
-that raise the chance to become included? ;)
+  		spin_lock(&vb->lock);
+ 		if (vb->free < 1UL << order)
+ 			goto next;
 
-Regards,
+It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
+but is there any possibility that this is what should be fixed instead?
+Do we know what the consequences of blocks only getting flushed when
+they have been fully allocated are?
 
-Alexander
+> <SNIP>
+
+-- 
+Mel Gorman
+SUSE Labs
