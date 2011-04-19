@@ -1,32 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1DSKvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 06:51:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37174 "EHLO
+	id S1754772Ab1DSK6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 06:58:51 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54608 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab1DSKvK (ORCPT
+	with ESMTP id S1754587Ab1DSK6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 06:51:10 -0400
-Date: Tue, 19 Apr 2011 11:51:03 +0100
+	Tue, 19 Apr 2011 06:58:49 -0400
+Date: Tue, 19 Apr 2011 11:58:38 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <hzhuang1@marvell.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
-        "cbou@mail.ru" <cbou@mail.ru>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 13/14] regulator: check name in initialization of
-	max8925
-Message-ID: <20110419105103.GF9462@sirena.org.uk>
-References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com> <20110418142855.GE2466@opensource.wolfsonmicro.com> <BANLkTim1QHe-hpyt0yQxKt2SBwtOAPQ3Bg@mail.gmail.com> <20110418160424.GG1765@opensource.wolfsonmicro.com> <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com> <20110419080919.GC16357@opensource.wolfsonmicro.com> <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B4CC@SC-VEXCH1.marvell.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-sh@vger.kernel.org, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [linux-pm] [PATCH 7/9] PM / Runtime: Add generic clock
+	manipulation rountines for runtime PM
+Message-ID: <20110419105836.GG9462@sirena.org.uk>
+References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl> <201104170142.10723.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B4CC@SC-VEXCH1.marvell.com>
+In-Reply-To: <201104170142.10723.rjw@sisk.pl>
 X-Cookie: APL hackers do it in the quad.
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
@@ -36,18 +31,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 01:28:23AM -0700, Haojian Zhuang wrote:
+On Sun, Apr 17, 2011 at 01:42:10AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Many different platforms and subsystems may want to disable device
+> clocks during suspend and enable them during resume which is going to
+> be done in a very similar way in all those cases.  For this reason,
+> provide generic routines for the manipulation of device clocks during
+> suspend and resume.
 
-> >> 	There's issue in max8925_core.c since we can't assume regulator[0]
-> >always declared in machine driver.
+> Convert the ARM shmobile platform to using the new routines.
 
-> >What is the issue?  It's trivial to skip the regulator if the data is
-> >null.
-
-> It skiped all regulators if regulator[0] isn't decleared.
-> 	(pdata == NULL) || (pdata->regulator[0] == NULL)
-
-> So it's a bug.
-
-Surely the obvious fix is to fix the issue and not skip all the
-regulators if an individual regulator has no data?
+I've had similar thoughts with respect to the regulator API - I'd been
+thinking of dealing with this by adding a notifier which subsystems
+could build upon, in much the same way as already exists for the system
+ssuspend and resume events.
