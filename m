@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1DSUcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:32:46 -0400
-Received: from kroah.org ([198.145.64.141]:47538 "EHLO coco.kroah.org"
+	id S1754361Ab1DSUdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:33:12 -0400
+Received: from kroah.org ([198.145.64.141]:47526 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1DSUQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:16:49 -0400
+	id S1753921Ab1DSUQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:16:47 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:43 2011
-Message-Id: <20110419201043.618871419@clark.kroah.org>
+Message-Id: <20110419201043.405170600@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:13 -0700
+Date: Tue, 19 Apr 2011 13:08:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [04/70] cifs: always do is_path_accessible check in cifs_mount
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [02/70] drm/radeon/kms: pll tweaks for rv6xx
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 70945643722ffeac779d2529a348f99567fa5c33 upstream.
+commit 9bb09fa1b5b07459279301ac6220d575f307597b upstream.
 
-Currently, we skip doing the is_path_accessible check in cifs_mount if
-there is no prefixpath. I have a report of at least one server however
-that allows a TREE_CONNECT to a share that has a DFS referral at its
-root. The reporter in this case was using a UNC that had no prefixpath,
-so the is_path_accessible check was not triggered and the box later hit
-a BUG() because we were chasing a DFS referral on the root dentry for
-the mount.
+Prefer minm over maxp.
 
-This patch fixes this by removing the check for a zero-length
-prefixpath.  That should make the is_path_accessible check be done in
-this situation and should allow the client to chase the DFS referral at
-mount time instead.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=35994
 
-Reported-and-Tested-by: Yogesh Sharma <ysharma@cymer.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2826,7 +2826,7 @@ try_mount_again:
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -531,6 +531,12 @@ static u32 atombios_adjust_pll(struct dr
+ 			pll->flags |= RADEON_PLL_PREFER_HIGH_FB_DIV;
+ 		else
+ 			pll->flags |= RADEON_PLL_PREFER_LOW_REF_DIV;
++
++		if ((rdev->family == CHIP_R600) ||
++		    (rdev->family == CHIP_RV610) ||
++		    (rdev->family == CHIP_RV630) ||
++		    (rdev->family == CHIP_RV670))
++			pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
+ 	} else {
+ 		pll->flags |= RADEON_PLL_LEGACY;
  
- remote_path_check:
- 	/* check if a whole path (including prepath) is not remote */
--	if (!rc && cifs_sb->prepathlen && tcon) {
-+	if (!rc && tcon) {
- 		/* build_path_to_root works only when we have a valid tcon */
- 		full_path = cifs_build_path_to_root(cifs_sb, tcon);
- 		if (full_path == NULL) {
 
 
