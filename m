@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab1DSBnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:43:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13384 "EHLO mga03.intel.com"
+	id S1753932Ab1DSBny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:43:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27981 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab1DSBns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:43:48 -0400
+	id S1753571Ab1DSBnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:43:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
-   d="scan'208";a="421595192"
+   d="scan'208";a="421595178"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: [RFC 3/4] PCIe, AER, add aer_recover_queue
-Date: Tue, 19 Apr 2011 09:43:38 +0800
-Message-Id: <1303177419-22466-3-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [RFC 2/4] ACPI, APEI, GHES: Add hardware memory error recovery support
+Date: Tue, 19 Apr 2011 09:43:37 +0800
+Message-Id: <1303177419-22466-2-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
 References: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
@@ -25,176 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to native PCIe AER, now APEI (ACPI Platform Error
-Interface) GHES (Generic Hardware Error Source) can be used to report
-PCIe AER errors too.  To add support to APEI GHES PCIe AER recovery,
-aer_recover_queue is added to export the recovery function in native
-PCIe AER driver.
-
-Recoverable PCIe AER errors are reported via NMI in APEI GHES.  Then
-APEI GHES uses irq_work to delay the error processing into an IRQ
-handler.  But PCIe AER recovery can be very time-consuming, so
-aer_recover_queue, which can be used in IRQ handler, delays the real
-recovery action into the process context, that is, work queue.
+memory_failure_queue() is called when recoverable memory errors are
+notified by firmware to do the recovery work.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Zhang Yanmin <yanmin.zhang@intel.com>
 ---
- drivers/pci/pcie/aer/aerdrv_core.c     |   76 +++++++++++++++++++++++++++++----
- drivers/pci/pcie/aer/aerdrv_errprint.c |    3 -
- include/linux/aer.h                    |    3 +
- 3 files changed, 74 insertions(+), 8 deletions(-)
+ drivers/acpi/apei/Kconfig |    7 +++++++
+ drivers/acpi/apei/ghes.c  |   24 +++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -24,6 +24,7 @@
- #include <linux/suspend.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/kfifo.h>
- #include "aerdrv.h"
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -31,6 +31,13 @@ config ACPI_APEI_PCIEAER
+ 	  PCIe AER errors may be reported via APEI firmware first mode.
+ 	  Turn on this option to enable the corresponding support.
  
- static int forceload;
-@@ -445,8 +446,7 @@ static struct pcie_port_service_driver *
- 	return drv;
- }
++config ACPI_APEI_MEMORY_FAILURE
++	bool "APEI memory error recovering support"
++	depends on ACPI_APEI && MEMORY_FAILURE
++	help
++	  Memory errors may be reported via APEI firmware first mode.
++	  Turn on this option to enable the memory recovering support.
++
+ config ACPI_APEI_EINJ
+ 	tristate "APEI Error INJection (EINJ)"
+ 	depends on ACPI_APEI && DEBUG_FS
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -430,20 +430,30 @@ static void ghes_clear_estatus(struct gh
  
--static pci_ers_result_t reset_link(struct pcie_device *aerdev,
--		struct pci_dev *dev)
-+static pci_ers_result_t reset_link(struct pci_dev *dev)
+ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
  {
- 	struct pci_dev *udev;
- 	pci_ers_result_t status;
-@@ -486,7 +486,6 @@ static pci_ers_result_t reset_link(struc
+-	int sev, processed = 0;
++	int sev, sec_sev;
+ 	struct acpi_hest_generic_data *gdata;
  
- /**
-  * do_recovery - handle nonfatal/fatal error recovery process
-- * @aerdev: pointer to a pcie_device data structure of root port
-  * @dev: pointer to a pci_dev data structure of agent detecting an error
-  * @severity: error severity type
-  *
-@@ -494,8 +493,7 @@ static pci_ers_result_t reset_link(struc
-  * error detected message to all downstream drivers within a hierarchy in
-  * question and return the returned code.
-  */
--static void do_recovery(struct pcie_device *aerdev, struct pci_dev *dev,
--		int severity)
-+static void do_recovery(struct pci_dev *dev, int severity)
- {
- 	pci_ers_result_t status, result = PCI_ERS_RESULT_RECOVERED;
- 	enum pci_channel_state state;
-@@ -511,7 +509,7 @@ static void do_recovery(struct pcie_devi
- 			report_error_detected);
- 
- 	if (severity == AER_FATAL) {
--		result = reset_link(aerdev, dev);
-+		result = reset_link(dev);
- 		if (result != PCI_ERS_RESULT_RECOVERED)
- 			goto failed;
- 	}
-@@ -576,9 +574,73 @@ static void handle_error_source(struct p
- 			pci_write_config_dword(dev, pos + PCI_ERR_COR_STATUS,
- 					info->status);
- 	} else
--		do_recovery(aerdev, dev, info->severity);
-+		do_recovery(dev, info->severity);
- }
- 
-+#ifdef CONFIG_ACPI_APEI_PCIEAER
-+static void aer_recover_work_func(struct work_struct *work);
-+
-+#define AER_RECOVER_RING_ORDER		4
-+#define AER_RECOVER_RING_SIZE		(1 << AER_RECOVER_RING_ORDER)
-+
-+struct aer_recover_entry
-+{
-+	u8	bus;
-+	u8	devfn;
-+	u16	domain;
-+	int	severity;
-+};
-+
-+static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
-+		    AER_RECOVER_RING_SIZE);
-+/*
-+ * Mutual exclusion for writers of aer_recover_ring, reader side don't
-+ * need lock, because there is only one reader and lock is not needed
-+ * between reader and writer.
-+ */
-+static DEFINE_SPINLOCK(aer_recover_ring_lock);
-+static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
-+
-+void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
-+		       int severity)
-+{
-+	unsigned long flags;
-+	struct aer_recover_entry entry = {
-+		.bus		= bus,
-+		.devfn		= devfn,
-+		.domain		= domain,
-+		.severity	= severity,
-+	};
-+
-+	spin_lock_irqsave(&aer_recover_ring_lock, flags);
-+	if (kfifo_put(&aer_recover_ring, &entry))
-+		schedule_work(&aer_recover_work);
-+	else
-+		pr_err("AER recover: Buffer overflow when recovering AER for %04x:%02x:%02x:%x\n",
-+		       domain, bus, PCI_SLOT(devfn), PCI_FUNC(devfn));
-+	spin_unlock_irqrestore(&aer_recover_ring_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(aer_recover_queue);
-+
-+static void aer_recover_work_func(struct work_struct *work)
-+{
-+	struct aer_recover_entry entry;
-+	struct pci_dev *pdev;
-+
-+	while (kfifo_get(&aer_recover_ring, &entry)) {
-+		pdev = pci_get_domain_bus_and_slot(entry.domain, entry.bus,
-+						   entry.devfn);
-+		if (!pdev) {
-+			pr_err("AER recover: Can not find pci_dev for %04x:%02x:%02x:%x\n",
-+			       entry.domain, entry.bus,
-+			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
-+			continue;
-+		}
-+		do_recovery(pdev, entry.severity);
-+	}
-+}
+ 	sev = ghes_severity(estatus->error_severity);
+ 	apei_estatus_for_each_section(estatus, gdata) {
+-#ifdef CONFIG_X86_MCE
++		sec_sev = ghes_severity(gdata->error_severity);
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+-			apei_mce_report_mem_error(
+-				sev == GHES_SEV_CORRECTED,
+-				(struct cper_sec_mem_err *)(gdata+1));
+-			processed = 1;
+-		}
++			struct cper_sec_mem_err *mem_err;
++			mem_err = (struct cper_sec_mem_err *)(gdata+1);
++#ifdef CONFIG_X86_MCE
++			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
++						  mem_err);
+ #endif
++#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
++			if (sev == GHES_SEV_RECOVERABLE &&
++			    sec_sev == GHES_SEV_RECOVERABLE &&
++			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
++				unsigned long pfn;
++				pfn = mem_err->physical_addr >> PAGE_SHIFT;
++				memory_failure_queue(pfn, 0, 0);
++			}
 +#endif
-+
- /**
-  * get_device_error_info - read error status from dev and store it to info
-  * @dev: pointer to the device expected to have a error record
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -204,7 +204,7 @@ void aer_print_port_info(struct pci_dev
- }
- 
- #ifdef CONFIG_ACPI_APEI_PCIEAER
--static int cper_severity_to_aer(int cper_severity)
-+int cper_severity_to_aer(int cper_severity)
- {
- 	switch (cper_severity) {
- 	case CPER_SEV_RECOVERABLE:
-@@ -215,6 +215,7 @@ static int cper_severity_to_aer(int cper
- 		return AER_CORRECTABLE;
++		}
  	}
  }
-+EXPORT_SYMBOL_GPL(cper_severity_to_aer);
- 
- void cper_print_aer(const char *prefix, int cper_severity,
- 		    struct aer_capability_regs *aer)
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -51,5 +51,8 @@ static inline int pci_cleanup_aer_uncorr
- 
- extern void cper_print_aer(const char *prefix, int cper_severity,
- 			   struct aer_capability_regs *aer);
-+extern int cper_severity_to_aer(int cper_severity);
-+extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
-+			      int severity);
- #endif //_AER_H_
  
