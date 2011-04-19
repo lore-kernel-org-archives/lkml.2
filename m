@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab1DSRsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:48:30 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58930 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754029Ab1DSRs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:48:29 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <alpine.DEB.2.00.1104191213120.17888@router.home>
-References: <20110415135144.GE8828@tiehlicka.suse.cz>
-	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
-	 <20110418100131.GD8925@tiehlicka.suse.cz>
-	 <20110418135637.5baac204.akpm@linux-foundation.org>
-	 <20110419111004.GE21689@tiehlicka.suse.cz>
-	 <1303228009.3171.18.camel@mulgrave.site>
-	 <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
-	 <1303233088.3171.26.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104191213120.17888@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 12:48:26 -0500
-Message-ID: <1303235306.3171.33.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753985Ab1DSRtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:49:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46460 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752205Ab1DSRtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 13:49:12 -0400
+Date: Tue, 19 Apr 2011 17:48:55 GMT
+From: tip-bot for Youquan Song <youquan.song@intel.com>
+Message-ID: <tip-2b398bd9f8f73be706b41adcbb240ce95793049a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        joe@perches.com, tglx@linutronix.de, youquan.song@intel.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joe@perches.com, tglx@linutronix.de, youquan.song@intel.com,
+        mingo@elte.hu
+In-Reply-To: <1302762968-24380-2-git-send-email-youquan.song@intel.com>
+References: <1302762968-24380-2-git-send-email-youquan.song@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, apic: Print verbose error interrupt reason on apic=debug
+Git-Commit-ID: 2b398bd9f8f73be706b41adcbb240ce95793049a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Apr 2011 17:48:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 12:15 -0500, Christoph Lameter wrote:
-> On Tue, 19 Apr 2011, James Bottomley wrote:
-> 
-> > On Tue, 2011-04-19 at 20:05 +0300, Pekka Enberg wrote:
-> > > > It seems to be a random intermittent mm crash because the next reboot
-> > > > crashed with the same trace but after the fsck had completed and the
-> > > > third came up to the login prompt.
-> > >
-> > > Looks like a genuine SLUB problem on parisc. Christoph?
-> >
-> > Looking through the slub code, it seems to be making invalid
-> > assumptions.  All of the node stuff is dependent on CONFIG_NUMA.
-> > However, we're CONFIG_DISCONTIGMEM (with CONFIG_NUMA not set): on the
-> > machines I and Dave Anglin have, our physical memory ranges are 0-1GB
-> > and 64-65GB, so I think slub crashes when we get a page from the high
-> > memory range ... because it's not expecting a non-zero node number.
-> 
-> Right !NUMA systems only have node 0.
+Commit-ID:  2b398bd9f8f73be706b41adcbb240ce95793049a
+Gitweb:     http://git.kernel.org/tip/2b398bd9f8f73be706b41adcbb240ce95793049a
+Author:     Youquan Song <youquan.song@intel.com>
+AuthorDate: Thu, 14 Apr 2011 14:36:08 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 19 Apr 2011 19:03:30 +0200
 
-That's rubbish.  Discontigmem uses the nodes field to identify the
-discontiguous region.  page_to_nid() returns this value.  Your code
-wrongly assumes this is zero for non NUMA.
+x86, apic: Print verbose error interrupt reason on apic=debug
 
-This simple program triggers the problem instantly because it forces
-allocation up into the upper discontigmem range:
+End users worry about the error interrupt printout we generate
+currently:
 
-#include <stdlib.h>
+	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
+	smp_processor_id(), v , v1);
 
-void main(void)
-{
-  const long size = 1024*1024*1024;
-  char *a = malloc(size);
-  int i;
+... and would like to know the reason why error interrupts are generated.
 
-  for (i=0; i < size; i += 4096)
-    a[i] = '\0';
-}
+This patch prints out more detailed debug information.
 
-I can fix the panic by hard coding get_nodes() to return the zero node
-for the non-numa case ... however, presumably it's more than just this
-that's broken in slub?
+Another practical problem is that dynamic debug is not initialized yet
+when the APIC initializes, so the pr_debug() will not output the error
+interrupt debug information on bootup. In this patch, we use
+apic_printk(APIC_DEBUG, ...), so the apic=debug boot option will print
+verbose error interupts during bootup.
 
-James
-
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: hpa@linux.intel.com
+Cc: suresh.b.siddha@intel.com
+Cc: yong.y.wang@linux.intel.com
+Cc: jbaron@redhat.com
+Cc: trenn@suse.de
+Cc: kent.liu@intel.com
+Cc: chaohong.guo@intel.com
+Link: http://lkml.kernel.org/r/1302762968-24380-2-git-send-email-youquan.song@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
+ arch/x86/kernel/apic/apic.c |   41 ++++++++++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 94d2a33..243bd9c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -235,7 +235,11 @@ int slab_is_available(void)
- 
- static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index fabf01e..ae14712 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1812,30 +1812,41 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+  */
+ void smp_error_interrupt(struct pt_regs *regs)
  {
-+#ifdef CONFIG_NUMA
- 	return s->node[node];
-+#else
-+	return s->node[0];
-+#endif
+-	u32 v, v1;
++	u32 v0, v1;
++	u32 i = 0;
++	static const char * const error_interrupt_reason[] = {
++		"Send CS error",		/* APIC Error Bit 0 */
++		"Receive CS error",		/* APIC Error Bit 1 */
++		"Send accept error",		/* APIC Error Bit 2 */
++		"Receive accept error",		/* APIC Error Bit 3 */
++		"Redirectable IPI",		/* APIC Error Bit 4 */
++		"Send illegal vector",		/* APIC Error Bit 5 */
++		"Received illegal vector",	/* APIC Error Bit 6 */
++		"Illegal register address",	/* APIC Error Bit 7 */
++	};
+ 
+ 	exit_idle();
+ 	irq_enter();
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+-	v = apic_read(APIC_ESR);
++	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+ 	v1 = apic_read(APIC_ESR);
+ 	ack_APIC_irq();
+ 	atomic_inc(&irq_err_count);
+ 
+-	/*
+-	 * Here is what the APIC error bits mean:
+-	 * 0: Send CS error
+-	 * 1: Receive CS error
+-	 * 2: Send accept error
+-	 * 3: Receive accept error
+-	 * 4: Reserved
+-	 * 5: Send illegal vector
+-	 * 6: Received illegal vector
+-	 * 7: Illegal register address
+-	 */
+-	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
+-		smp_processor_id(), v , v1);
++	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
++		    smp_processor_id(), v0 , v1);
++
++	v1 = v1 & 0xff;
++	while (v1) {
++		if (v1 & 0x1)
++			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
++		i++;
++		v1 >>= 1;
++	};
++
++	apic_printk(APIC_DEBUG, KERN_CONT "\n");
++
+ 	irq_exit();
  }
  
- /* Verify that a pointer has an address that is valid within a slab page */
-
-
