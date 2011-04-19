@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1DSBtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:49:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54951 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab1DSBtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:49:17 -0400
-Message-ID: <4DACEA40.5020008@cn.fujitsu.com>
-Date: Tue, 19 Apr 2011 09:49:52 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1753958Ab1DSB6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:58:47 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64291 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab1DSB6q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:58:46 -0400
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Btrfs: allocate extent state and check the result
- properly
-References: <4DA409E6.7020406@cn.fujitsu.com>
-In-Reply-To: <4DA409E6.7020406@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-19 09:49:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-19 09:49:49,
-	Serialize complete at 2011-04-19 09:49:49
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110418160658.GD23814@pengutronix.de>
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <20110418160658.GD23814@pengutronix.de>
+From: John Williams <john.williams@petalogix.com>
+Date: Tue, 19 Apr 2011 11:58:25 +1000
+Message-ID: <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2011 04:14 PM, Xiao Guangrong wrote:
-> It doesn't allocate extent_state and check the result properly:
-> - in set_extent_bit, it doesn't allocate extent_state if the path is not
->   allowed wait
-> 
-> - in clear_extent_bit, it doesn't check the result after atomic-ly allocate,
->   we trigger BUG_ON() if it's fail
-> 
-> - if allocate fail, we trigger BUG_ON instead of returning -ENOMEM since
->   the return value of clear_extent_bit() is ignored by many callers
-> 
+On Tue, Apr 19, 2011 at 2:06 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> Hi,
+>
+>> For example with "uio" compatible string:
+>> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+>>       { .compatible = "uio", },
+>>       { /* empty for now */ },
+>> };
+>
+> Please use a proper example with "vendor,device".
+> (And after that it won't be empty anymore)
 
-Ping...to see what happened. :-)
+My vote is, and always has been 'generic-uio' :)
+
+Putting some random vendor/device string in there is just nuts. Do you
+really want a kernel patch every time some one binds their device to
+it?
+
+Or, is there no expectation that anybody would attempt to merge such a
+pointless patch to begin with?
+
+As we discussed at ELC, putting a real vendor/device in there is also
+broken because all instances in the system wil bind to the generic
+uio, which is not necessarily what is desired.
+
+I know the arguments against the 'generic-uio' tag, but come on, let's
+look at the lesser of two evils here!  I call BS on this DTS purity.
+
+John
