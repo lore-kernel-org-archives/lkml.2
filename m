@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab1DSURv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:51 -0400
-Received: from kroah.org ([198.145.64.141]:35741 "EHLO coco.kroah.org"
+	id S1755014Ab1DSURl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:41 -0400
+Received: from kroah.org ([198.145.64.141]:35686 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057Ab1DSURp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:50 2011
-Message-Id: <20110419201049.920112849@clark.kroah.org>
+	id S1754947Ab1DSURg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:36 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
+Message-Id: <20110419201048.965980032@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:12 -0700
+Date: Tue, 19 Apr 2011 13:09:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@vmware.com>
-Subject: [63/70] USB: fix formatting of SuperSpeed endpoints in /proc/bus/usb/devices
+        "Marius B. Kotsbak" <marius@kotsbak.com>
+Subject: [54/70] USB: option: Added support for Samsung GT-B3730/GT-B3710 LTE USB modem.
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: Marius B. Kotsbak <marius@kotsbak.com>
 
-commit 2868a2b1ba8f9c7f6c4170519ebb6c62934df70e upstream.
+commit 80f9df3e0093ad9f1eeefd2ff7fd27daaa518d25 upstream.
 
-Isochronous and interrupt SuperSpeed endpoints use the same mechanisms
-for decoding bInterval values as HighSpeed ones so adjust the code
-accordingly.
+Bind only modem AT command endpoint to option.
 
-Also bandwidth reservation for SuperSpeed matches highspeed, not
-low/full speed.
-
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Marius B. Kotsbak <marius@kotsbak.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/devices.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/core/devices.c
-+++ b/drivers/usb/core/devices.c
-@@ -221,7 +221,7 @@ static char *usb_dump_endpoint_descripto
- 		break;
- 	case USB_ENDPOINT_XFER_INT:
- 		type = "Int.";
--		if (speed == USB_SPEED_HIGH)
-+		if (speed == USB_SPEED_HIGH || speed == USB_SPEED_SUPER)
- 			interval = 1 << (desc->bInterval - 1);
- 		else
- 			interval = desc->bInterval;
-@@ -229,7 +229,8 @@ static char *usb_dump_endpoint_descripto
- 	default:	/* "can't happen" */
- 		return start;
- 	}
--	interval *= (speed == USB_SPEED_HIGH) ? 125 : 1000;
-+	interval *= (speed == USB_SPEED_HIGH ||
-+		     speed == USB_SPEED_SUPER) ? 125 : 1000;
- 	if (interval % 1000)
- 		unit = 'u';
- 	else {
-@@ -542,8 +543,9 @@ static ssize_t usb_device_dump(char __us
- 	if (level == 0) {
- 		int	max;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -407,6 +407,10 @@ static void option_instat_callback(struc
+ /* ONDA MT825UP HSDPA 14.2 modem */
+ #define ONDA_MT825UP         0x000b
  
--		/* high speed reserves 80%, full/low reserves 90% */
--		if (usbdev->speed == USB_SPEED_HIGH)
-+		/* super/high speed reserves 80%, full/low reserves 90% */
-+		if (usbdev->speed == USB_SPEED_HIGH ||
-+		    usbdev->speed == USB_SPEED_SUPER)
- 			max = 800;
- 		else
- 			max = FRAME_TIME_MAX_USECS_ALLOC;
++/* Samsung products */
++#define SAMSUNG_VENDOR_ID                       0x04e8
++#define SAMSUNG_PRODUCT_GT_B3730                0x6889
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -968,6 +972,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
++	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730/GT-B3710 LTE USB modem.*/
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
