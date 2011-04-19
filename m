@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab1DSUrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:47:39 -0400
-Received: from kroah.org ([198.145.64.141]:58968 "EHLO coco.kroah.org"
+	id S1754422Ab1DSUml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:42:41 -0400
+Received: from kroah.org ([198.145.64.141]:58914 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab1DSUmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
-Message-Id: <20110419204118.187561378@clark.kroah.org>
+	id S1754007Ab1DSUmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:17 2011
+Message-Id: <20110419204117.145772267@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:52 -0700
+Date: Tue, 19 Apr 2011 13:30:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [14/28] x86, amd: Disable GartTlbWlkErr when BIOS forgets it
+        Jiri Slaby <jslaby@suse.cz>,
+        =?ISO-8859-15?q?R=C3=A9mi=20Denis-Courmont?= 
+	<remi.denis-courmont@nokia.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [04/28] NET: cdc-phonet, handle empty phonet header
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,79 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e upstream.
+commit 468c3f924f043cad7a04f4f4d5224a2c9bc886c1 upstream.
 
-This patch disables GartTlbWlk errors on AMD Fam10h CPUs if
-the BIOS forgets to do is (or is just too old). Letting
-these errors enabled can cause a sync-flood on the CPU
-causing a reboot.
+Currently, for N 5800 XM I get:
+cdc_phonet: probe of 1-6:1.10 failed with error -22
 
-The AMD BKDG recommends disabling GART TLB Wlk Error completely.
+It's because phonet_header is empty. Extra altsetting looks like
+there:
+E 05 24 00 01 10 03 24 ab 05 24 06 0a 0b 04 24 fd  .$....$..$....$.
+E 00                                               .
 
-This patch is the fix for
+I don't see the header used anywhere so just check if the phonet
+descriptor is there, not the structure itself.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=33012
-
-on my machine.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/20110415131152.GJ18463@8bytes.org
-Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+Cc: David S. Miller <davem@davemloft.net>
+Acked-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/msr-index.h |    4 ++++
- arch/x86/kernel/cpu/amd.c        |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+)
+ drivers/net/usb/cdc-phonet.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -81,11 +81,15 @@
- #define MSR_IA32_MC0_ADDR		0x00000402
- #define MSR_IA32_MC0_MISC		0x00000403
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -325,13 +325,13 @@ int usbpn_probe(struct usb_interface *in
+ {
+ 	static const char ifname[] = "usbpn%d";
+ 	const struct usb_cdc_union_desc *union_header = NULL;
+-	const struct usb_cdc_header_desc *phonet_header = NULL;
+ 	const struct usb_host_interface *data_desc;
+ 	struct usb_interface *data_intf;
+ 	struct usb_device *usbdev = interface_to_usbdev(intf);
+ 	struct net_device *dev;
+ 	struct usbpn_dev *pnd;
+ 	u8 *data;
++	int phonet = 0;
+ 	int len, err;
  
-+#define MSR_AMD64_MC0_MASK		0xc0010044
-+
- #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
- #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
- #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
- #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
+ 	data = intf->altsetting->extra;
+@@ -352,10 +352,7 @@ int usbpn_probe(struct usb_interface *in
+ 					(struct usb_cdc_union_desc *)data;
+ 				break;
+ 			case 0xAB:
+-				if (phonet_header || dlen < 5)
+-					break;
+-				phonet_header =
+-					(struct usb_cdc_header_desc *)data;
++				phonet = 1;
+ 				break;
+ 			}
+ 		}
+@@ -363,7 +360,7 @@ int usbpn_probe(struct usb_interface *in
+ 		len -= dlen;
+ 	}
  
-+#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
-+
- /* These are consecutive and not in the normal 4er MCE bank block */
- #define MSR_IA32_MC0_CTL2		0x00000280
- #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -570,6 +570,25 @@ static void __cpuinit init_amd(struct cp
- 	/* As a rule processors have APIC timer running in deep C states */
- 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
-+
-+	/*
-+	 * Disable GART TLB Walk Errors on Fam10h. We do this here
-+	 * because this is always needed when GART is enabled, even in a
-+	 * kernel which has no MCE support built in.
-+	 */
-+	if (c->x86 == 0x10) {
-+		/*
-+		 * BIOS should disable GartTlbWlk Errors themself. If
-+		 * it doesn't do it here as suggested by the BKDG.
-+		 *
-+		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
-+		 */
-+		u64 mask;
-+
-+		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+		mask |= (1 << 10);
-+		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+	}
- }
+-	if (!union_header || !phonet_header)
++	if (!union_header || !phonet)
+ 		return -EINVAL;
  
- #ifdef CONFIG_X86_32
+ 	data_intf = usb_ifnum_to_if(usbdev, union_header->bSlaveInterface0);
 
 
