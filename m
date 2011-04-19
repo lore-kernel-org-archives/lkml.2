@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab1DSLAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 07:00:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53097 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab1DSLAc convert rfc822-to-8bit (ORCPT
+	id S1754815Ab1DSLIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 07:08:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40140 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab1DSLIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 07:00:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=GhzRoDyufTYPwQzp/wOXuWZhgdKjrqvwL3Yv2bR/RKGF9FQDKeyRgnOoEOrUvZVg1t
-         olb4d3L6uO5Ea8VfXnkS54QztbKGy6n2UIVU8yrztT4J3IKQaWwp2J36fpA7PFEf1dSH
-         gd00bQ4yzbpQbemIonx6J5CHi8GgJ/8j5b4Sg=
+	Tue, 19 Apr 2011 07:08:19 -0400
+Message-ID: <4DAD6D22.7000002@parallels.com>
+Date: Tue, 19 Apr 2011 15:08:18 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Date: Tue, 19 Apr 2011 13:00:30 +0200
-X-Google-Sender-Auth: o4ts1VOCaCdXTbt-ghrTvbeWAAA
-Message-ID: <BANLkTi=zNkSkD7L8f0pkZ2+j5pGcGhCYJA@mail.gmail.com>
-Subject: =?UTF-8?Q?fs=2Fbtrfs=2Finode=2Ec=3A6039=3A_warning=3A_=E2=80=98bio=E2=80=99_is_used_un?=
-	=?UTF-8?Q?initialized_in_this_function?=
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Paul Menage <menage@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpuset: allow empty cpu/node masks
+References: <20110419100739.8464.80475.stgit@localhost6> <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com>
+In-Reply-To: <BANLkTimRV7STKcdWFXmmsQ+DLxN0bAnv3A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fs/btrfs/inode.c: In function ‘btrfs_submit_direct_hook’:
-fs/btrfs/inode.c:6039: warning: ‘bio’ is used uninitialized in this function
+Paul Menage wrote:
+> On Tue, Apr 19, 2011 at 12:07 PM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org>  wrote:
+>>
+>> This aimed to fix attaching tasks to the newly created cgroups in hierarchies with
+>> cpuset subsystem. Cpuset always require initializing cpuset.cpus and cpuset.mems,
+>> because they are empty by default, this fact block task attaching with -ENOSPC.
+>
+> You can set the cgroup.clone_children to 1 to get the parent masks
+> automatically copied into the child. So I don't think this patch is
+> needed.
 
-`BIO_BUG_ON(!atomic_read(&bio->bi_cnt))' in bio_put() later will blow up nicely
-when passed a random pointer on the stack.
+cgroup.clone_children does not work if ns_cgroup is mounted,
+but it is ok if ns_cgroup is alredy scheduled to remove soon.
 
-Introduced by commit 02f57c7aedef1a537f4b16db7061cdd8efa3bb4e
-("Btrfs: don't split dio bios if we don't have to").
+However, I still think that all cgroups must have reasonable default state.
+Is cgroup.clone_children=1 planned to be default?
 
-Gr{oetje,eeting}s,
+So, I just want to make cgroup worked out of the box:
 
-                        Geert
+mount -t cgroup cgroup /cgroup
+mkdir /cgroup/foo
+echo $$ > /cgroup/foo/tasks
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Initialization before tasks attaching should be optional.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>
+> Paul
+
