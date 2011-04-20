@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab1DTPR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:17:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40379 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab1DTPR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:17:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Z0fG9V4WqiOjLBxP6Dm2vwJyA0vI4AumceYPkpEJITG0gm3YzjhV9c2/cSrJQESdUm
-         /HmXgw2l9CaW4NLjxLmsb3a+n4D5P0VpZkg83/bpQEEuUn5HB7CtQ+mhsRT8eoYAiKRz
-         1gKZjjmekpkiluifm0B3gZC913YjJzDImNCiA=
+	id S1755154Ab1DTPTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:19:40 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:53844
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753468Ab1DTPTj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 11:19:39 -0400
+X-SpamScore: -30
+X-BigFish: VPS-30(zz1803M9371O542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh95h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=Oc+y+31KugbEy66Mp96=bf_G8Mg@mail.gmail.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
-	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
-	<20110418091902.13345132@lxorguk.ukuu.org.uk>
-	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
-	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
-	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
-	<20110419093855.36910400@lxorguk.ukuu.org.uk>
-	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
-	<BANLkTint6DGgosVkjK-sveyA9SL9WVS4Mg@mail.gmail.com>
-	<BANLkTinv-MSg5Sobg2X1cJpAwPkM1Gevcg@mail.gmail.com>
-	<BANLkTi=Oc+y+31KugbEy66Mp96=bf_G8Mg@mail.gmail.com>
-Date: Wed, 20 Apr 2011 17:17:55 +0200
-X-Google-Sender-Auth: LzK5nCh1L-_IhYyJJyX04nb6grM
-Message-ID: <BANLkTinv_-6dJJXAWc=NFTceXGA9sabanA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux-arm-kernel@lists.infradead.org, Ben Nizette <bn@niasdigital.com>,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] tty/serial: add support for Xilinx PS UART
+Date: Wed, 20 Apr 2011 09:19:22 -0600
+In-Reply-To: <20110419221530.7370d013@lxorguk.ukuu.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] tty/serial: add support for Xilinx PS UART
+Thread-Index: Acv+1sssSnFxRt9QTa61MFxv9kDe+AAllOxg
+References: <e35578a9-909d-4594-bbe4-41d89b5f9b3e@VA3EHSMHS014.ehs.local> <20110419221530.7370d013@lxorguk.ukuu.org.uk>
+From: John Linn <John.Linn@xilinx.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
+X-OriginalArrivalTime: 20 Apr 2011 15:19:29.0894 (UTC) FILETIME=[580D4060:01CBFF6E]
+X-RCIS-Action: ALLOW
+Message-ID: <bde1ee6b-79a8-46f9-a8a3-38a91e51f1c3@VA3EHSMHS019.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/20 Haojian Zhuang <haojian.zhuang@gmail.com>:
+> -----Original Message-----
+> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> Sent: Tuesday, April 19, 2011 3:16 PM
+> To: John Linn
+> Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
+> Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
+> 
+> On Tue, 19 Apr 2011 14:14:52 -0600
+> John Linn <john.linn@xilinx.com> wrote:
+> 
+> > The Xilinx PS Uart is used on the new ARM based SoC. This
+> > UART is not compatible with others such that a seperate
+> > driver is required.
+> 
+> Joyous. I wish people would standardise.
+> 
+> > +		 213 = /dev/ttyPS0		Xilinx PS serial port 0
+> > +		 214 = /dev/ttyPS1		Xilinx PS serial port 1
+> > +		 215 = /dev/ttyPS2		Xilinx PS serial port 2
+> > +		 216 = /dev/ttyPS3		Xilinx PS serial port 3
+> 
+> Is there a specific reason you need fixed minor numbers ? If not
+please
+> use a dynamic range and keep Linus happy.
+> 
+> > +/**
+> > + * xuartps_isr - Interrupt handler
+> > + * @irq: Irq number
+> > + * @dev_id: Id of the port
+> > + *
+> > + * Returns IRQHANDLED
+> > + **/
+> > +static irqreturn_t xuartps_isr(int irq, void *dev_id)
+> > +{
+> > +	struct uart_port *port = (struct uart_port *)dev_id;
+> > +	struct tty_struct *tty = port->state->port.tty;
+> > +	unsigned long flags;
+> > +	unsigned int isrstatus, numbytes;
+> > +	unsigned int data;
+> > +	char status = TTY_NORMAL;
+> > +
+> > +	spin_lock_irqsave(&port->lock, flags);
+> 
+> The ttys are refcounting now and your locking subtly wrong if you want
+> to
+> avoid it (you lookup port-> stuff before you lock it)
+> 
+> The best way to do this is
+> 
+> 	tty = tty_port_tty_get(&port->state->port);
+> 
+> 	/* Returns a tty with reference or NULL */
+> 
+> 	Do stuff
+> 
+> 	tty_kref_put(tty);
 
-> I have an another question on board initialization. The configuration on pins
-> are including drive strength, pull and multiple function.
->
-> Since this patch can configure drive strength, pull. Will it be preferred to use
-> in board initialization?
+I see the subtle locking issue you mention.
 
-I am reusing it (inside the example driver) for drive strength and bias.
+This looks like a good way to help it, but it's not clear to me what to
+do in an isr 
+if the function returns a NULL for the tty.  In other places you can say
+the tty
+was busy, but in an ISR that doesn't make much sense (to me anyway).
 
-Multiple function again is pin/padmuxing.
+It seems easier in this case to just move the tty =
+port->state->port.tty to after 
+the lock is acquired.
 
-Even if some people are only muxing pins that can also be used as GPIO,
-this is not always the case. We can shunt out the same pins to be used as
-I2C or SPI for example, that means this cannot be handled in a GPIO
-driver since it has nothing to do with GPIO pins at all.
+I'm sure there's something obvious I'm missing here.
 
-Thus we need an orthogonal pin/padmux mechanism.
+Thanks,
+John
 
-Yours,
-Linus Walleij
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
