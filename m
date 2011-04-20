@@ -1,56 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1DTGkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 02:40:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62232 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab1DTGku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 02:40:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 0/4] Posix Alarm Timers
-Date: Wed, 20 Apr 2011 08:40:33 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-References: <1303257510-15054-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1303257510-15054-1-git-send-email-john.stultz@linaro.org>
+	id S1752859Ab1DTGoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 02:44:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52369 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752325Ab1DTGoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 02:44:12 -0400
+Message-ID: <4DAE80E9.2010102@cn.fujitsu.com>
+Date: Wed, 20 Apr 2011 14:44:57 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Chris Mason <chris.mason@oracle.com>
+CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
+Subject: [PATCH v2 1/2] Btrfs: allocate extent state and check the result
+ properly
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 14:44:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 14:44:43,
+	Serialize complete at 2011-04-20 14:44:43
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104200840.33671.arnd@arndb.de>
-X-Provags-ID: V02:K0:fvFJuO695eKgMFLK5OFgJSAzsnbE/BG589aN7txa8sz
- G2MIjR2/XNnLKCmYkWwiwhtgpI+0pX82OsAMMwNay9IV60rN7Q
- 4omdmc3lwQObqzCZSkEmet6uim7QD0HeMfl3Ljdq0XItq3HiTF
- qqKKga0vSSKmVcImKdnO5TqCzqnivsVAVY+z9hu2CIOEDUzIEg
- dQnjcClC+qEVn3EegdLtw==
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 April 2011 01:58:26 John Stultz wrote:
-> 
-> Just wanted to send out my current Posix Alarm Timers queue for 
-> comment and review in the hopes of getting it into shape for
-> 2.6.40.
-> 
-> Some background on the patches can be found here:
->         https://lwn.net/Articles/429925/
-> 
-> New in this series:
-> * Added timekeeping_inject_sleeptime, which corrects CLOCK_BOOTTIME
->   for arches that don't support read_persistent_clock().
-> * I've added a CAP_WAKE_ALARM capability to limit random applications
->   from setting alarms in the last patch. This probably needs some
->   careful review as it allows clock_nanosleep and timer_create to
->   return -EPERM, which is new behavior.
-> 
-I haven't looked at these patches much before, so I've done a brief
-review now. They look very nice, and I can't find anything to complain
-about.
+It doesn't allocate extent_state and check the result properly:
+- in set_extent_bit, it doesn't allocate extent_state if the path is not
+  allowed wait
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+- in clear_extent_bit, it doesn't check the result after atomic-ly allocate,
+  we trigger BUG_ON() if it's fail
+
+- if allocate fail, we trigger BUG_ON instead of returning -ENOMEM since
+  the return value of clear_extent_bit() is ignored by many callers
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ fs/btrfs/extent_io.c |   34 ++++++++++++++++++++++++++--------
+ 1 files changed, 26 insertions(+), 8 deletions(-)
+
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 5ae0bff..f36e284 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -439,6 +439,15 @@ static int clear_state_bit(struct extent_io_tree *tree,
+ 	return ret;
+ }
+ 
++static struct extent_state *
++alloc_extent_state_atomic(struct extent_state *prealloc)
++{
++	if (!prealloc)
++		prealloc = alloc_extent_state(GFP_ATOMIC);
++
++	return prealloc;
++}
++
+ /*
+  * clear some bits on a range in the tree.  This may require splitting
+  * or inserting elements in the tree, so the gfp mask is used to
+@@ -476,8 +485,7 @@ int clear_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
+ again:
+ 	if (!prealloc && (mask & __GFP_WAIT)) {
+ 		prealloc = alloc_extent_state(mask);
+-		if (!prealloc)
+-			return -ENOMEM;
++		BUG_ON(!prealloc);
+ 	}
+ 
+ 	spin_lock(&tree->lock);
+@@ -529,8 +537,8 @@ hit_next:
+ 	 */
+ 
+ 	if (state->start < start) {
+-		if (!prealloc)
+-			prealloc = alloc_extent_state(GFP_ATOMIC);
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = split_state(tree, state, prealloc, start);
+ 		BUG_ON(err == -EEXIST);
+ 		prealloc = NULL;
+@@ -551,8 +559,8 @@ hit_next:
+ 	 * on the first half
+ 	 */
+ 	if (state->start <= end && state->end > end) {
+-		if (!prealloc)
+-			prealloc = alloc_extent_state(GFP_ATOMIC);
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = split_state(tree, state, prealloc, end + 1);
+ 		BUG_ON(err == -EEXIST);
+ 		if (wake)
+@@ -725,8 +733,7 @@ int set_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
+ again:
+ 	if (!prealloc && (mask & __GFP_WAIT)) {
+ 		prealloc = alloc_extent_state(mask);
+-		if (!prealloc)
+-			return -ENOMEM;
++		BUG_ON(!prealloc);
+ 	}
+ 
+ 	spin_lock(&tree->lock);
+@@ -743,6 +750,8 @@ again:
+ 	 */
+ 	node = tree_search(tree, start);
+ 	if (!node) {
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = insert_state(tree, prealloc, start, end, &bits);
+ 		prealloc = NULL;
+ 		BUG_ON(err == -EEXIST);
+@@ -811,6 +820,9 @@ hit_next:
+ 			err = -EEXIST;
+ 			goto out;
+ 		}
++
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = split_state(tree, state, prealloc, start);
+ 		BUG_ON(err == -EEXIST);
+ 		prealloc = NULL;
+@@ -841,6 +853,9 @@ hit_next:
+ 			this_end = end;
+ 		else
+ 			this_end = last_start - 1;
++
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = insert_state(tree, prealloc, start, this_end,
+ 				   &bits);
+ 		BUG_ON(err == -EEXIST);
+@@ -865,6 +880,9 @@ hit_next:
+ 			err = -EEXIST;
+ 			goto out;
+ 		}
++
++		prealloc = alloc_extent_state_atomic(prealloc);
++		BUG_ON(!prealloc);
+ 		err = split_state(tree, state, prealloc, end + 1);
+ 		BUG_ON(err == -EEXIST);
+ 
+-- 
+1.7.4.2
