@@ -1,35 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1DTJqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 05:46:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54001 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752012Ab1DTJqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 05:46:06 -0400
-Date: Wed, 20 Apr 2011 10:46:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Rientjes <rientjes@google.com>
-Cc: james_p_freyensee@linux.intel.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
-Message-ID: <20110420104654.6b457142@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com>
-	<1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
-	<alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753664Ab1DTJrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 05:47:17 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46439 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752815Ab1DTJrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 05:47:16 -0400
+Date: Wed, 20 Apr 2011 10:46:47 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
+Message-ID: <20110420094647.GB1306@csn.ul.ie>
+References: <20110414211656.GB1700@cmpxchg.org>
+ <20110419093118.GB23041@csn.ul.ie>
+ <20110419233905.GA2333@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110419233905.GA2333@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> is small enough that it shouldn't be an issue.  Otherwise there's nothing 
-> protecting sizeof(current->comm) from changing without holding 
-> task_lock(current).
+On Wed, Apr 20, 2011 at 01:39:05AM +0200, Johannes Weiner wrote:
+> On Tue, Apr 19, 2011 at 10:31:18AM +0100, Mel Gorman wrote:
+> > On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
+> > > Space in a vmap block that was once allocated is considered dirty and
+> > > not made available for allocation again before the whole block is
+> > > recycled.
+> > > 
+> > > The result is that free space within a vmap block is always contiguous
+> > > and the allocation bitmap can be replaced by remembering the offset of
+> > > free space in the block.
+> > > 
+> > > The fragmented block purging was never invoked from vb_alloc() either,
+> > > as it skips blocks that do not have enough free space for the
+> > > allocation in the first place.  According to the above, it is
+> > > impossible for a block to have enough free space and still fail the
+> > > allocation.  Thus, this dead code is removed.  Partially consumed
+> > > blocks will be reclaimed anyway when an attempt is made to allocate a
+> > > new vmap block altogether and no free space is found.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > Cc: Nick Piggin <npiggin@kernel.dk>
+> > > Cc: Mel Gorman <mel@csn.ul.ie>
+> > > Cc: Hugh Dickins <hughd@google.com>
+> > 
+> > I didn't see a problem with the patch per-se but I wonder if your patch
+> > is the intended behaviour. It looks like the intention was that dirty
+> > blocks could be flushed from the TLB and made available for allocations
+> > leading to the possibility of fragmented vmap blocks.
+> >
+> > It's this check that is skipping over blocks without taking dirty into
+> > account.
+> > 
+> >   		spin_lock(&vb->lock);
+> >  		if (vb->free < 1UL << order)
+> >  			goto next;
+> > 
+> > It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
+> > but is there any possibility that this is what should be fixed instead?
+> 
+> I would like to emphasize that the quoted check only made it clear
+> that the allocation bitmap is superfluous.  There is no partial
+> recycling of a block with live allocations, not even before this
+> commit.
+> 
 
-The C language definition for one - sizeof() is a constant at compile time
+You're right in that the allocation bitmap does look superfluous. I was
+wondering if it was meant to be doing something useful.
+
+> > Do we know what the consequences of blocks only getting flushed when
+> > they have been fully allocated are?
+> 
+> Note that it can get recycled earlier if there is no outstanding
+> allocation on it, even if only a small amount of it is dirty (the
+> purge_fragmented_blocks code does this).
+> 
+
+Yep.
+
+> A single outstanding allocation prevents the block from being
+> recycled, blocking the reuse of the dirty area.
+> 
+
+Yes although your patch doesn't appear to make the current situation
+better or worse.  It's tricky to know exactly when a full flush
+will take place and what the conseqeuences are. For example, look
+at vb_alloc(). If all the blocks have a single allocation preventing
+recycling, we call new_vmap_block() which in itself is not too bad,
+but it may mean we are using more memory than necessary in the name
+of avoiding flushes. This is avoided if a lot of freeing is going on
+at the same time but it's unpredictable.
+
+> Theoretically, we could end up with all possible vmap blocks being
+> pinned by single allocations with most of their area being dirty and
+> not reusable.  But I believe this is unlikely to happen.
+> 
+> Would you be okay with printing out block usage statistics on
+> allocation errors for the time being, so we can identify this case if
+> problems show up?
+> 
+
+It'd be interesting but for the purposes of this patch I think it
+would be more useful to see the results of some benchmark that is vmap
+intensive. Something directory intensive running on XFS should do the
+job just to confirm no regression, right? A profile might indicate
+how often we end up scanning the full list, finding it dirty and
+calling new_vmap_block but even if something odd showed up there,
+it would be a new patch.
+
+> And consider this patch an optimization/simplification of a status quo
+> that does not appear problematic?  We can still revert it and
+> implement live block recycling when it turns out to be necessary.
+> 
+
+I see no problem with your patch so;
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+-- 
+Mel Gorman
+SUSE Labs
