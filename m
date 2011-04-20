@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1DTKYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 06:24:19 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46280 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab1DTKYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 06:24:17 -0400
-Date: Wed, 20 Apr 2011 12:23:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110420102349.GB1361@aftab>
-References: <1303135222-17118-2-git-send-email-bp@amd64.org>
- <20110419171340.GE6640@elte.hu>
- <20110419173521.GA25374@aftab>
- <20110419174446.GA13616@elte.hu>
+	id S1753871Ab1DTKb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 06:31:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52090 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752180Ab1DTKb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 06:31:27 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Dave Jones <davej@redhat.com>
+Subject: Re: lockdep trace when unplugging usb audio (.39rc4)
+Date: Wed, 20 Apr 2011 12:32:44 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc2-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+References: <20110419180745.GA438@redhat.com>
+In-Reply-To: <20110419180745.GA438@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419174446.GA13616@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_MZrrNgLR8ubYekB"
+Message-Id: <201104201232.44320.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 01:44:46PM -0400, Ingo Molnar wrote:
-> 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > +	if (ret != NOTIFY_STOP)
-> > +		printk_ratelimited(KERN_EMERG HW_ERR
-> > +				   "Run the above through 'mcelog --ascii'\n");
-> 
-> pr_emerg_ratelimited() would allow you to keep that broken line happy?
+--Boundary-00=_MZrrNgLR8ubYekB
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 
-Not entirely. I had to do the exit-early-to-save-an-indentation-level
-trick also :)
+Am Dienstag, 19. April 2011, 20:07:45 schrieb Dave Jones:
+> I get this trace when I unplug my NuForce uDAC.
 
---
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 13 Apr 2011 14:32:06 +0200
-Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
+Please test this patch.
 
-The default notifier doesn't make a lot of sense to call in the
-correctable errors case. Drop it and emit the mcelog decoding hint only
-in the uncorrectable errors case and when no notifier is registered.
-Also, limit issuing the "mcelog --ascii" message in the rare case when
-we dump unreported CEs before panicking.
+	Regards
+		Oliver
 
-While at it, remove unused old x86_mce_decode_callback from the header.
+--Boundary-00=_MZrrNgLR8ubYekB
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="0001-usb-audio-fix-potential-deadlock-on-unplug.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="0001-usb-audio-fix-potential-deadlock-on-unplug.patch"
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- arch/x86/include/asm/mce.h       |    2 --
- arch/x86/kernel/cpu/mcheck/mce.c |   24 +++++++-----------------
- 2 files changed, 7 insertions(+), 19 deletions(-)
+=46rom 24d036ccb418d7cfa5a821d5a70b3d3da2d63bb3 Mon Sep 17 00:00:00 2001
+=46rom: Oliver Neukum <oliver@neukum.org>
+Date: Wed, 20 Apr 2011 12:29:22 +0200
+Subject: [PATCH] usb-audio:fix potential deadlock on unplug
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index eb16e94..021979a 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
- static inline void enable_p5_mce(void) {}
- #endif
- 
--extern void (*x86_mce_decode_callback)(struct mce *m);
--
- void mce_setup(struct mce *m);
- void mce_log(struct mce *m);
- DECLARE_PER_CPU(struct sys_device, mce_dev);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68e2303..ff1ae9b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -105,20 +105,6 @@ static int			cpu_missing;
- ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
- EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
- 
--static int default_decode_mce(struct notifier_block *nb, unsigned long val,
--			       void *data)
--{
--	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
--	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
--
--	return NOTIFY_STOP;
--}
--
--static struct notifier_block mce_dec_nb = {
--	.notifier_call = default_decode_mce,
--	.priority      = -1,
--};
--
- /* MCA banks polled by the period polling timer for corrected events */
- DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
- 
- static void print_mce(struct mce *m)
- {
-+	int ret = 0;
-+
- 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
- 	       m->extcpu, m->mcgstatus, m->bank, m->status);
- 
-@@ -239,7 +227,11 @@ static void print_mce(struct mce *m)
- 	 * Print out human-readable details about the MCE error,
- 	 * (if the CPU has an implementation for that)
- 	 */
--	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	if (ret == NOTIFY_STOP)
-+		return;
-+
-+	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
+Decrease the scope of a lock to fix a deadlock
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+=2D--
+ sound/usb/card.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index a90662a..1d3d9f0 100644
+=2D-- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -554,6 +554,7 @@ static void snd_usb_audio_disconnect(struct usb_device =
+*dev, void *ptr)
+ 	mutex_lock(&chip->shutdown_mutex);
+ 	chip->shutdown =3D 1;
+ 	chip->num_interfaces--;
++	mutex_unlock(&chip->shutdown_mutex);
+ 	if (chip->num_interfaces <=3D 0) {
+ 		snd_card_disconnect(card);
+ 		/* release the pcm resources */
+@@ -569,11 +570,9 @@ static void snd_usb_audio_disconnect(struct usb_device=
+ *dev, void *ptr)
+ 			snd_usb_mixer_disconnect(p);
+ 		}
+ 		usb_chip[chip->index] =3D NULL;
+=2D		mutex_unlock(&chip->shutdown_mutex);
+ 		mutex_unlock(&register_mutex);
+ 		snd_card_free_when_closed(card);
+ 	} else {
+=2D		mutex_unlock(&chip->shutdown_mutex);
+ 		mutex_unlock(&register_mutex);
+ 	}
  }
- 
- #define PANIC_TIMEOUT 5 /* 5 seconds */
-@@ -1721,8 +1713,6 @@ __setup("mce", mcheck_enable);
- 
- int __init mcheck_init(void)
- {
--	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
--
- 	mcheck_intel_therm_init();
- 
- 	return 0;
--- 
-1.7.4.rc2
+=2D-=20
+1.7.1
 
 
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 4363 
+--Boundary-00=_MZrrNgLR8ubYekB--
