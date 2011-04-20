@@ -1,69 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1DTMjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 08:39:03 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53793 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab1DTMjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 08:39:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=HFlJvdMguoprELWau6jUXYJJozi7NGEbbphMV6XZUlKjsMai94WpVc18Ogwr8Oy5bX
-         I70EmIHRh++b06rXVHBV7Xzr70HBrKQhe7/ZeBj2bfFFEnEYfByAbJqARSO/tG4PRU4X
-         M+CcoWAglk88aoln1pozwcASQmlgGP/1YVzIE=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimfkpjQ9DoYKRTVwyvtPRccO+RwpA@mail.gmail.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
-	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
-	<20110418091902.13345132@lxorguk.ukuu.org.uk>
-	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
-	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
-	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
-	<20110419093855.36910400@lxorguk.ukuu.org.uk>
-	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
-	<BANLkTimfkpjQ9DoYKRTVwyvtPRccO+RwpA@mail.gmail.com>
-Date: Wed, 20 Apr 2011 21:38:59 +0900
-X-Google-Sender-Auth: KiyP4awZzn4V8FJbnM66m7-yPDM
-Message-ID: <BANLkTim7pGJVEngS7jJHgcn1FTMEiUC83w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-From: Kyungmin Park <kmpark@infradead.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ben Nizette <bn@niasdigital.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754863Ab1DTMj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 08:39:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab1DTMj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 08:39:56 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, jmoyer@redhat.com,
+        Lukas Czerner <lczerner@redhat.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        Jens Axboe <jens.axboe@oracle.com>
+Subject: [PATCH 1/2] blkdev: Submit discard bio in batches in blkdev_issue_discard()
+Date: Wed, 20 Apr 2011 14:39:31 +0200
+Message-Id: <1303303172-22404-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 9:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 2011/4/19 Kyungmin Park <kmpark@infradead.org>:
->
->> One more consideration, not mentioned previous time, is that pin
->> configuration for power down mode.
->> Samsung SoCs has retention GPIO configurations at sleep (suspend)
->> mode. and restore it at resume time.
->> it's need to reduce power and proper operation after suspend.
->
-> Isn't this supposed to be handled by runtime_pm hooks inside
-> your GPIO driver rather than by someone else talking to
-> the GPIO driver trying to spool/unspool the state from the
-> outside in some other place?
+Currently we are waiting for every submitted REQ_DISCARD bio separately,
+but it can have unwanted consequences of repeatedly flushing the queue,
+so we rather submit bios in batches and wait for the entire batch, hence
+narrowing the window of other ios going in.
 
-It's different from normal gpio input/output pin. It has different
-offset and configuration.
-As I know, current gpiolib doesn't support it.
+Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+always set !BIO_UPTODATE in the case of error and remove the check for
+bb, since we are the only user of this function and we always set this.
 
-Of course these should be handled at board file instead of drivers.
+Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+not needed anymore.
 
-Thank you,
-Kyungmin Park
->
-> Or am I getting things backwards now...?
->
-> Yours,
-> Linus Walleij
->
+I have done simple dd testing with surprising results. The script I have
+used is:
+
+for i in $(seq 10); do
+        echo $i
+        dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+        sleep 5
+done
+/usr/bin/time -f %e ./blkdiscard /dev/sdc1
+
+Running time of BLKDISCARD on the whole device:
+with patch              without patch
+0.95                    15.58
+
+So we can see that in this artificial test the kernel with the patch
+applied is approx 16x faster in discarding the device.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Jens Axboe <jens.axboe@oracle.com>
+---
+ block/blk-lib.c |   69 +++++++++++++++++++++++-------------------------------
+ 1 files changed, 29 insertions(+), 40 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 25de73e..9260cb0 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -9,17 +9,23 @@
+ 
+ #include "blk.h"
+ 
+-static void blkdev_discard_end_io(struct bio *bio, int err)
++struct bio_batch {
++	atomic_t		done;
++	unsigned long		flags;
++	struct completion	*wait;
++};
++
++static void bio_batch_end_io(struct bio *bio, int err)
+ {
++	struct bio_batch *bb = bio->bi_private;
++
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+-		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++			set_bit(BIO_EOPNOTSUPP, &bb->flags);
++		clear_bit(BIO_UPTODATE, &bb->flags);
+ 	}
+-
+-	if (bio->bi_private)
+-		complete(bio->bi_private);
+-
++	if (atomic_dec_and_test(&bb->done))
++		complete(bb->wait);
+ 	bio_put(bio);
+ }
+ 
+@@ -41,6 +47,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+ 	unsigned int max_discard_sectors;
++	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+ 
+@@ -67,7 +74,11 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		type |= REQ_SECURE;
+ 	}
+ 
+-	while (nr_sects && !ret) {
++	atomic_set(&bb.done, 1);
++	bb.flags = 1 << BIO_UPTODATE;
++	bb.wait = &wait;
++
++	while (nr_sects) {
+ 		bio = bio_alloc(gfp_mask, 1);
+ 		if (!bio) {
+ 			ret = -ENOMEM;
+@@ -75,9 +86,9 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		}
+ 
+ 		bio->bi_sector = sector;
+-		bio->bi_end_io = blkdev_discard_end_io;
++		bio->bi_end_io = bio_batch_end_io;
+ 		bio->bi_bdev = bdev;
+-		bio->bi_private = &wait;
++		bio->bi_private = &bb;
+ 
+ 		if (nr_sects > max_discard_sectors) {
+ 			bio->bi_size = max_discard_sectors << 9;
+@@ -88,45 +99,23 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 			nr_sects = 0;
+ 		}
+ 
+-		bio_get(bio);
++		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
++	}
+ 
++	/* Wait for bios in-flight */
++	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion(&wait);
+ 
+-		if (bio_flagged(bio, BIO_EOPNOTSUPP))
+-			ret = -EOPNOTSUPP;
+-		else if (!bio_flagged(bio, BIO_UPTODATE))
+-			ret = -EIO;
+-		bio_put(bio);
+-	}
++	if (test_bit(BIO_EOPNOTSUPP, &bb.flags))
++		ret = -EOPNOTSUPP;
++	else if (!test_bit(BIO_UPTODATE, &bb.flags))
++		ret = -EIO;
+ 
+ 	return ret;
+ }
+ EXPORT_SYMBOL(blkdev_issue_discard);
+ 
+-struct bio_batch
+-{
+-	atomic_t 		done;
+-	unsigned long 		flags;
+-	struct completion 	*wait;
+-};
+-
+-static void bio_batch_end_io(struct bio *bio, int err)
+-{
+-	struct bio_batch *bb = bio->bi_private;
+-
+-	if (err) {
+-		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bb->flags);
+-		else
+-			clear_bit(BIO_UPTODATE, &bb->flags);
+-	}
+-	if (bb)
+-		if (atomic_dec_and_test(&bb->done))
+-			complete(bb->wait);
+-	bio_put(bio);
+-}
+-
+ /**
+  * blkdev_issue_zeroout - generate number of zero filed write bios
+  * @bdev:	blockdev to issue
+-- 
+1.7.4.4
+
