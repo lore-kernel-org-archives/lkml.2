@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab1DTSCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 14:02:25 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15956 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab1DTSCY (ORCPT
+	id S1752265Ab1DTSCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 14:02:31 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:39357 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751984Ab1DTSC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 14:02:24 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6322"; a="86935916"
-Message-ID: <143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
-In-Reply-To: <BANLkTin_TpzdQS96SPKUNye6vb2b55Qc4A@mail.gmail.com>
-References: <1302822031-6752-1-git-send-email-sjg@chromium.org>
-    <4DA7A914.5020804@codeaurora.org>
-    <BANLkTikcY-xzjd0W77UfWWoO8ibjKNXQGg@mail.gmail.com>
-    <BANLkTin_TpzdQS96SPKUNye6vb2b55Qc4A@mail.gmail.com>
-Date: Wed, 20 Apr 2011 11:01:59 -0700 (PDT)
-Subject: Re: [PATCH v4] ARM: Use generic BUG() handler
-From: "Stephen Boyd" <sboyd@codeaurora.org>
-To: "anish singh" <anish198519851985@gmail.com>
-Cc: "Simon Glass" <sjg@chromium.org>, linux-arm-kernel@lists.infradead.org,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Tony Lindgren" <tony@atomide.com>,
-        "Nicolas Pitre" <nicolas.pitre@linaro.org>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Joe Perches" <joe@perches.com>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        "Alexander Shishkin" <virtuoso@slind.org>,
-        "Phil Carmody" <ext-phil.2.carmody@nokia.com>,
-        "Rabin Vincent" <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        "Omar Ramirez Luna" <omar.ramirez@ti.com>,
-        "Dave Martin" <dave.martin@linaro.org>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
+	Wed, 20 Apr 2011 14:02:28 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=eNnzyDyNaOXiuFWV49VNuJnsdGBlB+SZHgod55kO61Tm/hvqGCkSY96/M2n6uqfxEn3YQXBrd2+y4/AZyVqZeB0RW5AHZZaH9/+HYMTKrWsVc2ZEwp2TQTCvuYAeD60b;
+Date: Wed, 20 Apr 2011 11:02:24 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for April 20
+Message-Id: <20110420110224.e3974722.rdunlap@xenotime.net>
+In-Reply-To: <20110420144329.fce0e28e.sfr@canb.auug.org.au>
+References: <20110420144329.fce0e28e.sfr@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Apr 20, 2011 at 8:10 AM, Simon Glass <sjg@chromium.org> wrote:
->
->> On Thu, Apr 14, 2011 at 7:10 PM, Stephen Boyd <sboyd@codeaurora.org>
->> wrote:
->> > On 04/14/2011 04:00 PM, Simon Glass wrote:
->> >> From: Simon Glass <sjg@google.com>
->> >>
->> >> ARM uses its own BUG() handler which makes its output slightly
->> different
->> >> from other archtectures.
->>
->>
->> >> Signed-off-by: Simon Glass <sjg@chromium.org>
->> >
->> > Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
->>
->> Thanks Stephen. Since there were no other comments I have submitted
->> this to RMK's patch tracking system.
->>
->
-> Will this be part of linux kernel as i am not aware of patch tracking
-> system? I want to back port this feature on my
-> board which has Linux 2.6.35.7 kernel version(android gingerbread).
->
+On Wed, 20 Apr 2011 14:43:29 +1000 Stephen Rothwell wrote:
 
-It's here:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6885/1
+> Hi all,
 
-I imagine it will be added when/if Russell picks it up. Sadly it
-increases the LOC in ARM so Simon might need to really
-sell it to get it merged.
+> Merging sound/for-next
+> Merging sound-asoc/for-next
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Takashi,
 
+mainline contains commit a2800300f28bd1814f3ba8cfd93ecb0b00c2dfe3
+Author: Takashi Iwai <tiwai@suse.de>
+Date:   Tue Mar 8 18:20:46 2011 +0100
+    ALSA: asihpi - Use %zd for size_t argument in error message
+
+which changes:
+--- a/sound/pci/asihpi/hpi6205.c
++++ b/sound/pci/asihpi/hpi6205.c
+@@ -2088,7 +2088,7 @@ static u16 message_response_sequence(struct hpi_adapter_ob
+j *pao,
+ 		phr->specific_error = sizeof(interface->u);
+ 		phr->size = sizeof(struct hpi_response_header);
+ 		HPI_DEBUG_LOG(ERROR,
+-			"message len %d too big for buffer %ld \n", phm->size,
++			"message len %d too big for buffer %zd \n", phm->size,
+ 			sizeof(interface->u));
+ 		return 0;
+ 	}
+
+
+However, it looks like there is a patch in your for-next branch which undoes
+that commit, since hpi6205.c still uses %ld to print the sizeof() value and this
+warning is still produced:
+
+linux-next-20110420/sound/pci/asihpi/hpi6205.c:2091: warning: format '%ld' expects type 'long int', but argument 3 has type 'unsigned int'
+
+
+Please drop at least that one line from for-next.
+
+or am I completely befuddled?
+
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
