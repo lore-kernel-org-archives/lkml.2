@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab1DTQlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:41:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40360 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab1DTQlR (ORCPT
+	id S1754333Ab1DTQpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:45:09 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:40977 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab1DTQpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:41:17 -0400
-Date: Wed, 20 Apr 2011 18:41:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Paul Mundt <lethal@linux-sh.org>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
-In-Reply-To: <20110420142816.GZ31131@pengutronix.de>
-Message-ID: <alpine.LFD.2.02.1104201830500.3323@ionos>
-References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo> <20110414100048.GB1611@n2100.arm.linux.org.uk> <1302776705.28876.113.camel@pasglop> <20110414103200.GF1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104140751220.24613@xanadu.home>
- <20110414120904.GH1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104140920110.24613@xanadu.home> <20110414153813.GC6259@n2100.arm.linux.org.uk> <20110418105442.GB27864@linux-sh.org> <20110420142816.GZ31131@pengutronix.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 20 Apr 2011 12:45:08 -0400
+Date: Wed, 20 Apr 2011 18:45:06 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: rwhitton@iee.org, Clemens Ladisch <clemens@ladisch.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Background memory scrubbing
+Message-ID: <20110420164506.GE1624@x4.trippels.de>
+References: <16117.1303310442@jupiter.eclipse.co.uk>
+ <4DAEF98D.2090802@ladisch.de>
+ <20110420153529.GA2312@gere.osrc.amd.com>
+ <20110420154658.GD1624@x4.trippels.de>
+ <20110420155853.GB2312@gere.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-63488165-1303317666=:3323"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110420155853.GB2312@gere.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 2011.04.20 at 17:58 +0200, Borislav Petkov wrote:
+> On Wed, Apr 20, 2011 at 05:46:58PM +0200, Markus Trippelsdorf wrote:
+> > BTW is it really necessary to print the following to syslog:
+> > 
+> > EDAC amd64: pci-read, sdram scrub control value: 15
+> > EDAC MC: Read scrub rate: 97650
+> > 
+> > everytime one runs:
+> >  # cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+> > 97650
+> > 
+> > ?
+> 
+> This is KERN_DEBUG since .38 (commit 24f9a7fe3f19f3fd310f556364d01a22911724b3)
+> and it shouldn't appear on the console if you don't change your default log level.
 
---8323328-63488165-1303317666=:3323
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Yes. Sorry, but I was referring to dmesg and not the console. 
+What I mean is that maybe debugf1 or debugf2 is more appropriate than
+amd64_debug?
 
-On Wed, 20 Apr 2011, Uwe Kleine-König wrote:
-> I declare this to be stable, so assuming people are OK with it, you can
-> use that as a base to convert your platforms.
-
-You declare that stable? Interesting.
- 
-> There is a 2nd branch on that repository that also contains my RFC patch
-> just sent to this list in case you want to test it.
-
-Which is utter crap as I pointed out a few minutes ago.
-
-Also that clk thing is neither stable nor complete. It's just designed
-wrong. 
-
-As long as it does not handle nested clocks proper and by default w/o
-your tasteless add ons, it's just moving the status quo of ARM into a
-common infrastructure file.
-
-Yes, that's probably better than not having common infrastructure at
-all, but trying to build up conversions on that lot would be a
-complete waste of time and resources. Simply because you need to
-convert the already converted stuff another time.
-
-Thanks,
-
-	tglx
---8323328-63488165-1303317666=:3323--
+-- 
+Markus
