@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1DTPOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:14:09 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33800 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754333Ab1DTPOE (ORCPT
+	id S1755090Ab1DTPRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:17:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52170 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752424Ab1DTPR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:14:04 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=mDnYa5rfb7bUtHt/bvmAOM2ImIfCO3coVKg3FI7PkwVwod+pdUwHTVSyRdtgSj/yp8UVUleh82ZpwHLchhCcOSKXz/Wd1oqvf053K0RVp18OCbIawU9ZxsPWBuDxsYo2;
-Date: Wed, 20 Apr 2011 08:14:01 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: check pci_vpd_pci22_wait() return
-Message-ID: <20110420081401.48b9b5e1@jbarnes-desktop>
-In-Reply-To: <1303053741-384-1-git-send-email-gthelen@google.com>
-References: <1303053741-384-1-git-send-email-gthelen@google.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 20 Apr 2011 11:17:29 -0400
+Date: Wed, 20 Apr 2011 16:17:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com, sameo@linux.intel.com,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCHv3 4/4] TPS65910: Add tps65910 regulator driver
+Message-ID: <20110420151726.GA9869@opensource.wolfsonmicro.com>
+References: <BAB49D4A-084E-4290-AF99-118A172F0ED6@slimlogic.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BAB49D4A-084E-4290-AF99-118A172F0ED6@slimlogic.co.uk>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Apr 2011 08:22:21 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> pci_vpd_pci22_write() calls pci_vpd_pci22_wait() after writing
-> PCI_VPD_DATA and PCI_VPD_ADDR to wait for the VPD operation to complete.
-> The result pci_vpd_pci22_wait() was not checked for error.
+On Tue, Apr 19, 2011 at 08:27:35PM -0500, Jorge Eduardo Candelaria wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
 > 
-> This change checks for error.
+> The regulator module consists of 3 DCDCs and 8 LDOs. The output
+> voltages are configurable and are meant to supply power to the
+> main processor and other components
+> 
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
 
-Applied the two return value fixes to linux-next, thanks.
+This looks good except for some small nits:
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> +		//voltage = pmic->info[id]->table[srvsel] * 100;
+> +		voltage = (srvsel * 125 + 6000) * 100;
+
+> +		//voltage = pmic->info[id]->table[opvsel] * 100;
+> +		voltage = (opvsel * 125 + 6000) * 100;
+
+Delete the old code.
+
+> +	value = tps65910_reg_read(pmic, reg);
+> +	if (value < 0)
+> +		return value;
+> +
+> +	switch (id) {
+> +	case TPS65910_REG_VIO:
+> +	case TPS65910_REG_VDIG1:
+> +	case TPS65910_REG_VDIG2:
+> +	case TPS65910_REG_VPLL:
+> +	case TPS65910_REG_VDAC:
+> +	case TPS65910_REG_VAUX1:
+> +	case TPS65910_REG_VAUX2:
+> +	case TPS65910_REG_VAUX33:
+> +	case TPS65910_REG_VMMC:
+> +		value &= ~(LDO_SEL_MASK);
+> +		value |= (selector << LDO_SEL_SHIFT);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	return tps65910_reg_write(pmic, reg, value);
+
+This looks like you need a read/modify/write operation for setting
+arbatrary bits rather than specifically setting or clearing.
