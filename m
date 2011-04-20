@@ -1,172 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1DTHDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 03:03:15 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:47948 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752942Ab1DTHDO (ORCPT
+	id S1753394Ab1DTHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 03:08:57 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52146 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab1DTHI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 03:03:14 -0400
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] genalloc: add support to specify the physical address
-Date: Wed, 20 Apr 2011 08:54:15 +0200
-Message-Id: <1303282455-26649-1-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.2.3
-X-Ovh-Tracer-Id: 9596607856124275709
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Wed, 20 Apr 2011 03:08:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH followup] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110420065943.GA18799@tiehlicka.suse.cz>
+References: <20110420093326.45EF.A69D9226@jp.fujitsu.com> <20110420065943.GA18799@tiehlicka.suse.cz>
+Message-Id: <20110420160946.4629.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Wed, 20 Apr 2011 16:08:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so we specify the virtual address as base of the pool chunk and then
-get the physical address for hardware IP
+> Hi Kosaki,
+> 
+> On Wed 20-04-11 09:33:26, KOSAKI Motohiro wrote:
+> > > While I am in the cleanup mode. We should use VM_GROWSUP rather than
+> > > tricky CONFIG_STACK_GROWSUP||CONFIG_IA64.
+> > > 
+> > > What do you think?
+> > 
+> > Now, VM_GROWSUP share the same value with VM_NOHUGEPAGE.
+> > (this trick use the fact that thp don't support any stack growup architecture)
+> 
+> I am not sure I understand you. AFAICS, VM_GROWSUP is defined to non 0
+> only if CONFIG_STACK_GROWSUP||CONFIG_IA64 (include/linux/mm.h).
+> And we use it to determine whether expand_stack_growsup[*] should be
+> defined (in include/linux/mm.h).
+> 
+> The patch basically unifies the way how we export expand_stack_growsup
+> function and how define it (in mm/mmap.c).
+> 
+> So either we should use CONFIG_STACK_GROWSUP||CONFIG_IA64 at both places
+> or we should use VM_GROWSUP trick. I am for the later one.
+> 
+> Am I missing something?
+> 
+> --- 
+> [*] the previous patch renamed expand_growsup to expand_stack_growsup.
 
-as example on at91 we will use on spi, uart or macb
+Right you are. sorry.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-Hi Andrew,
-	I integrate the documentation fix
-	could replace the previous one with this one
 
-V2:
-	update documentation
-	use phys_addr_t for physical addr
-Best Regards,
-J.
- include/linux/genalloc.h |   22 +++++++++++++++++++++-
- lib/genalloc.c           |   45 +++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 58 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index b1c70f1..5bbebda 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -26,13 +26,33 @@ struct gen_pool {
- struct gen_pool_chunk {
- 	spinlock_t lock;
- 	struct list_head next_chunk;	/* next chunk in pool */
-+	phys_addr_t phys_addr;		/* physical starting address of memory chunk */
- 	unsigned long start_addr;	/* starting address of memory chunk */
- 	unsigned long end_addr;		/* ending address of memory chunk */
- 	unsigned long bits[0];		/* bitmap for allocating memory chunk */
- };
- 
- extern struct gen_pool *gen_pool_create(int, int);
--extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
-+extern phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long);
-+extern int gen_pool_add_virt(struct gen_pool *, unsigned long, phys_addr_t,
-+			     size_t, int);
-+/**
-+ * gen_pool_add - add a new chunk of special memory to the pool
-+ * @pool: pool to add new memory chunk to
-+ * @addr: starting address of memory chunk to add to pool
-+ * @size: size in bytes of the memory chunk to add to pool
-+ * @nid: node id of the node the chunk structure and bitmap should be
-+ *       allocated on, or -1
-+ *
-+ * Add a new chunk of special memory to the specified pool.
-+ *
-+ * Returns 0 on success or a -ve errno on failure.
-+ */
-+static inline int gen_pool_add(struct gen_pool *pool, unsigned long addr,
-+			       size_t size, int nid)
-+{
-+	return gen_pool_add_virt(pool, addr, -1, size, nid);
-+}
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 1923f14..577ddf8 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -39,17 +39,20 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
- EXPORT_SYMBOL(gen_pool_create);
- 
- /**
-- * gen_pool_add - add a new chunk of special memory to the pool
-+ * gen_pool_add_virt - add a new chunk of special memory to the pool
-  * @pool: pool to add new memory chunk to
-- * @addr: starting address of memory chunk to add to pool
-+ * @virt: virtual starting address of memory chunk to add to pool
-+ * @phys: physical starting address of memory chunk to add to pool
-  * @size: size in bytes of the memory chunk to add to pool
-  * @nid: node id of the node the chunk structure and bitmap should be
-  *       allocated on, or -1
-  *
-  * Add a new chunk of special memory to the specified pool.
-+ *
-+ * Returns 0 on success or a -ve errno on failure.
-  */
--int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
--		 int nid)
-+int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phys,
-+		 size_t size, int nid)
- {
- 	struct gen_pool_chunk *chunk;
- 	int nbits = size >> pool->min_alloc_order;
-@@ -58,11 +61,12 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
--		return -1;
-+		return -ENOMEM;
- 
- 	spin_lock_init(&chunk->lock);
--	chunk->start_addr = addr;
--	chunk->end_addr = addr + size;
-+	chunk->phys_addr = phys;
-+	chunk->start_addr = virt;
-+	chunk->end_addr = virt + size;
- 
- 	write_lock(&pool->lock);
- 	list_add(&chunk->next_chunk, &pool->chunks);
-@@ -70,7 +74,32 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
- 
- 	return 0;
- }
--EXPORT_SYMBOL(gen_pool_add);
-+EXPORT_SYMBOL(gen_pool_add_virt);
-+
-+/**
-+ * gen_pool_virt_to_phys - return the physical address of memory
-+ * @pool: pool to allocate from
-+ * @addr: starting address of memory
-+ *
-+ * Returns the physical address on success, or -1 on error.
-+ */
-+phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
-+{
-+	struct list_head *_chunk;
-+	struct gen_pool_chunk *chunk;
-+
-+	read_lock(&pool->lock);
-+	list_for_each(_chunk, &pool->chunks) {
-+		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+
-+		if (addr >= chunk->start_addr && addr < chunk->end_addr)
-+			return chunk->phys_addr + addr - chunk->start_addr;
-+	}
-+	read_unlock(&pool->lock);
-+
-+	return -1;
-+}
-+EXPORT_SYMBOL(gen_pool_virt_to_phys);
- 
- /**
-  * gen_pool_destroy - destroy a special memory pool
--- 
-1.7.4.1
 
