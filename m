@@ -1,58 +1,51 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab1DQMoP (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 17 Apr 2011 08:44:15 -0400
-Received: from ns.dobnet.cz ([213.151.87.3]:41722 "EHLO ns.dobnet.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab1DQMoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 08:44:06 -0400
-X-Greylist: delayed 2023 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Apr 2011 08:44:05 EDT
-X-Sagator-Scanner: 0.9.0-1 at posta.dobnet.cz;
-	log(status(deliver(modify_subject(clamd()))),
-	status(deliver(modify_subject(SpamAssassinD()))))
-X-Sagator-ID: 20110417-141019-0001-29565-h6Dcsc@posta.dobnet.cz
-From: "Willows Finance Company" <info@loan.com>
-Reply-To: terrygfinn213@w.cn
-Subject: Apply For Loan At 3%
-Date: Sun, 17 Apr 2011 14:10:09 +0200
-Message-Id: <20110417114343.M44557@loan.com>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 82.128.15.24 (homolova)
+	id S1754364Ab1DTLXn (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 20 Apr 2011 07:23:43 -0400
+Received: from eastrmfepi203.cox.net ([68.230.241.207]:46735 "EHLO
+	eastrmfepi203.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab1DTLXm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 07:23:42 -0400
+X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Apr 2011 07:23:42 EDT
+X-CT-Score: NA
+X-Authority-Analysis: v=1.1 cv=Bnpb4GFFHmxHbnugVe6AhTieCXSJHGjj7jZaTnsJi/Y=
+ c=1 sm=1 a=IcqEpFyRG60A:10 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10
+ a=wcNfJGG9mz4A:10 a=IkcTkHD0fZMA:10 a=+SWPRVnFO5vhD5/DS0yR1w==:17
+ a=BrDiTsk0AAAA:8 a=_TFW4sMIha6WV_hXQL0A:9 a=FTJ7mPF78N_V8AqaouwA:7
+ a=QEXdDO2ut3YA:10 a=zQ0QsPolBFcA:10 a=-hJg1tCh9CgA:10 a=h70Ln8zBhxmD2C3W:21
+ a=JpMTc9JSEusKvk77:21 a=+SWPRVnFO5vhD5/DS0yR1w==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110420071457.7U0Z5.175789.imail@eastrmwml32>
+Date: Wed, 20 Apr 2011 7:14:57 -0400
+From: <adafsf12@cox.net>
+Reply-To: chnjh15@aol.com
+Subject: AFFORDABLE LOAN GET BACK TO US!!
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-2
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sir/Madam,
+Good-day,
 
-Welcome to Willows Finance Company Limited. We Offer Private, Commercial and 
-Personal Loans with very Minimal annual Interest Rates as Low as 3% within a 
-1 year to 10years repayment duration period to any part of the world. We give 
-out loans within the range of $5,000 to $5,000,000.00 USD. Our loans are well 
-insured for maximum security is our priority.
+I'm Mr. Greg Moore.
+Get approved for a business or personal loans today and get funds within same week of application.
 
-Interested Persons should contact us via E-mail:
+These personal loans can be approved regardless of your credit and there are lots of happy customers
 
-Lender's Name: Mr. Terry Griffen
-Lender's Email: terrygfinn213@w.cn 
+to back up this claim. But you wonÃÂÃÂ¢t only get the personal loan you need; you will get the cheapest one.
 
-BORROWERS INFORMATION
+This is our promise: We guarantee The lowest rate for all loans with free collateral benefits.
 
-Names:
-Country:
-Address:
-Age:
-Fax Number:
-Personal Number:
-Occupation:
-Sex:
-Monthly Income:
-Amount Needed:
-Loan duration:
+No social security Number required and no credit check required, 100% Guaranteed.
 
-Best Regards
-Mr. Terry Griffen
-CEO/Willows Finance Company.
-Tel: + 44 702 404 7963
+contact Email: gregmorefinacial71@yahoo.co.uk
+phone: +447924525773
+           
+Mr. Greg Moore.
+Greg Moore Financials Incorporation ÃÂÃÂÃÂÃÂ© 2011
