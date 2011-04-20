@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1DTO3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 10:29:41 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:60208 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab1DTO3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 10:29:40 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [stable] [PATCH 2/3] um: Add support for 64 bit atomic operations
-Date: Wed, 20 Apr 2011 16:29:23 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.1-1.2-desktop; KDE/4.6.0; x86_64; ; )
-Cc: akpm@linux-foundation.org, Martin Walch <walch.martin@web.de>,
-        linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org
-References: <1303299266-10219-1-git-send-email-richard@nod.at> <1303299266-10219-2-git-send-email-richard@nod.at> <20110420142702.GB22114@kroah.com>
-In-Reply-To: <20110420142702.GB22114@kroah.com>
+	id S1754123Ab1DTOcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 10:32:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65399 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab1DTOcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 10:32:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/3] bitops: add ifdef CONFIG_GENERIC_FIND_BIT_LE guard
+Date: Wed, 20 Apr 2011 16:31:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+References: <1303309252-9946-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1303309252-9946-1-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104201629.24099.richard@nod.at>
+Message-Id: <201104201631.40017.arnd@arndb.de>
+X-Provags-ID: V02:K0:llzD2Ni0MnlybBngEXUNdISVD3MkYgKhcFdjpQD2A3g
+ 68hdmAIU3dDehxXkBV/S0aCTzZ2eNQzGaw0ZEMtSPpCDN2yxNv
+ QiPTyEjq911Cs31BjqK6CU6LKb41tykk8Khjcb70sp/dMIE4xZ
+ ARwMHWH6p7UZ1UC3twQHUWzxiSmkSJ51IgjqCK3up7xKEHS5kR
+ WNkASBJn4iyARZQJjcZnw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch 20 April 2011, 16:27:02 schrieb Greg KH:
-> On Wed, Apr 20, 2011 at 01:34:25PM +0200, Richard Weinberger wrote:
-> > This adds support for 64 bit atomic operations on
-> > 32 bit UML systems.
-> > XFS needs them since 2.6.38.
-> > 
-> > Reported-by: Martin Walch <walch.martin@web.de>
-> > Tested-by: Martin Walch <walch.martin@web.de>
-> > Cc: Martin Walch <walch.martin@web.de>
-> > Cc: <stable@kernel.org> # .38.x 084189a: um: disable CONFIG_CMPXCHG_LOCAL
-> 
-> Why is this a stable patch?
+On Wednesday 20 April 2011, Akinobu Mita wrote:
+> index 946a21b..bd2253e 100644
+> --- a/include/asm-generic/bitops/le.h
+> +++ b/include/asm-generic/bitops/le.h
+> @@ -30,6 +30,8 @@ static inline unsigned long find_first_zero_bit_le(const void *addr,
+>  
+>  #define BITOP_LE_SWIZZLE       ((BITS_PER_LONG-1) & ~0x7)
+>  
+> +#ifdef CONFIG_GENERIC_FIND_BIT_LE
+> +
+>  extern unsigned long find_next_zero_bit_le(const void *addr,
+>                 unsigned long size, unsigned long offset);
+>  extern unsigned long find_next_bit_le(const void *addr,
+> @@ -38,6 +40,8 @@ extern unsigned long find_next_bit_le(const void *addr,
+>  #define find_first_zero_bit_le(addr, size) \
+>         find_next_zero_bit_le((addr), (size), 0)
+>  
+> +#endif /* CONFIG_GENERIC_FIND_BIT_LE */
+> +
+>  #else
+>  #error "Please fix <asm/byteorder.h>"
+>  #endif
 
-Because it fixes a build error in 2.6.38.
-See: https://bugzilla.kernel.org/show_bug.cgi?id=32812
+The style that we normally use in asm-generic is to test the macro itself
+for existence, so in asm-generic, do:
 
-Thanks,
-//richard
+#ifndef find_next_zero_bit_le
+extern unsigned long find_next_zero_bit_le(const void *addr,
+                 unsigned long size, unsigned long offset);
+#endif
 
-> confused,
-> 
-> greg k-h
+and in the architectures, write
 
+static inline unsigned long find_next_zero_bit_le(const void *addr,
+                 unsigned long size, unsigned long offset)
+#define find_next_zero_bit_le find_next_zero_bit_le
+
+I guess we can do the #ifdef separately for each of the three macros,
+or choose one of them to use as a key.
+
+	Arnd
