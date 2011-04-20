@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1DTSJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 14:09:29 -0400
-Received: from mout6.freenet.de ([195.4.92.96]:40086 "EHLO mout6.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab1DTSJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 14:09:28 -0400
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-X-Newsgroups: linux.kernel
-Subject: Re: [00/70] 2.6.38.4-rc1-stable review
-Date: Wed, 20 Apr 2011 20:10:54 +0200
-Organization: privat
-Message-ID: <4DAF21AE.3040607@01019freenet.de>
-References: <gJpyV-7nm-5@gated-at.bofh.it>
+	id S1752586Ab1DTSKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 14:10:00 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45840 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751465Ab1DTSJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 14:09:59 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        x86 maintainers <x86@kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1104201149520.12154@router.home>
+References: <20110420161615.462D.A69D9226@jp.fujitsu.com>
+	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
+	 <20110420174027.4631.A69D9226@jp.fujitsu.com>
+	 <1303317178.2587.30.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104201149520.12154@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 13:09:55 -0500
+Message-ID: <1303322995.2587.42.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.1b2) Gecko/20110326 Firefox/4.2a1pre SeaMonkey/2.1b2pre
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <gJpyV-7nm-5@gated-at.bofh.it>
-To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2011-04-20 at 11:50 -0500, Christoph Lameter wrote:
+> > I'm afraid it doesn't boot (it's another slub crash):
+> 
+> Is there any simulator available that we can use to run a parisc boot?
 
-may I ask if this patch could get a chance to come in:
+I don't think we have a simulator.  However, if you send a ssh key to
 
-http://lkml.org/lkml/2011/3/23/414
+T-Bone@parisc-linux.org
+
+He can loan you remote access to one of the systems that ESIEE in France
+hosts for us.  (he's expecting you).
+
+James
 
 
-Regards,
-Andreas Hartmann
