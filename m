@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab1DTNk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 09:40:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39269 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab1DTNk6 convert rfc822-to-8bit (ORCPT
+	id S1754801Ab1DTNnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 09:43:14 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:47594 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753016Ab1DTNnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 09:40:58 -0400
+	Wed, 20 Apr 2011 09:43:13 -0400
+Date: Wed, 20 Apr 2011 12:57:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Implement /dev/byte (a generic byte source
+ similiar to /dev/zero)
+Message-ID: <20110420105754.GA14722@ucw.cz>
+References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>
+ <1303126676-3456-2-git-send-email-holler@ahsoftware.de>
 MIME-Version: 1.0
-In-Reply-To: <20110419062654.GB10698@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	<20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
-	<1303145171.32491.886.camel@twins>
-	<20110419062654.GB10698@linux.vnet.ibm.com>
-Date: Wed, 20 Apr 2011 09:40:57 -0400
-Message-ID: <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation for uprobes
-From: Eric Paris <eparis@parisplace.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, James Morris <jmorris@namei.org>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>, sds@tycho.nsa.gov
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303126676-3456-2-git-send-email-holler@ahsoftware.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 2:26 AM, Srikar Dronamraju
-<srikar@linux.vnet.ibm.com> wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-04-18 18:46:11]:
->
->> On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
+On Mon 2011-04-18 13:37:56, Alexander Holler wrote:
+> This device outputs by default 0xff instead 0 which makes more sense
+> than 0 to clear e.g. FLASH based devices.
 
->> > +static int xol_add_vma(struct uprobes_xol_area *area)
->> > +{
->> > +   struct vm_area_struct *vma;
->> > +   struct mm_struct *mm;
->> > +   struct file *file;
->> > +   unsigned long addr;
->> > +   int ret = -ENOMEM;
->> > +
->> > +   mm = get_task_mm(current);
->> > +   if (!mm)
->> > +           return -ESRCH;
->> > +
->> > +   down_write(&mm->mmap_sem);
->> > +   if (mm->uprobes_xol_area) {
->> > +           ret = -EALREADY;
->> > +           goto fail;
->> > +   }
->> > +
->> > +   /*
->> > +    * Find the end of the top mapping and skip a page.
->> > +    * If there is no space for PAGE_SIZE above
->> > +    * that, mmap will ignore our address hint.
->> > +    *
->> > +    * We allocate a "fake" unlinked shmem file because
->> > +    * anonymous memory might not be granted execute
->> > +    * permission when the selinux security hooks have
->> > +    * their way.
->> > +    */
->>
->> That just annoys me, so we're working around some stupid sekurity crap,
->> executable anonymous maps are perfectly fine, also what do JITs do?
->
-> Yes, we are working around selinux security hooks, but do we have a
-> choice.
->
-> James can you please comment on this.
+Well, now you should provide example where you mmap /dev/byte, then
+write() the flash directly from the mapping.
 
-[added myself and stephen, the 2 SELinux maintainers]
+... hmm, that brings good question: what happens on existing mappings
+when the byte is changed?
 
-This is just wrong.  Anything to 'work around' SELinux in the kernel
-is wrong.  SELinux access decisions are determined by policy not by
-dirty hacks in the code to subvert any kind of security claims that
-policy might hope to enforce.
+> To make the device more general usable, the value it outputs is changeable
+> on a per file descriptor basis through simple writes to it.
+> Values can be decimal (0 - 255), octal (00 - 0377) or hex (0x0 - 0xff).
+> For other values (or strings) written to it, the write operation returns an
+> error and the subsequent output is undefined.
+...
+>  # Create a file of size 10GB and filled with 0xaa.
+> exec 5<>/dev/byte # Open /dev/byte and assign fd 5 to it
+> echo 0xaa >&5     # Instruct the device to output 0xaa
 
-[side note, security_file_mmap() is the right call if there is a file
-or not.  It should just be called security_mmap() but the _file_ has
-been around a long time and just never had a need to be changed]
-
-Now how to fix the problems you were seeing.  If you run a modern
-system with a GUI I'm willing to bet the pop-up window told you
-exactly how to fix your problem.  If you are not on a GUI I accept
-it's a more difficult as you most likely don't have the setroubleshoot
-tools installed to help you out.  I'm just guess what your problem
-was, but I think you have two solutions either:
-
-1) chcon -t unconfined_execmem_t /path/to/your/binary
-2) setsebool -P allow_execmem 1
-
-The first will cause the binary to execute in a domain with
-permissions to execute anonymous memory, the second will allow all
-unconfined domains to execute anonymous memory.
-
-I believe there was a question about how JIT's work with SELinux
-systems.  They work mostly by method #1.
-
-I did hear this question though: On a different but related note, how
-is the use of uprobes controlled? Does it apply the same checking as
-for ptrace?
-
-Thanks guys!  If you have SELinux or LSM problems in the future let me
-know.  It's likely the solution is easier than you imagine   ;)
-
--Eric
+That's seriously strange. /dev/byte should be changeable... by writing
+bytes.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
