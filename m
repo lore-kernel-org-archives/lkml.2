@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab1DTIS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 04:18:28 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:45237 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750808Ab1DTIS0 (ORCPT
+	id S1751421Ab1DTITU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 04:19:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55922 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab1DTITS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 04:18:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=CneybqELo9weJ9KineTONKdbOgWGAMn1XpKH/qEWcG3Datb49CFdX4Pot9msMAOaAVRQHej6hpmAT0ZyYf0Q+YNVmajydAgfEptBs0VsloPkECGKMyLNcIZiwlePryFe;
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk
-Subject: [PATCH] block: Remove extra discard_alignment from hd_struct.
-Date: Wed, 20 Apr 2011 16:17:35 +0800
-Message-Id: <1303287455-3796-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	Wed, 20 Apr 2011 04:19:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110416154841.GA17935@S2100-06.ap.freescale.net>
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+	<20110416154841.GA17935@S2100-06.ap.freescale.net>
+Date: Wed, 20 Apr 2011 10:19:17 +0200
+Message-ID: <BANLkTi=c6Fh24W6u-ikRfnfV922OuJnJ9A@mail.gmail.com>
+Subject: Re: [PATCH v2 00/12] mmc: use nonblock mmc requests to minimize latency
+From: Per Forlin <per.forlin@linaro.org>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On 16 April 2011 17:48, Shawn Guo <shawn.guo@freescale.com> wrote:
+> Hi Per,
+>
+> On Wed, Apr 06, 2011 at 09:07:01PM +0200, Per Forlin wrote:
+> [...]
+>>
+>> Per Forlin (12):
+>>   mmc: add none blocking mmc request function
+>>   mmc: mmc_test: add debugfs file to list all tests
+>>   mmc: mmc_test: add test for none blocking transfers
+>>   mmc: add member in mmc queue struct to hold request data
+>>   mmc: add a block request prepare function
+>>   mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+>>   mmc: add a second mmc queue request member
+>>   mmc: add handling for two parallel block requests in issue_rw_rq
+>>   mmc: test: add random fault injection in core.c
+>>   omap_hsmmc: use original sg_len for dma_unmap_sg
+>>   omap_hsmmc: add support for pre_req and post_req
+>>   mmci: implement pre_req() and post_req()
+>>
+>>  drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
+>>  drivers/mmc/card/mmc_test.c   |  342 ++++++++++++++++++++++++++++-
+>>  drivers/mmc/card/queue.c      |  171 +++++++++------
+>>  drivers/mmc/card/queue.h      |   31 ++-
+>>  drivers/mmc/core/core.c       |  132 ++++++++++-
+>>  drivers/mmc/core/debugfs.c    |    5 +
+>>  drivers/mmc/host/mmci.c       |  146 +++++++++++-
+>>  drivers/mmc/host/mmci.h       |    8 +
+>>  drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+>>  include/linux/mmc/core.h      |    9 +-
+>>  include/linux/mmc/host.h      |   13 +-
+>>  lib/Kconfig.debug             |   11 +
+>>  12 files changed, 1172 insertions(+), 279 deletions(-)
+>>
+> I'm playing the patch set and seeing the following warnings.
+>
+>  CC      drivers/mmc/card/block.o
+> drivers/mmc/card/block.c: In function ‘mmc_blk_issue_rq’:
+> drivers/mmc/card/block.c:429:6: warning: ‘status’ may be used uninitialized in this function
+>
+My bad, it should be:
++ int status = 0;
 
-Currently, hd_struct.discard_alignment is only used when we
-show /sys/block/sdx/sdx/discard_alignment. So remove it and
-calculate when it is asked to show.
+>  CC      drivers/mmc/core/core.o
+> drivers/mmc/core/core.c: In function ‘mmc_request_done’:
+> drivers/mmc/core/core.c:163:3: warning: passing argument 2 of ‘mmc_should_fail_request’ from incompatible pointer type
+> drivers/mmc/core/core.c:129:20: note: expected ‘struct mmc_data *’ but argument is of type ‘struct mmc_request *’
+The function within #ifdef CONFIG_FAIL_MMC_REQUEST is the correct one.
+I will update this in the next version.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- fs/partitions/check.c |    9 ++++++---
- include/linux/genhd.h |    1 -
- 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index ac54697..ec4f4ae 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -255,7 +255,12 @@ ssize_t part_discard_alignment_show(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
- 	struct hd_struct *p = dev_to_part(dev);
--	return sprintf(buf, "%u\n", p->discard_alignment);
-+	struct gendisk *disk = dev_to_disk(dev);
-+
-+	return sprintf(buf, "%u\n",
-+		       (unsigned long long)queue_limit_discard_alignment(
-+							&disk->queue->limits,
-+							p->start_sect));
- }
- 
- ssize_t part_stat_show(struct device *dev,
-@@ -449,8 +454,6 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 	p->start_sect = start;
- 	p->alignment_offset =
- 		queue_limit_alignment_offset(&disk->queue->limits, start);
--	p->discard_alignment =
--		queue_limit_discard_alignment(&disk->queue->limits, start);
- 	p->nr_sects = len;
- 	p->partno = partno;
- 	p->policy = get_disk_ro(disk);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index d764a42..b4c233f 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -100,7 +100,6 @@ struct hd_struct {
- 	sector_t start_sect;
- 	sector_t nr_sects;
- 	sector_t alignment_offset;
--	unsigned int discard_alignment;
- 	struct device __dev;
- 	struct kobject *holder_dir;
- 	int policy, partno;
--- 
-1.7.4
-
+>
+> --
+> Regards,
+> Shawn
+Thanks,
+Per
