@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1DTQYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:24:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34977 "EHLO
+	id S1755369Ab1DTQYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:24:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34952 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342Ab1DTQYM (ORCPT
+	with ESMTP id S1755341Ab1DTQYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:24:12 -0400
+	Wed, 20 Apr 2011 12:24:01 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Michael Witten <mfwitten@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/6] perf script: Add support for PERF_TYPE_RAW
-Date: Wed, 20 Apr 2011 13:23:56 -0300
-Message-Id: <1303316636-11923-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 4/6] perf tools: Move `try-cc'
+Date: Wed, 20 Apr 2011 13:23:54 -0300
+Message-Id: <1303316636-11923-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1303316636-11923-1-git-send-email-acme@infradead.org>
 References: <1303316636-11923-1-git-send-email-acme@infradead.org>
@@ -28,65 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arun Sharma <asharma@fb.com>
+From: Michael Witten <mfwitten@gmail.com>
 
-Useful for getting stack traces for hardware events not handled by
-PERF_TYPE_HARDWARE.
+The `try-cc' user-defined function was in tools/perf/feature-tests.mak;
+this commit moves it to tools/perf/config/utilities.mak.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Link: http://lkml.kernel.org/n/tip-qimdcdpekjqxuyqovy4kjusx@git.kernel.org
+Signed-off-by: Michael Witten <mfwitten@gmail.com>
+Link: http://lkml.kernel.org/n/tip-bqhwcuxsrve0iodn6q4ejaoi@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+ tools/perf/config/utilities.mak |    8 ++++++++
+ tools/perf/feature-tests.mak    |    8 --------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 6cf811a..b3012c4 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -82,6 +82,16 @@ static struct {
- 				  PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
- 				  PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE,
- 	},
+diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+index 6d8ff88..8046182 100644
+--- a/tools/perf/config/utilities.mak
++++ b/tools/perf/config/utilities.mak
+@@ -178,3 +178,11 @@ endef
+ _ge_attempt = $(or $(get-executable),$(_gea_warn),$(call _gea_err,$(2)))
+ _gea_warn = $(warning The path '$(1)' is not executable.)
+ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
 +
-+	[PERF_TYPE_RAW] = {
-+		.user_set = false,
-+
-+		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
-+			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
-+			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
-+
-+		.invalid_fields = PERF_OUTPUT_TRACE,
-+	},
- };
- 
- static bool output_set_by_user(void)
-@@ -502,6 +512,8 @@ static int parse_output_fields(const struct option *opt __used,
- 			type = PERF_TYPE_SOFTWARE;
- 		else if (!strcmp(str, "trace"))
- 			type = PERF_TYPE_TRACEPOINT;
-+		else if (!strcmp(str, "raw"))
-+			type = PERF_TYPE_RAW;
- 		else {
- 			fprintf(stderr, "Invalid event type in field string.\n");
- 			return -EINVAL;
-@@ -902,7 +914,7 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace. Fields: comm,tid,pid,time,cpu,event,trace,sym",
-+		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,sym",
- 		     parse_output_fields),
- 
- 	OPT_END()
++# try-cc
++# Usage: option = $(call try-cc, source-to-build, cc-options)
++try-cc = $(shell sh -c						  \
++	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
++	 echo "$(1)" |						  \
++	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
++	 rm -f "$$TMP"')
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+index 1b33420..6170fd2 100644
+--- a/tools/perf/feature-tests.mak
++++ b/tools/perf/feature-tests.mak
+@@ -126,11 +126,3 @@ int main(void)
+ 	return 0;
+ }
+ endef
+-
+-# try-cc
+-# Usage: option = $(call try-cc, source-to-build, cc-options)
+-try-cc = $(shell sh -c						  \
+-	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
+-	 echo "$(1)" |						  \
+-	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
+-	 rm -f "$$TMP"')
 -- 
 1.6.2.5
 
