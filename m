@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab1DTXK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:10:29 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42745 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752737Ab1DTXK2 (ORCPT
+	id S1753400Ab1DTXLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:11:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34784 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752737Ab1DTXLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:10:28 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=o+ROH0/fW1KTnQ8C1wvvXaCHCUhI37SUd7Jx9n9ed5kQh3932H89KRBfB7gNCxf94VQtQQ6Jt9J6k0cU+EyBQtIqndtlIPwVponmDKfQtwLheVj31XvhFahHU7Em2V1v;
-Date: Wed, 20 Apr 2011 16:10:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: james_p_freyensee@linux.intel.com
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
-Message-Id: <20110420161025.88299c36.rdunlap@xenotime.net>
-In-Reply-To: <1303340700.13457.88.camel@localhost>
+	Wed, 20 Apr 2011 19:11:30 -0400
+Date: Wed, 20 Apr 2011 16:11:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@suse.de>
+Cc: J Freyensee <james_p_freyensee@linux.intel.com>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        suhail.ahmed@intel.com, christophe.guerard@intel.com
+Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
+Message-Id: <20110420161125.3449d4fd.akpm@linux-foundation.org>
+In-Reply-To: <20110420191421.GA10306@suse.de>
 References: <james_p_freyensee@linux.intel.com>
-	<1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
-	<20110419161509.21b678d3.rdunlap@xenotime.net>
-	<1303340700.13457.88.camel@localhost>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	<1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
+	<alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
+	<1303258222.13457.42.camel@localhost>
+	<alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+	<20110420014340.GA21245@suse.de>
+	<1303323083.13457.50.camel@localhost>
+	<20110420191421.GA10306@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011 16:05:00 -0700 J Freyensee wrote:
+On Wed, 20 Apr 2011 12:14:21 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-> On Tue, 2011-04-19 at 16:15 -0700, Randy Dunlap wrote:
+> > But as David pointed out, if there is work other than mine coming that
+> > has already been proposed, wouldn't it be good to get this patch in
+> > place now to start the encouragement of future eyes to just call this
+> > function than re-invent the wheel?
 > 
-> A couple more comments below.
+> No, then those projects submit the patch to export this, if they happen
+> to get to mainline before this one does.
 > 
-> > On Tue, 19 Apr 2011 15:58:08 -0700 james_p_freyensee@linux.intel.com wrote:
+> Again, don't export something unless you are using it at the time, no
+> "this is to be used hopefully by something in the future" type stuff
+> please.  Who knows if those future plans ever pan out.
 
+Well there's an easy solution here.  Send the patch to export
+get_task_comm(), then send along some patches which fix
 
-> > > + * @max_IDS: The max amount of available write IDs to use.
-> > > + * @baseID:  The starting SW channel ID, based on the Intel
-> > > + *           PTI arch.
-> > > + *
-> > > + * @return: pti_masterchannel struct containing master, channel ID address,
-> > 
-> > No '@' on "return".
-> 
-> Why no '@' on 'return' when just by doing a 'grep -Ri "@return" drivers/
-> | wc -l' I count 369 examples of '@return' being used already in the
-> kernel?  It looks like an acceptable format to me.
+z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
+89
 
-It's not.  See Documentation/kernel-doc-nano-HOWTO.txt.
-'@' goes on function parameters (or struct members).
-Not on return values.  Those other places should be fixed, but
-it's just not a high priority thing to do.
-
-
-> > > + * or 0 for error.
-> > > + *
-> > > + * Each bit in the arrays ia_app and ia_os correspond to a master and
-> > > + * channel id. The bit is one if the id is taken and 0 if free. For
-> > > + * every master there are 128 channel id's.
-> > > + */
-> > > +static struct pti_masterchannel *getID(u8 *IDarray, int max_IDS, int baseID)
-> > > +{
-
-
-> > > +/**
-> > > + * pti_request_masterchannel() - Kernel API function used to allocate
-> > > + *                                a master, channel ID address to write to
-> > > + *                                PTI HW.
-> > > + * @type: 0- request Application  master, channel aperture ID write address.
-> > > + *        1- request OS master, channel aperture ID write address.
-> > > + *        2- request Modem master, channel aperture ID write
-> > > + *           address.
-> > > + *        Other values, error.
-> > > + * @return: pti_masterchannel struct or 0 for error.
-> > 
-> > No '@' on "return".
-> 
-> Same reason here.
-
-Same answer here.
-
-
-
-> > > + *
-> > > + * @return int : Success = 0, otherwise fail.
-> > 
-> > No '@' on "return".
-> 
-> Same explanation as above.
-
-Same reply also.
-
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
