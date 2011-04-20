@@ -1,79 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab1DTQNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:13:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37248 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab1DTQNd (ORCPT
+	id S1755334Ab1DTQOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:14:10 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:42678 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754761Ab1DTQOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:13:33 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=BMVA_mf54fQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=h1msV1-NIpBbKvTb0w0A:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110420155838.640017971@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 20 Apr 2011 11:58:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [PATCH 0/6] [GIT PULL][v2.6.40] tracing: updates and jump label rebase
+	Wed, 20 Apr 2011 12:14:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=CBbIttM+GcSLaMXJz4rlsuf2JV9kT0eu3YX9fJd5z5HJlb4EnN+Hl6PfRNp7dRAdQGCTGlFUG9fMOMnmfOgO78Mr2wykb2/6nffKIj8U/uOCvU4JPTFivi6iGcq0/D3C;
+Date: Wed, 20 Apr 2011 09:14:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Joe Perches <joe@perches.com>, Michael Prokop <mika@grml.org>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH v2] Documentation/dontdiff: large update
+Message-Id: <20110420091404.f7e178ee.rdunlap@xenotime.net>
+In-Reply-To: <20110418214637.88f5bd3d.rdunlap@xenotime.net>
+References: <20110418160809.f10c0b62.rdunlap@xenotime.net>
+	<1303176177.31723.58.camel@Joe-Laptop>
+	<20110418214637.88f5bd3d.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Ingo,
+v2, updated based on comments from Joe and Paul.
 
-[ Resend, as due to a cut and paste error, Ingo's and Andrew's email
-  was chopped off the Cc list ]
+Update to Documentation/dontdiff, based on many updates to
+various .gitignore patches over the last 2 years.
 
-This includes minor updates to ftrace as well as the patchset
-for jump labels. I took out the debug printk patch that had caused
-earlier conflicts. We can add that one later.
+Initially begun by Michael Prokop <mika@grml.org>, with lots of
+changes by Randy Dunlap.
 
-Please pull the latest tip/perf/core tree, which can be found at:
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Michael Prokop <mika@grml.org>
+Cc: Joe Perches <joe@perches.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+---
+ Documentation/dontdiff |   58 ++++++++++++++++++++++++++++++---------
+ 1 file changed, 46 insertions(+), 12 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/core
-
-
-Jan Glauber (1):
-      jump label: Add s390 support
-
-Jason Baron (2):
-      jump label: Introduce static_branch() interface
-      jump label: Add _ASM_ALIGN for x86 and x86_64
-
-Jiri Olsa (1):
-      tracing: Avoid soft lockup in trace_pipe
-
-Steven Rostedt (2):
-      tracing: Convert trace_printk() formats for module to const char *
-      tracing: Print trace_bprintk() formats for modules too
-
-----
- arch/mips/include/asm/jump_label.h  |   22 +-
- arch/s390/Kconfig                   |    1 +
- arch/s390/include/asm/jump_label.h  |   37 +++
- arch/s390/kernel/Makefile           |    2 +-
- arch/s390/kernel/jump_label.c       |   59 ++++
- arch/sparc/include/asm/jump_label.h |   25 +-
- arch/x86/include/asm/alternative.h  |    3 +-
- arch/x86/include/asm/jump_label.h   |   27 +-
- arch/x86/kernel/alternative.c       |    2 +-
- arch/x86/kernel/module.c            |    1 +
- include/asm-generic/vmlinux.lds.h   |   14 +-
- include/linux/dynamic_debug.h       |    2 -
- include/linux/jump_label.h          |   89 ++++---
- include/linux/jump_label_ref.h      |   44 ---
- include/linux/perf_event.h          |   26 +-
- include/linux/tracepoint.h          |   22 +-
- kernel/jump_label.c                 |  539 ++++++++++++++---------------------
- kernel/perf_event.c                 |    4 +-
- kernel/trace/trace.c                |   15 +-
- kernel/trace/trace_output.c         |    3 +
- kernel/trace/trace_printk.c         |  120 +++++++-
- kernel/tracepoint.c                 |   23 +-
- 22 files changed, 578 insertions(+), 502 deletions(-)
+--- lnx-2639-r3g8-docum.orig/Documentation/dontdiff
++++ lnx-2639-r3g8-docum/Documentation/dontdiff
+@@ -1,6 +1,8 @@
+ *.a
+ *.aux
+ *.bin
++*.bz2
++*.cis
+ *.cpio
+ *.csp
+ *.dsp
+@@ -8,6 +10,8 @@
+ *.elf
+ *.eps
+ *.fw
++*.gcno
++*.gcov
+ *.gen.S
+ *.gif
+ *.grep
+@@ -19,14 +23,20 @@
+ *.ko
+ *.log
+ *.lst
++*.lzma
++*.lzo
++*.mo
+ *.moc
+ *.mod.c
+ *.o
+ *.o.*
++*.order
+ *.orig
+ *.out
++*.patch
+ *.pdf
+ *.png
++*.pot
+ *.ps
+ *.rej
+ *.s
+@@ -39,16 +49,22 @@
+ *.tex
+ *.ver
+ *.xml
++*.xz
+ *_MODULES
+ *_vga16.c
+ *~
++\#*#
+ *.9
+-*.9.gz
+ .*
++.*.d
+ .mm
+ 53c700_d.h
+ CVS
+ ChangeSet
++GPATH
++GRTAGS
++GSYMS
++GTAGS
+ Image
+ Kerntypes
+ Module.markers
+@@ -57,15 +73,14 @@ PENDING
+ SCCS
+ System.map*
+ TAGS
++aconf
++af_names.h
+ aic7*reg.h*
+ aic7*reg_print.c*
+ aic7*seq.h*
+ aicasm
+ aicdb.h*
+-altivec1.c
+-altivec2.c
+-altivec4.c
+-altivec8.c
++altivec*.c
+ asm-offsets.h
+ asm_offsets.h
+ autoconf.h*
+@@ -80,6 +95,7 @@ btfixupprep
+ build
+ bvmlinux
+ bzImage*
++capability_names.h
+ capflags.c
+ classlist.h*
+ comp*.log
+@@ -88,7 +104,8 @@ conf
+ config
+ config-*
+ config_data.h*
+-config_data.gz*
++config.mak
++config.mak.autogen
+ conmakehash
+ consolemap_deftbl.c*
+ cpustr.h
+@@ -96,7 +113,9 @@ crc32table.h*
+ cscope.*
+ defkeymap.c
+ devlist.h*
++dnotify_test
+ docproc
++dslm
+ elf2ecoff
+ elfconfig.h*
+ evergreen_reg_safe.h
+@@ -105,6 +124,7 @@ flask.h
+ fore200e_mkfirm
+ fore200e_pca_fw.c*
+ gconf
++gconf.glade.h
+ gen-devlist
+ gen_crc32table
+ gen_init_cpio
+@@ -112,11 +132,12 @@ generated
+ genheaders
+ genksyms
+ *_gray256.c
++hpet_example
++hugepage-mmap
++hugepage-shm
+ ihex2fw
+ ikconfig.h*
+ inat-tables.c
+-initramfs_data.cpio
+-initramfs_data.cpio.gz
+ initramfs_list
+ int16.c
+ int1.c
+@@ -133,15 +154,19 @@ kxgettext
+ lkc_defs.h
+ lex.c
+ lex.*.c
++linux
+ logo_*.c
+ logo_*_clut224.c
+ logo_*_mono.c
+ lxdialog
++mach
+ mach-types
+ mach-types.h
+ machtypes.h
+ map
++map_hugetlb
+ maui_boot.h
++media
+ mconf
+ miboot*
+ mk_elfconfig
+@@ -150,23 +175,29 @@ mkbugboot
+ mkcpustr
+ mkdep
+ mkprep
++mkregtable
+ mktables
+ mktree
+ modpost
+ modules.builtin
+ modules.order
+ modversions.h*
++nconf
+ ncscope.*
+ offset.h
+ offsets.h
+ oui.c*
++page-types
+ parse.c
+ parse.h
+ patches*
+ pca200e.bin
+ pca200e_ecd.bin2
+-piggy.gz
++perf.data
++perf.data.old
++perf-archive
+ piggyback
++piggy.gzip
+ piggy.S
+ pnmtologo
+ ppc_defs.h*
+@@ -177,10 +208,9 @@ r200_reg_safe.h
+ r300_reg_safe.h
+ r420_reg_safe.h
+ r600_reg_safe.h
+-raid6altivec*.c
+-raid6int*.c
+-raid6tables.c
++recordmcount
+ relocs
++rlim_names.h
+ rn50_reg_safe.h
+ rs600_reg_safe.h
+ rv515_reg_safe.h
+@@ -194,6 +224,7 @@ split-include
+ syscalltab.h
+ tables.c
+ tags
++test_get_len
+ tftpboot.img
+ timeconst.h
+ times.h*
+@@ -210,10 +241,13 @@ vdso32.so.dbg
+ vdso64.lds
+ vdso64.so.dbg
+ version.h*
++vmImage
+ vmlinux
+ vmlinux-*
+ vmlinux.aout
++vmlinux.bin.all
+ vmlinux.lds
++vmlinuz
+ voffset.h
+ vsyscall.lds
+ vsyscall_32.lds
