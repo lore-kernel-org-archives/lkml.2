@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1DTO6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 10:58:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab1DTO6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 10:58:11 -0400
-Date: Wed, 20 Apr 2011 10:57:54 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
-Message-ID: <20110420145754.GT20887@redhat.com>
-References: <1303145815-15050-1-git-send-email-dzickus@redhat.com>
- <4DAEEF96.4070807@gmail.com>
+	id S1754800Ab1DTO67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 10:58:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34335 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab1DTO65 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 10:58:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=YMFLuwMaLoYytjGQ0nKGH3rn3vBWQffqQzu6ImYfoNPnPehkNG7I6mOR9KoTlXFd0B
+         uCdcyRqPsnQqzfY4Rlf4gDlJ5oocTejKiygZbVRXspzoebwCPWDeqyEvrmqkbCMZRSfS
+         UKzo7Xl1Vsu2kQZbUVDSyTMc1SCU2rOTo1GOM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAEEF96.4070807@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20110420142626.GA22114@kroah.com>
+References: <4daee9cb.04558f0a.76dc.4776@mx.google.com> <20110420142626.GA22114@kroah.com>
+From: li jianyun <jianyunff@gmail.com>
+Date: Wed, 20 Apr 2011 22:58:30 +0800
+Message-ID: <BANLkTimL4ndgb7FRkr393AD=yOCVyJ1QuA@mail.gmail.com>
+Subject: Re: [PATCH] Add Marvell UMI driver
+To: Greg KH <greg@kroah.com>
+Cc: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 06:37:10PM +0400, Cyrill Gorcunov wrote:
-> Don, sorry for delay, I somehow missed this patch at first place :/ And probably
-> the patch below could help with "stess" problem?
+Hi Grep KH
+      thanks for your remind,I am a beginner，and don't know how to
+send patch to kernel.
+I will update the Signed-off-by. Do I need update the subject to
+"[PATCH][RESEND] Add Marvell UMI driver" when I resend this patch?
+     thanks for your patient.
 
-The patch I am using for the 'stress' problem is different than what I
-posted because I wanted to keep it simple for 2.6.39.  But yeah I already
-moved the unmasking to the enable_pmus_all(0) line.
 
-The thing is that cuts down on some of these in-flight NMIs but not all of
-them.  I came up with some logic that catches all the in-flight NMIs on
-Nehalem and AMDs but my core2quad still fails.  I'll try to post that
-today while requesting help.
-
-Still not sure you need the double APIC writes (as your patch) shows.  I
-haven't seen a case in my testing where a single APIC write fails.
-
-Cheers,
-Don
+2011/4/20 Greg KH <greg@kroah.com>:
+> On Wed, Apr 20, 2011 at 10:02:19PM +0800, Li Jianyun wrote:
+>>
+>>       The Marvell Universal Message Interface (UMI) defines a messaging
+>> interface between host and Marvell products. It considers situations of
+>> limited system resource and optimized system performance.
+>>       UMI driver translates host request to message and sends message to
+>> FW via UMI, FW receives message and processes it, then sends response to
+>> UMI driver.
+>>       FW generates an interrupt when it needs to send information or
+>> responseto UMI driver.
+>>
+>> Signed-off-by: Jianyun Li <jianyunff@gmail.com>
+>
+> Why not sign off using your marvell.com email address?
+>
+>> +++ b/drivers/scsi/mvumi.c
+>> @@ -0,0 +1,2245 @@
+>> +/*
+>> + * Marvell UMI driver
+>> + *
+>> + * Copyright 2011 Marvell. <jyli@marvell.com>
+>> + *
+>> + * This file is licensed under GPLv2.
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License as
+>> + * published by the Free Software Foundation; version 2 of the
+>> + * License.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>> + * General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program; if not, write to the Free Software
+>> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+>> + * USA
+>
+> Unless you are willing to track the office location of the FSF for the
+> next 40 years, and send patches updating it here, just drop this
+> paragraph, it's pointless, as the person _did_ get a copy with the
+> kernel.
+>
+> thanks,
+>
+> greg k-h
+>
