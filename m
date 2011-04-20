@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1DTHo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 03:44:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41045 "EHLO
+	id S1754282Ab1DTHph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 03:45:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41057 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab1DTHoz (ORCPT
+	with ESMTP id S1753973Ab1DTHo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 03:44:55 -0400
+	Wed, 20 Apr 2011 03:44:56 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>
@@ -14,12 +14,13 @@ Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
         Viresh Kumar <viresh.kumar@st.com>, shiraz.hashim@st.com,
         =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirqus@gmail.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 1/5] driver core/platform_device_add_data: set platform_data to NULL if !data
-Date: Wed, 20 Apr 2011 09:44:42 +0200
-Message-Id: <1303285486-28598-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH v2 5/5] driver core: let dev_set_drvdata return int instead of void as it can fail
+Date: Wed, 20 Apr 2011 09:44:46 +0200
+Message-Id: <1303285486-28598-5-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110420074248.GS31131@pengutronix.de>
+In-Reply-To: <1303285486-28598-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <20110420074248.GS31131@pengutronix.de>
+ <1303285486-28598-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,49 +32,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the data = NULL case more consistent to the data != NULL case.
-The functional change is that now
+Before commit
 
-	platform_device_add_data(somepdev, NULL, somesize)
+	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
 
-sets pdev->dev.platform_data to NULL instead of not touching it.
+calling dev_set_drvdata with dev=NULL was an unchecked error. After some
+discussion about what to return in this case removing the check (and so
+producing a null pointer exception) seems fine.
 
-Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/base/platform.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/base/dd.c      |    7 +++----
+ include/linux/device.h |    2 +-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 9e0e4fc..65cb4c3 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -220,17 +220,16 @@ EXPORT_SYMBOL_GPL(platform_device_add_resources);
- int platform_device_add_data(struct platform_device *pdev, const void *data,
- 			     size_t size)
- {
--	void *d;
-+	void *d = NULL;
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index da57ee9..f9d69d7 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -408,17 +408,16 @@ void *dev_get_drvdata(const struct device *dev)
+ }
+ EXPORT_SYMBOL(dev_get_drvdata);
  
--	if (!data)
--		return 0;
--
--	d = kmemdup(data, size, GFP_KERNEL);
--	if (d) {
--		pdev->dev.platform_data = d;
--		return 0;
-+	if (data) {
-+		d = kmemdup(data, size, GFP_KERNEL);
-+		if (!d)
-+			return -ENOMEM;
+-void dev_set_drvdata(struct device *dev, void *data)
++int dev_set_drvdata(struct device *dev, void *data)
+ {
+ 	int error;
+ 
+-	if (!dev)
+-		return;
+ 	if (!dev->p) {
+ 		error = device_private_init(dev);
+ 		if (error)
+-			return;
++			return error;
  	}
--	return -ENOMEM;
-+
-+	pdev->dev.platform_data = d;
+ 	dev->p->driver_data = data;
 +	return 0;
  }
- EXPORT_SYMBOL_GPL(platform_device_add_data);
+ EXPORT_SYMBOL(dev_set_drvdata);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 350ceda..2215d01 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -557,7 +557,7 @@ extern int device_move(struct device *dev, struct device *new_parent,
+ extern const char *device_get_devnode(struct device *dev,
+ 				      mode_t *mode, const char **tmp);
+ extern void *dev_get_drvdata(const struct device *dev);
+-extern void dev_set_drvdata(struct device *dev, void *data);
++extern int dev_set_drvdata(struct device *dev, void *data);
  
+ /*
+  * Root device objects for grouping under /sys/devices
 -- 
 1.7.4.1
 
