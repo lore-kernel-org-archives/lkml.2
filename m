@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1DTAcW (ORCPT <rfc822;w@1wt.eu>);
+	id S1754098Ab1DTAcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 20:32:24 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:15374 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab1DTAcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Apr 2011 20:32:22 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34575 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126Ab1DTAcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 20:32:21 -0400
-Date: Wed, 20 Apr 2011 01:31:24 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes (radeon + nouveau)
-Message-ID: <alpine.DEB.2.00.1104200129240.13453@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Message-ID: <4DAE28F6.30805@snapgear.com>
+Date: Wed, 20 Apr 2011 10:29:42 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68knommu: use asm-generic/bitops/ext2-atomic.h
+References: <1303048649-28265-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1303048649-28265-1-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Akinobu,
 
-Hi Linus,
+On 17/04/11 23:57, Akinobu Mita wrote:
+> m68knommu can use generic implementation of ext2 atomic bitops.
+>
+> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
+> Cc: Greg Ungerer<gerg@uclinux.org>
 
-Couple of radeon fixes and a few nouveau fixes, one for a memory 
-corruption due to how the notifier was allocated.
+That looks good to me, so:
 
-Dave.
+Acked-by: Greg Ungerer<gerg@uclinux.org>
 
-The following changes since commit 2582b6efceb43dce63b4a1090d289934067a972d:
+Do you want me to add it to the m68knommu git tree,
+and pass to Linus in the next merge window?
 
-  Revert "i915: restore only the mode of this driver on lastclose" (2011-04-13 09:20:24 +1000)
+Regards
+Greg
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-Alex Deucher (4):
-      drm/radeon/kms: fix bad shift in atom iio table parser
-      drm/radeon/kms: add connectors even if i2c fails
-      drm/radeon/kms: adjust evergreen display watermark setup
-      drm/radeon/kms: pll tweaks for r7xx
+> ---
+>   arch/m68k/include/asm/bitops_no.h |   18 +-----------------
+>   1 files changed, 1 insertions(+), 17 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/bitops_no.h b/arch/m68k/include/asm/bitops_no.h
+> index 7d3779f..6b0e2d3 100644
+> --- a/arch/m68k/include/asm/bitops_no.h
+> +++ b/arch/m68k/include/asm/bitops_no.h
+> @@ -246,23 +246,7 @@ static inline int __test_and_clear_bit_le(int nr, volatile void *addr)
+>   	return retval;
+>   }
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr)		\
+> -	({						\
+> -		int ret;				\
+> -		spin_lock(lock);			\
+> -		ret = __test_and_set_bit_le((nr), (addr));	\
+> -		spin_unlock(lock);			\
+> -		ret;					\
+> -	})
+> -
+> -#define ext2_clear_bit_atomic(lock, nr, addr)		\
+> -	({						\
+> -		int ret;				\
+> -		spin_lock(lock);			\
+> -		ret = __test_and_clear_bit_le((nr), (addr));	\
+> -		spin_unlock(lock);			\
+> -		ret;					\
+> -	})
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   static inline int test_bit_le(int nr, const volatile void *addr)
+>   {
 
-Ben Skeggs (4):
-      drm/nouveau: split ramin_lock into two locks, one hardirq safe
-      drm/nouveau: fix nv30 pcie boards
-      drm/nouveau: populate ttm_alloced with false, when it's not
-      drm/nouveau: fix pinning of notifier block
 
-Dave Airlie (1):
-      Merge remote branch 'nouveau/drm-nouveau-fixes' of /ssd/git/drm-nouveau-next into drm-fixes
-
-Marcin Slusarz (2):
-      drm/nouveau: fix notifier memory corruption bug
-      drm/nouveau: fix allocation of notifier object
-
- drivers/gpu/drm/nouveau/nouveau_dma.c      |    2 +-
- drivers/gpu/drm/nouveau/nouveau_drv.h      |    3 +
- drivers/gpu/drm/nouveau/nouveau_fbcon.c    |    4 +-
- drivers/gpu/drm/nouveau/nouveau_mem.c      |    2 +-
- drivers/gpu/drm/nouveau/nouveau_notifier.c |   11 ++-
- drivers/gpu/drm/nouveau/nouveau_object.c   |   10 ++-
- drivers/gpu/drm/nouveau/nouveau_sgdma.c    |    5 +-
- drivers/gpu/drm/nouveau/nouveau_state.c    |    1 +
- drivers/gpu/drm/nouveau/nv50_instmem.c     |   10 ++-
- drivers/gpu/drm/nouveau/nv50_vm.c          |    5 +-
- drivers/gpu/drm/nouveau/nvc0_vm.c          |    5 +-
- drivers/gpu/drm/radeon/atom.c              |    6 +-
- drivers/gpu/drm/radeon/atombios_crtc.c     |    6 +--
- drivers/gpu/drm/radeon/evergreen.c         |   89 ++++++++++++++--------------
- drivers/gpu/drm/radeon/radeon_connectors.c |   29 ++++-----
- drivers/gpu/drm/radeon/radeon_i2c.c        |    6 ++
- 16 files changed, 102 insertions(+), 92 deletions(-)
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
