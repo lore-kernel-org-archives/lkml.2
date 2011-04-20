@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1DTPDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:03:08 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44397 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751020Ab1DTPDF (ORCPT
+	id S1753011Ab1DTPEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:04:37 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44383 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab1DTPEg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:03:05 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Matthew Wilcox <matthew@wil.cx>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        x86 maintainers <x86@kernel.org>, linux-arch@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <alpine.DEB.2.00.1104200943580.9266@router.home>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
-	 <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
-	 <20110420161615.462D.A69D9226@jp.fujitsu.com>
-	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-	 <20110420112020.GA31296@parisc-linux.org>
-	 <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
-	 <1303308938.2587.8.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104200943580.9266@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 10:02:59 -0500
-Message-ID: <1303311779.2587.19.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Apr 2011 11:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Qsl9xMRE2SMsIPgY/Ex8abVLOAUCmomcVVCsE4iJHJb3M64D1sWMm9qFpQWr0U/8nW
+         QPOYxpjhEGwpixKwqMRcgKWh6FpD0ahCMAItBqM2sU4dsC36ZBJ2DETmwsjWsG8k4O7Z
+         lVfigBt/k452kcb73NC9mXxbi9HytNbSy9Ah8=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinv-MSg5Sobg2X1cJpAwPkM1Gevcg@mail.gmail.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+	<20110419093855.36910400@lxorguk.ukuu.org.uk>
+	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
+	<BANLkTint6DGgosVkjK-sveyA9SL9WVS4Mg@mail.gmail.com>
+	<BANLkTinv-MSg5Sobg2X1cJpAwPkM1Gevcg@mail.gmail.com>
+Date: Wed, 20 Apr 2011 23:04:35 +0800
+Message-ID: <BANLkTi=Oc+y+31KugbEy66Mp96=bf_G8Mg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ben Nizette <bn@niasdigital.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 09:50 -0500, Christoph Lameter wrote:
-> On Wed, 20 Apr 2011, James Bottomley wrote:
-> 
-> >      1. We can look at what imposing NUMA on the DISCONTIGMEM archs
-> >         would do ... the embedded ones are going to be hardest hit, but
-> >         if it's not too much extra code, it might be palatable.
-> >      2. The other is that we can audit mm to look at all the node
-> >         assumptions in the non-numa case.  My suspicion is that
-> >         accidentally or otherwise, it mostly works for the normal case,
-> >         so there might not be much needed to pull it back to working
-> >         properly for DISCONTIGMEM.
-> 
-> The older code may work. SLAB f.e. does not call page_to_nid() in the
-> !NUMA case but keeps special metadata structures around in each slab page
-> that records the node used for allocation. The problem is with new code
-> added/revised in the last 5 years or so that uses page_to_nid() and
-> allocates only a single structure for !NUMA. There are also VM_BUG_ONs in
-> the page allocator that should trigger if page_to_nid() returns strange
-> values. I wonder why that never occurred.
+On Wed, Apr 20, 2011 at 10:40 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+> On Wed, Apr 20, 2011 at 11:26 PM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+>> On Tue, Apr 19, 2011 at 4:51 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+>>>>
+>>>> Leaving aside the current input/output and on/off bits I would go for
+>>>> being able to do
+>>>>
+>>>>        gpio_get_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER);
+>>>>        gpio_set_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER_ELSE);
+>>>
+>>> One more consideration, not mentioned previous time, is that pin
+>>> configuration for power down mode.
+>>> Samsung SoCs has retention GPIO configurations at sleep (suspend)
+>>> mode. and restore it at resume time.
+>>> it's need to reduce power and proper operation after suspend.
+>>>
+>> I have a little confusion. In ARM SoC, a lot of pins are used as
+>> multi-functions.
+>>
+>> Before suspend, it may be configured as some function that isn't GPIO.
+>> Is it a goal
+>> that avoid declaring gpio_request() for suspend and updating the setting of pin?
+>
+> E.g., When WiFi is turn on and system goes the sleep, wifi should be
+> turn on. For this it should be configure the power down gpio
+> configuration properly. Its' different that call the gpio_set_value
+> function.
+>
+> One more, even though some pins are used for other purpose instead of
+> GPIO. It needs to be configure as input or output at power down mode
+> registers.
+>
+> Thank you,
+> Kyungmin Park
+>
+I have an another question on board initialization. The configuration on pins
+are including drive strength, pull and multiple function.
 
-Actually, I think slab got changed when discontigmem was added ...
-that's why it all works OK.
-
-> >      3. Finally we could look at deprecating DISCONTIGMEM in favour
-> of >         SPARSEMEM, but we'd still need to fix -stable for that case.
-> >         Especially as it will take time to convert all the architectures
-> 
-> The fix needed is to mark DISCONTIGMEM without NUMA as broken for now. We
-> need an audit of the core VM before removing that or making it contingent
-> on the configurations of various VM subsystems.
-
-Don't be stupid ... that would cause six architectures to get marked
-broken.
-
-> > I'm certainly with Matthew: DISCONTIGMEM is supposed to be a lightweight
-> > framework which allows machines with split physical memory ranges to
-> > work.  That's a very common case nowadays.  Numa is supposed to be a
-> > heavyweight framework to preserve node locality for non-uniform memory
-> > access boxes (which none of the DISCONTIGMEM && !NUMA systems are).
-> 
-> Well yes but we have SPARSE for that today. DISCONTIG with multiple per
-> pgdat structures in a !NUMA case is just weird and unexpected for many who
-> have done VM coding in the last years.
-
-Look, I'm not really interested in who understands what.  The fact is we
-have six architectures with the possibility for DISCONTIGMEM && !NUMA,
-so that's the case we need to fix in -stable.
-
-They oops with SLUB, as far as I can tell, there are still no oops
-reports with SLAB.  The simplest -stable fix seems to be to mark SLUB
-broken on DISCONTIGMEM && !NUMA.
-
-James
-
-
+Since this patch can configure drive strength, pull. Will it be preferred to use
+in board initialization?
