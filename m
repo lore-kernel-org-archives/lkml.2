@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1DTVXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 17:23:35 -0400
-Received: from n1.taur.dk ([217.198.219.102]:60777 "EHLO n1.taur.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab1DTVXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 17:23:34 -0400
-Message-ID: <4DAF4E8B.6030506@kasperkp.dk>
-Date: Wed, 20 Apr 2011 23:22:19 +0200
-From: Kasper Pedersen <kernel@kasperkp.dk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1753201Ab1DTVeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 17:34:50 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61853 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab1DTVes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 17:34:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=JT7sDk2VlavDrZpitdD2iGkvH85qOmE7NUgU1u6KDozONkZ+tzy+RjoHhZaxGoWI3d
+         LlMQGpS76vTnTrvI2L5w==
+Date: Wed, 20 Apr 2011 14:34:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Matthew Wilcox <matthew@wil.cx>
+cc: Pekka Enberg <penberg@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <20110420112020.GA31296@parisc-linux.org>
+Message-ID: <alpine.DEB.2.00.1104201425020.31768@chino.kir.corp.google.com>
+References: <20110420102314.4604.A69D9226@jp.fujitsu.com> <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com> <20110420161615.462D.A69D9226@jp.fujitsu.com> <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com> <20110420112020.GA31296@parisc-linux.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: x86: tsc: v2 make TSC calibration more immune to interrupts
-References: <4DAF2B57.6010100@kasperkp.dk>	 <1303326959.2796.136.camel@work-vm>  <4DAF37B4.3040408@kasperkp.dk> <1303331280.2796.154.camel@work-vm>
-In-Reply-To: <1303331280.2796.154.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a SMI or plain interrupt occurs during the delayed part
-of TSC calibration, and the SMI/irq handler is good and fast
-so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
-off (10-30ppm).
+On Wed, 20 Apr 2011, Matthew Wilcox wrote:
 
-We should not depend on interrupts being longer than 50000
-clocks, so, in the refined calibration, always do the 5
-tries, and use the best sample we get.
+> > That part makes me think the best option is to make parisc do
+> > CONFIG_NUMA as well regardless of the historical intent was.
+> 
+> But it's not just parisc.  It's six other architectures as well, some
+> of which aren't even SMP.  Does !SMP && NUMA make any kind of sense?
+> 
 
-This should work always for any four periodic or rate-limited
-interrupt sources. If we get 5 interrupts with 500ns gaps in
-a row, behaviour should be as without this patch.
+It does as long as DISCONTIGMEM is hijacking NUMA abstractions throughout 
+the code; for example, look at the .config that James is probably using 
+for testing here:
 
-It is safe to use the first value that passes SMI_TRESHOLD
-for the initial calibration: As long as tsc_khz is above
-100MHz, SMI_TRESHOLD represents less than 1% of error.
+	CONFIG_PA8X00=y
+	CONFIG_64BIT=y
+	CONFIG_DISCONTIGMEM=y
+	CONFIG_NEED_MULTIPLE_NODES=y
+	CONFIG_NODES_SHIFT=3
 
-The 8 additional samples costs us 28 microseconds in startup
-time.
+and CONFIG_NUMA is not enabled.  So we want CONFIG_NODES_SHIFT of 3 
+(because MAX_PHYSMEM_RANGES is 8) and CONFIG_NEED_MULTIPLE_NODES is 
+enabled because of DISCONTIGMEM:
 
-measurements:
-On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
-A Core2 is similar: http://n1.taur.dk/tscdeviat.png
-(while mostly t2-t1=~1000, in about 1 of 3000 tests
-I see t2-t1=~20000 for both machines.)
-vmware ESX4 has t2-t1=~8000 and up.
+	#
+	# Both the NUMA code and DISCONTIGMEM use arrays of pg_data_t's
+	# to represent different areas of memory.  This variable allows
+	# those dependencies to exist individually.
+	#
+	config NEED_MULTIPLE_NODES
+		def_bool y
+		depends on DISCONTIGMEM || NUMA
 
-v2: John Stulz suggested limiting best uncertainty to
-where it is needed, saving ~170usec startup time.
+when in reality we should do away with CONFIG_NEED_MULTIPLE_NODES and just 
+force DISCONTIGMEM to enable CONFIG_NUMA at least for -stable and as a 
+quick fix for James.
 
-Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
----
- arch/x86/kernel/tsc.c |   36 ++++++++++++++++++++++++------------
- 1 files changed, 24 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index ffe5755..8dc813b 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -117,27 +117,39 @@ static int __init tsc_setup(char *str)
- 
- __setup("tsc=", tsc_setup);
- 
--#define MAX_RETRIES     5
-+#define BESTOF_SAMPLES      5
- #define SMI_TRESHOLD    50000
- 
- /*
-  * Read TSC and the reference counters. Take care of SMI disturbance
-  */
--static u64 tsc_read_refs(u64 *p, int hpet)
-+static u64 tsc_read_refs(u64 *p, int hpet, int find_best)
- {
--	u64 t1, t2;
-+	u64 t1, t2, tp, best_uncertainty, uncertainty, best_t2;
- 	int i;
- 
--	for (i = 0; i < MAX_RETRIES; i++) {
-+	best_uncertainty = SMI_TRESHOLD;
-+	best_t2 = 0;
-+	for (i = 0; i < BESTOF_SAMPLES; i++) {
- 		t1 = get_cycles();
- 		if (hpet)
--			*p = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
-+			tp = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
- 		else
--			*p = acpi_pm_read_early();
-+			tp = acpi_pm_read_early();
- 		t2 = get_cycles();
--		if ((t2 - t1) < SMI_TRESHOLD)
--			return t2;
-+		uncertainty = t2 - t1;
-+		if (uncertainty < best_uncertainty) {
-+			best_uncertainty = uncertainty;
-+			best_t2 = t2;
-+			*p = tp;
-+			if (!find_best)
-+				break;
-+		}
- 	}
-+	if (best_uncertainty < SMI_TRESHOLD)
-+		return best_t2;
-+
-+	*p = tp;
- 	return ULLONG_MAX;
- }
- 
-@@ -455,9 +467,9 @@ unsigned long native_calibrate_tsc(void)
- 		 * read the end value.
- 		 */
- 		local_irq_save(flags);
--		tsc1 = tsc_read_refs(&ref1, hpet);
-+		tsc1 = tsc_read_refs(&ref1, hpet, 0);
- 		tsc_pit_khz = pit_calibrate_tsc(latch, ms, loopmin);
--		tsc2 = tsc_read_refs(&ref2, hpet);
-+		tsc2 = tsc_read_refs(&ref2, hpet, 0);
- 		local_irq_restore(flags);
- 
- 		/* Pick the lowest PIT TSC calibration so far */
-@@ -928,11 +940,11 @@ static void tsc_refine_calibration_work(struct work_struct *work)
- 		 */
- 		hpet = is_hpet_enabled();
- 		schedule_delayed_work(&tsc_irqwork, HZ);
--		tsc_start = tsc_read_refs(&ref_start, hpet);
-+		tsc_start = tsc_read_refs(&ref_start, hpet, 1);
- 		return;
- 	}
- 
--	tsc_stop = tsc_read_refs(&ref_stop, hpet);
-+	tsc_stop = tsc_read_refs(&ref_stop, hpet, 1);
- 
- 	/* hpet or pmtimer available ? */
- 	if (ref_start == ref_stop)
-
-
+In the long run, we'll probably want to define a lighterweight CONFIG_NUMA 
+as a layer that CONFIG_DISCONTIGMEM can use for memory range abstractions 
+and then CONFIG_NUMA is built on top of it to define proximity between 
+those ranges.
