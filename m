@@ -1,72 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1DTQvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:51:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39443 "EHLO mx1.redhat.com"
+	id S1753342Ab1DTQz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:55:27 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:55088 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab1DTQvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:51:14 -0400
-Date: Wed, 20 Apr 2011 18:50:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stas Sergeev <stsp@aknet.ru>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [2/2]
-Message-ID: <20110420165023.GA24455@redhat.com>
-References: <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <4DAEDC3F.5010208@aknet.ru>
+	id S1752223Ab1DTQzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 12:55:25 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Li Jianyun <jianyunff@gmail.com>
+Subject: Re: [PATCH] Add Marvell UMI driver
+Date: Wed, 20 Apr 2011 18:55:18 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38.2-19-desktop; KDE/4.6.1; x86_64; ; )
+Cc: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+References: <4daee9cb.04558f0a.76dc.4776@mx.google.com>
+In-Reply-To: <4daee9cb.04558f0a.76dc.4776@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAEDC3F.5010208@aknet.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104201855.20521.eike-kernel@sf-tec.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Stas Sergeev wrote:
->
-> The attached patch implements the PR_DETACH prctl
-> command. It detaches the entire process group from
-> its parent, allowing the parent to still read the detach
-> code with normal wait().
-> Can be used to daemonize process with threads.
+Li Jianyun wrote:
 
-Now I do not understand this patch at all.
+> +/**
+> + * mvumi_init_data -	Initialize requested date for FW
+> + * @mhba:			Adapter soft state
+> + */
+> +static int mvumi_init_data(struct mvumi_hba *mhba)
+> +{
+> +	struct mv_ob_data_pool *ob_pool;
+> +	struct mvumi_res_mgnt *res_mgnt;
+> +	unsigned int tmp_size, offset, i;
+> +	void *virmem, *v;
+> +	dma_addr_t p;
+> +
+> +	if (mhba->fw_flag & MVUMI_FW_ALLOC)
+> +		return 0;
+> +	tmp_size = 128 + mhba->ib_max_entry_size_bytes * mhba->max_io + 16
+> +							+ sizeof(unsigned int);
+> +	tmp_size += 8 + mhba->ob_max_entry_size_bytes * mhba->max_io + 4;
+> +	res_mgnt = mvumi_alloc_mem_resource(mhba,
+> +			RESOURCE_UNCACHED_MEMORY, tmp_size);
+> +	if (!res_mgnt) {
+> +		dev_printk(KERN_ERR, &mhba->pdev->dev,
+> +			"failed to allocate memory for inbound list\n");
+> +		goto fail_alloc_dma_buf;
+> +	}
+> +
+> +	p = res_mgnt->bus_addr;
+> +	v = res_mgnt->virt_addr;
+> +	offset = (unsigned int)(round_up(res_mgnt->bus_addr, 128) -
+> +							res_mgnt->bus_addr);
+> +	p += offset;
 
-Stas, I already asked you, please describe the semantics of PR_DETACH.
-Looking at the code, I can only see it was changed again, but I have
-no idea what is the supposed behaviour.
+p now has offset again, no? Is this intentional?
 
-At first glance, this version does not reparent the caller to init,
-but still PR_DETACH checks ->real_parent != /sbin/init for unknown
-reason...
+> +	v = (unsigned char *) v + offset;
 
-IIUC, PR_DETACH simply fools ->real_parent so that it think this child
-exits, while the child in fact runs after that but do_wait() can't see it.
+I don't think you need the cast. The kernel relies on the gcc extension that 
+"void* += n" moves up n bytes.
 
-Why? I don't understand the point.
+> +	mhba->ib_list = v;
+> +	mhba->ib_list_phys = p;
+> +
+> +	v = (unsigned char *) v + mhba->ib_max_entry_size_bytes * mhba->max_io;
+> +	p += mhba->ib_max_entry_size_bytes * mhba->max_io;
+> +
+> +	offset = (unsigned int)(round_up(p, 8) - p);
+> +	p += offset;
+> +	v = (unsigned char *) v + offset;
+> +	mhba->ib_shadow = v;
+> +	mhba->ib_shadow_phys = p;
+> +
+> +	p += sizeof(unsigned int);
+> +	v = (unsigned char *) v + sizeof(unsigned int);
+> +
+> +	offset = round_up(p, 8) - p;
+> +	p += offset;
+> +	v = (unsigned char *) v + offset;
+> +	mhba->ob_shadow = v;
+> +	mhba->ob_shadow_phys = p;
+> +	p += 8;
+> +	v = (unsigned char *) v + 8;
+> +	offset = (unsigned int) (round_up(p, 128) - p);
 
-And. To hide the pr_detached task from do_wait(). you changed
-do_notify_parent() to returnd DEATH_REAP. I guess you did this to ensure
-exit_notify() paths will set EXIT_DEAD and thus do_wait() can't see this
-child again. This looks very ugly I must admit. And not 100% correct, we
-notify the parent twice if ->detaching != 0. Also, because of this logic,
-once wait_task_detached() drops tasklist it can race with exit_notify()
-doing release_task(). Yes, task_struct can't go away, but we can't trust
-task_pid_vnr(p). Hmm, the change in reparent_leader doesn't look right,
-at least in case we reparent to sub-thread.
+Sometimes you cast the result of round_up() to unsigned int and sometimes not. 
+So I guess you just need to never cast. Since the result will be in range 
+8..128 anyway I think the casting can just go away completely.
 
-And of course, this breaks ptrace _completely_. I didn't read the patch
-further, perhaps there are more problems.
+> +
+> +	return 0;
+> +}
+> +/**
 
+Newline missing here.
 
+> + * mvumi_probe_one -	PCI hotplug entry point
+> + * @pdev:		PCI device structure
+> + * @id:			PCI ids of supported hotplugged adapter
+> + */
+> +static int __devinit mvumi_probe_one(struct pci_dev *pdev,
+> +					const struct pci_device_id *id)
+> +{
+> +	int ret;
+> +	struct Scsi_Host *host;
+> +	struct mvumi_hba *mhba;
+> +	unsigned short class_code = 0xFFFF;
+> +
+> +	pci_read_config_word(pdev, 0x0A,  &class_code);
+> +	dev_printk(KERN_INFO, &pdev->dev,
+> +			" %#4.04x:%#4.04x:%#4.04x:%#4.04x: ",
+> +			pdev->vendor, pdev->device, pdev->subsystem_vendor,
+> +			pdev->subsystem_device);
+> +	dev_printk(KERN_INFO, &pdev->dev,
+> +			"bus %d:slot %d:func %d:class_code:%#4.04x\n",
+> +			pdev->bus->number, PCI_SLOT(pdev->devfn),
+> +			PCI_FUNC(pdev->devfn), class_code);
+> +
+> +	ret = pci_enable_device(pdev);
 
-Stas, I am sorry, I am tired ;) You are sending more and more versions
-with the different semantics and they all are buggy. Please add Linus
-and ask him if he is going to accept the new feature, and please describe
-exactly what you are trying to achieve. Until then I do not want to spend
-my time trying to understand yet another implementation of the hack which
-I personally dislike.
+You may want to use pcim_enable_device(). Look at Documentation/driver-
+model/devres.txt. This would take care of some of your error handling for 
+free.
 
-Oleg.
+> +	if (ret)
+> +		return ret;
+> +
+> +	pci_set_master(pdev);
+> +
+> +	if (IS_DMA64) {
+> +		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) != 0) {
+> +			if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) != 0)
+> +				goto fail_set_dma_mask;
+> +		}
+> +	} else {
+> +		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) != 0)
+> +			goto fail_set_dma_mask;
+> +	}
 
+I don't like that you lose the error code of pci_set_dma_mask() here.
+
+> +	host = scsi_host_alloc(&mvumi_template, sizeof(struct mvumi_hba));
+> +	if (!host) {
+> +		dev_printk(KERN_ERR, &pdev->dev, "scsi_host_alloc failed\n");
+> +		goto fail_alloc_instance;
+> +	}
+> +	mhba = (struct mvumi_hba *) host->hostdata;
+
+mhba = shost_priv(host);
+
+> +	memset(mhba, 0, sizeof(*mhba));
+> +
+> +	INIT_LIST_HEAD(&mhba->cmd_pool);
+> +	INIT_LIST_HEAD(&mhba->ob_data_pool_list);
+> +	INIT_LIST_HEAD(&mhba->free_ob_list);
+> +	INIT_LIST_HEAD(&mhba->res_list);
+> +	INIT_LIST_HEAD(&mhba->waiting_req_list);
+> +	atomic_set(&mhba->fw_outstanding, 0);
+> +
+> +	init_waitqueue_head(&mhba->int_cmd_wait_q);
+> +
+> +	spin_lock_init(&mhba->cmd_pool_lock);
+> +	spin_lock_init(&mhba->tag_lock);
+> +
+> +	mhba->pdev = pdev;
+> +	mhba->shost = host;
+> +	mhba->unique_id = pdev->bus->number << 8 | pdev->devfn;
+> +
+> +	if (mvumi_init_fw(mhba))
+> +		goto fail_init_fw;
+
+You are once again loosing an error code here.
+
+> +	ret = request_irq(mhba->pdev->irq, mvumi_isr_handler, IRQF_SHARED,
+> +				"mvumi", mhba);
+> +	if (ret) {
+> +		dev_printk(KERN_ERR, &pdev->dev, "failed to register IRQ\n");
+> +		goto fail_init_irq;
+> +	}
+> +
+> +	mhba->instancet->enable_intr(mhba->mmio);
+> +	pci_set_drvdata(pdev, mhba);
+> +
+> +	if (mvumi_io_attach(mhba))
+> +		goto fail_io_attach;
+> +	dev_printk(KERN_INFO, &pdev->dev, "probe mvumi driver successfully.\n");
+> +	return 0;
+
+I don't know if the ordering is correct here. Once you have registered the IRQ 
+handler you must be prepared to get interrupts. In fact with IRQ debugging 
+enabled your IRQ handler will be called immediately in request_irq(). So when 
+you set up other stuff here that is needed in the IRQ handler this can do all 
+sort of things wrong.
+
+> +fail_io_attach:
+> +	pci_set_drvdata(pdev, NULL);
+> +	mhba->instancet->disable_intr(mhba->mmio);
+> +	free_irq(mhba->pdev->irq, mhba);
+> +fail_init_irq:
+> +	mvumi_release_fw(mhba);
+> +fail_init_fw:
+> +	scsi_host_put(host);
+> +
+> +fail_alloc_instance:
+> +fail_set_dma_mask:
+> +	pci_disable_device(pdev);
+> +
+> +	return -ENODEV;
+> +}
+
+You always lose the error codes of anything in your probe function. I don't 
+think this is a good idea.
+
+> +
+> +static void mvumi_detach_one(struct pci_dev *pdev)
+> +{
+> +	struct Scsi_Host *host;
+> +	struct mvumi_hba *mhba;
+> +
+> +	mhba = pci_get_drvdata(pdev);
+> +	host = mhba->shost;
+> +	scsi_remove_host(mhba->shost);
+> +	mvumi_flush_cache(mhba);
+> +
+> +	mhba->instancet->disable_intr(mhba->mmio);
+> +	free_irq(mhba->pdev->irq, mhba);
+
+Same as above here: you may still get an IRQ until this point. So be careful 
+with what you free first.
+
+> +	mvumi_release_fw(mhba);
+> +	scsi_host_put(host);
+> +	pci_set_drvdata(pdev, NULL);
+> +	pci_disable_device(pdev);
+> +	dev_printk(KERN_INFO, &pdev->dev, "driver is removed!\n");
+> +}
+
+Greetings,
+
+Eike
