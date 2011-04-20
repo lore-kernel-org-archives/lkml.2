@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab1DTUMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:12:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48934 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab1DTUMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:12:31 -0400
-Date: Wed, 20 Apr 2011 22:12:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110420201225.GA29947@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Christoph Hellwig <hch@infradead.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jens Axboe <jaxboe@fusionio.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
- <20110414202445.GA6173@liondog.tnic>
- <BANLkTi=h+NL+qqMDBNvOUmVDonORf4Qx2A@mail.gmail.com>
- <20110415041455.GA27928@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110415041455.GA27928@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756033Ab1DTUOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:14:18 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39034 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab1DTUOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:14:17 -0400
+Subject: [PATCH V3 5/8] Enable cxgb3 to support zerocopy
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: mst@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1303328216.19336.18.camel@localhost.localdomain>
+References: <1303328216.19336.18.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 13:13:58 -0700
+Message-ID: <1303330438.19336.57.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 12:14:55AM -0400, Christoph Hellwig wrote:
-> Jens already has a fix in his tree to always offload the block I/O
-> submission to blockd for this case.
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
 
-FWIW, I can't trigger the warning with 2.6.39-rc4-00089-g2f666bc
-anymore. So either Jens' fixes have trickled up to Linus or it is due to
-6631e635c65d he mentioned earlier.
+ drivers/net/cxgb3/cxgb3_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks.
+diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
+index 9108931..93a1101 100644
+--- a/drivers/net/cxgb3/cxgb3_main.c
++++ b/drivers/net/cxgb3/cxgb3_main.c
+@@ -3313,7 +3313,7 @@ static int __devinit init_one(struct pci_dev *pdev,
+ 		netdev->features |= NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+ 		netdev->features |= NETIF_F_GRO;
+ 		if (pci_using_dac)
+-			netdev->features |= NETIF_F_HIGHDMA;
++			netdev->features |= NETIF_F_HIGHDMA | NETIF_F_ZEROCOPY;
+ 
+ 		netdev->features |= NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX;
+ 		netdev->netdev_ops = &cxgb_netdev_ops;
 
--- 
-Regards/Gruss,
-    Boris.
+
