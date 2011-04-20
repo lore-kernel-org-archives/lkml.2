@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1DTXTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:19:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42767 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1DTXTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:19:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=lOtUlXjg81HoULCwLbWu6g0M0RuKtPzAgUgdwDHJt7zcZ39Uv/bepZa1A4rKAmyePB
-         IU8kRWpKaXNm/k/9GH6w==
-Date: Wed, 20 Apr 2011 16:19:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Greg KH <gregkh@suse.de>, J Freyensee <james_p_freyensee@linux.intel.com>,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-In-Reply-To: <20110420161125.3449d4fd.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1104201613270.13948@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com> <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com> <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com> <1303258222.13457.42.camel@localhost> <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
- <20110420014340.GA21245@suse.de> <1303323083.13457.50.camel@localhost> <20110420191421.GA10306@suse.de> <20110420161125.3449d4fd.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753682Ab1DTXTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:19:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28611 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab1DTXTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 19:19:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,248,1301900400"; 
+   d="scan'208";a="631752830"
+Date: Wed, 20 Apr 2011 16:18:59 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SMACK: Add missing rcu_read_lock/unlock for process
+ capability walk.
+Message-ID: <20110420231859.GB32402@tassilo.jf.intel.com>
+References: <1303336844-31074-1-git-send-email-andi@firstfloor.org>
+ <4DAF637D.90606@schaufler-ca.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAF637D.90606@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011, Andrew Morton wrote:
-
-> > > But as David pointed out, if there is work other than mine coming that
-> > > has already been proposed, wouldn't it be good to get this patch in
-> > > place now to start the encouragement of future eyes to just call this
-> > > function than re-invent the wheel?
-> > 
-> > No, then those projects submit the patch to export this, if they happen
-> > to get to mainline before this one does.
-> > 
-> > Again, don't export something unless you are using it at the time, no
-> > "this is to be used hopefully by something in the future" type stuff
-> > please.  Who knows if those future plans ever pan out.
+On Wed, Apr 20, 2011 at 03:51:41PM -0700, Casey Schaufler wrote:
+> On 4/20/2011 3:00 PM, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> >
+> > smk_access_entry does a RCU list walk for a list shared with other
+> > threads. It relies on the caller doing rcu_read_lock().
+> > One caller forgot to do to this, which could lead to races
+> > on preemptible kernels.
+> >
+> > Move the rcu_read_lock() into smk_access_entry instead.
 > 
-> Well there's an easy solution here.  Send the patch to export
-> get_task_comm(), then send along some patches which fix
+> Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
 > 
-> z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
-> 89
-> 
+> The lock was moved out of smk_access_entry in support of the
+> processing done in the smack_mmap_file() hook. Where do you see
+> a potential race, and which caller "forgot" to do the lock?
 
-If we go this route and continue to support /proc/pid/comm, then we're 
-going to need to ensure nothing that dereferences p->comm for any thread p 
-is in a blockable context and that it's acceptable for get_task_comm(p) to 
-take task_lock(p), and that requires not nesting it with 
-write_lock(&tasklist_lock).
+There are two callers and only one takes it.
+The one that doesn't take it is smk_curacc.
 
-I'm thinking that we're going to want to choose something else other than 
-p->alloc_lock to protect p->comm since that lock is protecting so many 
-different members of struct task_struct that we may not know whether it's 
-held when we want to print p->comm.
+I checked the callers of that and there is no rcu_read_lock() in those
+
+As far as I understand the cred which holds this list is shared
+between threads and other threads can modify it. Which means 
+it needs RCU read lock protection.
+
+-Andi
