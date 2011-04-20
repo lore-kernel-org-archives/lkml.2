@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab1DTHQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 03:16:52 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1408 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753244Ab1DTHQu convert rfc822-to-8bit (ORCPT
+	id S1753950Ab1DTHR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 03:17:26 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55941 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab1DTHRZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 03:16:50 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-To: "Arnd Bergmann" <arnd@arndb.de>
-cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jonas Gorski" <jonas.gorski@gmail.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "Greg KH" <greg@kroah.com>, "Andy Botting" <andy@andybotting.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom
- bus?
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
- <201104171938.12834.arnd@arndb.de> <op.vt6ufu1n3ri7v4@arend-laptop>
- <201104191635.40351.arnd@arndb.de>
-Date: Wed, 20 Apr 2011 09:16:26 +0200
+	Wed, 20 Apr 2011 03:17:25 -0400
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vt76hofg3ri7v4@arend-laptop>
-In-Reply-To: <201104191635.40351.arnd@arndb.de>
-User-Agent: Opera Mail/11.10 (Linux)
-X-WSS-ID: 61B056813I814036445-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
+In-Reply-To: <4DA81F42.3070208@csr.com>
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+	<1302116833-24540-2-git-send-email-per.forlin@linaro.org>
+	<4DA81F42.3070208@csr.com>
+Date: Wed, 20 Apr 2011 09:17:23 +0200
+Message-ID: <BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
+Subject: Re: [PATCH v2 01/12] mmc: add none blocking mmc request function
+From: Per Forlin <per.forlin@linaro.org>
+To: David Vrabel <david.vrabel@csr.com>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011 16:35:40 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+Hi,
 
-> On Tuesday 19 April 2011, Arend van Spriel wrote:
+On 15 April 2011 12:34, David Vrabel <david.vrabel@csr.com> wrote:
+> On 06/04/11 20:07, Per Forlin wrote:
+>> Previously there has only been one function mmc_wait_for_req
+>> to start and wait for a request. This patch adds
+>>  * mmc_start_req - starts a request wihtout waiting
+>>  * mmc_wait_for_req_done - waits until request is done
+>>  * mmc_pre_req - asks the host driver to prepare for the next job
+>>  * mmc_post_req - asks the host driver to clean up after a completed job
 >
->> > A new bus_type really only makes sense if you expect a lot of devices
->> > to use this and you want to have the probing in the bus. If you only
->> > want to have a way to enumerate devices that get created by the
->> > parent driver, you can also use platform devices.
->>
->> The main assumption of the (bcm)axi driver seems to be that each core  
->> can
->> be considered as a device. Correct me if I am wrong, but I consider a
->> device to be an entity providing a particular system function. So an
->> ethernet device provides ethernet connectivity function, a mixer device
->> provides sound mixing function, and so on. The cores within a chip are  
->> not
->> always self-contained like this. To clarify let's say a system function  
->> is
->> realized by programming core A, core B, and finally trigger core A to  
->> set
->> the function in motion. This implies the need of coordination between  
->> the
->> programming steps on those cores.
->>
->> Is my view on what is a device wrong? Does a platform device differ in
->> this respect from a regular device?
+> If MMC core had a queue of requests internally you wouldn't need to
+> provide mmc_pre_req() and mmc_post_req() functions outside of the core.
+>  i.e., the mmc block driver would just need to queue up two mmc requests
+> and the core would take care of calling pre_req and post_req at the
+> correct time.
 >
-> A platform device means something that cannot be probed, in every other
-> respect it is the same as other devices. From your explanation above,
-> it seems that you don't actually need to represent the cores on your
-> particular chips as struct device in Linux at all.
+Sorry for late response I have been out of office a couple of days.
+Yes, it would be nice to not expose those hooks outside the core. I
+will look into this in detail to see what it would take to implement
+this and if there are any complications.
+
+> Using a MMC request queue has other benefits -- it allows multiple users
+> without having to claim/release the host.  This would be useful for
+> (especially multi-function) SDIO.
+You mean claim and release would be done only within the mmc core. The
+timed saved here would equal the time it takes to release and claim
+the host.
+Claim and release can also be used for power management to indicate if
+any client is using the host, if not the power can be switched off.
+
+> (especially multi-function) SDIO.
+I just want to make sure I understand the multi-function SDIO case, I
+haven't done any work with SDIO.
+Can the SDIO functions compete over the same claim_host at the same time?
+Example: if function 1 claims the host, function 2 and function 3 also
+want to claim the host but have to wait for function 1 to release the
+host.
+What is the extra benefit of having the internal request queue for
+multi function SDIO?
+The functions must still wait for request completion before
+acknowledge the SDIO client? Or could the functions acknowledge
+immediately after the request is queued up in mmc core?
+
 >
-> If you wanted to use platform_device, the right way would probably
-> be an MFD device that creates multiple child devices (which end
-> up as platform_device, though you don't need to worry about that)
-> from the PCI driver. Then you could use the child devices completely
-> independent from one another.
->
-> Since you say that the cores in this case are tightly coupled and
-> don't provide independent functionality to the system, there is
-> no need to represent them as devices.
-
-Hi Arnd,
-
-The case is a hypothetical one, but I consider it a likely one. The axi  
-bus driver currently registers each detected core as a device in the linux  
-device tree. My statement is that this implies loose or no coupling  
-between those cores, which is not true. One (or two) exceptions have  
-already been identified. I would expect your last line to read: ...to the  
-system, those cores should not be represented as devices.
-
-Gr. AvS
--- 
-"The world is indeed comic, but the joke is on mankind." â€” H.P. Lovecraft
-
+> David
+> --
+Thanks for your feedback,
+Per
