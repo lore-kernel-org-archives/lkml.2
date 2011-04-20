@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1DTKGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 06:06:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54425 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab1DTKGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 06:06:51 -0400
-Message-ID: <4DAEB062.9020907@cn.fujitsu.com>
-Date: Wed, 20 Apr 2011 18:07:30 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1754099Ab1DTKHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 06:07:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41791 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab1DTKHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 06:07:33 -0400
+Message-ID: <4DAEB003.8020304@ru.mvista.com>
+Date: Wed, 20 Apr 2011 14:05:55 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
-Subject: [PATCH 2/5] Btrfs: fix the race between reading and updating devices
-References: <4DAEB030.1070303@cn.fujitsu.com>
-In-Reply-To: <4DAEB030.1070303@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-20 18:07:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-20 18:07:17,
-	Serialize complete at 2011-04-20 18:07:17
+To: Seth Heasley <seth.heasley@intel.com>
+CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.39-rc3] ahci: AHCI-mode SATA patch for Intel Panther
+ Point DeviceIDs
+References: <201104191638.41267.seth.heasley@intel.com>
+In-Reply-To: <201104191638.41267.seth.heasley@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On btrfs_congested_fn and __unplug_io_fn paths, we should hold
-device_list_mutex to avoid remove/add device path to
-update fs_devices->devices
+Hello.
 
-On __btrfs_close_devices and btrfs_prepare_sprout paths, the devices in
-fs_devices->devices or fs_devices->devices is updated, so we should hold
-the mutex to avoid the reader side to reach them
+On 20-04-2011 3:38, Seth Heasley wrote:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- fs/btrfs/disk-io.c |    4 ++++
- fs/btrfs/volumes.c |    7 +++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+> This patch adds the AHCI-mode SATA DeviceIDs for the Intel
+> Panther Point PCH.
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index ef6865c..5a70096 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1412,6 +1412,7 @@ static int btrfs_congested_fn(void *congested_data, int bdi_bits)
- 	struct btrfs_device *device;
- 	struct backing_dev_info *bdi;
- 
-+	mutex_lock(&info->fs_devices->device_list_mutex);
- 	list_for_each_entry(device, &info->fs_devices->devices, dev_list) {
- 		if (!device->bdev)
- 			continue;
-@@ -1421,6 +1422,7 @@ static int btrfs_congested_fn(void *congested_data, int bdi_bits)
- 			break;
- 		}
- 	}
-+	mutex_unlock(&info->fs_devices->device_list_mutex);
- 	return ret;
- }
- 
-@@ -1434,6 +1436,7 @@ static void __unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
- 	struct btrfs_fs_info *info;
- 
- 	info = (struct btrfs_fs_info *)bdi->unplug_io_data;
-+	mutex_lock(&info->fs_devices->device_list_mutex);
- 	list_for_each_entry(device, &info->fs_devices->devices, dev_list) {
- 		if (!device->bdev)
- 			continue;
-@@ -1442,6 +1445,7 @@ static void __unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
- 		if (bdi->unplug_io_fn)
- 			bdi->unplug_io_fn(bdi, page);
- 	}
-+	mutex_unlock(&info->fs_devices->device_list_mutex);
- }
- 
- static void btrfs_unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 69fc902..a672249 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -515,6 +515,7 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- 	if (--fs_devices->opened > 0)
- 		return 0;
- 
-+	mutex_lock(&fs_devices->device_list_mutex);
- 	list_for_each_entry(device, &fs_devices->devices, dev_list) {
- 		if (device->bdev) {
- 			blkdev_put(device->bdev, device->mode);
-@@ -529,6 +530,8 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- 		device->writeable = 0;
- 		device->in_fs_metadata = 0;
- 	}
-+	mutex_unlock(&fs_devices->device_list_mutex);
-+
- 	WARN_ON(fs_devices->open_devices);
- 	WARN_ON(fs_devices->rw_devices);
- 	fs_devices->opened = 0;
-@@ -1449,7 +1452,11 @@ static int btrfs_prepare_sprout(struct btrfs_trans_handle *trans,
- 	INIT_LIST_HEAD(&seed_devices->devices);
- 	INIT_LIST_HEAD(&seed_devices->alloc_list);
- 	mutex_init(&seed_devices->device_list_mutex);
-+
-+	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
- 	list_splice_init(&fs_devices->devices, &seed_devices->devices);
-+	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
-+
- 	list_splice_init(&fs_devices->alloc_list, &seed_devices->alloc_list);
- 	list_for_each_entry(device, &seed_devices->devices, dev_list) {
- 		device->fs_devices = seed_devices;
--- 
-1.7.4.4
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
+> --- linux-2.6.39-rc3/drivers/ata/ahci.c.orig	2011-04-11
+> 17:21:51.000000000 -0700
+> +++ linux-2.6.39-rc3/drivers/ata/ahci.c	2011-04-14
+> 11:59:24.000000000 -0700
+> @@ -261,6 +261,12 @@
+>   	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
+>   	{ PCI_VDEVICE(INTEL, 0x2826), board_ahci }, /* PBG RAID */
+>   	{ PCI_VDEVICE(INTEL, 0x2323), board_ahci }, /* DH89xxCC
+> AHCI */
+> +	{ PCI_VDEVICE(INTEL, 0x1e02), board_ahci }, /* Panther Point
+> AHCI */
+> +	{ PCI_VDEVICE(INTEL, 0x1e03), board_ahci }, /* Panther Point
+> AHCI */
+> +	{ PCI_VDEVICE(INTEL, 0x1e04), board_ahci }, /* Panther Point
+> RAID */
+> +	{ PCI_VDEVICE(INTEL, 0x1e05), board_ahci }, /* Panther Point
+> RAID */
+> +	{ PCI_VDEVICE(INTEL, 0x1e06), board_ahci }, /* Panther Point
+> RAID */
+> +	{ PCI_VDEVICE(INTEL, 0x1e07), board_ahci }, /* Panther Point
+> RAID */
+
+    The patch is line wrapped.
+
+WBR, Sergei
