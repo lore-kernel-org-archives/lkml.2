@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab1DTUwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:52:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47405 "EHLO
+	id S1755929Ab1DTUwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:52:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:47360 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab1DTUwF (ORCPT
+	with ESMTP id S1753847Ab1DTUv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:52:05 -0400
+	Wed, 20 Apr 2011 16:51:58 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=bn3JTQL/pscRJXcboT9urQx3QaFbvbbQgV/m18AVqKisPicBcPWQrF7YNXqXhwutx
-	g+lN4whGL4vrUs4vPSr+A==
+	b=fy+AY/dGcyR082rHodD/sz0dHiKOII+WTMambT7x30KxcVvtzBcr9GH/yi63ltqTX
+	TYFyN22RiscKuXovNgNJg==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
 Cc: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
         linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>
-Subject: [RFC][Patch 10/18] sched: update wake_affine path to use u64, s64 for weights
-Date: Wed, 20 Apr 2011 13:51:29 -0700
-Message-Id: <1303332697-16426-11-git-send-email-ncrao@google.com>
+Subject: [RFC][Patch 12/18] sched: Update update_sd_lb_stats() to use u64
+Date: Wed, 20 Apr 2011 13:51:31 -0700
+Message-Id: <1303332697-16426-13-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
 References: <1303332697-16426-1-git-send-email-ncrao@google.com>
@@ -25,54 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the s64/u64 math in wake_affine() and effective_load() to handle
-increased resolution.
+Update update_sd_lb_stats() and helper functions to use u64/s64 for weight
+calculations.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
- kernel/sched_fair.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched_fair.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 029dd4f..2b030f4 100644
+index d5b1276..12b25b7 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -1388,7 +1388,7 @@ static void task_waking_fair(struct rq *rq, struct task_struct *p)
-  * of group shares between cpus. Assuming the shares were perfectly aligned one
-  * can calculate the shift in shares.
+@@ -2308,23 +2308,23 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+  * 		during load balancing.
   */
--static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
-+static s64 effective_load(struct task_group *tg, int cpu, s64 wl, s64 wg)
- {
- 	struct sched_entity *se = tg->se[cpu];
+ struct sd_lb_stats {
+-	struct sched_group *busiest; /* Busiest group in this sd */
+-	struct sched_group *this;  /* Local group in this sd */
+-	unsigned long total_load;  /* Total load of all groups in sd */
+-	unsigned long total_pwr;   /*	Total power of all groups in sd */
+-	unsigned long avg_load;	   /* Average load across all groups in sd */
++	struct sched_group *busiest;	/* Busiest group in this sd */
++	struct sched_group *this;	/* Local group in this sd */
++	u64 total_load;			/* Total load of all groups in sd */
++	unsigned long total_pwr;	/* Total power of all groups in sd */
++	u64 avg_load;			/* Avg load across all groups in sd */
  
-@@ -1396,7 +1396,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
- 		return wl;
+ 	/** Statistics of this group */
+-	unsigned long this_load;
+-	unsigned long this_load_per_task;
++	u64 this_load;
++	u64 this_load_per_task;
+ 	unsigned long this_nr_running;
+ 	unsigned long this_has_capacity;
+ 	unsigned int  this_idle_cpus;
  
- 	for_each_sched_entity(se) {
--		long lw, w;
-+		s64 lw, w;
+ 	/* Statistics of the busiest group */
+ 	unsigned int  busiest_idle_cpus;
+-	unsigned long max_load;
+-	unsigned long busiest_load_per_task;
++	u64 max_load;
++	u64 busiest_load_per_task;
+ 	unsigned long busiest_nr_running;
+ 	unsigned long busiest_group_capacity;
+ 	unsigned long busiest_has_capacity;
+@@ -2461,8 +2461,8 @@ static inline void update_sd_power_savings_stats(struct sched_group *group,
+ 	     group_first_cpu(group) > group_first_cpu(sds->group_min))) {
+ 		sds->group_min = group;
+ 		sds->min_nr_running = sgs->sum_nr_running;
+-		sds->min_load_per_task = sgs->sum_weighted_load /
+-						sgs->sum_nr_running;
++		sds->min_load_per_task = div_u64(sgs->sum_weighted_load,
++						 sgs->sum_nr_running);
+ 	}
  
- 		tg = se->my_q->tg;
- 		w = se->my_q->load.weight;
-@@ -1409,7 +1409,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
- 		wl += w;
- 
- 		if (lw > 0 && wl < lw)
--			wl = (wl * tg->shares) / lw;
-+			wl = div64_s64(wl * tg->shares, lw);
- 		else
- 			wl = tg->shares;
- 
-@@ -1504,7 +1504,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 
- 	if (balanced ||
- 	    (this_load <= load &&
--	     this_load + target_load(prev_cpu, idx) <= tl_per_task)) {
-+	     this_load + target_load(prev_cpu, idx) <= (u64)tl_per_task)) {
- 		/*
- 		 * This domain has SD_WAKE_AFFINE and
- 		 * p is cache cold in this domain, and
+ 	/*
 -- 
 1.7.3.1
 
