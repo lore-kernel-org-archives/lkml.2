@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab1DTFxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 01:53:07 -0400
-Received: from 1wt.eu ([62.212.114.60]:33010 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab1DTFxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 01:53:06 -0400
-Date: Wed, 20 Apr 2011 07:39:25 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [24/28] USB: xhci - fix unsafe macro definitions
-Message-ID: <20110420053925.GC16291@1wt.eu>
-References: <20110419204119.285492847@clark.kroah.org> <1303264924.3464.69.camel@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303264924.3464.69.camel@localhost>
-User-Agent: Mutt/1.4.2.3i
+	id S1752442Ab1DTFxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 01:53:44 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55364 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1DTFxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 01:53:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=nsZKzQjhJS0sueO4lPn/gzA/T0wpKHQXLxSnQ+47/Jm6fCP4Gxz6F048V+k2IEJCs8
+         kF8ITpzKlMGHVKz6XzBUMkXKlh3Wo2MrrN7ppTrb4lCeQIjo9S5R/789z2jZ6pGrvoAr
+         /l5IL/IP6CcUl01F+TqPqn4cf9MKWXgbhdLgo=
+MIME-Version: 1.0
+In-Reply-To: <20110420102314.4604.A69D9226@jp.fujitsu.com>
+References: <1303249716.11237.26.camel@mulgrave.site>
+	<alpine.DEB.2.00.1104191657030.26867@router.home>
+	<20110420102314.4604.A69D9226@jp.fujitsu.com>
+Date: Wed, 20 Apr 2011 08:53:41 +0300
+X-Google-Sender-Auth: r6gludV8YliwHNBAnYFM_lfQUNM
+Message-ID: <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to expand_upwards
+From: Pekka Enberg <penberg@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 03:02:04AM +0100, Ben Hutchings wrote:
-> On Tue, 2011-04-19 at 13:31 -0700, Greg KH wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Dmitry Torokhov <dtor@vmware.com>
-> > 
-> > commit 5a6c2f3ff039154872ce597952f8b8900ea0d732 upstream.
-> > 
-> > Macro arguments used in expressions need to be enclosed in parenthesis
-> > to avoid unpleasant surprises.
-> 
-> Do you know of any specific uses of these macros where the missing
-> parentheses caused 'unpleasant surprises'?
+On Wed, Apr 20, 2011 at 4:23 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> I'm worry about this patch. A lot of mm code assume !NUMA systems
+> only have node 0. Not only SLUB.
 
-In my opinion, this type of fix should be backported even if the current
-code does not appear to be at risk, otherwise a later fix in the kernel
-could cause a serious regression when backported to -stable. For instance,
-if we later have to backport this patch (cut'n'pasted) :
+So is that a valid assumption or not? Christoph seems to think it is
+and James seems to think it's not. Which way should we aim to fix it?
+Would be nice if other people chimed in as we already know what James
+and Christoph think.
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1033,7 +1033,7 @@ static inline unsigned int xhci_get_endpoint_interval(struct usb_device *udev,
-        default:
-                BUG();
-        }
--       return EP_INTERVAL(interval);
-+       return EP_INTERVAL(interval + 1);
- }
-
-How can you guess that while works in mainline, it breaks -stable ?
-
-As a user, I'd rather have known valid code in -stable and -longterm at the
-risk of an occasional *temporary* regression than longterm unexplainable
-regressions due to diverging code causing unexpected issues with backported
-fixes.
-
-Regards,
-Willy
-
+                        Pekka
