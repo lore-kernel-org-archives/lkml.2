@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750836Ab1DTEMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 00:12:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49538 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab1DTEML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 00:12:11 -0400
-Date: Wed, 20 Apr 2011 14:11:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: linux-next: build failure after merge of the final tree (fbdev tree
- related)
-Message-Id: <20110420141158.008d61b2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t"
+	id S1750916Ab1DTEXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 00:23:09 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37336 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab1DTEXH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 00:23:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=oiW87UCiNi7jLIPsn/AT+7LAYfHOqv0NAYyQTJi9pdBH9iZ8swuIbScjYXx9vUGGIn
+         Hdo8veUmKu87TEo/lU+X63lqgcLo8ajjQskyMLKV9mMKjed1zCetIW5qQ6pHWtgTh70y
+         vODXetcYfW+gYB7t/oAj8JP261Zt4pZ+9O3jE=
+MIME-Version: 1.0
+In-Reply-To: <20110419174712.GA29314@pengutronix.de>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+	<20110419102031.GA4164@pengutronix.de>
+	<BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
+	<20110419174712.GA29314@pengutronix.de>
+Date: Wed, 20 Apr 2011 13:23:04 +0900
+X-Google-Sender-Auth: QFJEmFWO2RB1PoKB2yj5p75aXa8
+Message-ID: <BANLkTinv84Ci1BUAGAXSDc-VYWGs8fC4fA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
+ self registered
+From: Kyungmin Park <kmpark@infradead.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
+        sameo@linux.intel.com, patches@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Paul,
-
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/video/s3fb.c: In function 's3_pci_remove':
-drivers/video/s3fb.c:1388: error: 'par' undeclared (first use in this funct=
-ion)
-
-Caused by commit 86c0f043a737 ("s3fb: add DDC support").  Clearly not
-tested with CONFIG_MTRR not set :-(
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNrl0OAAoJEDMEi1NhKgbszh0H/Az2qbqQ3FXYLsyAGqmiYcy8
-4M3Y9Qj2aG8qmeOWvzn6w6K5O0eASQQK56Oze/UWOhuN8jwLZ1hjKh0qHUyFYvVE
-xMWnSQ7CqQWDYAa9GzJVGhUPqvJ09FO9TMQLyBUq2m8rN8omeCFgrQhMBuJE4FJQ
-7gwLmdd67QMesn7z6DH4opRR9Sn0DeBBPYftSUUGS5a5Y4MNjNFV3/ilmRGTwCyB
-MMYXaRSjJzprj7hJkS+1TsJReV5ttjXYytwaZdolDw8gwngIPFdpvFUaH9F3STLs
-uWhha5iFvNg+QJRFcaItwH4ZIGd0u8KgB2EC+l1VyAaJnaUrCYWH1P8B1CJInrw=
-=xRKv
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t--
+On Wed, Apr 20, 2011 at 2:47 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+>
+>> BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle it.
+>
+> The difference is that sdhci-s3c.c was more like a fork of sdhci-pltfm while
+> the others were users of it. With the new interface, s3c can be converted using
+> pltfm more easily. If somebody is willing to do that, this is very much
+> welcome. I'd suggest waiting for Shawn's interface to stabilize, though.
+Okay Thanks, we will prepare it.
+>
+> Regards,
+>
+>   Wolfram
+>
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
