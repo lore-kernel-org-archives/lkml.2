@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1DTJzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 05:55:45 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34142 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753840Ab1DTJzm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 05:55:42 -0400
-Date: Wed, 20 Apr 2011 10:56:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bruno =?ISO-8859-14?B?UHLpbW9udA==?= <bonbons@linux-vserver.org>
-Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.39-rc2, framebuffer] use after free oops
-Message-ID: <20110420105631.70695dfa@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110420080535.3edd11ac@pluto.restena.lu>
-References: <BANLkTi=8U3=E0=j8MJ-r70O_aO8Pxvv9Nw@mail.gmail.com>
-	<BANLkTi=F8u7oZM+=W+5vzmvf1b0YiN0fQg@mail.gmail.com>
-	<20110420080535.3edd11ac@pluto.restena.lu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	id S1753907Ab1DTKF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 06:05:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54899 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab1DTKF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 06:05:56 -0400
+Message-ID: <4DAEB030.1070303@cn.fujitsu.com>
+Date: Wed, 20 Apr 2011 18:06:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>
+CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
+Subject: [PATCH 1/5] Btrfs: fix bh leak on __btrfs_open_devices path
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 18:06:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 18:06:27,
+	Serialize complete at 2011-04-20 18:06:27
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011 08:05:35 +0200
-Bruno Prémont <bonbons@linux-vserver.org> wrote:
+'bh' is forgot to release if no error is detected
 
-> On Wed, 20 Apr 2011 13:50:10 Daniel J Blueman <daniel.blueman@gmail.com> wrote:
-> > Any ideas on how best to address this issue [0], since it causes
-> > silent corruption, or at best crashes?
-> 
-> There is probably no easy short-term fix to this... 
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ fs/btrfs/volumes.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-The short term fix would be to deliberately leak the buffer. That should
-go into 2.6.39-rc right now with a comment explaining the situation.
-Otherwise who knows what corruption may occur to user data if unlucky.
-
-The other 'cheat' might be to tweak the API so the removal API isn't a
-'destroy' interface but a 'shut down' and has a matching 'restart' one
-for when the intelfb unloads at which point vga16fb can carry on with the
-original fb_info 8)
-
-Alan
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 8b9fb8c..69fc902 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -631,6 +631,7 @@ static int __btrfs_open_devices(struct btrfs_fs_devices *fs_devices,
+ 			list_add(&device->dev_alloc_list,
+ 				 &fs_devices->alloc_list);
+ 		}
++		brelse(bh);
+ 		continue;
+ 
+ error_brelse:
+-- 
+1.7.4.4
