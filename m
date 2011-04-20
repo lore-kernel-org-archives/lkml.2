@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1DTFFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 01:05:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41734 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab1DTFFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 01:05:18 -0400
-Date: Tue, 19 Apr 2011 22:06:17 -0700
-From: Greg KH <gregkh@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
- workaround
-Message-ID: <20110420050617.GA16756@suse.de>
-References: <20110419204117.979118654@clark.kroah.org>
- <1303263653.3464.65.camel@localhost>
- <20110420020128.GA27631@suse.de>
- <1303265862.3464.77.camel@localhost>
- <20110420031105.GA11945@suse.de>
- <1303274910.3464.95.camel@localhost>
+	id S1751943Ab1DTFJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 01:09:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39588 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab1DTFJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 01:09:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=DiuMP14wkBK4O5SWzAcWjIbjrFwzXiqKg4qhRl9zpaXQ+CfNfJaC8KDpKML4uRcBEh
+         2IeltHcwq2HZwgpF9Ju8Y56SOBx733M+QOqC3TLDzSvInOBKbab3R7gG4v6ZFrtEFqcY
+         YcggDjGe6dhsZW9bfn2921+YtRNsPHQlx71pY=
+From: Jason Stubbs <jasonbstubbs@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Subject: [PATCH] platform: add support for samsung nc210/nc110
+Date: Wed, 20 Apr 2011 15:07:54 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303274910.3464.95.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104201507.54862.jasonbstubbs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 05:48:30AM +0100, Ben Hutchings wrote:
-> On Tue, 2011-04-19 at 20:11 -0700, Greg KH wrote:
-> > On Wed, Apr 20, 2011 at 03:17:42AM +0100, Ben Hutchings wrote:
-> > > On Tue, 2011-04-19 at 19:01 -0700, Greg KH wrote:
-> > > > On Wed, Apr 20, 2011 at 02:40:53AM +0100, Ben Hutchings wrote:
-> > > > > On Tue, 2011-04-19 at 13:30 -0700, Greg KH wrote:
-> > > > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> > > > > > 
-> > > > > > ------------------
-> > > > > > 
-> > > > > > From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-> > > > > > 
-> > > > > > commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
-> > > > > > 
-> > > > > > Remove check_c1e_idle() and use the new AMD errata checking framework
-> > > > > > instead.
-> > > > > 
-> > > > > Clean-up patches are generally not candidates for longterm updates.
-> > > > 
-> > > > This was added because a follow-on patch required it.
-> > > 
-> > > Ah yes, 'x86, AMD: Set ARAT feature on AMD processors' is using the same
-> > > condition.
-> > > 
-> > > Of course, that could have been backported by referring to the function
-> > > that this removes, rather than pulling in a load of other changes with
-> > > consequent risk of regressions.
-> > 
-> > I prefer to take original patches for stable, it makes it easier in the
-> > end.
-> 
-> It makes what easier, when?  What I see here is a bug fix that is much
-> larger than necessary, with a consequent risk of regression that seems
-> way out of proportion to the benefit.  (What actually *is* the benefit
-> of these AMD changes?)  And we have had several serious regressions in
-> the 2.6.32.y series recently, so I really don't think we are getting the
-> trade-off right.
+From: Jason Stubbs <jasonbstubbs@gmail.com>
 
-We got a few new quirks added for AMD hardware platforms that fix
-problems.  It took 3 patches to get there, yes, but now, as time goes
-on, adding new ones is even easier as the .32 code matches the .39 code
-in this area due to these patches being added.
+Note, I don't expect this patch to go in and would actually just like some
+feedback on how to better handle the set_brightness problem. Note also that
+this patch won't apply on top of my brightness min/max fixes patch and I'll
+redo this one as necessary.
 
-Now if you find problems in these, great, let me know and I will work to
-resolve them.
+This patch adds support for the NC210/NC110 to the samsung-laptop driver.
 
-As for regressions, what are you referring to?
+All SABI commands except for set_brightness work as expected. The behaviour
+of set_brightness is as follows:
 
-thanks,
+- Setting a new brightness will only step one level toward the new brightness
+  level. For example, setting a level of 5 when the current level is 2 will
+  result in a brightness level of 3.
+- A spurious KEY_BRIGHTNESS_UP or KEY_BRIGHTNESS_DOWN event is also generated
+  along with the change in brightness.
+- Neither of the above two issues occur when changing from/to brightness level 0.
 
-greg k-h
+The changes in set_brightness() work around the above while attempting to
+minimize flicker due to jumping to and from brightness level 0.
+
+Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
+---
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index d347116..01d5278 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -380,6 +380,14 @@ static void set_brightness(u8 user_brightness)
+ {
+ 	u8 user_level = user_brightness - sabi_config->min_brightness;
+ 
++	if (user_level == read_brightness()) {
++		return;
++	}
++
++	if (sabi_config->min_brightness == 0 && user_level != 0) {
++		sabi_set_command(sabi_config->commands.set_brightness, 0);
++	}
++
+ 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
+ }
+ 
+@@ -666,6 +674,15 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
+ 		},
+ 		.callback = dmi_check_cb,
+ 	},
++	{
++		.ident = "NC210/NC110",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "NC210/NC110"),
++			DMI_MATCH(DMI_BOARD_NAME, "NC210/NC110"),
++		},
++		.callback = dmi_check_cb,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
