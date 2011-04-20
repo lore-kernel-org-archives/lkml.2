@@ -1,88 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab1DTUF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:05:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34601 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755933Ab1DTUF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:05:57 -0400
-Date: Wed, 20 Apr 2011 13:04:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tmpfs: fix race between umount and writepage
-Message-Id: <20110420130453.3985144c.akpm@linux-foundation.org>
-In-Reply-To: <20110405103452.18737.28363.stgit@localhost6>
-References: <20110405103452.18737.28363.stgit@localhost6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1756005Ab1DTUHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:07:52 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:57828 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755930Ab1DTUHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:07:50 -0400
+Subject: [PATCH V3 4/8] vhost TX zero copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: mst@redhat.com, David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1303328216.19336.18.camel@localhost.localdomain>
+References: <1303328216.19336.18.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 13:07:37 -0700
+Message-ID: <1303330057.19336.50.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 14:34:52 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+This patch maintains the outstanding userspace buffers in the 
+sequence it is delivered to vhost. The outstanding userspace buffers 
+will be marked as done once the lower device buffers DMA has finished. 
+This is monitored through last reference of kfree_skb callback. Two
+buffer index are used for this purpose.
 
-> shmem_writepage() call igrab() on the inode for the page which is came from
-> reclaimer to add it later into shmem_swaplist for swap-unuse operation.
-> 
-> This igrab() can race with super-block deactivating process:
-> 
-> shrink_inactive_list()		deactivate_super()
-> pageout()			tmpfs_fs_type->kill_sb()
-> shmem_writepage()		kill_litter_super()
-> 				generic_shutdown_super()
-> 				 evict_inodes()
->  igrab()
-> 				  atomic_read(&inode->i_count)
-> 				   skip-inode
->  iput()
-> 				 if (!list_empty(&sb->s_inodes))
-> 					printk("VFS: Busy inodes after...
+The vhost passes the userspace buffers info to lower device skb 
+through message control. Since there will be some done DMAs when
+entering vhost handle_tx. The worse case is all buffers in the vq are
+in pending/done status, so we need to notify guest to release DMA done 
+buffers first before get any new buffers from the vq.
 
-Generally, ->writepage implementations shouldn't play with the inode,
-for the reasons you've discovered.  A more common race is
-writepage-versus-reclaim, where writepage is playing with the inode
-when a concurrent reclaim frees the inode (and hence the
-address_space).
+Signed-off-by: Shirley <xma@us.ibm.com>
+---
 
-It is safe to play with the inode while the passed-in page is locked
-because nobody will free an inode which has an attached locked page. 
-But once the page is unlocked, nothing pins the inode.  Typically,
-tmpfs goes and breakes this rule.
+ drivers/vhost/net.c   |   30 +++++++++++++++++++++++++++-
+ drivers/vhost/vhost.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.h |   10 +++++++++
+ 3 files changed, 87 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2f7c76a..1bc4536 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -32,6 +32,8 @@
+  * Using this limit prevents one virtqueue from starving others. */
+ #define VHOST_NET_WEIGHT 0x80000
+ 
++#define MAX_ZEROCOPY_PEND 64
++
+ enum {
+ 	VHOST_NET_VQ_RX = 0,
+ 	VHOST_NET_VQ_TX = 1,
+@@ -129,6 +131,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	struct skb_ubuf_info pend;
+ 
+ 	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+@@ -151,6 +154,10 @@ static void handle_tx(struct vhost_net *net)
+ 	hdr_size = vq->vhost_hlen;
+ 
+ 	for (;;) {
++		/* Release DMAs done buffers first */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_zerocopy_signal_used(vq);
++
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+@@ -166,6 +173,12 @@ static void handle_tx(struct vhost_net *net)
+ 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+ 				break;
+ 			}
++			/* If more outstanding DMAs, queue the work */
++			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
++			    (atomic_read(&vq->refcnt) > MAX_ZEROCOPY_PEND)) {
++				vhost_poll_queue(&vq->poll);
++				break;
++			}
+ 			if (unlikely(vhost_enable_notify(vq))) {
+ 				vhost_disable_notify(vq);
+ 				continue;
+@@ -188,17 +201,30 @@ static void handle_tx(struct vhost_net *net)
+ 			       iov_length(vq->hdr, s), hdr_size);
+ 			break;
+ 		}
++		/* use msg_control to pass vhost zerocopy ubuf info to skb */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
++			pend.callback = vhost_zerocopy_callback;
++			pend.arg = vq;
++			pend.desc = vq->upend_idx;
++			msg.msg_control = &pend;
++			msg.msg_controllen = sizeof(pend);
++			vq->heads[vq->upend_idx].id = head;
++			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
++			atomic_inc(&vq->refcnt);
++		}
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
+-			vhost_discard_vq_desc(vq, 1);
++			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++				vhost_discard_vq_desc(vq, 1);
+ 			tx_poll_start(net, sock);
+ 			break;
+ 		}
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2ab2912..09bcb1d 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	vq->upend_idx = 0;
++	vq->done_idx = 0;
++	atomic_set(&vq->refcnt, 0);
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+ 					       UIO_MAXIOV, GFP_KERNEL);
+ 		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
+ 					  GFP_KERNEL);
+-		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
++		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
+ 					    UIO_MAXIOV, GFP_KERNEL);
+ 
+ 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
+@@ -385,10 +388,41 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	return 0;
+ }
+ 
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
++{
++	int i, j = 0;
++
++	i = vq->done_idx;
++	while (i != vq->upend_idx) {
++		/* len = 1 means DMA done */
++		if (vq->heads[i].len == 1) {
++			/* reset len = 0 */
++			vq->heads[i].len = 0;
++			i = (i + 1) % UIO_MAXIOV;
++			++j;
++		} else
++			break;
++	}
++	if (j) {
++		if (i > vq->done_idx)
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
++		else {
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
++					 UIO_MAXIOV - vq->done_idx);
++			vhost_add_used_n(vq, vq->heads, i);
++		}
++		vq->done_idx = i;
++		vhost_signal(vq->dev, vq);
++		atomic_sub(j, &vq->refcnt);
++	}
++}
++
+ /* Caller should have device mutex */
+ void vhost_dev_cleanup(struct vhost_dev *dev)
+ {
+ 	int i;
++	unsigned long begin = jiffies;
++
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
+@@ -405,6 +439,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 			eventfd_ctx_put(dev->vqs[i].call_ctx);
+ 		if (dev->vqs[i].call)
+ 			fput(dev->vqs[i].call);
++		/* wait for all lower device DMAs done, then notify guest */
++		while (atomic_read(&dev->vqs[i].refcnt)) {
++			if (time_after(jiffies, begin + 5 * HZ))
++				vhost_zerocopy_signal_used(&dev->vqs[i]);
++		}
+ 		vhost_vq_reset(dev, dev->vqs + i);
+ 	}
+ 	vhost_dev_free_iovecs(dev);
+@@ -1416,3 +1455,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+ 		vq_err(vq, "Failed to enable notification at %p: %d\n",
+ 		       &vq->used->flags, r);
+ }
++
++void vhost_zerocopy_callback(struct sk_buff *skb)
++{
++	int idx = skb_shinfo(skb)->ubuf.desc;
++	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
++
++	/* set len = 1 to mark this desc buffers done DMA */
++	vq->heads[idx].len = 1;
++}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3363ae..cd2febb 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -108,6 +108,14 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* vhost zerocopy support */
++	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
++	/* index of zerocopy pending DMA buffers */
++	int upend_idx;
++	/* index of zerocopy done DMA buffers, but not notify guest yet */
++	int done_idx;
++	/* notify vhost zerocopy DMA buffers has done in lower device */
++	void (*callback)(struct sk_buff *);
+ };
+ 
+ struct vhost_dev {
+@@ -154,6 +162,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
++void vhost_zerocopy_callback(struct sk_buff *skb);
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
 
-Question is: why is shmem_writepage() doing the igrab/iput?
-
-Read 1b1b32f2c6f6bb3253 and weep.
-
-That changelog is a little incorrect:
-
-: Ah, I'd never suspected it, but shmem_writepage's swaplist manipulation
-: is unsafe: though still hold page lock, which would hold off inode
-: deletion if the page were i pagecache, it doesn't hold off once it's in
-: swapcache (free_swap_and_cache doesn't wait on locked pages).  Hmm: we
-: could put the the inode on swaplist earlier, but then shmem_unuse_inode
-: could never prune unswapped inodes.
-
-We don't actually hold the page lock when altering the swaplist:
-swap_writepage() unlocks the page.  Doesn't seem to matter.
-
-
-I think we should get the igrab/iput out of there and come up with a
-different way of pinning the inode in ->writepage().
-
-Can we do it in this order?
-
-	mutex_lock(&shmem_swaplist_mutex);
-	list_move_tail(&info->swaplist, &shmem_swaplist);
-	delete_from_page_cache(page);
-	shmem_swp_set(info, entry, swap.val);
-	shmem_swp_unmap(entry);
-	mutex_unlock(&shmem_swaplist_mutex);
-	swap_writepage(page, wbc);									
 
