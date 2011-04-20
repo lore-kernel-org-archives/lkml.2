@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1DTPfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:35:36 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41753 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab1DTPff (ORCPT
+	id S1755238Ab1DTPh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:37:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36185 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752787Ab1DTPh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:35:35 -0400
-Date: Wed, 20 Apr 2011 17:35:30 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: rwhitton@iee.org
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
-Subject: Re: Background memory scrubbing
-Message-ID: <20110420153529.GA2312@gere.osrc.amd.com>
-References: <16117.1303310442@jupiter.eclipse.co.uk>
- <4DAEF98D.2090802@ladisch.de>
+	Wed, 20 Apr 2011 11:37:26 -0400
+Date: Wed, 20 Apr 2011 16:37:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "cbou@mail.ru" <cbou@mail.ru>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv1 4/11] Power: Battery module of DA9052 PMIC driver
+Message-ID: <20110420153722.GC9869@opensource.wolfsonmicro.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC1AE@KCINPUNHJCMS01.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DAEF98D.2090802@ladisch.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC1AE@KCINPUNHJCMS01.kpit.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 05:19:41PM +0200, Clemens Ladisch wrote:
-> > Unfortunately in common with a large number of hardware platforms
-> > background scrubbing isn't supported in the hardware (even though ECC
-> > error correction is supported) and thus there is no BIOS option to
-> > enable it.
-> 
-> Which hardware platform is this?  AFAICT all architectures with ECC
-> (old AMD64, Family 0Fh, Family 10h) also have scrubbing support.
-> If your BIOS is too dumb, just try enabling it directly (bits 0-4 of
-> PCI configuration register 0x58 in function 3 of the CPU's northbridge
-> device, see the BIOS and Kernel's Developer's Guide for details).
+On Wed, Apr 06, 2011 at 06:28:03PM +0530, Ashish Jangam wrote:
 
-Or even better, if on AMD, you can build the amd64_edac module
-(CONFIG_EDAC_AMD64) and do
+> +static u16 filter_sample(u16 *buffer)
+> +{
+> +       u8 count;
+> +       u16 tempvalue = 0;
+> +       u16 ret;
+> +
+> +       if (buffer == NULL)
+> +               return -EINVAL;
+> +
+> +       for (count = 0; count < DA9052_FILTER_SIZE; count++)
+> +               tempvalue = tempvalue + *(buffer + count);
+> +
+> +       ret = tempvalue/DA9052_FILTER_SIZE;
+> +       return ret;
 
-echo <x> > /sys/devices/system/edac/mc/mc<y>/sdram_scrub_rate
+It's probably as well to pass the size of buffer in as an argument so
+that it's less surprising that you don't handle a partially filled
+buffer.
 
-where x is the scrubbing bandwidth in bytes/sec and y is the memory
-controller on the machine, i.e. node.
+You probably want to call this _average() or something, it's not
+actually doing any filtering, it's just taking an average.  This is
+perfectly sensible but it's a bit confusing.
 
--- 
-Regards/Gruss,
-Boris.
+> +static irqreturn_t da9052_tbat_irq(int irq, void *data)
+> +{
+> +       struct da9052_charger_device *chg_device =
+> +                                       (struct da9052_charger_device *)data;
+> +
+> +       chg_device->health = POWER_SUPPLY_HEALTH_OVERHEAT;
+> +
+> +       return IRQ_HANDLED;
+> +}
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Shouldn't you also be telling the core about the status change so it can
+go notify userspace?
+
+> +/* STATIC CONFIGURATION */
+> +#define DA9052_LOOK_UP_TABLE_SIZE              68
+> +#define DA9052_NO_OF_LOOKUP_TABLE              3
+> +#define DA9052_FILTER_SIZE                     4
+> +#define DA9052_NUMBER_OF_STORE_CURENT_READING  4
+
+> +static u32 const vbat_vs_capacity_look_up[DA9052_NO_OF_LOOKUP_TABLE]
+> +                                       [DA9052_LOOK_UP_TABLE_SIZE][2] = {
+
+You probably want to be using ARRAY_SIZE() for some of this.
