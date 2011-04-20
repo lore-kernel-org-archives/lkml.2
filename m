@@ -1,121 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab1DTTd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 15:33:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752651Ab1DTTd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 15:33:58 -0400
-Date: Wed, 20 Apr 2011 21:33:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stas Sergeev <stsp@aknet.ru>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [2/2]
-Message-ID: <20110420193307.GA1445@redhat.com>
-References: <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <4DAEDC3F.5010208@aknet.ru> <20110420165023.GA24455@redhat.com> <4DAF29AD.1080603@aknet.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAF29AD.1080603@aknet.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755781Ab1DTThN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 15:37:13 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39498 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab1DTThL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 15:37:11 -0400
+Subject: [PATCH V3 0/8] macvtap/vhost TX zero copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 12:36:56 -0700
+Message-ID: <1303328216.19336.18.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Stas Sergeev wrote:
->
-> 20.04.2011 20:50, Oleg Nesterov wrote:
->>> The attached patch implements the PR_DETACH prctl
->>> command. It detaches the entire process group from
->>> its parent, allowing the parent to still read the detach
->>> code with normal wait().
->>> Can be used to daemonize process with threads.
->> At first glance, this version does not reparent the caller to init,
->> but still PR_DETACH checks ->real_parent != /sbin/init for unknown
->> reason...
-> The reason is that the task could have been reparented
-> to ini by some other means (parent died)
+This patchset add supports for TX zero-copy between guest and host
+kernel through vhost. It significantly reduces CPU utilization on the
+local host on which the guest is located (It reduced 30-50% CPU usage
+for vhost thread for single stream test). The patchset is based on
+previous submission and comments from the community regarding when/how
+to handle guest kernel buffers to be released. This is the simplest
+approach I can think of after comparing with several other solutions.
 
-This is clear,
+This patchset includes:
 
-- in this case no
-> detaching.
+1/8: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
 
-Why? Now that we do not reparent PR_DETACH could works in this case too.
-Nevermind, this is minor and probably makes sense, forget.
+2/8: Add a new device flag, NETIF_F_ZEROCOPY for lower level device
+support zero-copy;
 
-I still do not understand the point of PR_DETACH. Why do you think it is
-needed without reparenting? OK, I do not really care ;)
+3/8: Add a new struct skb_ubuf_info in skb_share_info for userspace
+buffers release callback when lower device DMA has done for that skb;
 
->> IIUC, PR_DETACH simply fools ->real_parent so that it think this child
->> exits, while the child in fact runs after that but do_wait() can't see it.
-> It can check si_code to see what actually happened.
->
->> Why? I don't understand the point.
-> It was the same also when reparenting was done: the
-> original parent was only able to read the detach code,
-> and nothing more. _Nothing_ was changed, the semantic
-> is completely the same!
+4/8: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+add vhost_zerocopy_add_used_and_signal to notify guest to release TX skb
+buffers.
 
-The same? what about, say, ppid?
+5/8: Add macvtap zero-copy in lower device when sending packet is
+greater than 128 bytes.
 
->> And. To hide the pr_detached task from do_wait(). you changed
->> do_notify_parent() to returnd DEATH_REAP.
-> No, its hidden by the check in wait_consider_task().
-> do_notify_parent() was changed only to not allow the
-> second notification to the same parent.
+6/8: Add Chelsio 10Gb NIC to zero copy feature flag
 
-Not only. Please look at your own code ;) wait_consider_task() checks
-exit_state == EXIT_ZOMBIE before p->pr_detached, and thus do_notify_parent()
-haas to return DEATH_REAP so that the caller will set EXIT_DEAD. Otherwise
-the old parent could see EXIT_ZOMBIE && pr_detached task again.
+7/8: Add Intel 10Gb NIC zero copy feature flag
 
-> Again, this is
-> to completely preserve the old semantic, where's the
-> original parent was always notified only once.
+8/8: Add Emulex 10Gb NIC zero copy feature flag
 
-Of course, it should be notified only once. but afaics it can be notified
-twice.
+The patchset is built against most recent linux 2.6.git. It has passed
+netperf/netserver multiple streams stress test on above NICs.
 
->> This looks very ugly I must admit. And not 100% correct, we
->> notify the parent twice if ->detaching != 0.
->
-> No: the do_dignal_parent() is not called in that case too.
+The single stream test results from 2.6.37 kernel on Chelsio:
 
-OK, I misread this code. In fact I missed something else, can't recall
-what I meant. Probably I was wrong anyway.
+64K message size: copy_from_user dropped from 40% to 5%; vhost thread
+cpu utilization dropped from 76% to 28%
 
-But. What if the child stops after PR_DETACH? It will notify the parent
-anyway, no? And this can even happen after wait(WEXITED) succeeded.
+I am collecting more test results against 2.6.39-rc3 kernel and will
+provide the test matrix later.
 
->> task_pid_vnr(p). Hmm, the change in reparent_leader doesn't look right,
->> at least in case we reparent to sub-thread.
-> Why not? Whereever we reparented, I allow reparenting again.
+Thanks
+Shirley
 
-Even if the child reparents to the original parent's sub-thread?
-
-> But, more importantly, I unhide that task in wait() and allow the
-> notifications again, so without this change it can't work.
-
-This is clear but see above.
-
->> And of course, this breaks ptrace _completely_.
-> Why? What exactly breaks?
-
-Everything. ptrace relies on do_wait(). wait_consider_task() doesn't
-work if pr_detached (except for WEXITED of course).
-
->> Stas, I am sorry, I am tired ;) You are sending more and more versions
->> with the different semantics and they all are buggy.
-> I am not that sure the last ones are very buggy.
-
-Well, I am not sure.
-
-> but at least that semantic
-> was a kind of "agreed on", and didn't change at all.
-
-Cough. So far nobody except you agrees with this semantics ;)
-
-Oleg.
 
