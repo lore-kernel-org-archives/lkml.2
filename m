@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab1DTPzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:55:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38704 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1DTPzB (ORCPT
+	id S1755145Ab1DTP67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:58:59 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51070 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab1DTP66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:55:01 -0400
-Message-ID: <4DAF0173.6040301@ru.mvista.com>
-Date: Wed, 20 Apr 2011 19:53:23 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Wed, 20 Apr 2011 11:58:58 -0400
+Date: Wed, 20 Apr 2011 17:58:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: rwhitton@iee.org, Clemens Ladisch <clemens@ladisch.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Background memory scrubbing
+Message-ID: <20110420155853.GB2312@gere.osrc.amd.com>
+References: <16117.1303310442@jupiter.eclipse.co.uk>
+ <4DAEF98D.2090802@ladisch.de>
+ <20110420153529.GA2312@gere.osrc.amd.com>
+ <20110420154658.GD1624@x4.trippels.de>
 MIME-Version: 1.0
-To: Seth Heasley <seth.heasley@intel.com>
-CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.39-rc3 RESEND] ata_piix: IDE-mode SATA patch for Intel
- Panther Point DeviceIDs
-References: <201104200843.37660.seth.heasley@intel.com>
-In-Reply-To: <201104200843.37660.seth.heasley@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110420154658.GD1624@x4.trippels.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Apr 20, 2011 at 05:46:58PM +0200, Markus Trippelsdorf wrote:
+> BTW is it really necessary to print the following to syslog:
+> 
+> EDAC amd64: pci-read, sdram scrub control value: 15
+> EDAC MC: Read scrub rate: 97650
+> 
+> everytime one runs:
+>  # cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+> 97650
+> 
+> ?
 
-On 20-04-2011 19:43, Seth Heasley wrote:
+This is KERN_DEBUG since .38 (commit 24f9a7fe3f19f3fd310f556364d01a22911724b3)
+and it shouldn't appear on the console if you don't change your default log level.
 
-> The previously submitted patch was word-wrapped.
+-- 
+Regards/Gruss,
+Boris.
 
-    This should have been under --- tear line. Now Jeff will have to hand edit 
-it out of the patch...
-
-> This patch adds the IDE-mode SATA DeviceIDs for the Intel Panther
-> Point PCH.
-
-> Signed-off-by: Seth Heasley<seth.heasley@intel.com>
-
-WBR, Sergei
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
