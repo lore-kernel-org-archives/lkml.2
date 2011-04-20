@@ -1,139 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1DTBla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:41:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50745 "EHLO e9.ny.us.ibm.com"
+	id S1754660Ab1DTBoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 21:44:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37193 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643Ab1DTBlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:41:19 -0400
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+	id S1751933Ab1DTBoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 21:44:24 -0400
+Date: Tue, 19 Apr 2011 18:43:40 -0700
+From: Greg KH <gregkh@suse.de>
 To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104181321480.31186@chino.kir.corp.google.com>
-	 <1303161774.9887.346.camel@nimitz>
-	 <20110419094422.9375.A69D9226@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 19 Apr 2011 18:41:13 -0700
-Message-ID: <1303263673.5076.612.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
+Message-ID: <20110420014340.GA21245@suse.de>
+References: <james_p_freyensee@linux.intel.com>
+ <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
+ <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
+ <1303258222.13457.42.camel@localhost>
+ <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 14:21 -0700, David Rientjes wrote:
-> On Tue, 19 Apr 2011, KOSAKI Motohiro wrote:
-> > The rule is,
-> > 
-> > 1) writing comm
-> > 	need task_lock
-> > 2) read _another_ thread's comm
-> > 	need task_lock
-> > 3) read own comm
-> > 	no need task_lock
+On Tue, Apr 19, 2011 at 06:22:14PM -0700, David Rientjes wrote:
+> On Tue, 19 Apr 2011, J Freyensee wrote:
 > 
-> That was true a while ago, but you now need to protect every thread's 
-> ->comm with get_task_comm() or ensuring task_lock() is held to protect 
-> against /proc/pid/comm which can change other thread's ->comm.  That was 
-> different before when prctl(PR_SET_NAME) would only operate on current, so 
-> no lock was needed when reading current->comm.
+> > > > From: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > > 
+> > > > This allows drivers who call this function to be compiled modularly.
+> > > > Otherwise, a driver who is interested in this type of functionality
+> > > > has to implement their own get_task_comm() call, causing code
+> > > > duplication in the Linux source tree.
+> > > > 
+> > > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > 
+> > > Acked-by: David Rientjes <rientjes@google.com>
+> > > 
+> > > There've been some other patchsets proposed recently that need to print a 
+> > > thread's comm and since /proc/pid/comm can change the comm's of other 
+> > > threads out from under them, it's necessary to serialize access to it with 
+> > > task_lock().  This patch certainly makes it easier for modules to do so 
+> > > correctly, thanks!
+> > 
+> > Thanks for the compliment; it's appreciated.  I've made my patch sets
+> > independent from one another.  And I believe a common consensus (at
+> > least with Greg KH, Alan C., Arjan VdV and myself) was achieved that
+> > this is a good patch to apply? So maybe this can be applied to the
+> > kernel, independent of my other patches, so this will fit your needs?
+> > 
+> 
+> This patch in particular can probably go through the -mm tree; the last 
+> activity for get_task_comm() was three years ago (59714d65dfbc 
+> "get_task_comm(): return the result") which also went through the -mm tree 
+> and its export is a general service to module authors.  Let's cc Andrew 
+> and see if he'll merge it.
 
-Everybody still goes through set_task_comm() to _set_ it, though.  That
-means that the worst case scenario that we get is output truncated
-(possibly to nothing).  We already have at least one existing user in
-mm/ (kmemleak) that thinks this is OK.  I'd tend to err in the direction
-of taking a truncated or empty task name to possibly locking up the
-system.
+No, let's wait for the other patches to get acceptable before we merge
+it.  We don't need to add exports when there are no users of it in the
+tree. It's not for .39 at this point anyway, so no rush at the moment.
 
-There are also plenty of instances of current->comm going in to the
-kernel these days.  I count 18 added since 2.6.37.
+thanks,
 
-As for a long-term fix, locks probably aren't the answer.  Would
-something like this completely untested patch work?  It would have the
-added bonus that it keeps tsk->comm users working for the moment.  We
-could eventually add an rcu_read_lock()-annotated access function.
-
----
-
- linux-2.6.git-dave/fs/exec.c                 |   22 +++++++++++++++-------
- linux-2.6.git-dave/include/linux/init_task.h |    3 ++-
- linux-2.6.git-dave/include/linux/sched.h     |    3 ++-
- 3 files changed, 19 insertions(+), 9 deletions(-)
-
-diff -puN mm/page_alloc.c~tsk_comm mm/page_alloc.c
-diff -puN include/linux/sched.h~tsk_comm include/linux/sched.h
---- linux-2.6.git/include/linux/sched.h~tsk_comm	2011-04-19 18:23:58.435013635 -0700
-+++ linux-2.6.git-dave/include/linux/sched.h	2011-04-19 18:24:44.651034028 -0700
-@@ -1334,10 +1334,11 @@ struct task_struct {
- 					 * credentials (COW) */
- 	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
- 
--	char comm[TASK_COMM_LEN]; /* executable name excluding path
-+	char comm_buf[TASK_COMM_LEN]; /* executable name excluding path
- 				     - access with [gs]et_task_comm (which lock
- 				       it with task_lock())
- 				     - initialized normally by setup_new_exec */
-+	char __rcu *comm;
- /* file system info */
- 	int link_count, total_link_count;
- #ifdef CONFIG_SYSVIPC
-diff -puN include/linux/init_task.h~tsk_comm include/linux/init_task.h
---- linux-2.6.git/include/linux/init_task.h~tsk_comm	2011-04-19 18:24:48.703035798 -0700
-+++ linux-2.6.git-dave/include/linux/init_task.h	2011-04-19 18:25:22.147050279 -0700
-@@ -161,7 +161,8 @@ extern struct cred init_cred;
- 	.group_leader	= &tsk,						\
- 	RCU_INIT_POINTER(.real_cred, &init_cred),			\
- 	RCU_INIT_POINTER(.cred, &init_cred),				\
--	.comm		= "swapper",					\
-+	.comm_buf	= "swapper",					\
-+	.comm		= &tsk.comm_buf, 				\
- 	.thread		= INIT_THREAD,					\
- 	.fs		= &init_fs,					\
- 	.files		= &init_files,					\
-diff -puN fs/exec.c~tsk_comm fs/exec.c
---- linux-2.6.git/fs/exec.c~tsk_comm	2011-04-19 18:25:32.283054625 -0700
-+++ linux-2.6.git-dave/fs/exec.c	2011-04-19 18:37:47.991485880 -0700
-@@ -1007,17 +1007,25 @@ char *get_task_comm(char *buf, struct ta
- 
- void set_task_comm(struct task_struct *tsk, char *buf)
- {
-+	char tmp_comm[TASK_COMM_LEN];
-+
- 	task_lock(tsk);
- 
-+	memcpy(tmp_comm, tsk->comm_buf, TASK_COMM_LEN);
-+	tsk->comm = tmp;
- 	/*
--	 * Threads may access current->comm without holding
--	 * the task lock, so write the string carefully.
--	 * Readers without a lock may see incomplete new
--	 * names but are safe from non-terminating string reads.
-+	 * Make sure no one is still looking at tsk->comm_buf
- 	 */
--	memset(tsk->comm, 0, TASK_COMM_LEN);
--	wmb();
--	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
-+	synchronize_rcu();
-+
-+	strlcpy(tsk->comm_buf, buf, sizeof(tsk->comm));
-+	tsk->comm = tsk->com_buff;
-+	/*
-+	 * Make sure no one is still looking at the
-+	 * stack-allocated buffer
-+	 */
-+	synchronize_rcu();
-+
- 	task_unlock(tsk);
- 	perf_event_comm(tsk);
- }
-
-
--- Dave
-
+greg k-h
