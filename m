@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1DTTMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 15:12:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058Ab1DTTMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 15:12:52 -0400
-Date: Wed, 20 Apr 2011 15:12:31 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        robert.richter@amd.com, andi@firstfloor.org, ming.m.lin@intel.com,
-        eranian@google.com, ying.huang@intel.com,
-        mathieu.desnoyers@efficios.com, acme@redhat.com
-Subject: Re: [RFC] x86, perf: high volume of events produces a flood of
- unknown NMIs
-Message-ID: <20110420191231.GB31724@redhat.com>
-References: <20110420182613.GA31724@redhat.com>
- <4DAF2A57.1010804@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAF2A57.1010804@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1753708Ab1DTTQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 15:16:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58193 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab1DTTQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 15:16:20 -0400
+Subject: Re: x86: tsc: make TSC calibration more immune to interrupts
+From: john stultz <johnstul@us.ibm.com>
+To: Kasper Pedersen <kernel@kasperkp.dk>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+In-Reply-To: <4DAF2B57.6010100@kasperkp.dk>
+References: <4DAF2B57.6010100@kasperkp.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 12:15:59 -0700
+Message-ID: <1303326959.2796.136.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 10:47:51PM +0400, Cyrill Gorcunov wrote:
-> > Or perhaps we don't care about this because in the end perf can't even
-> > capture the data without spitting out a CPU Overload message.
-> > 
-> > Thoughts?
-> > 
+On Wed, 2011-04-20 at 20:52 +0200, Kasper Pedersen wrote:
+> When a SMI or plain interrupt occurs during the delayed part
+> of TSC calibration, and the SMI/irq handler is good and fast
+> so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
+> off (10-30ppm).
 > 
-> Hi Don, just a thought -- since pmi masks lvtpc we could read it and check if it's
-> masked or no, though I fear it is quite time consuming operation in compare with
-> frames :( (hmm, intel spec mentions only p4 and xeon as masking lvtpc)
+> We should not depend on interrupts being longer than 50000
+> clocks, so always do the 5 tries, and use the best sample we
+> get.
+> This should work always for any four periodic or rate-limited
+> interrupt sources. If we get 5 interrupts with 500ns gaps in
+> a row, behaviour should be as without this patch.
+> 
+> This costs us 20-100 microseconds in startup time, as
+> tsc_read_refs is called 8 times.
+> 
+> measurements:
+> On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
+> A Core2 is similar: http://n1.taur.dk/tscdeviat.png
+> (while mostly t2-t1=~1000, in about 1 of 3000 tests
+> I see t2-t1=~20000 for both machines.)
+> vmware ESX4 has t2-t1=~8000 and up.
 
-Been there, tried that.  It seems to be masked a large majority of the
-time, even when the NMIs don't appear to be back-to-back.
 
-Cheers,
-Don
+I guess I'm curious how useful this is with the refined TSC calibration
+that was added not too long ago:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+
+Are you saying that you see the same 10-30ppm variance in the dmesg
+line: "Refined TSC clocksource calibration: XXXX.XXX MHz" ?
+
+thanks
+-john
+
+
