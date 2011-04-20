@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab1DTRdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 13:33:21 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:37001 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab1DTRdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 13:33:20 -0400
-X-ASG-Debug-ID: 1303320798-03d6a57329ea570001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAF18DF.9080205@fusionio.com>
-Date: Wed, 20 Apr 2011 19:33:19 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755507Ab1DTRgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 13:36:53 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49280 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab1DTRgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 13:36:52 -0400
+Date: Wed, 20 Apr 2011 19:36:27 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Borislav Petkov <bp@amd64.org>, "rwhitton@iee.org" <rwhitton@iee.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Background memory scrubbing
+Message-ID: <20110420173627.GE2734@aftab>
+References: <16117.1303310442@jupiter.eclipse.co.uk>
+ <4DAEF98D.2090802@ladisch.de>
+ <20110420153529.GA2312@gere.osrc.amd.com>
+ <20110420154658.GD1624@x4.trippels.de>
+ <20110420155853.GB2312@gere.osrc.amd.com>
+ <20110420164506.GE1624@x4.trippels.de>
+ <20110420165533.GA1624@x4.trippels.de>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at  0000000c IP: cfq_insert_request+0x1d/0x3f5
-References: <20110420125824.GA3507@tiehlicka.suse.cz> <4DAEDBEB.7060904@fusionio.com> <20110420132903.GA13554@tiehlicka.suse.cz>
-X-ASG-Orig-Subj: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at  0000000c IP: cfq_insert_request+0x1d/0x3f5
-In-Reply-To: <20110420132903.GA13554@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303320798
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.20
-X-Barracuda-Spam-Status: No, SCORE=0.20 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=PR0N_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61425
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.20 PR0N_SUBJECT           Subject has letters around special characters (pr0n)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110420165533.GA1624@x4.trippels.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-20 15:29, Michal Hocko wrote:
-> On Wed 20-04-11 15:13:15, Jens Axboe wrote:
->> On 2011-04-20 14:58, Michal Hocko wrote:
->>> Hi,
->>> I am not able to boot with the current git tree
->>> (2.6.39-rc4-00089-g2f666bc). 2.6.39-rc3 boots just fine.
->>>
->>> The backtrace [1] looks really messy.
->>>
->>> I have seen a similar backtrace at https://lkml.org/lkml/2011/3/25/169
->>> and tried the patch from https://lkml.org/lkml/2011/3/25/173 but it
->>> didn't help. The backtrace looks similar (much smaller) but the machine
->>> ends up dead as well with unbalanced preempt counter[2].
->>>
->>> The config is attached.
->>>
->>> Is this a known problem?
->>>
->>> ---
->>> * [1] backtrace with the current git tree (2f666bc)
->>>
->>> [   31.207283] BUG: unable to handle kernel NULL pointer dereference at 0000000c
->>> NULL pointer dereference[   31.207540] IP: at 0000000c
->>> [   31.207540] IP: [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> [   31.207720] *pde = 00000000  [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> NULL pointer dereference[   31.207720] *pde = 00000000
->>>  at 0000000c
->>> [   31.207888] Oops: 0000 [#1]
->>> PREEMPT [   31.207540] IP:[   31.207888] Oops: 0000 [#1] SMP PREEMPT DEBUG_PAGEALLOC [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> SMP DEBUG_PAGEALLOC[   31.207720] *pde = 00000000
->>> [   31.207888] Oops: 0000 [#1] PREEMPT [   31.208186] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/block/sda/queue/scheduler
->>
->> Ahh hang on, this may be a good clue. Does your boot scripts change the
->> IO scheduler?
+On Wed, Apr 20, 2011 at 12:55:33PM -0400, Markus Trippelsdorf wrote:
+> > > This is KERN_DEBUG since .38 (commit 24f9a7fe3f19f3fd310f556364d01a22911724b3)
+> > > and it shouldn't appear on the console if you don't change your default log level.
+> > 
+> > Yes. Sorry, but I was referring to dmesg and not the console. 
+> > What I mean is that maybe debugf1 or debugf2 is more appropriate than
+> > amd64_debug?
 > 
-> Good one...
-> Yes, I have:
-> echo deadline > /sys/block/sda/queue/scheduler
-> in /etc/rc.local
-> 
-> I am able to boot after I remove it. This is the first time I have seen
-> "last sysfs file" being useful.
-> Still want me to test the patch from the other email?
+> In other words:
 
-Is this a new addition to your system? IOW, how certain are you that
-this is a regression that occured between rc3 and rc4?
+Ok, that whole debugging output there is partly historical remains and
+we don't really need them if we're smart about it. But you'll have to
+change your patch and make a proper commit message :).
+
+> 
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index 31e71c4f..13b107e 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -211,7 +211,7 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
+>  
+>  	scrubval = scrubval & 0x001F;
+>  
+> -	amd64_debug("pci-read, sdram scrub control value: %d\n", scrubval);
+> +	debugf1 ("pci-read, sdram scrub control value: %d\n", scrubval);
+
+remove this one completely.
+
+>  
+>  	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
+>  		if (scrubrates[i].scrubval == scrubval) {
+> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+> index 26343fd..8a34aea 100644
+> --- a/drivers/edac/edac_mc_sysfs.c
+> +++ b/drivers/edac/edac_mc_sysfs.c
+> @@ -459,7 +459,7 @@ static ssize_t mci_sdram_scrub_rate_store(struct mem_ctl_info *mci,
+>  
+>  	new_bw = mci->set_sdram_scrub_rate(mci, bandwidth);
+>  	if (new_bw >= 0) {
+> -		edac_printk(KERN_DEBUG, EDAC_MC, "Scrub rate set to %d\n", new_bw);
+> +		debugf1 ("Scrub rate set to %d\n", new_bw);
+>  		return count;
+>  	}
+
+Make here the success case implicit and issue a warning only if we fail
+setting the scrub rate:
+
+
+	new_bw = mci->set_sdram_scrub_rate(mci, bandwidth);
+	if (new_bw < 0) {
+		edac_printk(KERN_WARNING, EDAC_MC,
+			    "Error setting scrub rate to: %lu\n", bandwidth);
+		return -EINVAL;
+	}
+
+and do the same thing with mci_sdram_scrub_rate_show() below.
+
+>  
+> @@ -483,7 +483,7 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+>  		return bandwidth;
+>  	}
+>  
+> -	edac_printk(KERN_DEBUG, EDAC_MC, "Read scrub rate: %d\n", bandwidth);
+> +	debugf1 ("Read scrub rate: %d\n", bandwidth);
+
+This one can go too since the success-case is in sysfs anyway.
+
+>  	return sprintf(data, "%d\n", bandwidth);
+>  }
+
+Would you like to do that?
+
+Thanks.
 
 -- 
-Jens Axboe
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
