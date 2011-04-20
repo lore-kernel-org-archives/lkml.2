@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1DTBuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:50:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43336 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab1DTBuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:50:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <1303263673.5076.612.camel@nimitz>
-References: <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com> <1303263673.5076.612.camel@nimitz>
-Message-Id: <20110420105059.460C.A69D9226@jp.fujitsu.com>
+	id S1754757Ab1DTCBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 22:01:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37500 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340Ab1DTCBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 22:01:37 -0400
+Date: Tue, 19 Apr 2011 19:01:28 -0700
+From: Greg KH <gregkh@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
+ workaround
+Message-ID: <20110420020128.GA27631@suse.de>
+References: <20110419204117.979118654@clark.kroah.org>
+ <1303263653.3464.65.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Wed, 20 Apr 2011 10:50:51 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303263653.3464.65.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-(Cc to  John Stultz who/proc/<pid>/comm author. I think we need to hear his opinion)
-
-> On Tue, 2011-04-19 at 14:21 -0700, David Rientjes wrote:
-> > On Tue, 19 Apr 2011, KOSAKI Motohiro wrote:
-> > > The rule is,
-> > > 
-> > > 1) writing comm
-> > > 	need task_lock
-> > > 2) read _another_ thread's comm
-> > > 	need task_lock
-> > > 3) read own comm
-> > > 	no need task_lock
+On Wed, Apr 20, 2011 at 02:40:53AM +0100, Ben Hutchings wrote:
+> On Tue, 2011-04-19 at 13:30 -0700, Greg KH wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 > > 
-> > That was true a while ago, but you now need to protect every thread's 
-> > ->comm with get_task_comm() or ensuring task_lock() is held to protect 
-> > against /proc/pid/comm which can change other thread's ->comm.  That was 
-> > different before when prctl(PR_SET_NAME) would only operate on current, so 
-> > no lock was needed when reading current->comm.
+> > ------------------
+> > 
+> > From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+> > 
+> > commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
+> > 
+> > Remove check_c1e_idle() and use the new AMD errata checking framework
+> > instead.
 > 
-> Everybody still goes through set_task_comm() to _set_ it, though.  That
-> means that the worst case scenario that we get is output truncated
-> (possibly to nothing).  We already have at least one existing user in
-> mm/ (kmemleak) that thinks this is OK.  I'd tend to err in the direction
-> of taking a truncated or empty task name to possibly locking up the
-> system.
+> Clean-up patches are generally not candidates for longterm updates.
+
+This was added because a follow-on patch required it.
+
+> However, I notice that the range of procesors considered to have erratum
+> 400 was also changed:
 > 
-> There are also plenty of instances of current->comm going in to the
-> kernel these days.  I count 18 added since 2.6.37.
+> [...]
+> > +const int amd_erratum_400[] =
+> > +	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+> > +			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+> [...]
+> > -	/* Family 0x0f models < rev F do not have C1E */
+> > -	if (c->x86 == 0x0F && c->x86_model >= 0x40)
+> > -		return 1;
+> > -
+> > -	if (c->x86 == 0x10) {
+> > -		/*
+> > -		 * check OSVW bit for CPUs that are not affected
+> > -		 * by erratum #400
+> > -		 */
+> > -		if (cpu_has(c, X86_FEATURE_OSVW)) {
+> [...]
+> > -		}
+> > -		return 1;
+> [...]
 > 
-> As for a long-term fix, locks probably aren't the answer.  Would
-> something like this completely untested patch work?  It would have the
-> added bonus that it keeps tsk->comm users working for the moment.  We
-> could eventually add an rcu_read_lock()-annotated access function.
+> Family 0x0f model 0x40 and model 0x41 stepping 0 and 1 are excluded.
+> Family 0x10 model 0x00, 0x01 and model 0x02 stepping 0 are excluded.
+> Is that the real fix here?
 
-The concept is ok to me. but AFAIK some caller are now using ARRAY_SIZE(tsk->comm).
-or sizeof(tsk->comm). Probably callers need to be changed too.
+In this patch, no, it's just infrastructure for a later one.
+And I think the bug you noticed here was also fixed in a later patch in
+the series, right?
 
-Thanks.
+thanks,
 
-
+greg k-h
