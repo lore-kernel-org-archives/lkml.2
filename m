@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab1DTUKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:10:23 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:58242 "EHLO e4.ny.us.ibm.com"
+	id S1756017Ab1DTUMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:12:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48934 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754234Ab1DTUKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:10:22 -0400
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1303328906.2823.24.camel@bwh-desktop>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-	 <1303328648.19336.24.camel@localhost.localdomain>
-	 <1303328906.2823.24.camel@bwh-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 13:09:33 -0700
-Message-ID: <1303330173.19336.52.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755930Ab1DTUMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:12:31 -0400
+Date: Wed, 20 Apr 2011 22:12:25 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110420201225.GA29947@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Christoph Hellwig <hch@infradead.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Jens Axboe <jaxboe@fusionio.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+ <20110414202445.GA6173@liondog.tnic>
+ <BANLkTi=h+NL+qqMDBNvOUmVDonORf4Qx2A@mail.gmail.com>
+ <20110415041455.GA27928@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110415041455.GA27928@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmit this patch with the new bit.
+On Fri, Apr 15, 2011 at 12:14:55AM -0400, Christoph Hellwig wrote:
+> Jens already has a fix in his tree to always offload the block I/O
+> submission to blockd for this case.
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+FWIW, I can't trigger the warning with 2.6.39-rc4-00089-g2f666bc
+anymore. So either Jens' fixes have trickled up to Linus or it is due to
+6631e635c65d he mentioned earlier.
 
- include/linux/netdevice.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 0249fe7..0998d3d 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1067,6 +1067,9 @@ struct net_device {
- #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
- #define NETIF_F_RXCSUM		(1 << 29) /* Receive checksumming offload */
- 
-+/* Bit 30 is for device to map userspace buffers -- zerocopy */
-+#define NETIF_F_ZEROCOPY	(1 << 30)
-+
- 	/* Segmentation offload features */
- #define NETIF_F_GSO_SHIFT	16
- #define NETIF_F_GSO_MASK	0x00ff0000
-
-
+-- 
+Regards/Gruss,
+    Boris.
