@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1DTXq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:46:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56124 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752408Ab1DTXqz (ORCPT
+	id S1754023Ab1DTXuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:50:18 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:26592 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752408Ab1DTXuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:46:55 -0400
-Date: Wed, 20 Apr 2011 16:46:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: james_p_freyensee@linux.intel.com
-Cc: Greg KH <gregkh@suse.de>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-Message-Id: <20110420164621.3d817c4f.akpm@linux-foundation.org>
-In-Reply-To: <1303341368.13457.92.camel@localhost>
-References: <james_p_freyensee@linux.intel.com>
-	<1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
-	<alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
-	<1303258222.13457.42.camel@localhost>
-	<alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
-	<20110420014340.GA21245@suse.de>
-	<1303323083.13457.50.camel@localhost>
-	<20110420191421.GA10306@suse.de>
-	<20110420161125.3449d4fd.akpm@linux-foundation.org>
-	<1303341368.13457.92.camel@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Apr 2011 19:50:16 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Apr 2011 19:50:16 EDT
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: qJwru3kVM1mWc4UgemnoQgZ8jNqcF6hhZL13PTyUfvMNBhl
+ .mwx.HNgX3G7s1IuzS7dq18n9eGTJ8zfThdtNDIdJl5Eo1k3Y7qEVBLfTjGf
+ oztzCOq0nbkQ.Gm6hQNxV0iFV7gykua6DlIyqEq6kLfu0Ud8wk80Qbqujzu7
+ mCzk_RgjIkFtO4ymJDxoXh9qsOYckkaq4CqKVDfalBkVQmvebkarTiSBiFM2
+ aZZHii3wfEd2O7Qob8LICaW0ZjV8iVxsFg0qPfQKVkA.ntaaqArcLW4Q2AoJ
+ 3RjfYRy3D9BGsBX7PED2DGW2HEGmLg9fj8x4FBzlhLPSOzXbtMA6ehO2k9Yg
+ BVbz_rtVc6l_VAYYfuSQjpw6H957m6fbAbygVE.RD4Os-
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DAF6FA5.7080801@schaufler-ca.com>
+Date: Wed, 20 Apr 2011 16:43:33 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Andi Kleen <ak@linux.intel.com>
+CC: Andi Kleen <andi@firstfloor.org>, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] SMACK: Add missing rcu_read_lock/unlock for process capability
+ walk.
+References: <1303336844-31074-1-git-send-email-andi@firstfloor.org> <4DAF637D.90606@schaufler-ca.com> <20110420231859.GB32402@tassilo.jf.intel.com>
+In-Reply-To: <20110420231859.GB32402@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011 16:16:08 -0700
-J Freyensee <james_p_freyensee@linux.intel.com> wrote:
+On 4/20/2011 4:18 PM, Andi Kleen wrote:
+> On Wed, Apr 20, 2011 at 03:51:41PM -0700, Casey Schaufler wrote:
+>> On 4/20/2011 3:00 PM, Andi Kleen wrote:
+>>> From: Andi Kleen <ak@linux.intel.com>
+>>>
+>>> smk_access_entry does a RCU list walk for a list shared with other
+>>> threads. It relies on the caller doing rcu_read_lock().
+>>> One caller forgot to do to this, which could lead to races
+>>> on preemptible kernels.
+>>>
+>>> Move the rcu_read_lock() into smk_access_entry instead.
+>> Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
+>>
+>> The lock was moved out of smk_access_entry in support of the
+>> processing done in the smack_mmap_file() hook. Where do you see
+>> a potential race, and which caller "forgot" to do the lock?
+> There are two callers and only one takes it.
 
-> On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
-> > On Wed, 20 Apr 2011 12:14:21 -0700
-> > Greg KH <gregkh@suse.de> wrote:
-> > 
-> > > > But as David pointed out, if there is work other than mine coming that
-> > > > has already been proposed, wouldn't it be good to get this patch in
-> > > > place now to start the encouragement of future eyes to just call this
-> > > > function than re-invent the wheel?
-> > > 
-> > > No, then those projects submit the patch to export this, if they happen
-> > > to get to mainline before this one does.
-> > > 
-> > > Again, don't export something unless you are using it at the time, no
-> > > "this is to be used hopefully by something in the future" type stuff
-> > > please.  Who knows if those future plans ever pan out.
-> > 
-> > Well there's an easy solution here.  Send the patch to export
-> > get_task_comm(), then send along some patches which fix
-> > 
-> > z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
-> > 89
-> > 
-> 
-> Andrew, so does this mean you want me to send this patch to export
-> get_task_comm() to you then?
-> 
+There are two callers in smack_access.c.
+There are four more in smack_lsm.c
 
-That works.  But Greg might see us doing it, so some additional
-mergeable patches which *need* that export will keep him happy.
+> The one that doesn't take it is smk_curacc.
 
-(iow, you're being extorted into doing some kernel cleanup work)
+The call in smk_curacc() is using the task local list, not the system list.
+
+> I checked the callers of that and there is no rcu_read_lock() in those
+>
+> As far as I understand the cred which holds this list is shared
+> between threads and other threads can modify it. Which means 
+> it needs RCU read lock protection.
+
+The global list, yes. The task specific list, no. Modifying the local
+list is like any other modification of the cred structure and requires
+the cred be copied.
+
+Moving the lock into smk_access_entry() would introduce a potential
+deadlock in smack_mmap_file. There is a bit of convolution in the
+mmap hook that requires looking at the list in a way that does not
+allow the locking to be embedded where it used to be.
+
+> -Andi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+
