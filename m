@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1DTL5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 07:57:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40038 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab1DTL5w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 07:57:52 -0400
-Date: Wed, 20 Apr 2011 12:57:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [linux-pm] [PATCH 7/9] PM / Runtime: Add generic clock
-	manipulation rountines for runtime PM
-Message-ID: <20110420115738.GA25571@sirena.org.uk>
-References: <201104130205.26988.rjw@sisk.pl> <201104170142.10723.rjw@sisk.pl> <20110419105836.GG9462@sirena.org.uk> <201104192335.34560.rjw@sisk.pl>
+	id S1754391Ab1DTL7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 07:59:44 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:53145 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926Ab1DTL7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 07:59:43 -0400
+X-ASG-Debug-ID: 1303300778-01de284cf816ddc0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DAECAAB.3040601@fusionio.com>
+Date: Wed, 20 Apr 2011 13:59:39 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104192335.34560.rjw@sisk.pl>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block IO bits for 2.6.39-rc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] block IO bits for 2.6.39-rc
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1303300778
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61402
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 11:35:34PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 19, 2011, Mark Brown wrote:
+Hi Linus,
 
-> > I've had similar thoughts with respect to the regulator API - I'd been
-> > thinking of dealing with this by adding a notifier which subsystems
-> > could build upon, in much the same way as already exists for the system
-> > ssuspend and resume events.
+- Fix a long standing bug in CFQ that assumes that read_lock() implies
+  rcu_read_lock() as well. No known cases of this hitting (it would have
+  to be a lucky punch during IO scheduler switch), but a bug none the
+  less.
 
-> Well, I generally avoid using notifiers, because they lead to big functions
-> that carry out many different tasks.
+- Get rid of QUEUE_FLAG_REENTER. I know you love it, but it must go.
+  SCSI unconditionally does async queue runs, in most cases they don't
+even need to do that. I'll pass a patch through James to correct that.
 
-> That said, I think consolidation and reduction of duplicate code is all good,
-> this way or another. :-)
+- Two buglets in the block sysfs code, missing cleanup on error and code
+  clarification change.
 
-Well, if you're comfortable with adding explicit regulator API hooks in
-the code directly then I can just do that - I'd been thinking notifiers
-since they mean you don't have to worry about what's going on with it
-but if you're happy with making it explicit that's fine by me also.
+- blk_flush_plug_list() is no longer used externally, it's only called
+  by schedule(). So we can kill the export now.
+
+Please pull!
+
+
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Jens Axboe (4):
+      block: kill blk_flush_plug_list() export
+      cfq-iosched: read_lock() does not always imply rcu_read_lock()
+      block: get rid of QUEUE_FLAG_REENTER
+      block: remove stale kerneldoc member from __blk_run_queue()
+
+Liu Yuan (1):
+      block, blk-sysfs: Fix an err return path in blk_register_queue()
+
+Tao Ma (1):
+      block: Remove the extra check in queue_requests_store
+
+ block/blk-core.c                 |   13 ++-----------
+ block/blk-sysfs.c                |    8 +++++---
+ block/blk.h                      |    1 -
+ block/cfq-iosched.c              |   20 ++++++--------------
+ drivers/scsi/scsi_lib.c          |   17 +----------------
+ drivers/scsi/scsi_transport_fc.c |   19 ++++---------------
+ include/linux/blkdev.h           |   26 +++++++++++++-------------
+ 7 files changed, 31 insertions(+), 73 deletions(-)
+
+-- 
+Jens Axboe
+
