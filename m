@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab1DTL23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 07:28:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64300 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1DTL21 convert rfc822-to-8bit (ORCPT
+	id S1754432Ab1DTLcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 07:32:20 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56930 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab1DTLcT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 07:28:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=B/G6bpU9NlhgZkhJibZ7Brl9bC7YCa3RUlBy4G0d8rJhJYS7yZPCDsW8MD5mY/l2l0
-         NKfICjdjr6JN4/O8NB4sdQkJB/YugoBKoLmRTwf4wuf7KSLnw17k2UgxM4ViZ6muyTX1
-         b6+lIN3b60Agi7V9NgVlP6QbYPLhhj8DEjbNo=
+	Wed, 20 Apr 2011 07:32:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110420112020.GA31296@parisc-linux.org>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
-	<BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
-	<20110420161615.462D.A69D9226@jp.fujitsu.com>
-	<BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-	<20110420112020.GA31296@parisc-linux.org>
-Date: Wed, 20 Apr 2011 14:28:26 +0300
-X-Google-Sender-Auth: fr-Jl-L8jV6hWDnylkotoPCH8DY
-Message-ID: <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to expand_upwards
-From: Pekka Enberg <penberg@kernel.org>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        x86 maintainers <x86@kernel.org>
+In-Reply-To: <1302116833-24540-9-git-send-email-per.forlin@linaro.org>
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+	<1302116833-24540-9-git-send-email-per.forlin@linaro.org>
+Date: Wed, 20 Apr 2011 13:32:18 +0200
+Message-ID: <BANLkTikf_yJiXnprkAC2s=q1Oyqs0cGWZA@mail.gmail.com>
+Subject: Re: [PATCH v2 08/12] mmc: add handling for two parallel block
+ requests in issue_rw_rq
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+On 6 April 2011 21:07, Per Forlin <per.forlin@linaro.org> wrote:
+> Change mmc_blk_issue_rw_rq() to become asynchronous.
+> The execution flow looks like this:
+> The mmc-queue calls issue_rw_rq(), which sends the request
+> to the host and returns back to the mmc-queue. The mmc-queue calls
+> isuue_rw_rq() again with a new request. This new request is prepared,
+> in isuue_rw_rq(), then it waits for the active request to complete before
+> pushing it to the host. When to mmc-queue is empty it will call
+> isuue_rw_rq() with req=NULL to finish off the active request
+> without starting a new request.
+>
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> ---
+>  drivers/mmc/card/block.c |  157 +++++++++++++++++++++++++++++++++++++++-------
+>  drivers/mmc/card/queue.c |    2 +-
+>  2 files changed, 134 insertions(+), 25 deletions(-)
+>
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index eef3510..2b14d1c 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -59,6 +59,7 @@ static int mmc_queue_thread(void *d)
+>                mq->mqrq_cur->req = req;
+>                spin_unlock_irq(q->queue_lock);
+>
+Call set_current_state(TASK_RUNNING) before issue_fn() otherwise
+issue_fn will execute as TASK_INTERRUPTIBLE.
+Will be added in the version 3 of this patchset.
 
-On Wed, Apr 20, 2011 at 10:34:23AM +0300, Pekka Enberg wrote:
->> That part makes me think the best option is to make parisc do
->> CONFIG_NUMA as well regardless of the historical intent was.
-
-On Wed, Apr 20, 2011 at 2:20 PM, Matthew Wilcox <matthew@wil.cx> wrote:
-> But it's not just parisc.  It's six other architectures as well, some
-> of which aren't even SMP.  Does !SMP && NUMA make any kind of sense?
-
-IIRC, we actually fixed SLAB or SLUB to work on such configs in the past.
-
-On Wed, Apr 20, 2011 at 2:20 PM, Matthew Wilcox <matthew@wil.cx> wrote:
-> I think really, this is just a giant horrible misunderstanding on the part
-> of the MM people.  There's no reason why an ARM chip with 16MB of memory
-> at 0 and 16MB of memory at 1GB should be saddled with all the NUMA gunk.
-
-Right. My point was simply that since x86 doesn't support DISCONTIGMEM
-without NUMA, the misunderstanding is likely very wide-spread.
-
-                       Pekka
+> +               mq->issue_fn(mq, req);
+>                if (!req) {
+>                        if (kthread_should_stop()) {
+>                                set_current_state(TASK_RUNNING);
+> @@ -71,7 +72,6 @@ static int mmc_queue_thread(void *d)
+>                }
+>                set_current_state(TASK_RUNNING);
+>
+> -               mq->issue_fn(mq, req);
+>        } while (1);
+>        up(&mq->thread_sem);
+>
+> --
+> 1.7.4.1
+>
+>
