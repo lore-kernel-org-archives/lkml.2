@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab1DTLfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 07:35:04 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:60960 "EHLO radon.swed.at"
+	id S1754467Ab1DTLgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 07:36:09 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:45178 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab1DTLfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 07:35:03 -0400
+	id S1754203Ab1DTLgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 07:36:07 -0400
 From: Richard Weinberger <richard@nod.at>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Randy Dunlap <randy.dunlap@oracle.com>,
         Richard Weinberger <richard@nod.at>
-Subject: [PATCH 1/3] um: Adjust current_thread_info() for gcc-4.6
-Date: Wed, 20 Apr 2011 13:34:24 +0200
-Message-Id: <1303299266-10219-1-git-send-email-richard@nod.at>
+Subject: [PATCH 3/3] uml: fix hppfs build
+Date: Wed, 20 Apr 2011 13:34:26 +0200
+Message-Id: <1303299266-10219-3-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <1303299266-10219-1-git-send-email-richard@nod.at>
+References: <1303299266-10219-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases gcc-4.6 will optimize away current_thread_info().
-To prevent gcc from doing so the stack address has to be obtained
-via inline asm.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-LKML-Reference: http://marc.info/?i=201104132150.05623.richard@nod.at
+Make HoneyPot ProcFS depend on CONFIG_PROC_FS so that it will build.
+Recommended by Christoph Hellwig.
 
+Fixes kernel bugzilla #33692:
+  https://bugzilla.kernel.org/show_bug.cgi?id=33692
+
+Reported-by: Simon Danner <danner.simon@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Jeff Dike <jdike@addtoit.com>
+Cc:	user-mode-linux-devel@lists.sourceforge.net
+Cc:	Christoph Hellwig <hch@infradead.org>
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/um/include/asm/thread_info.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ arch/um/Kconfig.um |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/um/include/asm/thread_info.h b/arch/um/include/asm/thread_info.h
-index e2cf786..5bd1bad 100644
---- a/arch/um/include/asm/thread_info.h
-+++ b/arch/um/include/asm/thread_info.h
-@@ -49,7 +49,10 @@ static inline struct thread_info *current_thread_info(void)
- {
- 	struct thread_info *ti;
- 	unsigned long mask = THREAD_SIZE - 1;
--	ti = (struct thread_info *) (((unsigned long) &ti) & ~mask);
-+	void *p;
-+
-+	asm volatile ("" : "=r" (p) : "0" (&ti));
-+	ti = (struct thread_info *) (((unsigned long)p) & ~mask);
- 	return ti;
- }
+diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
+index 90a438a..b5e675e 100644
+--- a/arch/um/Kconfig.um
++++ b/arch/um/Kconfig.um
+@@ -47,7 +47,7 @@ config HOSTFS
  
+ config HPPFS
+ 	tristate "HoneyPot ProcFS (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	depends on EXPERIMENTAL && PROC_FS
+ 	help
+ 	  hppfs (HoneyPot ProcFS) is a filesystem which allows UML /proc
+ 	  entries to be overridden, removed, or fabricated from the host.
 -- 
 1.7.4.2
 
