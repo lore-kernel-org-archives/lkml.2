@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab1DTGoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 02:44:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61996 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab1DTGod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 02:44:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Arend van Spriel" <arend@broadcom.com>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-Date: Wed, 20 Apr 2011 08:44:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: "Greg KH" <greg@kroah.com>,
-        =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jonas Gorski" <jonas.gorski@gmail.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "Andy Botting" <andy@andybotting.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com> <20110419140257.GA20456@kroah.com> <op.vt74sxvp3ri7v4@arend-laptop>
-In-Reply-To: <op.vt74sxvp3ri7v4@arend-laptop>
+	id S1753048Ab1DTGpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 02:45:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58499 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752728Ab1DTGpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 02:45:04 -0400
+Message-ID: <4DAE811D.6080506@cn.fujitsu.com>
+Date: Wed, 20 Apr 2011 14:45:49 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Chris Mason <chris.mason@oracle.com>
+CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
+Subject: [PATCH v2 2/2] Btrfs: fix unsafe usage of merge_state
+References: <4DAE80E9.2010102@cn.fujitsu.com>
+In-Reply-To: <4DAE80E9.2010102@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 14:45:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 14:45:35,
+	Serialize complete at 2011-04-20 14:45:35
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104200844.10607.arnd@arndb.de>
-X-Provags-ID: V02:K0:5jb8tsjXRwwMrPULsQf/2Kn5LswhqP0EvKBJMjFDPsx
- T/kfZJg8YOt9kGm6apBow1T4kn5HyxJXIrrj6gDAYjpoFSNURx
- I8ABstgxtuXEnaO/i39jLXJL2HMx+UCHAZFjjy8lhP0eNwy9UA
- 1mtdM5WVxQBlBgXOm7zDTx9ZaALXQ+kYaRBEYy/WSmkoqgHC62
- bl1AT7gePrKbhusIjv3ow==
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 April 2011 08:39:59 Arend van Spriel wrote:
-> On Tue, 19 Apr 2011 16:02:57 +0200, Greg KH <greg@kroah.com> wrote:
-> 
-> > Please don't use a platform device, unless there is no other way for
-> > your device to work.  For this device, you are connected to the PCI bus,
-> > so a platform device does not make sense at all.
-> 
-> Hi Greg,
-> 
-> This is only true for a particular usage model. There are two models as  
-> shown below:
-> 
-> 1) PCI(e) card
->                        ...........
-> +----------+          :   x y z :     x, y, and z are cores.
-> |    uC    |__________:___|_|_| :
-> |          |  PCI-bus : axi-bus :
-> +----------+          :.........:
->                        bcm chipset
-> 
-> 2) SoC
->            ...............
->            : uC    x y z :
->            :  |____|_|_| :
->            :    axi-bus  :
->            :.............:
->              bcm chipset
-> 
-> Your statement is true for 1) but in usage model 2) there is no PCI bus.  
-> Also you refer to the chipset when you say 'device'. In the axi bus type  
-> each individual core is registered as a device in the linux device tree.
+merge_state can free the current state if it can be merged with the next node,
+but in set_extent_bit(), after merge_state, we still use the current extent to
+get the next node and cache it into cached_state
 
-I guess what Greg was referring to is having platform devices for x/y/z
-here. In case 2, you might still need to have a platform_device for the
-combination of the three IP cores if they make up one logical device.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ fs/btrfs/extent_io.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
-As mentioned in my reply, it depends a lot on what these cores actually
-are, e.g. whether you might want to have only one of them active in a
-given system to drive a specific functionality, or if you always need
-all three of them.
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index f36e284..129601e 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -780,20 +780,18 @@ hit_next:
+ 		if (err)
+ 			goto out;
+ 
++		next_node = rb_next(node);
+ 		cache_state(state, cached_state);
+ 		merge_state(tree, state);
+ 		if (last_end == (u64)-1)
+ 			goto out;
+ 
+ 		start = last_end + 1;
+-		if (start < end && prealloc && !need_resched()) {
+-			next_node = rb_next(node);
+-			if (next_node) {
+-				state = rb_entry(next_node, struct extent_state,
+-						 rb_node);
+-				if (state->start == start)
+-					goto hit_next;
+-			}
++		if (next_node && start < end && prealloc && !need_resched()) {
++			state = rb_entry(next_node, struct extent_state,
++					 rb_node);
++			if (state->start == start)
++				goto hit_next;
+ 		}
+ 		goto search_again;
+ 	}
+@@ -856,14 +854,22 @@ hit_next:
+ 
+ 		prealloc = alloc_extent_state_atomic(prealloc);
+ 		BUG_ON(!prealloc);
++
++		/*
++		 * Avoid to free 'prealloc' if it can be merged with
++		 * the later extent.
++		 */
++		atomic_inc(&prealloc->refs);
+ 		err = insert_state(tree, prealloc, start, this_end,
+ 				   &bits);
+ 		BUG_ON(err == -EEXIST);
+ 		if (err) {
++			free_extent_state(prealloc);
+ 			prealloc = NULL;
+ 			goto out;
+ 		}
+ 		cache_state(prealloc, cached_state);
++		free_extent_state(prealloc);
+ 		prealloc = NULL;
+ 		start = this_end + 1;
+ 		goto search_again;
+-- 
+1.7.4.2
 
-	Arnd
