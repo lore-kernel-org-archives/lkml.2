@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1DTXQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:16:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54782 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab1DTXQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:16:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,248,1301900400"; 
-   d="scan'208";a="422934901"
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
+	id S1753521Ab1DTXTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:19:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42767 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab1DTXTS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 19:19:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=lOtUlXjg81HoULCwLbWu6g0M0RuKtPzAgUgdwDHJt7zcZ39Uv/bepZa1A4rKAmyePB
+         IU8kRWpKaXNm/k/9GH6w==
+Date: Wed, 20 Apr 2011 16:19:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@suse.de>, David Rientjes <rientjes@google.com>,
+cc: Greg KH <gregkh@suse.de>, J Freyensee <james_p_freyensee@linux.intel.com>,
         linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         christophe.guerard@intel.com
+Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
 In-Reply-To: <20110420161125.3449d4fd.akpm@linux-foundation.org>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
-	 <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
-	 <1303258222.13457.42.camel@localhost>
-	 <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
-	 <20110420014340.GA21245@suse.de> <1303323083.13457.50.camel@localhost>
-	 <20110420191421.GA10306@suse.de>
-	 <20110420161125.3449d4fd.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 20 Apr 2011 16:16:08 -0700
-Message-ID: <1303341368.13457.92.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+Message-ID: <alpine.DEB.2.00.1104201613270.13948@chino.kir.corp.google.com>
+References: <james_p_freyensee@linux.intel.com> <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com> <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com> <1303258222.13457.42.camel@localhost> <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+ <20110420014340.GA21245@suse.de> <1303323083.13457.50.camel@localhost> <20110420191421.GA10306@suse.de> <20110420161125.3449d4fd.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
-> On Wed, 20 Apr 2011 12:14:21 -0700
-> Greg KH <gregkh@suse.de> wrote:
-> 
+On Wed, 20 Apr 2011, Andrew Morton wrote:
+
 > > > But as David pointed out, if there is work other than mine coming that
 > > > has already been proposed, wouldn't it be good to get this patch in
 > > > place now to start the encouragement of future eyes to just call this
@@ -58,10 +54,13 @@ On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
 > 89
 > 
 
-Andrew, so does this mean you want me to send this patch to export
-get_task_comm() to you then?
+If we go this route and continue to support /proc/pid/comm, then we're 
+going to need to ensure nothing that dereferences p->comm for any thread p 
+is in a blockable context and that it's acceptable for get_task_comm(p) to 
+take task_lock(p), and that requires not nesting it with 
+write_lock(&tasklist_lock).
 
-Thanks,
-Jay
-
-
+I'm thinking that we're going to want to choose something else other than 
+p->alloc_lock to protect p->comm since that lock is protecting so many 
+different members of struct task_struct that we may not know whether it's 
+held when we want to print p->comm.
