@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1DTUfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:35:11 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39974 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab1DTUfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:35:09 -0400
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-From: john stultz <johnstul@us.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
-References: <20110419094422.9375.A69D9226@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com>
-	 <20110420093900.45F6.A69D9226@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 13:34:55 -0700
-Message-ID: <1303331695.2796.159.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755651Ab1DTUgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:36:50 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:51894 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421Ab1DTUgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:36:49 -0400
+Message-ID: <4DAF439A.5020204@aknet.ru>
+Date: Thu, 21 Apr 2011 00:35:38 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [2/2]
+References: <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <4DAEDC3F.5010208@aknet.ru> <20110420165023.GA24455@redhat.com> <4DAF29AD.1080603@aknet.ru> <20110420193307.GA1445@redhat.com>
+In-Reply-To: <20110420193307.GA1445@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 13:24 -0700, David Rientjes wrote:
-> On Wed, 20 Apr 2011, KOSAKI Motohiro wrote:
-> 
-> > > That was true a while ago, but you now need to protect every thread's 
-> > > ->comm with get_task_comm() or ensuring task_lock() is held to protect 
-> > > against /proc/pid/comm which can change other thread's ->comm.  That was 
-> > > different before when prctl(PR_SET_NAME) would only operate on current, so 
-> > > no lock was needed when reading current->comm.
-> > 
-> > Right. /proc/pid/comm is evil. We have to fix it. otherwise we need change
-> > all of current->comm user. It's very lots!
-> > 
-> 
-> Fixing it in this case would be removing it and only allowing it for 
-> current via the usual prctl() :)  The code was introduced in 4614a696bd1c 
-> (procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm) in 
-> December 2009 and seems to originally be meant for debugging.  We simply 
-> can't continue to let it modify any thread's ->comm unless we change the 
-> over 300 current->comm deferences in the kernel.
-> 
-> I'd prefer that we remove /proc/pid/comm entirely or at least prevent 
-> writing to it unless CONFIG_EXPERT.
+20.04.2011 23:33, Oleg Nesterov wrote:
 
-Eeeh. That's probably going to be a tough sell, as I think there is
-wider interest in what it provides. Its useful for debugging
-applications not kernels, so I doubt folks will want to rebuild their
-kernel to try to analyze a java issue.
+> I still do not understand the point of PR_DETACH. Why do you think it is
+> needed without reparenting? OK, I do not really care ;)
+Hmm, but that's really interesting, I wonder why do
+you ask this. In my eyes, the reparenting was just a
+"trick", which is now avoided for good. And I saved
+a lot of per-thread memory by throwing that, and
+shrunk the patch twice. Why do you think no-reparenting
+changed something real? Could this change any use case?
 
-So I'm well aware that there is the chance that you catch the race and
-read an incomplete/invalid comm (it was discussed at length when the
-change went in), but somewhere I've missed how that's causing actual
-problems. Other then just being "evil" and having the documented race,
-could you clarify what the issue is that your hitting?
+>>> And. To hide the pr_detached task from do_wait(). you changed
+>>> do_notify_parent() to returnd DEATH_REAP.
+>> No, its hidden by the check in wait_consider_task().
+>> do_notify_parent() was changed only to not allow the
+>> second notification to the same parent.
+> Not only. Please look at your own code ;) wait_consider_task() checks
+> exit_state == EXIT_ZOMBIE before p->pr_detached, and thus do_notify_parent()
+> haas to return DEATH_REAP so that the caller will set EXIT_DEAD. Otherwise
+> the old parent could see EXIT_ZOMBIE&&  pr_detached task again.
+Yes, but that's not to hide from do_wait().
+At least as far as I understand, exit_notify() does
+release_task() in this case, so that's not hiding: I
+literally terminate the child this way.
+Or am I missing something?
 
-thanks
--john
+> But. What if the child stops after PR_DETACH? It will notify the parent
+> anyway, no?
+Ah, so that should be disallowed too, will fix.
 
+>>> task_pid_vnr(p). Hmm, the change in reparent_leader doesn't look right,
+>>> at least in case we reparent to sub-thread.
+>> Why not? Whereever we reparented, I allow reparenting again.
+> Even if the child reparents to the original parent's sub-thread?
+OK. :)
 
+> Everything. ptrace relies on do_wait(). wait_consider_task() doesn't
+> work if pr_detached (except for WEXITED of course).
+OK.
 
+>> I am not that sure the last ones are very buggy.
+> Well, I am not sure.
+OK, at least the above 2 bugs are trivial to fix... :))
+Thanks!
 
