@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750916Ab1DTEXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 00:23:09 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37336 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1DTEXH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 00:23:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=oiW87UCiNi7jLIPsn/AT+7LAYfHOqv0NAYyQTJi9pdBH9iZ8swuIbScjYXx9vUGGIn
-         Hdo8veUmKu87TEo/lU+X63lqgcLo8ajjQskyMLKV9mMKjed1zCetIW5qQ6pHWtgTh70y
-         vODXetcYfW+gYB7t/oAj8JP261Zt4pZ+9O3jE=
+	id S1751216Ab1DTEc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 00:32:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40984 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab1DTEcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 00:32:25 -0400
+Date: Tue, 19 Apr 2011 20:11:05 -0700
+From: Greg KH <gregkh@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
+ workaround
+Message-ID: <20110420031105.GA11945@suse.de>
+References: <20110419204117.979118654@clark.kroah.org>
+ <1303263653.3464.65.camel@localhost>
+ <20110420020128.GA27631@suse.de>
+ <1303265862.3464.77.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20110419174712.GA29314@pengutronix.de>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
-	<20110419102031.GA4164@pengutronix.de>
-	<BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
-	<20110419174712.GA29314@pengutronix.de>
-Date: Wed, 20 Apr 2011 13:23:04 +0900
-X-Google-Sender-Auth: QFJEmFWO2RB1PoKB2yj5p75aXa8
-Message-ID: <BANLkTinv84Ci1BUAGAXSDc-VYWGs8fC4fA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
- self registered
-From: Kyungmin Park <kmpark@infradead.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
-        sameo@linux.intel.com, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303265862.3464.77.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 2:47 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
->
->> BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle it.
->
-> The difference is that sdhci-s3c.c was more like a fork of sdhci-pltfm while
-> the others were users of it. With the new interface, s3c can be converted using
-> pltfm more easily. If somebody is willing to do that, this is very much
-> welcome. I'd suggest waiting for Shawn's interface to stabilize, though.
-Okay Thanks, we will prepare it.
->
-> Regards,
->
->   Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
+On Wed, Apr 20, 2011 at 03:17:42AM +0100, Ben Hutchings wrote:
+> On Tue, 2011-04-19 at 19:01 -0700, Greg KH wrote:
+> > On Wed, Apr 20, 2011 at 02:40:53AM +0100, Ben Hutchings wrote:
+> > > On Tue, 2011-04-19 at 13:30 -0700, Greg KH wrote:
+> > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+> > > > 
+> > > > commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
+> > > > 
+> > > > Remove check_c1e_idle() and use the new AMD errata checking framework
+> > > > instead.
+> > > 
+> > > Clean-up patches are generally not candidates for longterm updates.
+> > 
+> > This was added because a follow-on patch required it.
+> 
+> Ah yes, 'x86, AMD: Set ARAT feature on AMD processors' is using the same
+> condition.
+> 
+> Of course, that could have been backported by referring to the function
+> that this removes, rather than pulling in a load of other changes with
+> consequent risk of regressions.
+
+I prefer to take original patches for stable, it makes it easier in the
+end.
+
+thanks,
+
+greg k-h
