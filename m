@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab1DTU3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:29:54 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42019 "EHLO e7.ny.us.ibm.com"
+	id S1756168Ab1DTUaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:30:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39590 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab1DTU3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:29:52 -0400
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Dimitris Michailidis <dm@chelsio.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4DAF40EB.20303@chelsio.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-	 <1303328648.19336.24.camel@localhost.localdomain>
-	 <1303328906.2823.24.camel@bwh-desktop>
-	 <1303330173.19336.52.camel@localhost.localdomain>
-	 <4DAF40EB.20303@chelsio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 13:28:37 -0700
-Message-ID: <1303331317.19336.65.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752278Ab1DTUaF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:30:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex =?utf-8?q?Villac=C3=AD=C2=ADs_Lasso?= 
+	<avillaci@fiec.espol.edu.ec>
+Subject: Re: [Bug #28522] Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+Date: Wed, 20 Apr 2011 22:30:34 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+References: <sam8u5dLkaB.A.afE.53uqNB@chimera> <IqJL5EkbqD.A.KLG.Z6uqNB@chimera> <4DAF3FCB.2070407@fiec.espol.edu.ec>
+In-Reply-To: <4DAF3FCB.2070407@fiec.espol.edu.ec>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201104202230.35187.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 13:24 -0700, Dimitris Michailidis wrote:
-> Bit 30 is also taken in net-next.
+On Wednesday, April 20, 2011, Alex Villací­s Lasso wrote:
+> El 17/04/11 08:52, Rafael J. Wysocki escribió:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.37 and 2.6.38.
+> >
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.37 and 2.6.38.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28522
+> > Subject		: Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+> > Submitter	: Alex Villacis Lasso<avillaci@ceibo.fiec.espol.edu.ec>
+> > Date		: 2011-02-07 17:21 (70 days old)
+> >
+> >
+> >
+> Still present in 2.6.39-rc4.
 
-How about 31?
+Thanks for the update.
 
-Thanks
-Shirley
-
+Rafael
