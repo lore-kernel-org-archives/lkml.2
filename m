@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab1DTMe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 08:34:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56110 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754686Ab1DTMe5 (ORCPT
+	id S1754724Ab1DTMiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 08:38:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46865 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab1DTMiD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 08:34:57 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20110420053925.GC16291@1wt.eu>
-References: <20110419204119.285492847@clark.kroah.org>
-	 <1303264924.3464.69.camel@localhost>  <20110420053925.GC16291@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-SJq+oT5fn7KIFUgRbsgZ"
-Date: Wed, 20 Apr 2011 13:34:35 +0100
-Message-ID: <1303302875.3464.96.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [24/28] USB: xhci - fix unsafe macro
- definitions
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	Wed, 20 Apr 2011 08:38:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VxOdNGrgB6P0z7An+zZhogspuOM3sQj5mX8sZIWsssRlZmXJ0RjO0WvyYQGTBIV7FL
+         0ZIls+RgQ+gqWLRXMHPxGtGeD445vDAneZ9qDjgtFfUOYclNzV6Cekhgt1P8U034nQyc
+         hoUC3IQCq0dIZRZkQWFn+pWCHZwnLBABNqe1M=
+MIME-Version: 1.0
+In-Reply-To: <D3BCC8A3-7570-49F2-838C-A2B1899B0519@niasdigital.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+	<20110419093855.36910400@lxorguk.ukuu.org.uk>
+	<D3BCC8A3-7570-49F2-838C-A2B1899B0519@niasdigital.com>
+Date: Wed, 20 Apr 2011 14:38:01 +0200
+X-Google-Sender-Auth: DfoNWPVqDcGRQ2wukrNitlEI5f4
+Message-ID: <BANLkTi=M3FxU6vv_aq1rLTmXQCGps=hC=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ben Nizette <bn@niasdigital.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/4/20 Ben Nizette <bn@niasdigital.com>:
+> On 19/04/2011, at 6:38 PM, Alan Cox wrote:
+>> Leaving aside the current input/output and on/off bits I would go for
+>> being able to do
+>>
+>>       gpio_get_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER);
+>>       gpio_set_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER_ELSE);
+>
+> Yeah I'm all for that so long as the capability constants are defined by the gpio
+> provider, eg <linux/gpio/mygpioexpander.h>.  There's no way gpiolib should be
+> keeping a big ole list of every possible config option for every gpio provider.
 
---=-SJq+oT5fn7KIFUgRbsgZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+OK I buy that. I will refactor this solution to some opaque call instead
+and start from there.
 
-On Wed, 2011-04-20 at 07:39 +0200, Willy Tarreau wrote:
-> On Wed, Apr 20, 2011 at 03:02:04AM +0100, Ben Hutchings wrote:
-> > On Tue, 2011-04-19 at 13:31 -0700, Greg KH wrote:
-> > > 2.6.32-longterm review patch.  If anyone has any objections, please l=
-et us know.
-> > >=20
-> > > ------------------
-> > >=20
-> > > From: Dmitry Torokhov <dtor@vmware.com>
-> > >=20
-> > > commit 5a6c2f3ff039154872ce597952f8b8900ea0d732 upstream.
-> > >=20
-> > > Macro arguments used in expressions need to be enclosed in parenthesi=
-s
-> > > to avoid unpleasant surprises.
-> >=20
-> > Do you know of any specific uses of these macros where the missing
-> > parentheses caused 'unpleasant surprises'?
->=20
-> In my opinion, this type of fix should be backported even if the current
-> code does not appear to be at risk, otherwise a later fix in the kernel
-> could cause a serious regression when backported to -stable. For instance=
-,
-> if we later have to backport this patch (cut'n'pasted) :
-[...]
+> Well, maybe gpiolib can know about the options (eg GPIO_BIAS) so long
+> as it doesn't have to enumerate every possible value.
 
-I agree, but would like to know whether there is an immediate effect.
+I will drop that even, one parameter is better than two if one of them
+is custom nevertheless. What difference does it make..
 
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-SJq+oT5fn7KIFUgRbsgZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATa7S2ue/yOyVhhEJAQrTkA/+KIPa9aR21/KlFx9/3isoWJBwrUBVu5c+
-liXgpiWNGmzGuiBfjJl4a+rfOb4k4yKBxzpBLZjLT0GCQBLZRrqXywgt99loXuc2
-Rh2NqBKi1e55HiCdhzBgZrVxq3DtFWFxJSCPUy9kGsd3TXbl9bRwwe4dEdD/oYEA
-7OgDjQu7A7QnCiZG4vuCQTp8GhTHN3O+TqAIsuxdZts3MpIJIG+wA4guTDIJeMzF
-QgMzlKMj8GVAX0KB+CtFhjoQQVMZYC+i2Jf9T0YaFY4SA9k+juhC59n31siY4QGv
-wFOsioy2qxMoGWMkMcPrGnnJOnNcx275l8ImK5yOQztNs49TMqg/iP4FTPm7Jbid
-+/2t//aX7hSa028qf/t84ccI2zCaQ9dkcukxEk0YPEG5h3pik84LgnWUkQ6SmCyY
-FiVNxpbs3G6mLCo5rfdtEkwMvysctpglOEMwIfGhbIkfl4UPfF/qjFlmd2BYp5wp
-rj4fB1AhxGTzjPj/oBz0O8oZOUSQmK7CMT7cg576P++jM3PWrrXa0KXTIUPyosBZ
-fIMybbfoGWK1u5a/1kSUFJEgM5mXqYLNHteOHiBmj96xBPaDc4Rr25esH28vN5fT
-1Y6gbLX9fKVA6LyPTOESjh/4eo/yrnP+FXoJUxhj4jA75nefEancd+BsBa901rqt
-Kkr6QsTtTho=
-=bNBa
------END PGP SIGNATURE-----
-
---=-SJq+oT5fn7KIFUgRbsgZ--
+Yours,
+Linus Walleij
