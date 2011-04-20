@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab1DTXTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:19:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28611 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab1DTXTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:19:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,248,1301900400"; 
-   d="scan'208";a="631752830"
-Date: Wed, 20 Apr 2011 16:18:59 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Andi Kleen <andi@firstfloor.org>, jmorris@namei.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SMACK: Add missing rcu_read_lock/unlock for process
- capability walk.
-Message-ID: <20110420231859.GB32402@tassilo.jf.intel.com>
-References: <1303336844-31074-1-git-send-email-andi@firstfloor.org>
- <4DAF637D.90606@schaufler-ca.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAF637D.90606@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753654Ab1DTXU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:20:27 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:7429 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab1DTXUZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 19:20:25 -0400
+Subject: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
+From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+To: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Karthigan Srinivasan <Karthigan.Srinivasan@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 18:20:24 -0500
+Message-ID: <1303341624.11397.2.camel@ks-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 03:51:41PM -0700, Casey Schaufler wrote:
-> On 4/20/2011 3:00 PM, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > smk_access_entry does a RCU list walk for a list shared with other
-> > threads. It relies on the caller doing rcu_read_lock().
-> > One caller forgot to do to this, which could lead to races
-> > on preemptible kernels.
-> >
-> > Move the rcu_read_lock() into smk_access_entry instead.
-> 
-> Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
-> 
-> The lock was moved out of smk_access_entry in support of the
-> processing done in the smack_mmap_file() hook. Where do you see
-> a potential race, and which caller "forgot" to do the lock?
+>From e770496964bf749c30df8a19abbdfe0f79d64fb7 Mon Sep 17 00:00:00 2001
+From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+Date: Wed, 20 Apr 2011 18:14:10 -0500
+Subject: [PATCH] drivers/acpi/utils.c: Fixed coding style issues.
 
-There are two callers and only one takes it.
-The one that doesn't take it is smk_curacc.
+Fixed brace and comment coding style issues in code.
 
-I checked the callers of that and there is no rcu_read_lock() in those
+Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+---
+ drivers/acpi/utils.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-As far as I understand the cred which holds this list is shared
-between threads and other threads can modify it. Which means 
-it needs RCU read lock protection.
+diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+index b002a47..2cf81a1 100644
+--- a/drivers/acpi/utils.c
++++ b/drivers/acpi/utils.c
+@@ -99,9 +99,9 @@ acpi_extract_package(union acpi_object *package,
+ 
+ 		union acpi_object *element = &(package->package.elements[i]);
+ 
+-		if (!element) {
++		if (!element) 
+ 			return AE_BAD_DATA;
+-		}
++		
+ 
+ 		switch (element->type) {
+ 
+@@ -185,9 +185,9 @@ acpi_extract_package(union acpi_object *package,
+ 		u8 **pointer = NULL;
+ 		union acpi_object *element = &(package->package.elements[i]);
+ 
+-		if (!element) {
++		if (!element) 
+ 			return AE_BAD_DATA;
+-		}
++		
+ 
+ 		switch (element->type) {
+ 
+@@ -303,9 +303,9 @@ acpi_evaluate_reference(acpi_handle handle,
+ 	u32 i = 0;
+ 
+ 
+-	if (!list) {
++	if (!list) 
+ 		return AE_BAD_PARAMETER;
+-	}
++	
+ 
+ 	/* Evaluate object. */
+ 
+@@ -337,9 +337,9 @@ acpi_evaluate_reference(acpi_handle handle,
+ 		goto end;
+ 	}
+ 
+-	if (package->package.count > ACPI_MAX_HANDLES) {
++	if (package->package.count > ACPI_MAX_HANDLES) 
+ 		return AE_NO_MEMORY;
+-	}
++	
+ 	list->count = package->package.count;
+ 
+ 	/* Extract package data. */
+@@ -373,7 +373,7 @@ acpi_evaluate_reference(acpi_handle handle,
+       end:
+ 	if (ACPI_FAILURE(status)) {
+ 		list->count = 0;
+-		//kfree(list->handles);
++		/* kfree(list->handles);*/
+ 	}
+ 
+ 	kfree(buffer.pointer);
+-- 
+1.7.1
 
--Andi
+
+
