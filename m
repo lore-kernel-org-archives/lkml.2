@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1DTXu1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:50:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39949 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123Ab1DTXuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:50:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
-Date: Thu, 21 Apr 2011 01:50:45 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <201104150053.37037.rjw@sisk.pl> <20110415145457.GA27650@eazy.amigager.de> <20110419202212.GA15438@mac.home>
-In-Reply-To: <20110419202212.GA15438@mac.home>
+	id S1754098Ab1DTXvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:51:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52022 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab1DTXvm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 19:51:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:cc
+         :content-type:content-transfer-encoding;
+        b=kJXAXhOSRsOjwT7QTgGd3d4TLUklh7GJHil83NvJsINsVsJgjwgW8lQuH1//QqqC4Q
+         h5lFwPjZ1UBTXx/pBGElYJFlUAe49enXDyflnexMhX9C/T0s6wG5FDenhqZM6Df78YV+
+         ASnP/q/g6GYMyMOaQeLMdG1sa+Jy57xoQriY4=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104210150.45988.rjw@sisk.pl>
+In-Reply-To: <20110419143548.GA26461@hallyn.com>
+References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+	<20110417180722.GA21112@hallyn.com>
+	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
+	<20110418082838.GA30088@hallyn.com>
+	<BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
+	<20110418220232.GA15967@hallyn.com>
+	<BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
+	<BANLkTimELd0WhNYkaQOQuV1vnr+5jAgTZA@mail.gmail.com>
+	<20110419143548.GA26461@hallyn.com>
+Date: Thu, 21 Apr 2011 08:51:40 +0900
+Message-ID: <BANLkTimMGm=Qd-exvKmwJdh4pGRscRTHVw@mail.gmail.com>
+Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
+ from root or to another non-root uid from a non-root uid.
+From: crocket <crockabiscuit@gmail.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morgan <morgan@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 19, 2011, Tino Keitel wrote:
-> Hi,
-> 
-> I reverted some wakeup and ACPI related commits. When I reverted commit
-> 7fa69baf29de8c77a6b32c054df2abb8f11f8aa4, wakeup using the keyboard
-> worked again and /proc/acpi/wakeup behaved as expected.
-> 
-> So check this, I reverted the following commits to avoid conflicts and
-> build failures:
-> 
-> c19f9a84ec807da57fd75bbd9a3f2b8269611f79
-> 5190726765b40774c069e187a958e10ccd970e65
-> 2a5d24286e8bdafdc272b37ec5bdd9e977b3767c
-> f2b56bc808addb908a5bf435d9b942c02af9a7c4
-> 7fa69baf29de8c77a6b32c054df2abb8f11f8aa4
+On Tue, Apr 19, 2011 at 11:35 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting crocket (crockabiscuit@gmail.com):
+>> Thanks for the precious information.
+>>
+>> I think capsh should be introduced somewhere in some manuals.
 
-In fact, the problem is somewhere else.
 
-It turns out that device_is_registered() may return true before
-the device's "power" directory in sysfs is created, which causes
-device_set_wakeup_capable() not to set dev->power.can_wakeup and
-that's why the /proc/acpi/wakeup interface doesn't work for
-some devices.
+     Yes I think mentioning capsh in capabilities(7) would be a good idea.
 
-Please try the patch below, it should help.
 
-Thanks,
-Rafael
-
----
- drivers/base/power/main.c   |    1 +
- drivers/base/power/wakeup.c |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -63,6 +63,7 @@ void device_pm_init(struct device *dev)
- 	dev->power.wakeup = NULL;
- 	spin_lock_init(&dev->power.lock);
- 	pm_runtime_init(dev);
-+	INIT_LIST_HEAD(&dev->power.entry);
- }
- 
- /**
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -258,7 +258,7 @@ void device_set_wakeup_capable(struct de
- 	if (!!dev->power.can_wakeup == !!capable)
- 		return;
- 
--	if (device_is_registered(dev)) {
-+	if (device_is_registered(dev) && !list_empty(&dev->power.entry)) {
- 		if (capable) {
- 			if (wakeup_sysfs_add(dev))
- 				return;
+>
+> Would mentioning capsh in capabilities(7) be a good idea?
+>
+>> On Tue, Apr 19, 2011 at 10:14 AM, crocket <crockabiscuit@gmail.com> wrote:
+>> > Is there an existing utility that sets SECBIT_NO_SETUID_FIXUP?
+>> > Or is there a way to set it without writing a C wrapper program?
+>> >
+>> > On Tue, Apr 19, 2011 at 7:02 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>> >> Quoting crocket (crockabiscuit@gmail.com):
+>> >>> I have several questions.
+>> >>>
+>> >>> 1) How do I set SECBIT_NO_SETUID_FIXUP?
+>> >>
+>> >> prctl(PR_SET_SECUREBITS, SECBIT_NO_SETUID_FIXUP | SECBIT_NO_SETUID_FIXUP_LOCKED)
+>> >>
+>> >> see capabilities(7) for details.
+>> >>
+>> >>> 2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
+>> >>
+>> >> Yes, because it's what userspace expects.  If you prefer to run in
+>> >> a full POSIX capabilities environment with unprivileged root, you
+>> >> can have init set SECBIT_NO_SETUID_FIXUP and SECBIT_NOROOT and
+>> >> tune userspace to do the right thing, but it's not trivial.
+>> >>
+>> >> -serge
+>> >>
+>> >
+>
