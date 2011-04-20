@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1DTMch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 08:32:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39009 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1DTMcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 08:32:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=MZsiMazI9cEvX2ZTGPS9GHONMG8pDq+5yRRT8J94SZia4QvHgoavmRAEhWGxUe62GT
-         G4I/lCRtirasEN6lN8aWuNv/W+1aT728sKD3hISkseJfxwQO347y2ciWhUpyo97OWnIW
-         jTw/5ycnV1KO8dcSaYg57TNABNyjQTtHNS+8g=
+	id S1754733Ab1DTMdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 08:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752471Ab1DTMdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 08:33:44 -0400
+Date: Wed, 20 Apr 2011 18:03:30 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, greg@kroah.com, linuxppc-dev@ozlabs.org
+Subject: Re: hvc_console: Don't access hvc_task if not initialised
+Message-ID: <20110420123330.GB3519@amit-x200.redhat.com>
+References: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
+ <hvc-kick-notask@mdm.bga.com>
+ <20110325084714.GA28356@amit-x200.redhat.com>
+ <hvc-kick-notask-2@mdm.bga.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
-	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
-	<20110418091902.13345132@lxorguk.ukuu.org.uk>
-	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
-	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
-	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
-	<20110419093855.36910400@lxorguk.ukuu.org.uk>
-	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
-Date: Wed, 20 Apr 2011 14:32:35 +0200
-X-Google-Sender-Auth: 1PYxNi4590Ghu48D2QRpo2d4-OA
-Message-ID: <BANLkTimfkpjQ9DoYKRTVwyvtPRccO+RwpA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ben Nizette <bn@niasdigital.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <hvc-kick-notask-2@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/19 Kyungmin Park <kmpark@infradead.org>:
+On (Mon) 28 Mar 2011 [11:52:05], Milton Miller wrote:
+> On Fri, 25 Mar 2011 about 14:17:14 +0530, Amit Shah wrote:
+> > On (Thu) 24 Mar 2011 [08:58:04], Milton Miller wrote:
+> > > On Thu, 24 Mar 2011 07:29:58 -0000, Amit Shah wrote:
+> > > > hvc_open() can be called without having any backing device.  This
+> > > > results in a call to hvc_kick() which calls wake_up_process on a NULL
+> > > > pointer.  
+> > > 
+> > > How is hvc_open called without a hvc_driver registered to the tty layer?
+> > 
+> > This gets reproduced in a couple of scenarios, I'm trying to get more
+> > information.
 
-> One more consideration, not mentioned previous time, is that pin
-> configuration for power down mode.
-> Samsung SoCs has retention GPIO configurations at sleep (suspend)
-> mode. and restore it at resume time.
-> it's need to reduce power and proper operation after suspend.
+OK - I finally could reproduce myself, albiet it's a panic in
+hvc_open, not the one mentioned earlier.
 
-Isn't this supposed to be handled by runtime_pm hooks inside
-your GPIO driver rather than by someone else talking to
-the GPIO driver trying to spool/unspool the state from the
-outside in some other place?
+hvc_console is built into the kernel and virtio_console is a module.
+This sequence triggers a panic:
 
-Or am I getting things backwards now...?
+- modprobe virtio_console
+- agetty /dev/hvc0 9600 vt100
+- rmmod virtio_console
+- modprobe virtio_console
+- agetty /dev/hvc0 9600 vt100
 
-Yours,
-Linus Walleij
+A patch that I had sent previously, to hvc_remove() a port when the
+associated virtio_console port gets unplugged, fixes this panic.
+
+Stricter checking in hvc_open(), as you mentioned, will solve the
+other one as well.
+
+Thanks!
+
+		Amit
