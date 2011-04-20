@@ -1,351 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab1DTKId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 06:08:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59884 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871Ab1DTKIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 06:08:31 -0400
-Message-ID: <4DAEB0CC.1000004@cn.fujitsu.com>
-Date: Wed, 20 Apr 2011 18:09:16 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1753964Ab1DTKYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 06:24:19 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46280 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab1DTKYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 06:24:17 -0400
+Date: Wed, 20 Apr 2011 12:23:49 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
+Message-ID: <20110420102349.GB1361@aftab>
+References: <1303135222-17118-2-git-send-email-bp@amd64.org>
+ <20110419171340.GE6640@elte.hu>
+ <20110419173521.GA25374@aftab>
+ <20110419174446.GA13616@elte.hu>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
-Subject: [PATCH 5/5] Btrfs: using rcu lock in the reader side of devices list
-References: <4DAEB030.1070303@cn.fujitsu.com>
-In-Reply-To: <4DAEB030.1070303@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-20 18:09:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-20 18:09:03,
-	Serialize complete at 2011-04-20 18:09:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419174446.GA13616@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fs_devices->devices is only updated on remove and add device paths, so we can
-use rcu to protect it in the reader side
+On Tue, Apr 19, 2011 at 01:44:46PM -0400, Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > +	if (ret != NOTIFY_STOP)
+> > +		printk_ratelimited(KERN_EMERG HW_ERR
+> > +				   "Run the above through 'mcelog --ascii'\n");
+> 
+> pr_emerg_ratelimited() would allow you to keep that broken line happy?
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Not entirely. I had to do the exit-early-to-save-an-indentation-level
+trick also :)
+
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Wed, 13 Apr 2011 14:32:06 +0200
+Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
+
+The default notifier doesn't make a lot of sense to call in the
+correctable errors case. Drop it and emit the mcelog decoding hint only
+in the uncorrectable errors case and when no notifier is registered.
+Also, limit issuing the "mcelog --ascii" message in the rare case when
+we dump unreported CEs before panicking.
+
+While at it, remove unused old x86_mce_decode_callback from the header.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- fs/btrfs/disk-io.c |   21 +++++++------
- fs/btrfs/ioctl.c   |    7 ++--
- fs/btrfs/volumes.c |   85 ++++++++++++++++++++++++++++++++++++----------------
- fs/btrfs/volumes.h |    2 +
- 4 files changed, 76 insertions(+), 39 deletions(-)
+ arch/x86/include/asm/mce.h       |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c |   24 +++++++-----------------
+ 2 files changed, 7 insertions(+), 19 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 5a70096..ea13c9f 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1412,8 +1412,8 @@ static int btrfs_congested_fn(void *congested_data, int bdi_bits)
- 	struct btrfs_device *device;
- 	struct backing_dev_info *bdi;
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..021979a 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
+ static inline void enable_p5_mce(void) {}
+ #endif
  
--	mutex_lock(&info->fs_devices->device_list_mutex);
--	list_for_each_entry(device, &info->fs_devices->devices, dev_list) {
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(device, &info->fs_devices->devices, dev_list) {
- 		if (!device->bdev)
- 			continue;
- 		bdi = blk_get_backing_dev_info(device->bdev);
-@@ -1422,7 +1422,7 @@ static int btrfs_congested_fn(void *congested_data, int bdi_bits)
- 			break;
- 		}
- 	}
--	mutex_unlock(&info->fs_devices->device_list_mutex);
-+	rcu_read_unlock();
- 	return ret;
- }
- 
-@@ -1436,8 +1436,9 @@ static void __unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
- 	struct btrfs_fs_info *info;
- 
- 	info = (struct btrfs_fs_info *)bdi->unplug_io_data;
--	mutex_lock(&info->fs_devices->device_list_mutex);
--	list_for_each_entry(device, &info->fs_devices->devices, dev_list) {
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(device, &info->fs_devices->devices, dev_list) {
- 		if (!device->bdev)
- 			continue;
- 
-@@ -1445,7 +1446,7 @@ static void __unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
- 		if (bdi->unplug_io_fn)
- 			bdi->unplug_io_fn(bdi, page);
- 	}
--	mutex_unlock(&info->fs_devices->device_list_mutex);
-+	rcu_read_unlock();
- }
- 
- static void btrfs_unplug_io_fn(struct backing_dev_info *bdi, struct page *page)
-@@ -2414,9 +2415,9 @@ int write_all_supers(struct btrfs_root *root, int max_mirrors)
- 	sb = &root->fs_info->super_for_commit;
- 	dev_item = &sb->dev_item;
- 
--	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
-+	rcu_read_lock();
- 	head = &root->fs_info->fs_devices->devices;
--	list_for_each_entry(dev, head, dev_list) {
-+	list_for_each_entry_rcu(dev, head, dev_list) {
- 		if (!dev->bdev) {
- 			total_errors++;
- 			continue;
-@@ -2449,7 +2450,7 @@ int write_all_supers(struct btrfs_root *root, int max_mirrors)
- 	}
- 
- 	total_errors = 0;
--	list_for_each_entry(dev, head, dev_list) {
-+	list_for_each_entry_rcu(dev, head, dev_list) {
- 		if (!dev->bdev)
- 			continue;
- 		if (!dev->in_fs_metadata || !dev->writeable)
-@@ -2459,7 +2460,7 @@ int write_all_supers(struct btrfs_root *root, int max_mirrors)
- 		if (ret)
- 			total_errors++;
- 	}
--	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
-+	rcu_read_unlock();
- 	if (total_errors > max_errors) {
- 		printk(KERN_ERR "btrfs: %d errors while writing supers\n",
- 		       total_errors);
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index f580a3a..c2f8920 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -275,8 +275,9 @@ static noinline int btrfs_ioctl_fitrim(struct file *file, void __user *arg)
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
--	mutex_lock(&fs_info->fs_devices->device_list_mutex);
--	list_for_each_entry(device, &fs_info->fs_devices->devices, dev_list) {
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(device, &fs_info->fs_devices->devices,
-+				dev_list) {
- 		if (!device->bdev)
- 			continue;
- 		q = bdev_get_queue(device->bdev);
-@@ -286,7 +287,7 @@ static noinline int btrfs_ioctl_fitrim(struct file *file, void __user *arg)
- 				     minlen);
- 		}
- 	}
--	mutex_unlock(&fs_info->fs_devices->device_list_mutex);
-+	rcu_read_unlock();
- 	if (!num_devices)
- 		return -EOPNOTSUPP;
- 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index f43b946..8998ce7 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -397,7 +397,7 @@ static noinline int device_list_add(const char *path,
- 		INIT_LIST_HEAD(&device->dev_alloc_list);
- 
- 		mutex_lock(&fs_devices->device_list_mutex);
--		list_add(&device->dev_list, &fs_devices->devices);
-+		list_add_rcu(&device->dev_list, &fs_devices->devices);
- 		mutex_unlock(&fs_devices->device_list_mutex);
- 
- 		device->fs_devices = fs_devices;
-@@ -505,6 +505,29 @@ again:
- 	return 0;
- }
- 
-+static void __free_device(struct work_struct *work)
-+{
-+	struct btrfs_device *device;
-+
-+	device = container_of(work, struct btrfs_device, rcu_work);
-+
-+	if (device->bdev)
-+		blkdev_put(device->bdev, device->mode);
-+
-+	kfree(device->name);
-+	kfree(device);
-+}
-+
-+static void free_device(struct rcu_head *head)
-+{
-+	struct btrfs_device *device;
-+
-+	device = container_of(head, struct btrfs_device, rcu);
-+
-+	INIT_WORK(&device->rcu_work, __free_device);
-+	schedule_work(&device->rcu_work);
-+}
-+
- static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- {
- 	struct btrfs_device *device;
-@@ -514,18 +537,27 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- 
- 	mutex_lock(&fs_devices->device_list_mutex);
- 	list_for_each_entry(device, &fs_devices->devices, dev_list) {
--		if (device->bdev) {
--			blkdev_put(device->bdev, device->mode);
-+		struct btrfs_device *new_device;
-+
-+		if (device->bdev)
- 			fs_devices->open_devices--;
--		}
-+
- 		if (device->writeable) {
- 			list_del_init(&device->dev_alloc_list);
- 			fs_devices->rw_devices--;
- 		}
- 
--		device->bdev = NULL;
--		device->writeable = 0;
--		device->in_fs_metadata = 0;
-+		new_device = kmalloc(sizeof(*new_device), GFP_NOFS);
-+		BUG_ON(!new_device);
-+		memcpy(new_device, device, sizeof(*new_device));
-+		new_device->name = kstrdup(device->name, GFP_NOFS);
-+		BUG_ON(!new_device->name);
-+		new_device->bdev = NULL;
-+		new_device->writeable = 0;
-+		new_device->in_fs_metadata = 0;
-+		list_replace_rcu(&device->dev_list, &new_device->dev_list);
-+
-+		call_rcu(&device->rcu, free_device);
- 	}
- 	mutex_unlock(&fs_devices->device_list_mutex);
- 
-@@ -1238,11 +1270,13 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 	struct block_device *bdev;
- 	struct buffer_head *bh = NULL;
- 	struct btrfs_super_block *disk_super;
-+	struct btrfs_fs_devices *cur_devices;
- 	u64 all_avail;
- 	u64 devid;
- 	u64 num_devices;
- 	u8 *dev_uuid;
- 	int ret = 0;
-+	bool clear_super = false;
- 
- 	mutex_lock(&uuid_mutex);
- 	mutex_lock(&root->fs_info->volume_mutex);
-@@ -1328,6 +1362,7 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 		list_del_init(&device->dev_alloc_list);
- 		unlock_chunks(root);
- 		root->fs_info->fs_devices->rw_devices--;
-+		clear_super = true;
- 	}
- 
- 	ret = btrfs_shrink_device(device, 0);
-@@ -1338,16 +1373,15 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 	if (ret)
- 		goto error_undo;
- 
--	device->in_fs_metadata = 0;
+-extern void (*x86_mce_decode_callback)(struct mce *m);
 -
- 	/*
- 	 * the device list mutex makes sure that we don't change
- 	 * the device list while someone else is writing out all
- 	 * the device supers.
- 	 */
+ void mce_setup(struct mce *m);
+ void mce_log(struct mce *m);
+ DECLARE_PER_CPU(struct sys_device, mce_dev);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68e2303..ff1ae9b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -105,20 +105,6 @@ static int			cpu_missing;
+ ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
+ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
+ 
+-static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+-			       void *data)
+-{
+-	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
+-	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
+-
+-	return NOTIFY_STOP;
+-}
+-
+-static struct notifier_block mce_dec_nb = {
+-	.notifier_call = default_decode_mce,
+-	.priority      = -1,
+-};
+-
+ /* MCA banks polled by the period polling timer for corrected events */
+ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
+ 
+ static void print_mce(struct mce *m)
+ {
++	int ret = 0;
 +
-+	cur_devices = device->fs_devices;
- 	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
--	list_del_init(&device->dev_list);
--	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
-+	list_del_rcu(&device->dev_list);
+ 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
  
- 	device->fs_devices->num_devices--;
- 
-@@ -1361,36 +1395,36 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 	if (device->bdev == root->fs_info->fs_devices->latest_bdev)
- 		root->fs_info->fs_devices->latest_bdev = next_device->bdev;
- 
--	if (device->bdev) {
--		blkdev_put(device->bdev, device->mode);
--		device->bdev = NULL;
-+	if (device->bdev)
- 		device->fs_devices->open_devices--;
--	}
+@@ -239,7 +227,11 @@ static void print_mce(struct mce *m)
+ 	 * Print out human-readable details about the MCE error,
+ 	 * (if the CPU has an implementation for that)
+ 	 */
+-	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	if (ret == NOTIFY_STOP)
++		return;
 +
-+	call_rcu(&device->rcu, free_device);
-+	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
++	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
+ }
  
- 	num_devices = btrfs_super_num_devices(&root->fs_info->super_copy) - 1;
- 	btrfs_set_super_num_devices(&root->fs_info->super_copy, num_devices);
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+@@ -1721,8 +1713,6 @@ __setup("mce", mcheck_enable);
  
--	if (device->fs_devices->open_devices == 0) {
-+	if (cur_devices->open_devices == 0) {
- 		struct btrfs_fs_devices *fs_devices;
- 		fs_devices = root->fs_info->fs_devices;
- 		while (fs_devices) {
--			if (fs_devices->seed == device->fs_devices)
-+			if (fs_devices->seed == cur_devices)
- 				break;
- 			fs_devices = fs_devices->seed;
- 		}
--		fs_devices->seed = device->fs_devices->seed;
--		device->fs_devices->seed = NULL;
-+		fs_devices->seed = cur_devices->seed;
-+		cur_devices->seed = NULL;
- 		lock_chunks(root);
--		__btrfs_close_devices(device->fs_devices);
-+		__btrfs_close_devices(cur_devices);
- 		unlock_chunks(root);
--		free_fs_devices(device->fs_devices);
-+		free_fs_devices(cur_devices);
- 	}
+ int __init mcheck_init(void)
+ {
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
+-
+ 	mcheck_intel_therm_init();
  
- 	/*
- 	 * at this point, the device is zero sized.  We want to
- 	 * remove it from the devices list and zero out the old super
- 	 */
--	if (device->writeable) {
-+	if (clear_super) {
- 		/* make sure this device isn't detected as part of
- 		 * the FS anymore
- 		 */
-@@ -1399,8 +1433,6 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 		sync_dirty_buffer(bh);
- 	}
- 
--	kfree(device->name);
--	kfree(device);
- 	ret = 0;
- 
- error_brelse:
-@@ -1459,7 +1491,8 @@ static int btrfs_prepare_sprout(struct btrfs_trans_handle *trans,
- 	mutex_init(&seed_devices->device_list_mutex);
- 
- 	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
--	list_splice_init(&fs_devices->devices, &seed_devices->devices);
-+	list_splice_init_rcu(&fs_devices->devices, &seed_devices->devices,
-+			      synchronize_rcu);
- 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
- 
- 	list_splice_init(&fs_devices->alloc_list, &seed_devices->alloc_list);
-@@ -1658,7 +1691,7 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
- 	 * half setup
- 	 */
- 	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
--	list_add(&device->dev_list, &root->fs_info->fs_devices->devices);
-+	list_add_rcu(&device->dev_list, &root->fs_info->fs_devices->devices);
- 	list_add(&device->dev_alloc_list,
- 		 &root->fs_info->fs_devices->alloc_list);
- 	root->fs_info->fs_devices->num_devices++;
-diff --git a/fs/btrfs/volumes.h b/fs/btrfs/volumes.h
-index cc2eada..f1b2e4f 100644
---- a/fs/btrfs/volumes.h
-+++ b/fs/btrfs/volumes.h
-@@ -86,6 +86,8 @@ struct btrfs_device {
- 	u8 uuid[BTRFS_UUID_SIZE];
- 
- 	struct btrfs_work work;
-+	struct rcu_head rcu;
-+	struct work_struct rcu_work;
- };
- 
- struct btrfs_fs_devices {
+ 	return 0;
 -- 
-1.7.4.4
+1.7.4.rc2
 
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 4363 
