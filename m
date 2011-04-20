@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1DTBe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:34:56 -0400
-Received: from [62.121.20.90] ([62.121.20.90]:33003 "EHLO relay.timico.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379Ab1DTBey convert rfc822-to-8bit (ORCPT
+	id S1754579Ab1DTBlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 21:41:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53286 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751340Ab1DTBlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:34:54 -0400
-X-Greylist: delayed 85612 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Apr 2011 21:34:54 EDT
-From: Jon Povey <Jon.Povey@racelogic.co.uk>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-CC: "Nori, Sekhar" <nsekhar@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Griffis, Brad" <bgriffis@ti.com>, Philby John <pjohn@in.mvista.com>
-Content-Class: urn:content-classes:message
-Date: Wed, 20 Apr 2011 02:34:47 +0100
-Subject: RE: [PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC
-Thread-Topic: [PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC
-Thread-Index: Acv+jAlcdplzwpLCT9uvYJdDdBb8dAAbtzsg
-Message-ID: <70E876B0EA86DD4BAF101844BC814DFE093FB40BBD@Cloud.RL.local>
-In-Reply-To: <BANLkTinTMi76GmgO6HJ0+ifCXsHE3Mjsvg@mail.gmail.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 19 Apr 2011 21:41:04 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, akpm@linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>
+In-Reply-To: <20110419204117.979118654@clark.kroah.org>
+References: <20110419204117.979118654@clark.kroah.org>
+Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-GakxzpHyiyAAN5QmupdC"
+Date: Wed, 20 Apr 2011 02:40:53 +0100
+Message-ID: <1303263653.3464.65.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
+ workaround
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Gardiner wrote:
-> In "i2c-davinci: Fix race when setting up for TX" and "i2c-davinci:
-> Fix TX setup for more SoCs" you mention testing on DM355 -- is there
-> any you have hardware on which the recovery procedure is executed on
-> occasion and that you would be available to test modifications to the
-> current implementation?
 
-Nope, sorry. I've never seen the bus lock up.
+--=-GakxzpHyiyAAN5QmupdC
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
---
-Jon Povey
-jon.povey@racelogic.co.uk
+On Tue, 2011-04-19 at 13:30 -0700, Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let u=
+s know.
+>=20
+> ------------------
+>=20
+> From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+>=20
+> commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
+>=20
+> Remove check_c1e_idle() and use the new AMD errata checking framework
+> instead.
 
-Racelogic is a limited company registered in England. Registered number 2743719 .
-Registered Office Unit 10, Swan Business Centre, Osier Way, Buckingham, Bucks, MK18 1TB .
+Clean-up patches are generally not candidates for longterm updates.
 
-The information contained in this electronic mail transmission is intended by Racelogic Ltd for the use of the named individual or entity to which it is directed and may contain information that is confidential or privileged. If you have received this electronic mail transmission in error, please delete it from your system without copying or forwarding it, and notify the sender of the error by reply email so that the sender's address records can be corrected. The views expressed by the sender of this communication do not necessarily represent those of Racelogic Ltd. Please note that Racelogic reserves the right to monitor e-mail communications passing through its network
+However, I notice that the range of procesors considered to have erratum
+400 was also changed:
 
+[...]
+> +const int amd_erratum_400[] =3D
+> +	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+> +			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+[...]
+> -	/* Family 0x0f models < rev F do not have C1E */
+> -	if (c->x86 =3D=3D 0x0F && c->x86_model >=3D 0x40)
+> -		return 1;
+> -
+> -	if (c->x86 =3D=3D 0x10) {
+> -		/*
+> -		 * check OSVW bit for CPUs that are not affected
+> -		 * by erratum #400
+> -		 */
+> -		if (cpu_has(c, X86_FEATURE_OSVW)) {
+[...]
+> -		}
+> -		return 1;
+[...]
 
+Family 0x0f model 0x40 and model 0x41 stepping 0 and 1 are excluded.
+Family 0x10 model 0x00, 0x01 and model 0x02 stepping 0 are excluded.
+Is that the real fix here?
+
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-GakxzpHyiyAAN5QmupdC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATa45pee/yOyVhhEJAQqtrBAAkpuXyu13HmvQ7zrsVC9F/FRVwBkZ2DsT
+ZeHq1cW7JH12rlnUF/b1z6vIcLNPyqkwcIotG0XfymBBrHN4aPzDKsDzlcI9Veu0
+3aRhXcsUcC+QCLV97qdYSq2w8RLJ8CsysTJqpwp+adANZ8LFsoRxiNG/6MaLxXAJ
+sCI0Dg76VuT9SRyZntjztqDxOCuTnW8BAjQiowNPkcRBx/B0uL0FeE5A24/hOjTO
+9wOD1hcJw4CGA9+Jos/5P5R49wxezeDp77C1m+Y/g+Nt2hazyotr2N0SJF/LTv2e
+/JAEy3CsuwSOeTh8lQF1OWe3aEloyFON+Nunj3PWMtRRm+dYZdn3vJafrD8Voik+
+2KJ4o67vi4uuJRPhcsjsuPKWHn7/3x8BWfHBQFvKsgwnJm5hJ1BaBrxveqOoJDaC
+VQTJXbCk4zd0xsKrsxZSvxoJBGQ9SnY2AmeACS2QXry1KZViI8CbCB3IR3oBd81s
+rCajHNQUf9fPPF1yecxYqgeVV5izQAiRpnAg3rNASh8Mkg8gJD/7oAy7dswODn7K
+ag61Y1EP+3qgmJ/vRnnWZ/UjVwpo3RYBnZ8zBM2n3tJ8aLhfyOfs64Bd6ZeXlTp9
+AzEb4vPd5/wIS8o2jFglddx14PHw2IvOSvcRafSavRM5NkH8hEqkwr3Q6Wgjfd+x
+achyOAo4om4=
+=NI2M
+-----END PGP SIGNATURE-----
+
+--=-GakxzpHyiyAAN5QmupdC--
