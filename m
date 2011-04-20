@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab1DTLgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 07:36:09 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:45178 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab1DTLgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 07:36:07 -0400
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3/3] uml: fix hppfs build
-Date: Wed, 20 Apr 2011 13:34:26 +0200
-Message-Id: <1303299266-10219-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <1303299266-10219-1-git-send-email-richard@nod.at>
-References: <1303299266-10219-1-git-send-email-richard@nod.at>
+	id S1754358Ab1DTLjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 07:39:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60210 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab1DTLjS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 07:39:18 -0400
+Subject: Re: [alsa-devel] [PATCH] ASoC: Add EQ and filter to max98095 CODEC
+ driver
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Peter Hsiang <cdefgab1288@gmail.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Hsiang <peter.hsiang@maxim-ic.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Jesse Marroquin <jesse.marroquin@maxim-ic.com>
+In-Reply-To: <1303262440-19412-1-git-send-email-peter.hsiang@maxim-ic.com>
+References: <1303262440-19412-1-git-send-email-peter.hsiang@maxim-ic.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 12:39:13 +0100
+Message-ID: <1303299553.3436.5.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 2011-04-19 at 18:20 -0700, Peter Hsiang wrote:
+> This patch adds the equalizer and biquad filter controls.
+> 
+> Signed-off-by: Peter Hsiang <peter.hsiang@maxim-ic.com>
+> ---
+>  include/sound/max98095.h    |   28 +++
+>  sound/soc/codecs/max98095.c |  391 +++++++++++++++++++++++++++++++++++++++++++
+>  sound/soc/codecs/max98095.h |   15 ++
+>  3 files changed, 434 insertions(+), 0 deletions(-)
+> 
 
-Make HoneyPot ProcFS depend on CONFIG_PROC_FS so that it will build.
-Recommended by Christoph Hellwig.
-
-Fixes kernel bugzilla #33692:
-  https://bugzilla.kernel.org/show_bug.cgi?id=33692
-
-Reported-by: Simon Danner <danner.simon@gmail.com>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Jeff Dike <jdike@addtoit.com>
-Cc:	user-mode-linux-devel@lists.sourceforge.net
-Cc:	Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/Kconfig.um |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
-index 90a438a..b5e675e 100644
---- a/arch/um/Kconfig.um
-+++ b/arch/um/Kconfig.um
-@@ -47,7 +47,7 @@ config HOSTFS
- 
- config HPPFS
- 	tristate "HoneyPot ProcFS (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	depends on EXPERIMENTAL && PROC_FS
- 	help
- 	  hppfs (HoneyPot ProcFS) is a filesystem which allows UML /proc
- 	  entries to be overridden, removed, or fabricated from the host.
--- 
-1.7.4.2
+Acked-by: Liam Girdwood <lrg@ti.com>
 
