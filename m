@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1DTMKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 08:10:39 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9276 "EHLO
+	id S1754668Ab1DTMLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 08:11:06 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9323 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1DTMKh (ORCPT
+	with ESMTP id S1752572Ab1DTMLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 08:10:37 -0400
+	Wed, 20 Apr 2011 08:11:04 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 20 Apr 2011 05:10:36 -0700
+	by hqnvupgp08.nvidia.com on Wed, 20 Apr 2011 05:10:46 -0700
 From: wni@nvidia.com
 To: khali@linux-fr.org, ben-linux@fluff.org, lucas.demarchi@profusion.mobi,
         ccross@android.com, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Wei Ni <wni@nvidia.com>
-Subject: [PATCH 1/2] i2c: tegra: Retry transfer when unexpected/no_ack status is detected
-Date: Wed, 20 Apr 2011 20:08:31 +0800
-Message-Id: <1303301312-15302-2-git-send-email-wni@nvidia.com>
+Subject: [PATCH 2/2] i2c: tegra: use new i2c slave controller
+Date: Wed, 20 Apr 2011 20:08:32 +0800
+Message-Id: <1303301312-15302-3-git-send-email-wni@nvidia.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1303301312-15302-1-git-send-email-wni@nvidia.com>
 References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
@@ -26,103 +26,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Ni <wni@nvidia.com>
 
-Sometimes unexpected status like I2C busy status, Tx FIFO interrupted
-and wait on Rx data etc is seen. Add a code to detect such conditions
-and return -EAGAIN from driver. This will cause the i2c-core to retry
-the transmission as per the retry count and time-out specified by the
-platform data of the adapter.
-And for no_ack status, also retrun -EAGAIN to retry.
+tegra2 has an improved new i2c slave controller. This should be
+used instead of the old i2c slave controller. With old i2c slave
+controller, occasionally it generates spurious slave interrupts
+causing disruptions in master i2c transfers.
 
 Signed-off-by: Wei Ni <wni@nvidia.com>
 ---
- drivers/i2c/busses/i2c-tegra.c |   29 ++++++++++++++++++++++++++---
- include/linux/i2c-tegra.h      |    2 ++
- 2 files changed, 28 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-tegra.c |   28 ++++++++++++++++++++++++++++
+ include/linux/i2c-tegra.h      |    1 +
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index b4ab39b..4f5f7f2 100644
+index 4f5f7f2..0742468 100644
 --- a/drivers/i2c/busses/i2c-tegra.c
 +++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -31,12 +31,15 @@
- 
- #include <mach/clk.h>
- 
--#define TEGRA_I2C_TIMEOUT (msecs_to_jiffies(1000))
--#define BYTES_PER_FIFO_WORD 4
-+#define TEGRA_I2C_TIMEOUT			(msecs_to_jiffies(1000))
-+#define TEGRA_I2C_RETRIES			3
-+#define BYTES_PER_FIFO_WORD			4
- 
- #define I2C_CNFG				0x000
- #define I2C_CNFG_PACKET_MODE_EN			(1<<10)
- #define I2C_CNFG_NEW_MASTER_FSM			(1<<11)
-+#define I2C_STATUS				0x01C
-+#define I2C_STATUS_BUSY				(1<<8)
+@@ -41,8 +41,10 @@
+ #define I2C_STATUS				0x01C
+ #define I2C_STATUS_BUSY				(1<<8)
  #define I2C_SL_CNFG				0x020
++#define I2C_SL_CNFG_NACK			(1<<1)
  #define I2C_SL_CNFG_NEWSL			(1<<2)
  #define I2C_SL_ADDR1				0x02c
-@@ -77,6 +80,7 @@
- #define I2C_ERR_NONE				0x00
- #define I2C_ERR_NO_ACK				0x01
- #define I2C_ERR_ARBITRATION_LOST		0x02
-+#define I2C_ERR_UNEXPECTED_STATUS		0x08
++#define I2C_SL_ADDR2 				0x030
+ #define I2C_TX_FIFO				0x050
+ #define I2C_RX_FIFO				0x054
+ #define I2C_PACKET_TRANSFER_STATUS		0x058
+@@ -97,6 +99,9 @@
+ #define I2C_HEADER_MASTER_ADDR_SHIFT		12
+ #define I2C_HEADER_SLAVE_ADDR_SHIFT		1
  
- #define PACKET_HEADER0_HEADER_SIZE_SHIFT	28
- #define PACKET_HEADER0_PACKET_ID_SHIFT		16
-@@ -363,6 +367,15 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
- 		goto err;
- 	}
- 
-+	if (unlikely((i2c_readl(i2c_dev, I2C_STATUS) & I2C_STATUS_BUSY)
-+				&& (status == I2C_INT_TX_FIFO_DATA_REQ)
-+				&& i2c_dev->msg_read
-+				&& i2c_dev->msg_buf_remaining)) {
-+		i2c_dev->msg_err |= I2C_ERR_UNEXPECTED_STATUS;
-+		complete(&i2c_dev->msg_complete);
-+		goto err;
-+	}
++#define SL_ADDR1(addr)				(addr & 0xff)
++#define SL_ADDR2(addr)				((addr >> 8) & 0xff)
 +
- 	if (i2c_dev->msg_read && (status & I2C_INT_RX_FIFO_DATA_REQ)) {
- 		if (i2c_dev->msg_buf_remaining)
- 			tegra_i2c_empty_rx_fifo(i2c_dev);
-@@ -466,9 +479,12 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 	if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
- 			return 0;
--		return -EREMOTEIO;
-+		return -EAGAIN;
- 	}
+ /**
+  * struct tegra_i2c_dev	- per device i2c context
+  * @dev: device reference for power management
+@@ -126,6 +131,7 @@ struct tegra_i2c_dev {
+ 	int cont_id;
+ 	int irq;
+ 	int is_dvc;
++	bool is_slave;
+ 	struct completion msg_complete;
+ 	int msg_err;
+ 	u8 *msg_buf;
+@@ -133,6 +139,7 @@ struct tegra_i2c_dev {
+ 	int msg_read;
+ 	unsigned long bus_clk_rate;
+ 	bool is_suspended;
++	u16 slave_addr;
+ };
  
-+	if (i2c_dev->msg_err & I2C_ERR_UNEXPECTED_STATUS)
-+		return -EAGAIN;
-+
- 	return -EIO;
+ static void dvc_writel(struct tegra_i2c_dev *i2c_dev, u32 val, unsigned long reg)
+@@ -315,6 +322,20 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
+ 	dvc_writel(i2c_dev, val, DVC_CTRL_REG1);
  }
  
-@@ -598,6 +614,13 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->adapter.dev.parent = &pdev->dev;
- 	i2c_dev->adapter.nr = pdev->id;
-+	if (pdata->retries)
-+		i2c_dev->adapter.retries = pdata->retries;
-+	else
-+		i2c_dev->adapter.retries = TEGRA_I2C_RETRIES;
++static void tegra_i2c_slave_init(struct tegra_i2c_dev *i2c_dev)
++{
++	u32 val = I2C_SL_CNFG_NEWSL | I2C_SL_CNFG_NACK;
 +
-+	if (pdata->timeout)
-+		i2c_dev->adapter.timeout = pdata->timeout;
++	i2c_writel(i2c_dev, val, I2C_SL_CNFG);
++
++	if (i2c_dev->slave_addr) {
++		u16 addr = i2c_dev->slave_addr;
++
++		i2c_writel(i2c_dev, SL_ADDR1(addr), I2C_SL_ADDR1);
++		i2c_writel(i2c_dev, SL_ADDR2(addr), I2C_SL_ADDR2);
++	}
++}
++
+ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ {
+ 	u32 val;
+@@ -338,6 +359,9 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ 		0 << I2C_FIFO_CONTROL_RX_TRIG_SHIFT;
+ 	i2c_writel(i2c_dev, val, I2C_FIFO_CONTROL);
  
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
++	if (i2c_dev->is_slave)
++		tegra_i2c_slave_init(i2c_dev);
++
+ 	if (tegra_i2c_flush_fifos(i2c_dev))
+ 		err = -ETIMEDOUT;
+ 
+@@ -585,11 +609,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+ 	i2c_dev->cont_id = pdev->id;
+ 	i2c_dev->dev = &pdev->dev;
+ 	i2c_dev->bus_clk_rate = pdata ? pdata->bus_clk_rate : 100000;
++	i2c_dev->slave_addr = pdata->slave_addr;
+ 
+ 	if (pdev->id == 3)
+ 		i2c_dev->is_dvc = 1;
+ 	init_completion(&i2c_dev->msg_complete);
+ 
++	if (irq == INT_I2C || irq == INT_I2C2 || irq == INT_I2C3)
++		i2c_dev->is_slave = true;
++
+ 	platform_set_drvdata(pdev, i2c_dev);
+ 
+ 	ret = tegra_i2c_init(i2c_dev);
 diff --git a/include/linux/i2c-tegra.h b/include/linux/i2c-tegra.h
-index 9c85da4..8ee5b37 100644
+index 8ee5b37..c15c166 100644
 --- a/include/linux/i2c-tegra.h
 +++ b/include/linux/i2c-tegra.h
-@@ -20,6 +20,8 @@
- 
- struct tegra_i2c_platform_data {
+@@ -22,6 +22,7 @@ struct tegra_i2c_platform_data {
  	unsigned long bus_clk_rate;
-+	int retries;
-+	int timeout;	/* in jiffies */
+ 	int retries;
+ 	int timeout;	/* in jiffies */
++	u16 slave_addr;
  };
  
  #endif /* _LINUX_I2C_TEGRA_H */
