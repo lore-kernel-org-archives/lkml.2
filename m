@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1DTUYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:24:30 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:6968 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab1DTUY3 (ORCPT
+	id S1756105Ab1DTUYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:24:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55773 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756087Ab1DTUYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:24:29 -0400
-Message-ID: <4DAF40EB.20303@chelsio.com>
-Date: Wed, 20 Apr 2011 13:24:11 -0700
-From: Dimitris Michailidis <dm@chelsio.com>
-Organization: Chelsio Communications
-User-Agent: Thunderbird 1.5.0.12 (X11/20070530)
+	Wed, 20 Apr 2011 16:24:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=mSl9g2o3AZaWbaRm89hYoDeJ5xmzcuLs8IJJ3LifCdsn/itCtGYzydWLvnvNVD0aPM
+         sDwnJJqeUvg9g2PyeByg==
+Date: Wed, 20 Apr 2011 13:24:26 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <johnstul@us.ibm.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+In-Reply-To: <20110420093900.45F6.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
+References: <20110419094422.9375.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com> <20110420093900.45F6.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-References: <1303328216.19336.18.camel@localhost.localdomain>	 <1303328648.19336.24.camel@localhost.localdomain>	 <1303328906.2823.24.camel@bwh-desktop> <1303330173.19336.52.camel@localhost.localdomain>
-In-Reply-To: <1303330173.19336.52.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2011 01:09 PM, Shirley Ma wrote:
-> Resubmit this patch with the new bit.
+On Wed, 20 Apr 2011, KOSAKI Motohiro wrote:
 
-Bit 30 is also taken in net-next.
+> > That was true a while ago, but you now need to protect every thread's 
+> > ->comm with get_task_comm() or ensuring task_lock() is held to protect 
+> > against /proc/pid/comm which can change other thread's ->comm.  That was 
+> > different before when prctl(PR_SET_NAME) would only operate on current, so 
+> > no lock was needed when reading current->comm.
+> 
+> Right. /proc/pid/comm is evil. We have to fix it. otherwise we need change
+> all of current->comm user. It's very lots!
+> 
 
-> 
-> Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> ---
-> 
->  include/linux/netdevice.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> index 0249fe7..0998d3d 100644
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1067,6 +1067,9 @@ struct net_device {
->  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
->  #define NETIF_F_RXCSUM		(1 << 29) /* Receive checksumming offload */
->  
-> +/* Bit 30 is for device to map userspace buffers -- zerocopy */
-> +#define NETIF_F_ZEROCOPY	(1 << 30)
-> +
->  	/* Segmentation offload features */
->  #define NETIF_F_GSO_SHIFT	16
->  #define NETIF_F_GSO_MASK	0x00ff0000
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Fixing it in this case would be removing it and only allowing it for 
+current via the usual prctl() :)  The code was introduced in 4614a696bd1c 
+(procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm) in 
+December 2009 and seems to originally be meant for debugging.  We simply 
+can't continue to let it modify any thread's ->comm unless we change the 
+over 300 current->comm deferences in the kernel.
 
+I'd prefer that we remove /proc/pid/comm entirely or at least prevent 
+writing to it unless CONFIG_EXPERT.
