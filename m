@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1DTNVC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 09:21:02 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:39805 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752227Ab1DTNVA (ORCPT
+	id S1754795Ab1DTNWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 09:22:18 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:56211 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab1DTNWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 09:21:00 -0400
-Date: Wed, 20 Apr 2011 12:36:41 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Subject: Re: [RFC PATCH] PM / Core: suspend_again cb for syscore_ops
-Message-ID: <20110420103641.GA1789@ucw.cz>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 20 Apr 2011 09:22:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UabVHeDckZHxo32yE6LneSqp03jmmtdzqdf//2iOdero3FqhBCYLSTZclnZ2RpCKyT
+         wv2Scxa8fAn3hv2Xi/sS+b+QLgsVKzX4jwFA1qLnD9gldJWHR8JuGqM2V1TX/QYYpRuk
+         RORN0sNKUtd+Y1EzReZL2IPUHPDDAuw9D4E0c=
+From: Liu Yuan <namei.unix@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] driver, virtio: Modify the err hanlding logic
+Date: Wed, 20 Apr 2011 21:21:59 +0800
+Message-Id: <1303305719-4475-1-git-send-email-namei.unix@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Liu Yuan <tailai.ly@taobao.com>
 
-> A system or a device may need to control suspend/wakeup events. It may
-> want to wakeup the system after a predefined amount of time or at a
-> predefined event decided while entering suspend for polling or delayed
-> work. Then, it may want to enter suspend again if its predefined wakeup
-> condition is the only wakeup reason and there is no outstanding events;
-> thus, it does not wakeup the userspace unnecessary and keeps suspended
-> as long as possible (saving the power).
+In the function vp_request_msix_vectors(), when
+pci_enable_msix() returns 0, there will be
+redundant double checks for 'err'. This patch
+fixes it to avoid the unnecessary check.
 
-Nice. Zaurus needs it, exactly due to this reason:
+Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+---
+ drivers/virtio/virtio_pci.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-> 2. Execute critical "delayed work" at suspend.
->  A driver or a system/board may have a delayed work (or any similar
-> things) that it wants to execute at the requested time.
->  For example, some chargers want to check the battery voltage some
-> time (e.g., 30 seconds) after the battery is fully charged and the
-> charger stops. Then, the charger restarts charging if the voltage has
-> dropped more than a threshold, which is smaller than "restart-charger"
-> voltage, which is a threshold to restart charging regardless of the
-> time passed.
-
-Yep, and zaurus also needs it to stop charging.
-
-> The system enters the suspend again if and only if all of the following
-> conditions are met:
-> 1. None of suspend_again ops returned "I want to stop suspend"
-> (suspend_again returns SUSPEND_AGAIN_STOP).
-> 2. At least one of suspend_again ops returned "I want to suspend again"
-> (suspend_again returns SUSPEND_AGAIN_CONTINUE)
-
-Better naming  could be SUSPEND_AGAIN and VETO_RESUSPEND or
-SUSPEND_AGAIN_VETO .
-
-> Anyway, the following features may need to be added later:
-> 1. An API to allow devices to express next desired wakeup-time. Then,
-> the framework will combine them and setup RTC alarm accordingly and
-> save/restore previously registered RTC alarms.
-
-Yep.
-
-									Pavel
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index 4fb5b2b..2c05376 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -298,10 +298,11 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
+ 
+ 	/* pci_enable_msix returns positive if we can't get this many. */
+ 	err = pci_enable_msix(vp_dev->pci_dev, vp_dev->msix_entries, nvectors);
+-	if (err > 0)
+-		err = -ENOSPC;
+-	if (err)
++	if (err) {
++		if (err > 0)
++			err = -ENOSPC;
+ 		goto error;
++	}
+ 	vp_dev->msix_vectors = nvectors;
+ 	vp_dev->msix_enabled = 1;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.1
+
