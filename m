@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab1DTXlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:41:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58199 "EHLO
+	id S1753976Ab1DTXq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:46:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56124 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752123Ab1DTXla (ORCPT
+	by vger.kernel.org with ESMTP id S1752408Ab1DTXqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:41:30 -0400
-Date: Wed, 20 Apr 2011 16:40:05 -0700
+	Wed, 20 Apr 2011 19:46:55 -0400
+Date: Wed, 20 Apr 2011 16:46:21 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
- writeback
-Message-Id: <20110420164005.e3925965.akpm@linux-foundation.org>
-In-Reply-To: <20110420080918.383880412@intel.com>
-References: <20110420080336.441157866@intel.com>
-	<20110420080918.383880412@intel.com>
+To: james_p_freyensee@linux.intel.com
+Cc: Greg KH <gregkh@suse.de>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
+Message-Id: <20110420164621.3d817c4f.akpm@linux-foundation.org>
+In-Reply-To: <1303341368.13457.92.camel@localhost>
+References: <james_p_freyensee@linux.intel.com>
+	<1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
+	<alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
+	<1303258222.13457.42.camel@localhost>
+	<alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+	<20110420014340.GA21245@suse.de>
+	<1303323083.13457.50.camel@localhost>
+	<20110420191421.GA10306@suse.de>
+	<20110420161125.3449d4fd.akpm@linux-foundation.org>
+	<1303341368.13457.92.camel@localhost>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,57 +34,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011 16:03:41 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Wed, 20 Apr 2011 16:16:08 -0700
+J Freyensee <james_p_freyensee@linux.intel.com> wrote:
 
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
+> On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
+> > On Wed, 20 Apr 2011 12:14:21 -0700
+> > Greg KH <gregkh@suse.de> wrote:
+> > 
+> > > > But as David pointed out, if there is work other than mine coming that
+> > > > has already been proposed, wouldn't it be good to get this patch in
+> > > > place now to start the encouragement of future eyes to just call this
+> > > > function than re-invent the wheel?
+> > > 
+> > > No, then those projects submit the patch to export this, if they happen
+> > > to get to mainline before this one does.
+> > > 
+> > > Again, don't export something unless you are using it at the time, no
+> > > "this is to be used hopefully by something in the future" type stuff
+> > > please.  Who knows if those future plans ever pan out.
+> > 
+> > Well there's an easy solution here.  Send the patch to export
+> > get_task_comm(), then send along some patches which fix
+> > 
+> > z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
+> > 89
+> > 
 > 
-> At each queue_io() time, first try enqueuing only newly expired inodes.
-> If there are zero expired inodes to work with, then relax the rule and
-> enqueue all dirty inodes.
+> Andrew, so does this mean you want me to send this patch to export
+> get_task_comm() to you then?
 > 
-> This will help reduce the number of dirty pages encountered by page
-> reclaim, eg. the pageout() calls. Normally older inodes contain older
-> dirty pages, which are more close to the end of the LRU lists. So
-> syncing older inodes first helps reducing the dirty pages reached by
-> the page reclaim code.
-> 
-> More background: as Mel put it, "it makes sense to write old pages first
-> to reduce the chances page reclaim is initiating IO."
-> 
-> Rik also presented the situation with a graph:
-> 
-> LRU head                                 [*] dirty page
-> [                          *              *      * *  *  * * * * * *]
-> 
-> Ideally, most dirty pages should lie close to the LRU tail instead of
-> LRU head. That requires the flusher thread to sync old/expired inodes
-> first (as there are obvious correlations between inode age and page
-> age), and to give fair opportunities to newly expired inodes rather
-> than sticking with some large eldest inodes (as larger inodes have
-> weaker correlations in the inode<=>page ages).
-> 
-> This patch helps the flusher to meet both the above requirements.
-> 
-> Side effects: it might reduce the batch size and hence reduce
-> inode_wb_list_lock hold time, but in turn make the cluster-by-partition
-> logic in the same function less effective on reducing disk seeks.
 
-One of the many requirements for writeback is that if userspace is
-continually dirtying pages in a particular file, that shouldn't cause
-the kupdate function to concentrate on that file's newly-dirtied pages,
-neglecting pages from other files which were less-recently dirtied. 
-(and dirty nodes, etc).
+That works.  But Greg might see us doing it, so some additional
+mergeable patches which *need* that export will keep him happy.
 
-And the background writeback function and fsync() and msync() and
-everything else shouldn't cause starvation of expired pages, either.  I
-guess you could say that the expired dirty pages become the
-highest-priority writeback item.
-
-
-Are you testing for this failure scenario?  If so, can you briefly
-describe the testing?
-
-It would be hlpeful if you could explain how the current code
-implements this requirement?
+(iow, you're being extorted into doing some kernel cleanup work)
