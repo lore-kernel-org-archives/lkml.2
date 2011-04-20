@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1DTDuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 23:50:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58004 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab1DTDup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 23:50:45 -0400
-Date: Wed, 20 Apr 2011 13:50:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: linux-next: manual merge of the percpu tree with the tip tree
-Message-Id: <20110420135036.b84035de.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1750767Ab1DTEAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 00:00:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65435 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab1DTEAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 00:00:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=to:subject:from:date:cc:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=rQF3Hg5h6ocy/gNJDjkau8WdKrhzI6PJ7nptNVK5A9aw+hFfeXgPKesCpVSaV/Db2+
+         3fAPiyV/buqeD/nuLmDWJt0dF2S9FN7JDY8zbxCopGwSyrivhNnQKvtHgNibO6YPyIkr
+         ui8xRA+gbL2RQ+RIuMruskOK1TB2qCevBnZeU=
+To: Greg KH <gregkh@suse.de>
+Subject: [PATCH] platform: fix samsung brightness min/max calculations
+From: Jason Stubbs <jasonbstubbs@gmail.com>
+Date: Wed, 20 Apr 2011 13:58:50 +1000
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104201358.50443.jasonbstubbs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Jason Stubbs <jasonbstubbs@gmail.com>
 
-Today's linux-next merge of the percpu tree got a conflict in
-arch/x86/include/asm/percpu.h between commit b1e7734f024c ("x86, percpu:
-Use ASM_NOP4 instead of hardcoding P6_NOP4") from the tip tree and commit
-5f55924deaa6 ("percpu: Avoid extra NOP in percpu_cmpxchg16b_double") from
-the percpu tree.
+For one of the SABI configs, the valid brightness levels are 1 through 8 with
+0 being reserved for the BIOS. To make the range 0-based, the driver is meant
+to offset values to/from userspace by 1 giving valid levels of 0 through 7.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This patch fixes the reporting of the maximum level and the interpretation of
+the value passed from userspace as per the above logic. It also fixes the
+assumption that min_brightness will be either 0 or 1.
 
-diff --cc arch/x86/include/asm/percpu.h
-index 53278b0,d68fca6..0000000
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@@ -509,6 -509,11 +509,11 @@@ do {									
-   * it in software.  The address used in the cmpxchg16 instruction must be
-   * aligned to a 16 byte boundary.
-   */
-+ #ifdef CONFIG_SMP
- -#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP3
-++#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" ASM_NOP3
-+ #else
- -#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP2
-++#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" ASM_NOP2
-+ #endif
-  #define percpu_cmpxchg16b_double(pcp1, o1, o2, n1, n2)			\
-  ({									\
-  	char __ret;							\
+Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
+---
+diff --git a/drivers/platform/x86/samsung-laptop.c 
+b/drivers/platform/x86/samsung-laptop.c
+index d347116..ebf1b07 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -370,15 +370,17 @@ static u8 read_brightness(void)
+ 				  &sretval);
+ 	if (!retval) {
+ 		user_brightness = sretval.retval[0];
+-		if (user_brightness != 0)
++		if (user_brightness > sabi_config->min_brightness)
+ 			user_brightness -= sabi_config->min_brightness;
++		else
++			user_brightness = 0;
+ 	}
+ 	return user_brightness;
+ }
+ 
+ static void set_brightness(u8 user_brightness)
+ {
+-	u8 user_level = user_brightness - sabi_config->min_brightness;
++	u8 user_level = user_brightness + sabi_config->min_brightness;
+ 
+ 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
+ }
+@@ -782,7 +784,8 @@ static int __init samsung_init(void)
+ 	/* create a backlight device to talk to this one */
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.type = BACKLIGHT_PLATFORM;
+-	props.max_brightness = sabi_config->max_brightness;
++	props.max_brightness = sabi_config->max_brightness -
++				sabi_config->min_brightness;
+ 	backlight_device = backlight_device_register("samsung", &sdev->dev,
+ 						     NULL, &backlight_ops,
+ 						     &props);
