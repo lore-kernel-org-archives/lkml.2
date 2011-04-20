@@ -1,92 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1DTNbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 09:31:55 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:53630 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab1DTNbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 09:31:53 -0400
-X-ASG-Debug-ID: 1303306312-01de284cf816e490001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAEE049.7050407@fusionio.com>
-Date: Wed, 20 Apr 2011 15:31:53 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754523Ab1DTNk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 09:40:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39269 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab1DTNk6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 09:40:58 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at  0000000c IP: cfq_insert_request+0x1d/0x3f5
-References: <20110420125824.GA3507@tiehlicka.suse.cz> <4DAEDBEB.7060904@fusionio.com> <20110420132903.GA13554@tiehlicka.suse.cz>
-X-ASG-Orig-Subj: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at  0000000c IP: cfq_insert_request+0x1d/0x3f5
-In-Reply-To: <20110420132903.GA13554@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303306312
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.20
-X-Barracuda-Spam-Status: No, SCORE=0.20 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=PR0N_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61410
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.20 PR0N_SUBJECT           Subject has letters around special characters (pr0n)
+In-Reply-To: <20110419062654.GB10698@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	<20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
+	<1303145171.32491.886.camel@twins>
+	<20110419062654.GB10698@linux.vnet.ibm.com>
+Date: Wed, 20 Apr 2011 09:40:57 -0400
+Message-ID: <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation for uprobes
+From: Eric Paris <eparis@parisplace.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, James Morris <jmorris@namei.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>, sds@tycho.nsa.gov
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-20 15:29, Michal Hocko wrote:
-> On Wed 20-04-11 15:13:15, Jens Axboe wrote:
->> On 2011-04-20 14:58, Michal Hocko wrote:
->>> Hi,
->>> I am not able to boot with the current git tree
->>> (2.6.39-rc4-00089-g2f666bc). 2.6.39-rc3 boots just fine.
->>>
->>> The backtrace [1] looks really messy.
->>>
->>> I have seen a similar backtrace at https://lkml.org/lkml/2011/3/25/169
->>> and tried the patch from https://lkml.org/lkml/2011/3/25/173 but it
->>> didn't help. The backtrace looks similar (much smaller) but the machine
->>> ends up dead as well with unbalanced preempt counter[2].
->>>
->>> The config is attached.
->>>
->>> Is this a known problem?
->>>
->>> ---
->>> * [1] backtrace with the current git tree (2f666bc)
->>>
->>> [   31.207283] BUG: unable to handle kernel NULL pointer dereference at 0000000c
->>> NULL pointer dereference[   31.207540] IP: at 0000000c
->>> [   31.207540] IP: [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> [   31.207720] *pde = 00000000  [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> NULL pointer dereference[   31.207720] *pde = 00000000
->>>  at 0000000c
->>> [   31.207888] Oops: 0000 [#1]
->>> PREEMPT [   31.207540] IP:[   31.207888] Oops: 0000 [#1] SMP PREEMPT DEBUG_PAGEALLOC [<c028dece>] cfq_insert_request+0x1d/0x3f5
->>> SMP DEBUG_PAGEALLOC[   31.207720] *pde = 00000000
->>> [   31.207888] Oops: 0000 [#1] PREEMPT [   31.208186] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/block/sda/queue/scheduler
+On Tue, Apr 19, 2011 at 2:26 AM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2011-04-18 18:46:11]:
+>
+>> On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
+
+>> > +static int xol_add_vma(struct uprobes_xol_area *area)
+>> > +{
+>> > +   struct vm_area_struct *vma;
+>> > +   struct mm_struct *mm;
+>> > +   struct file *file;
+>> > +   unsigned long addr;
+>> > +   int ret = -ENOMEM;
+>> > +
+>> > +   mm = get_task_mm(current);
+>> > +   if (!mm)
+>> > +           return -ESRCH;
+>> > +
+>> > +   down_write(&mm->mmap_sem);
+>> > +   if (mm->uprobes_xol_area) {
+>> > +           ret = -EALREADY;
+>> > +           goto fail;
+>> > +   }
+>> > +
+>> > +   /*
+>> > +    * Find the end of the top mapping and skip a page.
+>> > +    * If there is no space for PAGE_SIZE above
+>> > +    * that, mmap will ignore our address hint.
+>> > +    *
+>> > +    * We allocate a "fake" unlinked shmem file because
+>> > +    * anonymous memory might not be granted execute
+>> > +    * permission when the selinux security hooks have
+>> > +    * their way.
+>> > +    */
 >>
->> Ahh hang on, this may be a good clue. Does your boot scripts change the
->> IO scheduler?
-> 
-> Good one...
-> Yes, I have:
-> echo deadline > /sys/block/sda/queue/scheduler
-> in /etc/rc.local
-> 
-> I am able to boot after I remove it. This is the first time I have seen
-> "last sysfs file" being useful.
+>> That just annoys me, so we're working around some stupid sekurity crap,
+>> executable anonymous maps are perfectly fine, also what do JITs do?
+>
+> Yes, we are working around selinux security hooks, but do we have a
+> choice.
+>
+> James can you please comment on this.
 
-Haha, good point, it's the first time for me as well IO think.
+[added myself and stephen, the 2 SELinux maintainers]
 
-> Still want me to test the patch from the other email?
+This is just wrong.  Anything to 'work around' SELinux in the kernel
+is wrong.  SELinux access decisions are determined by policy not by
+dirty hacks in the code to subvert any kind of security claims that
+policy might hope to enforce.
 
-No, that wont help you. I do wonder why this is a rc3 vs rc4 change.
-I'll dig around and send you something to try.
+[side note, security_file_mmap() is the right call if there is a file
+or not.  It should just be called security_mmap() but the _file_ has
+been around a long time and just never had a need to be changed]
 
--- 
-Jens Axboe
+Now how to fix the problems you were seeing.  If you run a modern
+system with a GUI I'm willing to bet the pop-up window told you
+exactly how to fix your problem.  If you are not on a GUI I accept
+it's a more difficult as you most likely don't have the setroubleshoot
+tools installed to help you out.  I'm just guess what your problem
+was, but I think you have two solutions either:
 
+1) chcon -t unconfined_execmem_t /path/to/your/binary
+2) setsebool -P allow_execmem 1
+
+The first will cause the binary to execute in a domain with
+permissions to execute anonymous memory, the second will allow all
+unconfined domains to execute anonymous memory.
+
+I believe there was a question about how JIT's work with SELinux
+systems.  They work mostly by method #1.
+
+I did hear this question though: On a different but related note, how
+is the use of uprobes controlled? Does it apply the same checking as
+for ptrace?
+
+Thanks guys!  If you have SELinux or LSM problems in the future let me
+know.  It's likely the solution is easier than you imagine   ;)
+
+-Eric
