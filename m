@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab1DTOH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 10:07:57 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:28451 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752542Ab1DTOH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 10:07:56 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: KP3JeLEVM1kb_2HiNZ_lVoN0AEIfYaPYvbkPZdDzlrE4J2X
- QfN2ZIZfdkdLE3nFliPAFqixogP5a1XIi1byTmUmDbO6AgAcu65qmFXX9u50
- 0qCFHwR4d9MDp73JY3wQcKx0BbNQtrz38VGedXmpudhG4uPwX8dJARkM0gL6
- 6QcwRP5CD29NImBgf7VK2MI0SE4IeDQDDyoyw_CNa1n.lD30CswinXU6EjHf
- 4Rbp5_s1lYt.pIz8V9pz5eSvB7GoeL56f2qJ_KDAa91Rlv6A0YfhotRYoAH2
- BbC3qzXWd5thv.tY9IBNXnLdccUxGjZkXxhWUx84HzG_qVm4MUMn2PCfkgop
- 4gPurIxNykmJaEzwvCHU7o.s-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 20 Apr 2011 09:07:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        x86 maintainers <x86@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-In-Reply-To: <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1104200906170.8634@router.home>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com> <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com> <20110420161615.462D.A69D9226@jp.fujitsu.com> <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753182Ab1DTOKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 10:10:17 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:50262 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752311Ab1DTOKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 10:10:16 -0400
+From: Roman Borisov <ext-roman.borisov@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        Roman Borisov <ext-roman.borisov@nokia.com>
+Subject: [PATCH v2] fs: bound mount propagation fix
+Date: Wed, 20 Apr 2011 18:11:53 +0400
+Message-Id: <a5c94bcf545fe78cc600402a5234a6bbc1dece97.1303304011.git.ext-roman.borisov@nokia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1303304011.git.ext-roman.borisov@nokia.com>
+References: <cover.1303304011.git.ext-roman.borisov@nokia.com>
+X-OriginalArrivalTime: 20 Apr 2011 14:09:54.0316 (UTC) FILETIME=[9F369CC0:01CBFF64]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011, Pekka Enberg wrote:
+MS_SILENT flag cleaning up added to flags_to_propagation_type function.
+It was reported that bound mount propagation doesn't work in busybox as by
+default busybox mount applet sets the MS_SILENT flag for any mount operation.
+Moreover recently added flags_to_propagation_type function doesn't allow to
+do such operations as --make-[r]private --make-[r]shared etc. when MS_SILENT
+is on.
+The idea to clean MS_SILENT flag belongs to Denys Vlasenko <vda.linux@googlemail.com>
 
-> That part makes me think the best option is to make parisc do
-> CONFIG_NUMA as well regardless of the historical intent was.
+Signed-off-by: Roman Borisov <ext-roman.borisov@nokia.com>
+---
+ fs/namespace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Another possilibity is to use SPARSEMEM instead? We can do the same for
-the other arches that we have done to x86.
-
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 60813f0..f219060 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1423,7 +1423,7 @@ out_unlock:
+ 
+ static int flags_to_propagation_type(int flags)
+ {
+-	int type = flags & ~MS_REC;
++	int type = flags & ~(MS_REC | MS_SILENT);
+ 
+ 	/* Fail if any non-propagation flags are set */
+ 	if (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+-- 
+1.7.0.4
 
