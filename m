@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1DTLAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 07:00:21 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:52084 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752707Ab1DTLAT (ORCPT
+	id S1754252Ab1DTLFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 07:05:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45326 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab1DTLFV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 07:00:19 -0400
-Date: Wed, 20 Apr 2011 12:51:20 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Igor Plyatov <plyatov@gmail.com>
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-at91: gsia18s board improvements and bug fixes
-Message-ID: <20110420105120.GI4204@game.jcrosoft.org>
-References: <1303291399-4075-1-git-send-email-plyatov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303291399-4075-1-git-send-email-plyatov@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13600589400494680935
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Wed, 20 Apr 2011 07:05:21 -0400
+Subject: Re: [PATCH 13/20] lockdep, mutex: Provide mutex_lock_nest_lock
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>
+In-Reply-To: <20110419130654.95a14117.akpm@linux-foundation.org>
+References: <20110401121258.211963744@chello.nl>
+	 <20110401121725.940769985@chello.nl>
+	 <20110419130654.95a14117.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Apr 2011 13:03:56 +0200
+Message-ID: <1303297436.8345.158.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:23 Wed 20 Apr     , Igor Plyatov wrote:
-> * AT91_PIN_Pxxx port names replaced by human readable GPO_xxxx, GPI_xxxx,
-I do not see the improvement
->   GPIO_xxxx names. This simplify source code and schematic maintenance.
-> * Active logic levels and default states corrected for GPOs.
-> * Replace small functions which use platform_register_device() by its direct
->   calls.
-ditto here
-> * Remove GPIO_CARD_UNMOUNT_1 gpio_keys_button, because it not used.
-> * debounce_interval added for critical buttons.
-> * Remove unneeded GPI setup code for buttons, because this done by corresponding
->   driver.
-> * pcf8574x_0x20_setup() and pcf8574x_0x20_teardown functions small refactoring.
-Best Regards,
-J.
+On Tue, 2011-04-19 at 13:06 -0700, Andrew Morton wrote:
+> On Fri, 01 Apr 2011 14:13:11 +0200
+> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > Provide the mutex_lock_nest_lock() annotation.
+> 
+> why?
+> 
+> Neither the changelog nor the code provide any documentation for this addition to
+> the lokdep API.
+
+---
+Subject: lockdep, mutex: Provide mutex_lock_nest_lock                                        
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>                                                
+Date: Fri, 26 Nov 2010 15:39:00 +0100                                                        
+                                                                                             
+In order to convert i_mmap_lock to a mutex we need a mutex equivalent                        
+to spin_lock_nest_lock(), thus provide the mutex_lock_nest_lock()                            
+annotation.                                                                                  
+                                                                                             
+As with spin_lock_nest_lock(), mutex_lock_nest_lock() allows                                 
+annotation of the locking pattern where an outer lock serializes the                         
+acquisition order of nested locks. That is, if every time you lock                            
+multiple locks A, say A1 and A2 you first acquire N, the order of                            
+acquiring A1 and A2 is irrelevant.                                                           
+                                                                                             
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>  
+---
