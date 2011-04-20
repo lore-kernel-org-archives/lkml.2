@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab1DTU6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:58:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12630 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab1DTU6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:58:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,247,1301900400"; 
-   d="scan'208";a="631697051"
-Date: Wed, 20 Apr 2011 13:57:36 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Madhu Iyengar <madhu.iyengar@qlogic.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>,
-        stable <stable@kernel.org>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-Subject: Re: [BISECTED] QLogic Corp. ISP2532-based 8Gb Fibre Channel not
- working on 2.6.35.y
-Message-ID: <20110420205736.GA32402@tassilo.jf.intel.com>
-References: <4DAD5495.5060704@pardus.org.tr>
- <20110419165801.GA17788@tassilo.jf.intel.com>
- <1303232648.3171.22.camel@mulgrave.site>
- <5E4F49720D0BAD499EE1F01232234BA8728A9D52F7@AVEXMB1.qlogic.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5E4F49720D0BAD499EE1F01232234BA8728A9D52F7@AVEXMB1.qlogic.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756000Ab1DTU7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:59:05 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40692 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab1DTU7C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:59:02 -0400
+Subject: Re: [PATCH V3 5/8] Enable cxgb3 to support zerocopy
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Dimitris Michailidis <dm@chelsio.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4DAF479D.7090309@chelsio.com>
+References: <1303328216.19336.18.camel@localhost.localdomain>
+	 <1303330438.19336.57.camel@localhost.localdomain>
+	 <4DAF479D.7090309@chelsio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 13:58:54 -0700
+Message-ID: <1303333134.19336.70.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-04-20 at 13:52 -0700, Dimitris Michailidis wrote:
+> The features handling has been reworked in net-next and patches like
+> this 
+> won't apply as the code you're patching has changed.  Also core code
+> now 
+> does a lot of the related work and you'll need to tell it what to do
+> with 
+> any new flags.
+Ok, will do.
 
-Patch added, thanks.
+> What properties does a device or driver need to meet to set this flag?
+> It 
+> seems to be set a bit too unconditionally.  For example, does it work
+> if one 
+> disables scatter/gather? 
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+This flag can be ON when HIGHDMA and scatter/gather support. I will
+modify the patch to make it conditionally.
+
+thanks
+Shirley
+
