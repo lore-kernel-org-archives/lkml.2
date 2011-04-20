@@ -1,108 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1DTBlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:41:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53286 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751340Ab1DTBlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:41:04 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@suse.de>
-In-Reply-To: <20110419204117.979118654@clark.kroah.org>
-References: <20110419204117.979118654@clark.kroah.org>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-GakxzpHyiyAAN5QmupdC"
-Date: Wed, 20 Apr 2011 02:40:53 +0100
-Message-ID: <1303263653.3464.65.camel@localhost>
+	id S1754773Ab1DTBla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 21:41:30 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50745 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754643Ab1DTBlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 21:41:19 -0400
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104181321480.31186@chino.kir.corp.google.com>
+	 <1303161774.9887.346.camel@nimitz>
+	 <20110419094422.9375.A69D9226@jp.fujitsu.com>
+	 <alpine.DEB.2.00.1104191419470.510@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 19 Apr 2011 18:41:13 -0700
+Message-ID: <1303263673.5076.612.camel@nimitz>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
- workaround
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-04-19 at 14:21 -0700, David Rientjes wrote:
+> On Tue, 19 Apr 2011, KOSAKI Motohiro wrote:
+> > The rule is,
+> > 
+> > 1) writing comm
+> > 	need task_lock
+> > 2) read _another_ thread's comm
+> > 	need task_lock
+> > 3) read own comm
+> > 	no need task_lock
+> 
+> That was true a while ago, but you now need to protect every thread's 
+> ->comm with get_task_comm() or ensuring task_lock() is held to protect 
+> against /proc/pid/comm which can change other thread's ->comm.  That was 
+> different before when prctl(PR_SET_NAME) would only operate on current, so 
+> no lock was needed when reading current->comm.
 
---=-GakxzpHyiyAAN5QmupdC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Everybody still goes through set_task_comm() to _set_ it, though.  That
+means that the worst case scenario that we get is output truncated
+(possibly to nothing).  We already have at least one existing user in
+mm/ (kmemleak) that thinks this is OK.  I'd tend to err in the direction
+of taking a truncated or empty task name to possibly locking up the
+system.
 
-On Tue, 2011-04-19 at 13:30 -0700, Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let u=
-s know.
->=20
-> ------------------
->=20
-> From: Hans Rosenfeld <hans.rosenfeld@amd.com>
->=20
-> commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
->=20
-> Remove check_c1e_idle() and use the new AMD errata checking framework
-> instead.
+There are also plenty of instances of current->comm going in to the
+kernel these days.  I count 18 added since 2.6.37.
 
-Clean-up patches are generally not candidates for longterm updates.
+As for a long-term fix, locks probably aren't the answer.  Would
+something like this completely untested patch work?  It would have the
+added bonus that it keeps tsk->comm users working for the moment.  We
+could eventually add an rcu_read_lock()-annotated access function.
 
-However, I notice that the range of procesors considered to have erratum
-400 was also changed:
+---
 
-[...]
-> +const int amd_erratum_400[] =3D
-> +	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-> +			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
-[...]
-> -	/* Family 0x0f models < rev F do not have C1E */
-> -	if (c->x86 =3D=3D 0x0F && c->x86_model >=3D 0x40)
-> -		return 1;
-> -
-> -	if (c->x86 =3D=3D 0x10) {
-> -		/*
-> -		 * check OSVW bit for CPUs that are not affected
-> -		 * by erratum #400
-> -		 */
-> -		if (cpu_has(c, X86_FEATURE_OSVW)) {
-[...]
-> -		}
-> -		return 1;
-[...]
+ linux-2.6.git-dave/fs/exec.c                 |   22 +++++++++++++++-------
+ linux-2.6.git-dave/include/linux/init_task.h |    3 ++-
+ linux-2.6.git-dave/include/linux/sched.h     |    3 ++-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
-Family 0x0f model 0x40 and model 0x41 stepping 0 and 1 are excluded.
-Family 0x10 model 0x00, 0x01 and model 0x02 stepping 0 are excluded.
-Is that the real fix here?
+diff -puN mm/page_alloc.c~tsk_comm mm/page_alloc.c
+diff -puN include/linux/sched.h~tsk_comm include/linux/sched.h
+--- linux-2.6.git/include/linux/sched.h~tsk_comm	2011-04-19 18:23:58.435013635 -0700
++++ linux-2.6.git-dave/include/linux/sched.h	2011-04-19 18:24:44.651034028 -0700
+@@ -1334,10 +1334,11 @@ struct task_struct {
+ 					 * credentials (COW) */
+ 	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
+ 
+-	char comm[TASK_COMM_LEN]; /* executable name excluding path
++	char comm_buf[TASK_COMM_LEN]; /* executable name excluding path
+ 				     - access with [gs]et_task_comm (which lock
+ 				       it with task_lock())
+ 				     - initialized normally by setup_new_exec */
++	char __rcu *comm;
+ /* file system info */
+ 	int link_count, total_link_count;
+ #ifdef CONFIG_SYSVIPC
+diff -puN include/linux/init_task.h~tsk_comm include/linux/init_task.h
+--- linux-2.6.git/include/linux/init_task.h~tsk_comm	2011-04-19 18:24:48.703035798 -0700
++++ linux-2.6.git-dave/include/linux/init_task.h	2011-04-19 18:25:22.147050279 -0700
+@@ -161,7 +161,8 @@ extern struct cred init_cred;
+ 	.group_leader	= &tsk,						\
+ 	RCU_INIT_POINTER(.real_cred, &init_cred),			\
+ 	RCU_INIT_POINTER(.cred, &init_cred),				\
+-	.comm		= "swapper",					\
++	.comm_buf	= "swapper",					\
++	.comm		= &tsk.comm_buf, 				\
+ 	.thread		= INIT_THREAD,					\
+ 	.fs		= &init_fs,					\
+ 	.files		= &init_files,					\
+diff -puN fs/exec.c~tsk_comm fs/exec.c
+--- linux-2.6.git/fs/exec.c~tsk_comm	2011-04-19 18:25:32.283054625 -0700
++++ linux-2.6.git-dave/fs/exec.c	2011-04-19 18:37:47.991485880 -0700
+@@ -1007,17 +1007,25 @@ char *get_task_comm(char *buf, struct ta
+ 
+ void set_task_comm(struct task_struct *tsk, char *buf)
+ {
++	char tmp_comm[TASK_COMM_LEN];
++
+ 	task_lock(tsk);
+ 
++	memcpy(tmp_comm, tsk->comm_buf, TASK_COMM_LEN);
++	tsk->comm = tmp;
+ 	/*
+-	 * Threads may access current->comm without holding
+-	 * the task lock, so write the string carefully.
+-	 * Readers without a lock may see incomplete new
+-	 * names but are safe from non-terminating string reads.
++	 * Make sure no one is still looking at tsk->comm_buf
+ 	 */
+-	memset(tsk->comm, 0, TASK_COMM_LEN);
+-	wmb();
+-	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
++	synchronize_rcu();
++
++	strlcpy(tsk->comm_buf, buf, sizeof(tsk->comm));
++	tsk->comm = tsk->com_buff;
++	/*
++	 * Make sure no one is still looking at the
++	 * stack-allocated buffer
++	 */
++	synchronize_rcu();
++
+ 	task_unlock(tsk);
+ 	perf_event_comm(tsk);
+ }
 
-Ben.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+-- Dave
 
---=-GakxzpHyiyAAN5QmupdC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATa45pee/yOyVhhEJAQqtrBAAkpuXyu13HmvQ7zrsVC9F/FRVwBkZ2DsT
-ZeHq1cW7JH12rlnUF/b1z6vIcLNPyqkwcIotG0XfymBBrHN4aPzDKsDzlcI9Veu0
-3aRhXcsUcC+QCLV97qdYSq2w8RLJ8CsysTJqpwp+adANZ8LFsoRxiNG/6MaLxXAJ
-sCI0Dg76VuT9SRyZntjztqDxOCuTnW8BAjQiowNPkcRBx/B0uL0FeE5A24/hOjTO
-9wOD1hcJw4CGA9+Jos/5P5R49wxezeDp77C1m+Y/g+Nt2hazyotr2N0SJF/LTv2e
-/JAEy3CsuwSOeTh8lQF1OWe3aEloyFON+Nunj3PWMtRRm+dYZdn3vJafrD8Voik+
-2KJ4o67vi4uuJRPhcsjsuPKWHn7/3x8BWfHBQFvKsgwnJm5hJ1BaBrxveqOoJDaC
-VQTJXbCk4zd0xsKrsxZSvxoJBGQ9SnY2AmeACS2QXry1KZViI8CbCB3IR3oBd81s
-rCajHNQUf9fPPF1yecxYqgeVV5izQAiRpnAg3rNASh8Mkg8gJD/7oAy7dswODn7K
-ag61Y1EP+3qgmJ/vRnnWZ/UjVwpo3RYBnZ8zBM2n3tJ8aLhfyOfs64Bd6ZeXlTp9
-AzEb4vPd5/wIS8o2jFglddx14PHw2IvOSvcRafSavRM5NkH8hEqkwr3Q6Wgjfd+x
-achyOAo4om4=
-=NI2M
------END PGP SIGNATURE-----
-
---=-GakxzpHyiyAAN5QmupdC--
