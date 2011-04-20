@@ -1,272 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab1DTQOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:14:10 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:42678 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754761Ab1DTQOI (ORCPT
+	id S1755291Ab1DTQXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:23:51 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:2385
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752167Ab1DTQXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=CBbIttM+GcSLaMXJz4rlsuf2JV9kT0eu3YX9fJd5z5HJlb4EnN+Hl6PfRNp7dRAdQGCTGlFUG9fMOMnmfOgO78Mr2wykb2/6nffKIj8U/uOCvU4JPTFivi6iGcq0/D3C;
-Date: Wed, 20 Apr 2011 09:14:04 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Joe Perches <joe@perches.com>, Michael Prokop <mika@grml.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH v2] Documentation/dontdiff: large update
-Message-Id: <20110420091404.f7e178ee.rdunlap@xenotime.net>
-In-Reply-To: <20110418214637.88f5bd3d.rdunlap@xenotime.net>
-References: <20110418160809.f10c0b62.rdunlap@xenotime.net>
-	<1303176177.31723.58.camel@Joe-Laptop>
-	<20110418214637.88f5bd3d.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Apr 2011 12:23:50 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 20 Apr 2011 11:23:41 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Andrea Galbusera <gizero@gmail.com>
+CC: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Vitaly Bordug <vbordug@ru.mvista.com>, <netdev@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] powerpc: Fix multicast problem in fs_enet driver
+Message-ID: <20110420112341.41d57444@schlenkerla.am.freescale.net>
+In-Reply-To: <1303289719-16913-1-git-send-email-gizero@gmail.com>
+References: <1303289719-16913-1-git-send-email-gizero@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 20 Apr 2011 10:55:19 +0200
+Andrea Galbusera <gizero@gmail.com> wrote:
 
-v2, updated based on comments from Joe and Paul.
+> mac-fec.c was setting individual UDP address registers instead of multicast
+> group address registers when joining a multicast group.
+> This prevented from correctly receiving UDP multicast packets.
+> According to datasheet, replaced hash_table_high and hash_table_low
+> with grp_hash_table_high and grp_hash_table_low respectively.
+> 
+> Tested on a MPC5121 based board.
+> 
+> Signed-off-by: Andrea Galbusera <gizero@gmail.com>
+> ---
+>  drivers/net/fs_enet/mac-fec.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/fs_enet/mac-fec.c b/drivers/net/fs_enet/mac-fec.c
+> index 61035fc..b9fbc83 100644
+> --- a/drivers/net/fs_enet/mac-fec.c
+> +++ b/drivers/net/fs_enet/mac-fec.c
+> @@ -226,8 +226,8 @@ static void set_multicast_finish(struct net_device *dev)
+>  	}
+>  
+>  	FC(fecp, r_cntrl, FEC_RCNTRL_PROM);
+> -	FW(fecp, hash_table_high, fep->fec.hthi);
+> -	FW(fecp, hash_table_low, fep->fec.htlo);
+> +	FW(fecp, grp_hash_table_high, fep->fec.hthi);
+> +	FW(fecp, grp_hash_table_low, fep->fec.htlo);
+>  }
+>  
+>  static void set_multicast_list(struct net_device *dev)
+> @@ -273,8 +273,8 @@ static void restart(struct net_device *dev)
+>  	/*
+>  	 * Reset all multicast.
+>  	 */
+> -	FW(fecp, hash_table_high, fep->fec.hthi);
+> -	FW(fecp, hash_table_low, fep->fec.htlo);
+> +	FW(fecp, grp_hash_table_high, fep->fec.hthi);
+> +	FW(fecp, grp_hash_table_low, fep->fec.htlo);
+>  
+>  	/*
+>  	 * Set maximum receive buffer size.
 
-Update to Documentation/dontdiff, based on many updates to
-various .gitignore patches over the last 2 years.
+This will break on 8xx which does not have grp_hash_table_*.  It has only
+one set of hash table registers which are used only for multicast -- so
+8xx should have fec_hash_table_* renamed to fec_grp_hash_table_* in struct
+fec.
 
-Initially begun by Michael Prokop <mika@grml.org>, with lots of
-changes by Randy Dunlap.
+-Scott
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Michael Prokop <mika@grml.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
----
- Documentation/dontdiff |   58 ++++++++++++++++++++++++++++++---------
- 1 file changed, 46 insertions(+), 12 deletions(-)
-
---- lnx-2639-r3g8-docum.orig/Documentation/dontdiff
-+++ lnx-2639-r3g8-docum/Documentation/dontdiff
-@@ -1,6 +1,8 @@
- *.a
- *.aux
- *.bin
-+*.bz2
-+*.cis
- *.cpio
- *.csp
- *.dsp
-@@ -8,6 +10,8 @@
- *.elf
- *.eps
- *.fw
-+*.gcno
-+*.gcov
- *.gen.S
- *.gif
- *.grep
-@@ -19,14 +23,20 @@
- *.ko
- *.log
- *.lst
-+*.lzma
-+*.lzo
-+*.mo
- *.moc
- *.mod.c
- *.o
- *.o.*
-+*.order
- *.orig
- *.out
-+*.patch
- *.pdf
- *.png
-+*.pot
- *.ps
- *.rej
- *.s
-@@ -39,16 +49,22 @@
- *.tex
- *.ver
- *.xml
-+*.xz
- *_MODULES
- *_vga16.c
- *~
-+\#*#
- *.9
--*.9.gz
- .*
-+.*.d
- .mm
- 53c700_d.h
- CVS
- ChangeSet
-+GPATH
-+GRTAGS
-+GSYMS
-+GTAGS
- Image
- Kerntypes
- Module.markers
-@@ -57,15 +73,14 @@ PENDING
- SCCS
- System.map*
- TAGS
-+aconf
-+af_names.h
- aic7*reg.h*
- aic7*reg_print.c*
- aic7*seq.h*
- aicasm
- aicdb.h*
--altivec1.c
--altivec2.c
--altivec4.c
--altivec8.c
-+altivec*.c
- asm-offsets.h
- asm_offsets.h
- autoconf.h*
-@@ -80,6 +95,7 @@ btfixupprep
- build
- bvmlinux
- bzImage*
-+capability_names.h
- capflags.c
- classlist.h*
- comp*.log
-@@ -88,7 +104,8 @@ conf
- config
- config-*
- config_data.h*
--config_data.gz*
-+config.mak
-+config.mak.autogen
- conmakehash
- consolemap_deftbl.c*
- cpustr.h
-@@ -96,7 +113,9 @@ crc32table.h*
- cscope.*
- defkeymap.c
- devlist.h*
-+dnotify_test
- docproc
-+dslm
- elf2ecoff
- elfconfig.h*
- evergreen_reg_safe.h
-@@ -105,6 +124,7 @@ flask.h
- fore200e_mkfirm
- fore200e_pca_fw.c*
- gconf
-+gconf.glade.h
- gen-devlist
- gen_crc32table
- gen_init_cpio
-@@ -112,11 +132,12 @@ generated
- genheaders
- genksyms
- *_gray256.c
-+hpet_example
-+hugepage-mmap
-+hugepage-shm
- ihex2fw
- ikconfig.h*
- inat-tables.c
--initramfs_data.cpio
--initramfs_data.cpio.gz
- initramfs_list
- int16.c
- int1.c
-@@ -133,15 +154,19 @@ kxgettext
- lkc_defs.h
- lex.c
- lex.*.c
-+linux
- logo_*.c
- logo_*_clut224.c
- logo_*_mono.c
- lxdialog
-+mach
- mach-types
- mach-types.h
- machtypes.h
- map
-+map_hugetlb
- maui_boot.h
-+media
- mconf
- miboot*
- mk_elfconfig
-@@ -150,23 +175,29 @@ mkbugboot
- mkcpustr
- mkdep
- mkprep
-+mkregtable
- mktables
- mktree
- modpost
- modules.builtin
- modules.order
- modversions.h*
-+nconf
- ncscope.*
- offset.h
- offsets.h
- oui.c*
-+page-types
- parse.c
- parse.h
- patches*
- pca200e.bin
- pca200e_ecd.bin2
--piggy.gz
-+perf.data
-+perf.data.old
-+perf-archive
- piggyback
-+piggy.gzip
- piggy.S
- pnmtologo
- ppc_defs.h*
-@@ -177,10 +208,9 @@ r200_reg_safe.h
- r300_reg_safe.h
- r420_reg_safe.h
- r600_reg_safe.h
--raid6altivec*.c
--raid6int*.c
--raid6tables.c
-+recordmcount
- relocs
-+rlim_names.h
- rn50_reg_safe.h
- rs600_reg_safe.h
- rv515_reg_safe.h
-@@ -194,6 +224,7 @@ split-include
- syscalltab.h
- tables.c
- tags
-+test_get_len
- tftpboot.img
- timeconst.h
- times.h*
-@@ -210,10 +241,13 @@ vdso32.so.dbg
- vdso64.lds
- vdso64.so.dbg
- version.h*
-+vmImage
- vmlinux
- vmlinux-*
- vmlinux.aout
-+vmlinux.bin.all
- vmlinux.lds
-+vmlinuz
- voffset.h
- vsyscall.lds
- vsyscall_32.lds
