@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab1DTXcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:32:43 -0400
-Received: from outbound.icp-osb-irony-out8.iinet.net.au ([203.59.1.134]:8624
-	"EHLO outbound.icp-osb-irony-out8.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752670Ab1DTXcm (ORCPT
+	id S1753921Ab1DTXlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 19:41:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58199 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752123Ab1DTXla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:32:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEBAJNsr03L2T1e/2dsb2JhbAANrx8bvlGFcQSSPA
-X-IronPort-AV: E=Sophos;i="4.64,248,1301846400"; 
-   d="scan'208";a="4245172"
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Ben Nizette <bn@niasdigital.com>
-In-Reply-To: <BANLkTi=W7jaVtW1FThvG_ca57q+yDz1kzQ@mail.gmail.com>
-Date: Thu, 21 Apr 2011 09:32:26 +1000
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+	Wed, 20 Apr 2011 19:41:30 -0400
+Date: Wed, 20 Apr 2011 16:40:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
+ writeback
+Message-Id: <20110420164005.e3925965.akpm@linux-foundation.org>
+In-Reply-To: <20110420080918.383880412@intel.com>
+References: <20110420080336.441157866@intel.com>
+	<20110420080918.383880412@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <E0A55C1E-9DA0-4FFE-90EE-575BB1E649CB@niasdigital.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com> <3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com> <20110418091902.13345132@lxorguk.ukuu.org.uk> <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com> <20110418132629.12d9a106@lxorguk.ukuu.org.uk> <6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com> <BANLkTi=W7jaVtW1FThvG_ca57q+yDz1kzQ@mail.gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Apr 2011 16:03:41 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-On 20/04/2011, at 10:21 PM, Linus Walleij wrote:
-
-> 2011/4/19 Ben Nizette <bn@niasdigital.com>:
->> On 18/04/2011, at 10:26 PM, Alan Cox wrote:
->> 
->>> The logical extension to that is to delete the gpio layer because the
->>> board code can do it ?
->> 
->> Well anything that is done once at startup, yes,
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
 > 
-> This patch is about biasing and drive modes. We need to alter
-> these at runtime (from board code, indeed) due to the fact that
-> when you go to sleep e.g. floating a pin yeilds better power
-> characteristics.
-
-This is actually an interesting case because floating pins yeild
-/worse/ power characteristics (each transistor of the push-pull
-is on a little bit and you get a path straight through) [1].  To
-get good power performance you want to pull an input pin high or
-low but which of those two directions depends on external
-constraints, i.e. the board.  This is a case where the driver
-should /not/ go playing with things it can't fully understand.
-
-Perhaps one of the properties that a board can set in a gpio chip
-driver is the suspend state and have suspend/resume hooks in the
-gpio chip take care of setting things up on each side.
-
-	--Ben.
-
-[1] http://processors.wiki.ti.com/index.php/Optimizing_IO_Power_Consumption
-
+> At each queue_io() time, first try enqueuing only newly expired inodes.
+> If there are zero expired inodes to work with, then relax the rule and
+> enqueue all dirty inodes.
 > 
-> Linus Walleij
+> This will help reduce the number of dirty pages encountered by page
+> reclaim, eg. the pageout() calls. Normally older inodes contain older
+> dirty pages, which are more close to the end of the LRU lists. So
+> syncing older inodes first helps reducing the dirty pages reached by
+> the page reclaim code.
+> 
+> More background: as Mel put it, "it makes sense to write old pages first
+> to reduce the chances page reclaim is initiating IO."
+> 
+> Rik also presented the situation with a graph:
+> 
+> LRU head                                 [*] dirty page
+> [                          *              *      * *  *  * * * * * *]
+> 
+> Ideally, most dirty pages should lie close to the LRU tail instead of
+> LRU head. That requires the flusher thread to sync old/expired inodes
+> first (as there are obvious correlations between inode age and page
+> age), and to give fair opportunities to newly expired inodes rather
+> than sticking with some large eldest inodes (as larger inodes have
+> weaker correlations in the inode<=>page ages).
+> 
+> This patch helps the flusher to meet both the above requirements.
+> 
+> Side effects: it might reduce the batch size and hence reduce
+> inode_wb_list_lock hold time, but in turn make the cluster-by-partition
+> logic in the same function less effective on reducing disk seeks.
 
+One of the many requirements for writeback is that if userspace is
+continually dirtying pages in a particular file, that shouldn't cause
+the kupdate function to concentrate on that file's newly-dirtied pages,
+neglecting pages from other files which were less-recently dirtied. 
+(and dirty nodes, etc).
+
+And the background writeback function and fsync() and msync() and
+everything else shouldn't cause starvation of expired pages, either.  I
+guess you could say that the expired dirty pages become the
+highest-priority writeback item.
+
+
+Are you testing for this failure scenario?  If so, can you briefly
+describe the testing?
+
+It would be hlpeful if you could explain how the current code
+implements this requirement?
