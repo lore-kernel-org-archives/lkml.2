@@ -1,245 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1DTQz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:55:27 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:55088 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab1DTQzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:55:25 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Li Jianyun <jianyunff@gmail.com>
-Subject: Re: [PATCH] Add Marvell UMI driver
-Date: Wed, 20 Apr 2011 18:55:18 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.2-19-desktop; KDE/4.6.1; x86_64; ; )
-Cc: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-References: <4daee9cb.04558f0a.76dc.4776@mx.google.com>
-In-Reply-To: <4daee9cb.04558f0a.76dc.4776@mx.google.com>
+	id S1754560Ab1DTQzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:55:37 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:56921 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab1DTQzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 12:55:36 -0400
+Date: Wed, 20 Apr 2011 18:55:33 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: rwhitton@iee.org, Clemens Ladisch <clemens@ladisch.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Background memory scrubbing
+Message-ID: <20110420165533.GA1624@x4.trippels.de>
+References: <16117.1303310442@jupiter.eclipse.co.uk>
+ <4DAEF98D.2090802@ladisch.de>
+ <20110420153529.GA2312@gere.osrc.amd.com>
+ <20110420154658.GD1624@x4.trippels.de>
+ <20110420155853.GB2312@gere.osrc.amd.com>
+ <20110420164506.GE1624@x4.trippels.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104201855.20521.eike-kernel@sf-tec.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110420164506.GE1624@x4.trippels.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li Jianyun wrote:
+On 2011.04.20 at 18:45 +0200, Markus Trippelsdorf wrote:
+> On 2011.04.20 at 17:58 +0200, Borislav Petkov wrote:
+> > On Wed, Apr 20, 2011 at 05:46:58PM +0200, Markus Trippelsdorf wrote:
+> > > BTW is it really necessary to print the following to syslog:
+> > > 
+> > > EDAC amd64: pci-read, sdram scrub control value: 15
+> > > EDAC MC: Read scrub rate: 97650
+> > > 
+> > > everytime one runs:
+> > >  # cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+> > > 97650
+> > > 
+> > > ?
+> > 
+> > This is KERN_DEBUG since .38 (commit 24f9a7fe3f19f3fd310f556364d01a22911724b3)
+> > and it shouldn't appear on the console if you don't change your default log level.
+> 
+> Yes. Sorry, but I was referring to dmesg and not the console. 
+> What I mean is that maybe debugf1 or debugf2 is more appropriate than
+> amd64_debug?
 
-> +/**
-> + * mvumi_init_data -	Initialize requested date for FW
-> + * @mhba:			Adapter soft state
-> + */
-> +static int mvumi_init_data(struct mvumi_hba *mhba)
-> +{
-> +	struct mv_ob_data_pool *ob_pool;
-> +	struct mvumi_res_mgnt *res_mgnt;
-> +	unsigned int tmp_size, offset, i;
-> +	void *virmem, *v;
-> +	dma_addr_t p;
-> +
-> +	if (mhba->fw_flag & MVUMI_FW_ALLOC)
-> +		return 0;
-> +	tmp_size = 128 + mhba->ib_max_entry_size_bytes * mhba->max_io + 16
-> +							+ sizeof(unsigned int);
-> +	tmp_size += 8 + mhba->ob_max_entry_size_bytes * mhba->max_io + 4;
-> +	res_mgnt = mvumi_alloc_mem_resource(mhba,
-> +			RESOURCE_UNCACHED_MEMORY, tmp_size);
-> +	if (!res_mgnt) {
-> +		dev_printk(KERN_ERR, &mhba->pdev->dev,
-> +			"failed to allocate memory for inbound list\n");
-> +		goto fail_alloc_dma_buf;
-> +	}
-> +
-> +	p = res_mgnt->bus_addr;
-> +	v = res_mgnt->virt_addr;
-> +	offset = (unsigned int)(round_up(res_mgnt->bus_addr, 128) -
-> +							res_mgnt->bus_addr);
-> +	p += offset;
+In other words:
 
-p now has offset again, no? Is this intentional?
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 31e71c4f..13b107e 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -211,7 +211,7 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
+ 
+ 	scrubval = scrubval & 0x001F;
+ 
+-	amd64_debug("pci-read, sdram scrub control value: %d\n", scrubval);
++	debugf1 ("pci-read, sdram scrub control value: %d\n", scrubval);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
+ 		if (scrubrates[i].scrubval == scrubval) {
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 26343fd..8a34aea 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -459,7 +459,7 @@ static ssize_t mci_sdram_scrub_rate_store(struct mem_ctl_info *mci,
+ 
+ 	new_bw = mci->set_sdram_scrub_rate(mci, bandwidth);
+ 	if (new_bw >= 0) {
+-		edac_printk(KERN_DEBUG, EDAC_MC, "Scrub rate set to %d\n", new_bw);
++		debugf1 ("Scrub rate set to %d\n", new_bw);
+ 		return count;
+ 	}
+ 
+@@ -483,7 +483,7 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+ 		return bandwidth;
+ 	}
+ 
+-	edac_printk(KERN_DEBUG, EDAC_MC, "Read scrub rate: %d\n", bandwidth);
++	debugf1 ("Read scrub rate: %d\n", bandwidth);
+ 	return sprintf(data, "%d\n", bandwidth);
+ }
+ 
 
-> +	v = (unsigned char *) v + offset;
-
-I don't think you need the cast. The kernel relies on the gcc extension that 
-"void* += n" moves up n bytes.
-
-> +	mhba->ib_list = v;
-> +	mhba->ib_list_phys = p;
-> +
-> +	v = (unsigned char *) v + mhba->ib_max_entry_size_bytes * mhba->max_io;
-> +	p += mhba->ib_max_entry_size_bytes * mhba->max_io;
-> +
-> +	offset = (unsigned int)(round_up(p, 8) - p);
-> +	p += offset;
-> +	v = (unsigned char *) v + offset;
-> +	mhba->ib_shadow = v;
-> +	mhba->ib_shadow_phys = p;
-> +
-> +	p += sizeof(unsigned int);
-> +	v = (unsigned char *) v + sizeof(unsigned int);
-> +
-> +	offset = round_up(p, 8) - p;
-> +	p += offset;
-> +	v = (unsigned char *) v + offset;
-> +	mhba->ob_shadow = v;
-> +	mhba->ob_shadow_phys = p;
-> +	p += 8;
-> +	v = (unsigned char *) v + 8;
-> +	offset = (unsigned int) (round_up(p, 128) - p);
-
-Sometimes you cast the result of round_up() to unsigned int and sometimes not. 
-So I guess you just need to never cast. Since the result will be in range 
-8..128 anyway I think the casting can just go away completely.
-
-> +
-> +	return 0;
-> +}
-> +/**
-
-Newline missing here.
-
-> + * mvumi_probe_one -	PCI hotplug entry point
-> + * @pdev:		PCI device structure
-> + * @id:			PCI ids of supported hotplugged adapter
-> + */
-> +static int __devinit mvumi_probe_one(struct pci_dev *pdev,
-> +					const struct pci_device_id *id)
-> +{
-> +	int ret;
-> +	struct Scsi_Host *host;
-> +	struct mvumi_hba *mhba;
-> +	unsigned short class_code = 0xFFFF;
-> +
-> +	pci_read_config_word(pdev, 0x0A,  &class_code);
-> +	dev_printk(KERN_INFO, &pdev->dev,
-> +			" %#4.04x:%#4.04x:%#4.04x:%#4.04x: ",
-> +			pdev->vendor, pdev->device, pdev->subsystem_vendor,
-> +			pdev->subsystem_device);
-> +	dev_printk(KERN_INFO, &pdev->dev,
-> +			"bus %d:slot %d:func %d:class_code:%#4.04x\n",
-> +			pdev->bus->number, PCI_SLOT(pdev->devfn),
-> +			PCI_FUNC(pdev->devfn), class_code);
-> +
-> +	ret = pci_enable_device(pdev);
-
-You may want to use pcim_enable_device(). Look at Documentation/driver-
-model/devres.txt. This would take care of some of your error handling for 
-free.
-
-> +	if (ret)
-> +		return ret;
-> +
-> +	pci_set_master(pdev);
-> +
-> +	if (IS_DMA64) {
-> +		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) != 0) {
-> +			if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) != 0)
-> +				goto fail_set_dma_mask;
-> +		}
-> +	} else {
-> +		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) != 0)
-> +			goto fail_set_dma_mask;
-> +	}
-
-I don't like that you lose the error code of pci_set_dma_mask() here.
-
-> +	host = scsi_host_alloc(&mvumi_template, sizeof(struct mvumi_hba));
-> +	if (!host) {
-> +		dev_printk(KERN_ERR, &pdev->dev, "scsi_host_alloc failed\n");
-> +		goto fail_alloc_instance;
-> +	}
-> +	mhba = (struct mvumi_hba *) host->hostdata;
-
-mhba = shost_priv(host);
-
-> +	memset(mhba, 0, sizeof(*mhba));
-> +
-> +	INIT_LIST_HEAD(&mhba->cmd_pool);
-> +	INIT_LIST_HEAD(&mhba->ob_data_pool_list);
-> +	INIT_LIST_HEAD(&mhba->free_ob_list);
-> +	INIT_LIST_HEAD(&mhba->res_list);
-> +	INIT_LIST_HEAD(&mhba->waiting_req_list);
-> +	atomic_set(&mhba->fw_outstanding, 0);
-> +
-> +	init_waitqueue_head(&mhba->int_cmd_wait_q);
-> +
-> +	spin_lock_init(&mhba->cmd_pool_lock);
-> +	spin_lock_init(&mhba->tag_lock);
-> +
-> +	mhba->pdev = pdev;
-> +	mhba->shost = host;
-> +	mhba->unique_id = pdev->bus->number << 8 | pdev->devfn;
-> +
-> +	if (mvumi_init_fw(mhba))
-> +		goto fail_init_fw;
-
-You are once again loosing an error code here.
-
-> +	ret = request_irq(mhba->pdev->irq, mvumi_isr_handler, IRQF_SHARED,
-> +				"mvumi", mhba);
-> +	if (ret) {
-> +		dev_printk(KERN_ERR, &pdev->dev, "failed to register IRQ\n");
-> +		goto fail_init_irq;
-> +	}
-> +
-> +	mhba->instancet->enable_intr(mhba->mmio);
-> +	pci_set_drvdata(pdev, mhba);
-> +
-> +	if (mvumi_io_attach(mhba))
-> +		goto fail_io_attach;
-> +	dev_printk(KERN_INFO, &pdev->dev, "probe mvumi driver successfully.\n");
-> +	return 0;
-
-I don't know if the ordering is correct here. Once you have registered the IRQ 
-handler you must be prepared to get interrupts. In fact with IRQ debugging 
-enabled your IRQ handler will be called immediately in request_irq(). So when 
-you set up other stuff here that is needed in the IRQ handler this can do all 
-sort of things wrong.
-
-> +fail_io_attach:
-> +	pci_set_drvdata(pdev, NULL);
-> +	mhba->instancet->disable_intr(mhba->mmio);
-> +	free_irq(mhba->pdev->irq, mhba);
-> +fail_init_irq:
-> +	mvumi_release_fw(mhba);
-> +fail_init_fw:
-> +	scsi_host_put(host);
-> +
-> +fail_alloc_instance:
-> +fail_set_dma_mask:
-> +	pci_disable_device(pdev);
-> +
-> +	return -ENODEV;
-> +}
-
-You always lose the error codes of anything in your probe function. I don't 
-think this is a good idea.
-
-> +
-> +static void mvumi_detach_one(struct pci_dev *pdev)
-> +{
-> +	struct Scsi_Host *host;
-> +	struct mvumi_hba *mhba;
-> +
-> +	mhba = pci_get_drvdata(pdev);
-> +	host = mhba->shost;
-> +	scsi_remove_host(mhba->shost);
-> +	mvumi_flush_cache(mhba);
-> +
-> +	mhba->instancet->disable_intr(mhba->mmio);
-> +	free_irq(mhba->pdev->irq, mhba);
-
-Same as above here: you may still get an IRQ until this point. So be careful 
-with what you free first.
-
-> +	mvumi_release_fw(mhba);
-> +	scsi_host_put(host);
-> +	pci_set_drvdata(pdev, NULL);
-> +	pci_disable_device(pdev);
-> +	dev_printk(KERN_INFO, &pdev->dev, "driver is removed!\n");
-> +}
-
-Greetings,
-
-Eike
+-- 
+Markus
