@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750767Ab1DTEAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 00:00:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65435 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab1DTEAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 00:00:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=to:subject:from:date:cc:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=rQF3Hg5h6ocy/gNJDjkau8WdKrhzI6PJ7nptNVK5A9aw+hFfeXgPKesCpVSaV/Db2+
-         3fAPiyV/buqeD/nuLmDWJt0dF2S9FN7JDY8zbxCopGwSyrivhNnQKvtHgNibO6YPyIkr
-         ui8xRA+gbL2RQ+RIuMruskOK1TB2qCevBnZeU=
-To: Greg KH <gregkh@suse.de>
-Subject: [PATCH] platform: fix samsung brightness min/max calculations
-From: Jason Stubbs <jasonbstubbs@gmail.com>
-Date: Wed, 20 Apr 2011 13:58:50 +1000
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104201358.50443.jasonbstubbs@gmail.com>
+	id S1750836Ab1DTEMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 00:12:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49538 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab1DTEML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 00:12:11 -0400
+Date: Wed, 20 Apr 2011 14:11:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: linux-next: build failure after merge of the final tree (fbdev tree
+ related)
+Message-Id: <20110420141158.008d61b2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Stubbs <jasonbstubbs@gmail.com>
+--Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For one of the SABI configs, the valid brightness levels are 1 through 8 with
-0 being reserved for the BIOS. To make the range 0-based, the driver is meant
-to offset values to/from userspace by 1 giving valid levels of 0 through 7.
+Hi Paul,
 
-This patch fixes the reporting of the maximum level and the interpretation of
-the value passed from userspace as per the above logic. It also fixes the
-assumption that min_brightness will be either 0 or 1.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
----
-diff --git a/drivers/platform/x86/samsung-laptop.c 
-b/drivers/platform/x86/samsung-laptop.c
-index d347116..ebf1b07 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -370,15 +370,17 @@ static u8 read_brightness(void)
- 				  &sretval);
- 	if (!retval) {
- 		user_brightness = sretval.retval[0];
--		if (user_brightness != 0)
-+		if (user_brightness > sabi_config->min_brightness)
- 			user_brightness -= sabi_config->min_brightness;
-+		else
-+			user_brightness = 0;
- 	}
- 	return user_brightness;
- }
- 
- static void set_brightness(u8 user_brightness)
- {
--	u8 user_level = user_brightness - sabi_config->min_brightness;
-+	u8 user_level = user_brightness + sabi_config->min_brightness;
- 
- 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
- }
-@@ -782,7 +784,8 @@ static int __init samsung_init(void)
- 	/* create a backlight device to talk to this one */
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_PLATFORM;
--	props.max_brightness = sabi_config->max_brightness;
-+	props.max_brightness = sabi_config->max_brightness -
-+				sabi_config->min_brightness;
- 	backlight_device = backlight_device_register("samsung", &sdev->dev,
- 						     NULL, &backlight_ops,
- 						     &props);
+drivers/video/s3fb.c: In function 's3_pci_remove':
+drivers/video/s3fb.c:1388: error: 'par' undeclared (first use in this funct=
+ion)
+
+Caused by commit 86c0f043a737 ("s3fb: add DDC support").  Clearly not
+tested with CONFIG_MTRR not set :-(
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNrl0OAAoJEDMEi1NhKgbszh0H/Az2qbqQ3FXYLsyAGqmiYcy8
+4M3Y9Qj2aG8qmeOWvzn6w6K5O0eASQQK56Oze/UWOhuN8jwLZ1hjKh0qHUyFYvVE
+xMWnSQ7CqQWDYAa9GzJVGhUPqvJ09FO9TMQLyBUq2m8rN8omeCFgrQhMBuJE4FJQ
+7gwLmdd67QMesn7z6DH4opRR9Sn0DeBBPYftSUUGS5a5Y4MNjNFV3/ilmRGTwCyB
+MMYXaRSjJzprj7hJkS+1TsJReV5ttjXYytwaZdolDw8gwngIPFdpvFUaH9F3STLs
+uWhha5iFvNg+QJRFcaItwH4ZIGd0u8KgB2EC+l1VyAaJnaUrCYWH1P8B1CJInrw=
+=xRKv
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Apr_2011_14_11_58_+1000_zoM1jLDz_hNCkx1t--
