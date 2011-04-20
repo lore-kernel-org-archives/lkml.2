@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1DTKHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 06:07:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41791 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab1DTKHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754026Ab1DTKHd (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 20 Apr 2011 06:07:33 -0400
-Message-ID: <4DAEB003.8020304@ru.mvista.com>
-Date: Wed, 20 Apr 2011 14:05:55 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753815Ab1DTKHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 06:07:31 -0400
+Message-ID: <4DAEB090.20609@cn.fujitsu.com>
+Date: Wed, 20 Apr 2011 18:08:16 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Seth Heasley <seth.heasley@intel.com>
-CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.39-rc3] ahci: AHCI-mode SATA patch for Intel Panther
- Point DeviceIDs
-References: <201104191638.41267.seth.heasley@intel.com>
-In-Reply-To: <201104191638.41267.seth.heasley@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Chris Mason <chris.mason@oracle.com>
+CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
+Subject: [PATCH 3/5] Btrfs: fix the race between remove dev and alloc chunk
+References: <4DAEB030.1070303@cn.fujitsu.com>
+In-Reply-To: <4DAEB030.1070303@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 18:08:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-20 18:08:02,
+	Serialize complete at 2011-04-20 18:08:02
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On remove device path, it updates device->dev_alloc_list but does not hold
+chunk lock
 
-On 20-04-2011 3:38, Seth Heasley wrote:
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ fs/btrfs/volumes.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> This patch adds the AHCI-mode SATA DeviceIDs for the Intel
-> Panther Point PCH.
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index a672249..d20351f 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1325,7 +1325,9 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
+ 	}
+ 
+ 	if (device->writeable) {
++		lock_chunks(root);
+ 		list_del_init(&device->dev_alloc_list);
++		unlock_chunks(root);
+ 		root->fs_info->fs_devices->rw_devices--;
+ 	}
+ 
+@@ -1379,7 +1381,9 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
+ 		}
+ 		fs_devices->seed = device->fs_devices->seed;
+ 		device->fs_devices->seed = NULL;
++		lock_chunks(root);
+ 		__btrfs_close_devices(device->fs_devices);
++		unlock_chunks(root);
+ 		free_fs_devices(device->fs_devices);
+ 	}
+ 
+@@ -1411,8 +1415,10 @@ out:
+ 	return ret;
+ error_undo:
+ 	if (device->writeable) {
++		lock_chunks(root);
+ 		list_add(&device->dev_alloc_list,
+ 			 &root->fs_info->fs_devices->alloc_list);
++		unlock_chunks(root);
+ 		root->fs_info->fs_devices->rw_devices++;
+ 	}
+ 	goto error_brelse;
+-- 
+1.7.4.4
 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-
-> --- linux-2.6.39-rc3/drivers/ata/ahci.c.orig	2011-04-11
-> 17:21:51.000000000 -0700
-> +++ linux-2.6.39-rc3/drivers/ata/ahci.c	2011-04-14
-> 11:59:24.000000000 -0700
-> @@ -261,6 +261,12 @@
->   	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
->   	{ PCI_VDEVICE(INTEL, 0x2826), board_ahci }, /* PBG RAID */
->   	{ PCI_VDEVICE(INTEL, 0x2323), board_ahci }, /* DH89xxCC
-> AHCI */
-> +	{ PCI_VDEVICE(INTEL, 0x1e02), board_ahci }, /* Panther Point
-> AHCI */
-> +	{ PCI_VDEVICE(INTEL, 0x1e03), board_ahci }, /* Panther Point
-> AHCI */
-> +	{ PCI_VDEVICE(INTEL, 0x1e04), board_ahci }, /* Panther Point
-> RAID */
-> +	{ PCI_VDEVICE(INTEL, 0x1e05), board_ahci }, /* Panther Point
-> RAID */
-> +	{ PCI_VDEVICE(INTEL, 0x1e06), board_ahci }, /* Panther Point
-> RAID */
-> +	{ PCI_VDEVICE(INTEL, 0x1e07), board_ahci }, /* Panther Point
-> RAID */
-
-    The patch is line wrapped.
-
-WBR, Sergei
