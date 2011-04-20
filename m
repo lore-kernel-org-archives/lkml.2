@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab1DTQp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:45:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55230 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296Ab1DTQpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:45:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
-Date: Wed, 20 Apr 2011 18:44:30 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com>
-In-Reply-To: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com>
+	id S1755486Ab1DTQph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:45:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755296Ab1DTQpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 12:45:33 -0400
+Message-ID: <4DAF0DAA.5080608@redhat.com>
+Date: Wed, 20 Apr 2011 12:45:30 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: rwhitton@iee.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Background memory scrubbing
+References: <42558.1303286300@jupiter.eclipse.co.uk>
+In-Reply-To: <42558.1303286300@jupiter.eclipse.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104201844.30919.arnd@arndb.de>
-X-Provags-ID: V02:K0:pu4gZyy7Q++HDjppajM/SM7WDhO9Ce+/Un8IAxFIaP/
- bvMeQMAznyEteynuTbukrawhYwXdDQO7spPREsHf1bOnh5TRsT
- J94XmMYzK+Q11ZP00ZokXp1cUAQeXNh4IiatjAJErE2UBndK0j
- rJAnygAILWF5kqv34qYrEofHgsYCvX0obVdChL/gYxlreWy75L
- l0D5LMge6bNpbJEgglmuw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011, Guenter Roeck wrote:
-> This driver adds support for Si570, Si571, Si598, and Si599
-> programmable XO/VCXO.
-> 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+On 04/20/2011 03:58 AM, Robert Whitton wrote:
 
-This needs some more explanation of what the hardware is there for,
-and why it's unlike everything else that we support in Linux.
+> for each PFN from 256 to the highest valid PFN
+> {
+>    if (pfn_valid(PFN))
+>    {
+>      page = pfn_to_page(PFN)
+>      va = kmap(page)
+>      atomic_scrub(va, PAGE_SIZE)
+>      kunmap(page)
+>    }
+>
+>    sleep(for_a_while)
+> }
 
-We try not to have too many things in drivers/misc that are
-one-off interfaces, so if the hardware is related to something
-else, it should probably go into one subsystem.
+What exactly does atomic_scrub do?
 
-My impression from readin the source code is that this is
-simply a clock device that would be used in combination with
-some other device in practice that consumes the clock.
-If that is true, it should probably not have a user-visible
-interface, but only an interface that can be used by other
-kernel drivers.
+> This code works absolutely fine up to a short distance beyond the 16MB boundary (specifically it seems to always fail on my hardware at PFN 4105). At this point despite the fact that kmap returns a valid virtual address (and it is the virtual address that I expect - 0xffff880001009000) I get the kernel oops - "unable to handle kernel paging request".
 
-	Arnd
+Looks like you might be making some of the kernel code that
+is running at that moment unreachable, leading to a kernel
+page fault.
