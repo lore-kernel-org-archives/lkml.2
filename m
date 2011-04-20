@@ -1,231 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1DTBEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:04:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53435 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1DTBEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:04:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,242,1301900400"; 
-   d="scan'208";a="681264974"
-Subject: Re: [patch v3 3/3] percpu_counter: use atomic64 for counter in SMP
-From: Shaohua Li <shaohua.li@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1104180923530.23207@router.home>
-References: <20110414020447.979946152@sli10-conroe.sh.intel.com>
-	 <20110414020747.411215973@sli10-conroe.sh.intel.com>
-	 <20110415041506.GC29512@mtj.dyndns.org>
-	 <1303112625.3981.191.camel@sli10-conroe>
-	 <alpine.DEB.2.00.1104180923530.23207@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 09:04:21 +0800
-Message-ID: <1303261461.3981.219.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754083Ab1DTBFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 21:05:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62254 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1DTBFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 21:05:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Gb1deFweivbxPyUmVB0YAKOrgTgMdqgr4Mkhw0BuRnwlOAhdp7f2+kOdhf7NHOqov5
+         WjcuWGYdlxjvWs06Ld1X0CjuJD0szXpsF7kVUNDRjMUZOAln/Dyxd+LqhOxURHl8A7ho
+         Uell5fWvPZ+z2+O7ayXeCk3ZgfuXDwkY7yLNc=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin6dXxj-HVMhR_KJzWjHdO8cb=3JQ@mail.gmail.com>
+References: <BANLkTinX7cknxL619o6R=0foeQMpTbRK-Q@mail.gmail.com>
+	<BANLkTin6dXxj-HVMhR_KJzWjHdO8cb=3JQ@mail.gmail.com>
+Date: Wed, 20 Apr 2011 10:05:30 +0900
+Message-ID: <BANLkTimxPS26Chnb+VCPZKPnbHY=0d_7uw@mail.gmail.com>
+Subject: Re: How to mount filesystem from RAM ?
+From: Jongman Heo <jongman.heo@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 22:25 +0800, Christoph Lameter wrote:
-> On Mon, 18 Apr 2011, Shaohua Li wrote:
-> 
-> > > Disabling preemption here doesn't make any sense.
-> > > percpu_counter_set() inherently requires its users to guarantee that
-> > > no other user is modifying the percpu counter.
-> > ha, ok.
-> > should I still rebase the patch against Christoph's patch? Looks that
-> > one is still not settled down.
-> 
-> I am a kind of confused about some of the arguments made there right now
-> and having your patch in that does the conversion to atomic would
-> simplify my patch (removes the spin_lock/unlock sequence in overflow
-> handling).
-below is the updated patch against Christoph's latest patch.
+2011/4/19 Rabin Vincent <rabin@rab.in>:
+> On Tue, Apr 19, 2011 at 11:32, Jongman Heo <jongman.heo@gmail.com> wrote:
+>> Instead, I can load the data from the partition into RAM, which means
+>> whole filesystem data is copied into some location of RAM. ( I know
+>> the physical address, for the data to be loaded.) This copy operation
+>> is done by bootloader side, not in Linux.
+>>
+>> In this case, how can I mount the filesystem from RAM? Is there any
+>> way to do this?
+>
+> Have a look at slram or phram in drivers/mtd/devices/.
+>
+>> And I think the memory location of filesystem data should be reserved
+>> not to be used by Linux kernel and user space application, am I right?
+>
+> One way to do this is by passing appropriate mem= arguments.
+>
 
+Hi, Rabin.
 
-Subject: percpu_counter: use atomic64 for counter in SMP
+I think that is what I've been looking for. I'll try phram.
 
-Uses atomic64 for percpu_counter, because it is cheaper than spinlock. This
-doesn't slow fast path (percpu_counter_read). atomic64_read equals to fbc->count
-for 64-bit system, or equals to spin_lock-read-spin_unlock for 32-bit system
-
-Note, originally the percpu_counter_read for 32-bit system doesn't hold
-spin_lock, but that is buggy and might cause very wrong value accessed.
-This patch fixes the issue.
-
-This can also improve some workloads with percpu_counter->lock heavily
-contented. For example, vm_committed_as sometimes causes the contention.
-We should tune the batch count, but if we can make percpu_counter better,
-why not? In a 24 CPUs system and 24 processes, each runs:
-while (1) {
-	mmap(128M);
-	munmap(128M);
-}
-we then measure how many loops each process can take:
-orig: 1226976
-patched: 8210626
-The atomic method gives 7x faster.
-
-In percpu_counter_set() and __percpu_counter_sum(), there will be no lock
-protecting. This means we might get inprecise count, but we have the same issue
-even with lock protecting, because __percpu_counter_add doesn't hold locking
-to update cpu local count.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
----
- include/linux/percpu_counter.h |   18 ++++--------------
- lib/percpu_counter.c           |   37 +++++++++++++++----------------------
- 2 files changed, 19 insertions(+), 36 deletions(-)
-
-Index: linux/include/linux/percpu_counter.h
-===================================================================
---- linux.orig/include/linux/percpu_counter.h	2011-04-19 08:52:14.000000000 +0800
-+++ linux/include/linux/percpu_counter.h	2011-04-19 08:52:58.000000000 +0800
-@@ -16,8 +16,7 @@
- #ifdef CONFIG_SMP
- 
- struct percpu_counter {
--	spinlock_t lock;
--	s64 count;
-+	atomic64_t count;
- #ifdef CONFIG_HOTPLUG_CPU
- 	struct list_head list;	/* All percpu_counters are on a list */
- #endif
-@@ -26,16 +25,7 @@ struct percpu_counter {
- 
- extern int percpu_counter_batch;
- 
--int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
--			  struct lock_class_key *key);
--
--#define percpu_counter_init(fbc, value)					\
--	({								\
--		static struct lock_class_key __key;			\
--									\
--		__percpu_counter_init(fbc, value, &__key);		\
--	})
--
-+int percpu_counter_init(struct percpu_counter *fbc, s64 amount);
- void percpu_counter_destroy(struct percpu_counter *fbc);
- void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
- void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
-@@ -60,7 +50,7 @@ static inline s64 percpu_counter_sum(str
- 
- static inline s64 percpu_counter_read(struct percpu_counter *fbc)
- {
--	return fbc->count;
-+	return atomic64_read(&fbc->count);
- }
- 
- /*
-@@ -70,7 +60,7 @@ static inline s64 percpu_counter_read(st
-  */
- static inline s64 percpu_counter_read_positive(struct percpu_counter *fbc)
- {
--	s64 ret = fbc->count;
-+	s64 ret = percpu_counter_read(fbc);
- 
- 	barrier();		/* Prevent reloads of fbc->count */
- 	if (ret >= 0)
-Index: linux/lib/percpu_counter.c
-===================================================================
---- linux.orig/lib/percpu_counter.c	2011-04-19 08:52:10.000000000 +0800
-+++ linux/lib/percpu_counter.c	2011-04-19 08:53:33.000000000 +0800
-@@ -59,13 +59,11 @@ void percpu_counter_set(struct percpu_co
- {
- 	int cpu;
- 
--	spin_lock(&fbc->lock);
- 	for_each_possible_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		*pcount = 0;
- 	}
--	fbc->count = amount;
--	spin_unlock(&fbc->lock);
-+	atomic64_set(&fbc->count, amount);
- }
- EXPORT_SYMBOL(percpu_counter_set);
- 
-@@ -85,11 +83,8 @@ void __percpu_counter_add(struct percpu_
- 			overflow = 0;
- 	} while (this_cpu_cmpxchg(*fbc->counters, count, new) != count);
- 
--	if (unlikely(overflow)) {
--		spin_lock(&fbc->lock);
--		fbc->count += overflow;
--		spin_unlock(&fbc->lock);
--	}
-+	if (unlikely(overflow))
-+		atomic64_add(overflow, &fbc->count);
- }
- EXPORT_SYMBOL(__percpu_counter_add);
- 
-@@ -99,26 +94,27 @@ EXPORT_SYMBOL(__percpu_counter_add);
-  */
- s64 __percpu_counter_sum(struct percpu_counter *fbc)
- {
--	s64 ret;
-+	s64 ret = 0;
- 	int cpu;
- 
--	spin_lock(&fbc->lock);
--	ret = fbc->count;
-+	/*
-+	 * Don't really need to disable preempt here, just make sure there is
-+	 * no big latency because of preemption
-+	 */
-+	preempt_disable();
- 	for_each_online_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		ret += *pcount;
- 	}
--	spin_unlock(&fbc->lock);
-+	ret += atomic64_read(&fbc->count);
-+	preempt_enable();
- 	return ret;
- }
- EXPORT_SYMBOL(__percpu_counter_sum);
- 
--int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
--			  struct lock_class_key *key)
-+int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
- {
--	spin_lock_init(&fbc->lock);
--	lockdep_set_class(&fbc->lock, key);
--	fbc->count = amount;
-+	atomic64_set(&fbc->count, amount);
- 	fbc->counters = alloc_percpu(s32);
- 	if (!fbc->counters)
- 		return -ENOMEM;
-@@ -133,7 +129,7 @@ int __percpu_counter_init(struct percpu_
- #endif
- 	return 0;
- }
--EXPORT_SYMBOL(__percpu_counter_init);
-+EXPORT_SYMBOL(percpu_counter_init);
- 
- void percpu_counter_destroy(struct percpu_counter *fbc)
- {
-@@ -177,13 +173,10 @@ static int __cpuinit percpu_counter_hotc
- 	mutex_lock(&percpu_counters_lock);
- 	list_for_each_entry(fbc, &percpu_counters, list) {
- 		s32 *pcount;
--		unsigned long flags;
- 
--		spin_lock_irqsave(&fbc->lock, flags);
- 		pcount = per_cpu_ptr(fbc->counters, cpu);
--		fbc->count += *pcount;
-+		atomic64_add(*pcount, &fbc->count);
- 		*pcount = 0;
--		spin_unlock_irqrestore(&fbc->lock, flags);
- 	}
- 	mutex_unlock(&percpu_counters_lock);
- #endif
-
-
+Thanks and regards,
+Jongman.
