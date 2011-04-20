@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab1DTU4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:56:35 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47355 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab1DTUv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:51:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=IezjG6m1MvZaRx+ZsEyoxO85tD5kkr7sP8ouLHg5X0gZ6qmvIAzM0DMvDyHjvYfoG
-	k8Mf+Hh0Rzlg3euEIEt6g==
-From: Nikhil Rao <ncrao@google.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>
-Subject: [RFC][Patch 09/18] sched: update division in cpu_avg_load_per_task to use div_u64
-Date: Wed, 20 Apr 2011 13:51:28 -0700
-Message-Id: <1303332697-16426-10-git-send-email-ncrao@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
-References: <1303332697-16426-1-git-send-email-ncrao@google.com>
+	id S1755905Ab1DTU5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:57:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39704 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab1DTU5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:57:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tino Keitel <tino.keitel@gmx.de>
+Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
+Date: Wed, 20 Apr 2011 22:57:35 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <201104150053.37037.rjw@sisk.pl> <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org> <20110415145457.GA27650@eazy.amigager.de>
+In-Reply-To: <20110415145457.GA27650@eazy.amigager.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104202257.36079.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the division in cpu_avg_load_per_task() to use div_u64, so
-that it works on 32-bit. We do not convert avg_load_per_task to u64 since this
-can be atmost 2^28, and fits into unsigned long on 32-bit.
+On Friday, April 15, 2011, Tino Keitel wrote:
+> On Fri, Apr 15, 2011 at 10:38:47 -0400, Alan Stern wrote:
+> > On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
+> > 
+> > > On Friday, April 15, 2011, Tino Keitel wrote:
+> > > > Hi,
+> > > > 
+> > > > with 2.6.38, I enabled wakeup from suspend to RAM with the USB keyboard
+> > > > this way:
+> > > > 
+> > > > echo USB2 > /proc/acpi/wakeup
+> > > > 
+> > > > This does not work anymore with 2.6.39-rc3. Wakeup using the keyboard
+> > > > won't work, and the USB2 line in /proc/acpi/wakeup doesn't change to
+> > > > "enabled" after the echo command.
+> > > > 
+> > > > Is this intended? If yes, what is the new way to enable keyboard
+> > > > wakeup?
+> > > 
+> > > No, it's supposed to work IIRC.  I'll have a look at that code tomorrow.
+> > 
+> > Tino, can you check the contents of the power/wakeup files in the
+> > appropriate sysfs directories?  That would be the directory for the
+> > keyboard device itself and the directory for the USB host controller
+> > for the bus the keyboard is on.
+> > 
+> > By default, power/wakeup should be "enabled" for the keyboard device 
+> > and "disabled" for the host controller.  If you write "enabled" into 
+> > the host controller's file by hand, does that fix the problem?
+> 
+> I already tried to write "enable" into all USB related wakeup files
+> yesterday, not change.
+> 
+> I'll check again how these files look like in 2.6.38, what sysfs
+> wakeup files change when writing into /proc/acpi/wakeup, and what
+> differences to 2.6.39-rc can be seen.
 
-Signed-off-by: Nikhil Rao <ncrao@google.com>
----
- kernel/sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please post the contents of /proc/acpi/wakeup (without reverting the commits
+you have identified as "bad").
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index f0adb0e..8047f10 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1525,7 +1525,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
- 
- 	if (nr_running)
--		rq->avg_load_per_task = rq->load.weight / nr_running;
-+		rq->avg_load_per_task = div_u64(rq->load.weight, nr_running);
- 	else
- 		rq->avg_load_per_task = 0;
- 
--- 
-1.7.3.1
-
+Thanks,
+Rafael
