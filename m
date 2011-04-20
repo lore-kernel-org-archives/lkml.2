@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1DTPB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:01:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48071 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab1DTPBZ convert rfc822-to-8bit (ORCPT
+	id S1754286Ab1DTPDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:03:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35731 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab1DTPDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:01:25 -0400
-Subject: Re: [PATCH 20/20] mm: Optimize page_lock_anon_vma() fast-path
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-In-Reply-To: <1303303124.8345.218.camel@twins>
-References: <20110401121258.211963744@chello.nl>
-	 <20110401121726.285750519@chello.nl>
-	 <20110419130800.7148a602.akpm@linux-foundation.org>
-	 <1303303124.8345.218.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Apr 2011 17:00:29 +0200
-Message-ID: <1303311629.8345.230.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 20 Apr 2011 11:03:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=yGL45sQc8VAHc071PIQr/6rSW3oD72kiqZMzzS+dvj5RzfKmZtVXH2puyft/DxGNr9
+         Q3mZUc7Gzpr/t+tEjZTNgQhtWD9x2bRfB1stVEvfbdlERR3yKjKJP8oQX8+NFKQkCYH9
+         4wiID5I9CvF1TTGIW8PuIMfqu0LFC02wIWAGw=
+Message-ID: <4DAEF5A6.4040405@gmail.com>
+Date: Wed, 20 Apr 2011 19:03:02 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
+References: <1303145815-15050-1-git-send-email-dzickus@redhat.com> <4DAEEF96.4070807@gmail.com> <20110420145754.GT20887@redhat.com>
+In-Reply-To: <20110420145754.GT20887@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 14:38 +0200, Peter Zijlstra wrote:
-> > > +   if (!page_mapped(page)) {
-> > > +           put_anon_vma(anon_vma);
-> > > +           anon_vma = NULL;
-> > > +           goto out;
-> > > +   }
-> > 
-> > Also quite opaque, needs decent commentary.
-> > 
-> > I'd have expected this test to occur after the lock was acquired.
+On 04/20/2011 06:57 PM, Don Zickus wrote:
+> On Wed, Apr 20, 2011 at 06:37:10PM +0400, Cyrill Gorcunov wrote:
+>> Don, sorry for delay, I somehow missed this patch at first place :/ And probably
+>> the patch below could help with "stess" problem?
 > 
-> Right, so I think we could drop that test from both here and
-> page_get_anon_vma() and nothing would break, its simply avoiding some
-> work in case we do detect the race with page_remove_rmap().
+> The patch I am using for the 'stress' problem is different than what I
+> posted because I wanted to keep it simple for 2.6.39.  But yeah I already
+> moved the unmasking to the enable_pmus_all(0) line.
+
+ok
+
 > 
-> So yes, I think I'll move it down because that'll widen the scope of
-> this optimization. 
+> The thing is that cuts down on some of these in-flight NMIs but not all of
+> them.  I came up with some logic that catches all the in-flight NMIs on
+> Nehalem and AMDs but my core2quad still fails.  I'll try to post that
+> today while requesting help.
 
-OK, so I went trawling through the linux-mm logs and actually found why
-this is needed under rcu_read_lock(), sadly I cannot seem to find a web
-reference to 2006 linux-mm emails.
+ok
 
-It was Hugh who noted that page_remove_rmap() only decrements
-page->_mapcount but does not clear page->mapping, therefore we must test
-page_mapped() after reading page->mapping while under the
-rcu_read_lock() in order to determine if the pointer obtained is still
-valid.
+> 
+> Still not sure you need the double APIC writes (as your patch) shows.  I
+> haven't seen a case in my testing where a single APIC write fails.
 
-The comment that exists today in __page_lock_anon_vma() actually tries
-to explain this
+yup, we can drop it, thanks!
 
+> 
+> Cheers,
+> Don
 
+-- 
+    Cyrill
