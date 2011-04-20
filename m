@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1DTWtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 18:49:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44710 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab1DTWtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 18:49:08 -0400
-Date: Wed, 20 Apr 2011 11:30:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: rcu stall.
-Message-ID: <20110420183046.GQ2307@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110420020215.GA30081@redhat.com>
- <20110420083616.GA1124@elte.hu>
+	id S1752938Ab1DTWvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 18:51:44 -0400
+Received: from smtp105.prem.mail.sp1.yahoo.com ([98.136.44.60]:48844 "HELO
+	smtp105.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752485Ab1DTWvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 18:51:42 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: sY6_3ngVM1n.xk3nDPtC0fa5PzG8xTCIKD5aLr3_d34l9bi
+ WIMzJ4tbF87Qa0J96UYq3tbBf4BJbKpRJ8CfCFcGOTmyCngN9Blgaw8d9wkp
+ pySZ2oRJy7QCfBKNr974XsfwccaXpoZjXa0tflnyquOG3sN32pm18szq5MQ9
+ dDVv0tR6XWDv09F4cDVZR2VlSBU3kUR9pETMY4nY0roDwZv7DUnUdQJAFh0g
+ MzpQO1elXt38H_h9CDsQtc3eAnskIgnkP._qitSJeQrvuiePdk1RISMu11kd
+ T13VHAE7W2MG0sOS6HsFmbSI6b6rU3J9r2HvTzr40y12PrTVGf32HErSai8b
+ .5nVkJLGI8Vq3VGQg96NwmpUb0_DTnonuKQ--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DAF637D.90606@schaufler-ca.com>
+Date: Wed, 20 Apr 2011 15:51:41 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110420083616.GA1124@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andi Kleen <andi@firstfloor.org>
+CC: jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] SMACK: Add missing rcu_read_lock/unlock for process capability
+ walk.
+References: <1303336844-31074-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1303336844-31074-1-git-send-email-andi@firstfloor.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 10:36:16AM +0200, Ingo Molnar wrote:
-> 
-> * Dave Jones <davej@redhat.com> wrote:
-> 
-> > Machine was under heavy load (300 or so running processes
-> > calling random system calls). The rcu stall detector kicked in,
-> > spewed this, and then the machine completely locked up.
-> 
-> Without having looked at it in detail, isnt this a lockup somewhere in the 
-> wireless code:
-> 
-> >   [<ffffffff8114f842>] ? simple_release_fs+0x22/0x57
-> >   [<ffffffff81082e4f>] ? arch_local_irq_restore+0x6/0xd
-> >   [<ffffffff81084df8>] lock_acquired+0x20f/0x21e
-> >   [<ffffffff814be9cc>] _raw_spin_lock+0x62/0x6a
-> >   [<ffffffff8114f842>] ? simple_release_fs+0x22/0x57
-> >   [<ffffffff814bf215>] ? _raw_spin_unlock+0x28/0x2c
-> >   [<ffffffff8114f842>] simple_release_fs+0x22/0x57
-> >   [<ffffffff811f53e9>] debugfs_remove_recursive+0x11f/0x16b
-> >   [<ffffffffa037adf3>] ieee80211_debugfs_key_remove+0x1f/0x2e [mac80211]
-> >   [<ffffffffa0373e7a>] __ieee80211_key_destroy+0x61/0x6d [mac80211]
-> >   [<ffffffffa0374250>] ieee80211_key_link+0x12c/0x165 [mac80211]
-> >   [<ffffffffa036b90e>] ieee80211_add_key+0xfb/0x133 [mac80211]
-> >   [<ffffffffa0277ff4>] nl80211_new_key+0xe5/0x106 [cfg80211]
-> >   [<ffffffffa026d2c5>] ? cfg80211_get_dev_from_ifindex+0x72/0x7a [cfg80211]
-> >   [<ffffffff81422244>] genl_rcv_msg+0x1dc/0x207
-> >   [<ffffffff81422068>] ? genl_rcv+0x2d/0x2d
-> >   [<ffffffff81421c69>] netlink_rcv_skb+0x43/0x8f
-> >   [<ffffffff81422061>] genl_rcv+0x26/0x2d
-> >   [<ffffffff8142176a>] netlink_unicast+0xec/0x156
-> >   [<ffffffff81421a53>] netlink_sendmsg+0x27f/0x2c0
-> >   [<ffffffff813ed78c>] __sock_sendmsg+0x69/0x75
-> >   [<ffffffff813ed905>] sock_sendmsg+0xa1/0xb6
-> >   [<ffffffff81086c30>] ? lock_release+0x181/0x18e
-> >   [<ffffffff81100de0>] ? might_fault+0xa5/0xac
-> >   [<ffffffff81100d97>] ? might_fault+0x5c/0xac
-> >   [<ffffffff813ec8e4>] ? copy_from_user+0x2f/0x31
-> >   [<ffffffff813f707a>] ? copy_from_user+0x2f/0x31
-> >   [<ffffffff813f7370>] ? verify_iovec+0x52/0xa6
-> >   [<ffffffff813eece3>] sys_sendmsg+0x23a/0x2b8
-> >   [<ffffffff81086d29>] ? lock_acquire+0xec/0xfb
-> >   [<ffffffff81086c30>] ? lock_release+0x181/0x18e
-> >   [<ffffffff8114b7d7>] ? mntput+0x26/0x28
-> >   [<ffffffff811343bc>] ? fput+0x1e6/0x1f5
-> >   [<ffffffff8113ba95>] ? path_put+0x1f/0x23
-> >   [<ffffffff810a9f23>] ? audit_syscall_entry+0x11c/0x148
-> >   [<ffffffff81255e4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >   [<ffffffff814c5d82>] system_call_fastpath+0x16/0x1b
-> 
-> RCU stall detector is simply the first thing that noticed the hang. Enabling 
-> the regular lockup detector would probably have resulted in a similar looking 
-> hang.
+On 4/20/2011 3:00 PM, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> smk_access_entry does a RCU list walk for a list shared with other
+> threads. It relies on the caller doing rcu_read_lock().
+> One caller forgot to do to this, which could lead to races
+> on preemptible kernels.
+>
+> Move the rcu_read_lock() into smk_access_entry instead.
 
-Hello, Dave,
+Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
 
-In case the lockup detector would get you better information, you can
-prevent RCU from checking for stall by setting the rcu_cpu_stall_suppress
-module parameter to 1, either as a boot parameter or via sysfs.
+The lock was moved out of smk_access_entry in support of the
+processing done in the smack_mmap_file() hook. Where do you see
+a potential race, and which caller "forgot" to do the lock?
 
-							Thanx, Paul
+Thank you.
+
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  security/smack/smack_access.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> index 7b0d3b3..43b20f3 100644
+> --- a/security/smack/smack_access.c
+> +++ b/security/smack/smack_access.c
+> @@ -92,6 +92,7 @@ int smk_access_entry(char *subject_label, char *object_label,
+>  	int may = -ENOENT;
+>  	struct smack_rule *srp;
+>  
+> +	rcu_read_lock();
+>  	list_for_each_entry_rcu(srp, rule_list, list) {
+>  		if (srp->smk_subject == subject_label ||
+>  		    strcmp(srp->smk_subject, subject_label) == 0) {
+> @@ -102,6 +103,7 @@ int smk_access_entry(char *subject_label, char *object_label,
+>  			}
+>  		}
+>  	}
+> +	rcu_read_unlock();
+>  
+>  	return may;
+>  }
+> @@ -184,9 +186,7 @@ int smk_access_flags(char *subject_label, char *object_label, int request,
+>  	 * good. A negative response from smk_access_entry()
+>  	 * indicates there is no entry for this pair.
+>  	 */
+> -	rcu_read_lock();
+>  	may = smk_access_entry(subject_label, object_label, &smack_rule_list);
+> -	rcu_read_unlock();
+>  
+>  	if (may > 0 && (request & may) == request)
+>  		goto out_audit;
+
