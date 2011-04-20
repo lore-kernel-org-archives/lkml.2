@@ -1,53 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab1DTP67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:58:59 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51070 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab1DTP66 (ORCPT
+	id S1755430Ab1DTQAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:00:47 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:39775 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754629Ab1DTQAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:58:58 -0400
-Date: Wed, 20 Apr 2011 17:58:53 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: rwhitton@iee.org, Clemens Ladisch <clemens@ladisch.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Background memory scrubbing
-Message-ID: <20110420155853.GB2312@gere.osrc.amd.com>
-References: <16117.1303310442@jupiter.eclipse.co.uk>
- <4DAEF98D.2090802@ladisch.de>
- <20110420153529.GA2312@gere.osrc.amd.com>
- <20110420154658.GD1624@x4.trippels.de>
+	Wed, 20 Apr 2011 12:00:45 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] gpio: add a custom configuration mechanism to gpiolib
+Date: Wed, 20 Apr 2011 18:00:16 +0200
+Message-ID: <1303315216-14852-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110420154658.GD1624@x4.trippels.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 05:46:58PM +0200, Markus Trippelsdorf wrote:
-> BTW is it really necessary to print the following to syslog:
-> 
-> EDAC amd64: pci-read, sdram scrub control value: 15
-> EDAC MC: Read scrub rate: 97650
-> 
-> everytime one runs:
->  # cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
-> 97650
-> 
-> ?
+From: Linus Walleij <linus.walleij@linaro.org>
 
-This is KERN_DEBUG since .38 (commit 24f9a7fe3f19f3fd310f556364d01a22911724b3)
-and it shouldn't appear on the console if you don't change your default log level.
+This adds an opaque pin config call to gpiolib to configure
+individual pins. We provide standardized configurarion definitions
+for bias and drive mode settings for individual pins, and provide
+the mechanism to hook in custom mode settings per-driver if need
+be.
 
+Since we have no previous hacked-up arch-specific drivers for this
+we can avoid any __override_functions and we just allow this to be
+properly implemented using gpiolib. Further the function is made
+non-mandatory, calling it without a backing implementation will
+result in -ENOTSUPP being returned.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog:
+- switch to opaque ioctl()-like config call
+- enumerate pin drives "OFF" and "UNKNOWN" (requested by Alan Cox)
+---
+ drivers/gpio/gpiolib.c     |   28 ++++++++++++++++++++
+ include/asm-generic/gpio.h |    8 ++++-
+ include/linux/gpio.h       |   61 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 36a2974..b62db38 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1635,6 +1635,34 @@ void gpio_set_value_cansleep(unsigned gpio, int value)
+ }
+ EXPORT_SYMBOL_GPL(gpio_set_value_cansleep);
+ 
++/**
++ * gpio_config() - configure a GPIO
++ * @gpio: gpio to configure
++ * @param: the custom parameter to set/get, typically an enum (only the
++ *	specific driver will know about these parameter)
++ * @data: optional data pointer: if you're getting a config, you can
++ *	pass data back using this pointer, either by dereferencing it
++ *	to a struct or using it to contain an enumerator.
++ * Context: process
++ *
++ * This is used to directly or indirectly to implement gpio_config().
++ * It invokes the associated gpio_chip.config() method. It can be
++ * used for setting things like drive modes, biasing, sleep modes etc.
++ * It returns a negative error code on error or 0 for successful
++ * operations. This is designed to work a bit like an ioctl() so you
++ * can use it to get/set specific parameters.
++ */
++int gpio_config(unsigned gpio, u16 param, unsigned long *data)
++{
++	struct gpio_chip	*chip;
++
++	chip = gpio_to_chip(gpio);
++	/* Implementing this is not mandatory */
++	if (chip->config)
++		return chip->config(chip, gpio - chip->base, param, data);
++	return -ENOTSUPP;
++}
++EXPORT_SYMBOL_GPL(gpio_config);
+ 
+ #ifdef CONFIG_DEBUG_FS
+ 
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index ff5c660..ce16e70 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -61,6 +61,7 @@ struct device_node;
+  * @set: assigns output value for signal "offset"
+  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
+  *	implementation may not sleep
++ * @config: set/get a certain custom parameter for the GPIO
+  * @dbg_show: optional routine to show contents in debugfs; default code
+  *	will be used when this is omitted, but custom code can show extra
+  *	state (such as pullup/pulldown configuration).
+@@ -105,12 +106,14 @@ struct gpio_chip {
+ 						unsigned offset, int value);
+ 	int			(*set_debounce)(struct gpio_chip *chip,
+ 						unsigned offset, unsigned debounce);
+-
+ 	void			(*set)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
+-
+ 	int			(*to_irq)(struct gpio_chip *chip,
+ 						unsigned offset);
++	int			(*config)(struct gpio_chip *chip,
++						unsigned offset,
++						u16 param,
++						unsigned long *data);
+ 
+ 	void			(*dbg_show)(struct seq_file *s,
+ 						struct gpio_chip *chip);
+@@ -158,6 +161,7 @@ extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
+ extern int gpio_get_value_cansleep(unsigned gpio);
+ extern void gpio_set_value_cansleep(unsigned gpio, int value);
+ 
++extern int gpio_config(unsigned gpio, u16 param, unsigned long *data);
+ 
+ /* A platform's <asm/gpio.h> code may want to inline the I/O calls when
+  * the GPIO is constant and refers to some always-present controller,
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 32720ba..fa92e50 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -3,6 +3,60 @@
+ 
+ /* see Documentation/gpio.txt */
+ 
++/*
++ * Bias modes for GPIOs - if you have more biases, add them here or provide
++ * custom enumerators for your driver if you find they are not generally
++ * useful.
++ *
++ * GPIO_CONFIG_BIAS_UNKNOWN: this bias mode is not known to us
++ * GPIO_CONFIG_BIAS_FLOAT: no specific bias, the GPIO will float or state
++ *	is not controlled by software
++ * GPIO_CONFIG_BIAS_PULL_UP: the GPIO will be pulled up (usually with high
++ *	impedance to VDD)
++ * GPIO_CONFIG_BIAS_PULL_DOWN: the GPIO will be pulled down (usually with high
++ *	impedance to GROUND)
++ * GPIO_BIAS_HIGH: the GPIO will be wired high, connected to VDD
++ * GPIO_BIAS_GROUND: the GPIO will be grounded, connected to GROUND
++ */
++#define GPIO_CONFIG_BIAS_UNKNOWN	0x1000
++#define GPIO_CONFIG_BIAS_FLOAT		0x1001
++#define GPIO_CONFIG_BIAS_PULL_UP	0x1002
++#define GPIO_CONFIG_BIAS_PULL_DOWN	0x1003
++#define GPIO_CONFIG_BIAS_HIGH		0x1004
++#define GPIO_CONFIG_BIAS_GROUND		0x1005
++
++/*
++ * Drive modes for GPIOs (output) - if you have more custom modes either
++ * add them here or keep them to your driver if you think they are not
++ * generally useful.
++ *
++ * GPIO_CONFIG_DRIVE_UNKNOWN: we don't know the drive mode of this GPIO, for
++ *	example since it is controlled by hardware or the information is not
++ *	accessible but we need a meaningful enumerator in e.g. initialization
++ *	code
++ * GPIO_CONFIG_DRIVE_PUSH_PULL: the GPIO will be driven actively high and
++ *	low, this is the most typical case and is typically achieved with two
++ *	active transistors on the output
++ * GPIO_CONFIG_DRIVE_OPEN_DRAIN: the GPIO will be driven with open drain (open
++ *	collector) which means it is usually wired with other output ports
++ *	which are then pulled up with an external resistor
++ * GPIO_CONFIG_DRIVE_OPEN_SOURCE: the GPIO will be driven with open drain
++ *	(open emitter) which is the same as open drain mutatis mutandis but
++ *	pulled to ground
++ * GPIO_CONFIG_DRIVE_OFF: the GPIO pin is set to inactive mode, off
++ */
++#define GPIO_CONFIG_DRIVE_UNKNOWN	0x2010
++#define GPIO_CONFIG_DRIVE_PUSH_PULL	0x2011
++#define GPIO_CONFIG_DRIVE_OPEN_DRAIN	0x2012
++#define GPIO_CONFIG_DRIVE_OPEN_SOURCE	0x2013
++#define GPIO_CONFIG_DRIVE_OFF		0x2014
++
++/*
++ * From this value on, the configuration commands are custom and shall be
++ * defined in the header file for your specific GPIO driver.
++ */
++#define GPIO_CONFIG_CUSTOM_BASE		0x8000
++
+ #ifdef CONFIG_GENERIC_GPIO
+ #include <asm/gpio.h>
+ 
+@@ -152,6 +206,13 @@ static inline int irq_to_gpio(unsigned irq)
+ 	return -EINVAL;
+ }
+ 
++static inline int gpio_config(unsigned gpio, u16 param, unsigned long *data)
++{
++	/* GPIO can never have been requested */
++	WARN_ON(1);
++	return -EINVAL;
++}
++
+ #endif
+ 
+ #endif /* __LINUX_GPIO_H */
 -- 
-Regards/Gruss,
-Boris.
+1.7.3.2
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
