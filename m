@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab1DTPNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:13:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57926 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab1DTPNn (ORCPT
+	id S1755176Ab1DTPNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:13:55 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:46890 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755158Ab1DTPNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:13:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=nAhQwefA+njD7Wgi0fVRC4U9lrsC+huWg8R+u5XJlnQmMLnX5c1PK0iNEWT6D9xMoY
-         Ia4KPBfcIak8kBDk37LgVINYz8RKhc3id52X+JmcyqoEjWLkn1q675HcU84BCwkogyud
-         iOp4hwraLpjGCAHsZAr0UyiWK2DqQJBbGO4ZM=
-Message-ID: <4DAEF821.4050103@openvz.org>
-Date: Wed, 20 Apr 2011 19:13:37 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH -tip] perf, x86: P4 PMU - Don't forget to clear cpuc->active_mask
- on overflow
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Apr 2011 11:13:53 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Sv90AxmeOeh6egwjCx7X5df9DBgYb3kj1MnNPkoJy/HXV5AH7FTfBndShXET0kCbNJDITfWC9juTi0/9tC4rx9/cX8/nTrgctjschkKV9pu124VyqTIFg+cyc3oytJZi;
+Date: Wed, 20 Apr 2011 08:13:48 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khali@linux-fr.org
+Subject: Re: [PATCH 2.6.39-rc3] lpc: irq and pci_ids patch for Intel Panther
+ Point DeviceIDs
+Message-ID: <20110420081348.3f1f8c28@jbarnes-desktop>
+In-Reply-To: <201104191635.16141.seth.heasley@intel.com>
+References: <201104191635.16141.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not enough to simply disable event on overflow the cpuc->active_mask
-should be cleared as well otherwise counter may stall in "active" even
-in real being already disabled (which potentially may lead to the situation
-that user may not use this counter further).
+On Tue, 19 Apr 2011 16:35:15 -0700
+Seth Heasley <seth.heasley@intel.com> wrote:
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
+> This patch adds the LPC Controller DeviceIDs for the Intel Panther Point PCH.
+> 
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
-Ming, iirc you were testing this one, but without unknown nmi fix. So
-patch from Don should fix unknown nmi issue, please give this patch a
-shot again if you have some time (Don's patch is here
-https://lkml.org/lkml/2011/4/18/404 but I think you have it already in mailbox).
-
- arch/x86/kernel/cpu/perf_event_p4.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -946,7 +946,7 @@ static int p4_pmu_handle_irq(struct pt_r
- 		if (!x86_perf_event_set_period(event))
- 			continue;
- 		if (perf_event_overflow(event, 1, &data, regs))
--			p4_pmu_disable_event(event);
-+			x86_pmu_stop(event, 0);
- 	}
-
- 	if (handled) {
+Applied to linux-next, thanks.
 
 -- 
-    Cyrill
+Jesse Barnes, Intel Open Source Technology Center
