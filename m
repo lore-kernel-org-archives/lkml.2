@@ -1,206 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1DTQAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:00:47 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:39775 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754629Ab1DTQAp (ORCPT
+	id S1755398Ab1DTQAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 12:00:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:35382 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab1DTQAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 12:00:45 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2] gpio: add a custom configuration mechanism to gpiolib
-Date: Wed, 20 Apr 2011 18:00:16 +0200
-Message-ID: <1303315216-14852-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 20 Apr 2011 12:00:35 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=vhdKIqpQuCYA:10 a=prTxL4AU0icA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=4qoakChLQat5bWICsiMA:9 a=VXGBcFrE9DCv4uNuMoIA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110420160031.635736395@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 20 Apr 2011 11:58:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, Jan Glauber <jang@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 6/6] jump label: Add s390 support
+References: <20110420155838.640017971@goodmis.org>
+Content-Disposition: inline; filename=0006-jump-label-Add-s390-support.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Jan Glauber <jang@linux.vnet.ibm.com>
 
-This adds an opaque pin config call to gpiolib to configure
-individual pins. We provide standardized configurarion definitions
-for bias and drive mode settings for individual pins, and provide
-the mechanism to hook in custom mode settings per-driver if need
-be.
+Implement the architecture backend for jump label support on s390.
 
-Since we have no previous hacked-up arch-specific drivers for this
-we can avoid any __override_functions and we just allow this to be
-properly implemented using gpiolib. Further the function is made
-non-mandatory, calling it without a backing implementation will
-result in -ENOTSUPP being returned.
+For a shared kernel booted from a NSS silently disable jump labels
+because the NSS is read-only. Therefore jump labels will be disabled
+in a shared kernel and can't be activated.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+LKML-Reference: <6935d2c41ce111e1719176ed4bbd3dbe4de80855.1300299760.git.jbaron@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-ChangeLog:
-- switch to opaque ioctl()-like config call
-- enumerate pin drives "OFF" and "UNKNOWN" (requested by Alan Cox)
----
- drivers/gpio/gpiolib.c     |   28 ++++++++++++++++++++
- include/asm-generic/gpio.h |    8 ++++-
- include/linux/gpio.h       |   61 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 95 insertions(+), 2 deletions(-)
+ arch/s390/Kconfig                  |    1 +
+ arch/s390/include/asm/jump_label.h |   37 ++++++++++++++++++++++
+ arch/s390/kernel/Makefile          |    2 +-
+ arch/s390/kernel/jump_label.c      |   59 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 98 insertions(+), 1 deletions(-)
+ create mode 100644 arch/s390/include/asm/jump_label.h
+ create mode 100644 arch/s390/kernel/jump_label.c
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 36a2974..b62db38 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1635,6 +1635,34 @@ void gpio_set_value_cansleep(unsigned gpio, int value)
- }
- EXPORT_SYMBOL_GPL(gpio_set_value_cansleep);
- 
-+/**
-+ * gpio_config() - configure a GPIO
-+ * @gpio: gpio to configure
-+ * @param: the custom parameter to set/get, typically an enum (only the
-+ *	specific driver will know about these parameter)
-+ * @data: optional data pointer: if you're getting a config, you can
-+ *	pass data back using this pointer, either by dereferencing it
-+ *	to a struct or using it to contain an enumerator.
-+ * Context: process
-+ *
-+ * This is used to directly or indirectly to implement gpio_config().
-+ * It invokes the associated gpio_chip.config() method. It can be
-+ * used for setting things like drive modes, biasing, sleep modes etc.
-+ * It returns a negative error code on error or 0 for successful
-+ * operations. This is designed to work a bit like an ioctl() so you
-+ * can use it to get/set specific parameters.
-+ */
-+int gpio_config(unsigned gpio, u16 param, unsigned long *data)
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 2508a6f..4a7f140 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -88,6 +88,7 @@ config S390
+ 	select HAVE_KERNEL_XZ
+ 	select HAVE_GET_USER_PAGES_FAST
+ 	select HAVE_ARCH_MUTEX_CPU_RELAX
++	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+ 	select ARCH_INLINE_SPIN_TRYLOCK
+ 	select ARCH_INLINE_SPIN_TRYLOCK_BH
+ 	select ARCH_INLINE_SPIN_LOCK
+diff --git a/arch/s390/include/asm/jump_label.h b/arch/s390/include/asm/jump_label.h
+new file mode 100644
+index 0000000..95a6cf2
+--- /dev/null
++++ b/arch/s390/include/asm/jump_label.h
+@@ -0,0 +1,37 @@
++#ifndef _ASM_S390_JUMP_LABEL_H
++#define _ASM_S390_JUMP_LABEL_H
++
++#include <linux/types.h>
++
++#define JUMP_LABEL_NOP_SIZE 6
++
++#ifdef CONFIG_64BIT
++#define ASM_PTR ".quad"
++#define ASM_ALIGN ".balign 8"
++#else
++#define ASM_PTR ".long"
++#define ASM_ALIGN ".balign 4"
++#endif
++
++static __always_inline bool arch_static_branch(struct jump_label_key *key)
 +{
-+	struct gpio_chip	*chip;
-+
-+	chip = gpio_to_chip(gpio);
-+	/* Implementing this is not mandatory */
-+	if (chip->config)
-+		return chip->config(chip, gpio - chip->base, param, data);
-+	return -ENOTSUPP;
-+}
-+EXPORT_SYMBOL_GPL(gpio_config);
- 
- #ifdef CONFIG_DEBUG_FS
- 
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ff5c660..ce16e70 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -61,6 +61,7 @@ struct device_node;
-  * @set: assigns output value for signal "offset"
-  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
-  *	implementation may not sleep
-+ * @config: set/get a certain custom parameter for the GPIO
-  * @dbg_show: optional routine to show contents in debugfs; default code
-  *	will be used when this is omitted, but custom code can show extra
-  *	state (such as pullup/pulldown configuration).
-@@ -105,12 +106,14 @@ struct gpio_chip {
- 						unsigned offset, int value);
- 	int			(*set_debounce)(struct gpio_chip *chip,
- 						unsigned offset, unsigned debounce);
--
- 	void			(*set)(struct gpio_chip *chip,
- 						unsigned offset, int value);
--
- 	int			(*to_irq)(struct gpio_chip *chip,
- 						unsigned offset);
-+	int			(*config)(struct gpio_chip *chip,
-+						unsigned offset,
-+						u16 param,
-+						unsigned long *data);
- 
- 	void			(*dbg_show)(struct seq_file *s,
- 						struct gpio_chip *chip);
-@@ -158,6 +161,7 @@ extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
- extern int gpio_get_value_cansleep(unsigned gpio);
- extern void gpio_set_value_cansleep(unsigned gpio, int value);
- 
-+extern int gpio_config(unsigned gpio, u16 param, unsigned long *data);
- 
- /* A platform's <asm/gpio.h> code may want to inline the I/O calls when
-  * the GPIO is constant and refers to some always-present controller,
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 32720ba..fa92e50 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -3,6 +3,60 @@
- 
- /* see Documentation/gpio.txt */
- 
-+/*
-+ * Bias modes for GPIOs - if you have more biases, add them here or provide
-+ * custom enumerators for your driver if you find they are not generally
-+ * useful.
-+ *
-+ * GPIO_CONFIG_BIAS_UNKNOWN: this bias mode is not known to us
-+ * GPIO_CONFIG_BIAS_FLOAT: no specific bias, the GPIO will float or state
-+ *	is not controlled by software
-+ * GPIO_CONFIG_BIAS_PULL_UP: the GPIO will be pulled up (usually with high
-+ *	impedance to VDD)
-+ * GPIO_CONFIG_BIAS_PULL_DOWN: the GPIO will be pulled down (usually with high
-+ *	impedance to GROUND)
-+ * GPIO_BIAS_HIGH: the GPIO will be wired high, connected to VDD
-+ * GPIO_BIAS_GROUND: the GPIO will be grounded, connected to GROUND
-+ */
-+#define GPIO_CONFIG_BIAS_UNKNOWN	0x1000
-+#define GPIO_CONFIG_BIAS_FLOAT		0x1001
-+#define GPIO_CONFIG_BIAS_PULL_UP	0x1002
-+#define GPIO_CONFIG_BIAS_PULL_DOWN	0x1003
-+#define GPIO_CONFIG_BIAS_HIGH		0x1004
-+#define GPIO_CONFIG_BIAS_GROUND		0x1005
-+
-+/*
-+ * Drive modes for GPIOs (output) - if you have more custom modes either
-+ * add them here or keep them to your driver if you think they are not
-+ * generally useful.
-+ *
-+ * GPIO_CONFIG_DRIVE_UNKNOWN: we don't know the drive mode of this GPIO, for
-+ *	example since it is controlled by hardware or the information is not
-+ *	accessible but we need a meaningful enumerator in e.g. initialization
-+ *	code
-+ * GPIO_CONFIG_DRIVE_PUSH_PULL: the GPIO will be driven actively high and
-+ *	low, this is the most typical case and is typically achieved with two
-+ *	active transistors on the output
-+ * GPIO_CONFIG_DRIVE_OPEN_DRAIN: the GPIO will be driven with open drain (open
-+ *	collector) which means it is usually wired with other output ports
-+ *	which are then pulled up with an external resistor
-+ * GPIO_CONFIG_DRIVE_OPEN_SOURCE: the GPIO will be driven with open drain
-+ *	(open emitter) which is the same as open drain mutatis mutandis but
-+ *	pulled to ground
-+ * GPIO_CONFIG_DRIVE_OFF: the GPIO pin is set to inactive mode, off
-+ */
-+#define GPIO_CONFIG_DRIVE_UNKNOWN	0x2010
-+#define GPIO_CONFIG_DRIVE_PUSH_PULL	0x2011
-+#define GPIO_CONFIG_DRIVE_OPEN_DRAIN	0x2012
-+#define GPIO_CONFIG_DRIVE_OPEN_SOURCE	0x2013
-+#define GPIO_CONFIG_DRIVE_OFF		0x2014
-+
-+/*
-+ * From this value on, the configuration commands are custom and shall be
-+ * defined in the header file for your specific GPIO driver.
-+ */
-+#define GPIO_CONFIG_CUSTOM_BASE		0x8000
-+
- #ifdef CONFIG_GENERIC_GPIO
- #include <asm/gpio.h>
- 
-@@ -152,6 +206,13 @@ static inline int irq_to_gpio(unsigned irq)
- 	return -EINVAL;
- }
- 
-+static inline int gpio_config(unsigned gpio, u16 param, unsigned long *data)
-+{
-+	/* GPIO can never have been requested */
-+	WARN_ON(1);
-+	return -EINVAL;
++	asm goto("0:	brcl 0,0\n"
++		".pushsection __jump_table, \"aw\"\n"
++		ASM_ALIGN "\n"
++		ASM_PTR " 0b, %l[label], %0\n"
++		".popsection\n"
++		: : "X" (key) : : label);
++	return false;
++label:
++	return true;
 +}
 +
- #endif
++typedef unsigned long jump_label_t;
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#endif
+diff --git a/arch/s390/kernel/Makefile b/arch/s390/kernel/Makefile
+index 64230bc..5ff15da 100644
+--- a/arch/s390/kernel/Makefile
++++ b/arch/s390/kernel/Makefile
+@@ -23,7 +23,7 @@ CFLAGS_sysinfo.o += -Iinclude/math-emu -Iarch/s390/math-emu -w
+ obj-y	:=  bitmap.o traps.o time.o process.o base.o early.o setup.o \
+ 	    processor.o sys_s390.o ptrace.o signal.o cpcmd.o ebcdic.o \
+ 	    s390_ext.o debug.o irq.o ipl.o dis.o diag.o mem_detect.o \
+-	    vdso.o vtime.o sysinfo.o nmi.o sclp.o
++	    vdso.o vtime.o sysinfo.o nmi.o sclp.o jump_label.o
  
- #endif /* __LINUX_GPIO_H */
+ obj-y	+= $(if $(CONFIG_64BIT),entry64.o,entry.o)
+ obj-y	+= $(if $(CONFIG_64BIT),reipl64.o,reipl.o)
+diff --git a/arch/s390/kernel/jump_label.c b/arch/s390/kernel/jump_label.c
+new file mode 100644
+index 0000000..44cc06b
+--- /dev/null
++++ b/arch/s390/kernel/jump_label.c
+@@ -0,0 +1,59 @@
++/*
++ * Jump label s390 support
++ *
++ * Copyright IBM Corp. 2011
++ * Author(s): Jan Glauber <jang@linux.vnet.ibm.com>
++ */
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/stop_machine.h>
++#include <linux/jump_label.h>
++#include <asm/ipl.h>
++
++#ifdef HAVE_JUMP_LABEL
++
++struct insn {
++	u16 opcode;
++	s32 offset;
++} __packed;
++
++struct insn_args {
++	unsigned long *target;
++	struct insn *insn;
++	ssize_t size;
++};
++
++static int __arch_jump_label_transform(void *data)
++{
++	struct insn_args *args = data;
++	int rc;
++
++	rc = probe_kernel_write(args->target, args->insn, args->size);
++	WARN_ON_ONCE(rc < 0);
++	return 0;
++}
++
++void arch_jump_label_transform(struct jump_entry *entry,
++			       enum jump_label_type type)
++{
++	struct insn_args args;
++	struct insn insn;
++
++	if (type == JUMP_LABEL_ENABLE) {
++		/* brcl 15,offset */
++		insn.opcode = 0xc0f4;
++		insn.offset = (entry->target - entry->code) >> 1;
++	} else {
++		/* brcl 0,0 */
++		insn.opcode = 0xc004;
++		insn.offset = 0;
++	}
++
++	args.target = (void *) entry->code;
++	args.insn = &insn;
++	args.size = JUMP_LABEL_NOP_SIZE;
++
++	stop_machine(__arch_jump_label_transform, &args, NULL);
++}
++
++#endif
 -- 
-1.7.3.2
+1.7.2.3
+
 
