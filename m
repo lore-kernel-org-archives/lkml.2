@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab1DTPrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:47:11 -0400
-Received: from smtpout.karoo.kcom.com ([212.50.160.34]:65291 "EHLO
-	smtpout.karoo.kcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab1DTPrG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:47:06 -0400
-X-IronPort-AV: E=Sophos;i="4.64,246,1301871600"; 
-   d="scan'208";a="763086672"
+	id S1755242Ab1DTPv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:51:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50477 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752671Ab1DTPv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 11:51:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,247,1301900400"; 
+   d="scan'208";a="736088661"
+To: jgarzik@pobox.com
+Subject: [PATCH 2.6.39-rc3 RESEND] ata_piix: IDE-mode SATA patch for Intel Panther Point DeviceIDs
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seth.heasley@intel.com
+From: Seth Heasley <seth.heasley@intel.com>
+Date: Wed, 20 Apr 2011 08:43:37 -0700
 MIME-Version: 1.0
-X-Priority: Normal
-X-Mailer: AtMail PHP 5.62
-Message-ID: <18563.1303314382@jupiter.eclipse.co.uk>
-To: "Borislav Petkov" <bp@amd64.org>, <rwhitton@iee.org>
-Reply-To: rwhitton@iee.org
-Content-Type: text/plain; charset="utf-8"
-X-Origin: 213.121.168.130
-X-Atmail-Account: rwhitton@jupiter.eclipse.co.uk
-Date: Wed, 20 Apr 2011 16:46:22 +0100
-Subject: Re: Background memory scrubbing
-From: Robert Whitton <rwhitton@iee.org>
-Cc: "Clemens Ladisch" <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104200843.37660.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The previously submitted patch was word-wrapped.
 
-> On Wed, Apr 20, 2011 at 05:19:41PM +0200, Clemens Ladisch wrote:
-> > > Unfortunately in common with a large number of hardware platforms
-> > > background scrubbing isn't supported in the hardware (even though ECC
-> > > error correction is supported) and thus there is no BIOS option to
-> > > enable it.
-> > 
-> > Which hardware platform is this? AFAICT all architectures with ECC
-> > (old AMD64, Family 0Fh, Family 10h) also have scrubbing support.
-> > If your BIOS is too dumb, just try enabling it directly (bits 0-4 of
-> > PCI configuration register 0x58 in function 3 of the CPU's northbridge
-> > device, see the BIOS and Kernel's Developer's Guide for details).
-> 
-> Or even better, if on AMD, you can build the amd64_edac module
-> (CONFIG_EDAC_AMD64) and do
-> 
-> echo  > /sys/devices/system/edac/mc/mc/sdram_scrub_rate
-> 
-> where x is the scrubbing bandwidth in bytes/sec and y is the memory
-> controller on the machine, i.e. node.
-> 
-> -- 
-> Regards/Gruss,
-> Boris.
-> 
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Panther 
+Point PCH.
 
-Unfortunately that also isn't an option on my platform(s). There surely must be a way for a module to be able to get a mapping for each physical page of memory in the system and to be able to use that mapping to do atomic read/writes to scrub the memory.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+
+--- linux-2.6.39-rc3/drivers/ata/ata_piix.c.orig	2011-04-11 17:21:51.000000000 -0700
++++ linux-2.6.39-rc3/drivers/ata/ata_piix.c	2011-04-14 11:38:04.000000000 -0700
+@@ -309,6 +309,14 @@
+ 	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
+ 	/* SATA Controller IDE (PBG) */
+ 	{ 0x8086, 0x1d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Panther Point) */
++	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	/* SATA Controller IDE (Panther Point) */
++	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	/* SATA Controller IDE (Panther Point) */
++	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Panther Point) */
++	{ 0x8086, 0x1e09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	{ }	/* terminate list */
+ };
+ 
