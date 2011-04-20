@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1DTPDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:03:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35731 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab1DTPDJ (ORCPT
+	id S1753210Ab1DTPDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:03:08 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44397 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751020Ab1DTPDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:03:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=yGL45sQc8VAHc071PIQr/6rSW3oD72kiqZMzzS+dvj5RzfKmZtVXH2puyft/DxGNr9
-         Q3mZUc7Gzpr/t+tEjZTNgQhtWD9x2bRfB1stVEvfbdlERR3yKjKJP8oQX8+NFKQkCYH9
-         4wiID5I9CvF1TTGIW8PuIMfqu0LFC02wIWAGw=
-Message-ID: <4DAEF5A6.4040405@gmail.com>
-Date: Wed, 20 Apr 2011 19:03:02 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
-References: <1303145815-15050-1-git-send-email-dzickus@redhat.com> <4DAEEF96.4070807@gmail.com> <20110420145754.GT20887@redhat.com>
-In-Reply-To: <20110420145754.GT20887@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Apr 2011 11:03:05 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Matthew Wilcox <matthew@wil.cx>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        x86 maintainers <x86@kernel.org>, linux-arch@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <alpine.DEB.2.00.1104200943580.9266@router.home>
+References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
+	 <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
+	 <20110420161615.462D.A69D9226@jp.fujitsu.com>
+	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
+	 <20110420112020.GA31296@parisc-linux.org>
+	 <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
+	 <1303308938.2587.8.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104200943580.9266@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 10:02:59 -0500
+Message-ID: <1303311779.2587.19.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2011 06:57 PM, Don Zickus wrote:
-> On Wed, Apr 20, 2011 at 06:37:10PM +0400, Cyrill Gorcunov wrote:
->> Don, sorry for delay, I somehow missed this patch at first place :/ And probably
->> the patch below could help with "stess" problem?
+On Wed, 2011-04-20 at 09:50 -0500, Christoph Lameter wrote:
+> On Wed, 20 Apr 2011, James Bottomley wrote:
 > 
-> The patch I am using for the 'stress' problem is different than what I
-> posted because I wanted to keep it simple for 2.6.39.  But yeah I already
-> moved the unmasking to the enable_pmus_all(0) line.
-
-ok
-
+> >      1. We can look at what imposing NUMA on the DISCONTIGMEM archs
+> >         would do ... the embedded ones are going to be hardest hit, but
+> >         if it's not too much extra code, it might be palatable.
+> >      2. The other is that we can audit mm to look at all the node
+> >         assumptions in the non-numa case.  My suspicion is that
+> >         accidentally or otherwise, it mostly works for the normal case,
+> >         so there might not be much needed to pull it back to working
+> >         properly for DISCONTIGMEM.
 > 
-> The thing is that cuts down on some of these in-flight NMIs but not all of
-> them.  I came up with some logic that catches all the in-flight NMIs on
-> Nehalem and AMDs but my core2quad still fails.  I'll try to post that
-> today while requesting help.
+> The older code may work. SLAB f.e. does not call page_to_nid() in the
+> !NUMA case but keeps special metadata structures around in each slab page
+> that records the node used for allocation. The problem is with new code
+> added/revised in the last 5 years or so that uses page_to_nid() and
+> allocates only a single structure for !NUMA. There are also VM_BUG_ONs in
+> the page allocator that should trigger if page_to_nid() returns strange
+> values. I wonder why that never occurred.
 
-ok
+Actually, I think slab got changed when discontigmem was added ...
+that's why it all works OK.
 
+> >      3. Finally we could look at deprecating DISCONTIGMEM in favour
+> of >         SPARSEMEM, but we'd still need to fix -stable for that case.
+> >         Especially as it will take time to convert all the architectures
 > 
-> Still not sure you need the double APIC writes (as your patch) shows.  I
-> haven't seen a case in my testing where a single APIC write fails.
+> The fix needed is to mark DISCONTIGMEM without NUMA as broken for now. We
+> need an audit of the core VM before removing that or making it contingent
+> on the configurations of various VM subsystems.
 
-yup, we can drop it, thanks!
+Don't be stupid ... that would cause six architectures to get marked
+broken.
 
+> > I'm certainly with Matthew: DISCONTIGMEM is supposed to be a lightweight
+> > framework which allows machines with split physical memory ranges to
+> > work.  That's a very common case nowadays.  Numa is supposed to be a
+> > heavyweight framework to preserve node locality for non-uniform memory
+> > access boxes (which none of the DISCONTIGMEM && !NUMA systems are).
 > 
-> Cheers,
-> Don
+> Well yes but we have SPARSE for that today. DISCONTIG with multiple per
+> pgdat structures in a !NUMA case is just weird and unexpected for many who
+> have done VM coding in the last years.
 
--- 
-    Cyrill
+Look, I'm not really interested in who understands what.  The fact is we
+have six architectures with the possibility for DISCONTIGMEM && !NUMA,
+so that's the case we need to fix in -stable.
+
+They oops with SLUB, as far as I can tell, there are still no oops
+reports with SLAB.  The simplest -stable fix seems to be to mark SLUB
+broken on DISCONTIGMEM && !NUMA.
+
+James
+
+
