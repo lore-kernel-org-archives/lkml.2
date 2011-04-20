@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab1DTTap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 15:30:45 -0400
-Received: from mx1.iiserkol.ac.in ([124.124.205.102]:34341 "EHLO
-	mx1.iiserkol.ac.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab1DTTao (ORCPT
+	id S1755794Ab1DTTcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 15:32:08 -0400
+Received: from pqueuea.post.tele.dk ([193.162.153.9]:38840 "EHLO
+	pqueuea.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab1DTTcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 15:30:44 -0400
-X-Greylist: delayed 8494 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Apr 2011 15:30:43 EDT
-Message-ID: <47734.41.73.17.34.1303315823.squirrel@iiserkol.ac.in>
-Date: Wed, 20 Apr 2011 21:40:23 +0530 (IST)
-Subject: 
-From: "M-LOTTO PROGRAM MALAYSIA" <mbalaram@iiserkol.ac.in>
-Reply-To: powerball_lesly.freeman@hotmail.com
-User-Agent: SquirrelMail/1.5.1
+	Wed, 20 Apr 2011 15:32:06 -0400
+Date: Wed, 20 Apr 2011 21:31:45 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: stop exporting irq_map
+Message-ID: <20110420193145.GA15439@merkur.ravnborg.org>
+References: <20110420084449.23741.45580.stgit@ponder>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110420084449.23741.45580.stgit@ponder>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MALAYSIA National Lottery
-MALAYSIA.
-P.O Box 789 Harrogate,HG1 2YR
-International M-LOTTO  Program.
-WINNING NUMBER My-36-39-44-45 (09)
+> +
+>  irq_hw_number_t virq_to_hw(unsigned int virq)
+>  {
+>  	return irq_map[virq].hwirq;
+>  }
+>  EXPORT_SYMBOL_GPL(virq_to_hw);
 
- NOTIFICATION OF WINNING
-Attn:
-You won the sum of $2 Million Usd!  in our monthly
-sweepstakes,just concluded March 24th in Malaysia, you are hereby advice
-to get back to us,
-to claimed your prize..Claims.
-Requirements:
-1.First Name
-2 Last Name :
-3.Home Address:
-4.Age:
-5.Sex:
-6.Occupation:
-7.Phone Number:
-8.Country Of Residence.
-Contact Person: Mr.OFFRING KALLAS
-Email:powerball_lesly.freeman@hotmail.com
+General comment...
+kernel/irq/* denote the virtual irq numbers "irq".
+powerpc uses "virq" for the same.
 
+Sometimes it is confusing that two different names is used
+for the same thing.
+
+The intent of this patch is to centralize access to a common data structure,
+but this could also be a good candidate for a terminology shift if
+this is considered.
+
+"git grep virq" shows a lot of hits - especially in arm, powerpc.
+So what I suggest is obviously only a small step in the direction
+of using "irq" all over.
+
+	Sam
