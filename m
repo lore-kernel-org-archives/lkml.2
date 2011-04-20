@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1DTOwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 10:52:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab1DTOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 10:52:38 -0400
-To: Eric Paris <eparis@parisplace.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, int-list-linux-mm@kvack.org,
-        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>, sds@tycho.nsa.gov
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation for uprobes
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	<20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
-	<1303145171.32491.886.camel@twins>
-	<20110419062654.GB10698@linux.vnet.ibm.com>
-	<BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Wed, 20 Apr 2011 10:51:45 -0400
-In-Reply-To: <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com> (Eric Paris's message of "Wed, 20 Apr 2011 09:40:57 -0400")
-Message-ID: <y0m7hapc6wu.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753822Ab1DTOxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 10:53:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42746 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751875Ab1DTOxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 10:53:45 -0400
+Date: Wed, 20 Apr 2011 15:54:07 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kyungmin Park <kmpark@infradead.org>, Ben Nizette <bn@niasdigital.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Message-ID: <20110420155407.1aa60f20@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTimfkpjQ9DoYKRTVwyvtPRccO+RwpA@mail.gmail.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+	<20110419093855.36910400@lxorguk.ukuu.org.uk>
+	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
+	<BANLkTimfkpjQ9DoYKRTVwyvtPRccO+RwpA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Apr 2011 14:32:35 +0200
+Linus Walleij <linus.walleij@linaro.org> wrote:
 
-eparis wrote:
+> 2011/4/19 Kyungmin Park <kmpark@infradead.org>:
+> 
+> > One more consideration, not mentioned previous time, is that pin
+> > configuration for power down mode.
+> > Samsung SoCs has retention GPIO configurations at sleep (suspend)
+> > mode. and restore it at resume time.
+> > it's need to reduce power and proper operation after suspend.
+> 
+> Isn't this supposed to be handled by runtime_pm hooks inside
+> your GPIO driver rather than by someone else talking to
+> the GPIO driver trying to spool/unspool the state from the
+> outside in some other place?
+> 
+> Or am I getting things backwards now...?
 
-> [...]
-> Now how to fix the problems you were seeing.  If you run a modern
-> system with a GUI I'm willing to bet the pop-up window told you
-> exactly how to fix your problem.  [...]
->
-> 1) chcon -t unconfined_execmem_t /path/to/your/binary
-> 2) setsebool -P allow_execmem 1
-> [...]
-> I believe there was a question about how JIT's work with SELinux
-> systems.  They work mostly by method #1.
-
-Actually, that's a solution to a different problem.  Here, it's not
-particular /path/to/your/binaries that want/need selinux provileges.
-It's a kernel-driven debugging facility that needs it temporarily for
-arbitrary processes.
-
-It's not like JITs, with known binary names.  It's not like GDB, which
-simply overwrites existing instructions in the text segment.  To make
-uprobes work fast (single-step-out-of-line), one needs one or emore
-temporary pages with unusual mapping permissions.
-
-- FChE
+IMHO that rather depends upon what knows the right things to do. The
+platform may know the right way to manage GPIO pins but it may also be
+that only the driver knows because the correct suspended pin states
+depend on the driver or on the current runtime configuration - eg if a
+specific GPIO must be left enabled for wakeup to work then it depends
+whether that device is active not on the platform level properties.
