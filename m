@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1DTSld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 14:41:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17696 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab1DTSlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 14:41:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,247,1301900400"; 
-   d="scan'208";a="736161348"
-From: Seth Heasley <seth.heasley@intel.com>
-To: khali@linux-fr.org
-Subject: [PATCH 2.6.39-rc3] i2c-i801: SMBus patch for Intel Panther Point DeviceIDs
-Date: Wed, 20 Apr 2011 11:33:39 -0700
-User-Agent: KMail/1.13.6 (Linux/2.6.35.6-45.fc14.x86_64; KDE/4.6.1; x86_64; ; )
-Cc: linux-i2c@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, seth.heasley@intel.com
+	id S1755559Ab1DTSlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 14:41:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41646 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499Ab1DTSlo (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 20 Apr 2011 14:41:44 -0400
+Date: Wed, 20 Apr 2011 14:39:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: stefano.stabellini@eu.citrix.com, john.baboval@virtualcomputer.com
+Subject: [GIT PULL] (xen) stable/bug-fixes-rc4 for 2.6.39-rc4.
+Message-ID: <20110420183934.GA22131@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104201133.39979.seth.heasley@intel.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DAF28E1.0014:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the SMBus controller DeviceID for the Intel Panther Point PCH.
+Linus,
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
---- linux-2.6.39-rc3/Documentation/i2c/busses/i2c-i801.orig	2011-04-11 17:21:51.000000000 -0700
-+++ linux-2.6.39-rc3/Documentation/i2c/busses/i2c-i801	2011-04-14 11:56:59.000000000 -0700
-@@ -19,6 +19,7 @@
-   * Intel 6 Series (PCH)
-   * Intel Patsburg (PCH)
-   * Intel DH89xxCC (PCH)
-+  * Intel Panther Point (PCH)
-    Datasheets: Publicly available at the Intel website
- 
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
---- linux-2.6.39-rc3/drivers/i2c/busses/Kconfig.orig	2011-04-11 17:21:51.000000000 -0700
-+++ linux-2.6.39-rc3/drivers/i2c/busses/Kconfig	2011-04-14 12:02:27.000000000 -0700
-@@ -101,6 +101,7 @@
- 	    6 Series (PCH)
- 	    Patsburg (PCH)
- 	    DH89xxCC (PCH)
-+	    Panther Point (PCH)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- linux-2.6.39-rc3/drivers/i2c/busses/i2c-i801.c.orig	2011-04-11 17:21:51.000000000 -0700
-+++ linux-2.6.39-rc3/drivers/i2c/busses/i2c-i801.c	2011-04-14 12:03:57.000000000 -0700
-@@ -50,6 +50,7 @@
-   Patsburg (PCH) IDF    0x1d71     32     hard     yes     yes     yes
-   Patsburg (PCH) IDF    0x1d72     32     hard     yes     yes     yes
-   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
-+  Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -623,6 +624,7 @@
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ 0, }
- };
- 
+Please git pull
+
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-rc4
+
+since git commit f0e615c3cb72b42191b558c130409335812621d8
+Linus Torvalds (1)
+    Linux 2.6.39-rc4
+
+These are two patches that came about the patch introduced at the beginning
+of 2.6.39 ("x86-64, mm: Put early page table high"
+4b239f458c229de044d6905c2b0f9fe16ed9e01e). With the two patches, one fixes
+booting of Linux with Xen hypervisor on a machine with an "gap" in the E820
+right after 3.8GB to 4GB, while the other fixes booting of a 32-bit guest.
+
+There is one more patch that we have been carrying in tree to fix the
+regression introduced by "x86-64,mm: Put early page table high" which is not
+yet ready - but hopefully will be at the end of the week, which will likely
+go through the x86 tree.
+
+Anyhow please pull these two following patches:
+
+Stefano Stabellini (2):
+      xen: do not create the extra e820 region at an addr lower than 4G
+      xen: mask_rw_pte: do not apply the early_ioremap checks on x86_32
+
+ arch/x86/xen/mmu.c   |   13 +++++++++----
+ arch/x86/xen/setup.c |    2 +-
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
