@@ -1,125 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab1DTQAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 12:00:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35397 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab1DTQAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755317Ab1DTQAe (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 20 Apr 2011 12:00:34 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=vhdKIqpQuCYA:10 a=To5htxnoGzYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=q6rQUnKnsQDmuxrwYP4A:9 a=33Wmf6nklRFcBIzi2asA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33804 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab1DTQAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 12:00:33 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=pDOKfcMg7l0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Iwdc0ePNTnk39Rv0CJYA:9 a=lSu7IAUlkRtUQclLTHkA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110420160030.866666479@goodmis.org>
+Message-Id: <20110420160030.287725074@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 20 Apr 2011 11:58:41 -0400
+Date: Wed, 20 Apr 2011 11:58:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/6] tracing: Avoid soft lockup in trace_pipe
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 1/6] tracing: Convert trace_printk() formats for module to const char *
 References: <20110420155838.640017971@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Avoid-soft-lockup-in-trace_pipe.patch
+Content-Disposition: inline; filename=0001-tracing-Convert-trace_printk-formats-for-module-to-c.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-running following commands:
+The trace_printk() formats for modules do not show up in the
+debugfs/tracing/printk_formats file. Only the formats that are
+for trace_printk()s that are in the kernel core.
 
-  # enable the binary option
-  echo 1 > ./options/bin
-  # disable context info option
-  echo 0 > ./options/context-info
-  # tracing only events
-  echo 1 > ./events/enable
-  cat trace_pipe
+To facilitate the change to add trace_printk() formats from modules
+into that file as well, we need to convert the structure that
+holds the formats from char fmt[], into const char *fmt,
+and allocate them separately.
 
-plus forcing system to generate many tracing events,
-is causing lockup (in NON preemptive kernels) inside
-tracing_read_pipe function.
-
-The issue is also easily reproduced by running ltp stress test.
-(ftrace_stress_test.sh)
-
-The reasons are:
- - bin/hex/raw output functions for events are set to
-   trace_nop_print function, which prints nothing and
-   returns TRACE_TYPE_HANDLED value
- - LOST EVENT trace do not handle trace_seq overflow
-
-These reasons force the while loop in tracing_read_pipe
-function never to break.
-
-The attached patch fixies handling of lost event trace, and
-changes trace_nop_print to print minimal info, which is needed
-for the correct tracing_read_pipe processing.
-
-v2 changes:
- - omit the cond_resched changes by trace_nop_print changes
- - WARN changed to WARN_ONCE and added info to be able
-   to find out the culprit
-
-v3 changes:
- - make more accurate patch comment
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <20110325110518.GC1922@jolsa.brq.redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c        |   15 ++++++++++++---
- kernel/trace/trace_output.c |    3 +++
- 2 files changed, 15 insertions(+), 3 deletions(-)
+ kernel/trace/trace_printk.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9541c27..5af42f4 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2013,9 +2013,10 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index 2547d88..b8b2681 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -32,7 +32,7 @@ static DEFINE_MUTEX(btrace_mutex);
+ 
+ struct trace_bprintk_fmt {
+ 	struct list_head list;
+-	char fmt[0];
++	const char *fmt;
+ };
+ 
+ static inline struct trace_bprintk_fmt *lookup_format(const char *fmt)
+@@ -49,6 +49,7 @@ static
+ void hold_module_trace_bprintk_format(const char **start, const char **end)
  {
- 	enum print_line_t ret;
+ 	const char **iter;
++	char *fmt;
  
--	if (iter->lost_events)
--		trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
--				 iter->cpu, iter->lost_events);
-+	if (iter->lost_events &&
-+	    !trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
-+				 iter->cpu, iter->lost_events))
-+		return TRACE_TYPE_PARTIAL_LINE;
+ 	mutex_lock(&btrace_mutex);
+ 	for (iter = start; iter < end; iter++) {
+@@ -58,14 +59,18 @@ void hold_module_trace_bprintk_format(const char **start, const char **end)
+ 			continue;
+ 		}
  
- 	if (iter->trace && iter->trace->print_line) {
- 		ret = iter->trace->print_line(iter);
-@@ -3229,6 +3230,14 @@ waitagain:
- 
- 		if (iter->seq.len >= cnt)
- 			break;
-+
-+		/*
-+		 * Setting the full flag means we reached the trace_seq buffer
-+		 * size and we should leave by partial output condition above.
-+		 * One of the trace_seq_* functions is not used properly.
-+		 */
-+		WARN_ONCE(iter->seq.full, "full flag set for trace type %d",
-+			  iter->ent->type);
+-		tb_fmt = kmalloc(offsetof(struct trace_bprintk_fmt, fmt)
+-				+ strlen(*iter) + 1, GFP_KERNEL);
+-		if (tb_fmt) {
++		tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
++		if (tb_fmt)
++			fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
++		if (tb_fmt && fmt) {
+ 			list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+-			strcpy(tb_fmt->fmt, *iter);
++			strcpy(fmt, *iter);
++			tb_fmt->fmt = fmt;
+ 			*iter = tb_fmt->fmt;
+-		} else
++		} else {
++			kfree(tb_fmt);
+ 			*iter = NULL;
++		}
  	}
- 	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 456be90..cf535cc 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -830,6 +830,9 @@ EXPORT_SYMBOL_GPL(unregister_ftrace_event);
- enum print_line_t trace_nop_print(struct trace_iterator *iter, int flags,
- 				  struct trace_event *event)
- {
-+	if (!trace_seq_printf(&iter->seq, "type: %d\n", iter->ent->type))
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
- 	return TRACE_TYPE_HANDLED;
+ 	mutex_unlock(&btrace_mutex);
  }
- 
 -- 
 1.7.2.3
 
