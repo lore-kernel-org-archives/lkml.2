@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab1DTC54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 22:57:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59595 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1DTC5y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 22:57:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to expand_upwards
-Cc: kosaki.motohiro@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <1303267733.11237.42.camel@mulgrave.site>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com> <1303267733.11237.42.camel@mulgrave.site>
-Message-Id: <20110420115804.461E.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Wed, 20 Apr 2011 11:57:48 +0900 (JST)
+	id S1754093Ab1DTDuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 23:50:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58004 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753430Ab1DTDup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 23:50:45 -0400
+Date: Wed, 20 Apr 2011 13:50:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: linux-next: manual merge of the percpu tree with the tip tree
+Message-Id: <20110420135036.b84035de.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2011-04-20 at 10:23 +0900, KOSAKI Motohiro wrote:
-> > > On Tue, 19 Apr 2011, James Bottomley wrote:
-> > > 
-> > > > > Which part of me telling you that you will break lots of other things in
-> > > > > the core kernel dont you get?
-> > > >
-> > > > I get that you tell me this ... however, the systems that, according to
-> > > > you, should be failing to get to boot prompt do, in fact, manage it.
-> > > 
-> > > If you dont use certain subsystems then it may work. Also do you run with
-> > > debuggin on.
-> > > 
-> > > The following patch is I think what would be needed to fix it.
-> > 
-> > I'm worry about this patch. A lot of mm code assume !NUMA systems 
-> > only have node 0. Not only SLUB.
-> > 
-> > I'm not sure why this unfortunate mismatch occur. but I think DISCONTIG
-> > hacks makes less sense. Can we consider parisc turn NUMA on instead?
-> 
-> Well, you mean a patch like this?  It won't build ... obviously we need
-> some more machinery
-> 
->   CC      arch/parisc/kernel/asm-offsets.s
-> In file included from include/linux/sched.h:78,
->                  from arch/parisc/kernel/asm-offsets.c:31:
-> include/linux/topology.h:212:2: error: #error Please define an appropriate SD_NODE_INIT in include/asm/topology.h!!!
-> In file included from include/linux/sched.h:78,
->                  from arch/parisc/kernel/asm-offsets.c:31:
-> include/linux/topology.h: In function 'numa_node_id':
-> include/linux/topology.h:255: error: implicit declaration of function 'cpu_to_node'
+Hi all,
 
-Sorry about that. I'll see more carefully the code later. Probably long
-time discontig-mem uninterest made multiple level breakage. Grr. ;-)
+Today's linux-next merge of the percpu tree got a conflict in
+arch/x86/include/asm/percpu.h between commit b1e7734f024c ("x86, percpu:
+Use ASM_NOP4 instead of hardcoding P6_NOP4") from the tip tree and commit
+5f55924deaa6 ("percpu: Avoid extra NOP in percpu_cmpxchg16b_double") from
+the percpu tree.
 
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
+diff --cc arch/x86/include/asm/percpu.h
+index 53278b0,d68fca6..0000000
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@@ -509,6 -509,11 +509,11 @@@ do {									
+   * it in software.  The address used in the cmpxchg16 instruction must be
+   * aligned to a 16 byte boundary.
+   */
++ #ifdef CONFIG_SMP
+ -#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP3
+++#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" ASM_NOP3
++ #else
+ -#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP2
+++#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" ASM_NOP2
++ #endif
+  #define percpu_cmpxchg16b_double(pcp1, o1, o2, n1, n2)			\
+  ({									\
+  	char __ret;							\
