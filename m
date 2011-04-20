@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1DTRix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 13:38:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39440 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630Ab1DTRiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 13:38:52 -0400
-Message-ID: <4DAF1A14.2090703@kernel.org>
-Date: Wed, 20 Apr 2011 10:38:28 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1755548Ab1DTRjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 13:39:25 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:45079 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751216Ab1DTRjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 13:39:22 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [linux-pm] [RFC PATCH V3 4/4] cpuidle: Single/Global registration of idle states
+Organization: Texas Instruments, Inc.
+References: <20110420065445.332.13688.stgit@tringupt.in.ibm.com>
+	<20110420065608.332.30043.stgit@tringupt.in.ibm.com>
+Date: Wed, 20 Apr 2011 10:33:25 -0700
+In-Reply-To: <20110420065608.332.30043.stgit@tringupt.in.ibm.com> (Trinabh
+	Gupta's message of "Wed, 20 Apr 2011 12:26:34 +0530")
+Message-ID: <87k4eo6d5m.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem above
- 1TB
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-5-git-send-email-joerg.roedel@amd.com> <4DAC4EC0.80008@zytor.com> <4DAC5099.4010403@kernel.org> <20110418145941.GJ2192@amd.com> <20110418155033.GC8623@elte.hu> <20110419061259.GL2192@amd.com> <20110419072520.GD25353@elte.hu> <4DAD919A.3080102@kernel.org> <20110419142904.GT2192@amd.com>
-In-Reply-To: <20110419142904.GT2192@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 07:29 AM, Roedel, Joerg wrote:
->>
->> Arguably we call this the k8_nb in other places, so my suggestion would
->> be k8_gart.c
-> 
-> The k8_nb was renamed to amd_nb recently. The NB is implemented in all
-> 64 bit AMD processors and there are more today then K8. The k8_nb was
-> historically chosen and misleading today.
-> 
+Trinabh Gupta <trinabh@linux.vnet.ibm.com> writes:
 
-OK, fair enough.  However, unless it is actually used in 32-bit mode
-calling it amd_gart_64.c is probably better than amd64_gart.c since an
-"amd64" processor can also be run in 32-bit mode.
+> With this patch there is single copy of cpuidle_states structure
+> instead of per-cpu. The statistics needed on per-cpu basis
+> by the governor are kept per-cpu. This simplifies the cpuidle
+> subsystem as state registration is done by single cpu only.
+> Having single copy of cpuidle_states saves memory. Rare case
+> of asymmetric C-states can be handled within the cpuidle driverand
+> architectures such as POWER do not have asymmetric C-states.
 
-	-hpa
+I haven't actually tested this series on OMAP yet, but it currently
+doesn't compile.
+
+The patch below (on top of your series) is required to compile on OMAP,
+I think it's doing what you intended, but please confirm.
+
+Kevin
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 6641574..ab77ba3 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -512,6 +512,7 @@ static int omap3_cpuidle_driver_init(void)
+ 	int i, retval, count = 0;
+ 	struct omap3_processor_cx *cx;
+ 	struct cpuidle_state *state;
++	struct cpuidle_driver *drv = &omap3_idle_driver;
+ 
+ 	mpu_pd = pwrdm_lookup("mpu_pwrdm");
+ 	core_pd = pwrdm_lookup("core_pwrdm");
+@@ -532,7 +533,7 @@ static int omap3_cpuidle_driver_init(void)
+ 		state->enter = (state->flags & CPUIDLE_FLAG_CHECK_BM) ?
+ 			omap3_enter_idle_bm : omap3_enter_idle;
+ 		if (cx->type == OMAP3_STATE_C1)
+-			dev->safe_state_index = count;
++			drv->safe_state_index = count;
+ 		sprintf(state->name, "C%d", count+1);
+ 		strncpy(state->desc, cx->desc, CPUIDLE_DESC_LEN);
+ 		count++;
