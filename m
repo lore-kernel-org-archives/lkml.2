@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1DTWjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 18:39:46 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40497 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab1DTWjp (ORCPT
+	id S1752651Ab1DTWlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 18:41:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49528 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab1DTWly convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 18:39:45 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.15.19
-Date: Wed, 20 Apr 2011 15:39:29 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Kasper Pedersen <kernel@kasperkp.dk>
-Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: x86: tsc: v2 make TSC calibration more immune to interrupts
-Message-ID: <20110420223929.GB5563@feather>
-References: <4DAF2B57.6010100@kasperkp.dk>
- <1303326959.2796.136.camel@work-vm>
- <4DAF37B4.3040408@kasperkp.dk>
- <1303331280.2796.154.camel@work-vm>
- <4DAF4E8B.6030506@kasperkp.dk>
+	Wed, 20 Apr 2011 18:41:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=POkVUWCEjVXAW37bOnuIlZw+CmVgi5S18xxZr82EpPGdtQEF4nv2Wwa1NYbc3zyBC6
+         7PrWnvRIrD0LEkTJDEvHBamq0uPINhxFzehrHPvtKBw5PhrGvahQFIiUimYSFGnFn8ui
+         elsIsz5XuJ/3GggPctpFnP4lB+jnyGRkcmYiM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAF4E8B.6030506@kasperkp.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1303337827.13259.2914.camel@petert>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+ <1299022100-14564-2-git-send-email-ptyser@xes-inc.com> <20110306073003.GA29325@angua.secretlab.ca>
+ <1299467241.11719.145.camel@ptyser-laptop> <20110307070816.GC29999@angua.secretlab.ca>
+ <1299544729.6057.73.camel@petert> <20110312091846.GJ9347@angua.secretlab.ca> <1303337827.13259.2914.camel@petert>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 20 Apr 2011 18:41:33 -0400
+Message-ID: <BANLkTik-EabL9pkhiRr1ZLotr7fKKz11dg@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] gpiolib: Add ability to get GPIO direction
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 11:22:19PM +0200, Kasper Pedersen wrote:
-> When a SMI or plain interrupt occurs during the delayed part
-> of TSC calibration, and the SMI/irq handler is good and fast
-> so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
-> off (10-30ppm).
-> 
-> We should not depend on interrupts being longer than 50000
-> clocks, so, in the refined calibration, always do the 5
-> tries, and use the best sample we get.
-> 
-> This should work always for any four periodic or rate-limited
-> interrupt sources. If we get 5 interrupts with 500ns gaps in
-> a row, behaviour should be as without this patch.
-> 
-> It is safe to use the first value that passes SMI_TRESHOLD
-> for the initial calibration: As long as tsc_khz is above
-> 100MHz, SMI_TRESHOLD represents less than 1% of error.
-> 
-> The 8 additional samples costs us 28 microseconds in startup
-> time.
-> 
-> measurements:
-> On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
-> A Core2 is similar: http://n1.taur.dk/tscdeviat.png
-> (while mostly t2-t1=~1000, in about 1 of 3000 tests
-> I see t2-t1=~20000 for both machines.)
-> vmware ESX4 has t2-t1=~8000 and up.
-> 
-> v2: John Stulz suggested limiting best uncertainty to
-> where it is needed, saving ~170usec startup time.
+On Wed, Apr 20, 2011 at 18:17, Peter Tyser wrote:
+> I had a chance to look into this today, but had some follow up questions
+> and comments.  There are a lot more GPIO drivers than expected...  How
+> do the 94 driver changes get tested and applied?
 
-Have you considered disabling interrupts while calibrating?  That would
-ensure that you only have to care about SMIs, not arbitrary interrupts.
+one possibility:
+ - one commit to add core functionality
+ - one commit to convert all of the drivers under drivers/gpio/
+ - one commit per arch/<arch>/
 
-Also, on more recent x86 systems you could look at MSR_SMI_COUNT (MSR
-0x34) to detect if any SMIs have occurred during the sample period.
-rdmsr, start sample period, stop sample period, rdmsr, if delta of 0
-then no SMIs occurred.  Exists on Nehalem and newer, at least.
-
-- Josh Triplett
+the first one you'd cc all arch maintainers, and the last one you can
+cc each arch maintainer.  for the 2nd one, you can cc all the relevant
+gpio people.
+-mike
