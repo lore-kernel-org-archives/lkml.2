@@ -1,154 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab1DTUwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:52:23 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7862 "EHLO
+	id S1756060Ab1DTUwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:52:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7834 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab1DTUwF (ORCPT
+	with ESMTP id S1755807Ab1DTUwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:52:05 -0400
+	Wed, 20 Apr 2011 16:52:02 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=MXYIREV24rsdvvl+m9CKJ120hNvgirQSx5frKDGRViffZCijsr+ZgI8vqE1wC5OYV
-	zqSxdEYYiuQjY+aEWRIZQ==
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=wwqTpvDnqoN0GOmM74FbkjH0kKqEAC7lf2n5SAvJwxku81h+EuSjPyqEMV/8FM4iF
+	zssWNOnakhUtd2V5jyyEA==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
 Cc: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
         linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>
-Subject: [RFC][Patch 14/18] sched: change type of imbalance to be u64
-Date: Wed, 20 Apr 2011 13:51:33 -0700
-Message-Id: <1303332697-16426-15-git-send-email-ncrao@google.com>
+Subject: [RFC][PATCH 00/18] Increase resolution of load weights
+Date: Wed, 20 Apr 2011 13:51:19 -0700
+Message-Id: <1303332697-16426-1-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
-References: <1303332697-16426-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the type of imbalance to be u64. With increased sched load
-resolution, it is possible for a runqueue to have a sched weight of 2^32, and
-imbalance needs to be updated to u64 to handle this case.
+Hi All,
 
-Signed-off-by: Nikhil Rao <ncrao@google.com>
----
- include/linux/sched.h |    2 +-
- kernel/sched_fair.c   |   24 ++++++++++++------------
- kernel/sched_stats.h  |    2 +-
- 3 files changed, 14 insertions(+), 14 deletions(-)
+I have attached an early version of a RFC patchset to increase resolution of
+sched entity load weights. This RFC introduces SCHED_LOAD_RESOLUTION which
+scales NICE_0_LOAD by a factor of 1024. The scaling is done internally and should
+be completely invisible to the user.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 546a418..2d9689a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -945,10 +945,10 @@ struct sched_domain {
- 
- #ifdef CONFIG_SCHEDSTATS
- 	/* load_balance() stats */
-+	u64 lb_imbalance[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_count[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_failed[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_balanced[CPU_MAX_IDLE_TYPES];
--	unsigned int lb_imbalance[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_gained[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_hot_gained[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_nobusyg[CPU_MAX_IDLE_TYPES];
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 8478aac..ab2d1c9 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2497,7 +2497,7 @@ static inline void update_sd_power_savings_stats(struct sched_group *group,
-  * Else returns 0.
-  */
- static inline int check_power_save_busiest_group(struct sd_lb_stats *sds,
--					int this_cpu, unsigned long *imbalance)
-+					int this_cpu, u64 *imbalance)
- {
- 	if (!sds->power_savings_balance)
- 		return 0;
-@@ -2526,7 +2526,7 @@ static inline void update_sd_power_savings_stats(struct sched_group *group,
- }
- 
- static inline int check_power_save_busiest_group(struct sd_lb_stats *sds,
--					int this_cpu, unsigned long *imbalance)
-+					int this_cpu, u64 *imbalance)
- {
- 	return 0;
- }
-@@ -2916,7 +2916,7 @@ int __weak arch_sd_sibling_asym_packing(void)
-  */
- static int check_asym_packing(struct sched_domain *sd,
- 			      struct sd_lb_stats *sds,
--			      int this_cpu, unsigned long *imbalance)
-+			      int this_cpu, u64 *imbalance)
- {
- 	int busiest_cpu;
- 
-@@ -2943,8 +2943,8 @@ static int check_asym_packing(struct sched_domain *sd,
-  * @this_cpu: The cpu at whose sched_domain we're performing load-balance.
-  * @imbalance: Variable to store the imbalance.
-  */
--static inline void fix_small_imbalance(struct sd_lb_stats *sds,
--				int this_cpu, unsigned long *imbalance)
-+static inline
-+void fix_small_imbalance(struct sd_lb_stats *sds, int this_cpu, u64 *imbalance)
- {
- 	u64 tmp, pwr_now = 0, pwr_move = 0;
- 	unsigned int imbn = 2;
-@@ -3014,8 +3014,8 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
-  * @this_cpu: Cpu for which currently load balance is being performed.
-  * @imbalance: The variable to store the imbalance.
-  */
--static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
--		unsigned long *imbalance)
-+static inline
-+void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu, u64 *imbalance)
- {
- 	u64 max_pull, load_above_capacity = ~0ULL;
- 
-@@ -3103,9 +3103,9 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
-  *		   put to idle by rebalancing its tasks onto our group.
-  */
- static struct sched_group *
--find_busiest_group(struct sched_domain *sd, int this_cpu,
--		   unsigned long *imbalance, enum cpu_idle_type idle,
--		   const struct cpumask *cpus, int *balance)
-+find_busiest_group(struct sched_domain *sd, int this_cpu, u64 *imbalance,
-+		   enum cpu_idle_type idle, const struct cpumask *cpus,
-+		   int *balance)
- {
- 	struct sd_lb_stats sds;
- 
-@@ -3202,7 +3202,7 @@ ret:
-  */
- static struct rq *
- find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
--		   enum cpu_idle_type idle, unsigned long imbalance,
-+		   enum cpu_idle_type idle, u64 imbalance,
- 		   const struct cpumask *cpus)
- {
- 	struct rq *busiest = NULL, *rq;
-@@ -3308,7 +3308,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- {
- 	int ld_moved, all_pinned = 0, active_balance = 0;
- 	struct sched_group *group;
--	unsigned long imbalance;
-+	u64 imbalance;
- 	struct rq *busiest;
- 	unsigned long flags;
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 48ddf43..f44676c 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -46,7 +46,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 			seq_printf(seq, "domain%d %s", dcount++, mask_str);
- 			for (itype = CPU_IDLE; itype < CPU_MAX_IDLE_TYPES;
- 					itype++) {
--				seq_printf(seq, " %u %u %u %u %u %u %u %u",
-+				seq_printf(seq, " %u %u %u %llu %u %u %u %u",
- 				    sd->lb_count[itype],
- 				    sd->lb_balanced[itype],
- 				    sd->lb_failed[itype],
+Why do we need this?
+This extra resolution allows us to scale on two dimensions - number of cpus and
+the depth of hierarchies. It also allows for proper load balancing of low weight
+task groups (for eg., nice+19 on autogroup).
+
+One of the big roadblocks for increasing resolution is the use of unsigned long
+for load.weight, which on 32-bit architectures can overflow with ~48 max-weight
+sched entities. In this RFC we convert all uses of load.weight to u64. This is
+still a work-in-progress and I have listed some of the issues I am still
+investigating below.
+
+I would like to get some feedback on the direction of this patchset. Please let
+me know if there are alternative ways of doing this, and I'll be happy to
+explore them as well.
+
+The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
+x86_64. Beyond the basic checks, it has not been well tested yet.
+
+Major TODOs:
+- Detect overflow in update shares calculations (time * load), and set load_avg
+  to maximum possible value (~0ULL).
+- tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
+  machines. Might need to add a lock to protect this instead of atomic ops.
+- Check wake-affine math and effective load calculations for overflows.
+- Needs more testing and need to ensure fairness/balancing is not broken.
+
+-Thanks,
+Nikhil
+
+Nikhil Rao (18):
+  sched: introduce SCHED_POWER_SCALE to scale cpu_power calculations
+  sched: increase SCHED_LOAD_SCALE resolution
+  sched: use u64 for load_weight fields
+  sched: update cpu_load to be u64
+  sched: update this_cpu_load() to return u64 value
+  sched: update source_load(), target_load() and weighted_cpuload() to
+    use u64
+  sched: update find_idlest_cpu() to use u64 for load
+  sched: update find_idlest_group() to use u64
+  sched: update division in cpu_avg_load_per_task to use div_u64
+  sched: update wake_affine path to use u64, s64 for weights
+  sched: update update_sg_lb_stats() to use u64
+  sched: Update update_sd_lb_stats() to use u64
+  sched: update f_b_g() to use u64 for weights
+  sched: change type of imbalance to be u64
+  sched: update h_load to use u64
+  sched: update move_task() and helper functions to use u64 for weights
+  sched: update f_b_q() to use u64 for weighted cpuload
+  sched: update shares distribution to use u64
+
+ drivers/cpuidle/governors/menu.c |    5 +-
+ include/linux/sched.h            |   22 +++--
+ kernel/sched.c                   |   61 ++++++-----
+ kernel/sched_debug.c             |   10 +-
+ kernel/sched_fair.c              |  218 ++++++++++++++++++++------------------
+ kernel/sched_stats.h             |    2 +-
+ 6 files changed, 167 insertions(+), 151 deletions(-)
+
 -- 
 1.7.3.1
 
