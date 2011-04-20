@@ -1,244 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1DTSZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 14:25:07 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:37975 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1DTSZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 14:25:05 -0400
-Date: Wed, 20 Apr 2011 20:16:02 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>,
-        nic_swsd@realtek.com
-Subject: Re: Suspend/resume - slow resume
-Message-ID: <20110420181602.GA18740@electric-eye.fr.zoreil.com>
-References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu> <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com> <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu> <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com> <20110417101731.GA17986@electric-eye.fr.zoreil.com> <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com> <20110418180813.GA18469@electric-eye.fr.zoreil.com> <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com> <Pine.SOC.4.64.1104181519490.1320@er3.rutgers.edu> <BANLkTi=dke10HougmiQn9hSF15nK0B8mdA@mail.gmail.com>
-Mime-Version: 1.0
+	id S1752859Ab1DTS0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 14:26:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1DTS0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 14:26:39 -0400
+Date: Wed, 20 Apr 2011 14:26:13 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, robert.richter@amd.com,
+        andi@firstfloor.org, gorcunov@openvz.org, ming.m.lin@intel.com,
+        eranian@google.com, ying.huang@intel.com,
+        mathieu.desnoyers@efficios.com, acme@redhat.com
+Subject: [RFC] x86, perf: high volume of events produces a flood of unknown
+ NMIs
+Message-ID: <20110420182613.GA31724@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=dke10HougmiQn9hSF15nK0B8mdA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> :
-[...]
-> Francois' patch is fine and improves on things, I only had a few
-> arguments with it. The problems I think it had were really about some
-> rather special cases.
+Hi,
 
-They may be addressed by the patch below.
+Arnaldo pointed me at an NMI problem that happens when he tries to
+generate a high volume of perf events.  He receives a flood of unknown
+NMIs.
 
-I'll test it as soon as my 2.6.39-rc stops softlocking and I have a
-working suspend / resume. No joke.
+I have been poking at the problem and came up with a patch, but it doesn't
+always work.  I was hoping people who understood how the NMI works at a
+low level might be able to help me.
 
-Subject: [PATCH] r8169: don't request firmware when there's no userspace.
+I was able to duplicate this on an AMD Phenom, Pentium 4, Xeon Core2quad,
+and Nehalem.  The problem I think is the large generation of back-to-back
+NMIs.  The perf nmi handler may accidentally handle some of those
+extra/in-flight NMIs in its first pass, leaving the next NMI to be
+unhandled and generating an unknown NMI message.
 
-The firmware is cached during the first successfull call to open() and
-released once the network device is unregistered. The driver uses the
-cached firmware between open() and unregister_netdev().
+Robert included logic to check for two back-to-back NMIs, but that falls
+short when more then three are generated.  I modified his logic to account
+for three back-to-back NMIs, but that didn't completely solve the problem.
 
-So far the firmware is optional : a failure to load the firmware does
-not prevent open() to success. It is thus necessary to 1) unregister
-all 816x / 810[23] devices and 2) force a driver probe to issue a new
-firmware load.
+I took another approach at catching back-to-back NMIs that seemed to work
+on all my machines except for the Xeon core2quad, but I am not entirely
+sure if my approach is valid.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
----
- drivers/net/r8169.c |   92 ++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 65 insertions(+), 27 deletions(-)
+The approach I took was based on the idea that if an NMI is being
+generated while currently in an NMI handler, the current NMI when finished
+won't continue executing the next instruction before the exception but
+instead jump back into another NMI exception frame.
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 493b0de..fceb954 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -170,6 +170,16 @@ static const struct {
+As a result, the args passed in to the NMI handler should have the same ip
+and sp as the previous NMI interrupt.  Otherwise one could assume that
+some amount of time passed between interrupts (enough to return from the
+exception and execute code).
+
+I thought this would allow me to trap an infinite number of back-to-back
+NMIs.  Like I said it seemed to work in a number of machines, except for
+my Xeon core2quad.
+
+Does anyone know if my approach is a valid one?  Or is there a better way
+to catch this condition?  Or maybe some other tips or tricks I can use to
+help come up with a solution for this?
+
+Or perhaps we don't care about this because in the end perf can't even
+capture the data without spitting out a CPU Overload message.
+
+Thoughts?
+
+Attached is the crude patch I was using for testing.  It also includes
+another patch the moves the apic LVTPC un-masking to fix the Pentium4
+machines.
+
+The commands I run to generate this problem is
+
+shell1> mount -t debugfs debugfs /sys/kernel/debug
+shell1> cd /sys/kernel/debug/tracing
+shell1> cat trace_pipe
+
+shell2> <grab kernel source>
+shell2> <cd to kernel source>
+shell2> make -j8
+
+shell3> perf record grep -r foo / &> /dev/null &
+shell3> perf record -F 100000 -g -e cycles -e instructions -e cache-misses
+--pid <pidof make>
+
+takes about a minute or two to duplicate
+
+Cheers,
+Don
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index eed3673a..20aa734 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -104,7 +104,6 @@ struct cpu_hw_events {
+ 	 */
+ 	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
+ 	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+-	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	int			enabled;
+ 
+ 	int			n_events;
+@@ -1160,7 +1159,6 @@ static void x86_pmu_start(struct perf_event *event, int flags)
+ 
+ 	cpuc->events[idx] = event;
+ 	__set_bit(idx, cpuc->active_mask);
+-	__set_bit(idx, cpuc->running);
+ 	x86_pmu.enable(event);
+ 	perf_event_update_userpage(event);
+ }
+@@ -1284,15 +1282,11 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
++	/* chipsets have their own quirks when to unmask */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
++
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		if (!test_bit(idx, cpuc->active_mask)) {
+-			/*
+-			 * Though we deactivated the counter some cpus
+-			 * might still deliver spurious interrupts still
+-			 * in flight. Catch them:
+-			 */
+-			if (__test_and_clear_bit(idx, cpuc->running))
+-				handled++;
+ 			continue;
+ 		}
+ 
+@@ -1333,8 +1327,8 @@ void perf_events_lapic_init(void)
+ }
+ 
+ struct pmu_nmi_state {
+-	unsigned int	marked;
+-	int		handled;
++	unsigned long	ip;
++	unsigned long   sp;
  };
- #undef _R
  
-+static const struct rtl_firmware_info {
-+	int mac_version;
-+	const char *fw_name;
-+} rtl_firmware_infos[] = {
-+	{ .mac_version = RTL_GIGA_MAC_VER_25, .fw_name = FIRMWARE_8168D_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_26, .fw_name = FIRMWARE_8168D_2 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_29, .fw_name = FIRMWARE_8105E_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 }
-+};
-+
- enum cfg_version {
- 	RTL_CFG_0 = 0x00,
- 	RTL_CFG_1,
-@@ -565,6 +575,7 @@ struct rtl8169_private {
- 	u32 saved_wolopts;
- 
- 	const struct firmware *fw;
-+#define RTL_FIRMWARE_UNKNOWN	ERR_PTR(-EAGAIN);
- };
- 
- MODULE_AUTHOR("Realtek and the Linux r8169 crew <netdev@vger.kernel.org>");
-@@ -1790,24 +1801,24 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
- static void rtl_release_firmware(struct rtl8169_private *tp)
+ static DEFINE_PER_CPU(struct pmu_nmi_state, pmu_nmi);
+@@ -1344,8 +1338,9 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 			 unsigned long cmd, void *__args)
  {
- 	release_firmware(tp->fw);
--	tp->fw = NULL;
-+	tp->fw = RTL_FIRMWARE_UNKNOWN;
- }
+ 	struct die_args *args = __args;
+-	unsigned int this_nmi;
+ 	int handled;
++	unsigned long ip = __this_cpu_read(pmu_nmi.ip);
++	unsigned long sp = __this_cpu_read(pmu_nmi.sp);
  
--static int rtl_apply_firmware(struct rtl8169_private *tp, const char *fw_name)
-+static void rtl_apply_firmware(struct rtl8169_private *tp)
- {
--	const struct firmware **fw = &tp->fw;
--	int rc = !*fw;
+ 	if (!atomic_read(&active_events))
+ 		return NOTIFY_DONE;
+@@ -1353,46 +1348,20 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	switch (cmd) {
+ 	case DIE_NMI:
+ 		break;
+-	case DIE_NMIUNKNOWN:
+-		this_nmi = percpu_read(irq_stat.__nmi_count);
+-		if (this_nmi != __this_cpu_read(pmu_nmi.marked))
+-			/* let the kernel handle the unknown nmi */
+-			return NOTIFY_DONE;
+-		/*
+-		 * This one is a PMU back-to-back nmi. Two events
+-		 * trigger 'simultaneously' raising two back-to-back
+-		 * NMIs. If the first NMI handles both, the latter
+-		 * will be empty and daze the CPU. So, we drop it to
+-		 * avoid false-positive 'unknown nmi' messages.
+-		 */
+-		return NOTIFY_STOP;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
+ 
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
 -
--	if (rc) {
--		rc = request_firmware(fw, fw_name, &tp->pci_dev->dev);
--		if (rc < 0)
--			goto out;
--	}
-+	const struct firmware *fw = tp->fw;
- 
- 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
--	rtl_phy_write_fw(tp, *fw);
--out:
--	return rc;
-+	if (!IS_ERR_OR_NULL(fw))
-+		rtl_phy_write_fw(tp, fw);
-+}
-+
-+static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
-+{
-+	if (rtl_readphy(tp, reg) != val)
-+		netif_warn(tp, hw, tp->dev, "chipset not ready for firmware\n");
-+	else
-+		rtl_apply_firmware(tp);
- }
- 
- static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
-@@ -2246,10 +2257,8 @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x001b);
--	if ((rtl_readphy(tp, 0x06) != 0xbf00) ||
--	    (rtl_apply_firmware(tp, FIRMWARE_8168D_1) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
--	}
-+
-+	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xbf00);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -2351,10 +2360,8 @@ static void rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x001b);
--	if ((rtl_readphy(tp, 0x06) != 0xb300) ||
--	    (rtl_apply_firmware(tp, FIRMWARE_8168D_2) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
--	}
-+
-+	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xb300);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -2474,8 +2481,7 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x18, 0x0310);
- 	msleep(100);
- 
--	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+	rtl_apply_firmware(tp);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- }
-@@ -3237,6 +3243,8 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	tp->timer.data = (unsigned long) dev;
- 	tp->timer.function = rtl8169_phy_timer;
- 
-+	tp->fw = RTL_FIRMWARE_UNKNOWN;
-+
- 	rc = register_netdev(dev);
- 	if (rc < 0)
- 		goto err_out_msi_4;
-@@ -3288,10 +3296,10 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- 
- 	cancel_delayed_work_sync(&tp->task);
- 
--	rtl_release_firmware(tp);
++	__this_cpu_write(pmu_nmi.ip, args->regs->ip);
++	__this_cpu_write(pmu_nmi.sp, args->regs->sp);
+ 	handled = x86_pmu.handle_irq(args->regs);
+-	if (!handled)
++	if (!handled) {
++		if ((args->regs->ip == ip) && (args->regs->sp == sp)) {
++			trace_printk("MATCH: ip - 0x%08lx, sp - 0x%08lx\n", ip, sp);
++			return NOTIFY_STOP;
++		}else
++			trace_printk("nomatch: ip - 0x%08lx (0x%08lx), sp - 0x%08lx (0x%08lx)\n", ip, args->regs->ip, sp, args->regs->sp);
+ 		return NOTIFY_DONE;
 -
- 	unregister_netdev(dev);
+-	this_nmi = percpu_read(irq_stat.__nmi_count);
+-	if ((handled > 1) ||
+-		/* the next nmi could be a back-to-back nmi */
+-	    ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
+-	     (__this_cpu_read(pmu_nmi.handled) > 1))) {
+-		/*
+-		 * We could have two subsequent back-to-back nmis: The
+-		 * first handles more than one counter, the 2nd
+-		 * handles only one counter and the 3rd handles no
+-		 * counter.
+-		 *
+-		 * This is the 2nd nmi because the previous was
+-		 * handling more than one counter. We will mark the
+-		 * next (3rd) and then drop it if unhandled.
+-		 */
+-		__this_cpu_write(pmu_nmi.marked, this_nmi + 1);
+-		__this_cpu_write(pmu_nmi.handled, handled);
+ 	}
  
-+	rtl_release_firmware(tp);
+ 	return NOTIFY_STOP;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 8fc2b2c..99b5151 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -937,6 +937,9 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+ 	if (!status) {
++		/* chipsets have their own quirks when to unmask */
++		apic_write(APIC_LVTPC, APIC_DM_NMI);
 +
- 	if (pci_dev_run_wake(pdev))
- 		pm_runtime_get_noresume(&pdev->dev);
+ 		intel_pmu_enable_all(0);
+ 		return handled;
+ 	}
+@@ -988,6 +991,9 @@ again:
+ 		goto again;
  
-@@ -3303,6 +3311,33 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- 	pci_set_drvdata(pdev, NULL);
+ done:
++	/* chipsets have their own quirks when to unmask */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
++
+ 	intel_pmu_enable_all(0);
+ 	return handled;
  }
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index c2520e1..612bc0e 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -921,9 +921,6 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		int overflow;
  
-+static void rtl_request_firmware(struct rtl8169_private *tp)
-+{
-+	int i;
-+
-+	/* Return early if the firmware is already loaded / cached. */
-+	if (!IS_ERR(tp->fw))
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(rtl_firmware_infos); i++) {
-+		const struct rtl_firmware_info *info = rtl_firmware_infos + i;
-+
-+		if (info->mac_version == tp->mac_version) {
-+			const char *name = info->fw_name;
-+			int rc;
-+
-+			rc = request_firmware(&tp->fw, name, &tp->pci_dev->dev);
-+			if (rc < 0) {
-+				netif_warn(tp, ifup, tp->dev, "unable to load "
-+					"firmware patch %s (%d)\n", name, rc);
-+			}
-+			return;
-+		}
-+	}
-+
-+	tp->fw = NULL;
-+}
-+
- static int rtl8169_open(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -3334,11 +3369,13 @@ static int rtl8169_open(struct net_device *dev)
+ 		if (!test_bit(idx, cpuc->active_mask)) {
+-			/* catch in-flight IRQs */
+-			if (__test_and_clear_bit(idx, cpuc->running))
+-				handled++;
+ 			continue;
+ 		}
  
- 	smp_mb();
+@@ -950,11 +947,17 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 			p4_pmu_disable_event(event);
+ 	}
  
-+	rtl_request_firmware(tp);
+-	if (handled) {
+-		/* p4 quirk: unmask it again */
+-		apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
++	if (handled)
+ 		inc_irq_stat(apic_perf_irqs);
+-	}
 +
- 	retval = request_irq(dev->irq, rtl8169_interrupt,
- 			     (tp->features & RTL_FEATURE_MSI) ? 0 : IRQF_SHARED,
- 			     dev->name, dev);
- 	if (retval < 0)
--		goto err_release_ring_2;
-+		goto err_release_fw_2;
++        /*
++	 * P4 quirks:
++	 * - An overflown perfctr will assert its interrupt
++	 *   until the OVF flag in its CCCR is cleared.
++	 * - LVTPC is masked on interrupt and must be
++	 *   unmasked by the LVTPC handler.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
  
- 	napi_enable(&tp->napi);
- 
-@@ -3359,7 +3396,8 @@ static int rtl8169_open(struct net_device *dev)
- out:
- 	return retval;
- 
--err_release_ring_2:
-+err_release_fw_2:
-+	rtl_release_firmware(tp);
- 	rtl8169_rx_clear(tp);
- err_free_rx_1:
- 	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
--- 
-1.7.4.2
+ 	return handled;
+ }
+
 
