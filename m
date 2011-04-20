@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab1DTUai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 16:30:38 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:36054 "EHLO e1.ny.us.ibm.com"
+	id S1756190Ab1DTUbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 16:31:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24527 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab1DTUag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 16:30:36 -0400
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Dimitris Michailidis <dm@chelsio.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4DAF40EB.20303@chelsio.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-	 <1303328648.19336.24.camel@localhost.localdomain>
-	 <1303328906.2823.24.camel@bwh-desktop>
-	 <1303330173.19336.52.camel@localhost.localdomain>
-	 <4DAF40EB.20303@chelsio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 13:30:30 -0700
-Message-ID: <1303331430.19336.67.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1756117Ab1DTUba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 16:31:30 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v3 0/3] Store and load PCI device saved state across function
+	resets
+To: linux-pci@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com
+Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
+        jan.kiszka@siemens.com, jbarnes@virtuousgeek.org
+Date: Wed, 20 Apr 2011 14:31:27 -0600
+Message-ID: <20110420202523.3189.31306.stgit@s20.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmit it with 31 bit.
+v2 -> v3:
+  Saved structure has variable contents.
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
+Avi, see if this adds any credibility to the pci-core allocated
+opaque buffer.  It was wrong in the previous versions to distill
+the variable device capability save list into a fixed struct.
+This should also eliminate any future maintenance specific to
+this storing and loading of state as capability save changes.
+
+v1 -> v2:
+  Make the pointer passed around less opaque for type safety.
+
+Bug https://bugs.launchpad.net/qemu/+bug/754591 is caused because
+the KVM module attempts to do a pci_save_state() before assigning
+the device to a VM, expecting that the saved state will remain
+valid until we release the device.  This is in conflict with our
+need to reset devices using PCI sysfs during a VM reset to
+quiesce the device.  Any calls to pci_reset_function() will
+overwrite the device saved stated prior to reset, and reload and
+invalidate the state after.  KVM then ends up trying to restore
+the state, but it's already invalid, so the device ends up with
+reset values.
+
+This series adds a mechanism to pull the saved state off the
+struct pci_dev and reload it later.  Thanks,
+
+Alex
 ---
 
- include/linux/netdevice.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 0249fe7..0998d3d 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1067,6 +1067,9 @@ struct net_device {
- #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
- #define NETIF_F_RXCSUM		(1 << 29) /* Receive checksumming offload */
- 
-+/* Bit 31 is for device to map userspace buffers -- zerocopy */
-+#define NETIF_F_ZEROCOPY	(1 << 31)
-+
- 	/* Segmentation offload features */
- #define NETIF_F_GSO_SHIFT	16
- #define NETIF_F_GSO_MASK	0x00ff0000
+Alex Williamson (3):
+      KVM: Use pci_store/load_saved_state() around VM device usage
+      PCI: Add interfaces to store and load the device saved state
+      PCI: Track the size of each saved capability data area
 
 
+ drivers/pci/pci.c        |  110 ++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/kvm_host.h |    1 
+ include/linux/pci.h      |   15 +++++-
+ virt/kvm/assigned-dev.c  |   18 ++++++--
+ 4 files changed, 132 insertions(+), 12 deletions(-)
