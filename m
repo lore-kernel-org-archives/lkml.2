@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab1DTSfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 14:35:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab1DTSfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 14:35:52 -0400
-Date: Wed, 20 Apr 2011 14:35:43 -0400
-From: Dave Jones <davej@redhat.com>
-To: sds@tycho.nsa.gov
-Cc: jmorris@namei.org, eparis@parisplace.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: suspicious rcu_dereference_check in security/selinux/netnode.c
-Message-ID: <20110420183543.GA11965@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
-	jmorris@namei.org, eparis@parisplace.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755566Ab1DTShO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 14:37:14 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:54791 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752485Ab1DTShM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 14:37:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
+References: <1302822031-6752-1-git-send-email-sjg@chromium.org>
+	<4DA7A914.5020804@codeaurora.org>
+	<BANLkTikcY-xzjd0W77UfWWoO8ibjKNXQGg@mail.gmail.com>
+	<BANLkTin_TpzdQS96SPKUNye6vb2b55Qc4A@mail.gmail.com>
+	<143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
+Date: Wed, 20 Apr 2011 13:37:04 -0500
+Message-ID: <BANLkTi=Zxt96b50DiuE_KVf2dv_vJooFnA@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM: Use generic BUG() handler
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: anish singh <anish198519851985@gmail.com>, Simon Glass <sjg@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        Dave Martin <dave.martin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- ===================================================
- [ INFO: suspicious rcu_dereference_check() usage. ]
- ---------------------------------------------------
- security/selinux/netnode.c:193 invoked rcu_dereference_check() without protection!
- 
- other info that might help us debug this:
- 
- rcu_scheduler_active = 1, debug_locks = 0
- 1 lock held by a.out/2018:
-  #0:  (sel_netnode_lock){+.....}, at: [<ffffffff81212ab7>] sel_netnode_sid+0x9e/0x267
- 
- stack backtrace:
- Pid: 2018, comm: a.out Not tainted 2.6.39-rc4+ #3
- Call Trace:
-  [<ffffffff81084908>] lockdep_rcu_dereference+0xa8/0xb0
-  [<ffffffff81212c0d>] sel_netnode_sid+0x1f4/0x267
-  [<ffffffff81212a19>] ? sel_netnode_find+0xe3/0xe3
-  [<ffffffff8120d564>] selinux_socket_bind+0x1cf/0x26f
-  [<ffffffff81086c08>] ? lock_release+0x181/0x18e
-  [<ffffffff81100db8>] ? might_fault+0xa5/0xac
-  [<ffffffff81100d6f>] ? might_fault+0x5c/0xac
-  [<ffffffff812073f1>] security_socket_bind+0x16/0x18
-  [<ffffffff813ee0e9>] sys_bind+0x73/0xcf
-  [<ffffffff814c5d7a>] ? sysret_check+0x2e/0x69
-  [<ffffffff810870cf>] ? trace_hardirqs_on_caller+0x10b/0x12f
-  [<ffffffff810a9efb>] ? audit_syscall_entry+0x11c/0x148
-  [<ffffffff81255e2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff814c5d42>] system_call_fastpath+0x16/0x1b
+Hi
 
+On Wed, Apr 20, 2011 at 1:01 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> It's here:
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6885/1
+>
+> I imagine it will be added when/if Russell picks it up. Sadly it
+> increases the LOC in ARM so Simon might need to really
+> sell it to get it merged.
 
-something like this perhaps ?
+I guess saying that it indirectly fixes wrong code generation on some
+cases[1] might give an extra push.
 
-	Dave
+Regards,
 
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index 65ebfe9..d0c38ba 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -188,9 +188,11 @@ static void sel_netnode_insert(struct sel_netnode *node)
- 	list_add_rcu(&node->list, &sel_netnode_hash[idx].list);
- 	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
- 		struct sel_netnode *tail;
-+		rcu_read_lock();
- 		tail = list_entry(
- 			rcu_dereference(sel_netnode_hash[idx].list.prev),
- 			struct sel_netnode, list);
-+		rcu_read_unlock();
- 		list_del_rcu(&tail->list);
- 		call_rcu(&tail->rcu, sel_netnode_free);
- 	} else
+Omar
+
+---
+[1] http://lkml.org/lkml/2011/3/31/490
