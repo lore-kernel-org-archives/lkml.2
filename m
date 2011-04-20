@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab1DTVTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 17:19:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32469 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab1DTVS6 (ORCPT
+	id S1755998Ab1DTVUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 17:20:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39716 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752651Ab1DTVUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 17:18:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=j59edmGpDlTsWsZZItswAD0UrJOQKO36/B9gdtXbGvsUV0gH+wr2Kg5mfUDOVNVW4l
-         Bc3NFqEiFUUXotYdKyFA==
-Date: Wed, 20 Apr 2011 14:18:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-In-Reply-To: <1303317178.2587.30.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
-References: <20110420161615.462D.A69D9226@jp.fujitsu.com> <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com> <20110420174027.4631.A69D9226@jp.fujitsu.com> <1303317178.2587.30.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 20 Apr 2011 17:20:14 -0400
+Date: Wed, 20 Apr 2011 22:21:08 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] gma500: add the ability to request backed space or
+ not
+Message-ID: <20110420222108.38bc8587@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110420203117.GA14141@kroah.com>
+References: <20110419142432.16479.89255.stgit@localhost.localdomain>
+	<20110419142658.16479.59689.stgit@localhost.localdomain>
+	<20110420203117.GA14141@kroah.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011, James Bottomley wrote:
+On Wed, 20 Apr 2011 13:31:17 -0700
+Greg KH <greg@kroah.com> wrote:
 
-> [    0.200000] Backtrace:
-> [    0.200000]  [<000000004021c938>] add_partial+0x28/0x98
-> [    0.200000]  [<000000004021faa0>] __slab_free+0x1d0/0x1d8
-> [    0.200000]  [<000000004021fd04>] kmem_cache_free+0xc4/0x128
-> [    0.200000]  [<000000004033bf9c>] ida_get_new_above+0x21c/0x2c0
-> [    0.200000]  [<00000000402a8980>] sysfs_new_dirent+0xd0/0x238
-> [    0.200000]  [<00000000402a974c>] create_dir+0x5c/0x168
-> [    0.200000]  [<00000000402a9ab0>] sysfs_create_dir+0x98/0x128
-> [    0.200000]  [<000000004033d6c4>] kobject_add_internal+0x114/0x258
-> [    0.200000]  [<000000004033d9ac>] kobject_add_varg+0x7c/0xa0
-> [    0.200000]  [<000000004033df20>] kobject_add+0x50/0x90
-> [    0.200000]  [<000000004033dfb4>] kobject_create_and_add+0x54/0xc8
-> [    0.200000]  [<00000000407862a0>] cgroup_init+0x138/0x1f0
-> [    0.200000]  [<000000004077ce50>] start_kernel+0x5a0/0x840
-> [    0.200000]  [<000000004011fa3c>] start_parisc+0xa4/0xb8
-> [    0.200000]  [<00000000404bb034>] packet_ioctl+0x16c/0x208
-> [    0.200000]  [<000000004049ac30>] ip_mroute_setsockopt+0x260/0xf20
-> [    0.200000] 
+> On Tue, Apr 19, 2011 at 03:27:10PM +0100, Alan Cox wrote:
+> > We will will need this for doing a GEM allocator. It should also avoid any
+> > crashes with the current code if the stolen area is too small.
+> > 
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> 
+> What tree did you make this against?
 
-This is probably because the parisc's DISCONTIGMEM memory ranges don't 
-have bits set in N_NORMAL_MEMORY.
+Against -next and the previous patches I sent you. Have you been
+stripping white space automatically again. That will break follow up
+patches if so.
 
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
- 	}
- 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
- 
--	for (i = 0; i < npmem_ranges; i++)
-+	for (i = 0; i < npmem_ranges; i++) {
-+		node_set_state(i, N_NORMAL_MEMORY);
- 		node_set_online(i);
-+	}
- #endif
- 
- 	/*
+I'll try and take a look at it at some point but it may well be mid May.
+
+Alan
