@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1DTBWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 21:22:22 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:60706 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1DTBWU (ORCPT
+	id S1754313Ab1DTBXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 21:23:40 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37258 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab1DTBXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 21:22:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=d2h8ypwu7L1wUiCQNX9IK4Zcm9RHAHKZBZLRS8pD1QW25tGOx4qlXTBcJimJs4NzoH
-         8c2zkcbukdzX+Ke+q4Vg==
-Date: Tue, 19 Apr 2011 18:22:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        J Freyensee <james_p_freyensee@linux.intel.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        suhail.ahmed@intel.com, christophe.guerard@intel.com
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-In-Reply-To: <1303258222.13457.42.camel@localhost>
-Message-ID: <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com> <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com> <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com> <1303258222.13457.42.camel@localhost>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 19 Apr 2011 21:23:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to expand_upwards
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <alpine.DEB.2.00.1104191657030.26867@router.home>
+References: <1303249716.11237.26.camel@mulgrave.site> <alpine.DEB.2.00.1104191657030.26867@router.home>
+Message-Id: <20110420102314.4604.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Wed, 20 Apr 2011 10:23:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011, J Freyensee wrote:
-
-> > > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > 
-> > > This allows drivers who call this function to be compiled modularly.
-> > > Otherwise, a driver who is interested in this type of functionality
-> > > has to implement their own get_task_comm() call, causing code
-> > > duplication in the Linux source tree.
-> > > 
-> > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > 
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > 
-> > There've been some other patchsets proposed recently that need to print a 
-> > thread's comm and since /proc/pid/comm can change the comm's of other 
-> > threads out from under them, it's necessary to serialize access to it with 
-> > task_lock().  This patch certainly makes it easier for modules to do so 
-> > correctly, thanks!
+> On Tue, 19 Apr 2011, James Bottomley wrote:
 > 
-> Thanks for the compliment; it's appreciated.  I've made my patch sets
-> independent from one another.  And I believe a common consensus (at
-> least with Greg KH, Alan C., Arjan VdV and myself) was achieved that
-> this is a good patch to apply? So maybe this can be applied to the
-> kernel, independent of my other patches, so this will fit your needs?
+> > > Which part of me telling you that you will break lots of other things in
+> > > the core kernel dont you get?
+> >
+> > I get that you tell me this ... however, the systems that, according to
+> > you, should be failing to get to boot prompt do, in fact, manage it.
 > 
+> If you dont use certain subsystems then it may work. Also do you run with
+> debuggin on.
+> 
+> The following patch is I think what would be needed to fix it.
 
-This patch in particular can probably go through the -mm tree; the last 
-activity for get_task_comm() was three years ago (59714d65dfbc 
-"get_task_comm(): return the result") which also went through the -mm tree 
-and its export is a general service to module authors.  Let's cc Andrew 
-and see if he'll merge it.
+I'm worry about this patch. A lot of mm code assume !NUMA systems 
+only have node 0. Not only SLUB.
 
-The only other dependency on this is in your third patch in the series 
-which actually has potential stack overflow that I'll comment on there, so 
-there's nothing else that has a dependency on this patch being merged 
-immediately.
+I'm not sure why this unfortunate mismatch occur. but I think DISCONTIG
+hacks makes less sense. Can we consider parisc turn NUMA on instead?
+
+
+
