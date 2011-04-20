@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab1DTRxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 13:53:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17458 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab1DTRxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 13:53:46 -0400
-Message-ID: <4DAF1DA7.9040705@redhat.com>
-Date: Wed, 20 Apr 2011 13:53:43 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1751318Ab1DTR7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 13:59:52 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44855 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1DTR7v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 13:59:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=g88Dlyyt89Yn8DxFd/JZ+uostMLZpn71bnvQ2gSfnlG+SyUeJQ0wm2BsGC90Pxi3Eh
+         qTSfz5H8m/pPWR/gNGskLzVnTrHCvZtERCPrDv7EnsflCUd9ag/I/6wiO6gQJ4yVkKNw
+         /kpAoH7v8jI981TpQ9QYrKDrllFYluA+tKvmg=
 MIME-Version: 1.0
-To: rwhitton@iee.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Background memory scrubbing
-References: <20131.1303319102@jupiter.eclipse.co.uk>
-In-Reply-To: <20131.1303319102@jupiter.eclipse.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110420161513.GA25396@suse.de>
+References: <BANLkTi=MjDqawZx=+fKjaAs5SPfGQDEgVQ@mail.gmail.com>
+ <1302547378-14639-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110419235812.GA4619@kroah.com> <BANLkTi=q8jfEaLByZVZPHHYp_5PTK-36cw@mail.gmail.com>
+ <20110420161513.GA25396@suse.de>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Wed, 20 Apr 2011 19:59:30 +0200
+Message-ID: <BANLkTi=CTQ4mYE1QXZjxQ0RdkkoVV-jzQg@mail.gmail.com>
+Subject: Re: [PATCH v2] driver core: let dev_set_drvdata return int instead of
+ void as it can fail
+To: Greg KH <gregkh@suse.de>
+Cc: Greg KH <greg@kroah.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Viresh Kumar <viresh.kumar@st.com>,
+        linux-arm-kernel@lists.infradead.org, shiraz.hashim@st.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2011 01:05 PM, Robert Whitton wrote:
-> On Wed 20/04/11  6:45 PM , Rik van Riel<riel@redhat.com>  wrote:
->> On 04/20/2011 03:58 AM, Robert Whitton wrote:
+2011/4/20 Greg KH <gregkh@suse.de>:
+> On Wed, Apr 20, 2011 at 11:09:56AM +0200, Michał Mirosław wrote:
+>> 2011/4/20 Greg KH <greg@kroah.com>:
+>> > On Mon, Apr 11, 2011 at 08:42:58PM +0200, Uwe Kleine-König wrote:
+>> >> Before commit
+>> >>
+>> >>       b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
+>> >>
+>> >> calling dev_set_drvdata with dev=NULL was an unchecked error. After some
+>> >> discussion about what to return in this case removing the check (and so
+>> >> producing a null pointer exception) seems fine.
+>> > I'm confused by this thread, care to resend all of these in a series
+>> > against the latest linux-next tree?
 >>
->>> for each PFN from 256 to the highest valid PFN
->>> {
->>> if (pfn_valid(PFN))
->>> {
->>> page = pfn_to_page(PFN)
->>> va = kmap(page)
->>> atomic_scrub(va, PAGE_SIZE)
->>> kunmap(page)
->>> }
->>>
->>> sleep(for_a_while)
->>> }
+>> I'd argue that dev_set_drvdata() should never fail. All current
+>> drivers depend on this, and if dev_set_drvdata() fails, user will get
+>> an OOPS a short while after the device finishes initializing (or maybe
+>> even before that if callbacks are involved).
+>> Allowing dev_set_drvdata() to fail will need putting a lot of
+>> boilerplate code into drivers for no real gain.
 >>
->> What exactly does atomic_scrub do?
+>> Please consider reverting commit
+>> b4028437876866aba4747a655ede00f892089e14 instead of "fixing" issues it
+>> generates.
 >
-> atomic_scrub is part of the edac subsystem see arch/x86/include/asm/edac.h. It simply does a locked add of zero to each DWORD in the specified range.
+> That patch was from 2009, surely if there were real issues with that
+> change, it would have shown up in the past 2 years, right?
+>
+> And no, I don't want to revert that, we need that for future work in
+> this area.
+>
+> I have no problem migrating the error code for that function on down,
+> very few drivers call this function directly, it should be wrapped by
+> bus-specific functions instead, right?  They can handle the error
+> handling on their own and not force the individual drivers to handle it
+> if needed.
 
-I can think of only a few ways in which that could cause a
-kernel page fault.
+> Have you ever seen this function fail?
 
-One of the more obvious causes would be running into an
-area of kernel memory that is mapped read-only.  Writing
-to a page that is mapped read-only would cause a page
-fault :)
+When the allocation in device_private_init() fails, dev_set_drvdata()
+leaves driver_data pointer not set.
+But it looks like dev_set_drvdata() should not be called before
+device_register(), so this check and allocation call there is
+redundant.
 
-Walking the page tables to check whether my guess is correct
-should be possible in the current context.  Look at current->mm->pgd for 
-the page directory and start walking from there.
+So maybe the function should just look like this:
 
-Incidentally, the kernel mappings should be the same for any
-process, so the above should hold true from any context.
+void dev_set_drvdata(struct device *dev, void *data)
+{
+  /* dev == NULL is a BUG; dev->p is allocated at device_register() time */
+  BUG_ON(!dev->p);
+  dev->p->driver_data = data;
+}
+
+Passing dev == NULL to dev_get_drvdata() is also a BUG, so:
+
+void *dev_get_drvdata(const struct device *dev)
+{
+  return dev->p->driver_data;
+}
+
+Best Regards,
+Michał Mirosław
