@@ -1,189 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1DTIrW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 04:47:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3152 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762Ab1DTIqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 04:46:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,245,1301900400"; 
-   d="scan'208";a="422473382"
-Message-Id: <20110420080918.560499032@intel.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 20 Apr 2011 16:03:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
+	id S1753092Ab1DTIs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 04:48:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34448 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab1DTIsz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 04:48:55 -0400
+Subject: Re: [PATCH 01/20] mm: mmu_gather rework
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Dave Chinner <david@fromorbit.com>
-cc: Itaru Kitayama <kitayama@cl.bb4u.ne.jp>
-CC: Minchan Kim <minchan.kim@gmail.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] writeback: refill b_io iff empty
-References: <20110420080336.441157866@intel.com>
-Content-Disposition: inline; filename=writeback-refill-queue-iff-empty.patch
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Tony Luck <tony.luck@intel.com>,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <20110419130606.fb7139b2.akpm@linux-foundation.org>
+References: <20110401121258.211963744@chello.nl>
+	 <20110401121725.360704327@chello.nl>
+	 <20110419130606.fb7139b2.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Apr 2011 10:47:28 +0200
+Message-ID: <1303289248.8345.62.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no point to carry different refill policies between for_kupdate
-and other type of works. Use a consistent "refill b_io iff empty" policy
-which can guarantee fairness in an easy to understand way.
+On Tue, 2011-04-19 at 13:06 -0700, Andrew Morton wrote:
+> On Fri, 01 Apr 2011 14:12:59 +0200
+> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > Remove the first obstackle towards a fully preemptible mmu_gather.
+> > 
+> > The current scheme assumes mmu_gather is always done with preemption
+> > disabled and uses per-cpu storage for the page batches. Change this to
+> > try and allocate a page for batching and in case of failure, use a
+> > small on-stack array to make some progress.
+> > 
+> > Preemptible mmu_gather is desired in general and usable once
+> > i_mmap_lock becomes a mutex. Doing it before the mutex conversion
+> > saves us from having to rework the code by moving the mmu_gather
+> > bits inside the pte_lock.
+> > 
+> > Also avoid flushing the tlb batches from under the pte lock,
+> > this is useful even without the i_mmap_lock conversion as it
+> > significantly reduces pte lock hold times.
+> 
+> There doesn't seem much point in reviewing this closely, as a lot of it
+> gets tossed away later in the series..
 
-A b_io refill will setup a _fixed_ work set with all currently eligible
-inodes and start a new round of walk through b_io. The "fixed" work set
-means no new inodes will be added to the work set during the walk.
-Only when a complete walk over b_io is done, new inodes that are
-eligible at the time will be enqueued and the walk be started over.
+That's a result of breaking patches along concept boundaries :/
 
-This procedure provides fairness among the inodes because it guarantees
-each inode to be synced once and only once at each round. So all inodes
-will be free from starvations.
+> >  		free_pages_and_swap_cache(tlb->pages, tlb->nr);
+> 
+> It seems inappropriate that this code uses
+> free_page[s]_and_swap_cache().  It should go direct to put_page() and
+> release_pages()?  Please review this code's implicit decision to pass
+> "cold==0" into release_pages().
 
-This change relies on wb_writeback() to keep retrying as long as we made
-some progress on cleaning some pages and/or inodes. Without that ability,
-the old logic on background works relies on aggressively queuing all
-eligible inodes into b_io at every time. But that's not a guarantee.
+Well, that isn't new with this patch, however it does look to be
+correct. We're freeing user pages, those could indeed still be part of
+the swapcache. Furthermore, the PAGEVEC_SIZE split in
+free_pages_and_swap_cache() alone makes it worth calling that over
+release_pages().
 
-The below test script completes a slightly faster now on XFS:
+As to the cold==0, I think that too is correct since we don't actually
+touch the pages themselves and we have no inkling as to their cache
+state, we're simply wiping out user pages.
 
-             2.6.39-rc3	  2.6.39-rc3-dyn-expire+
-------------------------------------------------
-all elapsed     256.043      252.367
-stddev           24.381       12.530
+> > -static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+> > +static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+> 
+> I wonder if all the inlining which remains in this code is needed and
+> desirable.
 
-tar elapsed      30.097       28.808
-dd  elapsed      13.214       11.782
+Probably not, the big plan was to make everybody use the generic code
+and then move it into mm/memory.c or so.
 
-	#!/bin/zsh
-
-	cp /c/linux-2.6.38.3.tar.bz2 /dev/shm/
-
-	umount /dev/sda7
-	mkfs.xfs -f /dev/sda7
-	mount /dev/sda7 /fs
-
-	echo 3 > /proc/sys/vm/drop_caches
-
-	tic=$(cat /proc/uptime|cut -d' ' -f2)
-
-	cd /fs
-	time tar jxf /dev/shm/linux-2.6.38.3.tar.bz2 &
-	time dd if=/dev/zero of=/fs/zero bs=1M count=1000 &
-
-	wait
-	sync
-	tac=$(cat /proc/uptime|cut -d' ' -f2)
-	echo elapsed: $((tac - tic))
-
-It maintains roughly the same small vs. large file writeout shares, and
-offers large files better chances to be written in nice 4M chunks.
-
-Analyzes from Dave Chinner in great details:
-
-Let's say we have lots of inodes with 100 dirty pages being created,
-and one large writeback going on. We expire 8 new inodes for every
-1024 pages we write back.
-
-With the old code, we do:
-
-	b_more_io (large inode) -> b_io (1l)
-	8 newly expired inodes -> b_io (1l, 8s)
-
-	writeback  large inode 1024 pages -> b_more_io
-
-	b_more_io (large inode) -> b_io (8s, 1l)
-	8 newly expired inodes -> b_io (8s, 1l, 8s)
-
-	writeback  8 small inodes 800 pages
-		   1 large inode 224 pages -> b_more_io
-
-	b_more_io (large inode) -> b_io (8s, 1l)
-	8 newly expired inodes -> b_io (8s, 1l, 8s)
-	.....
-
-Your new code:
-
-	b_more_io (large inode) -> b_io (1l)
-	8 newly expired inodes -> b_io (1l, 8s)
-
-	writeback  large inode 1024 pages -> b_more_io
-	(b_io == 8s)
-	writeback  8 small inodes 800 pages
-
-	b_io empty: (1800 pages written)
-		b_more_io (large inode) -> b_io (1l)
-		14 newly expired inodes -> b_io (1l, 14s)
-
-	writeback  large inode 1024 pages -> b_more_io
-	(b_io == 14s)
-	writeback  10 small inodes 1000 pages
-		   1 small inode 24 pages -> b_more_io (1l, 1s(24))
-	writeback  5 small inodes 500 pages
-	b_io empty: (2548 pages written)
-		b_more_io (large inode) -> b_io (1l, 1s(24))
-		20 newly expired inodes -> b_io (1l, 1s(24), 20s)
-	......
-
-Rough progression of pages written at b_io refill:
-
-Old code:
-
-	total	large file	% of writeback
-	1024	224		21.9% (fixed)
-
-New code:
-	total	large file	% of writeback
-	1800	1024		~55%
-	2550	1024		~40%
-	3050	1024		~33%
-	3500	1024		~29%
-	3950	1024		~26%
-	4250	1024		~24%
-	4500	1024		~22.7%
-	4700	1024		~21.7%
-	4800	1024		~21.3%
-	4800	1024		~21.3%
-	(pretty much steady state from here)
-
-Ok, so the steady state is reached with a similar percentage of
-writeback to the large file as the existing code. Ok, that's good,
-but providing some evidence that is doesn't change the shared of
-writeback to the large should be in the commit message ;)
-
-The other advantage to this is that we always write 1024 page chunks
-to the large file, rather than smaller "whatever remains" chunks.
-
-CC: Jan Kara <jack@suse.cz>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- linux-next.orig/fs/fs-writeback.c	2011-04-20 12:07:48.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-04-20 12:08:13.000000000 +0800
-@@ -579,7 +579,8 @@ void writeback_inodes_wb(struct bdi_writ
- 	if (!wbc->wb_start)
- 		wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_wb_list_lock);
--	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-+
-+	if (list_empty(&wb->b_io))
- 		queue_io(wb, wbc);
- 
- 	while (!list_empty(&wb->b_io)) {
-@@ -606,7 +607,7 @@ static void __writeback_inodes_sb(struct
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
- 	spin_lock(&inode_wb_list_lock);
--	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-+	if (list_empty(&wb->b_io))
- 		queue_io(wb, wbc);
- 	writeback_sb_inodes(sb, wb, wbc, true);
- 	spin_unlock(&inode_wb_list_lock);
-
-
+But I guess I can have asm-generic/tlb.h define HAVE_GENERIC_MMU_GATHER
+and make the compilation in mm/memory.c conditional on that (or generate
+lots of Kconfig churn).
