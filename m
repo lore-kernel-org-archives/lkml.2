@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1DTPXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 11:23:43 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:39166 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab1DTPXm (ORCPT
+	id S1755236Ab1DTPXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 11:23:53 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28887 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab1DTPXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 11:23:42 -0400
-Message-ID: <4DAEF98D.2090802@ladisch.de>
-Date: Wed, 20 Apr 2011 17:19:41 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 20 Apr 2011 11:23:52 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19lXlL5sePITGQ2WYkk7ROc
+Date: Wed, 20 Apr 2011 08:23:48 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: oskar.andero@sonyericsson.com
+Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] arm: omap2: enable smc instruction for sleep34xx
+Message-ID: <20110420152347.GC10402@atomide.com>
+References: <1303224171-24984-1-git-send-email-oskar.andero@sonyericsson.com>
 MIME-Version: 1.0
-To: rwhitton@iee.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Background memory scrubbing
-References: <16117.1303310442@jupiter.eclipse.co.uk>
-In-Reply-To: <16117.1303310442@jupiter.eclipse.co.uk>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Disposition: inline
+In-Reply-To: <1303224171-24984-1-git-send-email-oskar.andero@sonyericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Whitton wrote:
-> > Robert Whitton wrote:
-> > > I have a home grown module that performs background memory scrubbing
-> > > to eliminate single bit memory errors before they become a problem.
-> > > ... it is specifically targeted at the AMD64 PC architecture
-> > 
-> > Then why don't you use the memory controller's automatic background
-> > memory scrubbing support? Doesn't your BIOS have this option?
-> 
-> Unfortunately in common with a large number of hardware platforms
-> background scrubbing isn't supported in the hardware (even though ECC
-> error correction is supported) and thus there is no BIOS option to
-> enable it.
+* oskar.andero@sonyericsson.com <oskar.andero@sonyericsson.com> [110419 07:39]:
+> This fixes broken build when using binutils 2.21.
 
-Which hardware platform is this?  AFAICT all architectures with ECC
-(old AMD64, Family 0Fh, Family 10h) also have scrubbing support.
-If your BIOS is too dumb, just try enabling it directly (bits 0-4 of
-PCI configuration register 0x58 in function 3 of the CPU's northbridge
-device, see the BIOS and Kernel's Developer's Guide for details).
+Thanks will queue for the -rc cycle.
 
-
-Regards,
-Clemens
+Tony
