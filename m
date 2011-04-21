@@ -1,87 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab1DUHAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 03:00:17 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:62095 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1DUHAP convert rfc822-to-8bit (ORCPT
+	id S1753246Ab1DUHCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 03:02:08 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:63188 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab1DUHCG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 03:00:15 -0400
+	Thu, 21 Apr 2011 03:02:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=icfYUz7ui9xR83AqwLV8wGsrosGkLODkC6r7KrCBTb9RDaBiGpqATNk1S1Fo/zqy8p
-         KQWjKYZ27ooP/OZ0vRAgl+vyHMY5VuKDJBITcyDC1YTIK44fHbllOTCvkLShIgd5xOt7
-         foQVYWq4dtpTt8Uy02xXy+hW9y3qdTgn/SUeU=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=k+e5lRVqO5Nswp2emPx/EvR1XLfrE2vPsqvgJycyApgG/CSwj//FVEgC76BuG5CilC
+         4I4txALV8d8QsGZ+ZB2+V5aKlp+bRzSYEHsqNDYgArCX/i9HhRttTY85xf5AyzNRQcj0
+         iiTKEr1jwZOYHyEd6ZG9l2/J2VcgdKKqiv1PM=
 MIME-Version: 1.0
-In-Reply-To: <87tydtm41s.fsf@tucsk.pomaz.szeredi.hu>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
- <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
- <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
- <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
- <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
- <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com> <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
- <BANLkTinMNL8Q+_MCHDqAGSdYNAvHB2GdLw@mail.gmail.com> <87tydu3t4p.fsf_-_@tucsk.pomaz.szeredi.hu>
- <BANLkTinXVDrLnMOo17pqua5+38yQsezG6g@mail.gmail.com> <87tydtm41s.fsf@tucsk.pomaz.szeredi.hu>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Thu, 21 Apr 2011 08:59:54 +0200
-X-Google-Sender-Auth: LcYIRXI8kbqD9LbMoxiscOIq5wc
-Message-ID: <BANLkTikJ_7ZZ+1uC=0RBmKmxqFhVyLiYsw@mail.gmail.com>
-Subject: Re: [PATCH] tmpfs: implement generic xattr support
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Phillip Lougher <phillip.lougher@gmail.com>,
-        Andreas Dilger <adilger@dilger.ca>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Eric Paris <eparis@redhat.com>
+In-Reply-To: <20110421014259.132728798@goodmis.org>
+References: <20110421014153.126662477@goodmis.org>
+	<20110421014259.132728798@goodmis.org>
+Date: Thu, 21 Apr 2011 15:02:05 +0800
+Message-ID: <BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq locking issue
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 April 2011 15:43, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Phillip Lougher <phillip.lougher@gmail.com> writes:
+On Thu, Apr 21, 2011 at 9:41 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>  ---
 >
->> On Tue, Apr 19, 2011 at 9:04 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->>
->>> +static ssize_t shmem_listxattr(struct dentry *dentry, char *buffer, size_t size)
->>
->>> +       spin_lock(&dentry->d_inode->i_lock);
->>> +       list_for_each_entry(xattr, &info->xattr_list, list) {
->>> +               /* skip "trusted." attributes for unprivileged callers */
->>> +               if (!trusted && xattr_is_trusted(xattr->name))
->>> +                       continue;
->>> +
->>> +               used += strlen(xattr->name) + 1;
->>> +               if (buffer) {
->>> +                       if (size < used) {
->>> +                               used = -ERANGE;
->>> +                               break;
->>> +                       }
->>> +                       strncpy(buffer, xattr->name, strlen(xattr->name) + 1);
->>>+                        buffer += strlen(xattr->name) + 1;
->>
->> Why are you doing a strncpy here?  strcpy() isn't going to copy more
->> than strlen(xattr->name) + 1 bytes, and you know buffer is large
->> enough to hold that because of the previous if (size < used) check?
->>
->> If you assigned the first strlen(xattr->name) + 1 to a temporary
->> variable, you could use memcpy here, and avoid the 3 repeated
->> strlen(xattr->name) calls.
+> The above is the case when the unsafe lock is taken while holding
+> a lock taken in irq context. But when a lock is taken that also
+> grabs a unsafe lock, the call chain is shown:
 >
-> Yeah, makes sense.
+>  ---
+> other info that might help us debug this:
+>
+> Chain exists of:
+>  &rq->lock --> lockA --> lockC
+>
+>  Possible interrupt unsafe locking scenario:
+>
+>       CPU0                    CPU1
+>       ----                    ----
+>  lock(lockC);
+>                               local_irq_disable();
+>                               lock(&rq->lock);
+>                               lock(lockA);
+>  <Interrupt>
+>    lock(&rq->lock);
+>
+>  *** DEADLOCK ***
+
+Or we could show this:
+Chain exists of:
+&rq->lock --> lockA --> lockC
+
+ Possible interrupt unsafe locking scenario:
+
+      CPU0                    CPU1                           CPU2
+      ----                    ----                                     ----
+ lock(lockC);
+                              local_irq_disable();
+                              lock(&rq->lock);            lock(lockA);
+                              lock(lockA);                   lock(lockC);
+ <Interrupt>
+   lock(&rq->lock);
+
+ *** DEADLOCK ***
+
+Thanks,
+Yong
+
+>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/lockdep.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 70 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 0d2058d..bb77c030 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
+>        usage[i] = '\0';
+>  }
+>
+> +static int __print_lock_name(struct lock_class *class)
+> +{
+> +       char str[KSYM_NAME_LEN];
+> +       const char *name;
+> +
+> +       name = class->name;
+> +       if (!name)
+> +               name = __get_key_name(class->key, str);
+> +
+> +       return printk("%s", name);
+> +}
+> +
+>  static void print_lock_name(struct lock_class *class)
+>  {
+>        char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
+> @@ -1325,6 +1337,62 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
+>        return;
+>  }
+>
+> +static void
+> +print_irq_lock_scenario(struct lock_list *safe_entry,
+> +                       struct lock_list *unsafe_entry,
+> +                       struct held_lock *prev,
+> +                       struct held_lock *next)
+> +{
+> +       struct lock_class *safe_class = safe_entry->class;
+> +       struct lock_class *unsafe_class = unsafe_entry->class;
+> +       struct lock_class *middle_class = hlock_class(prev);
+> +
+> +       if (middle_class == safe_class)
+> +               middle_class = hlock_class(next);
+> +
+> +       /*
+> +        * A direct locking problem where unsafe_class lock is taken
+> +        * directly by safe_class lock, then all we need to show
+> +        * is the deadlock scenario, as it is obvious that the
+> +        * unsafe lock is taken under the safe lock.
+> +        *
+> +        * But if there is a chain instead, where the safe lock takes
+> +        * an intermediate lock (middle_class) where this lock is
+> +        * not the same as the safe lock, then the lock chain is
+> +        * used to describe the problem. Otherwise we would need
+> +        * to show a different CPU case for each link in the chain
+> +        * from the safe_class lock to the unsafe_class lock.
+> +        */
+> +       if (middle_class != unsafe_class) {
+> +               printk("Chain exists of:\n  ");
+> +               __print_lock_name(safe_class);
+> +               printk(" --> ");
+> +               __print_lock_name(middle_class);
+> +               printk(" --> ");
+> +               __print_lock_name(unsafe_class);
+> +               printk("\n\n");
+> +       }
+> +
+> +       printk(" Possible interrupt unsafe locking scenario:\n\n");
+> +       printk("       CPU0                    CPU1\n");
+> +       printk("       ----                    ----\n");
+> +       printk("  lock(");
+> +       __print_lock_name(unsafe_class);
+> +       printk(");\n");
+> +       printk("                               local_irq_disable();\n");
+> +       printk("                               lock(");
+> +       __print_lock_name(safe_class);
+> +       printk(");\n");
+> +       printk("                               lock(");
+> +       __print_lock_name(middle_class);
+> +       printk(");\n");
+> +       printk("  <Interrupt>\n");
+> +       printk("    lock(");
+> +       __print_lock_name(safe_class);
+> +       printk(");\n");
+> +       printk("\n *** DEADLOCK ***\n\n");
+> +}
+> +
+>  static int
+>  print_bad_irq_dependency(struct task_struct *curr,
+>                         struct lock_list *prev_root,
+> @@ -1376,6 +1444,8 @@ print_bad_irq_dependency(struct task_struct *curr,
+>        print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
+>
+>        printk("\nother info that might help us debug this:\n\n");
+> +       print_irq_lock_scenario(backwards_entry, forwards_entry, prev, next);
+> +
+>        lockdep_print_held_locks(curr);
+>
+>        printk("\nthe dependencies between %s-irq-safe lock", irqclass);
+> --
+> 1.7.2.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
 
-Can you put up a branch with both overlayfs and xattrs?
 
-I would like to point people at a repo with working implementation and
-mirroring the kernel tree to add one patch is a bit overkill.
 
-Thanks
-
-Michal
+-- 
+Only stand for myself
