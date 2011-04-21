@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1DUR0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:26:15 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57914 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156Ab1DUR0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:26:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=qdXhKd/9qFRg9vThdy1IhH6iSWsh3fyqrvEdXSiubJUJhwvS1rqkg5CFOAOT9VFsyz
-         ZbmfM7+65JQbG4YDMYdyFe0Zm/MilFSG2BOgwunLy9xsKNd2N8AJGdTC16O+Imx+0ByK
-         2oOfB4Aif/+EUpVmKcoustmfQy4kh8QvzTBUM=
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Michal Suchanek <hramrach@centrum.cz>
-Cc: Jordi Pujol <jordipujolp@gmail.com>,
-        Phillip Lougher <phillip.lougher@gmail.com>,
-        Andreas Dilger <adilger@dilger.ca>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH] tmpfs: implement generic xattr support
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<871v0wvuod.fsf@tucsk.pomaz.szeredi.hu>
-	<BANLkTikv+iCVgG_cgejqJjuS0xURrAvQuw@mail.gmail.com>
-	<201104211658.35618.jordipujolp@gmail.com>
-	<BANLkTimPN-9dmZKU25oLmUjtGQYDsyCvgw@mail.gmail.com>
-	<BANLkTi=HER-HDjLpu8Hw4fCMUwE7ii54_g@mail.gmail.com>
-Date: Thu, 21 Apr 2011 19:26:01 +0200
-In-Reply-To: <BANLkTi=HER-HDjLpu8Hw4fCMUwE7ii54_g@mail.gmail.com> (Michal
-	Suchanek's message of "Thu, 21 Apr 2011 17:43:27 +0200")
-Message-ID: <87vcy7v7me.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1755357Ab1DUR0c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:26:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49605 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755156Ab1DUR0b convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 13:26:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110421170826.GC15988@htj.dyndns.org>
+References: <20110421170826.GC15988@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Apr 2011 10:25:35 -0700
+Message-ID: <BANLkTinwPt=aRSsh_Ppb8hLOaURh6mL2GQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] block: don't propagate unlisted DISK_EVENTs to userland
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@lst.de>,
+        Neil Brown <neilb@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        kay.sievers@vrfy.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Suchanek <hramrach@centrum.cz> writes:
+Should I take these as patches, or through Jens/David/Who?
 
-> You will be probably interested in this log:
+I'll happily take them as patches, but I'd also like to hear
+confirmation from the people who saw the lock-up that it's gone now..
+
+                        Linus
+
+On Thu, Apr 21, 2011 at 10:08 AM, Tejun Heo <tj@kernel.org> wrote:
+> DISK_EVENT_MEDIA_CHANGE is used for both userland visible event and
+> internal event for revalidation of removeable devices.  Some legacy
+> drivers don't implement proper event detection and continuously
+> generate events under certain circumstances.  For example, ide-cd
+> generates media changed continuously if there's no media in the drive,
+> which can lead to infinite loop of events jumping back and forth
+> between the driver and userland event handler.
 >
-> ls: cannot access /usr/share/doc/ucb*: No such file or directory
-> ...
-> rmdir("/usr/share/doc/ucblogo.dpkg-new") = -1 ENOENT (No such file or directory)
-> rmdir("/usr/share/doc/ucblogo.dpkg-tmp") = -1 ENOENT (No such file or directory)
-> mkdir("/usr/share/doc/ucblogo.dpkg-new", 0) = 0
-> chown32("/usr/share/doc/ucblogo.dpkg-new", 0, 0) = 0
-> chmod("/usr/share/doc/ucblogo.dpkg-new", 0755) = 0
-> utime("/usr/share/doc/ucblogo.dpkg-new", [2011/04/21-15:37:05,
-> 2008/06/08-11:38:17]) = 0
-> rename("/usr/share/doc/ucblogo.dpkg-new", "/usr/share/doc/ucblogo") =
-> -1 EOPNOTSUPP (Operation not supported)
-
-Oops, stupid mistake.
-
-Following patch should fix it. 
-
-Thanks,
-Miklos
-
-commit e90f1946938da7c9502337340126beae1931d239
-Author: Miklos Szeredi <mszeredi@suse.cz>
-Date:   Thu Apr 21 19:18:23 2011 +0200
-
-    tmpfs: xattr: fix xattr for directories and special files
-    
-    Forgot to update the xattr methods for some file types.
-    
-    Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-
-diff --git a/mm/shmem.c b/mm/shmem.c
-index ac8ec9e..c527484 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2714,10 +2714,10 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 	.rename		= shmem_rename,
- #endif
- #ifdef CONFIG_TMPFS_XATTR
--	.setxattr	= generic_setxattr,
--	.getxattr	= generic_getxattr,
--	.listxattr	= generic_listxattr,
--	.removexattr	= generic_removexattr,
-+	.setxattr	= shmem_setxattr,
-+	.getxattr	= shmem_getxattr,
-+	.listxattr	= shmem_listxattr,
-+	.removexattr	= shmem_removexattr,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
-@@ -2727,10 +2727,10 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 
- static const struct inode_operations shmem_special_inode_operations = {
- #ifdef CONFIG_TMPFS_XATTR
--	.setxattr	= generic_setxattr,
--	.getxattr	= generic_getxattr,
--	.listxattr	= generic_listxattr,
--	.removexattr	= generic_removexattr,
-+	.setxattr	= shmem_setxattr,
-+	.getxattr	= shmem_getxattr,
-+	.listxattr	= shmem_listxattr,
-+	.removexattr	= shmem_removexattr,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
+> This patch updates disk event infrastructure such that it never
+> propagates events not listed in disk->events to userland.  Those
+> events are processed the same for internal purposes but uevent
+> generation is suppressed.
+>
+> This also ensures that userland only gets events which are advertised
+> in the @events sysfs node lowering risk of confusion.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+> These two patches fix infinite MEDIA_CHANGE events problem reported w/
+> ide-cd.  I tried an alternate patch to implement proper check_events()
+> for ide-cd but given the deprecated status of ide and the existence of
+> fallback userland event polling, this minimal approach seems better.
+>
+> Thank you.
+>
+>  block/genhd.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> Index: work/block/genhd.c
+> ===================================================================
+> --- work.orig/block/genhd.c
+> +++ work/block/genhd.c
+> @@ -1588,9 +1588,13 @@ static void disk_events_workfn(struct wo
+>
+>        spin_unlock_irq(&ev->lock);
+>
+> -       /* tell userland about new events */
+> +       /*
+> +        * Tell userland about new events.  Only the events listed in
+> +        * @disk->events are reported.  Unlisted events are processed the
+> +        * same internally but never get reported to userland.
+> +        */
+>        for (i = 0; i < ARRAY_SIZE(disk_uevents); i++)
+> -               if (events & (1 << i))
+> +               if (events & disk->events & (1 << i))
+>                        envp[nr_events++] = disk_uevents[i];
+>
+>        if (nr_events)
+>
