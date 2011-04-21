@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab1DUWC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 18:02:56 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:34143 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab1DUWCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 18:02:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=GhpDDz01FRYp9+9/OfJzDptLPL0aTqgUOnPHSkKao/X9vU5tsoMtWJA0eVK6Y5CdDa
-         8UYxS5AoFQf6ihkpm9/Q==
-Date: Thu, 21 Apr 2011 15:02:49 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roman Zippel <zippel@linux-m68k.org>
-cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch] m68k, mm: set all online nodes in N_NORMAL_MEMORY
-In-Reply-To: <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1104211501470.20201@chino.kir.corp.google.com>
-References: <1303317178.2587.30.camel@mulgrave.site> <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com> <20110421220351.9180.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com> <alpine.DEB.2.00.1104211500170.5741@router.home>
- <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1755472Ab1DUWGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 18:06:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41445 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428Ab1DUWGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 18:06:03 -0400
+Date: Fri, 22 Apr 2011 08:05:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: build failure after merge of the final tree (battery
+ tree related)
+Message-Id: <20110422080555.c7cd0e0b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__22_Apr_2011_08_05_55_+1000_QSJ_P8FOT2lN9w3V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For m68k, N_NORMAL_MEMORY represents all nodes that have present memory 
-since it does not support HIGHMEM.  This patch sets the bit at the time 
-the node is brought online.
+--Signature=_Fri__22_Apr_2011_08_05_55_+1000_QSJ_P8FOT2lN9w3V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If N_NORMAL_MEMORY is not accurate, slub may encounter errors since it 
-uses this nodemask to setup per-cache kmem_cache_node data structures.
+Hi Anton,
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/m68k/mm/init_mm.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+After merging the final tree, today's linux-next build (s390 allyesconfig)
+failed like this:
 
-diff --git a/arch/m68k/mm/init_mm.c b/arch/m68k/mm/init_mm.c
---- a/arch/m68k/mm/init_mm.c
-+++ b/arch/m68k/mm/init_mm.c
-@@ -59,6 +59,8 @@ void __init m68k_setup_node(int node)
- 	}
- #endif
- 	pg_data_map[node].bdata = bootmem_node_data + node;
-+	if (node_present_pages(node))
-+		node_set_state(node, N_NORMAL_MEMORY);
- 	node_set_online(node);
- }
- 
+drivers/built-in.o: In function `max8903_remove':
+drivers/power/max8903_charger.c:355: undefined reference to `free_irq'
+drivers/power/max8903_charger.c:357: undefined reference to `free_irq'
+drivers/power/max8903_charger.c:359: undefined reference to `free_irq'
+
+Caused by commit b14a9ccc1ddd ("power_supply: Add driver for MAX8903
+charger").  This driver needs some Kconfig dependency.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__22_Apr_2011_08_05_55_+1000_QSJ_P8FOT2lN9w3V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNsKpDAAoJEDMEi1NhKgbs610IAJ63lwrw/uveOChjCo8lBp5v
+qkVu2qmvea51zsKx4iLq9SC5OcKyEjF37nQ9lBttxK6vbebgwVtfl67l7IKef4mz
+AkFQwwlpvFkteFpZbhqJBtxFxz+4lN1fM949dAFTkfi4xbaNZI/ADzNwKeRZQTno
+uGCb3GwSsUEm7C4DRDMqGMjXfV48wqA0PhWDcLnBI+syTIjdgXlqj4dS/egLJ3l9
+njoHBiTA5T1sPatQnlGT+puDC5w918h1ndLCYb91VPb1WxqvZqoOw2ncWocssfDc
+B7wUL8TzKZcFikY8Ao5/V2PImcRpRWOGO6PsqIWZhzx378NiXseAPhk64+sTLDg=
+=5Kp/
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__22_Apr_2011_08_05_55_+1000_QSJ_P8FOT2lN9w3V--
