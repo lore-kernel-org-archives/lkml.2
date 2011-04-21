@@ -1,257 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1DUCEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:04:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40258 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab1DUCEd (ORCPT
+	id S1752285Ab1DUCFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:05:41 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64632 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab1DUCFk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:04:33 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Subject: Re: Linux 2.6.39-rc4 (regression: NUMA on multi-node CPUs broken)
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>
-In-Reply-To: <20110420153907.GA9000@alberich.amd.com>
-References: <BANLkTin1=uPcyBgy9S_2TJASk8qTkeueEA@mail.gmail.com> <20110420153907.GA9000@alberich.amd.com>
-Message-Id: <20110421110452.7323.A69D9226@jp.fujitsu.com>
+	Wed, 20 Apr 2011 22:05:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=j76m+9gNVhZGOx/+E9nMBsMwb+UnWc29x7MTq0ww/DU44DDXuweFrzMIcYHDUhHIiz
+         dAdWghC+pVwTz44mn1LLizC9cuNRkwTP7hueBwEyhOAdoWtsdoh1/dIhJaFCbzcERoJc
+         rGqO9k+sTrzysvtiVFJ8mjSXORbaymeHie2eo=
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="------_4DAF6FC6000000007308_MULTIPART_MIXED_"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Thu, 21 Apr 2011 11:04:27 +0900 (JST)
+In-Reply-To: <BANLkTikGGBCL4wA3gL_W0EaD02yJQDnO9Q@mail.gmail.com>
+References: <BANLkTi=1svkDQt+HyaHgnann1Vre7CLUNQ@mail.gmail.com>
+	<BANLkTimFd0ZuP2OQ4A_w7VFbDDN+rsvBtg@mail.gmail.com>
+	<BANLkTi=9dROLwWH2J=Y_FmP+t=rkjMLBJg@mail.gmail.com>
+	<4DAEE410.8020000@cam.ac.uk>
+	<BANLkTikGGBCL4wA3gL_W0EaD02yJQDnO9Q@mail.gmail.com>
+Date: Thu, 21 Apr 2011 10:05:39 +0800
+Message-ID: <BANLkTik95F6qeo13KmZ+oZ19YHkxtL15uQ@mail.gmail.com>
+Subject: Re: SPI read problem
+From: Pei Lin <telent997@gmail.com>
+To: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        =?GB2312?B?0Oy9qLvU?= <xujianhui168@gmail.com>,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------_4DAF6FC6000000007308_MULTIPART_MIXED_
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-
-> Following patch breaks real NUMA on multi-node CPUs like AMD
-> Magny-Cours and should be reverted (or changed to just take effect in
-> case of numa=fake):
-> 
->   commit 7d6b46707f2491a94f4bd3b4329d2d7f809e9368
->   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->   Date:   Fri Apr 15 20:39:01 2011 +0900
-> 
->     x86, NUMA: Fix fakenuma boot failure
-> 
->     ...
-> 
->     Thus, this patch implements a reassignment of node-ids if buggy firmware
->     or numa emulation makes wrong cpu node map. Tt enforce all logical cpus
->     in the same physical cpu share the same node.
-> 
->     ...
-> 
->   +static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
->   +{
->   +       int node1 = early_cpu_to_node(cpu1);
->   +       int node2 = early_cpu_to_node(cpu2);
->   +
->   +       /*
->   +        * Our CPU scheduler assumes all logical cpus in the same physical cpu
->   +        * share the same node. But, buggy ACPI or NUMA emulation might assign
->   +        * them to different node. Fix it.
->   +        */
-> 
->    ...
-> 
-> This is a false assumption. Magny-Cours has two nodes in the same
-> physical package. The scheduler was (kind of) fixed to work around
-> this boot problem for multi-node CPUs (with 2.6.32). 
-
-I agree we have to fix this ASAP. I also think we have to avoid reintroduce 
-the same again. Can you please tell me the commit-id of this one? 
-
-> If this is also
-> an issue with wrong cpu node maps in case of NUMA emulation this might
-> be fixed similar or this quirk should only be applied in case of NUMA
-> emulation.
-
-Indeed.
-
-Tejun, Do you remember I sent numa emulation specific patch at first. now
-I'm beside with Andreas. Because I bet current numa fallback code (you 
-pointed out one) has no user. 
-
-Or, please let us know if you have an alternative patch.
-
-
-
-Attached revert and fakenuma spefic fix patches.
-
---------_4DAF6FC6000000007308_MULTIPART_MIXED_
-Content-Type: application/octet-stream;
- name="0001-Revert-x86-NUMA-Fix-fakenuma-boot-failure.patch"
-Content-Disposition: attachment;
- filename="0001-Revert-x86-NUMA-Fix-fakenuma-boot-failure.patch"
-Content-Transfer-Encoding: base64
-
-RnJvbSA4MTgzODMzYmI0YjQ4ZmRiMTUwZjY0OTA1YjgwZmQyMTA0NTk0NmVjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBLT1NBS0kgTW90b2hpcm8gPGtvc2FraS5tb3RvaGlyb0BqcC5m
-dWppdHN1LmNvbT4KRGF0ZTogVGh1LCAyMSBBcHIgMjAxMSAxMDozMjo1NyArMDkwMApTdWJqZWN0
-OiBbUEFUQ0ggMS8yXSBSZXZlcnQgIng4NiwgTlVNQTogRml4IGZha2VudW1hIGJvb3QgZmFpbHVy
-ZSIKClRoaXMgcmV2ZXJ0cyBjb21taXQgN2Q2YjQ2NzA3ZjI0OTFhOTRmNGJkM2I0MzI5ZDJkN2Y4
-MDllOTM2OC4KQW5kcmVhcyBIZXJybWFubiByZXBvcnRlZCB0aGUgcGF0Y2ggYnJlYWtzIEFNRCBN
-YW5neS1Db3VycyBiZWNhdXNlCk1hZ255LUNvdXJzIGhhcyB0d28gbm9kZXMgaW4gdGhlIHNhbWUg
-cGh5c2ljYWwgcGFja2FnZS4KCkhlIHNhaWQsCjpXaXRoIHRoaXMgcGF0Y2ggTGludXggc2hvd3MK
-Ogo6ICAgcm9vdCAjIG51bWFjdGwgIC0taGFyZHdhcmUKOiAgIGF2YWlsYWJsZTogOCBub2RlcyAo
-MC03KQo6ICAgbm9kZSAwIGNwdXM6IDAgMSAyIDMgNCA1IDYgNyA4IDkgMTAgMTEKOiAgIG5vZGUg
-MCBzaXplOiA4MTg5IE1CCjogICBub2RlIDAgZnJlZTogNzkzNyBNQgo6ICAgbm9kZSAxIGNwdXM6
-CjogICBub2RlIDEgc2l6ZTogMTYzODQgTUIKOiAgIG5vZGUgMSBmcmVlOiAxNjEyOSBNQgo6ICAg
-bm9kZSAyIGNwdXM6IDEyIDEzIDE0IDE1IDE2IDE3IDE4IDE5IDIwIDIxIDIyIDIzCjogICBub2Rl
-IDIgc2l6ZTogODE5MiBNQgo6ICAgbm9kZSAyIGZyZWU6IDgwMjQgTUIKOiAgIG5vZGUgMyBjcHVz
-Ogo6ICAgbm9kZSAzIHNpemU6IDE2Mzg0IE1CCjogICBub2RlIDMgZnJlZTogMTYxMjkgTUIKOiAg
-IG5vZGUgNCBjcHVzOiAyNCAyNSAyNiAyNyAyOCAyOSAzMCAzMSAzMiAzMyAzNCAzNQo6ICAgbm9k
-ZSA0IHNpemU6IDgxOTIgTUIKOiAgIG5vZGUgNCBmcmVlOiA4MDEzIE1CCjogICBub2RlIDUgY3B1
-czoKOiAgIG5vZGUgNSBzaXplOiAxNjM4NCBNQgo6ICAgbm9kZSA1IGZyZWU6IDE2MTI5IE1CCjog
-ICBub2RlIDYgY3B1czogMzYgMzcgMzggMzkgNDAgNDEgNDIgNDMgNDQgNDUgNDYgNDcKOiAgIG5v
-ZGUgNiBzaXplOiA4MTkyIE1CCjogICBub2RlIDYgZnJlZTogODAyNSBNQgo6ICAgbm9kZSA3IGNw
-dXM6CjogICBub2RlIDcgc2l6ZTogMTYzODQgTUIKOiAgIG5vZGUgNyBmcmVlOiAxNjEyOCBNQgo6
-ICAgbm9kZSBkaXN0YW5jZXM6CjogICBub2RlICAgMCAgIDEgICAyICAgMyAgIDQgICA1ICAgNiAg
-IDcKOiAgICAgMDogIDEwICAxNiAgMTYgIDIyICAxNiAgMjIgIDE2ICAyMgo6ICAgICAxOiAgMTYg
-IDEwICAyMiAgMTYgIDE2ICAyMiAgMjIgIDE2CjogICAgIDI6ICAxNiAgMjIgIDEwICAxNiAgMTYg
-IDE2ICAxNiAgMTYKOiAgICAgMzogIDIyICAxNiAgMTYgIDEwICAxNiAgMTYgIDIyICAyMgo6ICAg
-ICA0OiAgMTYgIDE2ICAxNiAgMTYgIDEwICAxNiAgMTYgIDIyCjogICAgIDU6ICAyMiAgMjIgIDE2
-ICAxNiAgMTYgIDEwICAyMiAgMTYKOiAgICAgNjogIDE2ICAyMiAgMTYgIDIyICAxNiAgMjIgIDEw
-ICAxNgo6ICAgICA3OiAgMjIgIDE2ICAxNiAgMjIgIDIyICAxNiAgMTYgIDEwCjoKOndoaWNoIGlz
-IGJvZ3VzLiBUaGUgY29ycmVjdCBOVU1BLWluZm9ybWF0aW9uIChiYXNlZCBvbiBTUkFUKSAody9v
-IHRoaXMKOnBhdGNoKSBpcwo6CjogICAgbGludXggIyBudW1hY3RsIC0taGFyZHdhcmUKOiAgIGF2
-YWlsYWJsZTogOCBub2RlcyAoMC03KQo6ICAgbm9kZSAwIGNwdXM6IDAgMSAyIDMgNCA1CjogICBu
-b2RlIDAgc2l6ZTogODE4OSBNQgo6ICAgbm9kZSAwIGZyZWU6IDc5NDcgTUIKOiAgIG5vZGUgMSBj
-cHVzOiA2IDcgOCA5IDEwIDExCjogICBub2RlIDEgc2l6ZTogMTYzODQgTUIKOiAgIG5vZGUgMSBm
-cmVlOiAxNjExNCBNQgo6ICAgbm9kZSAyIGNwdXM6IDEyIDEzIDE0IDE1IDE2IDE3CjogICBub2Rl
-IDIgc2l6ZTogODE5MiBNQgo6ICAgbm9kZSAyIGZyZWU6IDc5NDEgTUIKOiAgIG5vZGUgMyBjcHVz
-OiAxOCAxOSAyMCAyMSAyMiAyMwo6ICAgbm9kZSAzIHNpemU6IDE2Mzg0IE1CCjogICBub2RlIDMg
-ZnJlZTogMTYxMjAgTUIKOiAgIG5vZGUgNCBjcHVzOiAyNCAyNSAyNiAyNyAyOCAyOQo6ICAgbm9k
-ZSA0IHNpemU6IDgxOTIgTUIKOiAgIG5vZGUgNCBmcmVlOiA4MDI4IE1CCjogICBub2RlIDUgY3B1
-czogMzAgMzEgMzIgMzMgMzQgMzUKOiAgIG5vZGUgNSBzaXplOiAxNjM4NCBNQgo6ICAgbm9kZSA1
-IGZyZWU6IDE2MTE2IE1CCjogICBub2RlIDYgY3B1czogMzYgMzcgMzggMzkgNDAgNDEKOiAgIG5v
-ZGUgNiBzaXplOiA4MTkyIE1CCjogICBub2RlIDYgZnJlZTogODAzMyBNQgo6ICAgbm9kZSA3IGNw
-dXM6IDQyIDQzIDQ0IDQ1IDQ2IDQ3CjogICBub2RlIDcgc2l6ZTogMTYzODQgTUIKOiAgIG5vZGUg
-NyBmcmVlOiAxNjEyMCBNQgo6ICAgbm9kZSBkaXN0YW5jZXM6CjogICBub2RlICAgMCAgIDEgICAy
-ICAgMyAgIDQgICA1ICAgNiAgIDcKOiAgICAgMDogIDEwICAxNiAgMTYgIDIyICAxNiAgMjIgIDE2
-ICAyMgo6ICAgICAxOiAgMTYgIDEwICAyMiAgMTYgIDE2ICAyMiAgMjIgIDE2CjogICAgIDI6ICAx
-NiAgMjIgIDEwICAxNiAgMTYgIDE2ICAxNiAgMTYKOiAgICAgMzogIDIyICAxNiAgMTYgIDEwICAx
-NiAgMTYgIDIyICAyMgo6ICAgICA0OiAgMTYgIDE2ICAxNiAgMTYgIDEwICAxNiAgMTYgIDIyCjog
-ICAgIDU6ICAyMiAgMjIgIDE2ICAxNiAgMTYgIDEwICAyMiAgMTYKOiAgICAgNjogIDE2ICAyMiAg
-MTYgIDIyICAxNiAgMjIgIDEwICAxNgo6ICAgICA3OiAgMjIgIDE2ICAxNiAgMjIgIDIyICAxNiAg
-MTYgIDEwCgpXZSBuZWVkIGFub3RoZXIgYW5kIGxlc3MgaW50cnVzaXZlIHBhdGNoLgoKU2lnbmVk
-LW9mZi1ieTogS09TQUtJIE1vdG9oaXJvIDxrb3Nha2kubW90b2hpcm9AanAuZnVqaXRzdS5jb20+
-Ci0tLQogYXJjaC94ODYva2VybmVsL3NtcGJvb3QuYyB8ICAgMjMgLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgMCBpbnNlcnRpb25zKCspLCAyMyBkZWxldGlvbnMoLSkK
-CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvc21wYm9vdC5jIGIvYXJjaC94ODYva2VybmVs
-L3NtcGJvb3QuYwppbmRleCA4ZWQ4OTA4Li5jMjg3MWQzIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9r
-ZXJuZWwvc21wYm9vdC5jCisrKyBiL2FyY2gveDg2L2tlcm5lbC9zbXBib290LmMKQEAgLTMxMiwy
-NiArMzEyLDYgQEAgdm9pZCBfX2NwdWluaXQgc21wX3N0b3JlX2NwdV9pbmZvKGludCBpZCkKIAkJ
-aWRlbnRpZnlfc2Vjb25kYXJ5X2NwdShjKTsKIH0KIAotc3RhdGljIHZvaWQgX19jcHVpbml0IGNo
-ZWNrX2NwdV9zaWJsaW5nc19vbl9zYW1lX25vZGUoaW50IGNwdTEsIGludCBjcHUyKQotewotCWlu
-dCBub2RlMSA9IGVhcmx5X2NwdV90b19ub2RlKGNwdTEpOwotCWludCBub2RlMiA9IGVhcmx5X2Nw
-dV90b19ub2RlKGNwdTIpOwotCi0JLyoKLQkgKiBPdXIgQ1BVIHNjaGVkdWxlciBhc3N1bWVzIGFs
-bCBsb2dpY2FsIGNwdXMgaW4gdGhlIHNhbWUgcGh5c2ljYWwgY3B1Ci0JICogc2hhcmUgdGhlIHNh
-bWUgbm9kZS4gQnV0LCBidWdneSBBQ1BJIG9yIE5VTUEgZW11bGF0aW9uIG1pZ2h0IGFzc2lnbgot
-CSAqIHRoZW0gdG8gZGlmZmVyZW50IG5vZGUuIEZpeCBpdC4KLQkgKi8KLQlpZiAobm9kZTEgIT0g
-bm9kZTIpIHsKLQkJcHJfd2FybmluZygiQ1BVICVkIGluIG5vZGUgJWQgYW5kIENQVSAlZCBpbiBu
-b2RlICVkIGFyZSBpbiB0aGUgc2FtZSBwaHlzaWNhbCBDUFUuIGZvcmNpbmcgc2FtZSBub2RlICVk
-XG4iLAotCQkJICAgY3B1MSwgbm9kZTEsIGNwdTIsIG5vZGUyLCBub2RlMik7Ci0KLQkJbnVtYV9y
-ZW1vdmVfY3B1KGNwdTEpOwotCQludW1hX3NldF9ub2RlKGNwdTEsIG5vZGUyKTsKLQkJbnVtYV9h
-ZGRfY3B1KGNwdTEpOwotCX0KLX0KLQogc3RhdGljIHZvaWQgX19jcHVpbml0IGxpbmtfdGhyZWFk
-X3NpYmxpbmdzKGludCBjcHUxLCBpbnQgY3B1MikKIHsKIAljcHVtYXNrX3NldF9jcHUoY3B1MSwg
-Y3B1X3NpYmxpbmdfbWFzayhjcHUyKSk7CkBAIC0zNDAsNyArMzIwLDYgQEAgc3RhdGljIHZvaWQg
-X19jcHVpbml0IGxpbmtfdGhyZWFkX3NpYmxpbmdzKGludCBjcHUxLCBpbnQgY3B1MikKIAljcHVt
-YXNrX3NldF9jcHUoY3B1MiwgY3B1X2NvcmVfbWFzayhjcHUxKSk7CiAJY3B1bWFza19zZXRfY3B1
-KGNwdTEsIGNwdV9sbGNfc2hhcmVkX21hc2soY3B1MikpOwogCWNwdW1hc2tfc2V0X2NwdShjcHUy
-LCBjcHVfbGxjX3NoYXJlZF9tYXNrKGNwdTEpKTsKLQljaGVja19jcHVfc2libGluZ3Nfb25fc2Ft
-ZV9ub2RlKGNwdTEsIGNwdTIpOwogfQogCiAKQEAgLTM4MiwxMiArMzYxLDEwIEBAIHZvaWQgX19j
-cHVpbml0IHNldF9jcHVfc2libGluZ19tYXAoaW50IGNwdSkKIAkJICAgIHBlcl9jcHUoY3B1X2xs
-Y19pZCwgY3B1KSA9PSBwZXJfY3B1KGNwdV9sbGNfaWQsIGkpKSB7CiAJCQljcHVtYXNrX3NldF9j
-cHUoaSwgY3B1X2xsY19zaGFyZWRfbWFzayhjcHUpKTsKIAkJCWNwdW1hc2tfc2V0X2NwdShjcHUs
-IGNwdV9sbGNfc2hhcmVkX21hc2soaSkpOwotCQkJY2hlY2tfY3B1X3NpYmxpbmdzX29uX3NhbWVf
-bm9kZShjcHUsIGkpOwogCQl9CiAJCWlmIChjLT5waHlzX3Byb2NfaWQgPT0gY3B1X2RhdGEoaSku
-cGh5c19wcm9jX2lkKSB7CiAJCQljcHVtYXNrX3NldF9jcHUoaSwgY3B1X2NvcmVfbWFzayhjcHUp
-KTsKIAkJCWNwdW1hc2tfc2V0X2NwdShjcHUsIGNwdV9jb3JlX21hc2soaSkpOwotCQkJY2hlY2tf
-Y3B1X3NpYmxpbmdzX29uX3NhbWVfbm9kZShjcHUsIGkpOwogCQkJLyoKIAkJCSAqICBEb2VzIHRo
-aXMgbmV3IGNwdSBicmluZ3VwIGEgbmV3IGNvcmU/CiAJCQkgKi8KLS0gCjEuNy4zLjEKCg==
---------_4DAF6FC6000000007308_MULTIPART_MIXED_
-Content-Type: application/octet-stream;
- name="0002-x86-64-NUMA-reimplement-cpu-node-map-initialization-.patch"
-Content-Disposition: attachment;
- filename="0002-x86-64-NUMA-reimplement-cpu-node-map-initialization-.patch"
-Content-Transfer-Encoding: base64
-
-RnJvbSAyMDllMzFlZDY3MTkwYzgyZjMzYzAwNzY5MDk1YjI0MWRkZTExYTZiIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBLT1NBS0kgTW90b2hpcm8gPGtvc2FraS5tb3RvaGlyb0BqcC5m
-dWppdHN1LmNvbT4KRGF0ZTogRnJpLCA4IEFwciAyMDExIDIzOjIzOjUwICswOTAwClN1YmplY3Q6
-IFtQQVRDSCAyLzJdIHg4Ni02NCwgTlVNQTogcmVpbXBsZW1lbnQgY3B1IG5vZGUgbWFwIGluaXRp
-YWxpemF0aW9uIGZvciBmYWtlIG51bWEuCgpDdXJyZW50bHksIG51bWE9ZmFrZSBib290IHBhcmFt
-ZXRlciBpcyBicm9rZW4uIElmIGl0J3MgdXNlZCwga2VybmVsCm1heSBwYW5pYyBkdWUgdG8gZGV2
-aWRlIGJ5IHplcm8gZXJyb3IgZGVwZW5kaW5nIG9uIENQVSBjb25maWd1cmF0aW9uCgpDYWxsIFRy
-YWNlOgogWzxmZmZmZmZmZjgxMDRhZDRjPl0gZmluZF9idXNpZXN0X2dyb3VwKzB4MzhjLzB4ZDMw
-CiBbPGZmZmZmZmZmODEwODZhZmY+XSA/IGxvY2FsX2Nsb2NrKzB4NmYvMHg4MAogWzxmZmZmZmZm
-ZjgxMDUwNTMzPl0gbG9hZF9iYWxhbmNlKzB4YTMvMHg2MDAKIFs8ZmZmZmZmZmY4MTA1MGY1Mz5d
-IGlkbGVfYmFsYW5jZSsweGYzLzB4MTgwCiBbPGZmZmZmZmZmODE1NTAwOTI+XSBzY2hlZHVsZSsw
-eDcyMi8weDdkMAogWzxmZmZmZmZmZjgxNTUwNTM4Pl0gPyB3YWl0X2Zvcl9jb21tb24rMHgxMjgv
-MHgxOTAKIFs8ZmZmZmZmZmY4MTU1MGE2NT5dIHNjaGVkdWxlX3RpbWVvdXQrMHgyNjUvMHgzMjAK
-IFs8ZmZmZmZmZmY4MTA5NTgxNT5dID8gbG9ja19yZWxlYXNlX2hvbGR0aW1lKzB4MzUvMHgxYTAK
-IFs8ZmZmZmZmZmY4MTU1MDUzOD5dID8gd2FpdF9mb3JfY29tbW9uKzB4MTI4LzB4MTkwCiBbPGZm
-ZmZmZmZmODEwOWJiNmM+XSA/IF9fbG9ja19yZWxlYXNlKzB4OWMvMHgxZDAKIFs8ZmZmZmZmZmY4
-MTU1MzRlMD5dID8gX3Jhd19zcGluX3VubG9ja19pcnErMHgzMC8weDQwCiBbPGZmZmZmZmZmODE1
-NTM0ZTA+XSA/IF9yYXdfc3Bpbl91bmxvY2tfaXJxKzB4MzAvMHg0MAogWzxmZmZmZmZmZjgxNTUw
-NTQwPl0gd2FpdF9mb3JfY29tbW9uKzB4MTMwLzB4MTkwCiBbPGZmZmZmZmZmODEwNTE5MjA+XSA/
-IHRyeV90b193YWtlX3VwKzB4NTEwLzB4NTEwCiBbPGZmZmZmZmZmODE1NTA2N2Q+XSB3YWl0X2Zv
-cl9jb21wbGV0aW9uKzB4MWQvMHgyMAogWzxmZmZmZmZmZjgxMDdmMzZjPl0ga3RocmVhZF9jcmVh
-dGVfb25fbm9kZSsweGFjLzB4MTUwCiBbPGZmZmZmZmZmODEwNzdiYjA+XSA/IHByb2Nlc3Nfc2No
-ZWR1bGVkX3dvcmtzKzB4NDAvMHg0MAogWzxmZmZmZmZmZjgxNTUwNDVmPl0gPyB3YWl0X2Zvcl9j
-b21tb24rMHg0Zi8weDE5MAogWzxmZmZmZmZmZjgxMDdhMjgzPl0gX19hbGxvY193b3JrcXVldWVf
-a2V5KzB4MWEzLzB4NTkwCiBbPGZmZmZmZmZmODFlMGNjZTI+XSBjcHVzZXRfaW5pdF9zbXArMHg2
-Yi8weDdiCiBbPGZmZmZmZmZmODFkZjNkMDc+XSBrZXJuZWxfaW5pdCsweGMzLzB4MTgyCiBbPGZm
-ZmZmZmZmODE1NWQ1ZTQ+XSBrZXJuZWxfdGhyZWFkX2hlbHBlcisweDQvMHgxMAogWzxmZmZmZmZm
-ZjgxNTUzY2Q0Pl0gPyByZXRpbnRfcmVzdG9yZV9hcmdzKzB4MTMvMHgxMwogWzxmZmZmZmZmZjgx
-ZGYzYzQ0Pl0gPyBzdGFydF9rZXJuZWwrMHg0MDAvMHg0MDAKIFs8ZmZmZmZmZmY4MTU1ZDVlMD5d
-ID8gZ3NfY2hhbmdlKzB4MTMvMHgxMwoKVGhlIGRpdmVkZSBieSB6ZXJvIGlzIGNhdXNlZCBmb2xs
-b3dpbmcgbGluZS4gKGllIGdyb3VwLT5jcHVfcG93ZXI9PTApCgprZXJuZWwvc2NoZWRfZmFpci5j
-Ojp1cGRhdGVfc2dfbGJfc3RhdHMoKQogICAgICAgIC8qIEFkanVzdCBieSByZWxhdGl2ZSBDUFUg
-cG93ZXIgb2YgdGhlIGdyb3VwICovCiAgICAgICAgc2dzLT5hdmdfbG9hZCA9IChzZ3MtPmdyb3Vw
-X2xvYWQgKiBTQ0hFRF9MT0FEX1NDQUxFKSAvCmdyb3VwLT5jcHVfcG93ZXI7CgpUaGlzIGlzIHJl
-Z3Jlc3Npb24gYnkgY29tbWl0IGUyM2JiYTYwNDQgKHg4Ni02NCwgTlVNQTogVW5pZnkgZW11bGF0
-ZWQKZGlzdGFuY2UgbWFwcGluZykgYmVjYXVzZSBpdCBjaGFuZ2VzIGNwdSAtPiBub2RlIG1hcHBp
-bmcgaW4gdGhlIHByb2Nlc3MKb2YgZHJvcHBpbmcgZmFrZV9waHlzbm9kZXMoKS4KCiAgb2xkKSBh
-bGwgY3B1cyBhcmUgYXNzaW5nZWQgbm9kZSAwCiAgbm93KSBjcHVzIGFyZSBhc3NpZ25lZCByb3Vu
-ZCByb2JpbgogICAgICAgKHRoZSBsb2dpYyBpcyBpbXBsZW1lbnRlZCBieSBudW1hX2luaXRfYXJy
-YXkoKSkKCiAgTm90ZTogVGhlIGNoYW5nZSBpcyBoZXBwZW4gb25seSBpZiB0aGUgc3lzdGVtIGRv
-ZXNuJ3QgaGF2ZSBuZWlnaGVyCiAgICBBQ1BJIHNyYXQgdGFibGUgbm9yIEFNRCBub3J0aGJyaWRn
-ZSBOVU1BIGluZm9ybWF0aW9uLgoKV2h5IHJvdW5kIHJvYmluIGFzc2lnbm1lbnQgZG9lc24ndCB3
-b3JrPyBCZWNhdXNlIGluaXRfbnVtYV9zY2hlZF9ncm91cHNfcG93ZXIoKQphc3N1bWVzIGFsbCBs
-b2dpY2FsIGNwdXMgaW4gdGhlIHNhbWUgcGh5c2ljYWwgY3B1IHNoYXJlIHRoZSBzYW1lIG5vZGUK
-KFRoZW4gaXQgb25seSBhY2NvdW50cyBmb3IgZ3JvdXBfZmlyc3RfY3B1KCkpLCBhbmQgdGhlIHNp
-bXBsZSByb3VuZApyb2JpbiBicmVha3MgdGhlIGFib3ZlIGFzc3VtcHRpb24uCgpUaGlzIHBhdGNo
-IGVuZm9yY2UgYWxsIGNwdXMgdXNlIG5vZGUgMCBpZiBmYWtlIG51bWEgaXMgZW5hYmxlZCBhcyBz
-YW1lCmFzIHYyLjYuMzggb3IgcHJpb3Jlci4KClNpZ25lZC1vZmYtYnk6IEtPU0FLSSBNb3RvaGly
-byA8a29zYWtpLm1vdG9oaXJvQGpwLmZ1aml0c3UuY29tPgpDYzogVGVqdW4gSGVvIDx0akBrZXJu
-ZWwub3JnPgpDYzogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogQnJpYW4gR2Vy
-c3QgPGJyZ2Vyc3RAZ21haWwuY29tPgpDYzogQ3lyaWxsIEdvcmN1bm92IDxnb3JjdW5vdkBnbWFp
-bC5jb20+CkNjOiBTaGFvaHVpIFpoZW5nIDxzaGFvaHVpLnpoZW5nQGludGVsLmNvbT4KQ2M6IERh
-dmlkIFJpZW50amVzIDxyaWVudGplc0Bnb29nbGUuY29tPgpDYzogSW5nbyBNb2xuYXIgPG1pbmdv
-QGVsdGUuaHU+CkNjOiBILiBQZXRlciBBbnZpbiA8aHBhQGxpbnV4LmludGVsLmNvbT4KLS0tCiBh
-cmNoL3g4Ni9tbS9udW1hX2VtdWxhdGlvbi5jIHwgICAgOCArKysrKysrKwogMSBmaWxlcyBjaGFu
-Z2VkLCA4IGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYXJjaC94
-ODYvbW0vbnVtYV9lbXVsYXRpb24uYyBiL2FyY2gveDg2L21tL251bWFfZW11bGF0aW9uLmMKaW5k
-ZXggYWQwOTFlNC4uNGZkYTM1MSAxMDA2NDQKLS0tIGEvYXJjaC94ODYvbW0vbnVtYV9lbXVsYXRp
-b24uYworKysgYi9hcmNoL3g4Ni9tbS9udW1hX2VtdWxhdGlvbi5jCkBAIC00MTksNiArNDE5LDE0
-IEBAIHZvaWQgX19pbml0IG51bWFfZW11bGF0aW9uKHN0cnVjdCBudW1hX21lbWluZm8gKm51bWFf
-bWVtaW5mbywgaW50IG51bWFfZGlzdF9jbnQpCiAJLyogZnJlZSB0aGUgY29waWVkIHBoeXNpY2Fs
-IGRpc3RhbmNlIHRhYmxlICovCiAJaWYgKHBoeXNfZGlzdCkKIAkJbWVtYmxvY2tfeDg2X2ZyZWVf
-cmFuZ2UoX19wYShwaHlzX2Rpc3QpLCBfX3BhKHBoeXNfZGlzdCkgKyBwaHlzX3NpemUpOworCisJ
-LyogU2V0dXAgY3B1IG5vZGUgbWFwLiAqLworCWZvciAoaSA9IDA7IGkgPCBucl9jcHVfaWRzOyBp
-KyspIHsKKwkJaWYgKGVhcmx5X2NwdV90b19ub2RlKGkpICE9IE5VTUFfTk9fTk9ERSkKKwkJCWNv
-bnRpbnVlOworCQludW1hX3NldF9ub2RlKGksIDApOworCX0KKwogCXJldHVybjsKIAogbm9fZW11
-OgotLSAKMS43LjMuMQoK
---------_4DAF6FC6000000007308_MULTIPART_MIXED_--
+2011/4/21 Murali K. Vemuri <vemuri.muralikrishna@gmail.com>:
+> On Wed, Apr 20, 2011 at 10:48 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 04/20/11 05:40, Murali K. Vemuri wrote:
+>>> On Wed, Apr 20, 2011 at 12:19 PM, Ðì½¨»Ô <xujianhui168@gmail.com> wrote:
+>>>> you can use tasklet.
+>>>>
+>>>> 2011/4/19 Murali K. Vemuri <vemuri.muralikrishna@gmail.com>
+>>>>>
+>>>>> Hello there,
+>>>>> I have a device which is Written_to/Read_from using SPI Bus.
+>>>>>
+>>>>> I initialize the device like this:
+>>>>>
+>>>>> static int __init myDEV_init(void)
+>>>>> {
+>>>>>    return spi_register_driver(&myDEV_driver);
+>>>>> }
+>>>>> module_init(myDEV_init);
+>>>>>
+>>>>> My myDEV_probe() function looks like this:
+>>>>>
+>>>>> static int __devinit myDEV_probe(struct spi_device *spi)
+>>>>> {
+>>>>> .....
+>>>>> .....
+>>>>> /*when my CPU receives a particular IRQ, I have to do a spi_read() and
+>>>>> do couple of spi_write(), I am using like this:*/
+>>>>> err = request_threaded_irq (MY_DEV_IRQ, NULL, myDEV_irq_thread,
+>>>>>            IRQF_TRIGGER_RISING, "MYDEV", NULL);
+>> This should be fine.  The thread can sleep just fine. We do this
+>> all over the place.  Could be something to do with the irq
+>> handling on the device.
+>>>>>
+>>>>> return 0;
+>>>>> }
+>>>>>
+>>>>> When the Interrupt is received by the CPU, myDEV_irq_thread is being
+>>>>> called.
+>>>>> However, in the ISR I have to do  spi_read(). This is always returning
+>>>>> "Timed out".
+>> That's very suspicious.  What spi controller are we dealing with here?
+>>>>>
+>>>>> To verify if the device is not at all working, along with registering
+>>>>> for the IRQ, I also created a char device through I did a IOCTL.
+>>>>> The IOCTL command in turn does spi_read(). In this case spi_read() is
+>>>>> successful.
+>>>>>
+>>>>> Since it is necessary to do spi_read() in my ISR, I searched around
+>>>>> and found some information that
+>>>>> spi_read() is callable only from contexts that can sleep.
+>>>>>
+>>>>> How can I make my ISR sleep? or is there any other way of doing this?
+>>>>>
+>>>>> Any help is highly appreciated.
+>>>>> Thanks & regards
+>>>>> Murali
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>>
+>>>
+>>> Hi there,
+>>>
+>>> I tried using "tasklet", "workqueue" and semaphore ... all my attempts failed.
+>>> if there is any other method I should try, please let me know.
+>> Something nastier is happening here.  It's not a problem with what you've
+>> presented in this email.  Perhaps a minimum example of the full code surrounding
+>> the problem may help us diagnose it.
+>>
+>
+> Thanks a lot for the inputs. this is the read function I have:
+> (What  I am trying to do is read register E6 of my device, the
+> register width is 16 bits.).
+>
+> static struct spi_device * my_SPI_DEV; (this is populated in the probe function)
+>
+> static int myDEV_read(u8 * buf, u16 len)
+> {
+>    int err;
+>    err = spi_read(my_SPI_DEV, buf, len);
+>    return err;
+> }
+> static int read_e6()
+> {
+>    u8 buf[3];
+>    int err;
+>    buf[0] = 0xe6;
+>    buf[1] = 0x00;
+>    buf[2] = 0x00;
+>    err = myDEV_read(buf, 3);
+>    printk(KERN_ERR "myDEV read returned: %d\n",err);
+>    return err;
+> }
+>
+> Now, this function read_e6() is called from the ISR I mentioned above.
+>
 
 
+spi_read will call spi_sync and this call may only be used from a
+context that may sleep.  The sleep
+ is non-interruptible, and has no timeout. should use in
+non-interruptable context.
+you should put the spi_read on context which can sleep, as bottom half
+"work queue"
+Or use spi_async interface.
+
+
+> 90% of time, the read returns "-5" (I/O Error) and about 10% time it
+> gets "0".  However I added a little hexdump to check the content in
+> case the return value is "0". The register content is always "0".
+>
+> Please let me know if I am doing any mistake.
+> Thanks & regards
+> Murali
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
+
+-- 
+Best Regards
+Lin
