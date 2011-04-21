@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab1DUNMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:12:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48176 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab1DUNMn (ORCPT
+	id S1752315Ab1DUNP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:15:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54397 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab1DUNP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:12:43 -0400
-Subject: [PATCH 3/3] mm: strictly require elevated page refcount in
- isolate_lru_page()
-To: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Apr 2011 17:12:42 +0400
-Message-ID: <20110421131242.17363.49785.stgit@localhost6>
-In-Reply-To: <20110421131239.17363.82750.stgit@localhost6>
-References: <20110421131239.17363.82750.stgit@localhost6>
-User-Agent: StGit/0.15
+	Thu, 21 Apr 2011 09:15:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=oNJXpOrpaNQq1QZWQYB59RK6X6EaBjV6xpz1A/Gk9IfkklY1V38xkv+5g0w3mZDszn
+         pKbN9VPt0AEIdj/QfhVzfipQe+Btdx/CH4sOQfV4AJP+fmR5cxfOV2hMk5atel/ZuUsa
+         tiV7jW8Z5z2h5p9HkppZOohi9SVpAXIHW75i0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Thu, 21 Apr 2011 21:15:56 +0800
+Message-ID: <BANLkTi=41=2_QOMOabg1UrwQ2A06fJAY9w@mail.gmail.com>
+Subject: [PATCH] sched: deduplicate mm checks in normalize_rt_tasks()
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isolate_lru_page() must be called only with stable reference to the page,
-this is what is written in the comment above it, this is reasonable.
+When normalizing realtime tasks, only user tasks are concerned by
+checking their ->mm.
+If the task is not realtime, the -mm is checked again, thus the
+overwork could be removed.
 
-current isolate_lru_page() users and its page extra reference sources:
-
-mm/huge_memory.c
-__collapse_huge_page_isolate()		- reference from pte
-
-mm/memcontrol.c
-mem_cgroup_move_parent()		- get_page_unless_zero()
-mem_cgroup_move_charge_pte_range()	- reference from pte
-
-mm/memory-failure.c
-soft_offline_page()			- fixed, reference from get_any_page()
-delete_from_lru_cache() - reference from caller or get_page_unless_zero()
-[seems like there bug, because __memory_failure() can call page_action() for
- hpages tail, but it is ok for isolate_lru_page(), tail getted and not in lru]
-
-mm/memory_hotplug.c
-do_migrate_range()			- fixed, get_page_unless_zero()
-
-mm/mempolicy.c
-migrate_page_add()			- reference from pte
-
-mm/migrate.c
-do_move_page_to_node_array()		- reference from follow_page()
-
-mlock.c					- various external references
-
-mm/vmscan.c
-putback_lru_page()			- reference from isolate_lru_page()
-
-It seems that all isolate_lru_page() users are ready now for this restriction.
-So, let's replace redundant get_page_unless_zero() with get_page() and
-add page initial reference count check with VM_BUG_ON()
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- mm/vmscan.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f6b435c..0175f39 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1201,13 +1201,16 @@ int isolate_lru_page(struct page *page)
- {
- 	int ret = -EBUSY;
- 
-+	VM_BUG_ON(!page_count(page));
-+
- 	if (PageLRU(page)) {
- 		struct zone *zone = page_zone(page);
- 
- 		spin_lock_irq(&zone->lru_lock);
--		if (PageLRU(page) && get_page_unless_zero(page)) {
-+		if (PageLRU(page)) {
- 			int lru = page_lru(page);
- 			ret = 0;
-+			get_page(page);
- 			ClearPageLRU(page);
- 
- 			del_page_from_lru_list(zone, page, lru);
-
+--- a/kernel/sched.c	2011-03-30 03:09:48.000000000 +0800
++++ b/kernel/sched.c	2011-04-21 20:59:28.000000000 +0800
+@@ -8364,7 +8364,7 @@ void normalize_rt_tasks(void)
+ 			 * Renice negative nice level userspace
+ 			 * tasks back to 0:
+ 			 */
+-			if (TASK_NICE(p) < 0 && p->mm)
++			if (TASK_NICE(p) < 0)
+ 				set_user_nice(p, 0);
+ 			continue;
+ 		}
