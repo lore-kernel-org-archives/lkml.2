@@ -1,146 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab1DUTxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 15:53:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43342 "EHLO mx1.redhat.com"
+	id S1754359Ab1DUTyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 15:54:39 -0400
+Received: from n1.taur.dk ([217.198.219.102]:34381 "EHLO n1.taur.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753935Ab1DUTxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 15:53:44 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org
-Subject: [PATCH 2/2] Btrfs: implement our own ->llseek
-Date: Thu, 21 Apr 2011 15:42:34 -0400
-Message-Id: <1303414954-3315-2-git-send-email-josef@redhat.com>
-In-Reply-To: <1303414954-3315-1-git-send-email-josef@redhat.com>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+	id S1753417Ab1DUTyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 15:54:38 -0400
+Message-ID: <4DB08B19.1040402@kasperkp.dk>
+Date: Thu, 21 Apr 2011 21:52:57 +0200
+From: Kasper Pedersen <kernel@kasperkp.dk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+CC: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86: tsc: v3 make TSC calibration more immune to interrupts
+References: <4DAF2B57.6010100@kasperkp.dk> <1303326959.2796.136.camel@work-vm> <4DAF37B4.3040408@kasperkp.dk> <1303331280.2796.154.camel@work-vm> <4DAF4E8B.6030506@kasperkp.dk> <20110420223929.GB5563@feather>
+In-Reply-To: <20110420223929.GB5563@feather>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to handle SEEK_HOLE/SEEK_DATA we need to implement our own llseek.
-Basically for the normal SEEK_*'s we will just defer to the generic helper, and
-for SEEK_HOLE/SEEK_DATA we will use our fiemap helper to figure out the nearest
-hole or data.  Currently this helper doesn't check for delalloc bytes for
-prealloc space, so for now treat prealloc as data until that is fixed.  Thanks,
+When a SMI or plain interrupt occurs during the delayed part
+of TSC calibration, and the SMI/irq handler is good and fast
+so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
+off (10-30ppm).
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
+We should keep plain interrupts out of the reading of
+tsc/reference, so disable interrupts there.
+
+We should not depend on SMIs being longer than 50000 clocks,
+so, in the refined calibration, always do the 5 tries, and
+use the best sample we get.
+
+This should work always for any four periodic or rate-limited
+SMI sources. If we get 5 SMIs with 500ns gaps in a row, 
+behaviour should be as without this patch.
+
+It is safe to use the first value that passes SMI_TRESHOLD
+for the initial calibration: As long as tsc_khz is above
+100MHz, SMI_TRESHOLD represents less than 1% of error.
+
+The 8 additional samples costs us 28 microseconds in startup
+time.
+
+measurements:
+On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
+A Core2 is similar: http://n1.taur.dk/tscdeviat.png
+(while mostly t2-t1=~1000, in about 1 of 3000 tests
+I see t2-t1=~20000 for both machines.)
+vmware ESX4 has t2-t1=~8000 and up.
+
+v2: John Stultz suggested limiting best uncertainty to
+where it is needed, saving ~170usec startup time.
+
+v3: Josh Triplett suggested disabling irqs. This does
+indeed help, and the 5-sample code now only needs to
+handle the SMI case.
+
+Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
 ---
- fs/btrfs/ctree.h |    3 ++
- fs/btrfs/file.c  |   85 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 87 insertions(+), 1 deletions(-)
+ arch/x86/kernel/tsc.c |   39 +++++++++++++++++++++++++++------------
+ 1 files changed, 27 insertions(+), 12 deletions(-)
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index d5f043e..d2991c8 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -2474,6 +2474,9 @@ int btrfs_csum_truncate(struct btrfs_trans_handle *trans,
- int btrfs_lookup_csums_range(struct btrfs_root *root, u64 start,
- 			     u64 end, struct list_head *list);
- /* inode.c */
-+struct extent_map *btrfs_get_extent_fiemap(struct inode *inode, struct page *page,
-+					   size_t pg_offset, u64 start, u64 len,
-+					   int create);
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index ffe5755..9983c03 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -117,27 +117,42 @@ static int __init tsc_setup(char *str)
  
- /* RHEL and EL kernels have a patch that renames PG_checked to FsMisc */
- #if defined(ClearPageFsMisc) && !defined(ClearPageChecked)
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index cd5e82e..f0a7a33 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1406,8 +1406,91 @@ out:
- 	return ret;
+ __setup("tsc=", tsc_setup);
+ 
+-#define MAX_RETRIES     5
++#define BESTOF_SAMPLES      5
+ #define SMI_TRESHOLD    50000
+ 
+ /*
+  * Read TSC and the reference counters. Take care of SMI disturbance
+  */
+-static u64 tsc_read_refs(u64 *p, int hpet)
++static u64 tsc_read_refs(u64 *p, int hpet, int find_best)
+ {
+-	u64 t1, t2;
++	u64 t1, t2, tp, best_uncertainty, uncertainty, best_t2;
+ 	int i;
++	unsigned long flags;
+ 
+-	for (i = 0; i < MAX_RETRIES; i++) {
++	best_uncertainty = SMI_TRESHOLD;
++	best_t2 = 0;
++	for (i = 0; i < BESTOF_SAMPLES; i++) {
++		local_irq_save(flags);
+ 		t1 = get_cycles();
+ 		if (hpet)
+-			*p = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
++			tp = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
+ 		else
+-			*p = acpi_pm_read_early();
++			tp = acpi_pm_read_early();
+ 		t2 = get_cycles();
+-		if ((t2 - t1) < SMI_TRESHOLD)
+-			return t2;
++		local_irq_restore(flags);
++		uncertainty = t2 - t1;
++		if (uncertainty < best_uncertainty) {
++			best_uncertainty = uncertainty;
++			best_t2 = t2;
++			*p = tp;
++			if (!find_best)
++				break;
++		}
+ 	}
++	if (best_uncertainty < SMI_TRESHOLD)
++		return best_t2;
++
++	*p = tp;
+ 	return ULLONG_MAX;
  }
  
-+static int find_desired_extent(struct inode *inode, loff_t *offset, int origin)
-+{
-+	struct extent_map *em;
-+	struct extent_state *cached_state = NULL;
-+	u64 lockstart = *offset;
-+	u64 lockend = i_size_read(inode);
-+	u64 start = *offset;
-+	u64 len = i_size_read(inode);
-+	int ret = 0;
-+
-+	lockend = max_t(u64, BTRFS_I(inode)->root->sectorsize, lockend);
-+	len = lockend;
-+
-+	lock_extent_bits(&BTRFS_I(inode)->io_tree, lockstart, lockend, 0,
-+			 &cached_state, GFP_NOFS);
-+	while (1) {
-+		em = btrfs_get_extent_fiemap(inode, NULL, 0, start, len, 0);
-+		if (IS_ERR(em)) {
-+			ret = -ENXIO;
-+			break;
-+		}
-+
-+		if (em->block_start == EXTENT_MAP_HOLE) {
-+			if (origin == SEEK_HOLE) {
-+				*offset = em->start;
-+				free_extent_map(em);
-+				break;
-+			}
-+		} else {
-+			if (origin == SEEK_DATA) {
-+				*offset = em->start;
-+				free_extent_map(em);
-+				break;
-+			}
-+		}
-+		start = em->start + em->len;
-+		if (test_bit(EXTENT_FLAG_VACANCY, &em->flags)) {
-+			free_extent_map(em);
-+			ret = -ENXIO;
-+			break;
-+		}
-+		free_extent_map(em);
-+	}
-+	unlock_extent_cached(&BTRFS_I(inode)->io_tree, lockstart, lockend,
-+			     &cached_state, GFP_NOFS);
-+	return ret;
-+}
-+
-+static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct inode *inode = file->f_mapping->host;
-+	int ret;
-+
-+	mutex_lock(&inode->i_mutex);
-+	switch (origin) {
-+	case SEEK_END:
-+	case SEEK_CUR:
-+		offset = generic_file_llseek_unlocked(file, offset, origin);
-+		goto out;
-+	case SEEK_DATA:
-+	case SEEK_HOLE:
-+		ret = find_desired_extent(inode, &offset, origin);
-+		if (ret) {
-+			mutex_unlock(&inode->i_mutex);
-+			return ret;
-+		}
-+	}
-+
-+	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET))
-+		return -EINVAL;
-+	if (offset > inode->i_sb->s_maxbytes)
-+		return -EINVAL;
-+
-+	/* Special lock needed here? */
-+	if (offset != file->f_pos) {
-+		file->f_pos = offset;
-+		file->f_version = 0;
-+	}
-+out:
-+	mutex_unlock(&inode->i_mutex);
-+	return offset;
-+}
-+
- const struct file_operations btrfs_file_operations = {
--	.llseek		= generic_file_llseek,
-+	.llseek		= btrfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
- 	.aio_read       = generic_file_aio_read,
--- 
-1.7.2.3
+@@ -455,9 +470,9 @@ unsigned long native_calibrate_tsc(void)
+ 		 * read the end value.
+ 		 */
+ 		local_irq_save(flags);
+-		tsc1 = tsc_read_refs(&ref1, hpet);
++		tsc1 = tsc_read_refs(&ref1, hpet, 0);
+ 		tsc_pit_khz = pit_calibrate_tsc(latch, ms, loopmin);
+-		tsc2 = tsc_read_refs(&ref2, hpet);
++		tsc2 = tsc_read_refs(&ref2, hpet, 0);
+ 		local_irq_restore(flags);
+ 
+ 		/* Pick the lowest PIT TSC calibration so far */
+@@ -928,11 +943,11 @@ static void tsc_refine_calibration_work(struct work_struct *work)
+ 		 */
+ 		hpet = is_hpet_enabled();
+ 		schedule_delayed_work(&tsc_irqwork, HZ);
+-		tsc_start = tsc_read_refs(&ref_start, hpet);
++		tsc_start = tsc_read_refs(&ref_start, hpet, 1);
+ 		return;
+ 	}
+ 
+-	tsc_stop = tsc_read_refs(&ref_stop, hpet);
++	tsc_stop = tsc_read_refs(&ref_stop, hpet, 1);
+ 
+ 	/* hpet or pmtimer available ? */
+ 	if (ref_start == ref_stop)
 
