@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1DULIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:08:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42263 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab1DULIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:08:47 -0400
-Date: Thu, 21 Apr 2011 12:08:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
-        raz ben yehuda <raziebe@gmail.com>, riel@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
-Message-ID: <20110421110841.GA612@suse.de>
-References: <20110415101248.GB22688@suse.de>
- <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+	id S1753535Ab1DULLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 07:11:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65036 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab1DULLg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 07:11:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
+Date: Thu, 21 Apr 2011 13:11:25 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com> <201104201844.30919.arnd@arndb.de> <20110420181652.GA23298@ericsson.com>
+In-Reply-To: <20110420181652.GA23298@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104211311.25988.arnd@arndb.de>
+X-Provags-ID: V02:K0:Nv7XiGcHUp0p2ViVyIiVa7G112GvL8HqENoRuB5vtSJ
+ HFWnZ9iEb/fdk62l2HKnWnlFgvc8UPhF20NzdQXhCN0V5vWkgb
+ LNSad9EVMuNT2JCtiwTUYEq91uoyyR/xHRhwyCYGYUNaw2K3lW
+ 60FE83LlAzn+GjlMpHlemOU4De3WSfEUq+1GW2Qh9kR/1XSXhw
+ +8IDjuhNadE51AWaRM0aQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 03:59:47PM +0900, Minchan Kim wrote:
-> Hi Mel,
+On Wednesday 20 April 2011, Guenter Roeck wrote:
+> On Wed, Apr 20, 2011 at 12:44:30PM -0400, Arnd Bergmann wrote:
+> > On Tuesday 19 April 2011, Guenter Roeck wrote:
+> > > This driver adds support for Si570, Si571, Si598, and Si599
+> > > programmable XO/VCXO.
+> > > 
+> > > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > 
+> > This needs some more explanation of what the hardware is there for,
+> > and why it's unlike everything else that we support in Linux.
+> > 
+> This is a generic configurable clock device. I'll be happy to add
+> some text such as "The device can be used for any application requiring
+> a static or a dynamically configurable clock, such as serdes clocks".
+> Not sure if that would add much value, though.
 > 
-> On Fri, Apr 15, 2011 at 7:12 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > With transparent hugepage support, handle_mm_fault() has to be careful
-> > that a normal PMD has been established before handling a PTE fault. To
-> > achieve this, it used __pte_alloc() directly instead of pte_alloc_map
-> > as pte_alloc_map is unsafe to run against a huge PMD. pte_offset_map()
-> > is called once it is known the PMD is safe.
-> >
-> > pte_alloc_map() is smart enough to check if a PTE is already present
-> > before calling __pte_alloc but this check was lost. As a consequence,
-> > PTEs may be allocated unnecessarily and the page table lock taken.
-> > Thi useless PTE does get cleaned up but it's a performance hit which
-> > is visible in page_test from aim9.
-> >
-> > This patch simply re-adds the check normally done by pte_alloc_map to
-> > check if the PTE needs to be allocated before taking the page table
-> > lock. The effect is noticable in page_test from aim9.
-> >
-> > AIM9
-> >                2.6.38-vanilla 2.6.38-checkptenone
-> > creat-clo      446.10 ( 0.00%)   424.47 (-5.10%)
-> > page_test       38.10 ( 0.00%)    42.04 ( 9.37%)
-> > brk_test        52.45 ( 0.00%)    51.57 (-1.71%)
-> > exec_test      382.00 ( 0.00%)   456.90 (16.39%)
-> > fork_test       60.11 ( 0.00%)    67.79 (11.34%)
-> > MMTests Statistics: duration
-> > Total Elapsed Time (seconds)                611.90    612.22
-> >
-> > (While this affects 2.6.38, it is a performance rather than a
-> > functional bug and normally outside the rules -stable. While the big
-> > performance differences are to a microbench, the difference in fork
-> > and exec performance may be significant enough that -stable wants to
-> > consider the patch)
-> >
-> > Reported-by: Raz Ben Yehuda <raziebe@gmail.com>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > --
-> >  mm/memory.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 5823698..1659574 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> >         * run pte_offset_map on the pmd, if an huge pmd could
-> >         * materialize from under us from a different thread.
-> >         */
-> > -       if (unlikely(__pte_alloc(mm, vma, pmd, address)))
-> > +       if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
-> >                return VM_FAULT_OOM;
-> >        /* if an huge pmd materialized from under us just retry later */
-> >        if (unlikely(pmd_trans_huge(*pmd)))
-> >
+> Regarding "unlike everything else", not sure if that is really correct.
+> The DDS chips Jonathan mentioned do get pretty close, and there are
+> other drivers providing support for clock chips, though typically more
+> dedicated.  ics932s401 in misc is one example, and then there are all
+> the tuner chips in media/common/tuners/.
+
+Isn't that what you'd normally call a 'struct clk' then?
+
+> > If that is true, it should probably not have a user-visible
+> > interface, but only an interface that can be used by other
+> > kernel drivers.
+> > 
+> Depends. In our case, turns out the devices consuming the clock
+> have user mode drivers. Lots of history there, but the chip vendors 
+> provide those user mode drivers, and the teams responsible for
+> integrating the drivers decided to not rewrite it to kernel mode drivers.
+> Also, for special purposes such as margining, it is necessary to control
+> the clock from userspace. So, for our use case, I need the user-visible
+> interface. I _don't_ need the kernel interface, at least not right now,
+> which is why I did not add it.
 > 
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Browsing through the web, it seems the chip is somewhat popular with
+> Amateur Radio. No idea if it would ever be controlled for such a purpose
+> from Linux, but if so, it would also require a user configurable frequency.
 > 
-> Sorry for jumping in too late. I have a just nitpick.
-> 
+> If there is a better place for such a driver than misc, please let me know.
 
-Better late than never :)
+When you say user mode driver, do you mean as in drivers/uio? (taking Hans
+on Cc for these)
 
-> We have another place, do_huge_pmd_anonymous_page.
-> Although it isn't workload of page_test, is it valuable to expand your
-> patch to cover it?
-> If there is workload there are many thread and share one shared anon
-> vma in ALWAYS THP mode, same problem would happen.
+Those already have generic support for memory and interrupt resources,
+maybe we can just add a common way to associate a uio device with a struct clk
+and provide a sysfs or ioctl interface to set a clock for a given device.
 
-We already checked pmd_none() in handle_mm_fault() before calling
-into do_huge_pmd_anonymous_page(). We could race for the fault while
-attempting to allocate a huge page but it wouldn't be as severe a
-problem particularly as it is encountered after failing a 2M allocation.
-
--- 
-Mel Gorman
-SUSE Labs
+	Arnd
