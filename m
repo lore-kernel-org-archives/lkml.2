@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1DUKF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 06:05:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39446 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab1DUKFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 06:05:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,250,1301900400"; 
-   d="scan'208";a="736442808"
-Date: Thu, 21 Apr 2011 18:05:41 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Huang, Ying" <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 1/4] HWPoison: add memory_failure_queue()
-Message-ID: <20110421100541.GA991@localhost>
-References: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
- <20110420090305.GB3761@localhost>
- <4DAFD0F2.5080708@intel.com>
+	id S1752606Ab1DUKHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 06:07:08 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59615 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1DUKHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 06:07:05 -0400
+Date: Thu, 21 Apr 2011 12:06:39 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Russ Anderson <rja@sgi.com>, LKML <linux-kernel@vger.kernel.org>,
+        EDAC devel <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, MCE: Do not taint when handling correctable
+ errors
+Message-ID: <20110421100639.GC10263@aftab>
+References: <1302857141-17580-1-git-send-email-bp@amd64.org>
+ <66D9D2F0CDB5C9428E6166B01EC85EE162EF92B0F3@GVW0676EXC.americas.hpqcorp.net>
+ <20110421093554.GB4262@elte.hu>
+ <20110421095114.GB10263@aftab>
+ <20110421095848.GA14889@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DAFD0F2.5080708@intel.com>
+In-Reply-To: <20110421095848.GA14889@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 02:38:42PM +0800, Huang, Ying wrote:
-> Hi, Fengguang,
+On Thu, Apr 21, 2011 at 05:58:48AM -0400, Ingo Molnar wrote:
+> Ok, indeed. Also, in the future, if you take patches from others please also 
+> credit them in the changelog. Something like this would have been good in the 
+> current case:
 > 
-> On 04/20/2011 05:03 PM, Wu, Fengguang wrote:
-> >> +	if (kfifo_put(&mf_cpu->fifo, &entry))
-> >> +		schedule_work_on(smp_processor_id(), &mf_cpu->work);
-> >> +	else
-> >> +		pr_err("Memory failure: buffer overflow when recovering memory failure at 0x%#lx\n",
-> >> +		       pfn);
-> > 
-> > nitpick: "buffer overflow when recording memory failure at PFN ..."?
+>   Also, this patch includes a change from Nagananda Chumbalkar as well, which 
+>   drops tainting in the therma throttling code for a similar reason: crossing a
+>   thermal threshold does not mean corruption.
 > 
-> Yes, in fact we are not recovering now.  Or "s/recording/queuing/"?
+> Nagananda's Acked-by is there so there's at least partial credit - but we 
+> generally try to aim for at least 100% credit where credit is due :-)
 
-OK, that's fine.
+Absolutely, and in the light of recent events :) I'm still not sure how
+to do that though in a straight-forward manner so that it is visible at
+a first glance. Sure, adding freeform text to the commit message is one
+way. Using a SOB chain might work too - even the Acked-by tag - but all
+those have another main purpose and are being repurposed for annotating
+the fact that a patch is the result of more than one author's thought
+process.
 
-Thanks,
-Fengguang
+IOW, in case I'm not missing anything, we don't really have a way to
+denote a multiple authorship, correct? And we should...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
