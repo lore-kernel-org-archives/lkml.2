@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1DUPWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 11:22:52 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55761 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab1DUPWu (ORCPT
+	id S1754627Ab1DUPXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 11:23:20 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34914 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab1DUPXT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 11:22:50 -0400
+	Thu, 21 Apr 2011 11:23:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=WiKNbSxgDXWBlXCvr0Tc5qE1NfhmhQq5vP6dGFb/dEbrxIJ6+Qiar4YL+giLH6nvdy
-         A8SQpFqRHCce3lvqRLNuZYVtlyYoTdpgLxSUk0yzI/srQ+4HjFO6qRD5ebyTfiYhK6MY
-         YO0e774TtDiE0dT7q4D9EaRXxPDlwhqyZDCzI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OTD1TBTDg+enqOfrx9CodNPy/38EqzuG4hQWaBo9OPJxBNQuhOu952/mzYcCoXjL1n
+         h8/lNjlInr+IQ2UdVR29UCKh9Fd0wqvcXRHRxwFk5G9+eYVZnTOuegvwYS9magzyLmwf
+         39PLE2+fpPI/ISMLA+6tzU8ILwTI6NBffVn1c=
 MIME-Version: 1.0
-In-Reply-To: <201104211658.35618.jordipujolp@gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
- <871v0wvuod.fsf@tucsk.pomaz.szeredi.hu> <BANLkTikv+iCVgG_cgejqJjuS0xURrAvQuw@mail.gmail.com>
- <201104211658.35618.jordipujolp@gmail.com>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Thu, 21 Apr 2011 17:22:28 +0200
-X-Google-Sender-Auth: 7I5DhbQT6KKYGszvjjnwlGkmAOI
-Message-ID: <BANLkTimPN-9dmZKU25oLmUjtGQYDsyCvgw@mail.gmail.com>
-Subject: Re: [PATCH] tmpfs: implement generic xattr support
-To: Jordi Pujol <jordipujolp@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Phillip Lougher <phillip.lougher@gmail.com>,
-        Andreas Dilger <adilger@dilger.ca>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110421120327.GD11788@opensource.wolfsonmicro.com>
+References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
+	<1303300539-2941-1-git-send-email-haojian.zhuang@marvell.com>
+	<20110421104204.GB11788@opensource.wolfsonmicro.com>
+	<25B60CDC2F704E4E9D88FFD52780CB4C05CF0EF027@SC-VEXCH1.marvell.com>
+	<20110421120327.GD11788@opensource.wolfsonmicro.com>
+Date: Thu, 21 Apr 2011 23:23:19 +0800
+Message-ID: <BANLkTik3w-uv95jHdBt7Q7qU54zc1=gCFA@mail.gmail.com>
+Subject: Re: [PATCH 13/14] regulator: max8925: fix not add device if missing
+ init data
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <hzhuang1@marvell.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 April 2011 16:58, Jordi Pujol <jordipujolp@gmail.com> wrote:
-> A Dijous 21 Abril 2011 12:59:01, Michal Suchanek va escriure:
->> Now it's time to build a larger image I guess.
+On Thu, Apr 21, 2011 at 8:03 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Apr 21, 2011 at 04:13:28AM -0700, Haojian Zhuang wrote:
 >
-> Hello,
+>> >> +static struct regulator_init_data
+>> >regulator_pdata[ARRAY_SIZE(regulator_devs)];
 >
-> I have done it, building a desktop image that contains kde4 and some services,
-> The tests show that tmpfs is broken, it makes first operations but at some
-> point it becomes erratic; that occurs in non-persistent mode, where
-> overlayfs upperdir is on tmpfs, and in persistent mode also but in this case
-> more user working is needed before tmpfs failure,
+>> >That looks really suspicious, what happens if there's two of these
+>> >devices in the system?
 >
-> in Linux single user mode I have installed the nvidia packages and driver
-> using dpkg, only some files are installed, therefore I tried creating manually
-> a required directory and in this manner the process has done some steps more.
+>> It's impossible to use two PMIC in one system. At least, I didn't hear.
 >
-> kernel source:
+> I don't believe that.  It's not going to be a common case but it will be
+> possible.
 >
-> http://livenet.selfip.com/ftp/debian/linux-2.6/linux-2.6.38-3.jpp.3-
-> lnet_2.6.38-15.tar.bz2
->
-> logs:
->
-> http://livenet.selfip.com/ftp/debian/overlayfs/test-tmpfs-xattrs.tar.bz2
->
+OK, I can allocate memory to handle this.
 
-Yes, while the system appears to run generally fine unpacking dpkg
-packages fails.
+>> >It's really unclear why the array is needed at all if you're registering
+>> >the devices one at a time.
+>
+>> Although there're a lot of regulators, maybe only parts of them are used.
+>> So only add the necessary one. Others will be passed. The number is got
+>> from platform data.
+>
+> You're missing the point here.  You're registering a device at a time
+> but for some reason the platform data is being stored in an array in
+> order to pass it in, even though only a single element in the array is
+> in use.
+>
+I can allocate memory for platform data.
 
-Thanks
+>> >> -  if (pdata && pdata->regulator[0]) {
+>> >> -          ret = mfd_add_devices(chip->dev, 0, &regulator_devs[0],
+>> >> -                                ARRAY_SIZE(regulator_devs),
+>> >> -                                &regulator_resources[0], 0);
+>> >> -          if (ret < 0) {
+>> >> -                  dev_err(chip->dev, "Failed to add regulator subdev\n");
+>> >> -                  goto out_dev;
+>> >> -          }
+>
+>> >Surely the only change that's needed here is to remove the check to see
+>> >if pdata->regulator[0] is non-null?
+>
+>> All above changes are necessary to me.
+>
+> What makes you say this?  If you remove the check for the first entry
+> being null then the driver will go and register all the regulators which
+> seems fine.  That seems like it fixes the problem with skipping all the
+> regulators if the first one has no platform data.
+>
+If I keep original method and only fix the null issue on regulator[0], I can
+also register regulators. But it'll display error messages since
+regulator_init_data is null while it's registers.
 
-Michal
+After switching to the current method, I only register the ones that I really
+need. So I can avoid some error messages in boot time.
+
+An array seems not good, and I can switch to allocate memory.
+
+> You're really not explaining the changes you're trying to make here
+> terribly well, the changes you're making seem very substantial relative
+> to what you say you're trying to do.
+>
+Yes, I'll list all changes in log.
