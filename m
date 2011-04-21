@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab1DUQiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:38:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38230 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab1DUQiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:38:13 -0400
-Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
-References: <1303332697-16426-1-git-send-email-ncrao@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 18:40:52 +0200
-Message-ID: <1303404052.2035.155.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753075Ab1DUQl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:41:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56616 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980Ab1DUQl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 12:41:57 -0400
+Date: Thu, 21 Apr 2011 18:41:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
+ was written
+Message-ID: <20110421164154.GC4476@quack.suse.cz>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.778889102@intel.com>
+ <20110419102016.GD5257@quack.suse.cz>
+ <20110419111601.GA18961@localhost>
+ <20110419211008.GD9556@quack.suse.cz>
+ <20110420075053.GB30672@localhost>
+ <20110420152211.GC4991@quack.suse.cz>
+ <20110421033325.GA13764@localhost>
+ <20110421043940.GC22423@infradead.org>
+ <20110421060556.GA24232@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421060556.GA24232@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 13:51 -0700, Nikhil Rao wrote:
+On Thu 21-04-11 14:05:56, Wu Fengguang wrote:
+> On Thu, Apr 21, 2011 at 12:39:40PM +0800, Christoph Hellwig wrote:
+> > On Thu, Apr 21, 2011 at 11:33:25AM +0800, Wu Fengguang wrote:
+> > > I collected the writeback_single_inode() traces (patch attached for
+> > > your reference) each for several test runs, and find much more
+> > > I_DIRTY_PAGES after patchset. Dave, do you know why there are so many
+> > > I_DIRTY_PAGES (or radix tag) remained after the XFS ->writepages() call,
+> > > even for small files?
+> > 
+> > What is your defintion of a small file?  As soon as it has multiple
+> > extents or holes there's absolutely no way to clean it with a single
+> > writepage call.
 > 
-> I would like to get some feedback on the direction of this patchset. Please let
-> me know if there are alternative ways of doing this, and I'll be happy to
-> explore them as well.
-> 
-> The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
-> x86_64. Beyond the basic checks, it has not been well tested yet.
-> 
-> Major TODOs:
-> - Detect overflow in update shares calculations (time * load), and set load_avg
->   to maximum possible value (~0ULL).
-> - tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
->   machines. Might need to add a lock to protect this instead of atomic ops.
-> - Check wake-affine math and effective load calculations for overflows.
-> - Needs more testing and need to ensure fairness/balancing is not broken.
+> It's writing a kernel source tree to XFS. You can find in the below
+> trace that it often leaves more dirty pages behind (indicated by the
+> I_DIRTY_PAGES flag) after writing as less as 1 page (indicated by the
+> wrote=1 field).
+  As Dave said, it's probably just a race since XFS redirties the inode on
+IO completion. So I think the inodes are just small so they have only a few
+dirty pages so you don't have much to write and they are written and
+redirtied before you check the I_DIRTY flags. You could use radix tree
+dirty tag to verify whether there are really dirty pages or not...
 
-The code looks fairly ok and I can't fault the TODOs ;-)
+  BTW a quick check of kernel tree shows the following distribution of
+sizes (in KB):
+  Count KB  Cumulative Percent
+    257 0   0.9%
+  13309 4   45%
+   5553 8   63%
+   2997 12  73%
+   1879 16  80%
+   1275 20  83%
+    987 24  87%
+    685 28  89%
+    540 32  91%
+    387 36  ...
+    309 40
+    264 44
+    249 48
+    170 52
+    143 56
+    144 60
+    132 64
+    100 68
+    ...
+Total 30155
 
-I guess getting some measurements on the performance penalty on 32bit
-would be nice -- if only to know about how bad it is.
+And the distribution of your 'wrote=xxx' roughly corresponds to this...
 
-And while its not perfect by a long stretch (we can still blow the whole
-lot by creating a deep enough hierarchy) it should be much better.. the
-only advantage of going with a full on wrapper solution would be that
-plugging in an arbitrary precision type would be simple ;-)
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
