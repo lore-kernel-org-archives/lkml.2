@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1DUQHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:07:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31287 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab1DUQHr (ORCPT
+	id S1754810Ab1DUQIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:08:24 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:21914 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab1DUQIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:07:47 -0400
-Date: Thu, 21 Apr 2011 09:07:26 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] raid5: fix build error, sector_t usage
-Message-Id: <20110421090726.fffd8a5f.randy.dunlap@oracle.com>
-In-Reply-To: <20110421140109.GA16856@elte.hu>
-References: <20110421140109.GA16856@elte.hu>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 21 Apr 2011 12:08:21 -0400
+Subject: Re: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
+From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110421102815.5abf133e@absol.kitzblitz>
+References: <1303341624.11397.2.camel@ks-ubuntu>
+	 <20110421102815.5abf133e@absol.kitzblitz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 11:08:19 -0500
+Message-ID: <1303402099.11855.9.camel@ks-ubuntu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DB05649.001A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+> You are introducing trailing whitespace.
+> 
+> >  			return AE_BAD_DATA;
+> > -		}
+> > +		
+>    ^^^^^^^^^^^^^
+> For every pair of braces you clean away, you're adding
+> two new coding style issues.
 
-Change <sectors> from unsigned long long to sector_t.
-This matches its source field.
+Nicolas - appreciate your feedback and apologize for the error.  I have
+corrected these issues. Re-submitting patch below with corrections.
 
-ERROR: "__udivdi3" [drivers/md/raid456.ko] undefined!
+Best Regards,
+Karthigan Srinivasan.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Fixed brace and comment coding style issues is code.
+
+Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
 ---
- drivers/md/raid5.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/utils.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
---- linux-next-20110421.orig/drivers/md/raid5.c
-+++ linux-next-20110421/drivers/md/raid5.c
-@@ -5678,7 +5678,7 @@ static void raid5_quiesce(mddev_t *mddev
- static void *raid45_takeover_raid0(mddev_t *mddev, int level)
- {
- 	struct raid0_private_data *raid0_priv = mddev->private;
--	unsigned long long sectors;
-+	sector_t sectors;
+diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+index b002a47..76eaac2 100644
+--- a/drivers/acpi/utils.c
++++ b/drivers/acpi/utils.c
+@@ -99,9 +99,8 @@ acpi_extract_package(union acpi_object *package,
  
- 	/* for raid0 takeover only one zone is supported */
- 	if (raid0_priv->nr_strip_zones > 1) {
+ 		union acpi_object *element = &(package->package.elements[i]);
+ 
+-		if (!element) {
++		if (!element)
+ 			return AE_BAD_DATA;
+-		}
+ 
+ 		switch (element->type) {
+ 
+@@ -185,9 +184,8 @@ acpi_extract_package(union acpi_object *package,
+ 		u8 **pointer = NULL;
+ 		union acpi_object *element = &(package->package.elements[i]);
+ 
+-		if (!element) {
++		if (!element)
+ 			return AE_BAD_DATA;
+-		}
+ 
+ 		switch (element->type) {
+ 
+@@ -303,9 +301,8 @@ acpi_evaluate_reference(acpi_handle handle,
+ 	u32 i = 0;
+ 
+ 
+-	if (!list) {
++	if (!list)
+ 		return AE_BAD_PARAMETER;
+-	}
+ 
+ 	/* Evaluate object. */
+ 
+@@ -337,9 +334,9 @@ acpi_evaluate_reference(acpi_handle handle,
+ 		goto end;
+ 	}
+ 
+-	if (package->package.count > ACPI_MAX_HANDLES) {
++	if (package->package.count > ACPI_MAX_HANDLES)
+ 		return AE_NO_MEMORY;
+-	}
++
+ 	list->count = package->package.count;
+ 
+ 	/* Extract package data. */
+@@ -373,7 +370,7 @@ acpi_evaluate_reference(acpi_handle handle,
+       end:
+ 	if (ACPI_FAILURE(status)) {
+ 		list->count = 0;
+-		//kfree(list->handles);
++		/* kfree(list->handles); */
+ 	}
+ 
+ 	kfree(buffer.pointer);
+-- 
+1.7.1
+
+
+
