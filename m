@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab1DUIGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 04:06:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37029 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab1DUIGk (ORCPT
+	id S1754006Ab1DUIGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 04:06:55 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.184]:24816
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753700Ab1DUIGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 04:06:40 -0400
-Date: Thu, 21 Apr 2011 04:06:38 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad@kernel.org" <konrad@kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH v3] xen block backend.
-Message-ID: <20110421080638.GA10630@infradead.org>
-References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
- <20110421033735.GA11501@infradead.org>
- <1303370925.5997.322.camel@zakaz.uk.xensource.com>
- <1303373003.5997.337.camel@zakaz.uk.xensource.com>
+	Thu, 21 Apr 2011 04:06:46 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 21 Apr 2011 16:10:39 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, <linaro-dev@lists.linaro.org>,
+        <sameo@linux.intel.com>, <patches@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] mmc: sdhci: eliminate sdhci_of_host and sdhci_of_data
+Message-ID: <20110421081038.GE4024@S2100-06.ap.freescale.net>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+ <1301042931-4869-3-git-send-email-shawn.guo@linaro.org>
+ <20110419102053.GC4164@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1303373003.5997.337.camel@zakaz.uk.xensource.com>
+In-Reply-To: <20110419102053.GC4164@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 09:03:23AM +0100, Ian Campbell wrote:
-> BTW about the only nice property blktap has as it currently stands over
-> this plan is that it exports an actual block device from vhd, qcow etc
-> files (in some sense blktap is a loopback driver for complex disk image
-> file formats). It turns out to occasionally be quite useful to be able
-> to mount such files, even on non-virtualisation systems (in its current
-> incarnation blktap has no dependency on Xen).
+On Tue, Apr 19, 2011 at 12:20:53PM +0200, Wolfram Sang wrote:
+> On Fri, Mar 25, 2011 at 04:48:48PM +0800, Shawn Guo wrote:
+> > The patch is to migrate the use of sdhci_of_host and sdhci_of_data
+> > to sdhci_pltfm_host and sdhci_pltfm_data, so that the former pair can
+> > be eliminated.
+> > 
+> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> > ---
+> 
+> [...]
+> 
+> > diff --git a/drivers/mmc/host/sdhci-pltfm.h b/drivers/mmc/host/sdhci-pltfm.h
+> > index a3e4be0..12afe86 100644
+> > --- a/drivers/mmc/host/sdhci-pltfm.h
+> > +++ b/drivers/mmc/host/sdhci-pltfm.h
+> > @@ -19,6 +19,10 @@
+> >  struct sdhci_pltfm_host {
+> >  	struct clk *clk;
+> >  	u32 scratchpad; /* to handle quirks across io-accessor calls */
+> > +
+> > +	/* migrate from sdhci_of_host */
+> > +	unsigned int clock;
+> > +	u16 xfer_mode_shadow;
+> 
+> xfer_mode_shadow can be merged into scratchpad. They both fix the same
+> issue.
+> 
+Yeah.
 
-You can already do that using qemu-nbd today.  In most cases the image
-format support in qemu is much better than in the various Xen trees
-anyway, with vhd beeing the only one that looks potentially better in
-Xen.
+-- 
+Regards,
+Shawn
 
