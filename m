@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1DUUxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 16:53:37 -0400
-Received: from trent.utfs.org ([194.246.123.103]:45470 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab1DUUxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 16:53:36 -0400
-Date: Thu, 21 Apr 2011 13:53:34 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Michael Guntsche <mike@it-loops.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        622352@bugs.debian.org, ralf.hildebrandt@charite.de
-Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with
- 2.6.39-rc[123]]
-In-Reply-To: <4DB07942.20209@fusionio.com>
-Message-ID: <alpine.DEB.2.01.1104211347380.18728@trent.utfs.org>
-References: <20110415035451@it-loops.com> <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com> <20110415042255.GC27928@infradead.org> <4DA7E202.4000307@fusionio.com> <alpine.DEB.2.01.1104211051490.18728@trent.utfs.org> <BANLkTim7SLt6TMqJQw35=tnACax0mE1URA@mail.gmail.com>
- <4DB077AF.7020909@nerdbynature.de> <4DB07942.20209@fusionio.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754130Ab1DUU4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 16:56:16 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:47192 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab1DUU4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 16:56:15 -0400
+X-Greylist: delayed 91467 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Apr 2011 16:56:15 EDT
+Date: Thu, 21 Apr 2011 22:56:12 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Dave Jones <davej@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
+        Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        BorislavPetkov <bp@alien8.de>
+Subject: Re: annoying new gcc 4.6.0 warnings.
+Message-ID: <20110421205612.GA4541@merkur.ravnborg.org>
+References: <20110421192117.GA14249@redhat.com> <BANLkTi=srdq69ZG8pWbzWOZLX5KX48DcbQ@mail.gmail.com> <4DB087EC.1010205@caviumnetworks.com> <1303415086.24766.84.camel@Joe-Laptop> <20110421195801.GA15126@redhat.com> <20110421200836.GA31709@merkur.ravnborg.org> <20110421202713.GA19425@redhat.com> <4DB09590.1040709@caviumnetworks.com> <20110421204549.GA20508@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421204549.GA20508@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Apr 2011 at 20:36, Jens Axboe wrote:
-> Please try Linus -git as of now, it could be the excessive udev events
-> for media change that is causing your problem.
+On Thu, Apr 21, 2011 at 04:45:49PM -0400, Dave Jones wrote:
+> On Thu, Apr 21, 2011 at 01:37:36PM -0700, David Daney wrote:
+>  > > +KBUILD_EXTRA_WARNINGS += -Wunused-but-set-variable
+>  > 
+>  > Well I didn't test it, but presumably if you need the $(call cc-option, 
+>  > -Wno-unused-but-set-variable), you would need similar here.
+>  
+> Third time's the charm ?
 
-I'm running latest -git (91e8549..), which includes your for-linus branch 
-and it's running fine so far (1h:30min uptime).
+Seems soo. It semi works now.
+"make W=1" is broken for reasons that is not related to this patch - will submit
+a fix in a minute for that.
 
-@Ralf: can you try this as well, maybe it'll fix #622352 for you too?
+So you can add:
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Tested-by: Sam Ravnborg <sam@ravnborg.org>
 
-Thanks,
-Christian.
--- 
-BOFH excuse #382:
+on the patch.
 
-Someone was smoking in the computer room and set off the halon systems.
+And if you really want to make me happy then you add a comment about _why_
+we disable the warning.
+
+Something like:
+
+# This warning generated too much noise in a regular build.
+# Use make W=1 to enable this warning (see scripts/Makefile.build)
++KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
++
+ ifdef CONFIG_FRAME_POINTER
+
+
+	Sam
