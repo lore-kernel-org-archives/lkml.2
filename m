@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab1DUGeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 02:34:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9428 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab1DUGeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 02:34:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,250,1301900400"; 
-   d="scan'208";a="736383618"
-Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Don't forget to clear
- cpuc->active_mask on overflow
-From: Lin Ming <ming.m.lin@intel.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-In-Reply-To: <4DAEF821.4050103@openvz.org>
-References: <4DAEF821.4050103@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 14:34:08 +0800
-Message-ID: <1303367648.28930.57.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752365Ab1DUGhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 02:37:07 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:9581 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750704Ab1DUGhF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 02:37:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEEAHTPr015LHHJgWdsb2JhbAClRhUBARYmJcYcDoVoBA
+Date: Thu, 21 Apr 2011 16:36:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110421063659.GH1814@dastard>
+References: <20110419073523.GF23985@dastard>
+ <20110419095740.GC5257@quack.suse.cz>
+ <20110419125616.GA20059@localhost>
+ <20110420012120.GK23985@dastard>
+ <20110420025321.GA14398@localhost>
+ <20110421004547.GD1814@dastard>
+ <20110421020617.GB12191@localhost>
+ <20110421030152.GG1814@dastard>
+ <20110421035954.GA15461@localhost>
+ <20110421041010.GA18710@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421041010.GA18710@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 23:13 +0800, Cyrill Gorcunov wrote:
-> It's not enough to simply disable event on overflow the cpuc->active_mask
-> should be cleared as well otherwise counter may stall in "active" even
-> in real being already disabled (which potentially may lead to the situation
-> that user may not use this counter further).
+On Thu, Apr 21, 2011 at 12:10:11PM +0800, Wu Fengguang wrote:
+> > > Still, given wb_writeback() is the only caller of both
+> > > __writeback_inodes_sb and writeback_inodes_wb(), I'm wondering if
+> > > moving the queue_io calls up into wb_writeback() would clean up this
+> > > logic somewhat. I think Jan mentioned doing something like this as
+> > > well elsewhere in the thread...
+> > 
+> > Unfortunately they call queue_io() inside the lock..
 > 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
-> 
-> Ming, iirc you were testing this one, but without unknown nmi fix. So
-> patch from Don should fix unknown nmi issue, please give this patch a
-> shot again if you have some time (Don's patch is here
-> https://lkml.org/lkml/2011/4/18/404 but I think you have it already in mailbox).
+> OK, let's try moving up the lock too. Do you like this change? :)
 
-Tested the 2 patches with nmi watchdog enabled and no unknown nmi was
-seen when running perf tool.
+Yes, very much ;)
 
-Nice.
+Cheers,
 
-Thanks,
-Lin Ming
-
-> 
->  arch/x86/kernel/cpu/perf_event_p4.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> =====================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -946,7 +946,7 @@ static int p4_pmu_handle_irq(struct pt_r
->  		if (!x86_perf_event_set_period(event))
->  			continue;
->  		if (perf_event_overflow(event, 1, &data, regs))
-> -			p4_pmu_disable_event(event);
-> +			x86_pmu_stop(event, 0);
->  	}
-> 
->  	if (handled) {
-> 
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
