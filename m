@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1DULgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:36:50 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:44779 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab1DULgt (ORCPT
+	id S1753944Ab1DULkc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 07:40:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52679 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1DULkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:36:49 -0400
-Date: Thu, 21 Apr 2011 13:36:47 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Andreas Mohr <andi@lisas.de>, Sam Ravnborg <sam@ravnborg.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+	Thu, 21 Apr 2011 07:40:31 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=R6sLeq5vHiIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=zGKtL67101eEpoBJi5MA:9 a=37H__hBZQYICicOkydAA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq
+ locking issue
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Re: [PATCH] eradicate bashisms in scripts/patch-kernel
-Message-ID: <20110421113647.GA18572@rhlx01.hs-esslingen.de>
-References: <20071102020118.GA13852@gondor.apana.org.au>
- <20071102200935.GA14153@rhlx01.hs-esslingen.de>
- <20071102131707.6023a5b7.rdunlap@xenotime.net>
- <20071105195827.GA24117@rhlx01.hs-esslingen.de>
- <20071114144627.8628f2dd.rdunlap@xenotime.net>
- <20071117163327.GA4296@rhlx01.hs-esslingen.de>
- <20071117172816.GC7213@uranus.ravnborg.org>
- <20071117205125.GA26425@rhlx01.hs-esslingen.de>
- <20110403185828.GA4561@rhlx01.hs-esslingen.de>
- <20110403124004.293c90c5.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110403124004.293c90c5.rdunlap@xenotime.net>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
+References: <20110421014153.126662477@goodmis.org>
+	 <20110421014259.132728798@goodmis.org>
+	 <BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 21 Apr 2011 07:40:29 -0400
+Message-ID: <1303386029.7181.118.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-sorry for the delay. Didn't have a suitable environment at that time,
-then it got buried...
-
-On Sun, Apr 03, 2011 at 12:40:04PM -0700, Randy Dunlap wrote:
-> On Sun, 3 Apr 2011 20:58:28 +0200 Andreas Mohr wrote:
-> > # linux-2.6.38.patch-kernel_test/scripts/patch-kernel linux-2.6.38.patch-kernel_test patch-2.6
-> > Current kernel version is 2.6.38 ( Flesh-Eating Bats with Fangs)
-> > ===>  linux-2.6.38.patch-kernel_test/scripts/patch-kernel: line 253: [: =: unary operator expected  <===
-> > cannot find patch file: patch-2.6.39
+On Thu, 2011-04-21 at 15:02 +0800, Yong Zhang wrote:
+> On Thu, Apr 21, 2011 at 9:41 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >  ---
+> >
+> > The above is the case when the unsafe lock is taken while holding
+> > a lock taken in irq context. But when a lock is taken that also
+> > grabs a unsafe lock, the call chain is shown:
+> >
+> >  ---
+> > other info that might help us debug this:
+> >
+> > Chain exists of:
+> >  &rq->lock --> lockA --> lockC
+> >
+> >  Possible interrupt unsafe locking scenario:
+> >
+> >       CPU0                    CPU1
+> >       ----                    ----
+> >  lock(lockC);
+> >                               local_irq_disable();
+> >                               lock(&rq->lock);
+> >                               lock(lockA);
+> >  <Interrupt>
+> >    lock(&rq->lock);
+> >
+> >  *** DEADLOCK ***
 > 
-> Hi,
+> Or we could show this:
+> Chain exists of:
+> &rq->lock --> lockA --> lockC
 > 
-> Are you trying to update a 2.6.38 kernel directory to 2.6.39?
-> I'm a little confused since the command line does not say anything about 2.6.39.
-
-Well, that virtual setup was just for the sake of having a problem test case.
-I should have described it in more detail.
-It simply tries to increment to the next patch version, which in case
-of 2.6.38 input would be 2.6.39 (which... obviously isn't available yet).
-
-> > Since my last patch (the parent mail) happened to modify the very same line,
+>  Possible interrupt unsafe locking scenario:
 > 
-> Parent email from 2007???  wow.  :)
-
-Yup - why not simply reply on the original patch?
-For suitable tracking, I'd rather have one reference too many than......
-
-Perhaps I should have replied on some ~1995 mail? ;-P
-
-> Why doesn't the debug/trace info show the value of STOPFULLVERSION?
-> Is it empty?
-
-Augmented version:
-
-do
-    CURRENTFULLVERSION="$VERSION.$PATCHLEVEL.$SUBLEVEL"
-    EXTRAVER=
-    echo "STOPFULLVERSION is $STOPFULLVERSION"
-    if [ $STOPFULLVERSION = $CURRENTFULLVERSION ]; then
-        echo "Stopping at $CURRENTFULLVERSION base as requested."
-        break
-    fi
+>       CPU0                    CPU1                           CPU2
+>       ----                    ----                                     ----
+>  lock(lockC);
+>                               local_irq_disable();
+>                               lock(&rq->lock);            lock(lockA);
+>                               lock(lockA);                   lock(lockC);
+>  <Interrupt>
+>    lock(&rq->lock);
+> 
+>  *** DEADLOCK ***
 
 
-# linux-2.6.30/scripts/patch-kernel linux-2.6.30 patch-2.6
-Current kernel version is 2.6.30 ( Man-Eating Seals of Antiquity)
-STOPFULLVERSION is 
-[: 276: =: unexpected operator
-Applying patch-2.6.31 (bzip2)... done.
-STOPFULLVERSION is 
-[: 276: =: unexpected operator
-Applying patch-2.6.32 (bzip2)... done.
-STOPFULLVERSION is 
-[: 276: =: unexpected operator
-Applying patch-2.6.33 (bzip2)... done.
-STOPFULLVERSION is 
-[: 276: =: unexpected operator
-Applying patch-2.6.34 (bzip2)... done.
-STOPFULLVERSION is 
-[: 276: =: unexpected operator
-cannot find patch file: patch-2.6.35
+We could but I prefer not to ;) We have some chains that are 8 locks
+deep. I really don't want to scatter that entirely across the screen.
+Hence my "Chain exists.." statement, following an example that any
+kernel developer can (with a little thinking) see is a possible
+deadlock.
 
---> seems so.
-
-> Michal is the new kbuild maintainer, so he could queue it, or I can.
-
-He's been queueing it immediately, thus everything went fine (--> thanks!).
+In fact, this code doesn't even look at the full chain, it only examines
+3 locks in the chain, and lets the developer figure out the rest. I
+could show the entire chain too.
 
 Thanks,
 
-Andreas Mohr
+-- Steve
+
+
