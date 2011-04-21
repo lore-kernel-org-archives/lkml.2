@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab1DTX73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 19:59:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40277 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752863Ab1DTX72 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 19:59:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1303324240-26672-1-git-send-email-jack@suse.cz>
-References: <1303324240-26672-1-git-send-email-jack@suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 20 Apr 2011 16:59:06 -0700
-Message-ID: <BANLkTi=muyG3iVnTp6YCY1-dFuBa6SQGZQ@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Pass setxattr(2) flags properly
-To: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753958Ab1DUAIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 20:08:24 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53127 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab1DUAIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 20:08:22 -0400
+Date: Thu, 21 Apr 2011 02:08:18 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SMACK: Add missing rcu_read_lock/unlock for process capability walk.
+Message-ID: <20110421000818.GT16484@one.firstfloor.org>
+References: <1303336844-31074-1-git-send-email-andi@firstfloor.org> <4DAF637D.90606@schaufler-ca.com> <20110420231859.GB32402@tassilo.jf.intel.com> <4DAF6FA5.7080801@schaufler-ca.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAF6FA5.7080801@schaufler-ca.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. This patch looks very sane, but it's been that way - ignoring the
-'flags' value - since 2009. Does anybody actually _use_ the flags
-field?
+> The global list, yes. The task specific list, no. Modifying the local
+> list is like any other modification of the cred structure and requires
+> the cred be copied.
 
-Judging by commit 431547b3c453 (that introduced the thing), it looks
-like a plain mistake, and the previous "flags" was replaced by a "0"
-in the call when it added the "hander->flags" argument at the end. But
-the fact that it's been two years, and nobody noticed, makes me go
-"hmm.."
+But you still need to free it eventually right? And that freeing will
+need RCU on the reader.
 
-Christoph added to participants, since he's the cause of that change.
+> 
+> Moving the lock into smk_access_entry() would introduce a potential
+> deadlock in smack_mmap_file. There is a bit of convolution in the
+> mmap hook that requires looking at the list in a way that does not
+> allow the locking to be embedded where it used to be.
 
-On Wed, Apr 20, 2011 at 11:30 AM, Jan Kara <jack@suse.cz> wrote:
-> For some reason generic_setxattr() did not pass flags (XATTR_CREATE,
-> XATTR_REPLACE) to the filesystem specific helper. This caused that
-> setxattr(2) syscall just ignored these flags.
->
-> Fix the bug by passing flags correctly.
->
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/xattr.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
->  Who's handling VFS changes when Al is away? Andrew?
+rcu_read_lock() is just a per task counter and nests fine and never deadlocks.
 
-I guess it's mostly me for at least the path handling, but for
-something like this I'd like Christoph to take a look too. Even if it
-_looks_ like a really obvious fix.
-
->
-> diff --git a/fs/xattr.c b/fs/xattr.c
-> index a19acdb..f1ef949 100644
-> --- a/fs/xattr.c
-> +++ b/fs/xattr.c
-> @@ -666,7 +666,7 @@ generic_setxattr(struct dentry *dentry, const char *name, const void *value, siz
->        handler = xattr_resolve_name(dentry->d_sb->s_xattr, &name);
->        if (!handler)
->                return -EOPNOTSUPP;
-> -       return handler->set(dentry, name, value, size, 0, handler->flags);
-> +       return handler->set(dentry, name, value, size, flags, handler->flags);
->  }
->
->  /*
-> --
-> 1.7.1
->
->
+-Andi
