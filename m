@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1DUUQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 16:16:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55245 "EHLO mx1.redhat.com"
+	id S1754590Ab1DUUQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 16:16:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31788 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab1DUUQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 16:16:18 -0400
-Date: Thu, 21 Apr 2011 16:15:34 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, David Daney <ddaney@caviumnetworks.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        BorislavPetkov <bp@alien8.de>
-Subject: Re: annoying new gcc 4.6.0 warnings.
-Message-ID: <20110421201534.GA19128@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Joe Perches <joe@perches.com>,
-	David Daney <ddaney@caviumnetworks.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	BorislavPetkov <bp@alien8.de>
-References: <20110421192117.GA14249@redhat.com>
- <BANLkTi=srdq69ZG8pWbzWOZLX5KX48DcbQ@mail.gmail.com>
- <4DB087EC.1010205@caviumnetworks.com>
- <1303415086.24766.84.camel@Joe-Laptop>
- <20110421195801.GA15126@redhat.com>
- <BANLkTinWV_OriM0mdoVdKWZNHhEUUmWDog@mail.gmail.com>
+	id S1754195Ab1DUUQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 16:16:29 -0400
+Date: Thu, 21 Apr 2011 22:15:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [2/2]
+Message-ID: <20110421201537.GB12248@redhat.com>
+References: <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <4DAEDC3F.5010208@aknet.ru> <20110420165023.GA24455@redhat.com> <4DB000A6.5060409@aknet.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinWV_OriM0mdoVdKWZNHhEUUmWDog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DB000A6.5060409@aknet.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 01:09:11PM -0700, Linus Torvalds wrote:
- > On Thu, Apr 21, 2011 at 12:58 PM, Dave Jones <davej@redhat.com> wrote:
- > > @@ -359,7 +359,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
- > >                   -fno-strict-aliasing -fno-common \
- > >                   -Werror-implicit-function-declaration \
- > >                   -Wno-format-security \
- > > -                  -fno-delete-null-pointer-checks
- > > +                  -fno-delete-null-pointer-checks \
- > > +                  -Wno-unused-but-set-variable
- > 
- > Does this work ok for older gcc's? Do they understand that
- > -Wno-unused-by-set-variable?
- > 
- > gcc-4.5.1 seems to understand it, but what about much older gccs?
+On 04/21, Stas Sergeev wrote:
+>
+> Attaching the fixed patch.
+> Changes:
+> - in wait_task_consider(), pr_detach hides the process
+> only in !ptrace case
+> ...
+> @@ -1555,6 +1600,14 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+>  	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
+>  		return wait_task_zombie(wo, p);
+>  
+> +	if (unlikely(p->pr_detached)) {
+> +		if (p->detaching)
+> +			return wait_task_detached(wo, p);
+> +		/* pr_detached tasks are hidden from parent */
+> +		if (!ptrace)
+> +			return 0;
+> +	}
 
-aparently not. I'll poke at it some more.
+Hmm... I guess this should fix ptrace? How? I dont understand this at all.
 
-	Dave
+Stas, I bet you didn't test your patch. If the old parent traces the child
+WEXITED should not succeed until the child really exits. Otherwise it is
+easy to escape ptrace.
 
+Oh. And I bet there are other problems. Say, exec can change the leader...
+Easy to fix, but note that we need more and more stupid pr_detached special
+cases.
+
+Stas, sorry. I am not going to looks at the next versions. Until you
+convince lkml we need this feature.
+
+Oleg.
 
