@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab1DUTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 15:03:16 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:6689 "EHLO SMTP02.CITRIX.COM"
+	id S1752992Ab1DUTEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 15:04:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab1DUTDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 15:03:15 -0400
-X-IronPort-AV: E=Sophos;i="4.64,252,1301889600"; 
-   d="scan'208";a="145859482"
-Subject: Re: [Xen-devel] Re: [PATCH] xen block backend driver.
-From: Daniel Stodden <daniel.stodden@citrix.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad@kernel.org" <konrad@kernel.org>
-In-Reply-To: <20110421034016.GB11501@infradead.org>
-References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
-	 <1303333543-5915-2-git-send-email-konrad.wilk@oracle.com>
-	 <20110421034016.GB11501@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 12:03:12 -0700
-Message-ID: <1303412592.9571.126.camel@agari.van.xensource.com>
+	id S1752365Ab1DUTEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 15:04:35 -0400
+Date: Thu, 21 Apr 2011 21:03:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>, Chris Metcalf <cmetcalf@tilera.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: arch/tile/kernel/hardwall.c:do_hardwall_trap unsafe/wrong usage of
+	->sighand
+Message-ID: <20110421190332.GA2570@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-3-git-send-email-matt@console-pimps.org> <20110413194231.GA15330@redhat.com> <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com> <20110414190012.GA23517@redhat.com> <20110416140813.5c90b1fc@mfleming-mobl1.ger.corp.intel.com> <20110418164513.GA25930@redhat.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110418164513.GA25930@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 23:40 -0400, Christoph Hellwig wrote:
-> > +#define WRITE_BARRIER	(REQ_WRITE | REQ_FLUSH | REQ_FUA)
-> 
-> Any in case you want to keep usingthis POS out of tree you really need
-> to fix this.  REQ_FLUSH | REQ_FUA is not equivalent to the old barrier
-> semantics that the Xen disk protocol exported to the guest.  You need
-> to drain the whole queue of outstanding I/Os as some old guest (at least
-> those using reiserfs, e.g. old SLES) rely on it.
+On 04/18, Oleg Nesterov wrote:
+>
+> On 04/16, Matt Fleming wrote:
+> >
+> > 	3. I suspect most people find the rules of ->sighand pretty
+> > 	confusing. Just look at
+> >
+> > 		arch/tile/kernel/hardwall.c:do_hardwall_trap()
+> >
+> > 	the use of siglock there looks buggy to me.
+>
+> Indeed, I agree. It shouldn't use __group_send_sig_info() at all.
+> I'll send the patch. Nobody outside of signal code should play with
+> ->sighand, this is almost always wrong.
 
-Yes, everybody is aware that the semantics were broken. But note it's
-not even a consistency issue at this point, because there's currently no
-frontend which relies on the original ordering semantics either. Take
-xen-blkfront, since blk_flush it uses the barrier op for a flush, being
-just a superset when ordering is enforced.
+Hmm. It turns out, I can't make the patch because I do not understand
+what this code tries to do.
 
->From here on, there's two ways we can proceed: 
+hardwall_activate() adds the thread to hardwall_list, but do_hardwall_trap()
+sends the signal to the whole process. I know nothing about arch/tile and
+probably this is correct, but could you confirm this?
 
-We can add the reorderable flush command you asked for a while ago.
+Note that SIGILL can be delivered to another thread in the thread-group, is
+it correct?
 
-But before we just enumerate a new command, a potentially more viable
-option would be FLUSH+FUA flags on the WRITE operation. As if mapping
-bio bits.
+Also. Is it supposed that SIGILL can have a hanlder or can be blocked, or
+it should always kill the whole thread group?
 
-The advantage is that it avoids the extra round trip implied by having
-the frontend driving writes through FSEQ_PREFLUSH on their own. I'd
-expect that to make much more of a performance difference. Somewhat
-differentiating PV from the low physical layer.
+I think we need the patch below, assuming that SIGILL should be sent to
+the single thread and it is fine to have a handler for SIGILL.
 
-Would you, maybe did you, consider that? I think it sounds interesting
-enough to gather performance data, just asking beforehand.
+Oleg.
 
-Blk-flush presently has no concept of _not_ sequencing the preflush, but
-eventually adding a REQ_FLUSH_FUA bit to the queue settings doesn't look
-like a big diff compared to what's currently going on.
-
-Note that it'd only be a device option for backends to offer, or not.
-Userspace backends will almost certainly prefer to start out with FLUSH,
-maybe FUA, because it's stateless and just maps to fdatasync().
-
-Best,
-Daniel
+--- sigprocmask/arch/tile/kernel/hardwall.c~1_sighand	2011-04-06 21:33:42.000000000 +0200
++++ sigprocmask/arch/tile/kernel/hardwall.c	2011-04-21 20:56:36.000000000 +0200
+@@ -268,12 +268,10 @@ void __kprobes do_hardwall_trap(struct p
+ 	found_processes = 0;
+ 	list_for_each_entry(p, &rect->task_head, thread.hardwall_list) {
+ 		BUG_ON(p->thread.hardwall != rect);
+-		if (p->sighand) {
++		if (!(p->flags & PF_EXITING)) {
+ 			found_processes = 1;
+ 			pr_notice("hardwall: killing %d\n", p->pid);
+-			spin_lock(&p->sighand->siglock);
+-			__group_send_sig_info(info.si_signo, &info, p);
+-			spin_unlock(&p->sighand->siglock);
++			do_send_sig_info(info.si_signo, &info, p, false);
+ 		}
+ 	}
+ 	if (!found_processes)
 
