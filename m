@@ -1,150 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab1DUWJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 18:09:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54370 "EHLO mga09.intel.com"
+	id S1755514Ab1DUWKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 18:10:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50074 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab1DUWJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 18:09:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
-   d="scan'208";a="736708687"
-Message-ID: <4DB0AB00.80105@intel.com>
-Date: Thu, 21 Apr 2011 15:09:04 -0700
-From: Joseph Cihula <joseph.cihula@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: akpm@linux-foundation.org, "Wei, Gang" <gang.wei@intel.com>
-Subject: [PATCH RESEND 2] intel_iommu: disable all VT-d PMRs when TXT launched
-References: <4D879328.1080006@intel.com>
-In-Reply-To: <4D879328.1080006@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752998Ab1DUWKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 18:10:11 -0400
+Date: Fri, 22 Apr 2011 08:10:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?Ik1pY2hhxYIgTWlyb3PFgmF3Ig==?= <mirq-linux@rere.qmqm.pl>
+Subject: linux-next: build failure after merge of the final tree (net tree
+ related)
+Message-Id: <20110422081008.e7ebab59.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__22_Apr_2011_08_10_08_+1000_mzJoh0CfRQIyrSfD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Re-sending--again--to get to the top of people's inboxes)
+--Signature=_Fri__22_Apr_2011_08_10_08_+1000_mzJoh0CfRQIyrSfD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Intel VT-d Protected Memory Regions (PMRs) are supposed to be disabled,
-on each VT-d engine, after DMA remapping is enabled on the engines.
-This is because the behavior of having both enabled is not deterministic
-and because, if TXT has been used to launch the kernel, the PMRs may be
-programmed to cover memory regions that will be used for DMA.
+Hi all,
 
-Under some circumstances (certain quirks detected, lack of multiple
-devices, etc.), the current code does not set up DMA remapping on some
-VT-d engines.  In such cases it also skips disabling the PMRs.  This
-causes failures when the kernel is launched with TXT (most often this
-occurs on the graphics engine and results in colored vertical bars on
-the display).
+After merging the final tree, today's linux-next build (powerpc chrp32_defc=
+onfig)
+failed like this:
 
-This patch detects when the kernel has been launched with TXT and then
-disables the PMRs on all VT-d engines.  In some cases where the reason
-that remapping is not being enabled is due to possible ACPI DMAR table
-errors, the VT-d engine addresses may not be correct and thus not able
-to be safely programmed even to disable PMRs.  Because part of the TXT
-launch process is the verification of these addresses, it will always be
-safe to disable PMRs if the TXT launch has succeeded and hence only
-doing this in such cases.
+drivers/net/mv643xx_eth.c: In function 'port_start':
+drivers/net/mv643xx_eth.c:2250: error: 'dev' undeclared (first use in this =
+function)
 
-Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
+Caused by commit aad59c431b77 ("net: mv643xx: convert to hw_features").
 
-diff -uprN -X linux-2.6.38-rc3/Documentation/dontdiff
-linux-2.6.38-rc3/drivers/pci/intel-iommu.c
-linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c
---- linux-2.6.38-rc3/drivers/pci/intel-iommu.c	2011-01-31
-19:05:49.000000000 -0800
-+++ linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c	2011-02-18
-15:42:36.778301210 -0800
-@@ -1299,7 +1299,7 @@ static void iommu_detach_domain(struct d
- static struct iova_domain reserved_iova_list;
- static struct lock_class_key reserved_rbtree_key;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--static void dmar_init_reserved_ranges(void)
-+static int dmar_init_reserved_ranges(void)
- {
- 	struct pci_dev *pdev = NULL;
- 	struct iova *iova;
-@@ -1313,8 +1313,10 @@ static void dmar_init_reserved_ranges(vo
- 	/* IOAPIC ranges shouldn't be accessed by DMA */
- 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
- 		IOVA_PFN(IOAPIC_RANGE_END));
--	if (!iova)
-+	if (!iova) {
- 		printk(KERN_ERR "Reserve IOAPIC range failed\n");
-+		return -ENODEV;
-+	}
+--Signature=_Fri__22_Apr_2011_08_10_08_+1000_mzJoh0CfRQIyrSfD
+Content-Type: application/pgp-signature
 
- 	/* Reserve all PCI MMIO to avoid peer-to-peer access */
- 	for_each_pci_dev(pdev) {
-@@ -1327,11 +1329,13 @@ static void dmar_init_reserved_ranges(vo
- 			iova = reserve_iova(&reserved_iova_list,
- 					    IOVA_PFN(r->start),
- 					    IOVA_PFN(r->end));
--			if (!iova)
-+			if (!iova) {
- 				printk(KERN_ERR "Reserve iova failed\n");
-+				return -ENODEV;
-+			}
- 		}
- 	}
--
-+	return 0;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- static void domain_reserve_special_ranges(struct dmar_domain *domain)
-@@ -2213,7 +2217,7 @@ static int __init iommu_prepare_static_i
- 	return 0;
- }
+iQEcBAEBAgAGBQJNsKtAAAoJEDMEi1NhKgbsFCUIAJVtutRgtnWi6n8V3d5gcFKY
+DAEX7Ak+0aCEHIa24yhtbOimAK3BoklLGbyo2aZEkNfVi15qlvxeVYa3WnA4vzFh
+ZmDcXVST29DP0b6AKMBQ5N6s7P2srRHSMv2izxnQjBG8u8FfjY44bgF0ih0xU66/
+5wmq4sYc4y3r29XadeLhK/Lbxd5AUfdWPbaj2/KXbCRbN6T8zZb4s0JldV++u9W7
+CxF7OcMFQ8coHayccgOAEen4k1Akm4JPlURDn1I3tKBVwIchtK3W6DwgbA8xCpjt
+5r1PmBZoIqZpcBqortujXG/P5V+DFDiqD+HQ0Z7Kk0amfkfSGwOLYWoWJdnHTDs=
+=xYoE
+-----END PGP SIGNATURE-----
 
--int __init init_dmars(void)
-+static int __init init_dmars(int force_on)
- {
- 	struct dmar_drhd_unit *drhd;
- 	struct dmar_rmrr_unit *rmrr;
-@@ -2393,8 +2397,15 @@ int __init init_dmars(void)
- 	 *   enable translation
- 	 */
- 	for_each_drhd_unit(drhd) {
--		if (drhd->ignored)
-+		if (drhd->ignored) {
-+			/*
-+			 * we always have to disable PMRs or DMA may fail on
-+			 * this device
-+			 */
-+			if (force_on)
-+				iommu_disable_protect_mem_regions(drhd->iommu);
- 			continue;
-+		}
- 		iommu = drhd->iommu;
-
- 		iommu_flush_write_buffer(iommu);
-@@ -3297,12 +3308,21 @@ int __init intel_iommu_init(void)
- 	if (no_iommu || dmar_disabled)
- 		return -ENODEV;
-
--	iommu_init_mempool();
--	dmar_init_reserved_ranges();
-+	if (iommu_init_mempool()) {
-+		if (force_on)
-+			panic("tboot: Failed to initialize iommu memory\n");
-+		return 	-ENODEV;
-+	}
-+
-+	if (dmar_init_reserved_ranges()) {
-+		if (force_on)
-+			panic("tboot: Failed to reserve iommu ranges\n");
-+		return 	-ENODEV;
-+	}
-
- 	init_no_remapping_devices();
-
--	ret = init_dmars();
-+	ret = init_dmars(force_on);
- 	if (ret) {
- 		if (force_on)
- 			panic("tboot: Failed to initialize DMARs\n");
+--Signature=_Fri__22_Apr_2011_08_10_08_+1000_mzJoh0CfRQIyrSfD--
