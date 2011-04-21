@@ -1,140 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab1DUItY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 04:49:24 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:50124
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752268Ab1DUItV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 04:49:21 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zz1432N98dKc8kzz1202hzz8275bhz2dh2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 21 Apr 2011 16:53:17 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linaro-dev@lists.linaro.org>,
-        <sameo@linux.intel.com>, <patches@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mmc: sdhci: consolidate sdhci-of-esdhc and
- sdhci-esdhc-imx
-Message-ID: <20110421085316.GG4024@S2100-06.ap.freescale.net>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
- <1301042931-4869-5-git-send-email-shawn.guo@linaro.org>
- <20110419102110.GE4164@pengutronix.de>
+	id S1753907Ab1DUI6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 04:58:45 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48895 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab1DUI6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 04:58:43 -0400
+Date: Thu, 21 Apr 2011 10:58:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Witten <mfwitten@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/6] perf/core improvements and fixes
+Message-ID: <20110421085822.GA4262@elte.hu>
+References: <1303316636-11923-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110419102110.GE4164@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1303316636-11923-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 12:21:10PM +0200, Wolfram Sang wrote:
-> >  config MMC_SDHCI_ESDHC_IMX
-> > -	bool "SDHCI platform support for the Freescale eSDHC i.MX controller"
-> > +	bool "SDHCI support for the Freescale eSDHC i.MX controller"
-> >  	depends on ARCH_MX25 || ARCH_MX35 || ARCH_MX5
-> >  	depends on MMC_SDHCI
-> > -	select MMC_SDHCI_PLTFM
-> > +	select MMC_SDHCI_ESDHC
-> >  	select MMC_SDHCI_IO_ACCESSORS
-> >  	help
-> > -	  This selects the Freescale eSDHC controller support on the platform
-> > -	  bus, found on platforms like mx35/51.
-> > +	  This selects the Freescale eSDHC controller support on platforms
-> > +	  like mx35/51.
-> 
-> While we are at it, mx25 could be added and mx53 (and you know better
-> what else will be coming ;))
-> 
-It's a direct copy.  Will update it properly.
 
-> > diff --git a/drivers/mmc/host/sdhci-esdhc.c b/drivers/mmc/host/sdhci-esdhc.c
-> > new file mode 100644
-> > index 0000000..b3d1bc1
-> > --- /dev/null
-> > +++ b/drivers/mmc/host/sdhci-esdhc.c
-> > @@ -0,0 +1,413 @@
-> > +/*
-> > + * Freescale eSDHC controller driver for MPCxxx and i.MX.
-> > + *
-> > + * Copyright (c) 2007 Freescale Semiconductor, Inc.
-> > + *   Author: Xiaobo Xie <X.Xie@freescale.com>
-> > + *
-> > + * Copyright (c) 2009 MontaVista Software, Inc.
-> > + *   Author: Anton Vorontsov <avorontsov@ru.mvista.com>
-> > + *
-> > + * Copyright (c) 2010 Pengutronix e.K.
-> > + *   Author: Wolfram Sang <w.sang@pengutronix.de>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License as published by
-> > + * the Free Software Foundation; either version 2 of the License.
-> > + */
-> > +
-> > +#include <linux/io.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/err.h>
-> > +#include <linux/clk.h>
-> > +#include <linux/mmc/host.h>
-> > +#include <linux/mmc/sdhci-pltfm.h>
-> > +#ifdef CONFIG_MMC_SDHCI_ESDHC_IMX
-> > +#include <mach/hardware.h>
-> > +#endif
-> > +#include "sdhci.h"
-> > +#include "sdhci-pltfm.h"
-> > +
-> > +/*
-> > + * Ops and quirks for the Freescale eSDHC controller.
-> > + */
-> > +
-> > +#define ESDHC_DEFAULT_QUIRKS	(SDHCI_QUIRK_FORCE_BLK_SZ_2048 | \
-> > +				SDHCI_QUIRK_BROKEN_CARD_DETECTION | \
-> > +				SDHCI_QUIRK_NO_BUSY_IRQ | \
-> > +				SDHCI_QUIRK_NONSTANDARD_CLOCK | \
-> > +				SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK | \
-> > +				SDHCI_QUIRK_PIO_NEEDS_DELAY | \
-> > +				SDHCI_QUIRK_RESTORE_IRQS_AFTER_RESET | \
-> > +				SDHCI_QUIRK_NO_CARD_NO_RESET)
-> 
-> These are not the current quirks. Meanwhile BROKEN_CARD_DETECTION is
-> gone as well as NO_CARD_NO_RESET (at least for imx). My additions to use
-> GPIOs for card detect and write protect are also not in this version.
-> 
-Next version will be based on mmc-next.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> [...]
+> Hi Ingo,
 > 
-> > +static struct sdhci_pltfm_data sdhci_esdhc_mpc_pdata = {
-> > +	.quirks = ESDHC_DEFAULT_QUIRKS,
-> > +	.ops = &sdhci_esdhc_mpc_ops,
-> > +};
-> > +#endif
+>         Please consider pulling from:
 > 
-> Please mark the #endif with comments of the expression they are
-> depending on, e.g.
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 > 
-> #endif /* CONFIG_MMC_SDHCI_ESDHC_MPC */
+> Regards,
 > 
-> if it is not immediately visible. That helps readability.
+> - Arnaldo
 > 
-Ok, since you like it :)
+> Arnaldo Carvalho de Melo (1):
+>   perf symbols: Give more useful names to 'self' parameters
+> 
+> Arun Sharma (1):
+>   perf script: Add support for PERF_TYPE_RAW
+> 
+> Michael Witten (4):
+>   perf tools: Makefile: Clean up `python/perf.so' rule
+>   perf tools: Makefile: PYTHON{,_CONFIG} to bandage Python 3 incompatibility
+>   perf tools: Move `try-cc'
+>   perf tools: git mv tools/perf/{features-tests.mak,config/}
+> 
+>  tools/perf/Makefile                 |  107 +++++--
+>  tools/perf/builtin-script.c         |   14 +-
+>  tools/perf/config/feature-tests.mak |  128 +++++++
+>  tools/perf/config/utilities.mak     |  188 +++++++++++
+>  tools/perf/feature-tests.mak        |  130 -------
+>  tools/perf/util/symbol.c            |  629 ++++++++++++++++++-----------------
+>  tools/perf/util/symbol.h            |   78 +++--
+>  7 files changed, 771 insertions(+), 503 deletions(-)
+>  create mode 100644 tools/perf/config/feature-tests.mak
+>  create mode 100644 tools/perf/config/utilities.mak
+>  delete mode 100644 tools/perf/feature-tests.mak
 
-> [...]
-> 
-> Phew, due to all these hardware bugs, the driver will get messy, even if
-> we try hard. Any chances that future revisions of the core will be
-> updated? :)
-> 
-I doubt all these quirks are design bugs but some designs not fully
-compliant to SDHC specification, which you still can say bugs :)
+Pulled, thanks a lot Arnaldo!
 
--- 
-Regards,
-Shawn
-
+	Ingo
