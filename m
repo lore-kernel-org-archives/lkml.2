@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1DURiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:38:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48966 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab1DURit (ORCPT
+	id S1755058Ab1DURjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:39:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36229 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab1DURjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:38:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YQfCQo6WizkYT2VqPGbfvVET0HGS36WQqEIxyna0/RP3tLjTQVgDsb/YPo6yCJNj4h
-         ICRlngUzMnnLwWWCCFBJmTIyfJsYH9Dt3L2si8UNQfCR0qs4cHUv9C6ECfaBCzA0Gnqb
-         vMhR4IhPo+43oldl43yPFzGhb5nQSJP5v2WTA=
-Date: Thu, 21 Apr 2011 19:38:45 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110421173845.GE15988@htj.dyndns.org>
-References: <20110404211604.GB6133@sucs.org>
- <20110406130423.GE4142@mtj.dyndns.org>
- <20110406212611.GA5131@sucs.org>
- <20110406213718.GA14139@mtj.dyndns.org>
- <20110409093449.GA10016@sucs.org>
- <20110410145920.GA3408@sucs.org>
- <20110413200000.GG3987@mtj.dyndns.org>
- <20110415090118.GA3315@mtj.dyndns.org>
- <20110415182006.GA15916@mtj.dyndns.org>
- <20110415214140.GB1295@sucs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415214140.GB1295@sucs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 21 Apr 2011 13:39:07 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 15/26] 15: uprobes: Handing int3 and
+ singlestep exception.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110421171042.GI10698@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	 <20110401143527.15455.32854.sendpatchset@localhost6.localdomain6>
+	 <1303218185.8345.0.camel@twins> <20110421171042.GI10698@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 19:41:38 +0200
+Message-ID: <1303407698.2035.159.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Apr 15, 2011 at 10:41:40PM +0100, Sitsofe Wheeler wrote:
-> I couldn't reproduce the problem with the very latest kernel but here's
-> the output that appeared with an older kernel with your patch:
+On Thu, 2011-04-21 at 22:40 +0530, Srikar Dronamraju wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2011-04-19 15:03:05]:
 > 
-> ------------[ cut here ]------------
-> WARNING: at block/genhd.c:1561 disk_clear_events+0x164/0x170()
+> > On Fri, 2011-04-01 at 20:05 +0530, Srikar Dronamraju wrote:
+> > > +       if (unlikely(!utask)) {
+> > > +               utask = add_utask();
+> > > +
+> > > +               /* Failed to allocate utask for the current task. */
+> > > +               BUG_ON(!utask);
+> > 
+> > That's not really nice is it ;-) means I can make the kernel go BUG by
+> > simply applying memory pressure.
+> > 
+> 
+> The other option would be remove the probe and set the ip to
+> the breakpoint address and restart the thread.
 
-Hmmm... that's really weird.  It indicates that the workqueue command
-sequence there doesn't guarantee scheduling and completion of the work
-item, which means either there's a bug in workqueue itself or I'm
-confused about what's going on.  Hopefully, the latter.
-Unfortunately, even with physical setup, I'm having problem
-reproducing the problem.  Which kernel version are you using exactly?
-Can you please let me know the commit ID?
+While its better than GFP_NOFAIL since its a return to userspace and
+hence cannot be holding locks etc.. it's still not pretty. But heaps
+better than simply bailing the kernel.
 
-Thanks.
 
--- 
-tejun
+
