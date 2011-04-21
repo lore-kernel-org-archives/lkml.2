@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1DUVHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:07:51 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:49039 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754021Ab1DUVHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:07:50 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: N7a04ksVM1m.0I_vy74zIqoJtspkUaojfuLzlArmJX6wtwJ
- uuWbcCLXPSrjAeayPzP8dQ9vgd7hRmnqrPfogwBmpZwHezQDRhS6n0x0CciM
- QQ1PT2ARKAJ3w6vrvLVoIluvMK2OP23tXgCdgEnW4.P81PnYLPSox_ODV2wi
- wGrUsbUda7O7t_b092sYCvOby5O4QQjYZ9cxpznIhD4z7MYB_raFoBzCk1KS
- oG4_.OHrBvpOM9YVbWXJeKgZP3hM.Cu25TsvuW_CLWDDWs8NT5nEsv4xIGez
- _yEdJWYIxvkcJ3EJeVwvBt2PZxn1txh.NxvtR2b1yKhNm4VBrFud3YubTHWz
- tfSX_rBVbO6iU1AixLcrhMQyC
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 21 Apr 2011 16:07:43 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-In-Reply-To: <1303416315.4025.36.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1104211553390.9496@router.home>
-References: <1303337718.2587.51.camel@mulgrave.site>  <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>  <20110421221712.9184.A69D9226@jp.fujitsu.com>  <1303403847.4025.11.camel@mulgrave.site>  <alpine.DEB.2.00.1104211328000.5741@router.home>
- <1303416315.4025.36.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754609Ab1DUVI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:08:27 -0400
+Received: from mail.perches.com ([173.55.12.10]:4889 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab1DUVI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:08:26 -0400
+From: Joe Perches <joe@perches.com>
+To: Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org
+Cc: Dave Chinner <dchinner@redhat.com>, xfs-masters@oss.sgi.com,
+        xfs@oss.sgi.com
+Subject: [PATCH] xfs: Remove duplicate XFS from xfs_alert_tag, neatening
+Date: Thu, 21 Apr 2011 14:08:23 -0700
+Message-Id: <59d707d5d1bc37ef3a08fdd23c8e1fe72fa55fbb.1303419931.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.5.rc3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Apr 2011, James Bottomley wrote:
+The xfs_printk in xfs_alert_tag doesn't need an XFS: prefix
+as it's added by xfs_printk.
 
-> > Dave Hansen, Mel: Can you provide us with some help? (Its Easter and so
-> > the europeans may be off for awhile)
->
-> It sort of depends on your definition of easy.  The problem going from
-> DISCONTIGMEM to SPARSEMEM is sorting out the section size (the minimum
-> indivisible size for a sectional_mem_map array) and also deciding on
-> whether you need SPARSEMEM_EXTREME (discontigmem allows arbitrarily
-> different sizes for each contiguous region) or
-> ARCH_HAS_HOLES_MEMORYMODEL (allows empty mem_map regions as well).  I
-> suspect most architectures will want SPARSEMEM_EXTREME (it means that
-> the section array isn't fully populated) because the gaps can be huge
-> (we've got a 64GB gap on parisc).
+Add format checking to the non-debug inline function xfs_debug.
+Miscellaneous function prototype argument alignment.
 
-Well my favorite is SPARSEMEM_VMEMMAP because it allows page level holes
-and uses the TLB (via page tables) to avoid lookups in the SPARSE maps but
-that is likely not going to be in an initial fix.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/xfs/linux-2.6/xfs_message.c |    3 +--
+ fs/xfs/linux-2.6/xfs_message.h |    5 +++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-> However, even though I think we can do this going forwards ... I don't
-> think we can backport it as a bug fix for the slub panic.
+diff --git a/fs/xfs/linux-2.6/xfs_message.c b/fs/xfs/linux-2.6/xfs_message.c
+index 9f76cce..e894ab2 100644
+--- a/fs/xfs/linux-2.6/xfs_message.c
++++ b/fs/xfs/linux-2.6/xfs_message.c
+@@ -95,8 +95,7 @@ xfs_alert_tag(
+ 	int			do_panic = 0;
+ 
+ 	if (xfs_panic_mask && (xfs_panic_mask & panic_tag)) {
+-		xfs_printk(KERN_ALERT, mp,
+-			"XFS: Transforming an alert into a BUG.");
++		xfs_alert(mp, "Transforming an alert into a BUG.");
+ 		do_panic = 1;
+ 	}
+ 
+diff --git a/fs/xfs/linux-2.6/xfs_message.h b/fs/xfs/linux-2.6/xfs_message.h
+index f1b3fc1..c11f415 100644
+--- a/fs/xfs/linux-2.6/xfs_message.h
++++ b/fs/xfs/linux-2.6/xfs_message.h
+@@ -11,7 +11,7 @@ extern void xfs_emerg(const struct xfs_mount *mp, const char *fmt, ...)
+ extern void xfs_alert(const struct xfs_mount *mp, const char *fmt, ...)
+         __attribute__ ((format (printf, 2, 3)));
+ extern void xfs_alert_tag(const struct xfs_mount *mp, int tag,
+-			 const char *fmt, ...)
++			  const char *fmt, ...)
+         __attribute__ ((format (printf, 3, 4)));
+ extern void xfs_crit(const struct xfs_mount *mp, const char *fmt, ...)
+         __attribute__ ((format (printf, 2, 3)));
+@@ -28,7 +28,8 @@ extern void xfs_info(const struct xfs_mount *mp, const char *fmt, ...)
+ extern void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
+         __attribute__ ((format (printf, 2, 3)));
+ #else
+-static inline void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
++static inline __attribute__ ((format (printf, 2, 3)))
++void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
+ {
+ }
+ #endif
+-- 
+1.7.5.rc3.dirty
 
-So far there seems to be no other solution that will fix the issues
-cleanly since we have a clash of the notions of a node in !NUMA between
-core and discontig. Which is a pretty basic thing to get wrong.
-
-If we can avoid all the fancy stuff and Dave can just get a minimal SPARSE
-config going then this may be the best solution for stable as well.
-
-But then these configs have been broken for years and no one noticed. This
-means the users of these arches likely have been running a subset of
-kernel functionality. I suspect they have never freed memory from
-DISCONTIG node 1 and higher without CONFIG_DEBUG_VM on. Otherwise I
-cannot explain why the VM_BUG_ONs did not trigger in
-mm/page_alloc.c:move_freepages() that should have been brought to the MM
-developers attention.
-
-This set of circumstances leads to the suspicion that there were only
-tests run that showed that the kernel booted. Higher node memory was never
-touched and the MM code was never truly exercised.
-
-So I am not sure that there is any urgency in this matter. No one has
-cared for years after all.
