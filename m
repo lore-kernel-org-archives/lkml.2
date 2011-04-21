@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1DURe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:34:56 -0400
-Received: from lucidpixels.com ([75.144.35.66]:52885 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab1DURez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:34:55 -0400
-Date: Thu, 21 Apr 2011 13:34:51 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nut-upsuser@lists.alioth.debian.org
-Subject: 2.6.38.3 w/nut: libusb_get_string: error sending control message:
- Broken pipe
-Message-ID: <alpine.DEB.2.02.1104211247370.4005@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754859Ab1DURiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:38:51 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48966 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab1DURit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 13:38:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YQfCQo6WizkYT2VqPGbfvVET0HGS36WQqEIxyna0/RP3tLjTQVgDsb/YPo6yCJNj4h
+         ICRlngUzMnnLwWWCCFBJmTIyfJsYH9Dt3L2si8UNQfCR0qs4cHUv9C6ECfaBCzA0Gnqb
+         vMhR4IhPo+43oldl43yPFzGhb5nQSJP5v2WTA=
+Date: Thu, 21 Apr 2011 19:38:45 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
+Message-ID: <20110421173845.GE15988@htj.dyndns.org>
+References: <20110404211604.GB6133@sucs.org>
+ <20110406130423.GE4142@mtj.dyndns.org>
+ <20110406212611.GA5131@sucs.org>
+ <20110406213718.GA14139@mtj.dyndns.org>
+ <20110409093449.GA10016@sucs.org>
+ <20110410145920.GA3408@sucs.org>
+ <20110413200000.GG3987@mtj.dyndns.org>
+ <20110415090118.GA3315@mtj.dyndns.org>
+ <20110415182006.GA15916@mtj.dyndns.org>
+ <20110415214140.GB1295@sucs.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415214140.GB1295@sucs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-Dist: Debian Testing
-Kernel: 2.6.38.3
-Software: nut 2.6.0-1
+On Fri, Apr 15, 2011 at 10:41:40PM +0100, Sitsofe Wheeler wrote:
+> I couldn't reproduce the problem with the very latest kernel but here's
+> the output that appeared with an older kernel with your patch:
+> 
+> ------------[ cut here ]------------
+> WARNING: at block/genhd.c:1561 disk_clear_events+0x164/0x170()
 
-I believe this is a chipset bug, are there any plans for a workaround?
-The messages have changed over the kernel versions for this problem, but
-the problem itself still exists:
+Hmmm... that's really weird.  It indicates that the workqueue command
+sequence there doesn't guarantee scheduling and completion of the work
+item, which means either there's a bug in workqueue itself or I'm
+confused about what's going on.  Hopefully, the latter.
+Unfortunately, even with physical setup, I'm having problem
+reproducing the problem.  Which kernel version are you using exactly?
+Can you please let me know the commit ID?
 
-Apr 21 09:17:25 p34 usbhid-ups[3737]: libusb_get_string: error sending control
-message: Broken pipe
-Apr 21 09:44:20 p34 usbhid-ups[3737]: libusb_get_string: error sending control
-message: Broken pipe
+Thanks.
 
-Error from 2009 (still a problem)
-http://lists.alioth.debian.org/pipermail/nut-upsuser/2009-October/005530.html
-
-This occurred on my last Intel motherboard (Intel 965WH) and current
-motherboard, Intel DP55KG.
-
-Is there something that can be 'fixed' or an workaround implemented, or
-should I just send these messages to /dev/null?
-
-As the nut software does work OK, I keep getting these errors in the logs.
-
-Thanks,
-
-Justin.
-
-
-
-
+-- 
+tejun
