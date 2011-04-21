@@ -1,212 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab1DUOfz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:35:55 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:38570 "EHLO slimlogic.co.uk"
+	id S1754229Ab1DUOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:38:25 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3424 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab1DUOfu convert rfc822-to-8bit (ORCPT
+	id S1753871Ab1DUOiX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:35:50 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Content-Type: text/plain; charset=us-ascii
+	Thu, 21 Apr 2011 10:38:23 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+To: "Arnd Bergmann" <arnd@arndb.de>
+cc: "zajec5@gmail.com" <zajec5@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "George Kashperko" <george@znau.edu.ua>,
+        "Jonas Gorski" <jonas.gorski@gmail.com>,
+        "Hauke Mehrtens" <hauke@hauke-m.de>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "Andy Botting" <andy@andybotting.com>, "Greg KH" <greg@kroah.com>,
+        "Michael Buesch" <m@bues.ch>
+Subject: Re: [PATCH] drivers: brcmaxi: provide amba axi functionality in
+ separate module
+References: <1303331669-31293-1-git-send-email-arend@broadcom.com>
+ <201104211612.49805.arnd@arndb.de>
+Date: Thu, 21 Apr 2011 16:38:09 +0200
+MIME-Version: 1.0
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vuallvn63ri7v4@arend-laptop>
+In-Reply-To: <201104211612.49805.arnd@arndb.de>
+User-Agent: Opera Mail/11.10 (Linux)
+X-WSS-ID: 61AE9D983I814964130-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
 Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv4 2/4] TPS65910: GPIO: Add GPIO driver
-Date: Thu, 21 Apr 2011 09:35:47 -0500
-Message-Id: <8BC87CF8-EAB5-40A9-AAFB-D4F7521B3E04@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com, sameo@linux.intel.com,
-        Graeme Gregory <gg@slimlogic.co.uk>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <gg@slimlogic.co.uk>
+On Thu, 21 Apr 2011 16:12:49 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
 
-TPS65910 has one configurable GPIO that can be used for several
-purposes. Subsequent versions of the TPS chip support more than
-one GPIO.
+> On Wednesday 20 April 2011, Arend van Spriel wrote:
+>> The open-source community is looking for a library which will detect
+>> cores in a chip using axi backplane. Another proposal has been
+>> sent by Rafał Miłecki, which registers detected cores in the linux
+>> device tree to be claimed by device drivers. This implies cores will
+>> always provide a system function to the kernel which is indepent from
+>> other cores and have very loose or no coupling. If this is not true,
+>> exceptions need to be added in the device registration process. This
+>> means knowledge of specific devices from specific vendors is sitting
+>> in a bus driver. Whether the exceptions are rarely or likely is a
+>> pending question.
+>
+> Hi Arend,
+>
+> I have two very general comments about this:
+>
+>> To feed the discussion this implementation takes a different approach.
+>> A calling entity (being a pci device driver, or SoC initialization
+>> sequence) registers a table with core identities and a callback  
+>> function.
+>> It then starts the scan and for each detected core with a callback
+>> function it does the call providing the core information. Apart from
+>> that it provides some basic operations on the core.
+>>
+>> It has been tested using the brcmsmac driver (in  
+>> drivers/staging/brcm80211).
+>
+> The API split between PCI and non-PCI devices appears to be
+> unhelpful. Can't you abstract the interface so that a user
+> would apply the exact same interfaces in both cases, and handle
+> the differences internally?
 
-Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
----
-drivers/mfd/Makefile         |    2 +-
-drivers/mfd/tps65910-gpio.c  |  109 ++++++++++++++++++++++++++++++++++++++++++
-drivers/mfd/tps65910.c       |    7 +++
-include/linux/mfd/tps65910.h |    3 +
-4 files changed, 120 insertions(+), 1 deletions(-)
-create mode 100644 drivers/mfd/tps65910-gpio.c
+Ok. that can be arranged ;-)
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 3afb7ac..012ed17 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -88,4 +88,4 @@ obj-$(CONFIG_MFD_VX855)		+= vx855.o
-obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
-obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
-obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
--obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
-+obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o
-diff --git a/drivers/mfd/tps65910-gpio.c b/drivers/mfd/tps65910-gpio.c
-new file mode 100644
-index 0000000..7bb8fe6
---- /dev/null
-+++ b/drivers/mfd/tps65910-gpio.c
-@@ -0,0 +1,109 @@
-+/*
-+ * tps65910-gpio.c  --  TI TPS6591x
-+ *
-+ * Copyright 2010 Texas Instruments Inc.
-+ *
-+ * Author: Graeme Gregory <gg@slimlogic.co.uk>
-+ * Author: Jorge Eduardo Candelaria jedu@slimlogic.co.uk>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/tps65910.h>
-+
-+static int tps65910_gpio_get(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-+	uint8_t val;
-+
-+	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-+
-+	if (val & GPIO0_GPIO_STS_MASK)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static void tps65910_gpio_set(struct gpio_chip *gc, unsigned offset,
-+			      int value)
-+{
-+	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-+	uint8_t val;
-+
-+	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-+
-+	if (value)
-+		val |= GPIO0_GPIO_SET_MASK;
-+	else
-+		val &= ~GPIO0_GPIO_SET_MASK;
-+
-+	tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-+}
-+
-+static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
-+				int value)
-+{
-+	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-+	uint8_t val;
-+	int ret;
-+
-+	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	val |= GPIO0_GPIO_CFG_MASK;
-+
-+	/* Set the initial value */
-+	tps65910_gpio_set(gc, 0, value);
-+
-+	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-+}
-+
-+static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-+	uint8_t val;
-+	int ret;
-+
-+	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	val &= ~GPIO0_GPIO_CFG_MASK;
-+
-+	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-+}
-+
-+void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
-+{
-+	int ret;
-+
-+	if (!gpio_base)
-+		return;
-+
-+	tps65910->gpio.owner		= THIS_MODULE;
-+	tps65910->gpio.label		= tps65910->i2c_client->name;
-+	tps65910->gpio.dev		= tps65910->dev;
-+	tps65910->gpio.base		= gpio_base;
-+	tps65910->gpio.ngpio		= 1;
-+	tps65910->gpio.can_sleep	= 1;
-+
-+	tps65910->gpio.direction_input	= tps65910_gpio_input;
-+	tps65910->gpio.direction_output	= tps65910_gpio_output;
-+	tps65910->gpio.set		= tps65910_gpio_set;
-+	tps65910->gpio.get		= tps65910_gpio_get;
-+
-+	ret = gpiochip_add(&tps65910->gpio);
-+
-+	if (ret)
-+		dev_warn(tps65910->dev, "GPIO registration failed: %d\n", ret);
-+}
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index f13e448..99c43b6 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -89,8 +89,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
-			    const struct i2c_device_id *id)
-{
-	struct tps65910 *tps65910;
-+	struct tps65910_board *pmic_plat_data;
-	int ret = 0;
+>> +/* Core Codes */
+>> +#define	NODEV_CORE_ID		0x700	/* Invalid coreid */
+>> +#define	CC_CORE_ID		0x800	/* chipcommon core */
+>> +#define	ILINE20_CORE_ID		0x801	/* iline20 core */
+>> +#define	SRAM_CORE_ID		0x802	/* sram core */
+>> +#define	SDRAM_CORE_ID		0x803	/* sdram core */
+>> +#define	PCI_CORE_ID		0x804	/* pci core */
+>> +#define	MIPS_CORE_ID		0x805	/* mips core */
+>> +#define	ENET_CORE_ID		0x806	/* enet mac core */
+>> +#define	CODEC_CORE_ID		0x807	/* v90 codec core */
+>> +#define	USB_CORE_ID		0x808	/* usb 1.1 host/device core */
+>> +#define	ADSL_CORE_ID		0x809	/* ADSL core */
+>> +#define	ILINE100_CORE_ID	0x80a	/* iline100 core */
+>> +#define	IPSEC_CORE_ID		0x80b	/* ipsec core */
+>> +#define	UTOPIA_CORE_ID		0x80c	/* utopia core */
+>> +#define	PCMCIA_CORE_ID		0x80d	/* pcmcia core */
+>> +#define	SOCRAM_CORE_ID		0x80e	/* internal memory core */
+>> +#define	MEMC_CORE_ID		0x80f	/* memc sdram core */
+>> +#define	OFDM_CORE_ID		0x810	/* OFDM phy core */
+>> ...
+>
+> This list to me is a strong hint that the cores behind the AXI bridge
+> should normally be actual devices in Linux, i.e. the approach that
+> Rafał suggested.  The vast majority of these is something that in Linux
+> would be operated by a device driver. The exceptions that I can see
+> are CPU cores and bus bridges, both of which we typically also represent
+> as devices in the flattened device tree, even though they typically
+> don't have a Linux driver attached to them.
 
-+	pmic_plat_data = dev_get_platdata(&i2c->dev);
-+	if (!pmic_plat_data)
-+		return -EINVAL;
-+
-	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
-	if (tps65910 == NULL)
-		return -ENOMEM;
-@@ -107,6 +112,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
-	if (ret < 0)
-		goto err;
+Fine. Your providing the kind of feedback I was looking for. The  
+OFDM_CORE_ID is also an exception.
 
-+	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
-+
-	return ret;
+So could a device driver claim multiple cores/devices to assure other  
+drivers are not accessing those? I would prefer that over having  
+exceptions coded in the axi bus driver, like the chipcommon core  
+(CC_CORE_ID). I assume it can be done by the device table. Is that correct?
 
-err:
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 43c8631..bf3597e 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -714,6 +714,7 @@
- */
+Rafał,
 
-struct tps65910_board {
-+	int gpio_base;
-	struct regulator_init_data *tps65910_pmic_init_data;
-};
+Would it be possible to make chipcommon driver optional (not doing the  
+initialization)?
 
-@@ -746,4 +747,6 @@ struct tps65910_platform_data {
-	int irq_base;
-};
-
-+void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
-+
-#endif /*  __LINUX_MFD_TPS65910_H */
+Gr. AvS
 -- 
-1.7.1
+"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
+
