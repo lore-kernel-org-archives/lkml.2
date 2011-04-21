@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab1DURIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:08:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61267 "EHLO
+	id S1755172Ab1DURJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:09:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58801 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab1DURIb (ORCPT
+	with ESMTP id S1754914Ab1DURJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:08:31 -0400
+	Thu, 21 Apr 2011 13:09:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ffAE4KVQWC/lU1pODj1MYo1AB/qa1oMBBPJCBTQ4zAm39EIUHyQjheqUwwbXE81dH3
-         tm7f76ntD20WPxxQ0B6B/LgJow4WZLjKtLAwX5GFCEAovM5lCKLuAjv/+gQUXQRmWvIq
-         DuLvEUdeSAMn9XG6znfUoBDpFM81QlKVQFKFg=
-Date: Thu, 21 Apr 2011 19:08:26 +0200
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uJI1G3n1nmgFe1vjc1y6+0/zWPoMdzoHP/V8bqhvTWzgYOjz2DCogRvquhkXOvfePT
+         cM5nwsu+FtZ+4gT7UL2p7LLhF073hpJ0X9PfUF/fCse3iquEIm4fTLD3CIxq0c0NnXnA
+         02IZidO7oM6Qa6oDPJvn/1yXlDK4T6M1ZfNvE=
+Date: Thu, 21 Apr 2011 19:09:25 +0200
 From: Tejun Heo <tj@kernel.org>
 To: Jens Axboe <jaxboe@fusionio.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Christoph Hellwig <hch@lst.de>, Neil Brown <neilb@suse.de>,
         "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
         linux-ide@vger.kernel.org, kay.sievers@vrfy.org
-Subject: [PATCH 1/2] block: don't propagate unlisted DISK_EVENTs to userland
-Message-ID: <20110421170826.GC15988@htj.dyndns.org>
+Subject: [PATCH 2/2] ide: unexport DISK_EVENT_MEDIA_CHANGE for ide-gd and
+ ide-cd
+Message-ID: <20110421170925.GD15988@htj.dyndns.org>
+References: <20110421170826.GC15988@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110421170826.GC15988@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DISK_EVENT_MEDIA_CHANGE is used for both userland visible event and
-internal event for revalidation of removeable devices.  Some legacy
-drivers don't implement proper event detection and continuously
-generate events under certain circumstances.  For example, ide-cd
-generates media changed continuously if there's no media in the drive,
-which can lead to infinite loop of events jumping back and forth
-between the driver and userland event handler.
+check_events() implementations in both ide-gd and ide-cd are
+inadequate for in-kernel event polling.  Both generate media change
+events continuously when certain conditions are met causing infinite
+event loop between the driver and userland event handler.
 
-This patch updates disk event infrastructure such that it never
-propagates events not listed in disk->events to userland.  Those
-events are processed the same for internal purposes but uevent
-generation is suppressed.
-
-This also ensures that userland only gets events which are advertised
-in the @events sysfs node lowering risk of confusion.
+As disk event now supports suppression of unlisted events, simply
+de-listing DISK_EVENT_MEDIA_CHANGE from disk->events resolves the
+problem.  Internal handling around media revalidation will behave the
+same while userland will fall back to userland event polling after
+detecting the device doesn't support disk events.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Jens Axboe <jaxboe@fusionio.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
-These two patches fix infinite MEDIA_CHANGE events problem reported w/
-ide-cd.  I tried an alternate patch to implement proper check_events()
-for ide-cd but given the deprecated status of ide and the existence of
-fallback userland event polling, this minimal approach seems better.
+ drivers/ide/ide-cd.c       |    1 -
+ drivers/ide/ide-cd_ioctl.c |    6 ++++++
+ drivers/ide/ide-gd.c       |    7 ++++++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
-Thank you.
-
- block/genhd.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-Index: work/block/genhd.c
+Index: work/drivers/ide/ide-gd.c
 ===================================================================
---- work.orig/block/genhd.c
-+++ work/block/genhd.c
-@@ -1588,9 +1588,13 @@ static void disk_events_workfn(struct wo
+--- work.orig/drivers/ide/ide-gd.c
++++ work/drivers/ide/ide-gd.c
+@@ -298,6 +298,12 @@ static unsigned int ide_gd_check_events(
+ 		return 0;
+ 	}
  
- 	spin_unlock_irq(&ev->lock);
- 
--	/* tell userland about new events */
 +	/*
-+	 * Tell userland about new events.  Only the events listed in
-+	 * @disk->events are reported.  Unlisted events are processed the
-+	 * same internally but never get reported to userland.
++	 * The following is used to force revalidation on the first open on
++	 * removeable devices, and never gets reported to userland as
++	 * genhd->events is 0.  This is intended as removeable ide disk
++	 * can't really detect MEDIA_CHANGE events.
 +	 */
- 	for (i = 0; i < ARRAY_SIZE(disk_uevents); i++)
--		if (events & (1 << i))
-+		if (events & disk->events & (1 << i))
- 			envp[nr_events++] = disk_uevents[i];
+ 	ret = drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED;
+ 	drive->dev_flags &= ~IDE_DFLAG_MEDIA_CHANGED;
  
- 	if (nr_events)
+@@ -413,7 +419,6 @@ static int ide_gd_probe(ide_drive_t *dri
+ 	if (drive->dev_flags & IDE_DFLAG_REMOVABLE)
+ 		g->flags = GENHD_FL_REMOVABLE;
+ 	g->fops = &ide_gd_ops;
+-	g->events = DISK_EVENT_MEDIA_CHANGE;
+ 	add_disk(g);
+ 	return 0;
+ 
+Index: work/drivers/ide/ide-cd.c
+===================================================================
+--- work.orig/drivers/ide/ide-cd.c
++++ work/drivers/ide/ide-cd.c
+@@ -1782,7 +1782,6 @@ static int ide_cd_probe(ide_drive_t *dri
+ 	ide_cd_read_toc(drive, &sense);
+ 	g->fops = &idecd_ops;
+ 	g->flags |= GENHD_FL_REMOVABLE;
+-	g->events = DISK_EVENT_MEDIA_CHANGE;
+ 	add_disk(g);
+ 	return 0;
+ 
+Index: work/drivers/ide/ide-cd_ioctl.c
+===================================================================
+--- work.orig/drivers/ide/ide-cd_ioctl.c
++++ work/drivers/ide/ide-cd_ioctl.c
+@@ -79,6 +79,12 @@ int ide_cdrom_drive_status(struct cdrom_
+ 	return CDS_DRIVE_NOT_READY;
+ }
+ 
++/*
++ * ide-cd always generates media changed event if media is missing, which
++ * makes it impossible to use for proper event reporting, so disk->events
++ * is cleared to 0 and the following function is used only to trigger
++ * revalidation and never propagated to userland.
++ */
+ unsigned int ide_cdrom_check_events_real(struct cdrom_device_info *cdi,
+ 					 unsigned int clearing, int slot_nr)
+ {
