@@ -1,82 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980Ab1DUERI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 00:17:08 -0400
-Received: from hornet.saude.df.gov.br ([200.193.236.52]:56343 "HELO
-	hornet.saude.df.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750780Ab1DUERH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 00:17:07 -0400
-Message-ID: <4aba9b854fae89846f1bc9d80a75970c.squirrel@webmail.saude.df.gov.br>
-Date: Thu, 21 Apr 2011 00:42:40 -0300
-Subject: CONGRATULATIONS!!!
-From: "FACEBOOK AWARD 2011" <Facebooknotice@mail.com>
-Reply-To: facebookteam1@ibibo.com
-User-Agent: SquirrelMail/1.4.20
+	id S1751403Ab1DUERd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 00:17:33 -0400
+Received: from verein.lst.de ([213.95.11.211]:35027 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab1DUER2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 00:17:28 -0400
+Date: Thu, 21 Apr 2011 06:17:28 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] vfs: Pass setxattr(2) flags properly
+Message-ID: <20110421041728.GA616@lst.de>
+References: <1303324240-26672-1-git-send-email-jack@suse.cz> <BANLkTi=muyG3iVnTp6YCY1-dFuBa6SQGZQ@mail.gmail.com> <20110421030927.GA32145@lst.de> <BANLkTi=cTOrww+K4R3=0OAYtQYd3vmpvYw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AkerSMTPGW-ServerID: 42665683c889dd7ad1fc859af4f72e79d2a07e9a
-X-AkerSMTPGW-MessageID: 0c3185f95e268ecaf5c482cbbca4acce43ea580d-0o
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=cTOrww+K4R3=0OAYtQYd3vmpvYw@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 20, 2011 at 08:58:35PM -0700, Linus Torvalds wrote:
+> So nobody much i going to care. But I presume that you ack the patch
+> itself as correct?
 
-
-Dear Member, on a random selection your profile name as indicated was
-drawn and attached to serial numbers BTD/672010/02 which subsequently won
-you 550,000.00 GBP {Five Hundred and Fifty Thousand Great Britain Pounds}.
-The selection was made through a computer draw system attaching
-personalized profile name to ticket numbers, Your profile name was
-attached to [winning number 0001}
-
-You are to contact FACEBOOK claims manager with details as stated below:
- Prof Larry Smith
-Email:facebookteam1@ibibo.com
-Tel: +44 87 124 46 313
-----------------------------------
-Your Full Names:
-Contact Address:
-Serial Number:
-Winning Number:
-Mobile Telephone Number:
-Fax numbers:
-Nationality/Country:
-Date of Birth:
-Age/Sex:
-Occupation:
- ----------------------------------
-Once again congratulations
-(FACEBOOK AWARD COORDINATOR)
-
-Dear Member, on a random selection your profile name as indicated was
-drawn and attached to serial numbers BTD/672010/02 which subsequently won
-you 550,000.00 GBP {Five Hundred and Fifty Thousand Great Britain Pounds}.
-The selection was made through a computer draw system attaching
-personalized profile name to ticket numbers, Your profile name was
-attached to [winning number 0001}
-
-You are to contact FACEBOOK claims manager with details as stated below:
- Prof Larry Smith
-Email:facebookteam1@ibibo.com
-Tel: +44 87 124 46 313
-----------------------------------
-Your Full Names:
-Contact Address:
-Serial Number:
-Winning Number:
-Mobile Telephone Number:
-Fax numbers:
-Nationality/Country:
-Date of Birth:
-Age/Sex:
-Occupation:
- ----------------------------------
-Once again congratulations
-(FACEBOOK AWARD COORDINATOR)
-
+Yes, the patch looks correct.
 
