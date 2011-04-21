@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab1DUGsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 02:48:33 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50202 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab1DUGsc convert rfc822-to-8bit (ORCPT
+	id S1752888Ab1DUGuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 02:50:15 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44473 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab1DUGuN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 02:48:32 -0400
+	Thu, 21 Apr 2011 02:50:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bB/c6o/EiIwDoiuti6b2IOaEroUBnkvlaDUBgxymJD6ifCW+JPoRmLcdalB8008yYb
-         zq/aH8TFj9PN8dIB06VArRRpZVRG3/H0w0lRlZisYM213sTnL3afbZK/eP8ifRiToh1T
-         THDj6ZIIM9WBLvG0bq6RYXpdWQ7dv1/uk4k5o=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tnp0s21PHN61o5B4Wz6NrJ6+mrLb0Jlb+ck6KiYcq6nO9wgRcFRtPVtEgcKqt3cfHv
+         Q0CBp+WlrrivXVSi/6EAlZcKAFWaOpGJbWW5EqMAeSL2TnBC03KDvb25QjPD1NRtwp5a
+         0DiLt/rAkyxMJMcnK/xzAMwciT2H/UcBmHme0=
 MIME-Version: 1.0
-In-Reply-To: <E0A55C1E-9DA0-4FFE-90EE-575BB1E649CB@niasdigital.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
-	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
-	<20110418091902.13345132@lxorguk.ukuu.org.uk>
-	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
-	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
-	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
-	<BANLkTi=W7jaVtW1FThvG_ca57q+yDz1kzQ@mail.gmail.com>
-	<E0A55C1E-9DA0-4FFE-90EE-575BB1E649CB@niasdigital.com>
-Date: Thu, 21 Apr 2011 08:48:31 +0200
-X-Google-Sender-Auth: Q6h2aNWoNWPQoYrtMqX96HX6ji8
-Message-ID: <BANLkTin_e1Kkn=KGvnqCHvnJVZczRwdnVA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ben Nizette <bn@niasdigital.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110421014300.727863282@goodmis.org>
+References: <20110421014153.126662477@goodmis.org>
+	<20110421014300.727863282@goodmis.org>
+Date: Thu, 21 Apr 2011 14:50:12 +0800
+Message-ID: <BANLkTinrHGbGikVxLUnJohS3w8AZ-pV5Ww@mail.gmail.com>
+Subject: Re: [PATCH 7/7] lockdep: Remove cmpxchg to update nr_chain_hlocks
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/21 Ben Nizette <bn@niasdigital.com>:
-
->> This patch is about biasing and drive modes. We need to alter
->> these at runtime (from board code, indeed) due to the fact that
->> when you go to sleep e.g. floating a pin yeilds better power
->> characteristics.
+On Thu, Apr 21, 2011 at 9:42 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 >
-> This is actually an interesting case because floating pins yeild
-> /worse/ power characteristics (each transistor of the push-pull
-> is on a little bit and you get a path straight through) [1]. �To
-> get good power performance you want to pull an input pin high or
-> low but which of those two directions depends on external
-> constraints, i.e. the board.
-
-Yeah, mea culpa, I twisted it around in my head. I mean the
-reverse. So this is why there are GPIO_CONFIG_BIAS_HIGH
-and GPIO_CONFIG_BIAS_GROUND in the predefined pin
-bias states.
-
-(I do get it, don't worry, I was in electroscience before I
-turned computer science actually...)
-
-> �This is a case where the driver
-> should /not/ go playing with things it can't fully understand.
+> For some reason nr_chain_hlocks is updated with cmpxchg, but this
+> is performed inside of the lockdep global "grab_lock()", which also
+> makes simple modification of this variable atomic.
 >
-> Perhaps one of the properties that a board can set in a gpio chip
-> driver is the suspend state and have suspend/resume hooks in the
-> gpio chip take care of setting things up on each side.
+> Remove the cmpxchg logic for updating nr_chain_hlocks and simplify
+> the code.
+>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/lockdep.c |   14 ++++----------
+>  1 files changed, 4 insertions(+), 10 deletions(-)
+>
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 3b1ac92..60bce52 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -1973,7 +1973,7 @@ static inline int lookup_chain_cache(struct task_struct *curr,
+>        struct list_head *hash_head = chainhashentry(chain_key);
+>        struct lock_chain *chain;
+>        struct held_lock *hlock_curr, *hlock_next;
 
-Yes, the API is not only for drivers, it's for boards alright.
+Maybe we can also remove hlock_next in this function for some cleanup, because
+it's just an alias of hlock.
 
-Pushing it to drivers/gpio give us two advantages:
+Thanks,
+Yong
 
-1. Depopulate the overpopulated arch/arm/* etc trees
-2. Give an overview so the GPIO maintainer and others can
-  think about consolidations
-3. Clear cut drivers that can have runtime PM hooks etc...
+> -       int i, j, n, cn;
+> +       int i, j;
+>
+>        if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+>                return 0;
+> @@ -2033,15 +2033,9 @@ cache_hit:
+>        }
+>        i++;
+>        chain->depth = curr->lockdep_depth + 1 - i;
+> -       cn = nr_chain_hlocks;
+> -       while (cn + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS) {
+> -               n = cmpxchg(&nr_chain_hlocks, cn, cn + chain->depth);
+> -               if (n == cn)
+> -                       break;
+> -               cn = n;
+> -       }
+> -       if (likely(cn + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS)) {
+> -               chain->base = cn;
+> +       if (likely(nr_chain_hlocks + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS)) {
+> +               chain->base = nr_chain_hlocks;
+> +               nr_chain_hlocks += chain->depth;
+>                for (j = 0; j < chain->depth - 1; j++, i++) {
+>                        int lock_id = curr->held_locks[i].class_idx - 1;
+>                        chain_hlocks[chain->base + j] = lock_id;
+> --
+> 1.7.2.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Linus Walleij
+
+
+-- 
+Only stand for myself
