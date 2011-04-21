@@ -1,113 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1DUQGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:06:46 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54333 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753964Ab1DUQGm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:06:42 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        linux-arch@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <alpine.DEB.2.00.1104201437180.31768@chino.kir.corp.google.com>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
-	 <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
-	 <20110420161615.462D.A69D9226@jp.fujitsu.com>
-	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-	 <20110420112020.GA31296@parisc-linux.org>
-	 <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
-	 <1303308938.2587.8.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104200943580.9266@router.home>
-	 <1303311779.2587.19.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201018360.9266@router.home>
-	 <alpine.DEB.2.00.1104201437180.31768@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 11:06:36 -0500
-Message-ID: <1303401997.4025.8.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1754792Ab1DUQHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:07:04 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44169 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab1DUQHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 12:07:02 -0400
+Date: Thu, 21 Apr 2011 18:06:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20110421160654.GA26822@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 14:42 -0700, David Rientjes wrote:
-> On Wed, 20 Apr 2011, Christoph Lameter wrote:
-> 
-> > There is barely any testing going on at all of this since we have had this
-> > issue for more than 5 years and have not noticed it. The absence of bug
-> > reports therefore proves nothing. Code inspection of the VM shows
-> > that this is an issue that arises in multiple subsystems and that we have
-> > VM_BUG_ONs in the page allocator that should trigger for these situations.
-> > 
-> > Usage of DISCONTIGMEM and !NUMA is not safe and should be flagged as such.
-> > 
-> 
-> We don't actually have any bug reports in front of us that show anything 
-> else in the VM other than slub has issues with this configuration, so 
-> marking them as broken is probably premature.  The parisc config that 
-> triggered this debugging enables CONFIG_SLAB by default, so it probably 
-> has gone unnoticed just because nobody other than James has actually tried 
-> it on hppa64.
-> 
-> Let's see if KOSAKI-san's fixes to Kconfig (even though I'd prefer the 
-> simpler and implicit "config NUMA def_bool ARCH_DISCONTIGMEM_ENABLE" over 
-> his config NUMA) and my fix to parisc to set the bit in N_NORMAL_MEMORY 
-> so that CONFIG_SLUB initializes kmem_cache_node correctly works and then 
-> address issues in the core VM as they arise.  Presumably someone has been 
-> running DISCONTIGMEM on hppa64 in the past five years without issues with 
-> defconfig, so the issue here may just be slub.
+Linus,
 
-Actually, we can fix slub.  As far as all my memory hammer tests go, the
-one liner below is the actual fix (it just forces slub get_node() to
-return the zero node always on !NUMA).  That, as far as a code
-inspection goes, seems to make SLUB as good as SLAB ... as long as
-no-one uses hugepages or VM DEBUG, which, I think we've demonstrated, is
-the case for all the current DISCONTIGMEM users.
+Please pull the latest x86-fixes-for-linus git tree from:
 
-I think either the above or just marking slub broken in DISCONTIGMEM & !
-NUMA is sufficient for stable.  The fix is getting urgent, because
-debian (which is what most of our users are running) has made SLUB the
-default allocator, which is why we're now starting to run into these
-panic reports.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
-The set memory range fix looks good for a backport too ... at least the
-page cache is now no-longer reluctant to use my upper 1GB ...
+ Thanks,
 
-I worry a bit more about backporting the selection of NUMA as a -stable
-fix because it's a larger change (and requires changes to all the
-architectures, since NUMA is an arch local Kconfig variable)
+	Ingo
 
-James
+------------------>
+David Rientjes (2):
+      Revert "x86, NUMA: Fix fakenuma boot failure"
+      x86, numa: Fix cpu nodemasks for NUMA emulation and CONFIG_DEBUG_PER_CPU_MAPS
 
-----
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 94d2a33..243bd9c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -235,7 +235,11 @@ int slab_is_available(void)
+ arch/x86/include/asm/numa.h  |    2 +-
+ arch/x86/kernel/smpboot.c    |   23 -----------------------
+ arch/x86/mm/numa.c           |   31 +++++++++++++------------------
+ arch/x86/mm/numa_emulation.c |   20 ++++++--------------
+ 4 files changed, 20 insertions(+), 56 deletions(-)
+
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 3d4dab4..a50fc9f 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -51,7 +51,7 @@ static inline void numa_remove_cpu(int cpu)		{ }
+ #endif	/* CONFIG_NUMA */
  
- static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
- {
-+#ifdef CONFIG_NUMA
- 	return s->node[node];
-+#else
-+	return s->node[0];
-+#endif
+ #ifdef CONFIG_DEBUG_PER_CPU_MAPS
+-struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable);
++void debug_cpumask_set_cpu(int cpu, int node, bool enable);
+ #endif
+ 
+ #endif	/* _ASM_X86_NUMA_H */
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8ed8908..c2871d3 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -312,26 +312,6 @@ void __cpuinit smp_store_cpu_info(int id)
+ 		identify_secondary_cpu(c);
  }
  
- /* Verify that a pointer has an address that is valid within a slab page */
-
-
+-static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
+-{
+-	int node1 = early_cpu_to_node(cpu1);
+-	int node2 = early_cpu_to_node(cpu2);
+-
+-	/*
+-	 * Our CPU scheduler assumes all logical cpus in the same physical cpu
+-	 * share the same node. But, buggy ACPI or NUMA emulation might assign
+-	 * them to different node. Fix it.
+-	 */
+-	if (node1 != node2) {
+-		pr_warning("CPU %d in node %d and CPU %d in node %d are in the same physical CPU. forcing same node %d\n",
+-			   cpu1, node1, cpu2, node2, node2);
+-
+-		numa_remove_cpu(cpu1);
+-		numa_set_node(cpu1, node2);
+-		numa_add_cpu(cpu1);
+-	}
+-}
+-
+ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+ {
+ 	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
+@@ -340,7 +320,6 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+ 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
+ 	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
+ 	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
+-	check_cpu_siblings_on_same_node(cpu1, cpu2);
+ }
+ 
+ 
+@@ -382,12 +361,10 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
+ 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
+-			check_cpu_siblings_on_same_node(cpu, i);
+ 		}
+ 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
+ 			cpumask_set_cpu(i, cpu_core_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_core_mask(i));
+-			check_cpu_siblings_on_same_node(cpu, i);
+ 			/*
+ 			 *  Does this new cpu bringup a new core?
+ 			 */
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 9559d36..745258d 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -213,53 +213,48 @@ int early_cpu_to_node(int cpu)
+ 	return per_cpu(x86_cpu_to_node_map, cpu);
+ }
+ 
+-struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
++void debug_cpumask_set_cpu(int cpu, int node, bool enable)
+ {
+-	int node = early_cpu_to_node(cpu);
+ 	struct cpumask *mask;
+ 	char buf[64];
+ 
+ 	if (node == NUMA_NO_NODE) {
+ 		/* early_cpu_to_node() already emits a warning and trace */
+-		return NULL;
++		return;
+ 	}
+ 	mask = node_to_cpumask_map[node];
+ 	if (!mask) {
+ 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
+ 		dump_stack();
+-		return NULL;
++		return;
+ 	}
+ 
++	if (enable)
++		cpumask_set_cpu(cpu, mask);
++	else
++		cpumask_clear_cpu(cpu, mask);
++
+ 	cpulist_scnprintf(buf, sizeof(buf), mask);
+ 	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
+ 		enable ? "numa_add_cpu" : "numa_remove_cpu",
+ 		cpu, node, buf);
+-	return mask;
++	return;
+ }
+ 
+ # ifndef CONFIG_NUMA_EMU
+-static void __cpuinit numa_set_cpumask(int cpu, int enable)
++static void __cpuinit numa_set_cpumask(int cpu, bool enable)
+ {
+-	struct cpumask *mask;
+-
+-	mask = debug_cpumask_set_cpu(cpu, enable);
+-	if (!mask)
+-		return;
+-
+-	if (enable)
+-		cpumask_set_cpu(cpu, mask);
+-	else
+-		cpumask_clear_cpu(cpu, mask);
++	debug_cpumask_set_cpu(cpu, early_cpu_to_node(cpu), enable);
+ }
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 1);
++	numa_set_cpumask(cpu, true);
+ }
+ 
+ void __cpuinit numa_remove_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 0);
++	numa_set_cpumask(cpu, false);
+ }
+ # endif	/* !CONFIG_NUMA_EMU */
+ 
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index ad091e4..de84cc1 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -454,10 +454,9 @@ void __cpuinit numa_remove_cpu(int cpu)
+ 		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
+ }
+ #else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+-static void __cpuinit numa_set_cpumask(int cpu, int enable)
++static void __cpuinit numa_set_cpumask(int cpu, bool enable)
+ {
+-	struct cpumask *mask;
+-	int nid, physnid, i;
++	int nid, physnid;
+ 
+ 	nid = early_cpu_to_node(cpu);
+ 	if (nid == NUMA_NO_NODE) {
+@@ -467,28 +466,21 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
+ 
+ 	physnid = emu_nid_to_phys[nid];
+ 
+-	for_each_online_node(i) {
++	for_each_online_node(nid) {
+ 		if (emu_nid_to_phys[nid] != physnid)
+ 			continue;
+ 
+-		mask = debug_cpumask_set_cpu(cpu, enable);
+-		if (!mask)
+-			return;
+-
+-		if (enable)
+-			cpumask_set_cpu(cpu, mask);
+-		else
+-			cpumask_clear_cpu(cpu, mask);
++		debug_cpumask_set_cpu(cpu, nid, enable);
+ 	}
+ }
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 1);
++	numa_set_cpumask(cpu, true);
+ }
+ 
+ void __cpuinit numa_remove_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 0);
++	numa_set_cpumask(cpu, false);
+ }
+ #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
