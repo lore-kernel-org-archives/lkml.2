@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab1DUGyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 02:54:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58765 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab1DUGyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 02:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=QAoXtihgy51JvjigB8+X+f+iAoSdhPbsN8ijGawmVfhUq/rGDg5tGVMZG2cHKGtzUo
-         ovobohWR1QFoUs3B0waW+zWUpTDAT3ze1/E5kv1xZPzaMuC+vRNCv+qQW3/OkgZB62xC
-         WoT1d9KCj6jHu/Efdv6kRQV+6WyO4T6ddC0T4=
-From: Liu Yuan <namei.unix@gmail.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm, ioapic: Fix an error field reference
-Date: Thu, 21 Apr 2011 14:53:57 +0800
-Message-Id: <1303368838-5620-1-git-send-email-namei.unix@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753005Ab1DUG6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 02:58:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab1DUG6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 02:58:52 -0400
+Date: Thu, 21 Apr 2011 08:58:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: PenMount salt <penmount.touch@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
+Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
+In-Reply-To: <BANLkTikwjPc9w-HJLitBYG1tdix1U=4ckg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1104210857170.12035@pobox.suse.cz>
+References: <1303291155-3148-1-git-send-email-salt@salt.com.tw> <201104201054.36974.dmitry.torokhov@gmail.com> <BANLkTikwjPc9w-HJLitBYG1tdix1U=4ckg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Yuan <tailai.ly@taobao.com>
+On Thu, 21 Apr 2011, PenMount salt wrote:
 
-Function ioapic_debug() in the ioapic_deliver() misnames
-one filed by reference. This patch correct it.
+> We are sorry, this is the first time we summit patches, and don't know 
+> the rules well yet. Is there a proper way we can correct this?
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
----
- virt/kvm/ioapic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please just resubmit the patch with modified From: and Signed-off-by: 
+lines so that they use real names.
 
-diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 0b9df83..8df1ca1 100644
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -167,7 +167,7 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
- 
- 	ioapic_debug("dest=%x dest_mode=%x delivery_mode=%x "
- 		     "vector=%x trig_mode=%x\n",
--		     entry->fields.dest, entry->fields.dest_mode,
-+		     entry->fields.dest_id, entry->fields.dest_mode,
- 		     entry->fields.delivery_mode, entry->fields.vector,
- 		     entry->fields.trig_mode);
- 
+See Documentation/SubmittingPatches, namely chapter 12 for details.
+
+Thanks a lot for your work on supporting the new deivce.
+
 -- 
-1.7.1
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
