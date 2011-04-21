@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1DUIIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 04:08:38 -0400
-Received: from smtp-out-095.synserver.de ([212.40.185.95]:1107 "HELO
-	smtp-out-087.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753275Ab1DUIIh (ORCPT
+	id S1753934Ab1DUILa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 04:11:30 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38904 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab1DUIL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 04:08:37 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 8285
-Message-ID: <4DAFE62A.105@metafoo.de>
-Date: Thu, 21 Apr 2011 10:09:14 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: linux-kernel@vger.kernel.org, "'Grant Likely'" <grant.likely@secretlab.ca>,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: Question: GPIO driver how to get irq_base
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com>
-In-Reply-To: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Apr 2011 04:11:27 -0400
+From: "M. Mohan Kumar" <mohan@in.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [V2] net/9p: Handle get_user_pages_fast return properly
+Date: Thu, 21 Apr 2011 13:41:22 +0530
+Message-Id: <1303373482-7076-1-git-send-email-mohan@in.ibm.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2011 09:32 AM, Tomoya MORINAGA wrote:
-> Hi GPIO maintainer,
-> 
-> Need your help.
-> I want to add interrupt function to gpio/pch_gpio.c
-> 
-> According to other upstreamed GPIO driver, (e.g. pl061, langwell, etc...)
-> 2 IRQs(irq, irq_base) are used.
-> 
-> I can get "irq" from (struct pci_dev *)pdev->irq.
-> However I can't understand where can I get the "irq_base".
-> Let me know how to get.
-> 
-> Thanks,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
+Use proper data type to handle get_user_pages_fast error condition. Also
+do not treat EFAULT error as fatal.
 
-In my opinion the best option for expander chips is to allocate a new irq_desc
-range by calling irq_alloc_descs. It will return the first irq number in the
-newly allocated range, which will be your irq_base.
-But be aware that this will require SPARSE_IRQ to work.
+Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+---
+Changes from previous version:
+Retain printing error message in case get_user_pages_fast fails
 
-- Lars
+ net/9p/client.c       |    2 +-
+ net/9p/trans_common.c |    8 +++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 691a04a..1612142 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -614,7 +614,7 @@ p9_client_rpc(struct p9_client *c, int8_t type, const char *fmt, ...)
+ 
+ 	err = c->trans_mod->request(c, req);
+ 	if (err < 0) {
+-		if (err != -ERESTARTSYS)
++		if (err != -ERESTARTSYS && err != -EFAULT)
+ 			c->status = Disconnected;
+ 		goto reterr;
+ 	}
+diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
+index 14265e8..0e73e07 100644
+--- a/net/9p/trans_common.c
++++ b/net/9p/trans_common.c
+@@ -63,7 +63,7 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *pdata_len,
+ 		int nr_pages, u8 rw)
+ {
+ 	uint32_t first_page_bytes = 0;
+-	uint32_t pdata_mapped_pages;
++	int32_t pdata_mapped_pages;
+ 	struct trans_rpage_info  *rpinfo;
+ 
+ 	*pdata_off = (__force size_t)req->tc->pubuf & (PAGE_SIZE-1);
+@@ -75,13 +75,11 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *pdata_len,
+ 	rpinfo = req->tc->private;
+ 	pdata_mapped_pages = get_user_pages_fast((unsigned long)req->tc->pubuf,
+ 			nr_pages, rw, &rpinfo->rp_data[0]);
+-
+-	if (pdata_mapped_pages < 0) {
++	if (pdata_mapped_pages <= 0) {
+ 		printk(KERN_ERR "get_user_pages_fast failed:%d udata:%p"
+ 				"nr_pages:%d\n", pdata_mapped_pages,
+ 				req->tc->pubuf, nr_pages);
+-		pdata_mapped_pages = 0;
+-		return -EIO;
++		return pdata_mapped_pages ;
+ 	}
+ 	rpinfo->rp_nr_pages = pdata_mapped_pages;
+ 	if (*pdata_off) {
+-- 
+1.7.4
+
