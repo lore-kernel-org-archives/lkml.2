@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab1DUVGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:06:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11956 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab1DUVGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:06:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
-   d="scan'208";a="736683588"
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-In-Reply-To: <20110420161025.88299c36.rdunlap@xenotime.net>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
-	 <20110419161509.21b678d3.rdunlap@xenotime.net>
-	 <1303340700.13457.88.camel@localhost>
-	 <20110420161025.88299c36.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 21 Apr 2011 14:06:39 -0700
-Message-ID: <1303419999.13457.107.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754587Ab1DUVHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:07:51 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:49039 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754021Ab1DUVHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:07:50 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: N7a04ksVM1m.0I_vy74zIqoJtspkUaojfuLzlArmJX6wtwJ
+ uuWbcCLXPSrjAeayPzP8dQ9vgd7hRmnqrPfogwBmpZwHezQDRhS6n0x0CciM
+ QQ1PT2ARKAJ3w6vrvLVoIluvMK2OP23tXgCdgEnW4.P81PnYLPSox_ODV2wi
+ wGrUsbUda7O7t_b092sYCvOby5O4QQjYZ9cxpznIhD4z7MYB_raFoBzCk1KS
+ oG4_.OHrBvpOM9YVbWXJeKgZP3hM.Cu25TsvuW_CLWDDWs8NT5nEsv4xIGez
+ _yEdJWYIxvkcJ3EJeVwvBt2PZxn1txh.NxvtR2b1yKhNm4VBrFud3YubTHWz
+ tfSX_rBVbO6iU1AixLcrhMQyC
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 21 Apr 2011 16:07:43 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <1303416315.4025.36.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1104211553390.9496@router.home>
+References: <1303337718.2587.51.camel@mulgrave.site>  <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>  <20110421221712.9184.A69D9226@jp.fujitsu.com>  <1303403847.4025.11.camel@mulgrave.site>  <alpine.DEB.2.00.1104211328000.5741@router.home>
+ <1303416315.4025.36.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 16:10 -0700, Randy Dunlap wrote:
-> On Wed, 20 Apr 2011 16:05:00 -0700 J Freyensee wrote:
-> 
-> > On Tue, 2011-04-19 at 16:15 -0700, Randy Dunlap wrote:
-> > 
-> > A couple more comments below.
-> > 
-> > > On Tue, 19 Apr 2011 15:58:08 -0700 james_p_freyensee@linux.intel.com wrote:
-> 
-> 
-> > > > + * @max_IDS: The max amount of available write IDs to use.
-> > > > + * @baseID:  The starting SW channel ID, based on the Intel
-> > > > + *           PTI arch.
-> > > > + *
-> > > > + * @return: pti_masterchannel struct containing master, channel ID address,
-> > > 
-> > > No '@' on "return".
-> > 
-> > Why no '@' on 'return' when just by doing a 'grep -Ri "@return" drivers/
-> > | wc -l' I count 369 examples of '@return' being used already in the
-> > kernel?  It looks like an acceptable format to me.
-> 
-> It's not.  See Documentation/kernel-doc-nano-HOWTO.txt.
-> '@' goes on function parameters (or struct members).
-> Not on return values.  Those other places should be fixed, but
-> it's just not a high priority thing to do.
-> 
+On Thu, 21 Apr 2011, James Bottomley wrote:
 
-How should I document return values of functions?  I would like them
-documented somehow.
+> > Dave Hansen, Mel: Can you provide us with some help? (Its Easter and so
+> > the europeans may be off for awhile)
+>
+> It sort of depends on your definition of easy.  The problem going from
+> DISCONTIGMEM to SPARSEMEM is sorting out the section size (the minimum
+> indivisible size for a sectional_mem_map array) and also deciding on
+> whether you need SPARSEMEM_EXTREME (discontigmem allows arbitrarily
+> different sizes for each contiguous region) or
+> ARCH_HAS_HOLES_MEMORYMODEL (allows empty mem_map regions as well).  I
+> suspect most architectures will want SPARSEMEM_EXTREME (it means that
+> the section array isn't fully populated) because the gaps can be huge
+> (we've got a 64GB gap on parisc).
 
-kernel-doc-nano-HOWTO.txt does not say other than give examples of what
-I don't want to do and to 'Take a look around the source tree for
-examples'.  
+Well my favorite is SPARSEMEM_VMEMMAP because it allows page level holes
+and uses the TLB (via page tables) to avoid lookups in the SPARSE maps but
+that is likely not going to be in an initial fix.
 
-So one example I found that documents return values does not seem to
-follow kernel-doc-nano-HOWTO.txt:
+> However, even though I think we can do this going forwards ... I don't
+> think we can backport it as a bug fix for the slub panic.
 
-(acpi/acpica/dsutils.c)
- /*******************************************************************************
- *
- * FUNCTION:    acpi_ds_clear_implicit_return
- *
- * PARAMETERS:  walk_state          - Current State
- *
- * RETURN:      None.
- *
+So far there seems to be no other solution that will fix the issues
+cleanly since we have a clash of the notions of a node in !NUMA between
+core and discontig. Which is a pretty basic thing to get wrong.
 
-then another driver, net/wireless/libertas/tx.c, does exactly what I do
-that I'm being advised against (minus the 's' at the end of 'return'):
+If we can avoid all the fancy stuff and Dave can just get a minimal SPARSE
+config going then this may be the best solution for stable as well.
 
-/**
- *  @brief This function sends to the host the last transmitted packet,
- *  filling the radiotap headers with transmission information.
- *
- *  @param priv     A pointer to struct lbs_private structure
- *  @param status   A 32 bit value containing transmission status.
- *
- *  @returns void
- */
+But then these configs have been broken for years and no one noticed. This
+means the users of these arches likely have been running a subset of
+kernel functionality. I suspect they have never freed memory from
+DISCONTIG node 1 and higher without CONFIG_DEBUG_VM on. Otherwise I
+cannot explain why the VM_BUG_ONs did not trigger in
+mm/page_alloc.c:move_freepages() that should have been brought to the MM
+developers attention.
 
+This set of circumstances leads to the suspicion that there were only
+tests run that showed that the kernel booted. Higher node memory was never
+touched and the MM code was never truly exercised.
 
-
-> 
-> > > > + * or 0 for error.
-> > > > + *
-> > > > + * Each bit in the arrays ia_app and ia_os correspond to a master and
-> > > > + * channel id. The bit is one if the id is taken and 0 if free. For
-> > > > + * every master there are 128 channel id's.
-> > > > + */
-> > > > +static struct pti_masterchannel *getID(u8 *IDarray, int max_IDS, int baseID)
-> > > > +{
-> 
-> 
-> > > > +/**
-> > > > + * pti_request_masterchannel() - Kernel API function used to allocate
-> > > > + *                                a master, channel ID address to write to
-> > > > + *                                PTI HW.
-> > > > + * @type: 0- request Application  master, channel aperture ID write address.
-> > > > + *        1- request OS master, channel aperture ID write address.
-> > > > + *        2- request Modem master, channel aperture ID write
-> > > > + *           address.
-> > > > + *        Other values, error.
-> > > > + * @return: pti_masterchannel struct or 0 for error.
-> > > 
-> > > No '@' on "return".
-> > 
-> > Same reason here.
-> 
-> Same answer here.
-> 
-> 
-> 
-> > > > + *
-> > > > + * @return int : Success = 0, otherwise fail.
-> > > 
-> > > No '@' on "return".
-> > 
-> > Same explanation as above.
-> 
-> Same reply also.
-> 
-> 
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-
-
+So I am not sure that there is any urgency in this matter. No one has
+cared for years after all.
