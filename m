@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab1DUU4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 16:56:16 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:47192 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab1DUU4P (ORCPT
+	id S1754265Ab1DUVDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:03:03 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:65306 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752428Ab1DUVDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 16:56:15 -0400
-X-Greylist: delayed 91467 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Apr 2011 16:56:15 EDT
-Date: Thu, 21 Apr 2011 22:56:12 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Dave Jones <davej@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
-        Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        BorislavPetkov <bp@alien8.de>
-Subject: Re: annoying new gcc 4.6.0 warnings.
-Message-ID: <20110421205612.GA4541@merkur.ravnborg.org>
-References: <20110421192117.GA14249@redhat.com> <BANLkTi=srdq69ZG8pWbzWOZLX5KX48DcbQ@mail.gmail.com> <4DB087EC.1010205@caviumnetworks.com> <1303415086.24766.84.camel@Joe-Laptop> <20110421195801.GA15126@redhat.com> <20110421200836.GA31709@merkur.ravnborg.org> <20110421202713.GA19425@redhat.com> <4DB09590.1040709@caviumnetworks.com> <20110421204549.GA20508@redhat.com>
-MIME-Version: 1.0
+	Thu, 21 Apr 2011 17:03:01 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Apr 2011 17:03:00 EDT
+X-AuditID: 1209190e-b7c80ae0000047dd-ef-4db09a5e1004
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110421204549.GA20508@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <1303414954-3315-1-git-send-email-josef@redhat.com>
+Date: Thu, 21 Apr 2011 16:45:54 -0400
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <EB7F482C-0195-4C63-9436-17B417C8DCD7@mit.edu>
+References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+X-Mailer: Apple Mail (2.1084)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsUixG6nrhs3a4OvwcQDchanJyxisph1eQqb
+	xaXHK9gt9uw9yWJxedccNgdWj80rtDze77vK5vF5k1wAcxSXTUpqTmZZapG+XQJXxpTrlxkL
+	NjJWnN/Qz9LA2MDYxcjJISFgInFj2mUmCFtM4sK99WxdjFwcQgL7GCW+H/3ADuFsYJR4s/8L
+	lLOSSaLj4TxmkBZhATuJZVt3soDYvAKGEks3tbOD2MwCWhI3/r0EG8smoCRx59N+sBpOAQeJ
+	03++sYHYLAKqEhN/TGCGqK+Q2PT6DhOELS+x/e0cZoiZVhJnZq5jBbGFBOwleta8BJsjAjTz
+	1PFvQDYH0NmyEk3LMiYwCs5CcsUsJFfMQjJ1ASPzKkbZlNwq3dzEzJzi1GTd4uTEvLzUIl1j
+	vdzMEr3UlNJNjKAg55Tk28H49aDSIUYBDkYlHt7nsRt8hVgTy4orcw8xSnIwKYnyRs4ECvEl
+	5adUZiQWZ8QXleakFh9ilOBgVhLhXdsElONNSaysSi3Kh0lJc7AoifPOlFT3FRJITyxJzU5N
+	LUgtgsnKcHAoSfCeBhkqWJSanlqRlplTgpBm4uAEGc4DNHwnSA1vcUFibnFmOkT+FKMxx+FD
+	M/YzcjR1zd7PKMSSl5+XKiXOewekVACkNKM0D24aLFG9YhQHek6Ydx9IFQ8wycHNewW0iglo
+	1dIr60FWlSQipKQaGBXY561rFXnwean/6m+7N7Ju8NX+p3hU9VGTVcCjQ7wyLyI5gxYv4u1e
+	U/RWxuUCf0Tm3ia/jISYxX9l2cI0Hl/nX3WsP2benpcxB8OiUyf4S+ZbbOpeKPtXwXf37Wlp
+	N66YeWpue7TJxe7AsfeWQrpNJrlFAX99z5TrTz3Vte/KyvfHVznIr1ZiKc5INNRiLipOBAB4
+	d7cZLwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 04:45:49PM -0400, Dave Jones wrote:
-> On Thu, Apr 21, 2011 at 01:37:36PM -0700, David Daney wrote:
->  > > +KBUILD_EXTRA_WARNINGS += -Wunused-but-set-variable
->  > 
->  > Well I didn't test it, but presumably if you need the $(call cc-option, 
->  > -Wno-unused-but-set-variable), you would need similar here.
->  
-> Third time's the charm ?
 
-Seems soo. It semi works now.
-"make W=1" is broken for reasons that is not related to this patch - will submit
-a fix in a minute for that.
+On Apr 21, 2011, at 3:42 PM, Josef Bacik wrote:
 
-So you can add:
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Tested-by: Sam Ravnborg <sam@ravnborg.org>
+> +	case SEEK_DATA:
+> +	case SEEK_HOLE:
+> +		return -EINVAL;
+> 	}
 
-on the patch.
+Maybe we should be returning EOPNOTSUPP?
 
-And if you really want to make me happy then you add a comment about _why_
-we disable the warning.
+-- Ted
 
-Something like:
-
-# This warning generated too much noise in a regular build.
-# Use make W=1 to enable this warning (see scripts/Makefile.build)
-+KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
-+
- ifdef CONFIG_FRAME_POINTER
-
-
-	Sam
