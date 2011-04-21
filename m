@@ -1,178 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1DUOZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:25:47 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47862 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1DUOZp (ORCPT
+	id S1754096Ab1DUO0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:26:49 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61021 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab1DUO0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:25:45 -0400
-Date: Thu, 21 Apr 2011 19:41:25 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>, sds@tycho.nsa.gov
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation
- for uprobes
-Message-ID: <20110421141125.GG10698@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
- <1303145171.32491.886.camel@twins>
- <20110419062654.GB10698@linux.vnet.ibm.com>
- <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
+	Thu, 21 Apr 2011 10:26:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=r63AEwYki5YK6H5acvh7R3+F43N7vO8smwFsj79SFxJNizP/g6vMHDRZxO2tYUi7OJ
+         Rol5h9oUzhpBnYJpSpo74XVlWqEFv+L8Ighsfr5VJBHzZWuJLxeOulzW9JzAxsyDKO1z
+         2JQdZ5CLsmFcYk5i2qsUvXr8OrKF3ArVKwW8o=
+Date: Thu, 21 Apr 2011 23:26:36 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        raz ben yehuda <raziebe@gmail.com>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+Message-ID: <20110421142636.GA1835@barrios-desktop>
+References: <20110415101248.GB22688@suse.de>
+ <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+ <20110421110841.GA612@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
+In-Reply-To: <20110421110841.GA612@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Paris <eparis@parisplace.org> [2011-04-20 09:40:57]:
-
-> On Tue, Apr 19, 2011 at 2:26 AM, Srikar Dronamraju
-> <srikar@linux.vnet.ibm.com> wrote:
-> > * Peter Zijlstra <peterz@infradead.org> [2011-04-18 18:46:11]:
-> >
-> >> On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
+On Thu, Apr 21, 2011 at 12:08:41PM +0100, Mel Gorman wrote:
+> On Thu, Apr 21, 2011 at 03:59:47PM +0900, Minchan Kim wrote:
+> > Hi Mel,
+> > 
+> > On Fri, Apr 15, 2011 at 7:12 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > > With transparent hugepage support, handle_mm_fault() has to be careful
+> > > that a normal PMD has been established before handling a PTE fault. To
+> > > achieve this, it used __pte_alloc() directly instead of pte_alloc_map
+> > > as pte_alloc_map is unsafe to run against a huge PMD. pte_offset_map()
+> > > is called once it is known the PMD is safe.
+> > >
+> > > pte_alloc_map() is smart enough to check if a PTE is already present
+> > > before calling __pte_alloc but this check was lost. As a consequence,
+> > > PTEs may be allocated unnecessarily and the page table lock taken.
+> > > Thi useless PTE does get cleaned up but it's a performance hit which
+> > > is visible in page_test from aim9.
+> > >
+> > > This patch simply re-adds the check normally done by pte_alloc_map to
+> > > check if the PTE needs to be allocated before taking the page table
+> > > lock. The effect is noticable in page_test from aim9.
+> > >
+> > > AIM9
+> > >                2.6.38-vanilla 2.6.38-checkptenone
+> > > creat-clo      446.10 ( 0.00%)   424.47 (-5.10%)
+> > > page_test       38.10 ( 0.00%)    42.04 ( 9.37%)
+> > > brk_test        52.45 ( 0.00%)    51.57 (-1.71%)
+> > > exec_test      382.00 ( 0.00%)   456.90 (16.39%)
+> > > fork_test       60.11 ( 0.00%)    67.79 (11.34%)
+> > > MMTests Statistics: duration
+> > > Total Elapsed Time (seconds)                611.90    612.22
+> > >
+> > > (While this affects 2.6.38, it is a performance rather than a
+> > > functional bug and normally outside the rules -stable. While the big
+> > > performance differences are to a microbench, the difference in fork
+> > > and exec performance may be significant enough that -stable wants to
+> > > consider the patch)
+> > >
+> > > Reported-by: Raz Ben Yehuda <raziebe@gmail.com>
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > --
+> > >  mm/memory.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >
+> > > diff --git a/mm/memory.c b/mm/memory.c
+> > > index 5823698..1659574 100644
+> > > --- a/mm/memory.c
+> > > +++ b/mm/memory.c
+> > > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >         * run pte_offset_map on the pmd, if an huge pmd could
+> > >         * materialize from under us from a different thread.
+> > >         */
+> > > -       if (unlikely(__pte_alloc(mm, vma, pmd, address)))
+> > > +       if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
+> > >                return VM_FAULT_OOM;
+> > >        /* if an huge pmd materialized from under us just retry later */
+> > >        if (unlikely(pmd_trans_huge(*pmd)))
+> > >
+> > 
+> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> > 
+> > Sorry for jumping in too late. I have a just nitpick.
+> > 
 > 
-> >> > +static int xol_add_vma(struct uprobes_xol_area *area)
-> >> > +{
-> >> > +   struct vm_area_struct *vma;
-> >> > +   struct mm_struct *mm;
-> >> > +   struct file *file;
-> >> > +   unsigned long addr;
-> >> > +   int ret = -ENOMEM;
-> >> > +
-> >> > +   mm = get_task_mm(current);
-> >> > +   if (!mm)
-> >> > +           return -ESRCH;
-> >> > +
-> >> > +   down_write(&mm->mmap_sem);
-> >> > +   if (mm->uprobes_xol_area) {
-> >> > +           ret = -EALREADY;
-> >> > +           goto fail;
-> >> > +   }
-> >> > +
-> >> > +   /*
-> >> > +    * Find the end of the top mapping and skip a page.
-> >> > +    * If there is no space for PAGE_SIZE above
-> >> > +    * that, mmap will ignore our address hint.
-> >> > +    *
-> >> > +    * We allocate a "fake" unlinked shmem file because
-> >> > +    * anonymous memory might not be granted execute
-> >> > +    * permission when the selinux security hooks have
-> >> > +    * their way.
-> >> > +    */
-> >>
-> >> That just annoys me, so we're working around some stupid sekurity crap,
-> >> executable anonymous maps are perfectly fine, also what do JITs do?
-> >
-> > Yes, we are working around selinux security hooks, but do we have a
-> > choice.
-> >
-> > James can you please comment on this.
+> Better late than never :)
 > 
-> [added myself and stephen, the 2 SELinux maintainers]
-
-Thanks for pitching in.
-
+> > We have another place, do_huge_pmd_anonymous_page.
+> > Although it isn't workload of page_test, is it valuable to expand your
+> > patch to cover it?
+> > If there is workload there are many thread and share one shared anon
+> > vma in ALWAYS THP mode, same problem would happen.
 > 
-> This is just wrong.  Anything to 'work around' SELinux in the kernel
-> is wrong.  SELinux access decisions are determined by policy not by
-> dirty hacks in the code to subvert any kind of security claims that
-> policy might hope to enforce.
-> 
-> [side note, security_file_mmap() is the right call if there is a file
-> or not.  It should just be called security_mmap() but the _file_ has
-> been around a long time and just never had a need to be changed]
-> 
+> We already checked pmd_none() in handle_mm_fault() before calling
+> into do_huge_pmd_anonymous_page(). We could race for the fault while
+> attempting to allocate a huge page but it wouldn't be as severe a
+> problem particularly as it is encountered after failing a 2M allocation.
 
-Okay,
+Right you are. Fail ot 2M allocation would affect as throttle.
+Thanks.
 
-> Now how to fix the problems you were seeing.  If you run a modern
-> system with a GUI I'm willing to bet the pop-up window told you
-> exactly how to fix your problem.  If you are not on a GUI I accept
-> it's a more difficult as you most likely don't have the setroubleshoot
-> tools installed to help you out.  I'm just guess what your problem
-> was, but I think you have two solutions either:
+As I failed let you add the check, I have to reveal my mind. :)
+Actually, what I want is consistency of the code.
+The code have been same in two places but you find the problem in page_test of aim9,
+you changed one of them slightly. I think in future someone will
+have a question about that and he will start grep git log but it will take
+a long time as the log is buried other code piled up. 
 
-I am not running GUI on my testbox and mostly disable selinux unless I
-need to test if uprobes works on selinux environment.
+I hope adding the comment in this case.
+
+        /*
+         * PTEs may be allocated unnecessarily and the page table lock taken.
+         * The useless PTE does get cleaned up but it's a performance hit in
+         * some micro-benchmark. Let's check pmd_none before __pte_alloc to
+         * reduce the overhead. 
+         */
+-       if (unlikely(__pte_alloc(mm, vma, pmd, address)))
++       if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
+
+If you mind it as someone who have a question can find the log at last 
+although he need some time, I wouldn't care of the nitpick any more. :)
+It's up to you. 
+
+Thanks, Mel.
 
 > 
-> 1) chcon -t unconfined_execmem_t /path/to/your/binary
-> 2) setsebool -P allow_execmem 1
-> 
-> The first will cause the binary to execute in a domain with
-> permissions to execute anonymous memory, the second will allow all
-> unconfined domains to execute anonymous memory.
-
-We arent restricted to a particular binary/binaries. We want an
-infrastructure that can trace all user-space applications. So the
-first option doesnt seem to help us.
-
-If I understand the second option. we would want this command to be
-run on any selinux enabled machines that wants uprobes to be working.
-
-> 
-> I did hear this question though: On a different but related note, how
-> is the use of uprobes controlled? Does it apply the same checking as
-> for ptrace?
-> 
-
-Uprobes is an infrastructure to trace user space applications.
-Uprobes will use Singlestepping out of line approach compared to
-ptrace's approach of re-inserting the original instruction on a
-breakpoint hit.
-
-Uprobes inserts a breakpoint and registers itself with the notifier
-mechanism similar to kprobes. Once we hit the breakpoint, the
-notifier callback will determine that the breakpoint was indeed
-inserted by uprobes, run the handler and then tries to singlestep the
-original instruction from a __different__ location. This approach
-works much better for multithreaded applications and also reduces
-context switches.
-
-To achieve this for user space applications, we need to create that
-__different__ location from where we can singlestep. Uprobes creates
-this location by adding a new executable single page vma. This page
-will have slots to which we copy the original instruction. 
-Once we singlestep the original instruction at a reserved slot, we do
-the necessary fixups.
-
-Initially we created the single page executable vma as an anonymous
-vma.
-However SElinux wasnt happy to see an executable anonymous VMA. Hence we
-added shmem-file. The vma is semi-transparent to the user i.e,
-in-kernel  uprobes infrastructure will create this vma as and when
-first breakpoint is hit for that process-group. This vma is cleaned up
-at the process-group exit time.
-
-Our idea is to export this to regular users through system-call so
-that regular debuggers like gdb can benefit.
-
-> Thanks guys!  If you have SELinux or LSM problems in the future let me
-> know.  It's likely the solution is easier than you imagine   ;)
-
-Can I assume that you would be okay with Peter's suggestion of using 
-install_special_mapping() instead of we calling do_mmap_pgoff().
+> -- 
+> Mel Gorman
+> SUSE Labs
 
 -- 
-Thanks and Regards
-Srikar
+Kind regards,
+Minchan Kim
