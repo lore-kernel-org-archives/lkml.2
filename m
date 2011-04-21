@@ -1,173 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab1DUCGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:06:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64007 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab1DUCGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:06:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,249,1301900400"; 
-   d="scan'208";a="422997717"
-Date: Thu, 21 Apr 2011 10:06:17 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20110421020617.GB12191@localhost>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.515923886@intel.com>
- <20110419073523.GF23985@dastard>
- <20110419095740.GC5257@quack.suse.cz>
- <20110419125616.GA20059@localhost>
- <20110420012120.GK23985@dastard>
- <20110420025321.GA14398@localhost>
- <20110421004547.GD1814@dastard>
+	id S1752679Ab1DUCHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:07:20 -0400
+Received: from eden-out.rutgers.edu ([128.6.68.11]:50821 "EHLO
+	goshen9.rutgers.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab1DUCHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 22:07:17 -0400
+Date: Wed, 20 Apr 2011 22:07:14 -0400 (EDT)
+From: Ciprian Docan <docan@eden.rutgers.edu>
+X-X-Sender: docan@er3.rutgers.edu
+To: Francois Romieu <romieu@fr.zoreil.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>,
+        nic_swsd@realtek.com
+Subject: Re: Suspend/resume - slow resume
+In-Reply-To: <20110420195330.GB18897@electric-eye.fr.zoreil.com>
+Message-ID: <Pine.SOC.4.64.1104202204090.1320@er3.rutgers.edu>
+References: <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
+ <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
+ <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+ <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
+ <20110418180813.GA18469@electric-eye.fr.zoreil.com>
+ <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
+ <Pine.SOC.4.64.1104181519490.1320@er3.rutgers.edu>
+ <BANLkTi=dke10HougmiQn9hSF15nK0B8mdA@mail.gmail.com>
+ <20110420181602.GA18740@electric-eye.fr.zoreil.com>
+ <Pine.SOC.4.64.1104201507140.1320@er3.rutgers.edu>
+ <20110420195330.GB18897@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110421004547.GD1814@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-559023410-675537891-1303351634=:1320"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 08:45:47AM +0800, Dave Chinner wrote:
-> On Wed, Apr 20, 2011 at 10:53:21AM +0800, Wu Fengguang wrote:
-> > On Wed, Apr 20, 2011 at 09:21:20AM +0800, Dave Chinner wrote:
-> > > On Tue, Apr 19, 2011 at 08:56:16PM +0800, Wu Fengguang wrote:
-> > > > I actually started with wb_writeback() as a natural choice, and then
-> > > > found it much easier to do the expired-only=>all-inodes switching in
-> > > > move_expired_inodes() since it needs to know the @b_dirty and @tmp
-> > > > lists' emptiness to trigger the switch. It's not sane for
-> > > > wb_writeback() to look into such details. And once you do the switch
-> > > > part in move_expired_inodes(), the whole policy naturally follows.
-> > > 
-> > > Well, not really. You didn't need to modify move_expired_inodes() at
-> > > all to implement these changes - all you needed to do was modify how
-> > > older_than_this is configured.
-> > > 
-> > > writeback policy is defined by the struct writeback_control.
-> > > move_expired_inodes() is pure mechanism. What you've done is remove
-> > > policy from the struct wbc and moved it to move_expired_inodes(),
-> > > which now defines both policy and mechanism.
-> > 
-> > > Furhter, this means that all the tracing that uses the struct wbc no
-> > > no longer shows the entire writeback policy that is being worked on,
-> > > so we lose visibility into policy decisions that writeback is
-> > > making.
-> > 
-> > Good point! I'm convinced, visibility is a necessity for debugging the
-> > complex writeback behaviors.
-> > 
-> > > This same change is as simple as updating wbc->older_than_this
-> > > appropriately after the wb_writeback() call for both background and
-> > > kupdate and leaving the lower layers untouched. It's just a policy
-> > > change. If you thinkthe mechanism is inefficient, copy
-> > > wbc->older_than_this to a local variable inside
-> > > move_expired_inodes()....
-> > 
-> > Do you like something like this? (details will change a bit when
-> > rearranging the patchset)
-> 
-> Yeah, this is close to what I had in mind.
-> 
-> > 
-> > --- linux-next.orig/fs/fs-writeback.c	2011-04-20 10:30:47.000000000 +0800
-> > +++ linux-next/fs/fs-writeback.c	2011-04-20 10:40:19.000000000 +0800
-> > @@ -660,11 +660,6 @@ static long wb_writeback(struct bdi_writ
-> >  	long write_chunk;
-> >  	struct inode *inode;
-> >  
-> > -	if (wbc.for_kupdate) {
-> > -		wbc.older_than_this = &oldest_jif;
-> > -		oldest_jif = jiffies -
-> > -				msecs_to_jiffies(dirty_expire_interval * 10);
-> > -	}
-> 
-> Right here I'd do:
-> 
-> 	if (work->for_kupdate || work->for_background)
-> 		wbc.older_than_this = &oldest_jif;
-> 
-> so that the setting of wbc.older_than_this in the loop can trigger
-> on whether it is null or not.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-That's the tricky part that drove me to change move_expired_inodes()
-directly..
+---559023410-675537891-1303351634=:1320
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 
-One important thing to bear in mind is, the background work can run on
-for one hour, one day or whatever. During the time dirty inodes come
-and go, expired and cleaned.  If we only reset wbc.older_than_this and
-never restore it _inside_ the loop, we'll quickly lose the ability to
-"start with expired inodes" shortly after f.g. 5 minutes.
 
-So we need to start with searching for expired inodes at each
-queue_io() time.  wbc.older_than_this shall be properly restored to
-&oldest_jif inside the loop. Since no expired inodes found in this
-loop does not mean no new inodes will be expired in the next loop.
+Hello Francois,
 
-> >  	if (!wbc.range_cyclic) {
-> >  		wbc.range_start = 0;
-> >  		wbc.range_end = LLONG_MAX;
-> > @@ -713,10 +708,17 @@ static long wb_writeback(struct bdi_writ
-> >  		if (work->for_background && !over_bground_thresh())
-> >  			break;
-> >  
-> > +		if (work->for_kupdate || work->for_background) {
-> > +			oldest_jif = jiffies -
-> > +				msecs_to_jiffies(dirty_expire_interval * 10);
-> > +			wbc.older_than_this = &oldest_jif;
-> > +		}
-> > +
-> 
-> if you change that to:
-> 
-> 		if (wbc.older_than_this) {
-> 			*wbc.older_than_this = jiffies -
-> 				msecs_to_jiffies(dirty_expire_interval * 10);
-> 		}
-> 
-> >  		wbc.more_io = 0;
-> >  		wbc.nr_to_write = write_chunk;
-> >  		wbc.pages_skipped = 0;
-> >  
-> > +retry_all:
-> 
-> You can get rid of this retry_all label and have the changeover in
-> behaviour re-initialise nr_to_write, etc.
-> 
-> >  		trace_wbc_writeback_start(&wbc, wb->bdi);
-> >  		if (work->sb)
-> >  			__writeback_inodes_sb(work->sb, wb, &wbc);
-> > @@ -733,6 +735,17 @@ static long wb_writeback(struct bdi_writ
-> >  		if (wbc.nr_to_write <= 0)
-> >  			continue;
-> >  		/*
-> > +		 * No expired inode? Try all fresh ones
-> > +		 */
-> > +		if ((work->for_kupdate || work->for_background) &&
-> > +		    wbc.older_than_this &&
-> > +		    wbc.nr_to_write == write_chunk &&
-> > +		    list_empty(&wb->b_io) &&
-> > +		    list_empty(&wb->b_more_io)) {
-> > +			wbc.older_than_this = NULL;
-> > +			goto retry_all;
-> > +		}
-> 
-> And here only do this for work->for_background as kupdate writeback
-> stops when we run out of expired inodes (i.e. it doesn't writeback
-> non-expired inodes).
+>> I tried to unload the module, but it crashed. I re-booted the
+>> machine and tried to unload the module again. I got the output from
+>> dmesg; please see attached.
+>
+> Hmmm...
 
-Sorry for the mistake. I've fixed it in the v2 :)
+I adapted your patch and fixed the module unload problem; please let me 
+know what you think. Thank you.
 
-Thanks,
-Fengguang
+--
+ 	Ciprian
+---559023410-675537891-1303351634=:1320
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=r8169-fix-module-unload.diff
+Content-Transfer-Encoding: BASE64
+Content-ID: <Pine.SOC.4.64.1104202207140.1320@er3.rutgers.edu>
+Content-Description: 
+Content-Disposition: attachment; filename=r8169-fix-module-unload.diff
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3I4MTY5LmMgYi9kcml2ZXJzL25l
+dC9yODE2OS5jDQppbmRleCA0OTNiMGRlLi4zOTdjMzY4IDEwMDY0NA0KLS0t
+IGEvZHJpdmVycy9uZXQvcjgxNjkuYw0KKysrIGIvZHJpdmVycy9uZXQvcjgx
+NjkuYw0KQEAgLTE3MCw2ICsxNzAsMTYgQEAgc3RhdGljIGNvbnN0IHN0cnVj
+dCB7DQogfTsNCiAjdW5kZWYgX1INCiANCitzdGF0aWMgY29uc3Qgc3RydWN0
+IHJ0bF9maXJtd2FyZV9pbmZvIHsNCisJaW50IG1hY192ZXJzaW9uOw0KKwlj
+b25zdCBjaGFyICpmd19uYW1lOw0KK30gcnRsX2Zpcm13YXJlX2luZm9zW10g
+PSB7DQorCXsgLm1hY192ZXJzaW9uID0gUlRMX0dJR0FfTUFDX1ZFUl8yNSwg
+LmZ3X25hbWUgPSBGSVJNV0FSRV84MTY4RF8xIH0sDQorCXsgLm1hY192ZXJz
+aW9uID0gUlRMX0dJR0FfTUFDX1ZFUl8yNiwgLmZ3X25hbWUgPSBGSVJNV0FS
+RV84MTY4RF8yIH0sDQorCXsgLm1hY192ZXJzaW9uID0gUlRMX0dJR0FfTUFD
+X1ZFUl8yOSwgLmZ3X25hbWUgPSBGSVJNV0FSRV84MTA1RV8xIH0sDQorCXsg
+Lm1hY192ZXJzaW9uID0gUlRMX0dJR0FfTUFDX1ZFUl8zMCwgLmZ3X25hbWUg
+PSBGSVJNV0FSRV84MTA1RV8xIH0NCit9Ow0KKw0KIGVudW0gY2ZnX3ZlcnNp
+b24gew0KIAlSVExfQ0ZHXzAgPSAweDAwLA0KIAlSVExfQ0ZHXzEsDQpAQCAt
+NTY1LDYgKzU3NSw3IEBAIHN0cnVjdCBydGw4MTY5X3ByaXZhdGUgew0KIAl1
+MzIgc2F2ZWRfd29sb3B0czsNCiANCiAJY29uc3Qgc3RydWN0IGZpcm13YXJl
+ICpmdzsNCisjZGVmaW5lIFJUTF9GSVJNV0FSRV9VTktOT1dOCUVSUl9QVFIo
+LUVBR0FJTik7DQogfTsNCiANCiBNT0RVTEVfQVVUSE9SKCJSZWFsdGVrIGFu
+ZCB0aGUgTGludXggcjgxNjkgY3JldyA8bmV0ZGV2QHZnZXIua2VybmVsLm9y
+Zz4iKTsNCkBAIC0xNzg5LDI1ICsxODAwLDI2IEBAIHJ0bF9waHlfd3JpdGVf
+Zncoc3RydWN0IHJ0bDgxNjlfcHJpdmF0ZSAqdHAsIGNvbnN0IHN0cnVjdCBm
+aXJtd2FyZSAqZncpDQogDQogc3RhdGljIHZvaWQgcnRsX3JlbGVhc2VfZmly
+bXdhcmUoc3RydWN0IHJ0bDgxNjlfcHJpdmF0ZSAqdHApDQogew0KLQlyZWxl
+YXNlX2Zpcm13YXJlKHRwLT5mdyk7DQotCXRwLT5mdyA9IE5VTEw7DQorCWlm
+ICghSVNfRVJSX09SX05VTEwodHAtPmZ3KSkNCisJCXJlbGVhc2VfZmlybXdh
+cmUodHAtPmZ3KTsNCisJdHAtPmZ3ID0gUlRMX0ZJUk1XQVJFX1VOS05PV047
+DQogfQ0KIA0KLXN0YXRpYyBpbnQgcnRsX2FwcGx5X2Zpcm13YXJlKHN0cnVj
+dCBydGw4MTY5X3ByaXZhdGUgKnRwLCBjb25zdCBjaGFyICpmd19uYW1lKQ0K
+K3N0YXRpYyB2b2lkIHJ0bF9hcHBseV9maXJtd2FyZShzdHJ1Y3QgcnRsODE2
+OV9wcml2YXRlICp0cCkNCiB7DQotCWNvbnN0IHN0cnVjdCBmaXJtd2FyZSAq
+KmZ3ID0gJnRwLT5mdzsNCi0JaW50IHJjID0gISpmdzsNCi0NCi0JaWYgKHJj
+KSB7DQotCQlyYyA9IHJlcXVlc3RfZmlybXdhcmUoZncsIGZ3X25hbWUsICZ0
+cC0+cGNpX2Rldi0+ZGV2KTsNCi0JCWlmIChyYyA8IDApDQotCQkJZ290byBv
+dXQ7DQotCX0NCisJY29uc3Qgc3RydWN0IGZpcm13YXJlICpmdyA9IHRwLT5m
+dzsNCiANCiAJLyogVE9ETzogcmVsZWFzZSBmaXJtd2FyZSBvbmNlIHJ0bF9w
+aHlfd3JpdGVfZncgc2lnbmFscyBmYWlsdXJlcy4gKi8NCi0JcnRsX3BoeV93
+cml0ZV9mdyh0cCwgKmZ3KTsNCi1vdXQ6DQotCXJldHVybiByYzsNCisJaWYg
+KCFJU19FUlJfT1JfTlVMTChmdykpDQorCQlydGxfcGh5X3dyaXRlX2Z3KHRw
+LCBmdyk7DQorfQ0KKw0KK3N0YXRpYyB2b2lkIHJ0bF9hcHBseV9maXJtd2Fy
+ZV9jb25kKHN0cnVjdCBydGw4MTY5X3ByaXZhdGUgKnRwLCB1OCByZWcsIHUx
+NiB2YWwpDQorew0KKwlpZiAocnRsX3JlYWRwaHkodHAsIHJlZykgIT0gdmFs
+KQ0KKwkJbmV0aWZfd2Fybih0cCwgaHcsIHRwLT5kZXYsICJjaGlwc2V0IG5v
+dCByZWFkeSBmb3IgZmlybXdhcmVcbiIpOw0KKwllbHNlDQorCQlydGxfYXBw
+bHlfZmlybXdhcmUodHApOw0KIH0NCiANCiBzdGF0aWMgdm9pZCBydGw4MTY5
+c19od19waHlfY29uZmlnKHN0cnVjdCBydGw4MTY5X3ByaXZhdGUgKnRwKQ0K
+QEAgLTIyNDYsMTAgKzIyNTgsOCBAQCBzdGF0aWMgdm9pZCBydGw4MTY4ZF8x
+X2h3X3BoeV9jb25maWcoc3RydWN0IHJ0bDgxNjlfcHJpdmF0ZSAqdHApDQog
+DQogCXJ0bF93cml0ZXBoeSh0cCwgMHgxZiwgMHgwMDA1KTsNCiAJcnRsX3dy
+aXRlcGh5KHRwLCAweDA1LCAweDAwMWIpOw0KLQlpZiAoKHJ0bF9yZWFkcGh5
+KHRwLCAweDA2KSAhPSAweGJmMDApIHx8DQotCSAgICAocnRsX2FwcGx5X2Zp
+cm13YXJlKHRwLCBGSVJNV0FSRV84MTY4RF8xKSA8IDApKSB7DQotCQluZXRp
+Zl93YXJuKHRwLCBwcm9iZSwgdHAtPmRldiwgInVuYWJsZSB0byBhcHBseSBm
+aXJtd2FyZSBwYXRjaFxuIik7DQotCX0NCisNCisJcnRsX2FwcGx5X2Zpcm13
+YXJlX2NvbmQodHAsIE1JSV9FWFBBTlNJT04sIDB4YmYwMCk7DQogDQogCXJ0
+bF93cml0ZXBoeSh0cCwgMHgxZiwgMHgwMDAwKTsNCiB9DQpAQCAtMjM1MSwx
+MCArMjM2MSw4IEBAIHN0YXRpYyB2b2lkIHJ0bDgxNjhkXzJfaHdfcGh5X2Nv
+bmZpZyhzdHJ1Y3QgcnRsODE2OV9wcml2YXRlICp0cCkNCiANCiAJcnRsX3dy
+aXRlcGh5KHRwLCAweDFmLCAweDAwMDUpOw0KIAlydGxfd3JpdGVwaHkodHAs
+IDB4MDUsIDB4MDAxYik7DQotCWlmICgocnRsX3JlYWRwaHkodHAsIDB4MDYp
+ICE9IDB4YjMwMCkgfHwNCi0JICAgIChydGxfYXBwbHlfZmlybXdhcmUodHAs
+IEZJUk1XQVJFXzgxNjhEXzIpIDwgMCkpIHsNCi0JCW5ldGlmX3dhcm4odHAs
+IHByb2JlLCB0cC0+ZGV2LCAidW5hYmxlIHRvIGFwcGx5IGZpcm13YXJlIHBh
+dGNoXG4iKTsNCi0JfQ0KKw0KKwlydGxfYXBwbHlfZmlybXdhcmVfY29uZCh0
+cCwgTUlJX0VYUEFOU0lPTiwgMHhiMzAwKTsNCiANCiAJcnRsX3dyaXRlcGh5
+KHRwLCAweDFmLCAweDAwMDApOw0KIH0NCkBAIC0yNDc0LDggKzI0ODIsNyBA
+QCBzdGF0aWMgdm9pZCBydGw4MTA1ZV9od19waHlfY29uZmlnKHN0cnVjdCBy
+dGw4MTY5X3ByaXZhdGUgKnRwKQ0KIAlydGxfd3JpdGVwaHkodHAsIDB4MTgs
+IDB4MDMxMCk7DQogCW1zbGVlcCgxMDApOw0KIA0KLQlpZiAocnRsX2FwcGx5
+X2Zpcm13YXJlKHRwLCBGSVJNV0FSRV84MTA1RV8xKSA8IDApDQotCQluZXRp
+Zl93YXJuKHRwLCBwcm9iZSwgdHAtPmRldiwgInVuYWJsZSB0byBhcHBseSBm
+aXJtd2FyZSBwYXRjaFxuIik7DQorCXJ0bF9hcHBseV9maXJtd2FyZSh0cCk7
+DQogDQogCXJ0bF93cml0ZXBoeV9iYXRjaCh0cCwgcGh5X3JlZ19pbml0LCBB
+UlJBWV9TSVpFKHBoeV9yZWdfaW5pdCkpOw0KIH0NCkBAIC0zMjM3LDYgKzMy
+NDQsOCBAQCBydGw4MTY5X2luaXRfb25lKHN0cnVjdCBwY2lfZGV2ICpwZGV2
+LCBjb25zdCBzdHJ1Y3QgcGNpX2RldmljZV9pZCAqZW50KQ0KIAl0cC0+dGlt
+ZXIuZGF0YSA9ICh1bnNpZ25lZCBsb25nKSBkZXY7DQogCXRwLT50aW1lci5m
+dW5jdGlvbiA9IHJ0bDgxNjlfcGh5X3RpbWVyOw0KIA0KKwl0cC0+ZncgPSBS
+VExfRklSTVdBUkVfVU5LTk9XTjsNCisNCiAJcmMgPSByZWdpc3Rlcl9uZXRk
+ZXYoZGV2KTsNCiAJaWYgKHJjIDwgMCkNCiAJCWdvdG8gZXJyX291dF9tc2lf
+NDsNCkBAIC0zMjg4LDEwICszMjk3LDEwIEBAIHN0YXRpYyB2b2lkIF9fZGV2
+ZXhpdCBydGw4MTY5X3JlbW92ZV9vbmUoc3RydWN0IHBjaV9kZXYgKnBkZXYp
+DQogDQogCWNhbmNlbF9kZWxheWVkX3dvcmtfc3luYygmdHAtPnRhc2spOw0K
+IA0KLQlydGxfcmVsZWFzZV9maXJtd2FyZSh0cCk7DQotDQogCXVucmVnaXN0
+ZXJfbmV0ZGV2KGRldik7DQogDQorCXJ0bF9yZWxlYXNlX2Zpcm13YXJlKHRw
+KTsNCisNCiAJaWYgKHBjaV9kZXZfcnVuX3dha2UocGRldikpDQogCQlwbV9y
+dW50aW1lX2dldF9ub3Jlc3VtZSgmcGRldi0+ZGV2KTsNCiANCkBAIC0zMzAz
+LDYgKzMzMTIsMzcgQEAgc3RhdGljIHZvaWQgX19kZXZleGl0IHJ0bDgxNjlf
+cmVtb3ZlX29uZShzdHJ1Y3QgcGNpX2RldiAqcGRldikNCiAJcGNpX3NldF9k
+cnZkYXRhKHBkZXYsIE5VTEwpOw0KIH0NCiANCitzdGF0aWMgdm9pZCBydGxf
+cmVxdWVzdF9maXJtd2FyZShzdHJ1Y3QgcnRsODE2OV9wcml2YXRlICp0cCkN
+Cit7DQorCWludCBpOw0KKw0KKwkvKiBSZXR1cm4gZWFybHkgaWYgdGhlIGZp
+cm13YXJlIGlzIGFscmVhZHkgbG9hZGVkIC8gY2FjaGVkLiAqLw0KKwlpZiAo
+IUlTX0VSUih0cC0+ZncpKQ0KKwkJZ290byBvdXQ7DQorDQorCWZvciAoaSA9
+IDA7IGkgPCBBUlJBWV9TSVpFKHJ0bF9maXJtd2FyZV9pbmZvcyk7IGkrKykg
+ew0KKwkJY29uc3Qgc3RydWN0IHJ0bF9maXJtd2FyZV9pbmZvICppbmZvID0g
+cnRsX2Zpcm13YXJlX2luZm9zICsgaTsNCisNCisJCWlmIChpbmZvLT5tYWNf
+dmVyc2lvbiA9PSB0cC0+bWFjX3ZlcnNpb24pIHsNCisJCQljb25zdCBjaGFy
+ICpuYW1lID0gaW5mby0+ZndfbmFtZTsNCisJCQlpbnQgcmM7DQorDQorCQkJ
+cmMgPSByZXF1ZXN0X2Zpcm13YXJlKCZ0cC0+ZncsIG5hbWUsICZ0cC0+cGNp
+X2Rldi0+ZGV2KTsNCisJCQlpZiAocmMgPCAwKSB7DQorCQkJCW5ldGlmX3dh
+cm4odHAsIGlmdXAsIHRwLT5kZXYsICJ1bmFibGUgdG8gbG9hZCAiDQorCQkJ
+CQkiZmlybXdhcmUgcGF0Y2ggJXMgKCVkKVxuIiwgbmFtZSwgcmMpOw0KKwkJ
+CQlnb3RvIG91dF9kaXNhYmxlX3JlcXVlc3RfZmlybXdhcmU7DQorCQkJfQ0K
+KwkJCWdvdG8gb3V0Ow0KKwkJfQ0KKwl9DQorDQorb3V0X2Rpc2FibGVfcmVx
+dWVzdF9maXJtd2FyZToNCisJdHAtPmZ3ID0gTlVMTDsNCitvdXQ6DQorCXJl
+dHVybjsNCit9DQorDQogc3RhdGljIGludCBydGw4MTY5X29wZW4oc3RydWN0
+IG5ldF9kZXZpY2UgKmRldikNCiB7DQogCXN0cnVjdCBydGw4MTY5X3ByaXZh
+dGUgKnRwID0gbmV0ZGV2X3ByaXYoZGV2KTsNCkBAIC0zMzM0LDExICszMzc0
+LDEzIEBAIHN0YXRpYyBpbnQgcnRsODE2OV9vcGVuKHN0cnVjdCBuZXRfZGV2
+aWNlICpkZXYpDQogDQogCXNtcF9tYigpOw0KIA0KKwlydGxfcmVxdWVzdF9m
+aXJtd2FyZSh0cCk7DQorDQogCXJldHZhbCA9IHJlcXVlc3RfaXJxKGRldi0+
+aXJxLCBydGw4MTY5X2ludGVycnVwdCwNCiAJCQkgICAgICh0cC0+ZmVhdHVy
+ZXMgJiBSVExfRkVBVFVSRV9NU0kpID8gMCA6IElSUUZfU0hBUkVELA0KIAkJ
+CSAgICAgZGV2LT5uYW1lLCBkZXYpOw0KIAlpZiAocmV0dmFsIDwgMCkNCi0J
+CWdvdG8gZXJyX3JlbGVhc2VfcmluZ18yOw0KKwkJZ290byBlcnJfcmVsZWFz
+ZV9md18yOw0KIA0KIAluYXBpX2VuYWJsZSgmdHAtPm5hcGkpOw0KIA0KQEAg
+LTMzNTksNyArMzQwMSw4IEBAIHN0YXRpYyBpbnQgcnRsODE2OV9vcGVuKHN0
+cnVjdCBuZXRfZGV2aWNlICpkZXYpDQogb3V0Og0KIAlyZXR1cm4gcmV0dmFs
+Ow0KIA0KLWVycl9yZWxlYXNlX3JpbmdfMjoNCitlcnJfcmVsZWFzZV9md18y
+Og0KKwlydGxfcmVsZWFzZV9maXJtd2FyZSh0cCk7DQogCXJ0bDgxNjlfcnhf
+Y2xlYXIodHApOw0KIGVycl9mcmVlX3J4XzE6DQogCWRtYV9mcmVlX2NvaGVy
+ZW50KCZwZGV2LT5kZXYsIFI4MTY5X1JYX1JJTkdfQllURVMsIHRwLT5SeERl
+c2NBcnJheSwNCg==
+
+---559023410-675537891-1303351634=:1320--
