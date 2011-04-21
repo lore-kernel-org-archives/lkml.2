@@ -1,170 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab1DUBOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 21:14:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27138 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754371Ab1DUBOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 21:14:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,248,1301900400"; 
-   d="scan'208";a="422982406"
-Date: Thu, 21 Apr 2011 09:14:31 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20110421011431.GA7828@localhost>
-References: <20110420080336.441157866@intel.com>
- <20110420080918.383880412@intel.com>
- <20110420164005.e3925965.akpm@linux-foundation.org>
+	id S1754708Ab1DUBPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 21:15:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35064 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab1DUBPQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 21:15:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SEa7aMMafd/fXATIzPJP1ArDtgARiSQ/PnypiY+LFQvK1EUnKztRr1Q3r4dZyveqHQ
+         /wkRPf6ScG+08tom9VIRNGlP0Fwln5/rXS5orSgUBxAjduKPYokdDnyENUEV6yTbnUJp
+         8d++U0b7Kh4KY7SMPBFJb86UG0/ZpkJ9vevI0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110420164005.e3925965.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DAEE410.8020000@cam.ac.uk>
+References: <BANLkTi=1svkDQt+HyaHgnann1Vre7CLUNQ@mail.gmail.com>
+	<BANLkTimFd0ZuP2OQ4A_w7VFbDDN+rsvBtg@mail.gmail.com>
+	<BANLkTi=9dROLwWH2J=Y_FmP+t=rkjMLBJg@mail.gmail.com>
+	<4DAEE410.8020000@cam.ac.uk>
+Date: Thu, 21 Apr 2011 10:15:14 +0900
+Message-ID: <BANLkTikGGBCL4wA3gL_W0EaD02yJQDnO9Q@mail.gmail.com>
+Subject: Re: SPI read problem
+From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: =?UTF-8?B?5b6Q5bu66L6J?= <xujianhui168@gmail.com>,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 07:40:05AM +0800, Andrew Morton wrote:
-> On Wed, 20 Apr 2011 16:03:41 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > A background flush work may run for ever. So it's reasonable for it to
-> > mimic the kupdate behavior of syncing old/expired inodes first.
-> > 
-> > At each queue_io() time, first try enqueuing only newly expired inodes.
-> > If there are zero expired inodes to work with, then relax the rule and
-> > enqueue all dirty inodes.
-> > 
-> > This will help reduce the number of dirty pages encountered by page
-> > reclaim, eg. the pageout() calls. Normally older inodes contain older
-> > dirty pages, which are more close to the end of the LRU lists. So
-> > syncing older inodes first helps reducing the dirty pages reached by
-> > the page reclaim code.
-> > 
-> > More background: as Mel put it, "it makes sense to write old pages first
-> > to reduce the chances page reclaim is initiating IO."
-> > 
-> > Rik also presented the situation with a graph:
-> > 
-> > LRU head                                 [*] dirty page
-> > [                          *              *      * *  *  * * * * * *]
-> > 
-> > Ideally, most dirty pages should lie close to the LRU tail instead of
-> > LRU head. That requires the flusher thread to sync old/expired inodes
-> > first (as there are obvious correlations between inode age and page
-> > age), and to give fair opportunities to newly expired inodes rather
-> > than sticking with some large eldest inodes (as larger inodes have
-> > weaker correlations in the inode<=>page ages).
-> > 
-> > This patch helps the flusher to meet both the above requirements.
-> > 
-> > Side effects: it might reduce the batch size and hence reduce
-> > inode_wb_list_lock hold time, but in turn make the cluster-by-partition
-> > logic in the same function less effective on reducing disk seeks.
-> 
-> One of the many requirements for writeback is that if userspace is
-> continually dirtying pages in a particular file, that shouldn't cause
-> the kupdate function to concentrate on that file's newly-dirtied pages,
-> neglecting pages from other files which were less-recently dirtied. 
-> (and dirty nodes, etc).
+On Wed, Apr 20, 2011 at 10:48 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> On 04/20/11 05:40, Murali K. Vemuri wrote:
+>> On Wed, Apr 20, 2011 at 12:19 PM, 徐建辉 <xujianhui168@gmail.com> wrote:
+>>> you can use tasklet.
+>>>
+>>> 2011/4/19 Murali K. Vemuri <vemuri.muralikrishna@gmail.com>
+>>>>
+>>>> Hello there,
+>>>> I have a device which is Written_to/Read_from using SPI Bus.
+>>>>
+>>>> I initialize the device like this:
+>>>>
+>>>> static int __init myDEV_init(void)
+>>>> {
+>>>>    return spi_register_driver(&myDEV_driver);
+>>>> }
+>>>> module_init(myDEV_init);
+>>>>
+>>>> My myDEV_probe() function looks like this:
+>>>>
+>>>> static int __devinit myDEV_probe(struct spi_device *spi)
+>>>> {
+>>>> .....
+>>>> .....
+>>>> /*when my CPU receives a particular IRQ, I have to do a spi_read() and
+>>>> do couple of spi_write(), I am using like this:*/
+>>>> err = request_threaded_irq (MY_DEV_IRQ, NULL, myDEV_irq_thread,
+>>>>            IRQF_TRIGGER_RISING, "MYDEV", NULL);
+> This should be fine.  The thread can sleep just fine. We do this
+> all over the place.  Could be something to do with the irq
+> handling on the device.
+>>>>
+>>>> return 0;
+>>>> }
+>>>>
+>>>> When the Interrupt is received by the CPU, myDEV_irq_thread is being
+>>>> called.
+>>>> However, in the ISR I have to do  spi_read(). This is always returning
+>>>> "Timed out".
+> That's very suspicious.  What spi controller are we dealing with here?
+>>>>
+>>>> To verify if the device is not at all working, along with registering
+>>>> for the IRQ, I also created a char device through I did a IOCTL.
+>>>> The IOCTL command in turn does spi_read(). In this case spi_read() is
+>>>> successful.
+>>>>
+>>>> Since it is necessary to do spi_read() in my ISR, I searched around
+>>>> and found some information that
+>>>> spi_read() is callable only from contexts that can sleep.
+>>>>
+>>>> How can I make my ISR sleep? or is there any other way of doing this?
+>>>>
+>>>> Any help is highly appreciated.
+>>>> Thanks & regards
+>>>> Murali
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>>
+>>
+>> Hi there,
+>>
+>> I tried using "tasklet", "workqueue" and semaphore ... all my attempts failed.
+>> if there is any other method I should try, please let me know.
+> Something nastier is happening here.  It's not a problem with what you've
+> presented in this email.  Perhaps a minimum example of the full code surrounding
+> the problem may help us diagnose it.
+>
 
-Right. This patch will exclude unexpired inodes from background work,
-as long as there are expired ones to work on. Which hopefully will
-provide better data safety in normal cases. After all the flusher
-is based on inodes and this is the most sane order it can take.
+Thanks a lot for the inputs. this is the read function I have:
+(What  I am trying to do is read register E6 of my device, the
+register width is 16 bits.).
 
-Given that the unexpired inodes will eventually expire after 30s, it
-won't exclude any inode from entering b_io for long time.
+static struct spi_device * my_SPI_DEV; (this is populated in the probe function)
 
-When there is a continually dirtied inode, let's check its internal
-pages writeback order first, and then examine the inter-inode order.
+static int myDEV_read(u8 * buf, u16 len)
+{
+    int err;
+    err = spi_read(my_SPI_DEV, buf, len);
+    return err;
+}
+static int read_e6()
+{
+    u8 buf[3];
+    int err;
+    buf[0] = 0xe6;
+    buf[1] = 0x00;
+    buf[2] = 0x00;
+    err = myDEV_read(buf, 3);
+    printk(KERN_ERR "myDEV read returned: %d\n",err);
+    return err;
+}
 
-a) it's a small file (less than the write chunk size)
+Now, this function read_e6() is called from the ISR I mentioned above.
 
-No problem at all, it will be fairly redirty_tail()ed after all the
-freshly dirtied inodes, waiting for the next turn
+90% of time, the read returns "-5" (I/O Error) and about 10% time it
+gets "0".  However I added a little hexdump to check the content in
+case the return value is "0". The register content is always "0".
 
-b) it's a large file, random writes
-
-No optimal solution at all, because it will contain both old and new
-pages all over the places.
-
-c) it's a large file, sequentially written to
-
-Old pages will be served first (if not, we'll cycle around sooner or
-later to behind the write stream), we will be rightfully concentrating
-on old pages
-
-d) it's a large file, reversely written to
-
-This is rare. We'll work through a series of segments, eg. pages
-90000-100000, pages 70000-80000, pages 60000-70000. Within each
-segment we'll work on youngest pages first..
-
-Except for (d) there is no way we may wrongly keep concentrating on
-the newly-dirtied pages _inside_ one file.
-
-As for _inter_ inode fairness, the last patch describes the scheme:
-
-: A b_io refill will setup a _fixed_ work set with all currently eligible
-: inodes and start a new round of walking through b_io.  The "fixed" work
-: set means no new inodes will be added to the work set during the walk.
-: Only when a complete walk over b_io is done, new inodes that are eligible
-: at the time will be enqueued and the walk will be started over.
-: 
-: This procedure provides fairness among the inodes because it guarantees
-: that each inode will be synced once and only once in each round.  So all
-: inodes will be free from starvation.
-
-In long turn, each inode will be honored a chance to write write_chunk
-pages _in fair turn_. However there is an implicit priority: the
-larger write_chunk, the more a large file can effectively write than
-small files.
-
-> And the background writeback function and fsync() and msync() and
-> everything else shouldn't cause starvation of expired pages, either.  I
-> guess you could say that the expired dirty pages become the
-> highest-priority writeback item.
-
-fsync() and msync() is expected to finish in bounded time, since they
-work on a fixed set of PAGECACHE_TAG_TOWRITE pages. So won't be
-starved by them. If there are too many fsync()s, we have the more
-serious problem of the whole system coming to a halt.
-
-Inside the background work, inter-inode fairness is guaranteed as
-described above.
-
-> Are you testing for this failure scenario?  If so, can you briefly
-> describe the testing?
-
-Not yet.. But one possible scheme is to record the dirty time of each
-page in a debug kernel and expose them to user space. Then we can run
-any kind of workloads, and in the mean while run a background scanner
-to collect and report the distribution of dirty page ages.
-
-Does it sound too heavy weight? Or we may start by reporting the dirty
-inode age first. To maintain a mapping->writeback_index_wrapped_when and
-a mapping->pages_dirtied_when to follow it (or just reuse/reset
-mapping->dirtied_when?). The former will be reset to jiffies on each
-full scan of the pages. range_whole=1 scan can maintain its start time
-in a local variable. Then we get an estimation "what's the max
-possible dirty page age this inode has?". There will sure be redirtied
-pages though..
-
-> It would be hlpeful if you could explain how the current code
-> implements this requirement?
-
-See above descriptions.
-
-Thanks,
-Fengguang
+Please let me know if I am doing any mistake.
+Thanks & regards
+Murali
