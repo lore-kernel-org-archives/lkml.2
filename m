@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1DUMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 08:05:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51470 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab1DUMF5 (ORCPT
+	id S1751922Ab1DUMJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 08:09:01 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41266 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1DUMJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 08:05:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=MRNRZsBqozumXc0VBWw8YeyzHIr4BvatfesWPoW7OXcuxw8Ptj5up/mDhGTrzGwOEk
-         A3WQTXOi8Jz4QJAxpYyidUL2a9K3AKHH1lhrHiMHzG8ci2M+a4fdjnrUM+koVE/q+svG
-         rrFWWD2+SGVwRGyYQNuqs90DotH5jl5BhUXDk=
+	Thu, 21 Apr 2011 08:09:00 -0400
+Date: Thu, 21 Apr 2011 14:08:55 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: John Williams <john.williams@petalogix.com>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, arnd@arndb.de
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+Message-ID: <20110421120855.GC2135@pengutronix.de>
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu>
+ <20110418160658.GD23814@pengutronix.de>
+ <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110421115843.GA7837@polaris.bitmath.org>
-References: <1303291155-3148-1-git-send-email-salt@salt.com.tw>
-	<20110420094700.GA2258@polaris.bitmath.org>
-	<BANLkTin7Q3fD3vg90qCk12MGaVEvLBe0Mg@mail.gmail.com>
-	<20110420100759.GA2436@polaris.bitmath.org>
-	<alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
-	<BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
-	<20110421115843.GA7837@polaris.bitmath.org>
-Date: Thu, 21 Apr 2011 14:05:56 +0200
-X-Google-Sender-Auth: q3TjPFBXPfT6J3ckccUM8QFxC3Y
-Message-ID: <BANLkTimku6reQpkNZ9-WUvhvv0pm+gSrSg@mail.gmail.com>
-Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Richard Nauber <richard.nauber@googlemail.com>,
-        PenMount <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eHhjakXzOLJAF9wJ"
+Content-Disposition: inline
+In-Reply-To: <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 13:58, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > Once you are done with testing the last_field_index change, it'd be great
->> > if you could respin the patches so that the first one perfoms this change,
->> > and the second one adds PenMount support on top of it.
->> >
->> > I'll then apply it. Thanks,
->>
->> Hi Jiri,
->>
->> I'll do that as soon as Henrik tells me it is working.
->
-> The 3M (0596:0502) and eGalax (0eef:720c) seem to work as expected.
->
 
-Thanks a lot Henrik.
+--eHhjakXzOLJAF9wJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll respin the patches right now!
+On Tue, Apr 19, 2011 at 11:58:25AM +1000, John Williams wrote:
 
-Cheers,
-Benjamin
+> As we discussed at ELC, putting a real vendor/device in there is also
+> broken because all instances in the system wil bind to the generic
+> uio, which is not necessarily what is desired.
+
+IIRC I pointed you to mpc5200b-psc devices which also have multiple functio=
+ns
+and have seperate bindings for these functions. It fits the "hardware
+description" character of a dt, because it says this PSC is a UART or an
+SPI or whatever.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--eHhjakXzOLJAF9wJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk2wHlcACgkQD27XaX1/VRsJ6gCfaecnGhrefmK8VMVcQAuhbJ8p
+jysAn3dUUAEEovHf07XyPGIV1sPVvw3v
+=BvYf
+-----END PGP SIGNATURE-----
+
+--eHhjakXzOLJAF9wJ--
