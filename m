@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab1DUWbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 18:31:36 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46687 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754764Ab1DUWbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 18:31:34 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        linux-arch@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <alpine.DEB.2.00.1104211517150.20201@chino.kir.corp.google.com>
-References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
-	 <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
-	 <20110420161615.462D.A69D9226@jp.fujitsu.com>
-	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
-	 <20110420112020.GA31296@parisc-linux.org>
-	 <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
-	 <1303308938.2587.8.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104200943580.9266@router.home>
-	 <1303311779.2587.19.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201018360.9266@router.home>
-	 <alpine.DEB.2.00.1104201437180.31768@chino.kir.corp.google.com>
-	 <1303401997.4025.8.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211517150.20201@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 17:31:31 -0500
-Message-ID: <1303425091.4025.59.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1755586Ab1DUWp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 18:45:27 -0400
+Received: from sous-sol.org ([216.99.217.87]:53350 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755544Ab1DUWp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 18:45:26 -0400
+Date: Thu, 21 Apr 2011 15:44:15 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Joseph Cihula <joseph.cihula@intel.com>
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, "Wei, Gang" <gang.wei@intel.com>
+Subject: Re: [PATCH RESEND 2] intel_iommu: disable all VT-d PMRs when TXT
+ launched
+Message-ID: <20110421224415.GG9569@sequoia.sous-sol.org>
+References: <4D879328.1080006@intel.com>
+ <4DB0AB00.80105@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB0AB00.80105@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 15:19 -0700, David Rientjes wrote:
-> On Thu, 21 Apr 2011, James Bottomley wrote:
-> 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 94d2a33..243bd9c 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -235,7 +235,11 @@ int slab_is_available(void)
-> >  
-> >  static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
-> >  {
-> > +#ifdef CONFIG_NUMA
-> >  	return s->node[node];
-> > +#else
-> > +	return s->node[0];
-> > +#endif
-> >  }
-> >  
-> >  /* Verify that a pointer has an address that is valid within a slab page */
-> 
-> Looks like parisc may have been just fine before 7340cc84141d (slub: 
-> reduce differences between SMP and NUMA), which was merged into 2.6.37?
+* Joseph Cihula (joseph.cihula@intel.com) wrote:
+> This patch detects when the kernel has been launched with TXT and then
+> disables the PMRs on all VT-d engines.  In some cases where the reason
+> that remapping is not being enabled is due to possible ACPI DMAR table
+> errors, the VT-d engine addresses may not be correct and thus not able
+> to be safely programmed even to disable PMRs.  Because part of the TXT
+> launch process is the verification of these addresses, it will always be
+> safe to disable PMRs if the TXT launch has succeeded and hence only
+> doing this in such cases.
 
-That's possible.  I've had no bug reports from the debian 2.6.32 kernel,
-which is the only other one that has SLUB by default.  The m68k guys
-seem to think this is the cause of their problems too.
-
-But the basic fact is that all our testing has been done on SLAB.  It
-wasn't until debian asked us to looks at a 2.6.38 kernel that I
-accidentally picked up SLUB by importing their config into my build
-environment.
-
-James
-
-
+What about on resume?  The ->ignored units won't get PMR disabled.
