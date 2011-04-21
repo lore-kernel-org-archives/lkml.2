@@ -1,183 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1DUCTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:19:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:34936 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab1DUCTT (ORCPT
+	id S1752929Ab1DUCTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:19:39 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33151 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab1DUCTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:19:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=EoUFk/83W9gYTUURFzcAaESX3GjhpW5JuXu33VGrz+DaS/XcsSfUfOTmllRHgcdrCK
-         I0c0d3mvDEayxET6zbMQ==
-Date: Wed, 20 Apr 2011 19:19:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        x86@kernel.org
-Subject: [patch 2/2] x86, numa: Fix cpu nodemasks for NUMA emulation and
- CONFIG_DEBUG_PER_CPU_MAPS
-In-Reply-To: <alpine.DEB.2.00.1104201918110.12634@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1104201918470.12634@chino.kir.corp.google.com>
-References: <BANLkTin1=uPcyBgy9S_2TJASk8qTkeueEA@mail.gmail.com> <20110420153907.GA9000@alberich.amd.com> <alpine.DEB.2.00.1104201722540.15906@chino.kir.corp.google.com> <alpine.DEB.2.00.1104201918110.12634@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 20 Apr 2011 22:19:38 -0400
+Subject: Re: x86: tsc: v2 make TSC calibration more immune to interrupts
+From: john stultz <johnstul@us.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Kasper Pedersen <kernel@kasperkp.dk>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+In-Reply-To: <20110420223929.GB5563@feather>
+References: <4DAF2B57.6010100@kasperkp.dk>
+	 <1303326959.2796.136.camel@work-vm> <4DAF37B4.3040408@kasperkp.dk>
+	 <1303331280.2796.154.camel@work-vm> <4DAF4E8B.6030506@kasperkp.dk>
+	 <20110420223929.GB5563@feather>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Apr 2011 19:19:28 -0700
+Message-ID: <1303352368.2796.191.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu nodemasks under CONFIG_DEBUG_PER_CPU_MAPS when NUMA emulation is 
-enabled is currently broken because it does not iterate through every 
-emulated node and bind cpus that have affinity to it.  NUMA emulation 
-should bind each cpu to every local node to accurately represent the true 
-NUMA topology of the underlying machine.
+On Wed, 2011-04-20 at 15:39 -0700, Josh Triplett wrote:
+> On Wed, Apr 20, 2011 at 11:22:19PM +0200, Kasper Pedersen wrote:
+> > When a SMI or plain interrupt occurs during the delayed part
+> > of TSC calibration, and the SMI/irq handler is good and fast
+> > so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
+> > off (10-30ppm).
+> > 
+> > We should not depend on interrupts being longer than 50000
+> > clocks, so, in the refined calibration, always do the 5
+> > tries, and use the best sample we get.
+> > 
+> > This should work always for any four periodic or rate-limited
+> > interrupt sources. If we get 5 interrupts with 500ns gaps in
+> > a row, behaviour should be as without this patch.
+> > 
+> > It is safe to use the first value that passes SMI_TRESHOLD
+> > for the initial calibration: As long as tsc_khz is above
+> > 100MHz, SMI_TRESHOLD represents less than 1% of error.
+> > 
+> > The 8 additional samples costs us 28 microseconds in startup
+> > time.
+> > 
+> > measurements:
+> > On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
+> > A Core2 is similar: http://n1.taur.dk/tscdeviat.png
+> > (while mostly t2-t1=~1000, in about 1 of 3000 tests
+> > I see t2-t1=~20000 for both machines.)
+> > vmware ESX4 has t2-t1=~8000 and up.
+> > 
+> > v2: John Stulz suggested limiting best uncertainty to
+> > where it is needed, saving ~170usec startup time.
+> 
+> Have you considered disabling interrupts while calibrating?  That would
+> ensure that you only have to care about SMIs, not arbitrary interrupts.
 
-debug_cpumask_set_cpu() needs to be fixed at the same time so that the 
-debugging information that it emits shows the new cpumask of the node 
-being assigned when the cpu is being added or removed.  It can now take 
-responsibility of setting or clearing the cpu itself to remove the need 
-for duplicate code.
+This calibration is actually timer based (and runs for 1 second,
+allowing the system to continue booting in the meantime), so disabling
+irqs wouldn't work. You could just disable irqs during the tsc_getref,
+but that still has the possibility to get hit by SMIs, which are the
+real issue.
 
-Also changes its last formal, "enable", to have the correct bool type 
-since it can only be true or false.
+> Also, on more recent x86 systems you could look at MSR_SMI_COUNT (MSR
+> 0x34) to detect if any SMIs have occurred during the sample period.
+> rdmsr, start sample period, stop sample period, rdmsr, if delta of 0
+> then no SMIs occurred.  Exists on Nehalem and newer, at least.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/include/asm/numa.h  |    2 +-
- arch/x86/mm/numa.c           |   27 +++++++++++----------------
- arch/x86/mm/numa_emulation.c |   20 ++++++--------------
- 3 files changed, 18 insertions(+), 31 deletions(-)
+That's interesting... but probably still too machine specific to be
+generally useful.
 
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -51,7 +51,7 @@ static inline void numa_remove_cpu(int cpu)		{ }
- #endif	/* CONFIG_NUMA */
- 
- #ifdef CONFIG_DEBUG_PER_CPU_MAPS
--struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable);
-+void debug_cpumask_set_cpu(int cpu, int node, bool enable);
- #endif
- 
- #endif	/* _ASM_X86_NUMA_H */
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -213,9 +213,8 @@ int early_cpu_to_node(int cpu)
- 	return per_cpu(x86_cpu_to_node_map, cpu);
- }
- 
--struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
-+void debug_cpumask_set_cpu(int cpu, int node, bool enable)
- {
--	int node = early_cpu_to_node(cpu);
- 	struct cpumask *mask;
- 	char buf[64];
- 
-@@ -227,9 +226,14 @@ struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
- 	if (!mask) {
- 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
- 		dump_stack();
--		return NULL;
-+		return;
- 	}
- 
-+	if (enable)
-+		cpumask_set_cpu(cpu, mask);
-+	else
-+		cpumask_clear_cpu(cpu, mask);
-+
- 	cpulist_scnprintf(buf, sizeof(buf), mask);
- 	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
- 		enable ? "numa_add_cpu" : "numa_remove_cpu",
-@@ -238,28 +242,19 @@ struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
- }
- 
- # ifndef CONFIG_NUMA_EMU
--static void __cpuinit numa_set_cpumask(int cpu, int enable)
-+static void __cpuinit numa_set_cpumask(int cpu, bool enable)
- {
--	struct cpumask *mask;
--
--	mask = debug_cpumask_set_cpu(cpu, enable);
--	if (!mask)
--		return;
--
--	if (enable)
--		cpumask_set_cpu(cpu, mask);
--	else
--		cpumask_clear_cpu(cpu, mask);
-+	debug_cpumask_set_cpu(cpu, early_cpu_to_node(cpu), enable);
- }
- 
- void __cpuinit numa_add_cpu(int cpu)
- {
--	numa_set_cpumask(cpu, 1);
-+	numa_set_cpumask(cpu, true);
- }
- 
- void __cpuinit numa_remove_cpu(int cpu)
- {
--	numa_set_cpumask(cpu, 0);
-+	numa_set_cpumask(cpu, false);
- }
- # endif	/* !CONFIG_NUMA_EMU */
- 
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -454,10 +454,9 @@ void __cpuinit numa_remove_cpu(int cpu)
- 		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
- }
- #else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
--static void __cpuinit numa_set_cpumask(int cpu, int enable)
-+static void __cpuinit numa_set_cpumask(int cpu, bool enable)
- {
--	struct cpumask *mask;
--	int nid, physnid, i;
-+	int nid, physnid;
- 
- 	nid = early_cpu_to_node(cpu);
- 	if (nid == NUMA_NO_NODE) {
-@@ -467,28 +466,21 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
- 
- 	physnid = emu_nid_to_phys[nid];
- 
--	for_each_online_node(i) {
-+	for_each_online_node(nid) {
- 		if (emu_nid_to_phys[nid] != physnid)
- 			continue;
- 
--		mask = debug_cpumask_set_cpu(cpu, enable);
--		if (!mask)
--			return;
--
--		if (enable)
--			cpumask_set_cpu(cpu, mask);
--		else
--			cpumask_clear_cpu(cpu, mask);
-+		debug_cpumask_set_cpu(cpu, nid, enable);
- 	}
- }
- 
- void __cpuinit numa_add_cpu(int cpu)
- {
--	numa_set_cpumask(cpu, 1);
-+	numa_set_cpumask(cpu, true);
- }
- 
- void __cpuinit numa_remove_cpu(int cpu)
- {
--	numa_set_cpumask(cpu, 0);
-+	numa_set_cpumask(cpu, false);
- }
- #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+thanks
+-john
+
