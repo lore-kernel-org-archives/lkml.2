@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab1DUCTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:19:39 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33151 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab1DUCTi (ORCPT
+	id S1752382Ab1DUC1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:27:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:62424 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1DUC1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:19:38 -0400
-Subject: Re: x86: tsc: v2 make TSC calibration more immune to interrupts
-From: john stultz <johnstul@us.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Kasper Pedersen <kernel@kasperkp.dk>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-In-Reply-To: <20110420223929.GB5563@feather>
-References: <4DAF2B57.6010100@kasperkp.dk>
-	 <1303326959.2796.136.camel@work-vm> <4DAF37B4.3040408@kasperkp.dk>
-	 <1303331280.2796.154.camel@work-vm> <4DAF4E8B.6030506@kasperkp.dk>
-	 <20110420223929.GB5563@feather>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 19:19:28 -0700
-Message-ID: <1303352368.2796.191.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Apr 2011 22:27:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=OlWwQRw9W8jMpl4EAbFqqDMBV4nsW0uBqrIOEVe7l2NWyKd8Be63BAw/YqQz3FxyzS
+         ZvJSNnVyKSDEBkgj3cgw==
+Date: Wed, 20 Apr 2011 19:27:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        James Bottomley <jejb@parisc-linux.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org
+Subject: [patch] parisc: set memory ranges in N_NORMAL_MEMORY when onlined
+In-Reply-To: <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1104201926300.15661@chino.kir.corp.google.com>
+References: <20110420161615.462D.A69D9226@jp.fujitsu.com> <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com> <20110420174027.4631.A69D9226@jp.fujitsu.com> <1303317178.2587.30.camel@mulgrave.site>
+ <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 15:39 -0700, Josh Triplett wrote:
-> On Wed, Apr 20, 2011 at 11:22:19PM +0200, Kasper Pedersen wrote:
-> > When a SMI or plain interrupt occurs during the delayed part
-> > of TSC calibration, and the SMI/irq handler is good and fast
-> > so that is does not exceed SMI_TRESHOLD, tsc_khz can be a bit
-> > off (10-30ppm).
-> > 
-> > We should not depend on interrupts being longer than 50000
-> > clocks, so, in the refined calibration, always do the 5
-> > tries, and use the best sample we get.
-> > 
-> > This should work always for any four periodic or rate-limited
-> > interrupt sources. If we get 5 interrupts with 500ns gaps in
-> > a row, behaviour should be as without this patch.
-> > 
-> > It is safe to use the first value that passes SMI_TRESHOLD
-> > for the initial calibration: As long as tsc_khz is above
-> > 100MHz, SMI_TRESHOLD represents less than 1% of error.
-> > 
-> > The 8 additional samples costs us 28 microseconds in startup
-> > time.
-> > 
-> > measurements:
-> > On a 700MHz P3 I see t2-t1=~22000, and 31ppm error.
-> > A Core2 is similar: http://n1.taur.dk/tscdeviat.png
-> > (while mostly t2-t1=~1000, in about 1 of 3000 tests
-> > I see t2-t1=~20000 for both machines.)
-> > vmware ESX4 has t2-t1=~8000 and up.
-> > 
-> > v2: John Stulz suggested limiting best uncertainty to
-> > where it is needed, saving ~170usec startup time.
-> 
-> Have you considered disabling interrupts while calibrating?  That would
-> ensure that you only have to care about SMIs, not arbitrary interrupts.
+When a DISCONTIGMEM memory range is brought online as a NUMA node, it 
+also needs to have its bet set in N_NORMAL_MEMORY.  This is necessary for 
+generic kernel code that utilizes N_NORMAL_MEMORY as a subset of N_ONLINE 
+for memory savings.
 
-This calibration is actually timer based (and runs for 1 second,
-allowing the system to continue booting in the meantime), so disabling
-irqs wouldn't work. You could just disable irqs during the tsc_getref,
-but that still has the possibility to get hit by SMIs, which are the
-real issue.
+These types of hacks can hopefully be removed once DISCONTIGMEM is either 
+removed or abstracted away from CONFIG_NUMA.
 
-> Also, on more recent x86 systems you could look at MSR_SMI_COUNT (MSR
-> 0x34) to detect if any SMIs have occurred during the sample period.
-> rdmsr, start sample period, stop sample period, rdmsr, if delta of 0
-> then no SMIs occurred.  Exists on Nehalem and newer, at least.
+Fixes a panic in the slub code which only initializes structures for 
+N_NORMAL_MEMORY to save memory:
 
-That's interesting... but probably still too machine specific to be
-generally useful.
+	Backtrace:
+	 [<000000004021c938>] add_partial+0x28/0x98
+	 [<000000004021faa0>] __slab_free+0x1d0/0x1d8
+	 [<000000004021fd04>] kmem_cache_free+0xc4/0x128
+	 [<000000004033bf9c>] ida_get_new_above+0x21c/0x2c0
+	 [<00000000402a8980>] sysfs_new_dirent+0xd0/0x238
+	 [<00000000402a974c>] create_dir+0x5c/0x168
+	 [<00000000402a9ab0>] sysfs_create_dir+0x98/0x128
+	 [<000000004033d6c4>] kobject_add_internal+0x114/0x258
+	 [<000000004033d9ac>] kobject_add_varg+0x7c/0xa0
+	 [<000000004033df20>] kobject_add+0x50/0x90
+	 [<000000004033dfb4>] kobject_create_and_add+0x54/0xc8
+	 [<00000000407862a0>] cgroup_init+0x138/0x1f0
+	 [<000000004077ce50>] start_kernel+0x5a0/0x840
+	 [<000000004011fa3c>] start_parisc+0xa4/0xb8
+	 [<00000000404bb034>] packet_ioctl+0x16c/0x208
+	 [<000000004049ac30>] ip_mroute_setsockopt+0x260/0xf20
 
-thanks
--john
+Tested-by: James Bottomley <James.Bottomley@hansenpartnership.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/parisc/mm/init.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
+diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
+ 	}
+ 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+ 
+-	for (i = 0; i < npmem_ranges; i++)
++	for (i = 0; i < npmem_ranges; i++) {
++		node_set_state(i, N_NORMAL_MEMORY);
+ 		node_set_online(i);
++	}
+ #endif
+ 
+ 	/*
