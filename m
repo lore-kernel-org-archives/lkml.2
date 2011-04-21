@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab1DUKmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 06:42:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39255 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752268Ab1DUKmH (ORCPT
+	id S1753112Ab1DUKxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 06:53:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34541 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab1DUKxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 06:42:07 -0400
-Date: Thu, 21 Apr 2011 11:42:04 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: sameo@linux.intel.com, haojian.zhuang@gmail.com,
-        linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk
-Subject: Re: [PATCH 13/14] regulator: max8925: fix not add device if
- missing init data
-Message-ID: <20110421104204.GB11788@opensource.wolfsonmicro.com>
-References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
- <1303300539-2941-1-git-send-email-haojian.zhuang@marvell.com>
+	Thu, 21 Apr 2011 06:53:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BJr41qh4sv1+X15QqsE/XFG6ws4O04pAwTvVtcedWxlLYHwhXkaf2VsyGLTwTqR15t
+         i0XJxQpzsvMuphhXr3sd9f0PhA8gWnNXbvQOA22Cko+RqeZadqOd5L+TqIgqUBkrmJmU
+         Q6Ht+hWhdCUrN3LrM9B6e2qHHyO2RwgoM2JS8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303300539-2941-1-git-send-email-haojian.zhuang@marvell.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
+References: <1303291155-3148-1-git-send-email-salt@salt.com.tw>
+	<20110420094700.GA2258@polaris.bitmath.org>
+	<BANLkTin7Q3fD3vg90qCk12MGaVEvLBe0Mg@mail.gmail.com>
+	<20110420100759.GA2436@polaris.bitmath.org>
+	<alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
+Date: Thu, 21 Apr 2011 12:53:02 +0200
+X-Google-Sender-Auth: Mrg4K3o3RU-Lv9367dFHNA0yLC8
+Message-ID: <BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
+Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Richard Nauber <richard.nauber@googlemail.com>,
+        PenMount <penmount.touch@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 07:55:39PM +0800, Haojian Zhuang wrote:
-> If regulator[0] is missed in init data, all regulators of max8925 won't
-> be initialized.
+On Thu, Apr 21, 2011 at 11:17, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 20 Apr 2011, Henrik Rydberg wrote:
+>
+>> > In fact, I have a second patch just on top of this one. It has been
+>> > tested by Ryan with PenMount devices.
+>>
+>> Great, and good timing. :-)
+>>
+>> > I was waiting for Penmount to be included first as it does not impact
+>> > any other drivers.
+>>
+>> I would prefer the opposite order, since it is cleaner and means one
+>> less device to test for the major change.
+>
+> I agree with Henrik on this.
+>
+> Once you are done with testing the last_field_index change, it'd be great
+> if you could respin the patches so that the first one perfoms this change,
+> and the second one adds PenMount support on top of it.
+>
+> I'll then apply it. Thanks,
 
-With a changelog like this I'd expect a small change to an error check
-in the startup code or something but this is a very big change to the
-driver initialisation.
+Hi Jiri,
 
-> +static struct regulator_init_data regulator_pdata[ARRAY_SIZE(regulator_devs)];
+I'll do that as soon as Henrik tells me it is working.
 
-That looks really suspicious, what happens if there's two of these
-devices in the system?
+Cheers,
+Benjamin
 
-> +		memcpy(&regulator_pdata[i], &pdata->regulator[i],
-> +			sizeof(struct regulator_init_data));
-> +		regulator_devs[i].platform_data = &regulator_pdata[i];
-> +		regulator_devs[i].pdata_size = sizeof(regulator_pdata[i]);
-> +		regulator_devs[i].num_resources = 1;
-> +		regulator_devs[i].resources = &regulator_resources[seq];
-> +
-> +		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[i], 1,
-> +				      &regulator_resources[seq], 0);
-> +		if (ret < 0) {
-> +			dev_err(chip->dev, "Failed to add regulator subdev\n");
-> +			goto out;
-
-It's really unclear why the array is needed at all if you're registering
-the devices one at a time.
-
-> -	if (pdata && pdata->regulator[0]) {
-> -		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[0],
-> -				      ARRAY_SIZE(regulator_devs),
-> -				      &regulator_resources[0], 0);
-> -		if (ret < 0) {
-> -			dev_err(chip->dev, "Failed to add regulator subdev\n");
-> -			goto out_dev;
-> -		}
-
-Surely the only change that's needed here is to remove the check to see
-if pdata->regulator[0] is non-null?
+>
+> --
+> Jiri Kosina
+> SUSE Labs, Novell Inc.
+>
