@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1DUCRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:17:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61410 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1DUCRI (ORCPT
+	id S1752709Ab1DUCR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:17:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:33662 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab1DUCR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:17:08 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=MvxcOw6unBcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=LRdWIEW7jnhDvEgRHdIA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ftrace: Build without frame pointers on Microblaze
-From: Steven Rostedt <rostedt@goodmis.org>
-To: monstr@monstr.eu
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <4DA698BA.6020506@monstr.eu>
-References: <1301908812-8119-1-git-send-email-monstr@monstr.eu>
-	 <1301908812-8119-2-git-send-email-monstr@monstr.eu>
-	 <4DA698BA.6020506@monstr.eu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 20 Apr 2011 22:17:06 -0400
-Message-ID: <1303352226.7181.109.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Apr 2011 22:17:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=dnCHJfwFtwPOuzHOTYyLj6gatFMwpIku1zhm+P/dZR1yU/iP9Kq2+VgKJXZmONeRH9
+         cYp76jFjYTPwhQzqz2Zg==
+Date: Wed, 20 Apr 2011 19:17:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc4 (regression: NUMA on multi-node CPUs broken)
+In-Reply-To: <20110421110452.7322.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1104201916490.12634@chino.kir.corp.google.com>
+References: <20110420153907.GA9000@alberich.amd.com> <alpine.DEB.2.00.1104201722540.15906@chino.kir.corp.google.com> <20110421110452.7322.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 08:48 +0200, Michal Simek wrote:
-> Hi Ingo, [cc: Steven and Frederic]
+On Thu, 21 Apr 2011, KOSAKI Motohiro wrote:
+
+> Simple revert 7d6b46707f24 makes the same boot failure again.
 > 
-> can you please add this patch to your tree?
-> 
 
-Sorry, I've been traveling and I'm behind on email. I'll queue this up.
-Is this needed for 2.6.39 or can it wait to 2.6.40?
-
--- Steve
-
-
+Do you have CONFIG_DEBUG_PER_CPU_MAPS enabled?  If not, please send your 
+.config.
