@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab1DULgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:36:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50610 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab1DULgQ (ORCPT
+	id S1753923Ab1DULgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 07:36:50 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:44779 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab1DULgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:36:16 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=Ar9dcRiOBTsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=_BtuxK9f_QJcpMfYURMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
- use Linux style comparisons
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+	Thu, 21 Apr 2011 07:36:49 -0400
+Date: Thu, 21 Apr 2011 13:36:47 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Andreas Mohr <andi@lisas.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Reiser <jreiser@bitwagon.com>
-In-Reply-To: <20110421094606.174caaf6@lxorguk.ukuu.org.uk>
-References: <20110421022825.535486725@goodmis.org>
-	 <20110421023737.290712238@goodmis.org>
-	 <20110421094606.174caaf6@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 21 Apr 2011 07:36:12 -0400
-Message-ID: <1303385773.7181.114.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Re: [PATCH] eradicate bashisms in scripts/patch-kernel
+Message-ID: <20110421113647.GA18572@rhlx01.hs-esslingen.de>
+References: <20071102020118.GA13852@gondor.apana.org.au>
+ <20071102200935.GA14153@rhlx01.hs-esslingen.de>
+ <20071102131707.6023a5b7.rdunlap@xenotime.net>
+ <20071105195827.GA24117@rhlx01.hs-esslingen.de>
+ <20071114144627.8628f2dd.rdunlap@xenotime.net>
+ <20071117163327.GA4296@rhlx01.hs-esslingen.de>
+ <20071117172816.GC7213@uranus.ravnborg.org>
+ <20071117205125.GA26425@rhlx01.hs-esslingen.de>
+ <20110403185828.GA4561@rhlx01.hs-esslingen.de>
+ <20110403124004.293c90c5.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110403124004.293c90c5.rdunlap@xenotime.net>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 09:46 +0100, Alan Cox wrote:
-> On Wed, 20 Apr 2011 22:28:26 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+Hi,
+
+sorry for the delay. Didn't have a suitable environment at that time,
+then it got buried...
+
+On Sun, Apr 03, 2011 at 12:40:04PM -0700, Randy Dunlap wrote:
+> On Sun, 3 Apr 2011 20:58:28 +0200 Andreas Mohr wrote:
+> > # linux-2.6.38.patch-kernel_test/scripts/patch-kernel linux-2.6.38.patch-kernel_test patch-2.6
+> > Current kernel version is 2.6.38 ( Flesh-Eating Bats with Fangs)
+> > ===>  linux-2.6.38.patch-kernel_test/scripts/patch-kernel: line 253: [: =: unary operator expected  <===
+> > cannot find patch file: patch-2.6.39
 > 
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > The Linux style for comparing is:
-> > 
-> >   var == 1
-> >   var > 0
+> Hi,
 > 
-> It's both and both forms are commonly used. I don't care what ftrace
-> looks like but don't pedal bogus style. We have enough bogus style as it
-> is.
+> Are you trying to update a 2.6.38 kernel directory to 2.6.39?
+> I'm a little confused since the command line does not say anything about 2.6.39.
 
-I thought I read somewhere that this was the preferred method. But I
-could be mistaking.
+Well, that virtual setup was just for the sake of having a problem test case.
+I should have described it in more detail.
+It simply tries to increment to the next patch version, which in case
+of 2.6.38 input would be 2.6.39 (which... obviously isn't available yet).
 
-Anyway, the patch still stands, although I'll change the above line from
-"Linux style" to "Linux ftrace style", as I'm the one that has to
-maintain this code, and I prefer this method.
+> > Since my last patch (the parent mail) happened to modify the very same line,
+> 
+> Parent email from 2007???  wow.  :)
 
-I translate: var == 1 as "var is one" so seeing "1 == var" my mind
-translates that to "one is var" which just sounds funny. Every time I
-see that notation I have to stop and think about it. I'm sure if I used
-it enough that hesitation would vanish, but for now, I'll keep it as is.
+Yup - why not simply reply on the original patch?
+For suitable tracking, I'd rather have one reference too many than......
 
-I haven't done the "if (var = 1)" mistake since college.
+Perhaps I should have replied on some ~1995 mail? ;-P
 
--- Steve
+> Why doesn't the debug/trace info show the value of STOPFULLVERSION?
+> Is it empty?
+
+Augmented version:
+
+do
+    CURRENTFULLVERSION="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+    EXTRAVER=
+    echo "STOPFULLVERSION is $STOPFULLVERSION"
+    if [ $STOPFULLVERSION = $CURRENTFULLVERSION ]; then
+        echo "Stopping at $CURRENTFULLVERSION base as requested."
+        break
+    fi
 
 
+# linux-2.6.30/scripts/patch-kernel linux-2.6.30 patch-2.6
+Current kernel version is 2.6.30 ( Man-Eating Seals of Antiquity)
+STOPFULLVERSION is 
+[: 276: =: unexpected operator
+Applying patch-2.6.31 (bzip2)... done.
+STOPFULLVERSION is 
+[: 276: =: unexpected operator
+Applying patch-2.6.32 (bzip2)... done.
+STOPFULLVERSION is 
+[: 276: =: unexpected operator
+Applying patch-2.6.33 (bzip2)... done.
+STOPFULLVERSION is 
+[: 276: =: unexpected operator
+Applying patch-2.6.34 (bzip2)... done.
+STOPFULLVERSION is 
+[: 276: =: unexpected operator
+cannot find patch file: patch-2.6.35
+
+--> seems so.
+
+> Michal is the new kbuild maintainer, so he could queue it, or I can.
+
+He's been queueing it immediately, thus everything went fine (--> thanks!).
+
+Thanks,
+
+Andreas Mohr
