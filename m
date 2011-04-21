@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab1DUNq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:46:59 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:60945 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab1DUNq6 (ORCPT
+	id S1753381Ab1DUNui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:50:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53448 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab1DUNuh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:46:58 -0400
+	Thu, 21 Apr 2011 09:50:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=VF0IKNkKgjYCl9H5dlPGwi/a3xXsrscEOB1p0bAtAm5wJvalgpWx3N9oEh/PAhbU3w
-         n9NJ/55AI5YRBW9AwO5uL59grndFI0bPQmflZ81LIRsp9FqmHGy9yGTVxxp32Vbfsgze
-         irYwkiJWUx+SyBS9UU8sWneFuDbBe9lIt9JZ0=
+        b=JzxOSjpfg2fqkHoYVlvM+r/RiSUVFigK0aG9C0Y4c01D3n7Nnds1eWQa54xlja2pJz
+         qZzC62l83JX97+ZeqGZ3pUsHWpWLErgSytcLBZ6cORTDdHZ09LXjHIFARnfvKrt5xJVX
+         zkh0xG6z20b8q2gUcIVigao0w/4adCfJv4Sl4=
 MIME-Version: 1.0
-In-Reply-To: <1303393450.2035.142.camel@laptop>
-References: <BANLkTin_m2Ygnr8csKo6fJZ4sB6YYvYDGw@mail.gmail.com>
-	<1303393450.2035.142.camel@laptop>
-Date: Thu, 21 Apr 2011 21:46:57 +0800
-Message-ID: <BANLkTinYu00M9No_Pqxp+gpEZAmPJPDt1g@mail.gmail.com>
-Subject: Re: [PATCH] sched: try to fix mm leak when freeing sched groups
+In-Reply-To: <20110421134312.GA3225@zhy>
+References: <BANLkTi=41=2_QOMOabg1UrwQ2A06fJAY9w@mail.gmail.com>
+	<20110421132904.GA2702@zhy>
+	<20110421134312.GA3225@zhy>
+Date: Thu, 21 Apr 2011 21:50:35 +0800
+Message-ID: <BANLkTik6uerEZfULDQe9kY8L6U7OpP3Q5Q@mail.gmail.com>
+Subject: Re: [PATCH] sched: deduplicate mm checks in normalize_rt_tasks()
 From: Hillf Danton <dhillf@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3LDl3uw025245
 
-On Thu, Apr 21, 2011 at 9:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2011-04-21 at 21:37 +0800, Hillf Danton wrote:
->> When freeing sched groups, there is a sg (== sched_group_nodes[i]) not
->> got freed.
->> The relevant code is reshuffled to be clearer, and correct.
+On Thu, Apr 21, 2011 at 9:43 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Thu, Apr 21, 2011 at 09:29:04PM +0800, Yong Zhang wrote:
+>> On Thu, Apr 21, 2011 at 09:15:56PM +0800, Hillf Danton wrote:
+>> > When normalizing realtime tasks, only user tasks are concerned by
+>> > checking their ->mm.
+>> > If the task is not realtime, the -mm is checked again, thus the
+>> > overwork could be removed.
+>> >
+>> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> > ---
+>> >
+>> > --- a/kernel/sched.c        2011-03-30 03:09:48.000000000 +0800
+>> > +++ b/kernel/sched.c        2011-04-21 20:59:28.000000000 +0800
+>> > @@ -8364,7 +8364,7 @@ void normalize_rt_tasks(void)
+>> >                      * Renice negative nice level userspace
+>> >                      * tasks back to 0:
+>> >                      */
+>> > -                   if (TASK_NICE(p) < 0 && p->mm)
+>> > +                   if (TASK_NICE(p) < 0)
+>>
+>> This looks good.
+>>
+>> And we can also move TASK_NICE(p) < 0 to the upper if(),
+>> like:
+>>               if (!rt_task(p) && TASK_NICE(p) < 0) {
+>>                       set_user_nice(p, 0);
+>>                       continue;
+>>               }
+>>
+>> to reduce one level if() to make code cleaner :)
 >
-> The code doesn't even appear to exist, what kernel are you patching?
+> Damm, I'm wrong here, just ignore it.
 >
-Hi Peter
+Hi Yong
 
-It is linux-2.6.39-rc1.tar.bz2 downloaded at kernel.org, and
-          >> --- a/kernel/sched.c  2011-03-30 03:09:48.000000000 +0800
-is the time stamp, right?
+We could not be fine every time, right?
 
 thanks
           Hillf
 
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/kernel/sched.c  2011-03-30 03:09:48.000000000 +0800
->> +++ b/kernel/sched.c  2011-04-21 21:09:00.000000000 +0800
->> @@ -7106,7 +7106,7 @@ static void free_sched_groups(const stru
->>                       continue;
->>
->>               for (i = 0; i < nr_node_ids; i++) {
->> -                     struct sched_group *oldsg, *sg = sched_group_nodes[i];
->> +                     struct sched_group *sg = sched_group_nodes[i];
->>
->>                       cpumask_and(nodemask, cpumask_of_node(i), cpu_map);
->>                       if (cpumask_empty(nodemask))
->> @@ -7114,13 +7114,11 @@ static void free_sched_groups(const stru
->>
->>                       if (sg == NULL)
->>                               continue;
->> -                     sg = sg->next;
->> -next_sg:
->> -                     oldsg = sg;
->> -                     sg = sg->next;
->> -                     kfree(oldsg);
->> -                     if (oldsg != sched_group_nodes[i])
->> -                             goto next_sg;
->> +                     do {
->> +                             struct sched_group *next = sg->next;
->> +                             kfree(sg);
->> +                             sg = next;
->> +                     } while (sg != sched_group_nodes[i]);
->>               }
->>               kfree(sched_group_nodes);
->>               sched_group_nodes_bycpu[cpu] = NULL;
+> Yours is good.
 >
+> Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 >
->
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+>>
+>> Thanks,
+>> Yong
+>>
+>> >                             set_user_nice(p, 0);
+>> >                     continue;
+>> >             }
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
