@@ -1,245 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1DUKeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 06:34:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43949 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab1DUKeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 06:34:08 -0400
-Date: Thu, 21 Apr 2011 12:33:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Saravana Kannan <skannan@codeaurora.org>
-cc: Paul McKenney <paul.mckenney@linaro.org>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, kernel@pengutronix.de,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH RFC] clk: add support for automatic parent handling
-In-Reply-To: <4DAFD5AA.9020404@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1104211147300.3323@ionos>
-References: <alpine.LFD.2.00.1104192339180.2744@localhost6.localdomain6> <1303308457-7501-1-git-send-email-u.kleine-koenig@pengutronix.de> <alpine.LFD.2.02.1104201704350.3323@ionos> <20110420185922.GD31131@pengutronix.de> <alpine.LFD.2.02.1104202113250.3323@ionos>
- <4DAFD5AA.9020404@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753011Ab1DUKlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 06:41:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1DUKlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 06:41:12 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC,PATCH 3/3] trace,perf: add filter support for ftrace/function tracepoint event
+Date: Thu, 21 Apr 2011 12:40:58 +0200
+Message-Id: <1303382458-11072-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1303382458-11072-1-git-send-email-jolsa@redhat.com>
+References: <1303382458-11072-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011, Saravana Kannan wrote:
-> On 04/20/2011 12:52 PM, Thomas Gleixner wrote:
-> > So what's wrong with that code:
-> > 
-> > 1) struct clk is just a collection of function pointers and two locks
-> > 
-> >     It lacks:
-> > 
-> >     - a flag field for properties
-> Agree. I would very much like it.
-> 
-> >     - a field for the parent
-> 
-> Agree.
-> 
-> >     - a field for the current clock rate
-> 
-> Meh! Not a big deal. Some clocks don't have the concept of setting their rate
-> since they share a parent with another unrelated clock (Ah, looks like you
-> talk about with the tree diagram). So, it might be easier to have the rate
-> inside each implementation if they need it. I shouldn't add too much code.
+Added support to be able to pass "ip == glob" filter for the ftrace/function
+tracepoint.
 
-No. Each clock has a rate, even if it's fixed and there is no point in
-calling down the tree to figure that out.
+Respective functions are hot-patched/updated when the filter is set,
+and the filter predicate is set to be allways true. Probably missing
+several cases.. not sure this is the way.
+
+wbr,
+jirka
+
+---
+ include/linux/ftrace_event.h       |    3 ++
+ kernel/trace/ftrace.c              |   35 ++++++++++++++++++++++++++++
+ kernel/trace/trace.h               |    2 +
+ kernel/trace/trace_events_filter.c |   45 ++++++++++++++++++++++++++++++++---
+ kernel/trace/trace_export.c        |   26 ++++++++++++++++----
+ 5 files changed, 102 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 22b32af..bbf7cc6 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -144,6 +144,8 @@ struct ftrace_event_class {
+ 	struct list_head	*(*get_fields)(struct ftrace_event_call *);
+ 	struct list_head	fields;
+ 	int			(*raw_init)(struct ftrace_event_call *);
++	void			(*filter)(struct ftrace_event_call *call,
++					  int enable);
+ };
  
-> >     - a field for the base register
-> 
-> Definitely no. It's completely useless for clocks whose registers don't all
-> line up with fixed offsets from the base register. Now I will have to put one
-> register here and the rest of the registers in the internal data?
->
-> >     - a struct for the offsets of the most common registers relative to
-> >       base
-> 
-> Ok, you thought about rest of the registers. But, how can this fit in the
-> common code? Each clock h/w implementation has totally different set of
-> registers. Sometimes different even within the same SoC. This would be quite
-> wasteful and doesn't even make sense to store at the top level. Also, storing
-> offsets is a pain in the neck when the register space is not clean (happens
-> more often than we would like :-().
-
-Depends, there is a lot of sane hardware out there (not necessarily in
-the ARM SoC world). We can do with a pointer if the need arises.
+ extern int ftrace_event_reg(struct ftrace_event_call *event,
+@@ -221,6 +223,7 @@ enum {
+ 	FILTER_STATIC_STRING,
+ 	FILTER_DYN_STRING,
+ 	FILTER_PTR_STRING,
++	FILTER_TRACE_FN,
+ };
  
-> >     optionally a set of common register accessor functions like I did
-> >     for the generic irq chip.
-> 
-> Again, I don't see the point in having this in the common code. May be I'm
-> missing something?
-
-See my RFC patch of a generic irq chip implementation and how much
-duplicated five line inline functions they removed.
+ #define EVENT_STORAGE_SIZE 128
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 49fbc8c..b52db6e 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3285,6 +3285,41 @@ int ftrace_event_class_register(struct ftrace_event_call *call,
+ 	return -EINVAL;
+ }
  
-> IMO, a better option instead of the base register and the offsets would be an
-> option to have a priv_data pointer. I forgot the exact use case, but we
-> thought that would have been helpful when we tried to port the msm clock
-> driver in our tree on top of Jeremy's patches.
-
-It works either way, but we should try to comeup with a sensible
-common base struct for sane hardware.
++void ftrace_event_tracefn_filter(int enable)
++{
++	char *filter = event_function.data;
++
++	if (enable) {
++		WARN_ON(!filter);
++		if (filter)
++			ftrace_match_records(filter, strlen(filter), 1);
++	} else {
++		ftrace_filter_reset(1);
++		if (filter) {
++			kfree(filter);
++			event_function.data = NULL;
++		}
++	}
++
++	mutex_lock(&ftrace_lock);
++	if (ftrace_enabled)
++		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++	mutex_unlock(&ftrace_lock);
++}
++
++void ftrace_event_class_filter(struct ftrace_event_call *call, int enable)
++{
++	int etype = call->event.type;
++
++	switch (etype) {
++	case TRACE_FN:
++		ftrace_event_tracefn_filter(enable);
++		break;
++	default:
++		break;
++	}
++}
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
  
-> > 2) The "framework" API is just a set of low level primitive helper
-> >     functions
-> > 
-> >     It lacks:
-> > 
-> >     - proper refcounting. clk_get() / clk_put() should do that at the
-> >       framework level.
-> 
-> This has nothing to do with the patches Jeremy made. clk_get()/_put() is in
-> clkdev. Also, I'm not sure if clk_get()/put() needs refcounting. That's like
-> asking kalloc/kfree to have refcounting.
-
-Ok. I missed the clkdev part.
+ static int ftrace_graph_active;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 3298333..bc2537e 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -780,6 +780,8 @@ extern const char *__stop___trace_bprintk_fmt[];
  
-> >     - the ability to propagate enable/disable/prepare/unprepare down
-> >       through the parent tree
-> 
-> Agree. That would be nice. I think the main reason people were not pushing for
-> it was to do things in manageable steps. It took a long time for people to
-> agree on even the current framework Jeremy added.
-
-Sad enough. But I'm not happy about that in any way. I know where it
-ends if you try to please everyone and agree on everything.
-
-> >     - proper mechanisms to sanity check clk_set_parent(),
-> >       clk_set_rate() et. al.
-> > 
-> >       This is not a implementation detail inside a specific clock. It's
-> >       a problem which is common at least on the tree level:
-> > 
-> >                      rootclk
-> >                   /          \
-> >                clk1          clk2
-> >               /   \
-> >             clk3  clk4
-> > 	   /
-> >           clk5
-> > 
-> >      So now you want to change the rate of clk1. Can you do that?
-> > 
-> >      No, but where is the sanity check which prevents that ?
-> >
-> >          In the clk1->set_rate() callback ?
-> > 
-> > 	Great, that's the wrong place.
-> 
-> Ah! Nice to see that this bothers you too. This has been a point of contention
-> with in our internal team too. I keep pushing back on requests to make child
-> clock's set rate propagate up to the patent when the parent has two unrelated
-> child clocks going to different devices.
-> 
-> IMO, the set rate should only work on the parent clock and if there really in
-> a need to change the child clock rates, then the users of those child clocks
-> will have to co-ordinate it amongst themselves. Although, our use case is a
-> bit simpler in that most of the time the child clocks are direct branches (no
-> dividers) of the parent.
-
-Still most of this should be handled in the common code. It's not a
-unique problem to a single hardware implementation. It's just a given
-problem due to the tree nature. And the current code completely lacks
-a representation of that and therefor all needs to be done at the
-implementation detail level.
+ extern int ftrace_event_class_register(struct ftrace_event_call *call,
+ 				       enum trace_reg type);
++extern void ftrace_event_class_filter(struct ftrace_event_call *call,
++				      int enable);
  
-> I'm not sure how realistic/common your example of switching parents for clk3
-> is. May be it is -- I would interested in what people have to say.
-
-I just used it to illustrate what common code should handle.
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 8008ddc..5a847a5 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -238,6 +238,11 @@ static int filter_pred_none(struct filter_pred *pred, void *event)
+ 	return 0;
+ }
  
-> So, between clk_set_divider(), clk_set_parent() and clk_set_rate(), I think we
-> should be able to cover most clock trees as long as we don't propagate
-> clk_set_rate() to parents with more than one children. In those case, the
-> children should just implement clk_set_divider() (or not even that if there is
-> no divider) and not allow clk_set_rate().
-
-The problem starts exactly at the point where you have all that
-propagation decision stuff in the chip implementation.
-
-clk_set_rate(clk, rate)
-{
-	u64 parent_rate = 0;
-
-        if (clk->users > 1)
-	      	 return -EBUSY;
-
-	if (!clk->set_rate)
-	   	 return rate == clk->rate ? 0 : -EINVAL;
-
-	ret = clk->set_rate(rate, &div, &parent_rate);
-	if (!ret)
-		return 0;
-
-	if (ret != NEED_PARENT_CHANGE)
-	   	return ret;
-
-	if (WARN_ON(!clk->parent))
-		return -EINVAL;
-
-        ret = clk_set_rate(clk->parent, parent_rate);
-        return ret ? ret : clk->set_rate(rate, NULL);
-}
-
-Something along that will cover the tree traversal and remove the
-propagation from the chip implementations. 
-
-> > So unless you fix this stuff you should not even think about
-> > converting anything to this "framework". That's just waste of time and
-> > effort. Aside of declaring it stable and useful ....
-> 
-> I think you haven't seen all the repetition of refcounting and each mach's
-> implementation of some variant of clock ops. The current patch set from Jeremy
-
-Yes, I have looked through the maze as I went through all irq stuff
-recently. Jeremys stuff is a start, but I think we should start with
-something a bit more complete than that minimal set. I know the pain
-when you start with a minimal set and try to force people into
-cleaning up their stuff over and over. :(
-
-And we can identify stuff already, so it should be added now.
-
-> will certainly help cut down some of that. If we get the "enable parent before
-> you enable child, etc" in now, I don't think there will be much churn when we
-> try to add code to enforce the tree restrictions you mention above.
-
-Yes, that's needs to be done before we start churning the tree.
++static int filter_pred_all(struct filter_pred *pred, void *event)
++{
++	return 1;
++}
++
+ /*
+  * regex_match_foo - Basic regex callbacks
+  *
+@@ -755,8 +760,23 @@ static void __free_preds(struct event_filter *filter)
+ 	filter->n_preds = 0;
+ }
  
-> > The least thing which we need now are half baken "abstractions" which
-> > just shuffle code around for no value.
-> 
-> While a lot of your points are correct, I don't think the current patches from
-> Jeremy are useless. May be I'm completely mistaken in assuming that you are
-> referring to Jeremy's patches?
-
-I'm not saying they are useless, but they need to be more complete
-before we start converting code to it.
++static void filter_enable(struct ftrace_event_call *call)
++{
++	struct ftrace_event_class *class = call->class;
++
++	call->flags |= TRACE_EVENT_FL_FILTERED;
++
++	if (class && class->filter)
++		class->filter(call, 1);
++}
++
+ static void filter_disable(struct ftrace_event_call *call)
+ {
++	struct ftrace_event_class *class = call->class;
++
++	if (class && class->filter)
++		class->filter(call, 0);
++
+ 	call->flags &= ~TRACE_EVENT_FL_FILTERED;
+ }
  
-> Btw, on a slight tangent, there is also the problem of clk_round_rate() not
-> being sufficient when a driver is trying to work across different mach's. I
-> think we need a clk_set_rate_range(min, ideal, max) but I can start a separate
-> thread on that if you want. I talked about it a bit in another thread.
+@@ -883,6 +903,11 @@ static bool is_string_field(struct ftrace_event_field *field)
+ 	       field->filter_type == FILTER_PTR_STRING;
+ }
+ 
++static bool is_tracefn_field(struct ftrace_event_field *field)
++{
++	return field->filter_type == FILTER_TRACE_FN;
++}
++
+ static int is_legal_op(struct ftrace_event_field *field, int op)
+ {
+ 	if (is_string_field(field) &&
+@@ -969,7 +994,15 @@ static int filter_add_pred(struct filter_parse_state *ps,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (is_string_field(field)) {
++	if (is_tracefn_field(field)) {
++		/* allow only one function trace predicate */
++		if (call->data) {
++			parse_error(ps, FILT_ERR_TOO_MANY_OPERANDS, 0);
++			return -EINVAL;
++		}
++		fn = filter_pred_all;
++		call->data = kstrdup(pred->regex.pattern, GFP_KERNEL);
++	} else if (is_string_field(field)) {
+ 		filter_build_regex(pred);
+ 
+ 		if (field->filter_type == FILTER_STATIC_STRING) {
+@@ -1760,7 +1793,7 @@ static int replace_system_preds(struct event_subsystem *system,
+ 			parse_error(ps, FILT_ERR_BAD_SUBSYS_FILTER, 0);
+ 			append_filter_err(ps, filter);
+ 		} else
+-			call->flags |= TRACE_EVENT_FL_FILTERED;
++			filter_enable(call);
+ 		/*
+ 		 * Regardless of if this returned an error, we still
+ 		 * replace the filter for the call.
+@@ -1853,7 +1886,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ 		filter_disable(call);
+ 		append_filter_err(ps, filter);
+ 	} else
+-		call->flags |= TRACE_EVENT_FL_FILTERED;
++		filter_enable(call);
+ out:
+ 	/*
+ 	 * Always swap the call filter with the new filter
+@@ -1965,6 +1998,8 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 	if (&call->list == &ftrace_events)
+ 		goto out_unlock;
+ 
++	filter_disable(call);
++
+ 	err = -EEXIST;
+ 	if (event->filter)
+ 		goto out_unlock;
+@@ -1986,8 +2021,10 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 		goto free_ps;
+ 
+ 	err = replace_preds(call, filter, ps, filter_str, false);
+-	if (!err)
++	if (!err) {
++		filter_enable(call);
+ 		event->filter = filter;
++	}
+ 
+ free_ps:
+ 	filter_opstack_clear(ps);
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 0b0906a..b1d5301 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 	ret = trace_define_field(event_call, #type, #item,		\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
+ 
+@@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 				 offsetof(typeof(field),		\
+ 					  container.item),		\
+ 				 sizeof(field.container.item),		\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
+ 
+@@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 		ret = trace_define_field(event_call, event_storage, #item, \
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+@@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 				 offsetof(typeof(field),		\
+ 					  container.item),		\
+ 				 sizeof(field.container.item),		\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
+ 
+@@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ #define __dynamic_array(type, item)					\
+ 	ret = trace_define_field(event_call, #type, #item,		\
+ 				 offsetof(typeof(field), item),		\
+-				 0, is_signed_type(type), FILTER_OTHER);\
++				 0, is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
+ 
++#define FILTER_TYPE_TRACE_FN		FILTER_TRACE_FN
++#define FILTER_TYPE_TRACE_GRAPH_ENT	FILTER_OTHER
++#define FILTER_TYPE_TRACE_GRAPH_RET	FILTER_OTHER
++#define FILTER_TYPE_TRACE_CTX		FILTER_OTHER
++#define FILTER_TYPE_TRACE_WAKE		FILTER_OTHER
++#define FILTER_TYPE_TRACE_STACK		FILTER_OTHER
++#define FILTER_TYPE_TRACE_USER_STACK	FILTER_OTHER
++#define FILTER_TYPE_TRACE_BPRINT	FILTER_OTHER
++#define FILTER_TYPE_TRACE_PRINT		FILTER_OTHER
++#define FILTER_TYPE_TRACE_MMIO_RW	FILTER_OTHER
++#define FILTER_TYPE_TRACE_MMIO_MAP	FILTER_OTHER
++#define FILTER_TYPE_TRACE_BRANCH	FILTER_OTHER
++#define FILTER_TYPE(arg)		FILTER_TYPE_##arg
++
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
+ int									\
+@@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+ {									\
+ 	struct struct_name field;					\
+ 	int ret;							\
++	int filter_type = FILTER_TYPE(id);				\
+ 									\
+ 	tstruct;							\
+ 									\
+@@ -160,6 +175,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+ 	.reg			= ftrace_event_class_register,		\
++	.filter			= ftrace_event_class_filter,		\
+ };									\
+ 									\
+ struct ftrace_event_call __used event_##call = {			\
+-- 
+1.7.1
 
-Yes, but that's one step after the minimal set :)
-
-Thanks,
-
-	tglx
