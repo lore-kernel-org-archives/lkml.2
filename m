@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1DUTKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 15:10:44 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:56940 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab1DUTKn (ORCPT
+	id S1752969Ab1DUTOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 15:14:41 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:32630 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1DUTOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 15:10:43 -0400
-Date: Thu, 21 Apr 2011 13:10:41 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] pci: Export pci device msi table via sysfs
-Message-ID: <20110421191041.GE31296@parisc-linux.org>
-References: <1303412267-1948-1-git-send-email-nhorman@tuxdriver.com>
+	Thu, 21 Apr 2011 15:14:40 -0400
+X-IronPort-AV: E=Sophos;i="4.64,252,1301889600"; 
+   d="scan'208";a="145861207"
+Subject: Re: [Xen-devel] Re: [PATCH] xen block backend driver.
+From: Daniel Stodden <daniel.stodden@citrix.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad@kernel.org" <konrad@kernel.org>
+In-Reply-To: <20110421190606.GA10793@infradead.org>
+References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
+	 <1303333543-5915-2-git-send-email-konrad.wilk@oracle.com>
+	 <20110421034016.GB11501@infradead.org>
+	 <1303412592.9571.126.camel@agari.van.xensource.com>
+	 <20110421190606.GA10793@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 12:14:37 -0700
+Message-ID: <1303413277.9571.133.camel@agari.van.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303412267-1948-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 02:57:47PM -0400, Neil Horman wrote:
-> b) msi_table - populated only if msi(x) is enabled, it lists the irqs allocated
-> to the pci device
+On Thu, 2011-04-21 at 15:06 -0400, Christoph Hellwig wrote:
+> On Thu, Apr 21, 2011 at 12:03:12PM -0700, Daniel Stodden wrote:
+> > Yes, everybody is aware that the semantics were broken. But note it's
+> > not even a consistency issue at this point, because there's currently no
+> > frontend which relies on the original ordering semantics either. Take
+> > xen-blkfront, since blk_flush it uses the barrier op for a flush, being
+> > just a superset when ordering is enforced.
+> 
+> There is a huge userbase of guests out there that does rely on it.
 
-You're not the first one to try this ... the problem is, you can easily
-overflow a single 4k page.  A device can have up to 2k MSI-X entries,
-and we might take up to 5 bytes for each one, so we'd need a 10k buffer.
+Which ones? Old blkfront would have make a difference back then when
+barriers used to be an option, but it never actually declared it, right?
 
-> +#ifdef CONFIG_PCI_MSI
-> +static ssize_t msi_list_show(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	struct msi_desc *entry;
-> +	int first, last;
-> +	ssize_t count = 0;
-> +
-> +	if (!(pdev->msi_enabled || pdev->msix_enabled))
-> +		return 0;
-> +
-> +	list_for_each_entry(entry, &pdev->msi_list, list)
-> +		count += sprintf(&buf[count], "%d ", entry->irq);
-> +
-> +	return count;
-> +}
-> +#endif
+> > But before we just enumerate a new command, a potentially more viable
+> > option would be FLUSH+FUA flags on the WRITE operation. As if mapping
+> > bio bits.
+> > 
+> > The advantage is that it avoids the extra round trip implied by having
+> > the frontend driving writes through FSEQ_PREFLUSH on their own. I'd
+> > expect that to make much more of a performance difference. Somewhat
+> > differentiating PV from the low physical layer.
+> > 
+> > Would you, maybe did you, consider that? I think it sounds interesting
+> > enough to gather performance data, just asking beforehand.
+> 
+> You will need a pure flush anyway.  Once you actually have a correct
+> implementation you can look into optimizing it.  Note that at least
+> the Solaris Xen coded added a cache flush to the protocol.
 
-The fundamental problem is that the way Linux uses MSI-X is completely
-bollocks.  I've got a few hours to myself on a plane coming up in six
-weeks, and I hope to rewrite it then (I've already written my talk, so
-what else am I going to do?  :-)
+Weeeeeelll, I certainly hope it can deal with backends which never got
+to see those headers. :o)
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Daniel
+
+
