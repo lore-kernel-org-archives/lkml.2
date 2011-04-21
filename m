@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab1DUNZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:25:07 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:22748 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995Ab1DUNZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:25:05 -0400
-Message-ID: <4DB030B2.7090801@nokia.com>
-Date: Thu, 21 Apr 2011 16:27:14 +0300
-From: Roger Quadros <roger.quadros@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1752834Ab1DUNZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:25:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43404 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab1DUNZe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 09:25:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IzgQSpWnWB3AwuCouuPXjABToZ59GPyXu5vjH3zG4C6klSYJwA7WR943uRoF8Dg4f5
+         c0akADT6myWFrnu0n8z9SciwOlJommf71FfmhbJ1R8hPlkDQndXU5zE/YKXs69CjF4PP
+         fYo4eS5q8NiN82YAed+kJvj2Zw2a4KuH/hHok=
+Date: Thu, 21 Apr 2011 15:25:29 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Jeff Garzik <jeff@garzik.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux IDE mailing list <linux-ide@vger.kernel.org>
+Subject: Re: WARNING at libata-core.c:5015 in 2.6.39-rc3-wl+, then lockup.
+ (bisected)
+Message-ID: <20110421132529.GC31724@htj.dyndns.org>
+References: <4DA5CF81.4070908@candelatech.com>
+ <4DA5D5D8.8070301@candelatech.com>
+ <4DA5F3BA.3060404@candelatech.com>
+ <4DA87A72.50809@candelatech.com>
+ <4DA88707.4060704@garzik.org>
+ <4DA888D6.40000@candelatech.com>
+ <4DAF9066.7090906@candelatech.com>
 MIME-Version: 1.0
-To: ext Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@suse.de>, <mina86@mina86.com>, <m-sonasath@ti.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: gadget: composite: Allow function drivers to
- defer setup responses
-References: <Pine.LNX.4.44L0.1104191001590.1835-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1104191001590.1835-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.36.144]
-X-OriginalArrivalTime: 21 Apr 2011 13:24:46.0118 (UTC) FILETIME=[7B6A2460:01CC0027]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAF9066.7090906@candelatech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 05:14 PM, ext Alan Stern wrote:
-> On Tue, 19 Apr 2011, Roger Quadros wrote:
->
->> +/**
->> + * usb_composite_setup_continue() - Continue the delayed setup transfer
->
-> You're should say "control transfer", not "setup transfer".  Control
-> transfers consist of a setup stage, an optional data stage, and a
-> status stage.  The setup stage has already ended by the time the
-> function's setup handler is called.
+Hello,
 
-Yes I will re-word the things and re-send the patches.
+On Wed, Apr 20, 2011 at 07:03:18PM -0700, Ben Greear wrote:
+> I tried today's kernel (39-rc4+) and it seems much more stable on my
+> system.  So, I think the problem must be fixed.  It appears it was not
+> fixed in the plain 39-rc4, for what that's worth.
 
->
->> + * @cdev: the composite device who's setup transfer was delayed
->> + *
->> + * This function must be called by the USB function driver to continue
->> + * with the setup transfer's data/status phase in case it had requested to
->
-> Data and Status are stages, not phases.  See section 8.5.3 of the
-> USB-2.0 spec.
->
-> You made these mistakes in a few different places throughout the patch.
->
->> + * delay the status phase. A USB function's setup handler (e.g. set_alt())
->> + * can request the composite framework to delay the setup request's status phase
->> + * by returning USB_GADGET_DELAYED_STATUS.
->> + */
->> +void usb_composite_setup_continue(struct usb_composite_dev *cdev)
->> +{
->> +	int			value;
->> +	struct usb_request	*req = cdev->req;
->> +	unsigned long		flags;
->> +
->> +	DBG(cdev, "%s\n", __func__);
->> +	spin_lock_irqsave(&cdev->lock, flags);
->> +
->> +	if (cdev->delayed_status == 0) {
->> +		WARN(cdev, "%s: Unexpected call\n", __func__);
->> +
->> +	} else if (--cdev->delayed_status == 0) {
->> +		DBG(cdev, "%s: Completing delayed status\n", __func__);
->> +		req->length = 0;
->> +		req->zero = 1;
->
-> There's no reason to set this flag.  It has no effect when req->length
-> is 0.
->
-OK.
+Hmmm... interesting.  I don't know of any changes which could have
+affected that but then again I've been half offline for the last three
+weeks.  Can you please try to boot earlier kernel and determine
+whether the kernel version difference is actually making the
+difference?
 
-Thanks for review.
+Thanks.
 
 -- 
-regards,
--roger
+tejun
