@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1DUIie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 04:38:34 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:27757 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab1DUIic (ORCPT
+	id S1753302Ab1DUIpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 04:45:33 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46538 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750784Ab1DUIpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 04:38:32 -0400
-X-IronPort-AV: E=Sophos;i="4.64,250,1301875200"; 
-   d="scan'208";a="5408556"
-Subject: Re: [Xen-devel] Re: [PATCH v3] xen block backend.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad@kernel.org" <konrad@kernel.org>
-In-Reply-To: <20110421080638.GA10630@infradead.org>
-References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
-	 <20110421033735.GA11501@infradead.org>
-	 <1303370925.5997.322.camel@zakaz.uk.xensource.com>
-	 <1303373003.5997.337.camel@zakaz.uk.xensource.com>
-	 <20110421080638.GA10630@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 21 Apr 2011 09:38:31 +0100
-Message-ID: <1303375111.5997.341.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Thu, 21 Apr 2011 04:45:32 -0400
+Date: Thu, 21 Apr 2011 09:46:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Reiser <jreiser@bitwagon.com>
+Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
+ use Linux style comparisons
+Message-ID: <20110421094606.174caaf6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110421023737.290712238@goodmis.org>
+References: <20110421022825.535486725@goodmis.org>
+	<20110421023737.290712238@goodmis.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 09:06 +0100, Christoph Hellwig wrote:
-> On Thu, Apr 21, 2011 at 09:03:23AM +0100, Ian Campbell wrote:
-> > BTW about the only nice property blktap has as it currently stands over
-> > this plan is that it exports an actual block device from vhd, qcow etc
-> > files (in some sense blktap is a loopback driver for complex disk image
-> > file formats). It turns out to occasionally be quite useful to be able
-> > to mount such files, even on non-virtualisation systems (in its current
-> > incarnation blktap has no dependency on Xen).
+On Wed, 20 Apr 2011 22:28:26 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> You can already do that using qemu-nbd today.
+> The Linux style for comparing is:
+> 
+>   var == 1
+>   var > 0
 
-Good to know, I'd had a vague feeling this was possible but hadn't
-looked into how.
-
-> In most cases the image format support in qemu is much better than in the various Xen trees
-> anyway, with vhd beeing the only one that looks potentially better in Xen.
-
-That's about what I reckon too.
-
-Ian.
-
+It's both and both forms are commonly used. I don't care what ftrace
+looks like but don't pedal bogus style. We have enough bogus style as it
+is.
