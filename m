@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1DUWaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 18:30:11 -0400
-Received: from lo.gmane.org ([80.91.229.12]:56921 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab1DUWaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 18:30:09 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Eric Blake <eblake@redhat.com>
-Subject: Re: [PATCH 1/2] fs: add =?utf-8?b?U0VFS19IT0xF?= and =?utf-8?b?U0VFS19EQVRB?= flags
-Date: Thu, 21 Apr 2011 22:28:04 +0000 (UTC)
-Message-ID: <loom.20110422T001650-760@post.gmane.org>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+	id S1755567Ab1DUWbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 18:31:36 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46687 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754764Ab1DUWbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 18:31:34 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
+        linux-arch@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <alpine.DEB.2.00.1104211517150.20201@chino.kir.corp.google.com>
+References: <20110420102314.4604.A69D9226@jp.fujitsu.com>
+	 <BANLkTi=mxWwLPEnB+rGg29b06xNUD0XvsA@mail.gmail.com>
+	 <20110420161615.462D.A69D9226@jp.fujitsu.com>
+	 <BANLkTimfpY3gq8oY6bPDajBW7JN6Hp+A0A@mail.gmail.com>
+	 <20110420112020.GA31296@parisc-linux.org>
+	 <BANLkTim+m-v-4k17HUSOYSbmNFDtJTgD6g@mail.gmail.com>
+	 <1303308938.2587.8.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104200943580.9266@router.home>
+	 <1303311779.2587.19.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104201018360.9266@router.home>
+	 <alpine.DEB.2.00.1104201437180.31768@chino.kir.corp.google.com>
+	 <1303401997.4025.8.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104211517150.20201@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 17:31:31 -0500
+Message-ID: <1303425091.4025.59.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 24.10.251.25 (Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.16) Gecko/20110322 Fedora/3.6.16-1.fc14 Firefox/3.6.16)
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josef Bacik <josef <at> redhat.com> writes:
-
-> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns
-> out using fiemap in things like cp cause more problems than it solves, so
-> lets try and give userspace an interface that doesn't suck.  So we have
+On Thu, 2011-04-21 at 15:19 -0700, David Rientjes wrote:
+> On Thu, 21 Apr 2011, James Bottomley wrote:
 > 
-> -SEEK_HOLE: this moves the file pos to the nearest hole in the file from the
-> given position.  If the given position is a hole then pos won't move.  A "hole"
-> is defined by whatever the fs feels like defining it to be.
-
-You absolutely need to match Solaris semantics, which are documented as follows:
-
-         �  If whence is SEEK_HOLE, the offset of the start of the  next  hole
-            greater than or equal to the supplied offset is returned. The def-
-            inition of a hole is provided near the end of the DESCRIPTION.
-
-         �  If whence is SEEK_DATA, the file pointer is set to  the  start  of
-            the  next  non-hole  file region greater than or equal to the sup-
-            plied offset.
-
-       A  "hole" is defined as a contiguous range of bytes in a file, all hav-
-       ing the value of zero, but not all zeros in a file are guaranteed to be
-       represented  as  holes returned with SEEK_HOLE. Filesystems are allowed
-       to expose ranges of zeros with SEEK_HOLE, but not required to. Applica-
-       tions can use SEEK_HOLE to optimise their behavior for ranges of zeros,
-       but must not depend on it to find all such ranges in a file. The  exis-
-       tence  of  a  hole at the end of every data region allows for easy pro-
-       gramming and implies that a virtual hole exists at the end of the file.
-       Applications   should   use   fpathconf(_PC_MIN_HOLE_SIZE)   or   path-
-       conf(_PC_MIN_HOLE_SIZE)  to  determine   if   a   filesystem   supports
-       SEEK_HOLE. See fpathconf(2).
-
-       For  filesystems  that  do not supply information about holes, the file
-       will be represented as one entire data region.
-
-       ENXIO           For SEEK_DATA, there are no more data regions past  the
-                       supplied offset. For SEEK_HOLE, there are no more holes
-                       past the supplied offset.
-
-Note that in that definition, SEEK_HOLE does _not_ reposition the file offset
-(it returns the offset of the next hole, which might be at the end of the file
-since all files have a virtual hole at the end, but leaves the position
-unchanged).  I'd have to write a test program on Solaris to see whether that
-definition is actually true, or if it is a bug in the Solaris man page.
-
-Making SEEK_HOLE blindly fail is therefore not useful; you could just as
-easily make it succeed and return the offset of the last byte of the file for
-all file systems (if the offset requested is within bounds, or fail with
-ENXIO if it is out of bounds), and have a valid, working, and minimal
-implementation already in place.
-
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 94d2a33..243bd9c 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -235,7 +235,11 @@ int slab_is_available(void)
+> >  
+> >  static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
+> >  {
+> > +#ifdef CONFIG_NUMA
+> >  	return s->node[node];
+> > +#else
+> > +	return s->node[0];
+> > +#endif
+> >  }
+> >  
+> >  /* Verify that a pointer has an address that is valid within a slab page */
 > 
-> -SEEK_DATA: this is obviously a little more self-explanatory.  Again the only
-> ambiguity comes in with preallocated extents.  If you have an fs that can't
-> reliably tell that the preallocated extent is in the process of turning into a
-> real extent, it is correct for SEEK_DATA to park you at a preallocated extent.
+> Looks like parisc may have been just fine before 7340cc84141d (slub: 
+> reduce differences between SMP and NUMA), which was merged into 2.6.37?
 
-In contrast to SEEK_HOLE, SEEK_DATA _does_ reposition the file, or fail with
-ENXIO.  Back to your minimal implementation, it would be valid to always fail
-with ENXIO (treating every file as a single block of data followed by a single
-virtual hole at file end, so there is no next data after any current position).
+That's possible.  I've had no bug reports from the debian 2.6.32 kernel,
+which is the only other one that has SLUB by default.  The m68k guys
+seem to think this is the cause of their problems too.
 
-> +++ b/fs/read_write.c
-> @@ -64,6 +64,9 @@ generic_file_llseek_unlocked(struct file *file, loff_t
-offset, int origin)
->  			return file->f_pos;
->  		offset += file->f_pos;
->  		break;
-> +	case SEEK_DATA:
-> +	case SEEK_HOLE:
-> +		return -EINVAL;
+But the basic fact is that all our testing has been done on SLAB.  It
+wasn't until debian asked us to looks at a 2.6.38 kernel that I
+accidentally picked up SLUB by importing their config into my build
+environment.
 
-Whatever you do, returning EINVAL is not nice, especially when it seems pretty
-easy to provide a working alternative that assumes all files are a single data
-block until fine-tuned otherwise on a per-filesystem basis.
-
-Also, based on the Solaris documentation, you probably ought to couple this
-with fpathconf(_PC_MIN_HOLE_SIZE).
-
-Eric Blake
+James
 
 
