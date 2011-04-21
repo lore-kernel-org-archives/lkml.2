@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab1DUKxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 06:53:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34541 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab1DUKxE (ORCPT
+	id S1753238Ab1DUK7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 06:59:23 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54901 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab1DUK7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 06:53:04 -0400
+	Thu, 21 Apr 2011 06:59:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BJr41qh4sv1+X15QqsE/XFG6ws4O04pAwTvVtcedWxlLYHwhXkaf2VsyGLTwTqR15t
-         i0XJxQpzsvMuphhXr3sd9f0PhA8gWnNXbvQOA22Cko+RqeZadqOd5L+TqIgqUBkrmJmU
-         Q6Ht+hWhdCUrN3LrM9B6e2qHHyO2RwgoM2JS8=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=m/M347LeRr1/suW+Ize4XkzmW/pMoei0FSxWzFjbvLFcHQdrq1D6bFomZuR/5vPfdv
+         rfDESCph/XDhw6Q6gtf41Me4bWJna6pPYuIrMvgpDYYLZwCVNZ36RsDgiKm4cj+qQqvI
+         +FmG41dlI4/wPFQAWfkov6weRYfDHHkn36Ji8=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
-References: <1303291155-3148-1-git-send-email-salt@salt.com.tw>
-	<20110420094700.GA2258@polaris.bitmath.org>
-	<BANLkTin7Q3fD3vg90qCk12MGaVEvLBe0Mg@mail.gmail.com>
-	<20110420100759.GA2436@polaris.bitmath.org>
-	<alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
-Date: Thu, 21 Apr 2011 12:53:02 +0200
-X-Google-Sender-Auth: Mrg4K3o3RU-Lv9367dFHNA0yLC8
-Message-ID: <BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
-Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Richard Nauber <richard.nauber@googlemail.com>,
-        PenMount <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <871v0wvuod.fsf@tucsk.pomaz.szeredi.hu>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+ <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+ <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com> <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+ <BANLkTinMNL8Q+_MCHDqAGSdYNAvHB2GdLw@mail.gmail.com> <87tydu3t4p.fsf_-_@tucsk.pomaz.szeredi.hu>
+ <BANLkTinXVDrLnMOo17pqua5+38yQsezG6g@mail.gmail.com> <87tydtm41s.fsf@tucsk.pomaz.szeredi.hu>
+ <BANLkTikJ_7ZZ+1uC=0RBmKmxqFhVyLiYsw@mail.gmail.com> <871v0wvuod.fsf@tucsk.pomaz.szeredi.hu>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Thu, 21 Apr 2011 12:59:01 +0200
+X-Google-Sender-Auth: FKpcuD0kGkRSXVuR-lno8QkiNXk
+Message-ID: <BANLkTikv+iCVgG_cgejqJjuS0xURrAvQuw@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: implement generic xattr support
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Phillip Lougher <phillip.lougher@gmail.com>,
+        Andreas Dilger <adilger@dilger.ca>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 11:17, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 20 Apr 2011, Henrik Rydberg wrote:
+On 21 April 2011 11:08, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Michal Suchanek <hramrach@centrum.cz> writes:
 >
->> > In fact, I have a second patch just on top of this one. It has been
->> > tested by Ryan with PenMount devices.
+>> Can you put up a branch with both overlayfs and xattrs?
 >>
->> Great, and good timing. :-)
->>
->> > I was waiting for Penmount to be included first as it does not impact
->> > any other drivers.
->>
->> I would prefer the opposite order, since it is cleaner and means one
->> less device to test for the major change.
+>> I would like to point people at a repo with working implementation and
+>> mirroring the kernel tree to add one patch is a bit overkill.
 >
-> I agree with Henrik on this.
+> Okay, added the tmpfs-xattr patch to the overlayfs.v8 branch.
 >
-> Once you are done with testing the last_field_index change, it'd be great
-> if you could respin the patches so that the first one perfoms this change,
-> and the second one adds PenMount support on top of it.
->
-> I'll then apply it. Thanks,
 
-Hi Jiri,
+Okay, I built a small live system using this branch and it boots without errors.
 
-I'll do that as soon as Henrik tells me it is working.
+Now it's time to build a larger image I guess.
 
-Cheers,
-Benjamin
+Thanks
 
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
->
+Michal
