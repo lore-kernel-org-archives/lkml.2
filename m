@@ -1,33 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab1DUC4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:56:19 -0400
-Received: from [211.103.208.230] ([211.103.208.230]:33623 "EHLO
-	www.jointbest.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab1DUC4S (ORCPT
+	id S1753238Ab1DUDB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 23:01:58 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:61787 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752248Ab1DUDB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:56:18 -0400
-X-Greylist: delayed 973 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Apr 2011 22:56:17 EDT
-Message-ID: <3c230e0babf2433378ffaf28d224abae.squirrel@mail.jointbest.com>
-Date: Thu, 21 Apr 2011 09:31:49 +0800
-Subject: 
-From: "RED DOT AWARD COMPANY" <info@reddot.com>
-Reply-To: reddot_wards@hotmail.com
-User-Agent: SquirrelMail/1.4.21
+	Wed, 20 Apr 2011 23:01:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoMDAPWar015LHHJgWdsb2JhbAClSRUBARYmJcZ2DoVoBA
+Date: Thu, 21 Apr 2011 13:01:52 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110421030152.GG1814@dastard>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.515923886@intel.com>
+ <20110419073523.GF23985@dastard>
+ <20110419095740.GC5257@quack.suse.cz>
+ <20110419125616.GA20059@localhost>
+ <20110420012120.GK23985@dastard>
+ <20110420025321.GA14398@localhost>
+ <20110421004547.GD1814@dastard>
+ <20110421020617.GB12191@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421020617.GB12191@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You Won 600,000.00 Pounds From RED DOT AWARDS.Contact Dr. Peter Zec For
-Claims.
-Contact :  reddot_wards@hotmail.com
+On Thu, Apr 21, 2011 at 10:06:17AM +0800, Wu Fengguang wrote:
+> On Thu, Apr 21, 2011 at 08:45:47AM +0800, Dave Chinner wrote:
+> > On Wed, Apr 20, 2011 at 10:53:21AM +0800, Wu Fengguang wrote:
+> > > On Wed, Apr 20, 2011 at 09:21:20AM +0800, Dave Chinner wrote:
+> > > > On Tue, Apr 19, 2011 at 08:56:16PM +0800, Wu Fengguang wrote:
+> > > > > I actually started with wb_writeback() as a natural choice, and then
+> > > > > found it much easier to do the expired-only=>all-inodes switching in
+> > > > > move_expired_inodes() since it needs to know the @b_dirty and @tmp
+> > > > > lists' emptiness to trigger the switch. It's not sane for
+> > > > > wb_writeback() to look into such details. And once you do the switch
+> > > > > part in move_expired_inodes(), the whole policy naturally follows.
+> > > > 
+> > > > Well, not really. You didn't need to modify move_expired_inodes() at
+> > > > all to implement these changes - all you needed to do was modify how
+> > > > older_than_this is configured.
+> > > > 
+> > > > writeback policy is defined by the struct writeback_control.
+> > > > move_expired_inodes() is pure mechanism. What you've done is remove
+> > > > policy from the struct wbc and moved it to move_expired_inodes(),
+> > > > which now defines both policy and mechanism.
+> > > 
+> > > > Furhter, this means that all the tracing that uses the struct wbc no
+> > > > no longer shows the entire writeback policy that is being worked on,
+> > > > so we lose visibility into policy decisions that writeback is
+> > > > making.
+> > > 
+> > > Good point! I'm convinced, visibility is a necessity for debugging the
+> > > complex writeback behaviors.
+> > > 
+> > > > This same change is as simple as updating wbc->older_than_this
+> > > > appropriately after the wb_writeback() call for both background and
+> > > > kupdate and leaving the lower layers untouched. It's just a policy
+> > > > change. If you thinkthe mechanism is inefficient, copy
+> > > > wbc->older_than_this to a local variable inside
+> > > > move_expired_inodes()....
+> > > 
+> > > Do you like something like this? (details will change a bit when
+> > > rearranging the patchset)
+> > 
+> > Yeah, this is close to what I had in mind.
+> > 
+> > > 
+> > > --- linux-next.orig/fs/fs-writeback.c	2011-04-20 10:30:47.000000000 +0800
+> > > +++ linux-next/fs/fs-writeback.c	2011-04-20 10:40:19.000000000 +0800
+> > > @@ -660,11 +660,6 @@ static long wb_writeback(struct bdi_writ
+> > >  	long write_chunk;
+> > >  	struct inode *inode;
+> > >  
+> > > -	if (wbc.for_kupdate) {
+> > > -		wbc.older_than_this = &oldest_jif;
+> > > -		oldest_jif = jiffies -
+> > > -				msecs_to_jiffies(dirty_expire_interval * 10);
+> > > -	}
+> > 
+> > Right here I'd do:
+> > 
+> > 	if (work->for_kupdate || work->for_background)
+> > 		wbc.older_than_this = &oldest_jif;
+> > 
+> > so that the setting of wbc.older_than_this in the loop can trigger
+> > on whether it is null or not.
+> 
+> That's the tricky part that drove me to change move_expired_inodes()
+> directly..
+> 
+> One important thing to bear in mind is, the background work can run on
+> for one hour, one day or whatever. During the time dirty inodes come
+> and go, expired and cleaned.  If we only reset wbc.older_than_this and
+> never restore it _inside_ the loop, we'll quickly lose the ability to
+> "start with expired inodes" shortly after f.g. 5 minutes.
 
+However, there's not need to implicity switch back to expired inodes
+on the next wb_writeback loop - it only needs to switch back when
+b_io is emptied. And I suspect that it really only needs to switch
+if there are inodes on b_more_io because if we didn't put any inodes
+onto b_more_io, then then we most likely cleaned the entire list of
+unexpired inodes in a single write chunk...
+
+That is, something like this when updating the background state in
+the loop tail:
+
+	if (work->for_background && list_empty(&wb->b_io)) {
+		if (wbc.older_than_this) {
+			if (list_empty(&wb->b_more_io)) {
+				wbc.older_than_this = NULL;
+				continue;
+			}
+		} else if (!list_empty(&wb->b_more_io)) {
+			wbc.older_than_this = &oldest_jif;
+			continue;
+		}
+	}
+
+Still, given wb_writeback() is the only caller of both
+__writeback_inodes_sb and writeback_inodes_wb(), I'm wondering if
+moving the queue_io calls up into wb_writeback() would clean up this
+logic somewhat. I think Jan mentioned doing something like this as
+well elsewhere in the thread...
+
+Cheers,
+
+Dave.
 -- 
-
-
+Dave Chinner
+david@fromorbit.com
