@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab1DUSaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 14:30:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62738 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab1DUSaS (ORCPT
+	id S1752692Ab1DUScj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 14:32:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48954 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751557Ab1DUSci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 14:30:18 -0400
-Message-ID: <4DB077AF.7020909@nerdbynature.de>
-Date: Thu, 21 Apr 2011 11:30:07 -0700
-From: Christian Kujau <lists@nerdbynature.de>
-User-Agent: Mozilla/5.0 (X11; U; en-US; rv:1.9) Gecko/20100401
+	Thu, 21 Apr 2011 14:32:38 -0400
+Date: Thu, 21 Apr 2011 19:32:36 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Haojian Zhuang <hzhuang1@marvell.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 13/14] regulator: max8925: fix not add device if
+	missing init data
+Message-ID: <20110421183236.GA31850@opensource.wolfsonmicro.com>
+References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com> <1303300539-2941-1-git-send-email-haojian.zhuang@marvell.com> <20110421104204.GB11788@opensource.wolfsonmicro.com> <25B60CDC2F704E4E9D88FFD52780CB4C05CF0EF027@SC-VEXCH1.marvell.com> <20110421120327.GD11788@opensource.wolfsonmicro.com> <BANLkTik3w-uv95jHdBt7Q7qU54zc1=gCFA@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@infradead.org>,
-        Michael Guntsche <mike@it-loops.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with 2.6.39-rc[123]]
-References: <20110415035451@it-loops.com> <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com> <20110415042255.GC27928@infradead.org> <4DA7E202.4000307@fusionio.com> <alpine.DEB.2.01.1104211051490.18728@trent.utfs.org> <BANLkTim7SLt6TMqJQw35=tnACax0mE1URA@mail.gmail.com>
-In-Reply-To: <BANLkTim7SLt6TMqJQw35=tnACax0mE1URA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:22SRFh2MjalnUcFpfEie1NspbfrSFguu526hjIkO1Ne
- oiEe71EdI1FfszsksN4F10DmYjB43zzrRTcMWgAgIuxFeV6E0K
- 8pr5OCBpOR6PojwSu7IjMoXNCf61ApiBBHLoBJRWFaZ1D0224Y
- /CpWQGJdX7z9xsu/+Xv4sKoLHNjxFXcnu6iFzweTuoyfgN1VxE
- /Ql/qkwxii3PWPULZ119Q==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik3w-uv95jHdBt7Q7qU54zc1=gCFA@mail.gmail.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote on 2011-04-21 10:59 :
-> As of right now, all _known_ block bugs should be fixed in the stuff I
-> just pushed out, with the current top-of-tree being the merge of the
-> IDE CD endless loop issue and the NULL ptr oops at elevator change
-> time:
+On Thu, Apr 21, 2011 at 11:23:19PM +0800, Haojian Zhuang wrote:
+> On Thu, Apr 21, 2011 at 8:03 PM, Mark Brown
 
-OK, thanks.
+> > What makes you say this?  If you remove the check for the first entry
+> > being null then the driver will go and register all the regulators which
+> > seems fine.  That seems like it fixes the problem with skipping all the
+> > regulators if the first one has no platform data.
 
-> That said, that udevd message of yours would imply a full root
-> filesystem, which can cause any amount of issues at boot time..
+> If I keep original method and only fix the null issue on regulator[0], I can
+> also register regulators. But it'll display error messages since
+> regulator_init_data is null while it's registers.
 
-My /dev is mounted as udev and is 10MB in size, which is more than
-enough for kernels < 2.6.39. But with 2.6.39 something changed and
-/dev/.udev/queue.bin is growing to 7 MB and more, udevd is spinning like
-crazy and the OOM is reaping processes.
-
-I'm currently in the middle of a bisect, with 11 steps to go on this
-PowerBook G4 :-\
-
-Thanks,
-Christian.
--- 
-make bzImage, not war
+Registering regulators with null init data seems like a reasonable thing
+to want to do - let's just remove the error message.
