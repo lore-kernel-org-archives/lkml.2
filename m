@@ -1,114 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1DUQIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:08:24 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:21914 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab1DUQIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:08:21 -0400
-Subject: Re: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
-From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110421102815.5abf133e@absol.kitzblitz>
-References: <1303341624.11397.2.camel@ks-ubuntu>
-	 <20110421102815.5abf133e@absol.kitzblitz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 11:08:19 -0500
-Message-ID: <1303402099.11855.9.camel@ks-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754813Ab1DUQJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:09:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:54039 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752813Ab1DUQJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 12:09:18 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201104211609.p3LG9D9n013300@stout.americas.sgi.com>
+Date: Thu, 21 Apr 2011 11:09:13 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.39-rc5
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You are introducing trailing whitespace.
-> 
-> >  			return AE_BAD_DATA;
-> > -		}
-> > +		
->    ^^^^^^^^^^^^^
-> For every pair of braces you clean away, you're adding
-> two new coding style issues.
+Linus, please pull the following commit for XFS.  It fixes a
+regression that went in to 2.6.39-rc1.  It's a simple problem,
+but its consequence (reusing a va_format pointer without
+re-initializing it) is not good.  Thank you.
 
-Nicolas - appreciate your feedback and apologize for the error.  I have
-corrected these issues. Re-submitting patch below with corrections.
-
-Best Regards,
-Karthigan Srinivasan.
+					-Alex
 
 
-Fixed brace and comment coding style issues is code.
+The following changes since commit 584f79046780e10cb24367a691f8c28398a00e84:
 
-Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
----
- drivers/acpi/utils.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+  Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-04-20 18:18:19 -0700)
 
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index b002a47..76eaac2 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -99,9 +99,8 @@ acpi_extract_package(union acpi_object *package,
- 
- 		union acpi_object *element = &(package->package.elements[i]);
- 
--		if (!element) {
-+		if (!element)
- 			return AE_BAD_DATA;
--		}
- 
- 		switch (element->type) {
- 
-@@ -185,9 +184,8 @@ acpi_extract_package(union acpi_object *package,
- 		u8 **pointer = NULL;
- 		union acpi_object *element = &(package->package.elements[i]);
- 
--		if (!element) {
-+		if (!element)
- 			return AE_BAD_DATA;
--		}
- 
- 		switch (element->type) {
- 
-@@ -303,9 +301,8 @@ acpi_evaluate_reference(acpi_handle handle,
- 	u32 i = 0;
- 
- 
--	if (!list) {
-+	if (!list)
- 		return AE_BAD_PARAMETER;
--	}
- 
- 	/* Evaluate object. */
- 
-@@ -337,9 +334,9 @@ acpi_evaluate_reference(acpi_handle handle,
- 		goto end;
- 	}
- 
--	if (package->package.count > ACPI_MAX_HANDLES) {
-+	if (package->package.count > ACPI_MAX_HANDLES)
- 		return AE_NO_MEMORY;
--	}
-+
- 	list->count = package->package.count;
- 
- 	/* Extract package data. */
-@@ -373,7 +370,7 @@ acpi_evaluate_reference(acpi_handle handle,
-       end:
- 	if (ACPI_FAILURE(status)) {
- 		list->count = 0;
--		//kfree(list->handles);
-+		/* kfree(list->handles); */
- 	}
- 
- 	kfree(buffer.pointer);
--- 
-1.7.1
+are available in the git repository at:
 
+  git://oss.sgi.com/xfs/xfs for-linus
 
+Dave Chinner (1):
+      xfs: fix duplicate message output
 
+ fs/xfs/linux-2.6/xfs_message.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
