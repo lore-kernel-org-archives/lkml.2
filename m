@@ -1,171 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab1DUCho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:37:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33535 "EHLO
+	id S1752965Ab1DUChl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:37:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41031 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1DUChj (ORCPT
+	with ESMTP id S1752232Ab1DUChj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Apr 2011 22:37:39 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=67tXhsohBooA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=meVymXHHAAAA:8 a=newhXfnPRNPQplt3jLUA:9 a=FiZIyLWqjbEO5HJ39wwA:7 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=EEWewcU0p9MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=meVymXHHAAAA:8 a=Mk_WYfw7bvVhj5mrVxQA:9 a=yINF8_lX2XXbXKY4nLEA:7 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110421023737.523968644@goodmis.org>
+Message-Id: <20110421023738.476989377@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 20 Apr 2011 22:28:27 -0400
+Date: Wed, 20 Apr 2011 22:28:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, John Reiser <jreiser@bitwagon.com>
-Subject: [RFC][PATCH 02/11] ftrace/trivial: Clean up record mcount to use Linux switch style
+Subject: [RFC][PATCH 06/11] ftrace/recordmcount: Add warning logic to warn on mcount not recorded
 References: <20110421022825.535486725@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-trivial-Clean-up-record-mcount-to-use-Linux-s.patch
+Content-Disposition: inline; filename=0006-ftrace-recordmcount-Add-warning-logic-to-warn-on-mco.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The Linux style for switch statements is:
+There's some sections that should not have mcount recorded and should not have
+modifications to the that code. But currently they waste some time by calling
+mcount anyway (which simply returns). As the real answer should be to
+either whitelist the section or have gcc ignore it fully.
 
-	switch (var) {
-	case x:
-		[...]
-		break;
-	}
-
-Not:
-	switch (var) {
-	case x: {
-		[...]
-	} break;
+This change adds a option to recordmcount to warn when it finds a section
+that is ignored by ftrace but still contains mcount callers. This is not on
+by default as developers may not know if the section should be completely
+ignored or added to the whitelist.
 
 Cc: John Reiser <jreiser@bitwagon.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/recordmcount.c |   43 ++++++++++++++++++++++---------------------
- 1 files changed, 22 insertions(+), 21 deletions(-)
+ scripts/recordmcount.c |   32 ++++++++++++++++++++++++--------
+ scripts/recordmcount.h |   22 +++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 13 deletions(-)
 
 diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 37afe0e..4ebd839 100644
+index 78054a4..0e18975 100644
 --- a/scripts/recordmcount.c
 +++ b/scripts/recordmcount.c
-@@ -264,27 +264,27 @@ do_file(char const *const fname)
- 	w8 = w8nat;
- 	switch (ehdr->e_ident[EI_DATA]) {
- 		static unsigned int const endian = 1;
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized ELF data encoding %d: %s\n",
- 			ehdr->e_ident[EI_DATA], fname);
- 		fail_file();
--	} break;
--	case ELFDATA2LSB: {
-+		break;
-+	case ELFDATA2LSB:
- 		if (*(unsigned char const *)&endian != 1) {
- 			/* main() is big endian, file.o is little endian. */
- 			w = w4rev;
- 			w2 = w2rev;
- 			w8 = w8rev;
- 		}
--	} break;
--	case ELFDATA2MSB: {
-+		break;
-+	case ELFDATA2MSB:
- 		if (*(unsigned char const *)&endian != 0) {
- 			/* main() is little endian, file.o is big endian. */
- 			w = w4rev;
- 			w2 = w2rev;
- 			w8 = w8rev;
- 		}
--	} break;
-+		break;
- 	}  /* end switch */
- 	if (memcmp(ELFMAG, ehdr->e_ident, SELFMAG) != 0
- 	||  w2(ehdr->e_type) != ET_REL
-@@ -295,11 +295,11 @@ do_file(char const *const fname)
+@@ -24,6 +24,7 @@
+ #include <sys/types.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
++#include <getopt.h>
+ #include <elf.h>
+ #include <fcntl.h>
+ #include <setjmp.h>
+@@ -39,6 +40,7 @@ static char gpfx;	/* prefix for global symbol name (sometimes '_') */
+ static struct stat sb;	/* Remember .st_size, etc. */
+ static jmp_buf jmpenv;	/* setjmp/longjmp per-file error escape */
+ static const char *altmcount;	/* alternate mcount symbol name */
++static int warn_on_notrace_sect; /* warn when section has mcount not being recorded */
  
- 	gpfx = 0;
- 	switch (w2(ehdr->e_machine)) {
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized e_machine %d %s\n",
- 			w2(ehdr->e_machine), fname);
- 		fail_file();
--	} break;
-+		break;
- 	case EM_386:	 reltype = R_386_32;                   break;
- 	case EM_ARM:	 reltype = R_ARM_ABS32;
- 			 altmcount = "__gnu_mcount_nc";
-@@ -315,12 +315,12 @@ do_file(char const *const fname)
- 	}  /* end switch */
+ /* setjmp() return values */
+ enum {
+@@ -397,19 +399,33 @@ do_file(char const *const fname)
+ }
  
- 	switch (ehdr->e_ident[EI_CLASS]) {
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized ELF class %d %s\n",
- 			ehdr->e_ident[EI_CLASS], fname);
- 		fail_file();
--	} break;
--	case ELFCLASS32: {
-+		break;
-+	case ELFCLASS32:
- 		if (w2(ehdr->e_ehsize) != sizeof(Elf32_Ehdr)
- 		||  w2(ehdr->e_shentsize) != sizeof(Elf32_Shdr)) {
- 			fprintf(stderr,
-@@ -334,7 +334,7 @@ do_file(char const *const fname)
- 			is_fake_mcount32 = MIPS32_is_fake_mcount;
- 		}
- 		do32(ehdr, fname, reltype);
--	} break;
-+		break;
- 	case ELFCLASS64: {
- 		Elf64_Ehdr *const ghdr = (Elf64_Ehdr *)ehdr;
- 		if (w2(ghdr->e_ehsize) != sizeof(Elf64_Ehdr)
-@@ -352,7 +352,8 @@ do_file(char const *const fname)
- 			is_fake_mcount64 = MIPS64_is_fake_mcount;
- 		}
- 		do64(ghdr, fname, reltype);
--	} break;
-+		break;
+ int
+-main(int argc, char const *argv[])
++main(int argc, char *argv[])
+ {
+ 	const char ftrace[] = "/ftrace.o";
+ 	int ftrace_size = sizeof(ftrace) - 1;
+ 	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
++	int c;
++	int i;
+ 
+-	if (argc <= 1) {
+-		fprintf(stderr, "usage: recordmcount file.o...\n");
++	while ((c = getopt(argc, argv, "w")) >= 0) {
++		switch (c) {
++		case 'w':
++			warn_on_notrace_sect = 1;
++			break;
++		default:
++			fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
++			return 0;
++		}
 +	}
- 	}  /* end switch */
++
++	if ((argc - optind) < 1) {
++		fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
+ 		return 0;
+ 	}
  
- 	cleanup();
-@@ -386,23 +387,23 @@ main(int argc, char const *argv[])
+ 	/* Process each file in turn, allowing deep failure. */
+-	for (--argc, ++argv; argc > 0; --argc, ++argv) {
++	for (i = optind; i < argc; i++) {
++		char *file = argv[i];
+ 		int const sjval = setjmp(jmpenv);
+ 		int len;
+ 
+@@ -418,14 +434,14 @@ main(int argc, char const *argv[])
+ 		 * function but does not call it. Since ftrace.o should
+ 		 * not be traced anyway, we just skip it.
+ 		 */
+-		len = strlen(argv[0]);
++		len = strlen(file);
+ 		if (len >= ftrace_size &&
+-		    strcmp(argv[0] + (len - ftrace_size), ftrace) == 0)
++		    strcmp(file + (len - ftrace_size), ftrace) == 0)
  			continue;
  
  		switch (sjval) {
--		default: {
-+		default:
- 			fprintf(stderr, "internal error: %s\n", argv[0]);
+ 		default:
+-			fprintf(stderr, "internal error: %s\n", argv[0]);
++			fprintf(stderr, "internal error: %s\n", file);
  			exit(1);
--		} break;
--		case SJ_SETJMP: {  /* normal sequence */
-+			break;
-+		case SJ_SETJMP:    /* normal sequence */
- 			/* Avoid problems if early cleanup() */
+ 			break;
+ 		case SJ_SETJMP:    /* normal sequence */
+@@ -433,7 +449,7 @@ main(int argc, char const *argv[])
  			fd_map = -1;
  			ehdr_curr = NULL;
  			mmap_failed = 1;
- 			do_file(argv[0]);
--		} break;
--		case SJ_FAIL: {  /* error in do_file or below */
-+			break;
-+		case SJ_FAIL:    /* error in do_file or below */
+-			do_file(argv[0]);
++			do_file(file);
+ 			break;
+ 		case SJ_FAIL:    /* error in do_file or below */
  			++n_error;
--		} break;
--		case SJ_SUCCEED: {  /* premature success */
-+			break;
-+		case SJ_SUCCEED:    /* premature success */
- 			/* do nothing */
--		} break;
-+			break;
- 		}  /* end switch */
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 657dbed..22033d5 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -313,7 +313,8 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+  * into nops.
+  */
+ static void nop_mcount(Elf_Shdr const *const relhdr,
+-		       Elf_Ehdr const *const ehdr)
++		       Elf_Ehdr const *const ehdr,
++		       const char *const txtname)
+ {
+ 	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
+ 		+ (void *)ehdr);
+@@ -336,6 +337,7 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
+ 
+ 	unsigned mcountsym = 0;
+ 	unsigned t;
++	int once = 0;
+ 
+ 	for (t = nrel; t; --t) {
+ 		int ret = -1;
+@@ -353,8 +355,18 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
+ 				mcountsym = Elf_r_sym(relp);
+ 		}
+ 
+-		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp))
+-			ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
++		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
++			if (make_nop)
++				ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
++			if (warn_on_notrace_sect && !once) {
++				printf("Section %s has mcount callers being ignored\n",
++				       txtname);
++				once = 1;
++				/* just warn? */
++				if (!make_nop)
++					return;
++			}
++		}
+ 
+ 		/*
+ 		 * If we successfully removed the mcount, mark the relocation
+@@ -501,12 +513,12 @@ do_func(Elf_Ehdr *const ehdr, char const *const fname, unsigned const reltype)
+ 			mlocp = sift_rel_mcount(mlocp,
+ 				(void *)mlocp - (void *)mloc0, &mrelp,
+ 				relhdr, ehdr, recsym, recval, reltype);
+-		} else if (make_nop && txtname) {
++		} else if (txtname && (warn_on_notrace_sect || make_nop)) {
+ 			/*
+ 			 * This section is ignored by ftrace, but still
+ 			 * has mcount calls. Convert them to nops now.
+ 			 */
+-			nop_mcount(relhdr, ehdr);
++			nop_mcount(relhdr, ehdr, txtname);
+ 		}
  	}
- 	return !!n_error;
+ 	if (mloc0 != mlocp) {
 -- 
 1.7.2.3
 
