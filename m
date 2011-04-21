@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab1DUThN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 15:37:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63767 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab1DUThM (ORCPT
+	id S1753568Ab1DUTib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 15:38:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27804 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1DUTi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 15:37:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: brace@beardog.cce.hp.com
-Subject: Re: How to create a kernel virtual mapping for physical addresses.
-Date: Thu, 21 Apr 2011 21:36:37 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: scameron@beardog.cce.hp.com, linux-kernel@vger.kernel.org
-References: <20110408220321.GA777@beardog.cce.hp.com> <201104192151.41511.arnd@arndb.de> <20110421184600.GA29746@beardog.cce.hp.com>
-In-Reply-To: <20110421184600.GA29746@beardog.cce.hp.com>
+	Thu, 21 Apr 2011 15:38:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=AIi47lOxf9Ix85BMuQ6/Zj9dT2rwq+rMI9fQeGgsJH6xCLtB+V8Da8EjQK3+EPYBxk
+         bskSrCPv2Dwh/OBlXqaQ==
+Date: Thu, 21 Apr 2011 12:38:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <20110421220351.9180.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com>
+References: <1303317178.2587.30.camel@mulgrave.site> <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com> <20110421220351.9180.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104212136.38017.arnd@arndb.de>
-X-Provags-ID: V02:K0:k2Mqvqt6csHrKVtqTOosEeFpa45Jg0dAjwOX9ITO1v/
- W0UubCeJClXuC9q68QAZ6s1gcFoDYtG4Pc8dqYgaxRn0CrmmFU
- TIdOduD1F6tLxYrD57hw5EjsV0Qb+9ps6ZSmd5a1Ypent6wL3s
- mrcVIss40EnV6BD5Evj6QMbXgXAoP4d7+CnOOOCEkzicBkH6kB
- lli0E1oyTTSAv5n5G2xfg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 April 2011 20:46:00 brace@beardog.cce.hp.com wrote:
-> Thanks for your reply.
-> 
-> I have a block of highmem that I want to map into my 32bit driver.
-> This block is 256M in size.
+On Thu, 21 Apr 2011, KOSAKI Motohiro wrote:
 
-If you have highmem enabled, there probably is not enough space
-to map all of this at once into the vmalloc area. If you had
-that much virtual address space, you would not need highmem ;-)
+> > diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+> > --- a/arch/parisc/mm/init.c
+> > +++ b/arch/parisc/mm/init.c
+> > @@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
+> >  	}
+> >  	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+> >  
+> > -	for (i = 0; i < npmem_ranges; i++)
+> > +	for (i = 0; i < npmem_ranges; i++) {
+> > +		node_set_state(i, N_NORMAL_MEMORY);
+> >  		node_set_online(i);
+> > +	}
+> >  #endif
+> 
+> 
+> I'm surprised this one. If arch code doesn't initialized N_NORMAL_MEMORY,
+> (or N_HIGH_MEMORY. N_HIGH_MEMORY == N_NORMAL_MEMORY if CONFIG_HIGHMEM=n)
+> kswapd is created only at node0. wow.
+> 
+> The initialization must be necessary even if !NUMA, I think. ;-)
+> Probably we should have revisit all arch code when commit 9422ffba4a 
+> (Memoryless nodes: No need for kswapd) was introduced, at least.
+> 
 
-> I get the physical address and want to create a contiguous virtual buffer.
-> I have been investigating vmap() as a possible solution.
-> 
-> I build up an array of pages as follows.
-> 	pfn = physical_address >> PAGE_SHIFT
-> 	for (i = 0; i < num_pages; i++) {
-> 		page = pfn_to_page(pfn);
-> 		page_array[i] = page;
-> 		++pfn
-> 	}
-> 
-> 	map = vmap(page_array, num_pages, VM_IOREMAP, PAGE_KERNEL);
-> 
-> Using the above method, I can memset the block of memory using
-> map as my virtual address.
-> 
-> However, later, I get the following error message:
-> 
-> kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-> BUG: unable to handle kernel paging request at virtual address c5000840
-> 
-> The address 0xc5000840 is within the range of vmap()ed memory.
-
-Maybe you have overwritten a kernel module and the kernel now
-tries to execute within the mapped area?
-
-> What should I be doing instead?
-
-It's not clear at all what you are actually trying to do. Which driver
-is this? If it's out-of-tree code, please post it here.
-
-	Arnd
+I think we may want to just convert slub (and the memory controller) to 
+use N_HIGH_MEMORY rather than N_NORMAL_MEMORY since nothing else uses it 
+and the generic code seems to handle N_HIGH_MEMORY for all configs 
+appropriately.
