@@ -1,134 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab1DUMLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 08:11:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37109 "EHLO hera.kernel.org"
+	id S1753386Ab1DUMLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 08:11:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37112 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab1DUMLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 08:11:06 -0400
-Date: Thu, 21 Apr 2011 12:10:44 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-dffa4b2f62ff28c982144c7033001b1ece4d3532@git.kernel.org>
+	id S1750884Ab1DUMLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 08:11:08 -0400
+Date: Thu, 21 Apr 2011 12:10:16 GMT
+From: tip-bot for David Rientjes <rientjes@google.com>
+Message-ID: <tip-7a6c6547825a2324faa76cff856db11d78de075e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tony.luck@intel.com, rja@sgi.com, Nagananda.Chumbalkar@hp.com,
-        tglx@linutronix.de, prarit@redhat.com, mingo@elte.hu,
-        borislav.petkov@amd.com
+        torvalds@linux-foundation.org, herrmann.der.user@googlemail.com,
+        tj@kernel.org, tglx@linutronix.de, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, rja@sgi.com, Nagananda.Chumbalkar@hp.com,
-        tglx@linutronix.de, prarit@redhat.com, mingo@elte.hu,
-        borislav.petkov@amd.com
-In-Reply-To: <20110420102349.GB1361@aftab>
-References: <20110420102349.GB1361@aftab>
+        torvalds@linux-foundation.org, herrmann.der.user@googlemail.com,
+        tj@kernel.org, tglx@linutronix.de, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1104201918470.12634@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104201918470.12634@chino.kir.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mce] x86, mce: Drop the default decoding notifier
-Git-Commit-ID: dffa4b2f62ff28c982144c7033001b1ece4d3532
+Subject: [tip:x86/urgent] x86, numa: Fix cpu nodemasks for NUMA emulation and CONFIG_DEBUG_PER_CPU_MAPS
+Git-Commit-ID: 7a6c6547825a2324faa76cff856db11d78de075e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Apr 2011 12:10:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Apr 2011 12:10:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dffa4b2f62ff28c982144c7033001b1ece4d3532
-Gitweb:     http://git.kernel.org/tip/dffa4b2f62ff28c982144c7033001b1ece4d3532
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 20 Apr 2011 12:23:49 +0200
+Commit-ID:  7a6c6547825a2324faa76cff856db11d78de075e
+Gitweb:     http://git.kernel.org/tip/7a6c6547825a2324faa76cff856db11d78de075e
+Author:     David Rientjes <rientjes@google.com>
+AuthorDate: Wed, 20 Apr 2011 19:19:13 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 21 Apr 2011 11:35:10 +0200
+CommitDate: Thu, 21 Apr 2011 11:31:00 +0200
 
-x86, mce: Drop the default decoding notifier
+x86, numa: Fix cpu nodemasks for NUMA emulation and CONFIG_DEBUG_PER_CPU_MAPS
 
-The default notifier doesn't make a lot of sense to call in the
-correctable errors case. Drop it and emit the mcelog decoding
-hint only in the uncorrectable errors case and when no notifier
-is registered. Also, limit issuing the "mcelog --ascii" message
-in the rare case when we dump unreported CEs before panicking.
+The cpu<->node mappings under CONFIG_DEBUG_PER_CPU_MAPS=y
+when NUMA emulation is enabled is currently broken because it does
+not iterate through every emulated node and bind cpus that have
+affinity to it.
 
-While at it, remove unused old x86_mce_decode_callback from the
-header.
+NUMA emulation should bind each cpu to every local node to
+accurately represent the true NUMA topology of the underlying
+machine.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>
-Cc: Russ Anderson <rja@sgi.com>
-Link: http://lkml.kernel.org/r/20110420102349.GB1361@aftab
+debug_cpumask_set_cpu() needs to be fixed at the same time so
+that the debugging information that it emits shows the new
+cpumask of the node being assigned when the cpu is being added
+or removed.
+
+It can now take responsibility of setting or clearing the cpu
+itself to remove the need for duplicate code.
+
+Also change its last parameter, "enable", to have the correct bool
+type since it can only be true or false.
+
+ -v2: Fix the return statements, by Kosaki Motohiro
+
+Acked-and-Tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1104201918470.12634@chino.kir.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/mce.h       |    2 --
- arch/x86/kernel/cpu/mcheck/mce.c |   24 +++++++-----------------
- 2 files changed, 7 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/numa.h  |    2 +-
+ arch/x86/mm/numa.c           |   31 +++++++++++++------------------
+ arch/x86/mm/numa_emulation.c |   20 ++++++--------------
+ 3 files changed, 20 insertions(+), 33 deletions(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index eb16e94..021979a 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
- static inline void enable_p5_mce(void) {}
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 3d4dab4..a50fc9f 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -51,7 +51,7 @@ static inline void numa_remove_cpu(int cpu)		{ }
+ #endif	/* CONFIG_NUMA */
+ 
+ #ifdef CONFIG_DEBUG_PER_CPU_MAPS
+-struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable);
++void debug_cpumask_set_cpu(int cpu, int node, bool enable);
  #endif
  
--extern void (*x86_mce_decode_callback)(struct mce *m);
--
- void mce_setup(struct mce *m);
- void mce_log(struct mce *m);
- DECLARE_PER_CPU(struct sys_device, mce_dev);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68e2303..ff1ae9b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -105,20 +105,6 @@ static int			cpu_missing;
- ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
- EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
- 
--static int default_decode_mce(struct notifier_block *nb, unsigned long val,
--			       void *data)
--{
--	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
--	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
--
--	return NOTIFY_STOP;
--}
--
--static struct notifier_block mce_dec_nb = {
--	.notifier_call = default_decode_mce,
--	.priority      = -1,
--};
--
- /* MCA banks polled by the period polling timer for corrected events */
- DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
- 
- static void print_mce(struct mce *m)
- {
-+	int ret = 0;
-+
- 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
- 	       m->extcpu, m->mcgstatus, m->bank, m->status);
- 
-@@ -239,7 +227,11 @@ static void print_mce(struct mce *m)
- 	 * Print out human-readable details about the MCE error,
- 	 * (if the CPU has an implementation for that)
- 	 */
--	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	if (ret == NOTIFY_STOP)
-+		return;
-+
-+	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
+ #endif	/* _ASM_X86_NUMA_H */
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 9559d36..745258d 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -213,53 +213,48 @@ int early_cpu_to_node(int cpu)
+ 	return per_cpu(x86_cpu_to_node_map, cpu);
  }
  
- #define PANIC_TIMEOUT 5 /* 5 seconds */
-@@ -1721,8 +1713,6 @@ __setup("mce", mcheck_enable);
- 
- int __init mcheck_init(void)
+-struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
++void debug_cpumask_set_cpu(int cpu, int node, bool enable)
  {
--	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
--
- 	mcheck_intel_therm_init();
+-	int node = early_cpu_to_node(cpu);
+ 	struct cpumask *mask;
+ 	char buf[64];
  
- 	return 0;
+ 	if (node == NUMA_NO_NODE) {
+ 		/* early_cpu_to_node() already emits a warning and trace */
+-		return NULL;
++		return;
+ 	}
+ 	mask = node_to_cpumask_map[node];
+ 	if (!mask) {
+ 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
+ 		dump_stack();
+-		return NULL;
++		return;
+ 	}
+ 
++	if (enable)
++		cpumask_set_cpu(cpu, mask);
++	else
++		cpumask_clear_cpu(cpu, mask);
++
+ 	cpulist_scnprintf(buf, sizeof(buf), mask);
+ 	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
+ 		enable ? "numa_add_cpu" : "numa_remove_cpu",
+ 		cpu, node, buf);
+-	return mask;
++	return;
+ }
+ 
+ # ifndef CONFIG_NUMA_EMU
+-static void __cpuinit numa_set_cpumask(int cpu, int enable)
++static void __cpuinit numa_set_cpumask(int cpu, bool enable)
+ {
+-	struct cpumask *mask;
+-
+-	mask = debug_cpumask_set_cpu(cpu, enable);
+-	if (!mask)
+-		return;
+-
+-	if (enable)
+-		cpumask_set_cpu(cpu, mask);
+-	else
+-		cpumask_clear_cpu(cpu, mask);
++	debug_cpumask_set_cpu(cpu, early_cpu_to_node(cpu), enable);
+ }
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 1);
++	numa_set_cpumask(cpu, true);
+ }
+ 
+ void __cpuinit numa_remove_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 0);
++	numa_set_cpumask(cpu, false);
+ }
+ # endif	/* !CONFIG_NUMA_EMU */
+ 
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index ad091e4..de84cc1 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -454,10 +454,9 @@ void __cpuinit numa_remove_cpu(int cpu)
+ 		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
+ }
+ #else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+-static void __cpuinit numa_set_cpumask(int cpu, int enable)
++static void __cpuinit numa_set_cpumask(int cpu, bool enable)
+ {
+-	struct cpumask *mask;
+-	int nid, physnid, i;
++	int nid, physnid;
+ 
+ 	nid = early_cpu_to_node(cpu);
+ 	if (nid == NUMA_NO_NODE) {
+@@ -467,28 +466,21 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
+ 
+ 	physnid = emu_nid_to_phys[nid];
+ 
+-	for_each_online_node(i) {
++	for_each_online_node(nid) {
+ 		if (emu_nid_to_phys[nid] != physnid)
+ 			continue;
+ 
+-		mask = debug_cpumask_set_cpu(cpu, enable);
+-		if (!mask)
+-			return;
+-
+-		if (enable)
+-			cpumask_set_cpu(cpu, mask);
+-		else
+-			cpumask_clear_cpu(cpu, mask);
++		debug_cpumask_set_cpu(cpu, nid, enable);
+ 	}
+ }
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 1);
++	numa_set_cpumask(cpu, true);
+ }
+ 
+ void __cpuinit numa_remove_cpu(int cpu)
+ {
+-	numa_set_cpumask(cpu, 0);
++	numa_set_cpumask(cpu, false);
+ }
+ #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
