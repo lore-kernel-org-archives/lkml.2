@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab1DUFGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 01:06:05 -0400
-Received: from kroah.org ([198.145.64.141]:49754 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab1DUFFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751461Ab1DUFFu (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 21 Apr 2011 01:05:50 -0400
-Date: Wed, 20 Apr 2011 22:06:49 -0700
+Received: from kroah.org ([198.145.64.141]:49751 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab1DUFFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 01:05:49 -0400
+Date: Wed, 20 Apr 2011 22:05:44 -0700
 From: Greg KH <greg@kroah.com>
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Cc: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 1/8] gma500: add the ability to request backed space or
  not
-Message-ID: <20110421050649.GA6151@kroah.com>
+Message-ID: <20110421050544.GA5832@kroah.com>
 References: <20110419142432.16479.89255.stgit@localhost.localdomain>
  <20110419142658.16479.59689.stgit@localhost.localdomain>
  <20110420203117.GA14141@kroah.com>
@@ -42,9 +42,8 @@ On Wed, Apr 20, 2011 at 10:21:08PM +0100, Alan Cox wrote:
 > stripping white space automatically again. That will break follow up
 > patches if so.
 
-Ok, I'm stupid, I missed that you sent me patches already for this
-driver, and didn't apply them first.  Sorry about that, I'll try it
-again tomorrow when I have more sleep...
+No, I have not stripped any more whitespace since the first problems
+that this caused on the driver.
 
 thanks,
 
