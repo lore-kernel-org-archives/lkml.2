@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1DUV7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:59:46 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:57231 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab1DUV7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:59:45 -0400
-Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+	id S1755430Ab1DUWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 18:00:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32589 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab1DUWA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 18:00:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=mpnxjTRtGafdEI1BLnSsSD834mL9dYyOOKHG0dJcuAoepavsHpWN9eVfsl0TQCURU0
+         3Z3RaY14OeggRfKR5aNA==
+Date: Thu, 21 Apr 2011 15:00:19 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <201104212100.18417.arnd@arndb.de>
-References: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com>
-	 <201104211823.21384.arnd@arndb.de> <20110421184713.GB29841@ericsson.com>
-	 <201104212100.18417.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 21 Apr 2011 14:58:44 -0700
-Message-ID: <1303423124.31666.5.camel@groeck-laptop>
+        Matt Turner <mattst88@gmail.com>
+cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] alpha, mm: set all online nodes in N_NORMAL_MEMORY
+In-Reply-To: <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1104211458580.20201@chino.kir.corp.google.com>
+References: <1303317178.2587.30.camel@mulgrave.site> <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com> <20110421220351.9180.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com> <alpine.DEB.2.00.1104211500170.5741@router.home>
+ <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 15:00 -0400, Arnd Bergmann wrote:
-> On Thursday 21 April 2011 20:47:13 Guenter Roeck wrote:
-> > On Thu, Apr 21, 2011 at 12:23:21PM -0400, Arnd Bergmann wrote:
-> > > 
-> > > I think the generalization of the ARM code is currently being worked
-> > > on, so this should be there soon.
-> > > 
-> > Any pointers ?
-> > 
-> I believe the most recent discussion is at
-> http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
-> 
-> 	Arnd
+For alpha, N_NORMAL_MEMORY represents all nodes that have present memory 
+since it does not support HIGHMEM.  This patch sets the bit at the time 
+the node is initialized.
 
-Looks like that is going to take a while. Oh well. I'll put this driver
-on the backburner.
+If N_NORMAL_MEMORY is not accurate, slub may encounter errors since it 
+uses this nodemask to setup per-cache kmem_cache_node data structures.
 
-Guenter
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/alpha/mm/numa.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
+diff --git a/arch/alpha/mm/numa.c b/arch/alpha/mm/numa.c
+--- a/arch/alpha/mm/numa.c
++++ b/arch/alpha/mm/numa.c
+@@ -313,6 +313,7 @@ void __init paging_init(void)
+ 			zones_size[ZONE_DMA] = dma_local_pfn;
+ 			zones_size[ZONE_NORMAL] = (end_pfn - start_pfn) - dma_local_pfn;
+ 		}
++		node_set_state(nid, N_NORMAL_MEMORY);
+ 		free_area_init_node(nid, zones_size, start_pfn, NULL);
+ 	}
+ 
