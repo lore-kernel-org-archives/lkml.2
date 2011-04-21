@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1DUBrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 21:47:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30141 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab1DUBrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 21:47:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,249,1301900400"; 
-   d="scan'208";a="912505467"
-Date: Thu, 21 Apr 2011 09:47:16 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20110421014716.GA12191@localhost>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.515923886@intel.com>
- <20110419073523.GF23985@dastard>
- <20110419095740.GC5257@quack.suse.cz>
- <20110419125616.GA20059@localhost>
- <20110420012120.GK23985@dastard>
- <20110420073822.GA30672@localhost>
- <20110421010132.GE1814@dastard>
+	id S1752079Ab1DUCEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:04:14 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:38596 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab1DUCEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 22:04:13 -0400
+Message-ID: <4DAF9066.7090906@candelatech.com>
+Date: Wed, 20 Apr 2011 19:03:18 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110421010132.GE1814@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jeff Garzik <jeff@garzik.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux IDE mailing list <linux-ide@vger.kernel.org>
+Subject: Re: WARNING at libata-core.c:5015 in 2.6.39-rc3-wl+, then lockup.
+ (bisected)
+References: <4DA5CF81.4070908@candelatech.com> <4DA5D5D8.8070301@candelatech.com> <4DA5F3BA.3060404@candelatech.com> <4DA87A72.50809@candelatech.com> <4DA88707.4060704@garzik.org> <4DA888D6.40000@candelatech.com>
+In-Reply-To: <4DA888D6.40000@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 09:01:32AM +0800, Dave Chinner wrote:
-> On Wed, Apr 20, 2011 at 03:38:22PM +0800, Wu Fengguang wrote:
-> > > make. Please test against a vanilla kernel if that is what you are
-> > > aiming these patches for. If you aren't aiming for a vanilla kernel,
-> > > please say so in the patch series header...
-> > 
-> > Here are the test results for vanilla kernel. It's again shows better
-> > numbers for dd, tar and overall run time.
-> > 
-> >              2.6.39-rc3   2.6.39-rc3-dyn-expire+
-> > ------------------------------------------------
-> > all elapsed     256.043      252.367
-> > stddev           24.381       12.530
-> > 
-> > tar elapsed      30.097       28.808
-> > dd  elapsed      13.214       11.782
-> 
-> The big reduction in run-to-run variance is very convincing - moreso
-> than the reduction in runtime - That's kind of what I had hoped
-> would occur once I understood the implications of the change. Thanks
-> for running the test to close the loop. :)
+On 04/15/2011 11:05 AM, Ben Greear wrote:
+> On 04/15/2011 10:57 AM, Jeff Garzik wrote:
+>> On 04/15/2011 01:03 PM, Ben Greear wrote:
+>>> Ok, it took a while, but I think I have this thing somewhat bisected.
+>>>
+>>> Starting at commit 4cc4d24efce4672f9b0e7fa27963770ae602998f, I see
+>>> hard-drive
+>>> issues. Commits right before this (in git bisect) crash in the
+>>> networking code
+>>> quite often, but the hard-drive logic seems to work at least.
+>>>
+>>> In later builds (ie, -rc3), the crashes and warnings are different, but
+>>> they have something to do with the file system. It's difficult to bisect
+>>> it any better because of all the instability...
 
-And you can see how the user perceivable variations in elapsed time
-are reduced by the patchsets:
-
-vanilla 
-             user       system     %cpu       elapsed
-stddev       0.000      0.037      0.539      0.805     dd,  xfs
-stddev       0.117      0.102      5.974      3.498     tar, xfs
-
-moving-target
-stddev       0.000      0.102      1.025      0.803     dd,  xfs
-stddev       0.131      0.136      4.415      2.136     tar, xfs
-
-IO-less + moving-target 
-stddev       0.000      0.022      0.000      0.283     dd,  xfs
-stddev       0.000      0.031      0.000      0.151     dd,  ext4
-stddev       0.111      0.218      2.040      0.532     tar, xfs
-stddev       0.129      0.119      1.020      0.215     tar, ext4
+I tried today's kernel (39-rc4+) and it seems much more stable on my
+system.  So, I think the problem must be fixed.  It appears it was not
+fixed in the plain 39-rc4, for what that's worth.
 
 Thanks,
-Fengguang
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
