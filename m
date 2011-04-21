@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab1DUIcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 04:32:35 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:55328 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752966Ab1DUIcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 04:32:33 -0400
-Date: Thu, 21 Apr 2011 10:28:15 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
-Message-ID: <20110421102815.5abf133e@absol.kitzblitz>
-In-Reply-To: <1303341624.11397.2.camel@ks-ubuntu>
-References: <1303341624.11397.2.camel@ks-ubuntu>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754358Ab1DUIck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 04:32:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275Ab1DUIcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 04:32:36 -0400
+Message-ID: <4DAFEB9D.4040402@redhat.com>
+Date: Thu, 21 Apr 2011 11:32:29 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linux-pci@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
+        jbarnes@virtuousgeek.org
+Subject: Re: [PATCH v3 0/3] Store and load PCI device saved state across function
+ resets
+References: <20110420202523.3189.31306.stgit@s20.home>
+In-Reply-To: <20110420202523.3189.31306.stgit@s20.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Karthigan Srinivasan <karthigan.srinivasan@hp.com>:
-> Fixed brace and comment coding style issues in code.
-> 
-> Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-> ---
->  drivers/acpi/utils.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> index b002a47..2cf81a1 100644
-> --- a/drivers/acpi/utils.c
-> +++ b/drivers/acpi/utils.c
-> @@ -99,9 +99,9 @@ acpi_extract_package(union acpi_object *package,
->  
->  		union acpi_object *element = &(package->package.elements[i]);
->  
-> -		if (!element) {
-> +		if (!element) 
-                             ^
-You are introducing trailing whitespace.
+On 04/20/2011 11:31 PM, Alex Williamson wrote:
+> v2 ->  v3:
+>    Saved structure has variable contents.
+>
+> Avi, see if this adds any credibility to the pci-core allocated
+> opaque buffer.  It was wrong in the previous versions to distill
+> the variable device capability save list into a fixed struct.
+> This should also eliminate any future maintenance specific to
+> this storing and loading of state as capability save changes.
+>
 
->  			return AE_BAD_DATA;
-> -		}
-> +		
-   ^^^^^^^^^^^^^
-For every pair of braces you clean away, you're adding
-two new coding style issues.
+Haha, nice trick.  Yes, it does.
 
-Best regards,
-Nicolas Kaiser
+-- 
+error compiling committee.c: too many arguments to function
+
