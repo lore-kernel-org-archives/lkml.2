@@ -1,49 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1DUUKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 16:10:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42953 "EHLO ogre.sisk.pl"
+	id S1753562Ab1DUUMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 16:12:24 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:38053 "EHLO mail.aknet.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752253Ab1DUUKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 16:10:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Two power management fixes for 2.6.39
-Date: Thu, 21 Apr 2011 22:11:02 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+	id S1752319Ab1DUUMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 16:12:23 -0400
+Message-ID: <4DB08F65.4020705@aknet.ru>
+Date: Fri, 22 Apr 2011 00:11:17 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [2/2]
+References: <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <4DAEDC3F.5010208@aknet.ru> <20110420165023.GA24455@redhat.com> <4DAF29AD.1080603@aknet.ru> <20110420193307.GA1445@redhat.com> <4DAF439A.5020204@aknet.ru> <20110421200006.GA12248@redhat.com>
+In-Reply-To: <20110421200006.GA12248@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104212211.03185.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-Please pull two power management fixes for 2.6.39 from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
-
-They fix bugs related to syscore_ops introduced earlier in this cycle.
-
-
- arch/x86/kernel/apm_32.c |    5 +++++
- drivers/base/syscore.c   |    2 ++
- drivers/xen/manage.c     |    9 ++++++++-
- kernel/kexec.c           |    7 +++++++
- kernel/power/hibernate.c |   10 ++++++++--
- kernel/power/suspend.c   |    5 ++++-
- 6 files changed, 34 insertions(+), 4 deletions(-)
-
----------------
-
-Rafael J. Wysocki (2):
-      PM: Fix error code paths executed after failing syscore_suspend()
-      PM: Add missing syscore_suspend() and syscore_resume() calls
-
+22.04.2011 00:00, Oleg Nesterov wrote:
+> Once again, last time... No need to convince me.
+Please, I did _never_ tried to convince you in anything.
+The question was only why you asked "Why do you think it is
+needed without reparenting?", as if without reparenting
+it does something different. That was a question about
+the semantic only.
