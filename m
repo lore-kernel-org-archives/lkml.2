@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1DURXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:23:48 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4704 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104Ab1DURXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:23:47 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Subject: Re: [PATCH] tg3: Convert u32 flag,flg2,flg3 uses to bitmap
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Joe Perches" <joe@perches.com>
-cc: "Matthew Carlson" <mcarlson@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <02bf2aa5c08514641ecbe7c39ef976918fad036c.1303367730.git.joe@perches.com>
-References: <1303322263-18991-10-git-send-email-mcarlson@broadcom.com>
- <02bf2aa5c08514641ecbe7c39ef976918fad036c.1303367730.git.joe@perches.com>
-Date: Thu, 21 Apr 2011 10:18:00 -0700
-Message-ID: <1303406280.8857.13.camel@HP1>
+	id S1755291Ab1DURZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:25:12 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46831 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab1DURZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 13:25:10 -0400
+Date: Thu, 21 Apr 2011 22:40:42 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 15/26] 15: uprobes: Handing int3 and
+ singlestep exception.
+Message-ID: <20110421171042.GI10698@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+ <20110401143527.15455.32854.sendpatchset@localhost6.localdomain6>
+ <1303218185.8345.0.camel@twins>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5)
-X-WSS-ID: 61AEB76C3GO6437994-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1303218185.8345.0.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Zijlstra <peterz@infradead.org> [2011-04-19 15:03:05]:
 
-On Wed, 2011-04-20 at 23:39 -0700, Joe Perches wrote:
-> @@ -4622,7 +4611,7 @@ static void tg3_tx_recover(struct tg3 *tp)
->                     "and include system chipset information.\n");
+> On Fri, 2011-04-01 at 20:05 +0530, Srikar Dronamraju wrote:
+> > +       if (unlikely(!utask)) {
+> > +               utask = add_utask();
+> > +
+> > +               /* Failed to allocate utask for the current task. */
+> > +               BUG_ON(!utask);
 > 
->         spin_lock(&tp->lock);
-> -       tp->tg3_flags |= TG3_FLAG_TX_RECOVERY_PENDING;
-> +       tg3_flag_set(tp, TX_RECOVERY_PENDING);
->         spin_unlock(&tp->lock);
->  }
+> That's not really nice is it ;-) means I can make the kernel go BUG by
+> simply applying memory pressure.
 > 
 
-By using set_bit() now, we can eliminate the spin_lock() here.  This
-flag is checked much later when tg3_reset_task() is scheduled to run in
-workqueue, so no memory barrier is needed either.
-
-Thanks.
+The other option would be remove the probe and set the ip to
+the breakpoint address and restart the thread.
 
 
+-- 
+Thanks and Regards
+Srikar
