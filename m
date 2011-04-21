@@ -1,23 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab1DUSYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 14:24:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59402 "EHLO mx1.suse.de"
+	id S1752285Ab1DUS0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 14:26:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59493 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab1DUSYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 14:24:43 -0400
-Date: Thu, 21 Apr 2011 20:24:42 +0200
-Message-ID: <s5hfwpbihsl.wl%tiwai@suse.de>
+	id S1751381Ab1DUS0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 14:26:39 -0400
+Date: Thu, 21 Apr 2011 20:26:38 +0200
+Message-ID: <s5hd3kfihpd.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Chris Ball <cjb@laptop.org>
 Cc: Aries Lee <arieslee@jmicron.com>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Fix read-only detection with JMicron 388 chip
-In-Reply-To: <m3y6338q2k.fsf@pullcord.laptop.org>
-References: <s5hoc3zd27i.wl%tiwai@suse.de>
-	<m339lba77p.fsf@pullcord.laptop.org>
-	<s5hmxjjil9r.wl%tiwai@suse.de>
-	<m3y6338q2k.fsf@pullcord.laptop.org>
+Subject: [PATCH] [PATCH v2] mmc: Fix read-only detection with JMicron 388 chip
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,32 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 21 Apr 2011 13:36:03 -0400,
-Chris Ball wrote:
-> 
-> Hi Takashi,
-> 
-> On Thu, Apr 21 2011, Takashi Iwai wrote:
-> >> I don't like overwriting ops here -- it's too magical, and now we have
-> >> to maintain the ops table in two places.  A quirk seems justified here,
-> >> even though we're trying to reduce them in general.
-> >
-> > Well, I also used quirk bit in my very first version I worked for
-> > 2.6.32 kernel.  But when I looked at 2.6.39, quirks are almost full --
-> > only the last one bit is left for bit 31.  So I didn't want to finish
-> > it :)
-> >
-> >>  Can anyone find a better solution?
-> >  
-> > One way would be to copy the ops table itself in struct sdhci_host
-> > instead of keeping the ops table pointer.  Then you can overwrite only
-> > the specific op in each probe_slot callback.
-> 
-> I think I'd rather not touch ops at all and keep the code simple --
-> if you don't mind, please post a version with quirks, and I'll work
-> on freeing up a few bits.
+On HP laptops with JMicron 388 chip, the write-locked SD card isn't
+detected correctly as read-only in many cases.  This is because the
+PRESENT_STATE register becomes unsable just after plugging, and it
+returns the WRITE_PROTECT bit wrongly at the first read.
 
-OK, I'll send shortly.
+This patch fixes the read-only detection by adding a new sdhci quirk
+indicating to check the register more intensively with a relatively
+long delay.
 
+The patch is tested with 2.6.39-rc4 kernel.
 
-Takashi
+Cc: Aries Lee <arieslee@jmicron.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+v1->v2
+ rewritten to use a quirk
+
+ drivers/mmc/host/sdhci-pci.c |    5 +++++
+ drivers/mmc/host/sdhci.c     |   28 ++++++++++++++++++++++++----
+ include/linux/mmc/sdhci.h    |    2 ++
+ 3 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index a136be7..5781395 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -329,6 +329,11 @@ static int jmicron_probe(struct sdhci_pci_chip *chip)
+ 		return ret;
+ 	}
+ 
++	/* quirk for unsable RO-detection on JM388 chips */
++	if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_SD ||
++	    chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD)
++		chip->quirks |= SDHCI_QUIRK_UNSTABLE_RO_DETECT;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 9e15f41..8097171 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1237,14 +1237,11 @@ out:
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
+-static int sdhci_get_ro(struct mmc_host *mmc)
++static int check_ro(struct sdhci_host *host)
+ {
+-	struct sdhci_host *host;
+ 	unsigned long flags;
+ 	int is_readonly;
+ 
+-	host = mmc_priv(mmc);
+-
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	if (host->flags & SDHCI_DEVICE_DEAD)
+@@ -1262,6 +1259,29 @@ static int sdhci_get_ro(struct mmc_host *mmc)
+ 		!is_readonly : is_readonly;
+ }
+ 
++#define SAMPLE_COUNT	5
++
++static int sdhci_get_ro(struct mmc_host *mmc)
++{
++	struct sdhci_host *host;
++	int i, ro_count;
++
++	host = mmc_priv(mmc);
++
++	if (!(host->quirks & SDHCI_QUIRK_UNSTABLE_RO_DETECT))
++		return check_ro(host);
++ 
++	ro_count = 0;
++	for (i = 0; i < SAMPLE_COUNT; i++) {
++		if (check_ro(host)) {
++			if (++ro_count > SAMPLE_COUNT / 2)
++				return 1;
++		}
++		msleep(30);
++	}
++	return 0;
++}
++ 
+ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+ {
+ 	struct sdhci_host *host;
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 83bd9f7..92e1c9a 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -85,6 +85,8 @@ struct sdhci_host {
+ #define SDHCI_QUIRK_NO_HISPD_BIT			(1<<29)
+ /* Controller treats ADMA descriptors with length 0000h incorrectly */
+ #define SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC		(1<<30)
++/* The read-only detection via SDHCI_PRESENT_STATE register is unstable */
++#define SDHCI_QUIRK_UNSTABLE_RO_DETECT			(1<<31)
+ 
+ 	int irq;		/* Device IRQ */
+ 	void __iomem *ioaddr;	/* Mapped address */
+-- 
+1.7.4.2
+
