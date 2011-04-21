@@ -1,31 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab1DUEfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 00:35:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45839 "EHLO
+	id S1751501Ab1DUEgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 00:36:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57689 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab1DUEfH (ORCPT
+	with ESMTP id S1751128Ab1DUEgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 00:35:07 -0400
-Date: Thu, 21 Apr 2011 00:34:50 -0400
+	Thu, 21 Apr 2011 00:36:21 -0400
+Date: Thu, 21 Apr 2011 00:36:06 -0400
 From: Christoph Hellwig <hch@infradead.org>
 To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
         Trond Myklebust <Trond.Myklebust@netapp.com>,
         Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
         Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/6] writeback: moving expire targets for
- background/kupdate works
-Message-ID: <20110421043449.GA22423@infradead.org>
-References: <20110419030003.108796967@intel.com>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110421043606.GB22423@infradead.org>
+References: <20110419073523.GF23985@dastard>
+ <20110419095740.GC5257@quack.suse.cz>
+ <20110419125616.GA20059@localhost>
+ <20110420012120.GK23985@dastard>
+ <20110420025321.GA14398@localhost>
+ <20110421004547.GD1814@dastard>
+ <20110421020617.GB12191@localhost>
+ <20110421030152.GG1814@dastard>
+ <20110421035954.GA15461@localhost>
+ <20110421041010.GA18710@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110419030003.108796967@intel.com>
+In-Reply-To: <20110421041010.GA18710@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -33,11 +43,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wu,
+On Thu, Apr 21, 2011 at 12:10:11PM +0800, Wu Fengguang wrote:
+> OK, let's try moving up the lock too. Do you like this change? :)
 
-if you're queueing up writeback changes can you look into splitting
-inode_wb_list_lock as it was done in earlier versions of the inode
-scalability patches?  Especially if we don't get the I/O less
-balance_dirty_pages in ASAP it'll at least allows us to scale the
-busy waiting for the list manipulationes to one CPU per BDI.
+I like it, especially as it kills the horribly named
+__writeback_inodes_sb that I added a while ago.
 
