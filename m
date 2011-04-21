@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab1DUW7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 18:59:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44242 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637Ab1DUW7h (ORCPT
+	id S1755663Ab1DUXEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 19:04:22 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23589 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab1DUXEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 18:59:37 -0400
-Date: Thu, 21 Apr 2011 19:59:53 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Keith Packard <keithp@keithp.com>
-Cc: Vinicius Gomes <vinicius.gomes@openbossa.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
- b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
-Message-ID: <20110421225953.GA2323@joana>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Vinicius Gomes <vinicius.gomes@openbossa.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-bluetooth@vger.kernel.org
-References: <yun1v1fj024.fsf@aiko.keithp.com>
- <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
- <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
- <yunaag0tjzb.fsf@aiko.keithp.com>
- <20110409000857.GB25581@piper>
- <20110411173409.1567679c@lxorguk.ukuu.org.uk>
- <BANLkTinK-cA67X6Knp-h5SKpjpDpwaMgZg@mail.gmail.com>
- <yunaafjs28n.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yunaafjs28n.fsf@aiko.keithp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Apr 2011 19:04:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6323"; a="87027665"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: Mark broadcast_timer_setup() __cpuinit
+Date: Thu, 21 Apr 2011 16:03:57 -0700
+Message-Id: <1303427037-12413-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keith,
+This function is only called by percpu_timer_setup() which is
+also __cpuinit marked. Thus it's safe to mark this function as
+__cpuinit too.
 
-* Keith Packard <keithp@keithp.com> [2011-04-21 14:50:32 -0700]:
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/kernel/smp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> On Mon, 11 Apr 2011 13:59:23 -0300, Vinicius Gomes <vinicius.gomes@openbossa.org> wrote:
-> 
-> > Will send a proper fix soon. Thanks all.
-> 
-> This is still broken in -rc4, I'd love to see a proper patch soon --
-> this will affect any machine with a bluetooth device.
-
-Patch is on the way to mainline. It's currently on wireless-2.6. Next steps
-are net-2.6 -> linux-2.6.
-
-Regards,
-
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 8fe05ad..f29b8a2 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -479,7 +479,7 @@ static void broadcast_timer_set_mode(enum clock_event_mode mode,
+ {
+ }
+ 
+-static void broadcast_timer_setup(struct clock_event_device *evt)
++static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
+ {
+ 	evt->name	= "dummy_timer";
+ 	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
 -- 
-Gustavo F. Padovan
-http://profusion.mobi
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
