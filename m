@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1DUOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:41:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61440 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab1DUOl5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:41:57 -0400
-Date: Thu, 21 Apr 2011 07:41:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Neil Brown <neilb@suse.de>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org
-Subject: Re: linux-next: Tree for April 21 (md/raid456)
-Message-Id: <20110421074113.5a0410fc.randy.dunlap@oracle.com>
-In-Reply-To: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-References: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754203Ab1DUOqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:46:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753287Ab1DUOqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 10:46:17 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 12/26] 12: uprobes: slot allocation
+ for uprobes
+From: Eric Paris <eparis@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@parisplace.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        sds@tycho.nsa.gov
+In-Reply-To: <20110421141125.GG10698@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	 <20110401143457.15455.64839.sendpatchset@localhost6.localdomain6>
+	 <1303145171.32491.886.camel@twins>
+	 <20110419062654.GB10698@linux.vnet.ibm.com>
+	 <BANLkTimw7dV9_aSsrUfzwSdwr6UwZDsRwg@mail.gmail.com>
+	 <20110421141125.GG10698@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 10:45:33 -0400
+Message-ID: <1303397133.1708.41.camel@unknown001a4b0c2895>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DB04222.001E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Apr 2011 13:20:45 +1000 Stephen Rothwell wrote:
+On Thu, 2011-04-21 at 19:41 +0530, Srikar Dronamraju wrote:
+> * Eric Paris <eparis@parisplace.org> [2011-04-20 09:40:57]:
 
-> Changes since 20110420:
+> > Now how to fix the problems you were seeing.  If you run a modern
+> > system with a GUI I'm willing to bet the pop-up window told you
+> > exactly how to fix your problem.  If you are not on a GUI I accept
+> > it's a more difficult as you most likely don't have the setroubleshoot
+> > tools installed to help you out.  I'm just guess what your problem
+> > was, but I think you have two solutions either:
+> 
+> I am not running GUI on my testbox and mostly disable selinux unless I
+> need to test if uprobes works on selinux environment.
+> 
+> > 
+> > 1) chcon -t unconfined_execmem_t /path/to/your/binary
+> > 2) setsebool -P allow_execmem 1
+> > 
+> > The first will cause the binary to execute in a domain with
+> > permissions to execute anonymous memory, the second will allow all
+> > unconfined domains to execute anonymous memory.
+> 
+> We arent restricted to a particular binary/binaries. We want an
+> infrastructure that can trace all user-space applications. So the
+> first option doesnt seem to help us.
+> 
+> If I understand the second option. we would want this command to be
+> run on any selinux enabled machines that wants uprobes to be working.
 
+The check which I'm guessing you ran into problems is done using the
+permissions of the 'current' task.  I don't know how your code works at
+all, but I would have guessed that the task allocating and adding this
+magic page was either perf or systemtap or something like that.  Not the
+'victim' task where the page would actually show up.  Is that true?  If
+so, method1 (or 2) works.  If not, and 'current' is actually the victim,
+method2 would work some of the time, but not always.
 
-on i386:
+If current can be the victim (or some completely random task) we can
+probably switch the credentials of the current task as we do the
+allocation to the initial creds (or something like that) so the
+permission will be granted.
 
-ERROR: "__udivdi3" [drivers/md/raid456.ko] undefined!
+Unrelated note: I'd prefer to see that page be READ+EXEC only once it
+has been mapped into the victim task.  Obviously the portion of the code
+that creates this page and sets up the instructions to run is going to
+need write.  Maybe this isn't feasible.  Maybe this magic pages gets
+written a lot even after it's been mapped in.  But I'd rather, if
+possible, know that my victim tasks didn't have a WRITE+EXEC page
+available......
 
-in raid45_takeover_raid0()
+-Eric
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
