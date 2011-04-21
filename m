@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1DUQJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:09:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33592 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab1DUQJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:09:36 -0400
-Date: Thu, 21 Apr 2011 09:09:22 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Subject: [PATCH -next] kvm: fix const value warning on i386
-Message-Id: <20110421090922.4d9a275b.randy.dunlap@oracle.com>
-In-Reply-To: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-References: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754795Ab1DUQMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:12:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47671 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754463Ab1DUQMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 12:12:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
+   d="scan'208";a="423348663"
+Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+Reply-To: james_p_freyensee@linux.intel.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@suse.de>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+In-Reply-To: <20110420164621.3d817c4f.akpm@linux-foundation.org>
+References: <james_p_freyensee@linux.intel.com>
+	 <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
+	 <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
+	 <1303258222.13457.42.camel@localhost>
+	 <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
+	 <20110420014340.GA21245@suse.de> <1303323083.13457.50.camel@localhost>
+	 <20110420191421.GA10306@suse.de>
+	 <20110420161125.3449d4fd.akpm@linux-foundation.org>
+	 <1303341368.13457.92.camel@localhost>
+	 <20110420164621.3d817c4f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 21 Apr 2011 09:12:18 -0700
+Message-ID: <1303402338.13457.95.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DB056B8.0059:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 2011-04-20 at 16:46 -0700, Andrew Morton wrote:
+> On Wed, 20 Apr 2011 16:16:08 -0700
+> J Freyensee <james_p_freyensee@linux.intel.com> wrote:
+> 
+> > On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
+> > > On Wed, 20 Apr 2011 12:14:21 -0700
+> > > Greg KH <gregkh@suse.de> wrote:
+> > > 
+> > > > > But as David pointed out, if there is work other than mine coming that
+> > > > > has already been proposed, wouldn't it be good to get this patch in
+> > > > > place now to start the encouragement of future eyes to just call this
+> > > > > function than re-invent the wheel?
+> > > > 
+> > > > No, then those projects submit the patch to export this, if they happen
+> > > > to get to mainline before this one does.
+> > > > 
+> > > > Again, don't export something unless you are using it at the time, no
+> > > > "this is to be used hopefully by something in the future" type stuff
+> > > > please.  Who knows if those future plans ever pan out.
+> > > 
+> > > Well there's an easy solution here.  Send the patch to export
+> > > get_task_comm(), then send along some patches which fix
+> > > 
+> > > z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
+> > > 89
+> > > 
+> > 
+> > Andrew, so does this mean you want me to send this patch to export
+> > get_task_comm() to you then?
+> > 
+> 
+> That works.  But Greg might see us doing it, so some additional
+> mergeable patches which *need* that export will keep him happy.
+> 
 
-arch/x86/kvm/emulate.c:2598: warning: integer constant is too large for 'long' type
+Okay, so the pti driver I own needs that export to be able to build as a
+module, so that is a start :-)
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- arch/x86/kvm/emulate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> (iow, you're being extorted into doing some kernel cleanup work)
 
---- linux-next-20110421.orig/arch/x86/kvm/emulate.c
-+++ linux-next-20110421/arch/x86/kvm/emulate.c
-@@ -2595,7 +2595,7 @@ static int check_svme_pa(struct x86_emul
- 	u64 rax = kvm_register_read(ctxt->vcpu, VCPU_REGS_RAX);
- 
- 	/* Valid physical address? */
--	if (rax & 0xffff000000000000)
-+	if (rax & 0xffff000000000000ULL)
- 		return emulate_gp(ctxt, 0);
- 
- 	return check_svme(ctxt);
+
