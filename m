@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1DUQMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:12:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47671 "EHLO mga03.intel.com"
+	id S1754775Ab1DUQOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:14:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36672 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab1DUQMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:12:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
-   d="scan'208";a="423348663"
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@suse.de>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-In-Reply-To: <20110420164621.3d817c4f.akpm@linux-foundation.org>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
-	 <alpine.DEB.2.00.1104191620360.4300@chino.kir.corp.google.com>
-	 <1303258222.13457.42.camel@localhost>
-	 <alpine.DEB.2.00.1104191817590.8047@chino.kir.corp.google.com>
-	 <20110420014340.GA21245@suse.de> <1303323083.13457.50.camel@localhost>
-	 <20110420191421.GA10306@suse.de>
-	 <20110420161125.3449d4fd.akpm@linux-foundation.org>
-	 <1303341368.13457.92.camel@localhost>
-	 <20110420164621.3d817c4f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 21 Apr 2011 09:12:18 -0700
-Message-ID: <1303402338.13457.95.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1750915Ab1DUQOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 12:14:20 -0400
+Date: Thu, 21 Apr 2011 18:14:02 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
+        raz ben yehuda <raziebe@gmail.com>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+Message-ID: <20110421161402.GS5611@random.random>
+References: <20110415101248.GB22688@suse.de>
+ <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+ <20110421110841.GA612@suse.de>
+ <20110421142636.GA1835@barrios-desktop>
+ <20110421160057.GA28712@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421160057.GA28712@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 16:46 -0700, Andrew Morton wrote:
-> On Wed, 20 Apr 2011 16:16:08 -0700
-> J Freyensee <james_p_freyensee@linux.intel.com> wrote:
-> 
-> > On Wed, 2011-04-20 at 16:11 -0700, Andrew Morton wrote:
-> > > On Wed, 20 Apr 2011 12:14:21 -0700
-> > > Greg KH <gregkh@suse.de> wrote:
-> > > 
-> > > > > But as David pointed out, if there is work other than mine coming that
-> > > > > has already been proposed, wouldn't it be good to get this patch in
-> > > > > place now to start the encouragement of future eyes to just call this
-> > > > > function than re-invent the wheel?
-> > > > 
-> > > > No, then those projects submit the patch to export this, if they happen
-> > > > to get to mainline before this one does.
-> > > > 
-> > > > Again, don't export something unless you are using it at the time, no
-> > > > "this is to be used hopefully by something in the future" type stuff
-> > > > please.  Who knows if those future plans ever pan out.
-> > > 
-> > > Well there's an easy solution here.  Send the patch to export
-> > > get_task_comm(), then send along some patches which fix
-> > > 
-> > > z:/usr/src/linux-2.6.39-rc4> grep -r 'current->comm' drivers | wc -l
-> > > 89
-> > > 
-> > 
-> > Andrew, so does this mean you want me to send this patch to export
-> > get_task_comm() to you then?
-> > 
-> 
-> That works.  But Greg might see us doing it, so some additional
-> mergeable patches which *need* that export will keep him happy.
-> 
+On Thu, Apr 21, 2011 at 05:00:57PM +0100, Mel Gorman wrote:
+> If you want to create a new patch with either your comment or mine
+> (whichever you prefer) I'll add my ack. I'm about to drop offline
+> for a few days but if it's still there Tuesday, I'll put together an
+> appropriate patch and submit. I'd keep it separate from the other patch
+> because it's a performance fix (which I'd like to see in -stable) where
+> as this is more of a cleanup IMO.
 
-Okay, so the pti driver I own needs that export to be able to build as a
-module, so that is a start :-)
+I think the older patch should have more priority agreed. This one may
+actually waste cpu cycles overall, rather than saving them, it
+shouldn't be a common occurrence.
 
-> (iow, you're being extorted into doing some kernel cleanup work)
+>From a code consistency point of view maybe we should just implement a
+pte_alloc macro (to put after pte_alloc_map) and use it in both
+places, and hide the glory details of the unlikely in the macro. When
+implementing pte_alloc, I suggest also adding unlikely to both, I mean
+we added unlikely to the fast path ok, but __pte_alloc is orders of
+magnitude less likely to fail than pte_none, and it still runs 1 every
+512 4k page faults, so I think __pte_alloc deserves an unlikely too.
 
+Minchan, you suggested this cleanup, so I suggest you to send a patch,
+but if you're busy we can help.
 
+Thanks!
+Andrea
