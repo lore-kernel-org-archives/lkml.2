@@ -1,219 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab1DUPLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 11:11:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45358 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754444Ab1DUPLd (ORCPT
+	id S1754550Ab1DUPUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 11:20:50 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40884 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab1DUPUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 11:11:33 -0400
-Date: Thu, 21 Apr 2011 16:11:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com, sameo@linux.intel.com,
-        Graeme Gregory <gg@slimlogic.co.uk>, grant@secretlab.ca
-Subject: Re: [PATCHv4 2/4] TPS65910: GPIO: Add GPIO driver
-Message-ID: <20110421151130.GB25526@opensource.wolfsonmicro.com>
-References: <8BC87CF8-EAB5-40A9-AAFB-D4F7521B3E04@slimlogic.co.uk>
+	Thu, 21 Apr 2011 11:20:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eJdFmJBLRuamVmf6Ed8ViYB3wCyNEbefZYKpwESrSPGtYnlbWWsiQA5fp45hil4C8D
+         uAORjEL/TeAqnP//BrGMun637dQQeg52j3UXPoJxzmTxWkYP+oiV1oY1LCe3VbOkUgT2
+         eV6hl/efiEUE6rMSFQF7AKyCoWV3fxOO8vJDs=
+Date: Thu, 21 Apr 2011 17:20:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [RFC,PATCH 3/3] trace,perf: add filter support for
+ ftrace/function tracepoint event
+Message-ID: <20110421152038.GA1772@nowhere>
+References: <1303382458-11072-1-git-send-email-jolsa@redhat.com>
+ <1303382458-11072-4-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8BC87CF8-EAB5-40A9-AAFB-D4F7521B3E04@slimlogic.co.uk>
-X-Cookie: You will get what you deserve.
+In-Reply-To: <1303382458-11072-4-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 09:35:47AM -0500, Jorge Eduardo Candelaria wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
+On Thu, Apr 21, 2011 at 12:40:58PM +0200, Jiri Olsa wrote:
+> Added support to be able to pass "ip == glob" filter for the ftrace/function
+> tracepoint.
 > 
-> TPS65910 has one configurable GPIO that can be used for several
-> purposes. Subsequent versions of the TPS chip support more than
-> one GPIO.
+> Respective functions are hot-patched/updated when the filter is set,
+> and the filter predicate is set to be allways true.
+
+Ideally, if the filter is set to "ip", we want to apply your hook
+and not make the filter appearing in the tracing path. ie, Instead of
+setting a filter with filter_pred_all callback, we should have no filter
+to process from ftrace_function_call_*() things.
+
+We probably need to make an exception when we filter parent_ip,
+which can't be processed using hotpatching, so we need a real
+filter for it.
+
+
+> Probably missing
+> several cases.. not sure this is the way.
 > 
-> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-
-CCing in Grant who's taken over the GPIO subsystem.
-
+> wbr,
+> jirka
+> 
 > ---
-> drivers/mfd/Makefile         |    2 +-
-> drivers/mfd/tps65910-gpio.c  |  109 ++++++++++++++++++++++++++++++++++++++++++
-> drivers/mfd/tps65910.c       |    7 +++
-> include/linux/mfd/tps65910.h |    3 +
-> 4 files changed, 120 insertions(+), 1 deletions(-)
-> create mode 100644 drivers/mfd/tps65910-gpio.c
+>  include/linux/ftrace_event.h       |    3 ++
+>  kernel/trace/ftrace.c              |   35 ++++++++++++++++++++++++++++
+>  kernel/trace/trace.h               |    2 +
+>  kernel/trace/trace_events_filter.c |   45 ++++++++++++++++++++++++++++++++---
+>  kernel/trace/trace_export.c        |   26 ++++++++++++++++----
+>  5 files changed, 102 insertions(+), 9 deletions(-)
 > 
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 3afb7ac..012ed17 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -88,4 +88,4 @@ obj-$(CONFIG_MFD_VX855)		+= vx855.o
-> obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
-> obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
-> obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
-> -obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
-> +obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o
-> diff --git a/drivers/mfd/tps65910-gpio.c b/drivers/mfd/tps65910-gpio.c
-> new file mode 100644
-> index 0000000..7bb8fe6
-> --- /dev/null
-> +++ b/drivers/mfd/tps65910-gpio.c
-> @@ -0,0 +1,109 @@
-> +/*
-> + * tps65910-gpio.c  --  TI TPS6591x
-> + *
-> + * Copyright 2010 Texas Instruments Inc.
-> + *
-> + * Author: Graeme Gregory <gg@slimlogic.co.uk>
-> + * Author: Jorge Eduardo Candelaria jedu@slimlogic.co.uk>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify it
-> + *  under  the terms of the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/errno.h>
-> +#include <linux/gpio.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mfd/tps65910.h>
-> +
-> +static int tps65910_gpio_get(struct gpio_chip *gc, unsigned offset)
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index 22b32af..bbf7cc6 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -144,6 +144,8 @@ struct ftrace_event_class {
+>  	struct list_head	*(*get_fields)(struct ftrace_event_call *);
+>  	struct list_head	fields;
+>  	int			(*raw_init)(struct ftrace_event_call *);
+> +	void			(*filter)(struct ftrace_event_call *call,
+> +					  int enable);
+
+Good, but this should take the parsed filter as a parameter.
+But that's also a problem of un-globalizing the function tracer. Several
+perf events, and ftrace, should be able to set different filters. Thus
+you need to compute a kind of union of all these filters and keep
+track of who needs which function.
+
+perf event A may want to trace func1()
+perf event B may want to trace func2()
+
+So you need to enable func1() and func2(), although they both
+have set different filters for that, but trigger an event on A
+only when func1() is called, and trigger an event on B only when func2()
+is called.
+
+So we probably need a kind of function hlist to keep track of that.
+
+I started something a while ago:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	tracing/hlist
+
+The thing is very outdated now I think, and it needed some rework.
+
+>  };
+>  
+>  extern int ftrace_event_reg(struct ftrace_event_call *event,
+> @@ -221,6 +223,7 @@ enum {
+>  	FILTER_STATIC_STRING,
+>  	FILTER_DYN_STRING,
+>  	FILTER_PTR_STRING,
+> +	FILTER_TRACE_FN,
+
+But yeah that kind of interface is cool. Although I would rather
+call that FILTER_CUSTOM or FILTER_OVERRIDEN, to avoid confusion
+with TRACE_FN, as this is deemed to express the fact we override
+the interpretation of the filter. ftrace should be only a specific
+user of that. More are perhaps coming.
+
+Also, we may need to override the effects of the filtering endpoint
+to express every capabilities of set_ftrace_filter, like
+trace_on/trace_off commands. So that we can get rid of that global file in
+the end.
+
+One idea was to have a "triggers" directory in each event directories,
+and have one intepretation of filters per file:
+
+$ls triggers
+filter
+trace_on
+trace_off
+
+Then, when the user tries:
+
+$ echo "ip == lambda" > trace_off
+
+This simply disables tracing when we hit the lambda function.
+Echoing the same in filter would filter when we hit that function.
+
+The filter file in that triggers directory would refer to the same
+inode of the filter file in the event directory. We would just keep
+the old one for compatibility.
+
+>  };
+>  
+>  #define EVENT_STORAGE_SIZE 128
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 49fbc8c..b52db6e 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -3285,6 +3285,41 @@ int ftrace_event_class_register(struct ftrace_event_call *call,
+>  	return -EINVAL;
+>  }
+>  
+> +void ftrace_event_tracefn_filter(int enable)
 > +{
-> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-> +	uint8_t val;
+> +	char *filter = event_function.data;
 > +
-> +	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
+> +	if (enable) {
+> +		WARN_ON(!filter);
+> +		if (filter)
+> +			ftrace_match_records(filter, strlen(filter), 1);
+> +	} else {
+> +		ftrace_filter_reset(1);
+> +		if (filter) {
+> +			kfree(filter);
+> +			event_function.data = NULL;
+> +		}
+> +	}
 > +
-> +	if (val & GPIO0_GPIO_STS_MASK)
-> +		return 1;
-> +
-> +	return 0;
+> +	mutex_lock(&ftrace_lock);
+> +	if (ftrace_enabled)
+> +		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
+> +	mutex_unlock(&ftrace_lock);
 > +}
-> +
-> +static void tps65910_gpio_set(struct gpio_chip *gc, unsigned offset,
-> +			      int value)
-> +{
-> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-> +	uint8_t val;
-> +
-> +	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-> +
-> +	if (value)
-> +		val |= GPIO0_GPIO_SET_MASK;
-> +	else
-> +		val &= ~GPIO0_GPIO_SET_MASK;
-> +
-> +	tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-> +}
-> +
-> +static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
-> +				int value)
-> +{
-> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-> +	uint8_t val;
-> +	int ret;
-> +
-> +	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	val |= GPIO0_GPIO_CFG_MASK;
-> +
-> +	/* Set the initial value */
-> +	tps65910_gpio_set(gc, 0, value);
-> +
-> +	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-> +}
-> +
-> +static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
-> +	uint8_t val;
-> +	int ret;
-> +
-> +	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	val &= ~GPIO0_GPIO_CFG_MASK;
-> +
-> +	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
-> +}
-> +
-> +void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
-> +{
-> +	int ret;
-> +
-> +	if (!gpio_base)
-> +		return;
-> +
-> +	tps65910->gpio.owner		= THIS_MODULE;
-> +	tps65910->gpio.label		= tps65910->i2c_client->name;
-> +	tps65910->gpio.dev		= tps65910->dev;
-> +	tps65910->gpio.base		= gpio_base;
-> +	tps65910->gpio.ngpio		= 1;
-> +	tps65910->gpio.can_sleep	= 1;
-> +
-> +	tps65910->gpio.direction_input	= tps65910_gpio_input;
-> +	tps65910->gpio.direction_output	= tps65910_gpio_output;
-> +	tps65910->gpio.set		= tps65910_gpio_set;
-> +	tps65910->gpio.get		= tps65910_gpio_get;
-> +
-> +	ret = gpiochip_add(&tps65910->gpio);
-> +
-> +	if (ret)
-> +		dev_warn(tps65910->dev, "GPIO registration failed: %d\n", ret);
-> +}
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index f13e448..99c43b6 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -89,8 +89,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
-> 			    const struct i2c_device_id *id)
-> {
-> 	struct tps65910 *tps65910;
-> +	struct tps65910_board *pmic_plat_data;
-> 	int ret = 0;
-> 
-> +	pmic_plat_data = dev_get_platdata(&i2c->dev);
-> +	if (!pmic_plat_data)
-> +		return -EINVAL;
-> +
-> 	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
-> 	if (tps65910 == NULL)
-> 		return -ENOMEM;
-> @@ -107,6 +112,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
-> 	if (ret < 0)
-> 		goto err;
-> 
-> +	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
-> +
-> 	return ret;
-> 
-> err:
-> diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-> index 43c8631..bf3597e 100644
-> --- a/include/linux/mfd/tps65910.h
-> +++ b/include/linux/mfd/tps65910.h
-> @@ -714,6 +714,7 @@
->  */
-> 
-> struct tps65910_board {
-> +	int gpio_base;
-> 	struct regulator_init_data *tps65910_pmic_init_data;
-> };
-> 
-> @@ -746,4 +747,6 @@ struct tps65910_platform_data {
-> 	int irq_base;
-> };
-> 
-> +void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
-> +
-> #endif /*  __LINUX_MFD_TPS65910_H */
-> -- 
-> 1.7.1
+
+Note we may have complicated expressions linked with either && or ||.
+Thus you need to be able to compute unions and intersections or
+functions sets. The ftrace_match_record() won't be sufficient enough
+for that. Best would be to evaluate the whole tree of the parsed expression.
+
+This can be done gradually though, we can start with simple expressions
+and reject complicated ones to begin with.
+
+Thanks.
