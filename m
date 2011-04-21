@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1DUOYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:24:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44354 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1DUOYH (ORCPT
+	id S1754021Ab1DUOYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:24:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40701 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab1DUOYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:24:07 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=R6sLeq5vHiIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ZRrO2wL-Emo26PX8APwA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq
- locking issue
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20110421133541.GB2702@zhy>
-References: <20110421014153.126662477@goodmis.org>
-	 <20110421014259.132728798@goodmis.org>
-	 <BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
-	 <1303386029.7181.118.camel@gandalf.stny.rr.com> <20110421133541.GB2702@zhy>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 21 Apr 2011 10:24:05 -0400
-Message-ID: <1303395845.7181.127.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Apr 2011 10:24:24 -0400
+Date: Thu, 21 Apr 2011 08:24:22 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        linux-kernel@vger.kernel.org, toshiharu-linux@dsn.okisemi.com
+Subject: Re: Question: GPIO driver how to get irq_base
+Message-ID: <20110421142422.GC32725@ponder.secretlab.ca>
+References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com>
+ <4DAFE62A.105@metafoo.de>
+ <20110421134524.GA32725@ponder.secretlab.ca>
+ <4DB03A4B.9040807@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB03A4B.9040807@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 21:35 +0800, Yong Zhang wrote:
-> On Thu, Apr 21, 2011 at 07:40:29AM -0400, Steven Rostedt wrote:
-
-> > I
-> > could show the entire chain too.
+On Thu, Apr 21, 2011 at 04:08:11PM +0200, Lars-Peter Clausen wrote:
+> On 04/21/2011 03:45 PM, Grant Likely wrote:
+> > On Thu, Apr 21, 2011 at 10:09:14AM +0200, Lars-Peter Clausen wrote:
+> >> [...]
+> >>
+> >> In my opinion the best option for expander chips is to allocate a new irq_desc
+> >> range by calling irq_alloc_descs. It will return the first irq number in the
+> >> newly allocated range, which will be your irq_base.
+> > 
+> > Yes, irq_alloc_descs() will give you a range of irqs that the gpio
+> > expander can use.  In many drivers, the irq_base is hard coded in the
+> > board file and passed in via pdata, but as much as possible I
+> > recommend avoiding that and letting Linux dynamically allocate the
+> > irq_base for you.  Setting gpio_base to -1 will do this.
+> > 
+> > The ->to_irq() hook in your driver can translate
+> > from a gpio number to an irq number for a specific gpio.
+> > 
+> >> But be aware that this will require SPARSE_IRQ to work.
+> > 
+> > Why?
+> > 
 > 
-> Sure :)
+> Because in a non-SPARSE_IRQ setup all irq_descs will be allocated by default.
+> See early_irq_init for the non-SPARSE_IRQ case in kernel/irq/irq_desc.c.
 
-I talked a little about this with Peter Zijlstra on IRC, and we agreed
-that we'll keep this as is until we notice that kernel developers are
-still confused with the output.
+They'll be allocated, but not all need to be assigned.
 
-The more advanced I make this output, the more likely I'll make a
-mistake and show something that is not what actually happens. I wrote a
-module to trigger each of these cases and the problems that lockdep can
-detect grows exponentially as we make the output more specific.
+> 
+> Though platform code could make irq_descs explicitly available byfirst setting
+> NR_IRQS to a larger number then it actually requires and then call
+> irq_free_descs for those irqs which are not used by platform code, but using
+> SPARSE_IRQ is in my opinion the better alternative in this case.
 
-I probably should modify the lockdep selftests to add an option to show
-the output as well as it triggers errors. This would allow me to make
-sure the output still works.
+On the powerpc platforms, pretty much all irqs are dynamically
+allocated and SPARSE_IRQ can be either on or off.  So, yes, you need
+to make sure NR_IRQs is large enough if you don't want to use SPARSE,
+but SPARSE is not a hard requirement.
 
-But for now, I have other things to work on ;)
-
--- Steve
-
+g.
 
