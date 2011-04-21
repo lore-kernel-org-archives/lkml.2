@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab1DURbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 13:31:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45288 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab1DURbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 13:31:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=toc270SF7MRMDCX6WuVJ8Wrd9JKuJfRXkiXO47PRnYQo/hftA6EJ0lL4PLCxTHYB/k
-         pLgdSYpoFx6tBR0QISeDNiXz1fahQDmvDOsbkeR0U3cmJ5e0roiZtxfopa1UWReeV+Ra
-         fwK/gUWVMHlOez/Npv4tVIBGV+xEYoaGjpw50=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Dave Jones <davej@redhat.com>
-Subject: Re: lockdep trace when unplugging usb audio (.39rc4)
-Date: Thu, 21 Apr 2011 19:31:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc3; KDE/4.4.5; i686; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-References: <20110419180745.GA438@redhat.com>
-In-Reply-To: <20110419180745.GA438@redhat.com>
+	id S1755181Ab1DURcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 13:32:00 -0400
+Received: from void.printf.net ([89.145.121.20]:53873 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755384Ab1DURb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 13:31:59 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Aries Lee <arieslee@jmicron.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Fix read-only detection with JMicron 388 chip
+References: <s5hoc3zd27i.wl%tiwai@suse.de>
+	<m339lba77p.fsf@pullcord.laptop.org> <s5hmxjjil9r.wl%tiwai@suse.de>
+Date: Thu, 21 Apr 2011 13:36:03 -0400
+In-Reply-To: <s5hmxjjil9r.wl%tiwai@suse.de> (Takashi Iwai's message of "Thu,
+	21 Apr 2011 19:09:36 +0200")
+Message-ID: <m3y6338q2k.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104211931.43057.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 19 kwietnia 2011 o 20:07:45 Dave Jones wrote:
-> I get this trace when I unplug my NuForce uDAC.
-> 
-> 	Dave
-> 
-> =======================================================
-> [ INFO: possible circular locking dependency detected ]
+Hi Takashi,
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=33792
-for your bug report, please add your address to the CC list in there, thanks!
+On Thu, Apr 21 2011, Takashi Iwai wrote:
+>> I don't like overwriting ops here -- it's too magical, and now we have
+>> to maintain the ops table in two places.  A quirk seems justified here,
+>> even though we're trying to reduce them in general.
+>
+> Well, I also used quirk bit in my very first version I worked for
+> 2.6.32 kernel.  But when I looked at 2.6.39, quirks are almost full --
+> only the last one bit is left for bit 31.  So I didn't want to finish
+> it :)
+>
+>>  Can anyone find a better solution?
+>  
+> One way would be to copy the ops table itself in struct sdhci_host
+> instead of keeping the ops table pointer.  Then you can overwrite only
+> the specific op in each probe_slot callback.
 
+I think I'd rather not touch ops at all and keep the code simple --
+if you don't mind, please post a version with quirks, and I'll work
+on freeing up a few bits.
+
+Thanks,
+
+- Chris.
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
