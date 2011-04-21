@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab1DUQhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 12:37:31 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36125 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754912Ab1DUQha (ORCPT
+	id S1755078Ab1DUQiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 12:38:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38230 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab1DUQiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 12:37:30 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>
-In-Reply-To: <20110421221712.9184.A69D9226@jp.fujitsu.com>
-References: <1303337718.2587.51.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
-	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
+	Thu, 21 Apr 2011 12:38:13 -0400
+Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
+References: <1303332697-16426-1-git-send-email-ncrao@google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 11:37:27 -0500
-Message-ID: <1303403847.4025.11.camel@mulgrave.site>
+Date: Thu, 21 Apr 2011 18:40:52 +0200
+Message-ID: <1303404052.2035.155.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 22:16 +0900, KOSAKI Motohiro wrote:
-> > This should fix the remaining architectures so they can use CONFIG_SLUB, 
-> > but I hope it can be tested by the individual arch maintainers like you 
-> > did for parisc.
+On Wed, 2011-04-20 at 13:51 -0700, Nikhil Rao wrote:
 > 
-> ia64 and mips have CONFIG_ARCH_POPULATES_NODE_MAP and it initialize
-> N_NORMAL_MEMORY automatically if my understand is correct.
-> (plz see free_area_init_nodes)
+> I would like to get some feedback on the direction of this patchset. Please let
+> me know if there are alternative ways of doing this, and I'll be happy to
+> explore them as well.
 > 
-> I guess alpha and m32r have no active developrs. only m68k seems to be need
-> fix and we have a chance to get a review... 
+> The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
+> x86_64. Beyond the basic checks, it has not been well tested yet.
+> 
+> Major TODOs:
+> - Detect overflow in update shares calculations (time * load), and set load_avg
+>   to maximum possible value (~0ULL).
+> - tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
+>   machines. Might need to add a lock to protect this instead of atomic ops.
+> - Check wake-affine math and effective load calculations for overflows.
+> - Needs more testing and need to ensure fairness/balancing is not broken.
 
-Actually, it's not quite a fix yet, I'm afraid.  I've just been
-investigating why my main 4 way box got slower with kernel builds:
-Apparently userspace processes are now all stuck on CPU0, so we're
-obviously tripping over some NUMA scheduling stuff that's missing.
+The code looks fairly ok and I can't fault the TODOs ;-)
 
-James
+I guess getting some measurements on the performance penalty on 32bit
+would be nice -- if only to know about how bad it is.
 
+And while its not perfect by a long stretch (we can still blow the whole
+lot by creating a deep enough hierarchy) it should be much better.. the
+only advantage of going with a full on wrapper solution would be that
+plugging in an arbitrary precision type would be simple ;-)
 
