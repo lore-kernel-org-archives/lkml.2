@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1DUCka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:40:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49379 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab1DUCk2 (ORCPT
+	id S1752683Ab1DUCm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:42:57 -0400
+Received: from smtp.wow.synacor.com ([64.8.70.55]:56175 "EHLO
+	smtp.mail.wowway.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab1DUCm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:40:28 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=xiwGX1Xr2kgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=g3cdqUb-ZZUHcV7zBEUA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 07/11] kbuild/recordmcount: Add RECORDMCOUNT_WARN
- to warn about mcount callers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-In-Reply-To: <20110421023738.714956282@goodmis.org>
-References: <20110421022825.535486725@goodmis.org>
-	 <20110421023738.714956282@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 20 Apr 2011 22:40:27 -0400
-Message-ID: <1303353627.7181.110.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 20 Apr 2011 22:42:56 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Apr 2011 22:42:56 EDT
+X-Spam-Rating: None
+X_CMAE_Category: 0,0 Undefined,Undefined
+X-CNFS-Analysis: v=1.1 cv=eKQ+N4rqOQiji9ijAFGVZbvuh9RsgY7ivWxzmg3MFRI= c=1 sm=0 a=EnAg6b0JcI4A:10 a=FKkrIqjQGGEA:10 a=M1VNycxITrcA:10 a=AhRLOILGsKkA:10 a=IkcTkHD0fZMA:10 a=0xuUpNzuAqVGyKJjr2AA:9 a=QEXdDO2ut3YA:10 a=QLvOlBIuGJjmAZ5IHHaCwQ==:117
+X-CM-Score: 0
+Date: Wed, 20 Apr 2011 22:34:54 -0400 (EDT)
+From: Stephen Powell <zlinuxman@wowway.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Jan Glauber <jang@linux.vnet.ibm.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, 622570@bugs.debian.org
+Message-ID: <248142179.74791.1303353294865.JavaMail.root@md01.wow.synacor.com>
+In-Reply-To: <20110418115141.GA3157@osiris.boeblingen.de.ibm.com>
+Subject: Re: [OOPS s390] Unable to handle kernel pointer dereference at
+ virtual kernel address (null)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [75.118.95.22]
+X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (zclient/6.0.5_GA_2328.RHEL5_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 22:28 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0007-kbuild-recordmcount-Add-RECORDMCOUNT_WARN-to-warn-ab.patch)
-> From: Steven Rostedt <srostedt@redhat.com>
+On Mon, 18 Apr 2011 07:51:41 -0400 (EDT), Heiko Carstens wrote:
 > 
-> When mcount is called in a section that ftrace will not modify it into
-> a nop, we want to warn about this. But not warn about this always. Now
-> if the user builds the kernel with the option RECORDMCOUNT_WARN=1 then
-> the build will warn about mcount callers that are ignored and will just
-> waste execution time.
+> That's a bug in the pfault interrupt code. After a cleanup patch which
+> simplified lowcore accesses we are left with a dereference which shouldn't
+> be there.  The patch below should fix it.
+> The bug was introduced with 2.6.37-rc1.
 > 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
+> index 9217e33..4cf85fe 100644
+> --- a/arch/s390/mm/fault.c
+> +++ b/arch/s390/mm/fault.c
+> @@ -558,9 +558,9 @@ static void pfault_interrupt(unsigned int ext_int_code,
+>  	 * Get the token (= address of the task structure of the affected task).
+>  	 */
+>  #ifdef CONFIG_64BIT
+> -	tsk = *(struct task_struct **) param64;
+> +	tsk = (struct task_struct *) param64;
+>  #else
+> -	tsk = *(struct task_struct **) param32;
+> +	tsk = (struct task_struct *) param32;
+>  #endif
+>  
+>  	if (subcode & 0x0080) {
 
-Michal,
+I applied the above patch and re-built the kernel.  I did not apply
+Jan Glauber's suggested patch, since Heiko's suggested patch seemed to be a
+"direct hit".  I have had the server up for more than 24 hours now,
+which is definitely a good sign.  Without this patch, I've not been able
+to keep a 2.6.38 s390x kernel up for more than a few hours.  Unfortunately,
+since I can't reproduce the problem on demand, I cannot say with 100%
+certainty that the problem is fixed, but it looks good and makes sense.
 
-Can I get an Acked-by from you for this patch. Or comments if it doesn't
-suit you?
-
-Thanks,
-
--- Stvee
-
-
+-- 
+  .''`.     Stephen Powell    
+ : :'  :
+ `. `'`
+   `-
