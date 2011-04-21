@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1DUMDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 08:03:53 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:53552 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab1DUMDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 08:03:52 -0400
-Date: Thu, 21 Apr 2011 17:19:36 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 18/26] 18: uprobes: commonly used
- filters.
-Message-ID: <20110421114936.GF10698@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143602.15455.82211.sendpatchset@localhost6.localdomain6>
- <1303221477.8345.6.camel@twins>
- <20110421110911.GE10698@linux.vnet.ibm.com>
- <1303385835.2035.75.camel@laptop>
+	id S1752218Ab1DUMF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 08:05:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51470 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab1DUMF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 08:05:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=MRNRZsBqozumXc0VBWw8YeyzHIr4BvatfesWPoW7OXcuxw8Ptj5up/mDhGTrzGwOEk
+         A3WQTXOi8Jz4QJAxpYyidUL2a9K3AKHH1lhrHiMHzG8ci2M+a4fdjnrUM+koVE/q+svG
+         rrFWWD2+SGVwRGyYQNuqs90DotH5jl5BhUXDk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1303385835.2035.75.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110421115843.GA7837@polaris.bitmath.org>
+References: <1303291155-3148-1-git-send-email-salt@salt.com.tw>
+	<20110420094700.GA2258@polaris.bitmath.org>
+	<BANLkTin7Q3fD3vg90qCk12MGaVEvLBe0Mg@mail.gmail.com>
+	<20110420100759.GA2436@polaris.bitmath.org>
+	<alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
+	<BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
+	<20110421115843.GA7837@polaris.bitmath.org>
+Date: Thu, 21 Apr 2011 14:05:56 +0200
+X-Google-Sender-Auth: q3TjPFBXPfT6J3ckccUM8QFxC3Y
+Message-ID: <BANLkTimku6reQpkNZ9-WUvhvv0pm+gSrSg@mail.gmail.com>
+Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Richard Nauber <richard.nauber@googlemail.com>,
+        PenMount <penmount.touch@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-04-21 13:37:15]:
+On Thu, Apr 21, 2011 at 13:58, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> > Once you are done with testing the last_field_index change, it'd be great
+>> > if you could respin the patches so that the first one perfoms this change,
+>> > and the second one adds PenMount support on top of it.
+>> >
+>> > I'll then apply it. Thanks,
+>>
+>> Hi Jiri,
+>>
+>> I'll do that as soon as Henrik tells me it is working.
+>
+> The 3M (0596:0502) and eGalax (0eef:720c) seem to work as expected.
+>
 
-> On Thu, 2011-04-21 at 16:39 +0530, Srikar Dronamraju wrote:
-> > > What you want is to save the pid-namespace of the task creating the
-> > > filter in your uprobe_simple_consumer and use that to obtain the task's
-> > > pid for matching with the provided number.
-> > > 
-> > 
-> > Okay, will do by adding the pid-namespace of the task creating the
-> > filter in the uprobe_simple_consumer. 
-> 
-> Maybe you could convert to the global pid namespace on construction and
-> always use that for comparison.
-> 
-> That would avoid the namespace muck on comparison.. 
-> 
+Thanks a lot Henrik.
 
-Yeah, this idea also seems feasible.
+I'll respin the patches right now!
 
--- 
-Thanks and Regards
-Srikar
+Cheers,
+Benjamin
