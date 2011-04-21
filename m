@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1DUN3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:29:15 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:60656 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1DUN3O (ORCPT
+	id S1753027Ab1DUNaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:30:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59671 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1DUN37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:29:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XKSwdljAjNWrN/hxmYA+VGwYU0JexEnB8hMOlrbZ3SZNjHUze0GQoZ2YxZ07TshCXr
-         INgEZwIV5a2nSxojmxGIBjjBCi55thwgAdr5zDil4g88HQEnoIO4DOzpm+ujtlPkCSUy
-         FkJaNFspyEdzmjqOlCQhBQH5CJH1IeROl4n6Q=
-Date: Thu, 21 Apr 2011 21:29:04 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] sched: deduplicate mm checks in normalize_rt_tasks()
-Message-ID: <20110421132904.GA2702@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <BANLkTi=41=2_QOMOabg1UrwQ2A06fJAY9w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=41=2_QOMOabg1UrwQ2A06fJAY9w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 21 Apr 2011 09:29:59 -0400
+Subject: Re: [PATCH 14/20] mm: Remove i_mmap_lock lockbreak
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>
+In-Reply-To: <20110419130719.86093a27.akpm@linux-foundation.org>
+References: <20110401121258.211963744@chello.nl>
+	 <20110401121725.991633993@chello.nl>
+	 <20110419130719.86093a27.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 15:32:35 +0200
+Message-ID: <1303392755.2035.141.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 09:15:56PM +0800, Hillf Danton wrote:
-> When normalizing realtime tasks, only user tasks are concerned by
-> checking their ->mm.
-> If the task is not realtime, the -mm is checked again, thus the
-> overwork could be removed.
+On Tue, 2011-04-19 at 13:07 -0700, Andrew Morton wrote:
+> On Fri, 01 Apr 2011 14:13:12 +0200
+> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
+> > Hugh says:
+> >  "The only significant loser, I think, would be page reclaim (when
+> >   concurrent with truncation): could spin for a long time waiting for
+> >   the i_mmap_mutex it expects would soon be dropped? "
+> > 
+> > Counter points:
+> >  - cpu contention makes the spin stop (need_resched())
+> >  - zap pages should be freeing pages at a higher rate than reclaim
+> >    ever can
+> > 
+> > I think the simplification of the truncate code is definately worth it.
 > 
-> --- a/kernel/sched.c	2011-03-30 03:09:48.000000000 +0800
-> +++ b/kernel/sched.c	2011-04-21 20:59:28.000000000 +0800
-> @@ -8364,7 +8364,7 @@ void normalize_rt_tasks(void)
->  			 * Renice negative nice level userspace
->  			 * tasks back to 0:
->  			 */
-> -			if (TASK_NICE(p) < 0 && p->mm)
-> +			if (TASK_NICE(p) < 0)
+> Well, we don't need to guess.  These things are testable!
 
-This looks good.
+I suppose you're right, but I'm having a bit of a hard time coming up
+with a sensible (reproducible) test case for the page reclaim part of
+this problem set.
 
-And we can also move TASK_NICE(p) < 0 to the upper if(),
-like:
-		if (!rt_task(p) && TASK_NICE(p) < 0) {
-			set_user_nice(p, 0);
-			continue;
-		}
+I'll try running 3 cyclic file scanners sized such that 2 exceed the
+memory footprint of the machine and truncate the 3rd's file after
+warming up.
 
-to reduce one level if() to make code cleaner :)
+That is, unless someone has a saner idea..
 
-Thanks,
-Yong
-
->  				set_user_nice(p, 0);
->  			continue;
->  		}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
