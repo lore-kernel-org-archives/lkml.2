@@ -1,137 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab1DUNL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:11:29 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:49444 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1DUNL0 (ORCPT
+	id S1752366Ab1DUNMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:12:44 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48171 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab1DUNMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:11:26 -0400
-X-SENDER-IP: [85.230.169.19]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiBRAIQssE1V5qkTPGdsb2JhbACJGZwuCwEBAQE3Mohwu08OhWgEkjw
-X-IronPort-AV: E=Sophos;i="4.64,251,1301868000"; 
-   d="scan'208";a="1723415486"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 21 Apr 2011 15:13:17 +0200
-To: riyer@nvidia.com
-Cc: dmitry.torokhov@gmail.com, olof@lixom.net, amartin@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v1] Input: tegra-kbc - add ghost key filter.
-Message-ID: <20110421131317.GA8661@polaris.bitmath.org>
-References: <1303248031-9633-1-git-send-email-riyer@nvidia.com>
+	Thu, 21 Apr 2011 09:12:42 -0400
+Subject: [PATCH 2/3] mem-hwpoison: fix page refcount around isolate_lru_page()
+To: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Apr 2011 17:12:40 +0400
+Message-ID: <20110421131240.17363.15414.stgit@localhost6>
+In-Reply-To: <20110421131239.17363.82750.stgit@localhost6>
+References: <20110421131239.17363.82750.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303248031-9633-1-git-send-email-riyer@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rakesh,
+Drop first page reference only after calling isolate_lru_page()
+to keep page stable reference while isolating.
 
-> Add ghost key filtering support for the Nvidia Tegra matrix keyboard.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
-> v1: Do not report keypresses when matrix keyboard encounters key ghosting.
-> 
->  arch/arm/mach-tegra/include/mach/kbc.h |    1 +
->  drivers/input/keyboard/tegra-kbc.c     |   40 ++++++++++++++++++++++++++++++++
->  2 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-> index 04c7798..bd99744 100644
-> --- a/arch/arm/mach-tegra/include/mach/kbc.h
-> +++ b/arch/arm/mach-tegra/include/mach/kbc.h
-> @@ -58,5 +58,6 @@ struct tegra_kbc_platform_data {
->  
->  	bool wakeup;
->  	bool use_fn_map;
-> +	bool use_ghost_filter;
->  };
->  #endif
-> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-> index 99ce903..bff8bfe 100644
-> --- a/drivers/input/keyboard/tegra-kbc.c
-> +++ b/drivers/input/keyboard/tegra-kbc.c
-> @@ -72,6 +72,7 @@ struct tegra_kbc {
->  	unsigned int repoll_dly;
->  	unsigned long cp_dly_jiffies;
->  	bool use_fn_map;
-> +	bool use_ghost_filter;
->  	const struct tegra_kbc_platform_data *pdata;
->  	unsigned short keycode[KBC_MAX_KEY * 2];
->  	unsigned short current_keys[KBC_MAX_KPENT];
-> @@ -285,6 +286,44 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
->  	}
->  
->  	/*
-> +	 * Matrix keyboard designs are prone to keyboard ghosting.
-> +	 * Ghosting occurs if there are 3 keys such that -
-> +	 * any 2 of the 3 keys share a row, and any 2 of them share a column.
-> +	 * If so ignore the keypresses for this iteration.
-> +	 */
-> +	if ((kbc->use_ghost_filter) && (num_down >= 3)) {
-> +		for (i = 0; i < num_down; i++) {
-> +			unsigned int j;
-> +			u8 curr_col = scancodes[i] & 0x07;
-> +			u8 curr_row = scancodes[i] >> KBC_ROW_SHIFT;
-> +			bool key_in_same_row = false;
-> +			bool key_in_same_col = false;
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ mm/memory-failure.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-How about moving these outside the loop,
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b9a5ee..a17d31e 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1440,16 +1440,12 @@ int soft_offline_page(struct page *page, int flags)
+ 	 */
+ 	ret = invalidate_inode_page(page);
+ 	unlock_page(page);
+-
+ 	/*
+-	 * Drop count because page migration doesn't like raised
+-	 * counts. The page could get re-allocated, but if it becomes
+-	 * LRU the isolation will just fail.
+ 	 * RED-PEN would be better to keep it isolated here, but we
+ 	 * would need to fix isolation locking first.
+ 	 */
+-	put_page(page);
+ 	if (ret == 1) {
++		put_page(page);
+ 		ret = 0;
+ 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
+ 		goto done;
+@@ -1461,6 +1457,11 @@ int soft_offline_page(struct page *page, int flags)
+ 	 * handles a large number of cases for us.
+ 	 */
+ 	ret = isolate_lru_page(page);
++	/*
++	 * Drop page reference which is came from get_any_page()
++	 * successful isolate_lru_page() already took another one.
++	 */
++	put_page(page);
+ 	if (!ret) {
+ 		LIST_HEAD(pagelist);
+ 
 
-> +
-> +			/*
-> +			 * Find 2 keys such that one key is in the same row
-> +			 * and the other is in the same column as the i-th key.
-> +			 */
-> +			for (j = 0; j < num_down; j++) {
-
-using j = i + 1 here,
-
-> +				u8 col = scancodes[j] & 0x07;
-> +				u8 row = scancodes[j] >> KBC_ROW_SHIFT;
-> +
-> +				/* Skip checking the i-th key. */
-> +				if (i == j)
-> +					continue;
-
-skipping this,
-
-> +
-> +				if (col == curr_col)
-> +					key_in_same_col = true;
-> +				if (row == curr_row)
-> +					key_in_same_row = true;
-> +			}
-> +			if (key_in_same_col && key_in_same_row) {
-> +				spin_unlock_irqrestore(&kbc->lock, flags);
-> +				return;
-> +			}
-
-and placing this test after the irqrestore instead?
-
-> +		}
-> +	}
-> +
-> +	/*
->  	 * If the platform uses Fn keymaps, translate keys on a Fn keypress.
->  	 * Function keycodes are KBC_MAX_KEY apart from the plain keycodes.
->  	 */
-> @@ -652,6 +691,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
->  		input_dev->keycodemax *= 2;
->  
->  	kbc->use_fn_map = pdata->use_fn_map;
-> +	kbc->use_ghost_filter = pdata->use_ghost_filter;
->  	keymap_data = pdata->keymap_data ?: &tegra_kbc_default_keymap_data;
->  	matrix_keypad_build_keymap(keymap_data, KBC_ROW_SHIFT,
->  				   input_dev->keycode, input_dev->keybit);
-> -- 
-> 1.7.0.4
-
-Thanks,
-Henrik
