@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab1DVFFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 01:05:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47273 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab1DVFFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 01:05:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=iYxCtW+rWdUdIyeptmHoHO7hHFZByjulyvNLf8+JNX8lOIq+966Tin4BUTBA2hRXhv
-         f8uYb+7DSgWT5jDcQU/gQrb5qyLI71ZbqjnW2MkW3XHECmNZ/r1ZBoEVo+2dfZYCvy0O
-         eZdw2ITToTTP7WfB0I3TTGgbNrYny9eFo1LoM=
-Message-ID: <4DB10C79.4020606@gmail.com>
-Date: Fri, 22 Apr 2011 02:04:57 -0300
-From: Daniel Hilst Selli <danielhilst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110325 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1751693Ab1DVF7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 01:59:07 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34951 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142Ab1DVF7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 01:59:03 -0400
+Date: Thu, 21 Apr 2011 12:54:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Moore <paul.moore@hp.com>
+Cc: Eric Paris <eparis@redhat.com>, Dave Jones <davej@redhat.com>,
+        sds@tycho.nsa.gov, jmorris@namei.org, eparis@parisplace.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, selinux@tycho.nsa.gov
+Subject: Re: suspicious rcu_dereference_check in security/selinux/netnode.c
+Message-ID: <20110421195451.GK2235@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110420183543.GA11965@redhat.com>
+ <1303324924.1708.31.camel@unknown001a4b0c2895>
+ <201104201530.00140.paul.moore@hp.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: brctl + broadcom wireless card == bug ?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104201530.00140.paul.moore@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the thing
+On Wed, Apr 20, 2011 at 03:29:59PM -0400, Paul Moore wrote:
+> On Wednesday, April 20, 2011 2:42:04 PM Eric Paris wrote:
+> > [added paul] EOM
+> > 
+> > On Wed, 2011-04-20 at 14:35 -0400, Dave Jones wrote:
+> > > ===================================================
+> > > 
+> > >  [ INFO: suspicious rcu_dereference_check() usage. ]
+> > >  ---------------------------------------------------
+> > >  security/selinux/netnode.c:193 invoked rcu_dereference_check() without
+> > >  protection!
+> > >  
+> > >  other info that might help us debug this:
+> > >  
+> > >  rcu_scheduler_active = 1, debug_locks = 0
+> > >  
+> > >  1 lock held by a.out/2018:
+> > >   #0:  (sel_netnode_lock){+.....}, at: [<ffffffff81212ab7>]
+> > >   sel_netnode_sid+0x9e/0x267
+> > >  
+> > >  stack backtrace:
+> > >  Pid: 2018, comm: a.out Not tainted 2.6.39-rc4+ #3
+> > >  
+> > >  Call Trace:
+> > >   [<ffffffff81084908>] lockdep_rcu_dereference+0xa8/0xb0
+> > >   [<ffffffff81212c0d>] sel_netnode_sid+0x1f4/0x267
+> > >   [<ffffffff81212a19>] ? sel_netnode_find+0xe3/0xe3
+> > >   [<ffffffff8120d564>] selinux_socket_bind+0x1cf/0x26f
+> > >   [<ffffffff81086c08>] ? lock_release+0x181/0x18e
+> > >   [<ffffffff81100db8>] ? might_fault+0xa5/0xac
+> > >   [<ffffffff81100d6f>] ? might_fault+0x5c/0xac
+> > >   [<ffffffff812073f1>] security_socket_bind+0x16/0x18
+> > >   [<ffffffff813ee0e9>] sys_bind+0x73/0xcf
+> > >   [<ffffffff814c5d7a>] ? sysret_check+0x2e/0x69
+> > >   [<ffffffff810870cf>] ? trace_hardirqs_on_caller+0x10b/0x12f
+> > >   [<ffffffff810a9efb>] ? audit_syscall_entry+0x11c/0x148
+> > >   [<ffffffff81255e2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > >   [<ffffffff814c5d42>] system_call_fastpath+0x16/0x1b
+> > > 
+> > > something like this perhaps ?
+> > > 
+> > > 	Dave
+> > > 
+> > > diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+> > > index 65ebfe9..d0c38ba 100644
+> > > --- a/security/selinux/netnode.c
+> > > +++ b/security/selinux/netnode.c
+> > > @@ -188,9 +188,11 @@ static void sel_netnode_insert(struct sel_netnode
+> > > *node)
+> > > 
+> > >  	list_add_rcu(&node->list, &sel_netnode_hash[idx].list);
+> > >  	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
+> > >  	
+> > >  		struct sel_netnode *tail;
+> > > 
+> > > +		rcu_read_lock();
+> > > 
+> > >  		tail = list_entry(
+> > >  		
+> > >  			rcu_dereference(sel_netnode_hash[idx].list.prev),
+> > >  			struct sel_netnode, list);
+> > > 
+> > > +		rcu_read_unlock();
+> > > 
+> > >  		list_del_rcu(&tail->list);
+> > >  		call_rcu(&tail->rcu, sel_netnode_free);
+> > >  	
+> > >  	} else
+> 
+> [Ooops, forgot to hit reply-all on the first attempt]
+> 
+> Hmm, I think the correct fix might be to just remove the rcu_dereference() 
+> call since this is protected by a spin lock (see sel_netnode_sid_slow()).  I 
+> may be wrong, but I thought rcu locks/derefs were not needed when a spin lock 
+> was held, yes?
+> 
+> Regardless of the fix, the same thing should probably be done to the 
+> sel_netport_* versions of these functions.
 
-I create a bridge with
-brctl addbr br0
+The lock is sel_netnode_lock, correct?  Then the best approach is as
+follows:
 
-make it up
-ifconfig br0 promisc up
+ 		tail = list_entry(
+ 			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
+						  lockdep_is_held(&sel_netnode_lock)),
+ 			struct sel_netnode, list);
 
-Hi people I'm having trouble to setting an bridge configuration. Seams
-that brctl crashes my wl module.
+Give or take long lines, anyway...  :-(
 
-Here is what I do..
-add my wireless eth to it
-brctl addif eth1 br0
+This way, if someone mistakenly calls this function without holding
+the lock, CONFIG_PROVE_RCU will know to complain.
 
-and then try to get an ip from router
-dhcpcd br0
+And Paul Moore is quite correct when he says that rcu_read_lock() is
+not needed in this case.
 
-What's happen here? I get an timeout error
-
-Then I search in my wpa_gui, try to reconnect and get 'Association 
-request to the driver failed'
-and can't connect. So I do `modprobe -r wl && modprobe wl` that seams to 
-work (I can connect) but after such
-the eth1 seams to auto-detach from br0. To make it short..
-
-brctrl addif eth1 br0 => breaks my wl module
-modprobe -r wl && modprobe wl => makes eth1 desapear from br0
-
-
-Seems a deadlock for me :-(
-
-Details:
-- my card is a broadcom: 12:00.0 Network controller: Broadcom 
-Corporation Device 4727 (rev 01)
-- the module is the broadcom proprietary module
-- I'm using gentoo 2.36: Linux gentoo 2.6.36-gentoo-r8 #2 SMP Thu Apr 21 
-11:46:16 BRT 2011 x86_64 Intel(R) Core(TM) i3 CPU M 370 @ 2.40GHz 
-GenuineIntel GNU/Linux
-
--- 
-"Do or do not... there is no try" Yoda Master
+							Thanx, Paul
