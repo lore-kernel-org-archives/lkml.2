@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab1DUNMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 09:12:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48168 "EHLO
+	id S1752605Ab1DUNMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 09:12:54 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48176 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab1DUNMm (ORCPT
+	with ESMTP id S1752207Ab1DUNMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 09:12:42 -0400
-Subject: [PATCH 1/3] mem-hotplug: call isolate_lru_page with elevated refcount
+	Thu, 21 Apr 2011 09:12:43 -0400
+Subject: [PATCH 3/3] mm: strictly require elevated page refcount in
+ isolate_lru_page()
 To: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 CC: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Apr 2011 17:12:39 +0400
-Message-ID: <20110421131239.17363.82750.stgit@localhost6>
+Date: Thu, 21 Apr 2011 17:12:42 +0400
+Message-ID: <20110421131242.17363.49785.stgit@localhost6>
+In-Reply-To: <20110421131239.17363.82750.stgit@localhost6>
+References: <20110421131239.17363.82750.stgit@localhost6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,41 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isolate_lru_page() must be called only with stable reference to page.
-So, let's grab normal page reference.
+isolate_lru_page() must be called only with stable reference to the page,
+this is what is written in the comment above it, this is reasonable.
+
+current isolate_lru_page() users and its page extra reference sources:
+
+mm/huge_memory.c
+__collapse_huge_page_isolate()		- reference from pte
+
+mm/memcontrol.c
+mem_cgroup_move_parent()		- get_page_unless_zero()
+mem_cgroup_move_charge_pte_range()	- reference from pte
+
+mm/memory-failure.c
+soft_offline_page()			- fixed, reference from get_any_page()
+delete_from_lru_cache() - reference from caller or get_page_unless_zero()
+[seems like there bug, because __memory_failure() can call page_action() for
+ hpages tail, but it is ok for isolate_lru_page(), tail getted and not in lru]
+
+mm/memory_hotplug.c
+do_migrate_range()			- fixed, get_page_unless_zero()
+
+mm/mempolicy.c
+migrate_page_add()			- reference from pte
+
+mm/migrate.c
+do_move_page_to_node_array()		- reference from follow_page()
+
+mlock.c					- various external references
+
+mm/vmscan.c
+putback_lru_page()			- reference from isolate_lru_page()
+
+It seems that all isolate_lru_page() users are ready now for this restriction.
+So, let's replace redundant get_page_unless_zero() with get_page() and
+add page initial reference count check with VM_BUG_ON()
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/memory_hotplug.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ mm/vmscan.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 9ca1d60..0a19109 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -705,7 +705,7 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 		if (!pfn_valid(pfn))
- 			continue;
- 		page = pfn_to_page(pfn);
--		if (!page_count(page))
-+		if (!get_page_unless_zero(page))
- 			continue;
- 		/*
- 		 * We can skip free pages. And we can only deal with pages on
-@@ -713,6 +713,7 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 		 */
- 		ret = isolate_lru_page(page);
- 		if (!ret) { /* Success */
-+			put_page(page);
- 			list_add_tail(&page->lru, &source);
- 			move_pages--;
- 			inc_zone_page_state(page, NR_ISOLATED_ANON +
-@@ -724,6 +725,7 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 			       pfn);
- 			dump_page(page);
- #endif
-+			put_page(page);
- 			/* Because we don't have big zone->lock. we should
- 			   check this again here. */
- 			if (page_count(page)) {
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f6b435c..0175f39 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1201,13 +1201,16 @@ int isolate_lru_page(struct page *page)
+ {
+ 	int ret = -EBUSY;
+ 
++	VM_BUG_ON(!page_count(page));
++
+ 	if (PageLRU(page)) {
+ 		struct zone *zone = page_zone(page);
+ 
+ 		spin_lock_irq(&zone->lru_lock);
+-		if (PageLRU(page) && get_page_unless_zero(page)) {
++		if (PageLRU(page)) {
+ 			int lru = page_lru(page);
+ 			ret = 0;
++			get_page(page);
+ 			ClearPageLRU(page);
+ 
+ 			del_page_from_lru_list(zone, page, lru);
 
