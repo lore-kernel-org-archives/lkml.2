@@ -1,54 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1DUVDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:03:03 -0400
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:65306 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752428Ab1DUVDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:03:01 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Apr 2011 17:03:00 EDT
-X-AuditID: 1209190e-b7c80ae0000047dd-ef-4db09a5e1004
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <1303414954-3315-1-git-send-email-josef@redhat.com>
-Date: Thu, 21 Apr 2011 16:45:54 -0400
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org
+	id S1754406Ab1DUVGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:06:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11956 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752836Ab1DUVGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:06:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
+   d="scan'208";a="736683588"
+Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+Reply-To: james_p_freyensee@linux.intel.com
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+In-Reply-To: <20110420161025.88299c36.rdunlap@xenotime.net>
+References: <james_p_freyensee@linux.intel.com>
+	 <1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
+	 <20110419161509.21b678d3.rdunlap@xenotime.net>
+	 <1303340700.13457.88.camel@localhost>
+	 <20110420161025.88299c36.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 21 Apr 2011 14:06:39 -0700
+Message-ID: <1303419999.13457.107.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <EB7F482C-0195-4C63-9436-17B417C8DCD7@mit.edu>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-X-Mailer: Apple Mail (2.1084)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsUixG6nrhs3a4OvwcQDchanJyxisph1eQqb
-	xaXHK9gt9uw9yWJxedccNgdWj80rtDze77vK5vF5k1wAcxSXTUpqTmZZapG+XQJXxpTrlxkL
-	NjJWnN/Qz9LA2MDYxcjJISFgInFj2mUmCFtM4sK99WxdjFwcQgL7GCW+H/3ADuFsYJR4s/8L
-	lLOSSaLj4TxmkBZhATuJZVt3soDYvAKGEks3tbOD2MwCWhI3/r0EG8smoCRx59N+sBpOAQeJ
-	03++sYHYLAKqEhN/TGCGqK+Q2PT6DhOELS+x/e0cZoiZVhJnZq5jBbGFBOwleta8BJsjAjTz
-	1PFvQDYH0NmyEk3LMiYwCs5CcsUsJFfMQjJ1ASPzKkbZlNwq3dzEzJzi1GTd4uTEvLzUIl1j
-	vdzMEr3UlNJNjKAg55Tk28H49aDSIUYBDkYlHt7nsRt8hVgTy4orcw8xSnIwKYnyRs4ECvEl
-	5adUZiQWZ8QXleakFh9ilOBgVhLhXdsElONNSaysSi3Kh0lJc7AoifPOlFT3FRJITyxJzU5N
-	LUgtgsnKcHAoSfCeBhkqWJSanlqRlplTgpBm4uAEGc4DNHwnSA1vcUFibnFmOkT+FKMxx+FD
-	M/YzcjR1zd7PKMSSl5+XKiXOewekVACkNKM0D24aLFG9YhQHek6Ydx9IFQ8wycHNewW0iglo
-	1dIr60FWlSQipKQaGBXY561rFXnwean/6m+7N7Ju8NX+p3hU9VGTVcCjQ7wyLyI5gxYv4u1e
-	U/RWxuUCf0Tm3ia/jISYxX9l2cI0Hl/nX3WsP2benpcxB8OiUyf4S+ZbbOpeKPtXwXf37Wlp
-	N66YeWpue7TJxe7AsfeWQrpNJrlFAX99z5TrTz3Vte/KyvfHVznIr1ZiKc5INNRiLipOBAB4
-	d7cZLwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-04-20 at 16:10 -0700, Randy Dunlap wrote:
+> On Wed, 20 Apr 2011 16:05:00 -0700 J Freyensee wrote:
+> 
+> > On Tue, 2011-04-19 at 16:15 -0700, Randy Dunlap wrote:
+> > 
+> > A couple more comments below.
+> > 
+> > > On Tue, 19 Apr 2011 15:58:08 -0700 james_p_freyensee@linux.intel.com wrote:
+> 
+> 
+> > > > + * @max_IDS: The max amount of available write IDs to use.
+> > > > + * @baseID:  The starting SW channel ID, based on the Intel
+> > > > + *           PTI arch.
+> > > > + *
+> > > > + * @return: pti_masterchannel struct containing master, channel ID address,
+> > > 
+> > > No '@' on "return".
+> > 
+> > Why no '@' on 'return' when just by doing a 'grep -Ri "@return" drivers/
+> > | wc -l' I count 369 examples of '@return' being used already in the
+> > kernel?  It looks like an acceptable format to me.
+> 
+> It's not.  See Documentation/kernel-doc-nano-HOWTO.txt.
+> '@' goes on function parameters (or struct members).
+> Not on return values.  Those other places should be fixed, but
+> it's just not a high priority thing to do.
+> 
 
-On Apr 21, 2011, at 3:42 PM, Josef Bacik wrote:
+How should I document return values of functions?  I would like them
+documented somehow.
 
-> +	case SEEK_DATA:
-> +	case SEEK_HOLE:
-> +		return -EINVAL;
-> 	}
+kernel-doc-nano-HOWTO.txt does not say other than give examples of what
+I don't want to do and to 'Take a look around the source tree for
+examples'.  
 
-Maybe we should be returning EOPNOTSUPP?
+So one example I found that documents return values does not seem to
+follow kernel-doc-nano-HOWTO.txt:
 
--- Ted
+(acpi/acpica/dsutils.c)
+ /*******************************************************************************
+ *
+ * FUNCTION:    acpi_ds_clear_implicit_return
+ *
+ * PARAMETERS:  walk_state          - Current State
+ *
+ * RETURN:      None.
+ *
+
+then another driver, net/wireless/libertas/tx.c, does exactly what I do
+that I'm being advised against (minus the 's' at the end of 'return'):
+
+/**
+ *  @brief This function sends to the host the last transmitted packet,
+ *  filling the radiotap headers with transmission information.
+ *
+ *  @param priv     A pointer to struct lbs_private structure
+ *  @param status   A 32 bit value containing transmission status.
+ *
+ *  @returns void
+ */
+
+
+
+> 
+> > > > + * or 0 for error.
+> > > > + *
+> > > > + * Each bit in the arrays ia_app and ia_os correspond to a master and
+> > > > + * channel id. The bit is one if the id is taken and 0 if free. For
+> > > > + * every master there are 128 channel id's.
+> > > > + */
+> > > > +static struct pti_masterchannel *getID(u8 *IDarray, int max_IDS, int baseID)
+> > > > +{
+> 
+> 
+> > > > +/**
+> > > > + * pti_request_masterchannel() - Kernel API function used to allocate
+> > > > + *                                a master, channel ID address to write to
+> > > > + *                                PTI HW.
+> > > > + * @type: 0- request Application  master, channel aperture ID write address.
+> > > > + *        1- request OS master, channel aperture ID write address.
+> > > > + *        2- request Modem master, channel aperture ID write
+> > > > + *           address.
+> > > > + *        Other values, error.
+> > > > + * @return: pti_masterchannel struct or 0 for error.
+> > > 
+> > > No '@' on "return".
+> > 
+> > Same reason here.
+> 
+> Same answer here.
+> 
+> 
+> 
+> > > > + *
+> > > > + * @return int : Success = 0, otherwise fail.
+> > > 
+> > > No '@' on "return".
+> > 
+> > Same explanation as above.
+> 
+> Same reply also.
+> 
+> 
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+
 
