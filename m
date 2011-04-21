@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1DUO41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:56:27 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:16433 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab1DUO40 (ORCPT
+	id S1754395Ab1DUO6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:58:44 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40924 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab1DUO6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:56:26 -0400
-Message-ID: <4DB04588.9000201@atmel.com>
-Date: Thu, 21 Apr 2011 16:56:08 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	Thu, 21 Apr 2011 10:58:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=vqdTsi1Sa7KvZVLQYEV/twQf4Fss+z22Ysy8Dl+ft0N2X5utUggkn0OnjFiWhMKONd
+         YFJo/uGvBUjNUIrUDZGuSmGwtQN93GOT8nlXceG62rxKY7Do6qbf8GKfA6dydCgUneSc
+         f1iNrj8tHaYw7DDe4mEnkQiZ+Q8sf7KFyTEOQ=
+From: Jordi Pujol <jordipujolp@gmail.com>
+To: Michal Suchanek <hramrach@centrum.cz>
+Subject: Re: [PATCH] tmpfs: implement generic xattr support
+Date: Thu, 21 Apr 2011 16:58:35 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38-3.jpp.2-lnet-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Phillip Lougher <phillip.lougher@gmail.com>,
+        Andreas Dilger <adilger@dilger.ca>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Eric Paris <eparis@redhat.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <871v0wvuod.fsf@tucsk.pomaz.szeredi.hu> <BANLkTikv+iCVgG_cgejqJjuS0xURrAvQuw@mail.gmail.com>
+In-Reply-To: <BANLkTikv+iCVgG_cgejqJjuS0xURrAvQuw@mail.gmail.com>
 MIME-Version: 1.0
-To: Igor Plyatov <plyatov@gmail.com>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-at91: gsia18s board improvements and bug fixes
-References: <1303291399-4075-1-git-send-email-plyatov@gmail.com>
-In-Reply-To: <1303291399-4075-1-git-send-email-plyatov@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104211658.35618.jordipujolp@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Igor,
+A Dijous 21 Abril 2011 12:59:01, Michal Suchanek va escriure:
+> Now it's time to build a larger image I guess.
 
-Le 20/04/2011 11:23, Igor Plyatov :
-> * AT91_PIN_Pxxx port names replaced by human readable GPO_xxxx, GPI_xxxx,
->   GPIO_xxxx names. This simplify source code and schematic maintenance.
+Hello,
 
-Maybe it simplifies schematic reading because the actual cpu pin names
-are not indicated on your schematic... But for code, the AT91 pin names
-are required, so, no for this part of the patch.
-You may know that there is an effort ongoing to minimize the amount of
-not needed / duplicated information in the kernel, I am afraid but I
-think this renaming is not needed.
+I have done it, building a desktop image that contains kde4 and some services,
+The tests show that tmpfs is broken, it makes first operations but at some 
+point it becomes erratic; that occurs in non-persistent mode, where 
+overlayfs upperdir is on tmpfs, and in persistent mode also but in this case 
+more user working is needed before tmpfs failure,
 
-Moreover, I think that the "Buttons" part of the file:
-arch/arm/mach-at91/include/mach/gsia18s.h
-should be removed.
+in Linux single user mode I have installed the nvidia packages and driver 
+using dpkg, only some files are installed, therefore I tried creating manually 
+a required directory and in this manner the process has done some steps more.
 
-> * Active logic levels and default states corrected for GPOs.
+kernel source:
 
-Ok for this.
+http://livenet.selfip.com/ftp/debian/linux-2.6/linux-2.6.38-3.jpp.3-
+lnet_2.6.38-15.tar.bz2
 
-> * Replace small functions which use platform_register_device() by its direct
->   calls.
+logs:
 
-Ok for this.
+http://livenet.selfip.com/ftp/debian/overlayfs/test-tmpfs-xattrs.tar.bz2
 
-> * Remove GPIO_CARD_UNMOUNT_1 gpio_keys_button, because it not used.
+thanks,
 
-Ok for this.
+Jordi Pujol
 
-> * debounce_interval added for critical buttons.
-
-Ok for this.
-
-> * Remove unneeded GPI setup code for buttons, because this done by corresponding
->   driver.
-
-I do not see this, can you elaborate?
-
-> * pcf8574x_0x20_setup() and pcf8574x_0x20_teardown functions small refactoring.
-
-Ok for this.
-
-> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
-
-So, can you please rewrite your patch, we will be pleased to integrate
-it in a "fix" update of at91 Linux.
-
-Thanks, best regards,
--- 
-Nicolas Ferre
-
+Live never ending Tale
+GNU/Linux Live forever!
+http://livenet.selfip.com
