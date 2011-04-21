@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1DUV5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:57:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43129 "EHLO ogre.sisk.pl"
+	id S1755328Ab1DUV6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:58:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:4896 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab1DUV5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:57:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH] PM / Wakeup: Fix initialization of wakeup-related device sysfs files
-Date: Thu, 21 Apr 2011 23:57:42 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Tino Keitel <tino.keitel@tikei.de>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752998Ab1DUV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:58:31 -0400
+Subject: Re: [RFC PATCH] kbuild: implement several W= levels
+From: Joe Perches <joe@perches.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
+In-Reply-To: <20110421213903.GB9660@merkur.ravnborg.org>
+References: <20110421213903.GB9660@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Apr 2011 14:58:29 -0700
+Message-ID: <1303423109.24766.97.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104212357.43052.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thu, 2011-04-21 at 23:39 +0200, Sam Ravnborg wrote:
+> Building a kernel with "make W=1" produce far too much noise
+> to be usefull.
+> Divide the warning options in three groups:
+> W=1 - usefull warning options
+> W=2 - noisy but semi usefull warnign options
+> W=3 - almost pure noise options
+> +warning-1 := -Wextra
+[]
+> +warning-2 += -Waggregate-return
 
-It turns out that some PCI devices are only found to be
-wakeup-capable during registration, in which case, when
-device_set_wakeup_capable() is called, device_is_registered() already
-returns 'true' for the given device, but dpm_sysfs_add() hasn't been
-called for it yet.  This leads to situations in which the device's
-power.can_wakeup flag is not set as requested because of failing
-wakeup_sysfs_add() and its wakeup-related sysfs files are not
-created, although they should be present.  This is a post-2.6.38
-regression introduced by commit cb8f51bdadb7969139c2e39c2defd4cde98c1
-(PM: Do not create wakeup sysfs files for devices that cannot wake
-up).
+This is a different form for this first warning-2 declaration
+than the first warning-1 declaration.
 
-To work around this problem initialize the device's power.entry
-field to an empty list head and make device_set_wakeup_capable()
-check if it is still empty before attempting to add the devices
-wakeup-related sysfs files with wakeup_sysfs_add().  Namely, if
-power.entry is still empty at this point, device_pm_add() hasn't been
-called yet for the device and its wakeup-related files will be
-created later, so device_set_wakeup_capable() doesn't have to create
-them.
+Maybe this should be := instead?
 
-Reported-by: Tino Keitel <tino.keitel@tikei.de>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/main.c   |    1 +
- drivers/base/power/wakeup.c |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Maybe there's a way to do something akin to
 
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -63,6 +63,7 @@ void device_pm_init(struct device *dev)
- 	dev->power.wakeup = NULL;
- 	spin_lock_init(&dev->power.lock);
- 	pm_runtime_init(dev);
-+	INIT_LIST_HEAD(&dev->power.entry);
- }
- 
- /**
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -258,7 +258,7 @@ void device_set_wakeup_capable(struct de
- 	if (!!dev->power.can_wakeup == !!capable)
- 		return;
- 
--	if (device_is_registered(dev)) {
-+	if (device_is_registered(dev) && !list_empty(&dev->power.entry)) {
- 		if (capable) {
- 			if (wakeup_sysfs_add(dev))
- 				return;
+warning_type(level, option)
+
+So these become
+
+warning_type(1, extra)
+warning_type(2, aggregate-return)
+
+etc.
+
+
