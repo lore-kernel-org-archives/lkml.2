@@ -1,122 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab1DUMKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 08:10:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37088 "EHLO hera.kernel.org"
+	id S1753022Ab1DUMLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 08:11:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37109 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab1DUMKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 08:10:40 -0400
-Date: Thu, 21 Apr 2011 12:09:51 GMT
-From: tip-bot for David Rientjes <rientjes@google.com>
-Message-ID: <tip-37f8527dbfd05af0f670aa02370d0c4cca7fbda6@git.kernel.org>
+	id S1750884Ab1DUMLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 08:11:06 -0400
+Date: Thu, 21 Apr 2011 12:10:44 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-dffa4b2f62ff28c982144c7033001b1ece4d3532@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, herrmann.der.user@googlemail.com,
-        tj@kernel.org, tglx@linutronix.de, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
+        tony.luck@intel.com, rja@sgi.com, Nagananda.Chumbalkar@hp.com,
+        tglx@linutronix.de, prarit@redhat.com, mingo@elte.hu,
+        borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, herrmann.der.user@googlemail.com,
-        tj@kernel.org, tglx@linutronix.de, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
-In-Reply-To: <alpine.DEB.2.00.1104201918110.12634@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104201918110.12634@chino.kir.corp.google.com>
+        tony.luck@intel.com, rja@sgi.com, Nagananda.Chumbalkar@hp.com,
+        tglx@linutronix.de, prarit@redhat.com, mingo@elte.hu,
+        borislav.petkov@amd.com
+In-Reply-To: <20110420102349.GB1361@aftab>
+References: <20110420102349.GB1361@aftab>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] Revert "x86, NUMA: Fix fakenuma boot failure"
-Git-Commit-ID: 37f8527dbfd05af0f670aa02370d0c4cca7fbda6
+Subject: [tip:x86/mce] x86, mce: Drop the default decoding notifier
+Git-Commit-ID: dffa4b2f62ff28c982144c7033001b1ece4d3532
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Apr 2011 12:09:54 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Apr 2011 12:10:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  37f8527dbfd05af0f670aa02370d0c4cca7fbda6
-Gitweb:     http://git.kernel.org/tip/37f8527dbfd05af0f670aa02370d0c4cca7fbda6
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Wed, 20 Apr 2011 19:19:10 -0700
+Commit-ID:  dffa4b2f62ff28c982144c7033001b1ece4d3532
+Gitweb:     http://git.kernel.org/tip/dffa4b2f62ff28c982144c7033001b1ece4d3532
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 20 Apr 2011 12:23:49 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 21 Apr 2011 11:30:59 +0200
+CommitDate: Thu, 21 Apr 2011 11:35:10 +0200
 
-Revert "x86, NUMA: Fix fakenuma boot failure"
+x86, mce: Drop the default decoding notifier
 
-Andreas Herrmann reported that 7d6b46707f24 ("x86, NUMA: Fix fakenuma
-boot failure") causes certain physical NUMA topologies (for example
-AMD Magny-Cours) to move sibling cpus to a single node when in reality
-they are in separate domains.
+The default notifier doesn't make a lot of sense to call in the
+correctable errors case. Drop it and emit the mcelog decoding
+hint only in the uncorrectable errors case and when no notifier
+is registered. Also, limit issuing the "mcelog --ascii" message
+in the rare case when we dump unreported CEs before panicking.
 
-This may result in some nodes being completely void of cpus, which
-doesn't accurately represent the correct topology. The system will
-boot, but will have suboptimal NUMA performance.
+While at it, remove unused old x86_mce_decode_callback from the
+header.
 
-This commit was intended as a fix for NUMA emulation, but should
-not cause a regression for real NUMA machines as a side effect.
-
-( There will be a separate fix for the numa-debug code, which
-  will not affect physical topologies. )
-
-Reported-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1104201918110.12634@chino.kir.corp.google.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>
+Cc: Russ Anderson <rja@sgi.com>
+Link: http://lkml.kernel.org/r/20110420102349.GB1361@aftab
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/smpboot.c |   23 -----------------------
- 1 files changed, 0 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/mce.h       |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c |   24 +++++++-----------------
+ 2 files changed, 7 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 8ed8908..c2871d3 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -312,26 +312,6 @@ void __cpuinit smp_store_cpu_info(int id)
- 		identify_secondary_cpu(c);
- }
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..021979a 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
+ static inline void enable_p5_mce(void) {}
+ #endif
  
--static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
+-extern void (*x86_mce_decode_callback)(struct mce *m);
+-
+ void mce_setup(struct mce *m);
+ void mce_log(struct mce *m);
+ DECLARE_PER_CPU(struct sys_device, mce_dev);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68e2303..ff1ae9b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -105,20 +105,6 @@ static int			cpu_missing;
+ ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
+ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
+ 
+-static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+-			       void *data)
 -{
--	int node1 = early_cpu_to_node(cpu1);
--	int node2 = early_cpu_to_node(cpu2);
+-	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
+-	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
 -
--	/*
--	 * Our CPU scheduler assumes all logical cpus in the same physical cpu
--	 * share the same node. But, buggy ACPI or NUMA emulation might assign
--	 * them to different node. Fix it.
--	 */
--	if (node1 != node2) {
--		pr_warning("CPU %d in node %d and CPU %d in node %d are in the same physical CPU. forcing same node %d\n",
--			   cpu1, node1, cpu2, node2, node2);
--
--		numa_remove_cpu(cpu1);
--		numa_set_node(cpu1, node2);
--		numa_add_cpu(cpu1);
--	}
+-	return NOTIFY_STOP;
 -}
 -
- static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+-static struct notifier_block mce_dec_nb = {
+-	.notifier_call = default_decode_mce,
+-	.priority      = -1,
+-};
+-
+ /* MCA banks polled by the period polling timer for corrected events */
+ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
+ 
+ static void print_mce(struct mce *m)
  {
- 	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
-@@ -340,7 +320,6 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
- 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
- 	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
- 	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
--	check_cpu_siblings_on_same_node(cpu1, cpu2);
++	int ret = 0;
++
+ 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
+ 
+@@ -239,7 +227,11 @@ static void print_mce(struct mce *m)
+ 	 * Print out human-readable details about the MCE error,
+ 	 * (if the CPU has an implementation for that)
+ 	 */
+-	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	if (ret == NOTIFY_STOP)
++		return;
++
++	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
  }
  
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+@@ -1721,8 +1713,6 @@ __setup("mce", mcheck_enable);
  
-@@ -382,12 +361,10 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
- 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
--			check_cpu_siblings_on_same_node(cpu, i);
- 		}
- 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_core_mask(i));
--			check_cpu_siblings_on_same_node(cpu, i);
- 			/*
- 			 *  Does this new cpu bringup a new core?
- 			 */
+ int __init mcheck_init(void)
+ {
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
+-
+ 	mcheck_intel_therm_init();
+ 
+ 	return 0;
