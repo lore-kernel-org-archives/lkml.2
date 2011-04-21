@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1DUUFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 16:05:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37532 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751499Ab1DUUFU (ORCPT
+	id S1753343Ab1DUUIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 16:08:38 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:54917 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab1DUUIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 16:05:20 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+	Thu, 21 Apr 2011 16:08:38 -0400
+Date: Thu, 21 Apr 2011 22:08:36 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Dave Jones <davej@redhat.com>, Joe Perches <joe@perches.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <alpine.DEB.2.00.1104211328000.5741@router.home>
-References: <1303337718.2587.51.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
-	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
-	 <1303403847.4025.11.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211328000.5741@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 15:05:15 -0500
-Message-ID: <1303416315.4025.36.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+        BorislavPetkov <bp@alien8.de>
+Subject: Re: annoying new gcc 4.6.0 warnings.
+Message-ID: <20110421200836.GA31709@merkur.ravnborg.org>
+References: <20110421192117.GA14249@redhat.com> <BANLkTi=srdq69ZG8pWbzWOZLX5KX48DcbQ@mail.gmail.com> <4DB087EC.1010205@caviumnetworks.com> <1303415086.24766.84.camel@Joe-Laptop> <20110421195801.GA15126@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421195801.GA15126@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 13:33 -0500, Christoph Lameter wrote:
-> On Thu, 21 Apr 2011, James Bottomley wrote:
+On Thu, Apr 21, 2011 at 03:58:02PM -0400, Dave Jones wrote:
+> On Thu, Apr 21, 2011 at 12:44:46PM -0700, Joe Perches wrote:
+>  > On Thu, 2011-04-21 at 12:39 -0700, David Daney wrote:
+>  > > Would it make any sense to add a config option to enable the spew for 
+>  > > those that wanted to see it?
+>  > 
+>  > Add it to make W=1 instead?
+>  > See commit 4a5838ad9d2d
 > 
-> > On Thu, 2011-04-21 at 22:16 +0900, KOSAKI Motohiro wrote:
-> > > > This should fix the remaining architectures so they can use CONFIG_SLUB,
-> > > > but I hope it can be tested by the individual arch maintainers like you
-> > > > did for parisc.
-> > >
-> > > ia64 and mips have CONFIG_ARCH_POPULATES_NODE_MAP and it initialize
-> > > N_NORMAL_MEMORY automatically if my understand is correct.
-> > > (plz see free_area_init_nodes)
-> > >
-> > > I guess alpha and m32r have no active developrs. only m68k seems to be need
-> > > fix and we have a chance to get a review...
-> >
-> > Actually, it's not quite a fix yet, I'm afraid.  I've just been
-> > investigating why my main 4 way box got slower with kernel builds:
-> > Apparently userspace processes are now all stuck on CPU0, so we're
-> > obviously tripping over some NUMA scheduling stuff that's missing.
-> 
-> The simplest solution may be to move these arches to use SPARSE instead.
-> AFAICT this was relatively easy for the arm guys.
-> 
-> Here is short guide on how to do that from the mips people:
-> 
-> http://www.linux-mips.org/archives/linux-mips/2008-08/msg00154.html
-> 
-> http://mytechkorner.blogspot.com/2010/12/sparsemem.html
-> 
-> Dave Hansen, Mel: Can you provide us with some help? (Its Easter and so
-> the europeans may be off for awhile)
+> This patch does that. Though I question the usefulness of W=1.
+> I just built powernow-k8.o with W=1, and got 4030 lines of output.
+> That's just insane.
 
-It sort of depends on your definition of easy.  The problem going from
-DISCONTIGMEM to SPARSEMEM is sorting out the section size (the minimum
-indivisible size for a sectional_mem_map array) and also deciding on
-whether you need SPARSEMEM_EXTREME (discontigmem allows arbitrarily
-different sizes for each contiguous region) or
-ARCH_HAS_HOLES_MEMORYMODEL (allows empty mem_map regions as well).  I
-suspect most architectures will want SPARSEMEM_EXTREME (it means that
-the section array isn't fully populated) because the gaps can be huge
-(we've got a 64GB gap on parisc).
+It was discussed to do:
+W=1 - the most usefull warnings
+W=2 - the less usefull warnings
+W=3 - the noise
 
-However, even though I think we can do this going forwards ... I don't
-think we can backport it as a bug fix for the slub panic.
+Or somthing like that.
+But no-one stepped up doing the classification then.
+Should be simple to do.
 
-James
+My gcc (4.3.2) barfed over -Wno-unused-but-set-variable.
+So your patch needs to check if the option is supported.
 
-
+	Sam
