@@ -1,159 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1DUApy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 20:45:54 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37569 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752292Ab1DUApw (ORCPT
+	id S1754432Ab1DUAqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 20:46:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:16266 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab1DUApz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 20:45:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoMDADl7r015LHHJgWdsb2JhbAClSBUBARYmJYhvvlAOhWgE
-Date: Thu, 21 Apr 2011 10:45:47 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20110421004547.GD1814@dastard>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.515923886@intel.com>
- <20110419073523.GF23985@dastard>
- <20110419095740.GC5257@quack.suse.cz>
- <20110419125616.GA20059@localhost>
- <20110420012120.GK23985@dastard>
- <20110420025321.GA14398@localhost>
+	Wed, 20 Apr 2011 20:45:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=axbJ8327+3VWY5ZutzosqAZjQgVftpdqWDCNyR0+Bfzn3NCE/W+JjS4MKceBSxKbPn
+         a2jKfsXW+uxolO9TU04w==
+Date: Wed, 20 Apr 2011 17:45:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc4 (regression: NUMA on multi-node CPUs broken)
+In-Reply-To: <20110420153907.GA9000@alberich.amd.com>
+Message-ID: <alpine.DEB.2.00.1104201722540.15906@chino.kir.corp.google.com>
+References: <BANLkTin1=uPcyBgy9S_2TJASk8qTkeueEA@mail.gmail.com> <20110420153907.GA9000@alberich.amd.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110420025321.GA14398@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 10:53:21AM +0800, Wu Fengguang wrote:
-> On Wed, Apr 20, 2011 at 09:21:20AM +0800, Dave Chinner wrote:
-> > On Tue, Apr 19, 2011 at 08:56:16PM +0800, Wu Fengguang wrote:
-> > > I actually started with wb_writeback() as a natural choice, and then
-> > > found it much easier to do the expired-only=>all-inodes switching in
-> > > move_expired_inodes() since it needs to know the @b_dirty and @tmp
-> > > lists' emptiness to trigger the switch. It's not sane for
-> > > wb_writeback() to look into such details. And once you do the switch
-> > > part in move_expired_inodes(), the whole policy naturally follows.
-> > 
-> > Well, not really. You didn't need to modify move_expired_inodes() at
-> > all to implement these changes - all you needed to do was modify how
-> > older_than_this is configured.
-> > 
-> > writeback policy is defined by the struct writeback_control.
-> > move_expired_inodes() is pure mechanism. What you've done is remove
-> > policy from the struct wbc and moved it to move_expired_inodes(),
-> > which now defines both policy and mechanism.
+On Wed, 20 Apr 2011, Andreas Herrmann wrote:
+
+> Following patch breaks real NUMA on multi-node CPUs like AMD
+> Magny-Cours and should be reverted (or changed to just take effect in
+> case of numa=fake):
 > 
-> > Furhter, this means that all the tracing that uses the struct wbc no
-> > no longer shows the entire writeback policy that is being worked on,
-> > so we lose visibility into policy decisions that writeback is
-> > making.
+>   commit 7d6b46707f2491a94f4bd3b4329d2d7f809e9368
+>   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>   Date:   Fri Apr 15 20:39:01 2011 +0900
 > 
-> Good point! I'm convinced, visibility is a necessity for debugging the
-> complex writeback behaviors.
+>     x86, NUMA: Fix fakenuma boot failure
 > 
-> > This same change is as simple as updating wbc->older_than_this
-> > appropriately after the wb_writeback() call for both background and
-> > kupdate and leaving the lower layers untouched. It's just a policy
-> > change. If you thinkthe mechanism is inefficient, copy
-> > wbc->older_than_this to a local variable inside
-> > move_expired_inodes()....
+>     ...
 > 
-> Do you like something like this? (details will change a bit when
-> rearranging the patchset)
-
-Yeah, this is close to what I had in mind.
-
+>     Thus, this patch implements a reassignment of node-ids if buggy firmware
+>     or numa emulation makes wrong cpu node map. Tt enforce all logical cpus
+>     in the same physical cpu share the same node.
 > 
-> --- linux-next.orig/fs/fs-writeback.c	2011-04-20 10:30:47.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2011-04-20 10:40:19.000000000 +0800
-> @@ -660,11 +660,6 @@ static long wb_writeback(struct bdi_writ
->  	long write_chunk;
->  	struct inode *inode;
->  
-> -	if (wbc.for_kupdate) {
-> -		wbc.older_than_this = &oldest_jif;
-> -		oldest_jif = jiffies -
-> -				msecs_to_jiffies(dirty_expire_interval * 10);
-> -	}
+>     ...
+> 
+>   +static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
+>   +{
+>   +       int node1 = early_cpu_to_node(cpu1);
+>   +       int node2 = early_cpu_to_node(cpu2);
+>   +
+>   +       /*
+>   +        * Our CPU scheduler assumes all logical cpus in the same physical cpu
+>   +        * share the same node. But, buggy ACPI or NUMA emulation might assign
+>   +        * them to different node. Fix it.
+>   +        */
+> 
+>    ...
+> 
+> This is a false assumption. Magny-Cours has two nodes in the same
+> physical package. The scheduler was (kind of) fixed to work around
+> this boot problem for multi-node CPUs (with 2.6.32). If this is also
+> an issue with wrong cpu node maps in case of NUMA emulation this might
+> be fixed similar or this quirk should only be applied in case of NUMA
+> emulation.
+> 
 
-Right here I'd do:
+Right, this yields cpuless nodes that the scheduler can't handle.  Prior 
+to the unification and cleanup, NUMA emulation would bind cpus to all 
+nodes that are allocated on the physical node that it has affinity with on 
+the board.  This causes all nodes to have bound cpus such that 
+node_to_cpumask() correctly reveals the proximity that cpus have to its 
+nodes, either emulated or otherwise.
 
-	if (work->for_kupdate || work->for_background)
-		wbc.older_than_this = &oldest_jif;
+We usually don't touch NUMA code for real architectures to fix a problem 
+that can only happen with NUMA emulation, so 7d6b46707f24 should probably 
+be reverted.
 
-so that the setting of wbc.older_than_this in the loop can trigger
-on whether it is null or not.
+With that patch reverted, NUMA emulation works fine for me; for example, 
+with numa=fake=8:
 
->  	if (!wbc.range_cyclic) {
->  		wbc.range_start = 0;
->  		wbc.range_end = LLONG_MAX;
-> @@ -713,10 +708,17 @@ static long wb_writeback(struct bdi_writ
->  		if (work->for_background && !over_bground_thresh())
->  			break;
->  
-> +		if (work->for_kupdate || work->for_background) {
-> +			oldest_jif = jiffies -
-> +				msecs_to_jiffies(dirty_expire_interval * 10);
-> +			wbc.older_than_this = &oldest_jif;
-> +		}
-> +
+	/sys/devices/system/node/node0/cpulist:0-3
+	/sys/devices/system/node/node1/cpulist:4-7
+	/sys/devices/system/node/node2/cpulist:8-11
+	/sys/devices/system/node/node3/cpulist:12-15
+	/sys/devices/system/node/node4/cpulist:0-3
+	/sys/devices/system/node/node5/cpulist:4-7
+	/sys/devices/system/node/node6/cpulist:8-11
+	/sys/devices/system/node/node7/cpulist:12-15
 
-if you change that to:
+I'm not sure what it's trying to address (yes, there is a problem with the 
+binding for CONFIG_NUMA_EMU && CONFIG_DEBUG_PER_CPU_MAPS, but not 
+otherwise).
 
-		if (wbc.older_than_this) {
-			*wbc.older_than_this = jiffies -
-				msecs_to_jiffies(dirty_expire_interval * 10);
-		}
-
->  		wbc.more_io = 0;
->  		wbc.nr_to_write = write_chunk;
->  		wbc.pages_skipped = 0;
->  
-> +retry_all:
-
-You can get rid of this retry_all label and have the changeover in
-behaviour re-initialise nr_to_write, etc.
-
->  		trace_wbc_writeback_start(&wbc, wb->bdi);
->  		if (work->sb)
->  			__writeback_inodes_sb(work->sb, wb, &wbc);
-> @@ -733,6 +735,17 @@ static long wb_writeback(struct bdi_writ
->  		if (wbc.nr_to_write <= 0)
->  			continue;
->  		/*
-> +		 * No expired inode? Try all fresh ones
-> +		 */
-> +		if ((work->for_kupdate || work->for_background) &&
-> +		    wbc.older_than_this &&
-> +		    wbc.nr_to_write == write_chunk &&
-> +		    list_empty(&wb->b_io) &&
-> +		    list_empty(&wb->b_more_io)) {
-> +			wbc.older_than_this = NULL;
-> +			goto retry_all;
-> +		}
-
-And here only do this for work->for_background as kupdate writeback
-stops when we run out of expired inodes (i.e. it doesn't writeback
-non-expired inodes).
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+KOSAKI-san?
