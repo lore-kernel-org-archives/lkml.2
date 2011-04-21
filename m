@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1DUL4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:56:54 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:59043 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1DUL4w (ORCPT
+	id S1753061Ab1DUMDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 08:03:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47255 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751867Ab1DUMDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:56:52 -0400
-X-SENDER-IP: [85.230.169.19]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlVaAEcbsE1V5qkTPGdsb2JhbACJGpwuCwEBAQE3Mohwu1kOhWgEkjw
-X-IronPort-AV: E=Sophos;i="4.64,251,1301868000"; 
-   d="scan'208";a="183316046"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 21 Apr 2011 13:58:43 +0200
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Richard Nauber <richard.nauber@googlemail.com>,
-        PenMount <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, PenMount <salt@salt.com.tw>
-Subject: Re: [PATCH] HID: add support for PenMount dual-touch panel
-Message-ID: <20110421115843.GA7837@polaris.bitmath.org>
-References: <1303291155-3148-1-git-send-email-salt@salt.com.tw>
- <20110420094700.GA2258@polaris.bitmath.org>
- <BANLkTin7Q3fD3vg90qCk12MGaVEvLBe0Mg@mail.gmail.com>
- <20110420100759.GA2436@polaris.bitmath.org>
- <alpine.LNX.2.00.1104211115570.12035@pobox.suse.cz>
- <BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
+	Thu, 21 Apr 2011 08:03:36 -0400
+Date: Thu, 21 Apr 2011 13:03:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Haojian Zhuang <hzhuang1@marvell.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 13/14] regulator: max8925: fix not add device if
+ missing init data
+Message-ID: <20110421120327.GD11788@opensource.wolfsonmicro.com>
+References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
+ <1303300539-2941-1-git-send-email-haojian.zhuang@marvell.com>
+ <20110421104204.GB11788@opensource.wolfsonmicro.com>
+ <25B60CDC2F704E4E9D88FFD52780CB4C05CF0EF027@SC-VEXCH1.marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinND+uw=JYS4WbwNLAX8P5SF1VGqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CF0EF027@SC-VEXCH1.marvell.com>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Once you are done with testing the last_field_index change, it'd be great
-> > if you could respin the patches so that the first one perfoms this change,
-> > and the second one adds PenMount support on top of it.
-> >
-> > I'll then apply it. Thanks,
-> 
-> Hi Jiri,
-> 
-> I'll do that as soon as Henrik tells me it is working.
+On Thu, Apr 21, 2011 at 04:13:28AM -0700, Haojian Zhuang wrote:
 
-The 3M (0596:0502) and eGalax (0eef:720c) seem to work as expected.
+> >> +static struct regulator_init_data
+> >regulator_pdata[ARRAY_SIZE(regulator_devs)];
 
-Cheers,
-Henrik
+> >That looks really suspicious, what happens if there's two of these
+> >devices in the system?
+
+> It's impossible to use two PMIC in one system. At least, I didn't hear.
+
+I don't believe that.  It's not going to be a common case but it will be
+possible.
+
+> >It's really unclear why the array is needed at all if you're registering
+> >the devices one at a time.
+
+> Although there're a lot of regulators, maybe only parts of them are used.
+> So only add the necessary one. Others will be passed. The number is got
+> from platform data.
+
+You're missing the point here.  You're registering a device at a time
+but for some reason the platform data is being stored in an array in
+order to pass it in, even though only a single element in the array is
+in use.
+
+> >> -	if (pdata && pdata->regulator[0]) {
+> >> -		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[0],
+> >> -				      ARRAY_SIZE(regulator_devs),
+> >> -				      &regulator_resources[0], 0);
+> >> -		if (ret < 0) {
+> >> -			dev_err(chip->dev, "Failed to add regulator subdev\n");
+> >> -			goto out_dev;
+> >> -		}
+
+> >Surely the only change that's needed here is to remove the check to see
+> >if pdata->regulator[0] is non-null?
+
+> All above changes are necessary to me.
+
+What makes you say this?  If you remove the check for the first entry
+being null then the driver will go and register all the regulators which
+seems fine.  That seems like it fixes the problem with skipping all the
+regulators if the first one has no platform data.
+
+You're really not explaining the changes you're trying to make here
+terribly well, the changes you're making seem very substantial relative
+to what you say you're trying to do.
