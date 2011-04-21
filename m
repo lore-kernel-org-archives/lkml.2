@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab1DULVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:21:41 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57551 "EHLO mx2.mail.elte.hu"
+	id S1753654Ab1DULXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 07:23:30 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36105 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1DULVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:21:40 -0400
-Date: Thu, 21 Apr 2011 13:21:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Russ Anderson <rja@sgi.com>, LKML <linux-kernel@vger.kernel.org>,
-        EDAC devel <linux-edac@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, MCE: Do not taint when handling correctable
- errors
-Message-ID: <20110421112121.GA21929@elte.hu>
-References: <1302857141-17580-1-git-send-email-bp@amd64.org>
- <66D9D2F0CDB5C9428E6166B01EC85EE162EF92B0F3@GVW0676EXC.americas.hpqcorp.net>
- <20110421093554.GB4262@elte.hu>
- <20110421095114.GB10263@aftab>
- <20110421095848.GA14889@elte.hu>
- <20110421100639.GC10263@aftab>
- <20110421102000.GD10263@aftab>
+	id S1753417Ab1DULX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 07:23:28 -0400
+Date: Thu, 21 Apr 2011 16:39:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 18/26] 18: uprobes: commonly used
+ filters.
+Message-ID: <20110421110911.GE10698@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+ <20110401143602.15455.82211.sendpatchset@localhost6.localdomain6>
+ <1303221477.8345.6.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110421102000.GD10263@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1303221477.8345.6.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Zijlstra <peterz@infradead.org> [2011-04-19 15:57:57]:
 
-* Borislav Petkov <bp@amd64.org> wrote:
-
-> On Thu, Apr 21, 2011 at 06:06:39AM -0400, Borislav Petkov wrote:
-> > On Thu, Apr 21, 2011 at 05:58:48AM -0400, Ingo Molnar wrote:
-> > > Ok, indeed. Also, in the future, if you take patches from others please also 
-> > > credit them in the changelog. Something like this would have been good in the 
-> > > current case:
-> > > 
-> > >   Also, this patch includes a change from Nagananda Chumbalkar as well, which 
-> > >   drops tainting in the therma throttling code for a similar reason: crossing a
-> > >   thermal threshold does not mean corruption.
-> > > 
-> > > Nagananda's Acked-by is there so there's at least partial credit - but we 
-> > > generally try to aim for at least 100% credit where credit is due :-)
+> On Fri, 2011-04-01 at 20:06 +0530, Srikar Dronamraju wrote:
+> > Provides most commonly used filters that most users of uprobes can
+> > reuse.  However this would be useful once we can dynamically associate a
+> > filter with a uprobe-event tracer.
 > > 
-> > Absolutely, and in the light of recent events :) I'm still not sure how
-> > to do that though in a straight-forward manner so that it is visible at
-> > a first glance. Sure, adding freeform text to the commit message is one
-> > way. Using a SOB chain might work too - even the Acked-by tag - but all
-> > those have another main purpose and are being repurposed for annotating
-> > the fact that a patch is the result of more than one author's thought
-> > process.
+> > Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/uprobes.h |    5 +++++
+> >  kernel/uprobes.c        |   50 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 55 insertions(+), 0 deletions(-)
 > > 
-> > IOW, in case I'm not missing anything, we don't really have a way to
-> > denote a multiple authorship, correct? And we should...
+> > diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> > index 26c4d78..34b989f 100644
+> > --- a/include/linux/uprobes.h
+> > +++ b/include/linux/uprobes.h
+> > @@ -65,6 +65,11 @@ struct uprobe_consumer {
+> >  	struct uprobe_consumer *next;
+> >  };
+> >  
+> > +struct uprobe_simple_consumer {
+> > +	struct uprobe_consumer consumer;
+> > +	pid_t fvalue;
+> > +};
+> > +
+> >  struct uprobe {
+> >  	struct rb_node		rb_node;	/* node in the rb tree */
+> >  	atomic_t		ref;
+> > diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+> > index cdd52d0..c950f13 100644
+> > --- a/kernel/uprobes.c
+> > +++ b/kernel/uprobes.c
+> > @@ -1389,6 +1389,56 @@ int uprobe_post_notifier(struct pt_regs *regs)
+> >  	return 0;
+> >  }
+> >  
+> > +bool uprobes_pid_filter(struct uprobe_consumer *self, struct task_struct *t)
+> > +{
+> > +	struct uprobe_simple_consumer *usc;
+> > +
+> > +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
+> > +	if (t->tgid == usc->fvalue)
+> > +		return true;
+> > +	return false;
+> > +}
+> > +
+> > +bool uprobes_tid_filter(struct uprobe_consumer *self, struct task_struct *t)
+> > +{
+> > +	struct uprobe_simple_consumer *usc;
+> > +
+> > +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
+> > +	if (t->pid == usc->fvalue)
+> > +		return true;
+> > +	return false;
+> > +}
 > 
-> Ok, after RTFMing <Documentation/SubmittingPatches> here's how:
+> Pretty much everything using t->pid/t->tgid is doing it wrong.
 > 
-> From: Original Author <author@example.com>
+> > +bool uprobes_ppid_filter(struct uprobe_consumer *self, struct task_struct *t)
+> > +{
+> > +	pid_t pid;
+> > +	struct uprobe_simple_consumer *usc;
+> > +
+> > +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
+> > +	rcu_read_lock();
+> > +	pid = task_tgid_vnr(t->real_parent);
+> > +	rcu_read_unlock();
+> > +
+> > +	if (pid == usc->fvalue)
+> > +		return true;
+> > +	return false;
+> > +}
+> > +
+> > +bool uprobes_sid_filter(struct uprobe_consumer *self, struct task_struct *t)
+> > +{
+> > +	pid_t pid;
+> > +	struct uprobe_simple_consumer *usc;
+> > +
+> > +	usc = container_of(self, struct uprobe_simple_consumer, consumer);
+> > +	rcu_read_lock();
+> > +	pid = pid_vnr(task_session(t));
+> > +	rcu_read_unlock();
+> > +
+> > +	if (pid == usc->fvalue)
+> > +		return true;
+> > +	return false;
+> > +}
 > 
-> 	^ this is the original author who sent the initial patch
+> And there things go haywire too.
 > 
-> Signed-off-by: Original Author <author@example.com>
-> Signed-off-by: Additional Author <author2@example.com>
-> Signed-off-by: Third Author <author3@example.com>
+> What you want is to save the pid-namespace of the task creating the
+> filter in your uprobe_simple_consumer and use that to obtain the task's
+> pid for matching with the provided number.
+> 
 
-The easiest solution is to create a separate patch for the TM1/TM2 change and 
-ask for a SOB :-)
+Okay, will do by adding the pid-namespace of the task creating the
+filter in the uprobe_simple_consumer.
 
-Thanks,
 
-	Ingo
+-- 
+Thanks and Regards
+Srikar
