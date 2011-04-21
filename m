@@ -1,167 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab1DUCFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 22:05:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64632 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1DUCFk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 22:05:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=j76m+9gNVhZGOx/+E9nMBsMwb+UnWc29x7MTq0ww/DU44DDXuweFrzMIcYHDUhHIiz
-         dAdWghC+pVwTz44mn1LLizC9cuNRkwTP7hueBwEyhOAdoWtsdoh1/dIhJaFCbzcERoJc
-         rGqO9k+sTrzysvtiVFJ8mjSXORbaymeHie2eo=
+	id S1752593Ab1DUCGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 22:06:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64007 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab1DUCGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 22:06:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,249,1301900400"; 
+   d="scan'208";a="422997717"
+Date: Thu, 21 Apr 2011 10:06:17 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110421020617.GB12191@localhost>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.515923886@intel.com>
+ <20110419073523.GF23985@dastard>
+ <20110419095740.GC5257@quack.suse.cz>
+ <20110419125616.GA20059@localhost>
+ <20110420012120.GK23985@dastard>
+ <20110420025321.GA14398@localhost>
+ <20110421004547.GD1814@dastard>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikGGBCL4wA3gL_W0EaD02yJQDnO9Q@mail.gmail.com>
-References: <BANLkTi=1svkDQt+HyaHgnann1Vre7CLUNQ@mail.gmail.com>
-	<BANLkTimFd0ZuP2OQ4A_w7VFbDDN+rsvBtg@mail.gmail.com>
-	<BANLkTi=9dROLwWH2J=Y_FmP+t=rkjMLBJg@mail.gmail.com>
-	<4DAEE410.8020000@cam.ac.uk>
-	<BANLkTikGGBCL4wA3gL_W0EaD02yJQDnO9Q@mail.gmail.com>
-Date: Thu, 21 Apr 2011 10:05:39 +0800
-Message-ID: <BANLkTik95F6qeo13KmZ+oZ19YHkxtL15uQ@mail.gmail.com>
-Subject: Re: SPI read problem
-From: Pei Lin <telent997@gmail.com>
-To: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        =?GB2312?B?0Oy9qLvU?= <xujianhui168@gmail.com>,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421004547.GD1814@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/21 Murali K. Vemuri <vemuri.muralikrishna@gmail.com>:
-> On Wed, Apr 20, 2011 at 10:48 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->> On 04/20/11 05:40, Murali K. Vemuri wrote:
->>> On Wed, Apr 20, 2011 at 12:19 PM, Ðì½¨»Ô <xujianhui168@gmail.com> wrote:
->>>> you can use tasklet.
->>>>
->>>> 2011/4/19 Murali K. Vemuri <vemuri.muralikrishna@gmail.com>
->>>>>
->>>>> Hello there,
->>>>> I have a device which is Written_to/Read_from using SPI Bus.
->>>>>
->>>>> I initialize the device like this:
->>>>>
->>>>> static int __init myDEV_init(void)
->>>>> {
->>>>>    return spi_register_driver(&myDEV_driver);
->>>>> }
->>>>> module_init(myDEV_init);
->>>>>
->>>>> My myDEV_probe() function looks like this:
->>>>>
->>>>> static int __devinit myDEV_probe(struct spi_device *spi)
->>>>> {
->>>>> .....
->>>>> .....
->>>>> /*when my CPU receives a particular IRQ, I have to do a spi_read() and
->>>>> do couple of spi_write(), I am using like this:*/
->>>>> err = request_threaded_irq (MY_DEV_IRQ, NULL, myDEV_irq_thread,
->>>>>            IRQF_TRIGGER_RISING, "MYDEV", NULL);
->> This should be fine.  The thread can sleep just fine. We do this
->> all over the place.  Could be something to do with the irq
->> handling on the device.
->>>>>
->>>>> return 0;
->>>>> }
->>>>>
->>>>> When the Interrupt is received by the CPU, myDEV_irq_thread is being
->>>>> called.
->>>>> However, in the ISR I have to do  spi_read(). This is always returning
->>>>> "Timed out".
->> That's very suspicious.  What spi controller are we dealing with here?
->>>>>
->>>>> To verify if the device is not at all working, along with registering
->>>>> for the IRQ, I also created a char device through I did a IOCTL.
->>>>> The IOCTL command in turn does spi_read(). In this case spi_read() is
->>>>> successful.
->>>>>
->>>>> Since it is necessary to do spi_read() in my ISR, I searched around
->>>>> and found some information that
->>>>> spi_read() is callable only from contexts that can sleep.
->>>>>
->>>>> How can I make my ISR sleep? or is there any other way of doing this?
->>>>>
->>>>> Any help is highly appreciated.
->>>>> Thanks & regards
->>>>> Murali
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
->>>>
->>>
->>> Hi there,
->>>
->>> I tried using "tasklet", "workqueue" and semaphore ... all my attempts failed.
->>> if there is any other method I should try, please let me know.
->> Something nastier is happening here.  It's not a problem with what you've
->> presented in this email.  Perhaps a minimum example of the full code surrounding
->> the problem may help us diagnose it.
->>
->
-> Thanks a lot for the inputs. this is the read function I have:
-> (What  I am trying to do is read register E6 of my device, the
-> register width is 16 bits.).
->
-> static struct spi_device * my_SPI_DEV; (this is populated in the probe function)
->
-> static int myDEV_read(u8 * buf, u16 len)
-> {
->    int err;
->    err = spi_read(my_SPI_DEV, buf, len);
->    return err;
-> }
-> static int read_e6()
-> {
->    u8 buf[3];
->    int err;
->    buf[0] = 0xe6;
->    buf[1] = 0x00;
->    buf[2] = 0x00;
->    err = myDEV_read(buf, 3);
->    printk(KERN_ERR "myDEV read returned: %d\n",err);
->    return err;
-> }
->
-> Now, this function read_e6() is called from the ISR I mentioned above.
->
+On Thu, Apr 21, 2011 at 08:45:47AM +0800, Dave Chinner wrote:
+> On Wed, Apr 20, 2011 at 10:53:21AM +0800, Wu Fengguang wrote:
+> > On Wed, Apr 20, 2011 at 09:21:20AM +0800, Dave Chinner wrote:
+> > > On Tue, Apr 19, 2011 at 08:56:16PM +0800, Wu Fengguang wrote:
+> > > > I actually started with wb_writeback() as a natural choice, and then
+> > > > found it much easier to do the expired-only=>all-inodes switching in
+> > > > move_expired_inodes() since it needs to know the @b_dirty and @tmp
+> > > > lists' emptiness to trigger the switch. It's not sane for
+> > > > wb_writeback() to look into such details. And once you do the switch
+> > > > part in move_expired_inodes(), the whole policy naturally follows.
+> > > 
+> > > Well, not really. You didn't need to modify move_expired_inodes() at
+> > > all to implement these changes - all you needed to do was modify how
+> > > older_than_this is configured.
+> > > 
+> > > writeback policy is defined by the struct writeback_control.
+> > > move_expired_inodes() is pure mechanism. What you've done is remove
+> > > policy from the struct wbc and moved it to move_expired_inodes(),
+> > > which now defines both policy and mechanism.
+> > 
+> > > Furhter, this means that all the tracing that uses the struct wbc no
+> > > no longer shows the entire writeback policy that is being worked on,
+> > > so we lose visibility into policy decisions that writeback is
+> > > making.
+> > 
+> > Good point! I'm convinced, visibility is a necessity for debugging the
+> > complex writeback behaviors.
+> > 
+> > > This same change is as simple as updating wbc->older_than_this
+> > > appropriately after the wb_writeback() call for both background and
+> > > kupdate and leaving the lower layers untouched. It's just a policy
+> > > change. If you thinkthe mechanism is inefficient, copy
+> > > wbc->older_than_this to a local variable inside
+> > > move_expired_inodes()....
+> > 
+> > Do you like something like this? (details will change a bit when
+> > rearranging the patchset)
+> 
+> Yeah, this is close to what I had in mind.
+> 
+> > 
+> > --- linux-next.orig/fs/fs-writeback.c	2011-04-20 10:30:47.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2011-04-20 10:40:19.000000000 +0800
+> > @@ -660,11 +660,6 @@ static long wb_writeback(struct bdi_writ
+> >  	long write_chunk;
+> >  	struct inode *inode;
+> >  
+> > -	if (wbc.for_kupdate) {
+> > -		wbc.older_than_this = &oldest_jif;
+> > -		oldest_jif = jiffies -
+> > -				msecs_to_jiffies(dirty_expire_interval * 10);
+> > -	}
+> 
+> Right here I'd do:
+> 
+> 	if (work->for_kupdate || work->for_background)
+> 		wbc.older_than_this = &oldest_jif;
+> 
+> so that the setting of wbc.older_than_this in the loop can trigger
+> on whether it is null or not.
 
+That's the tricky part that drove me to change move_expired_inodes()
+directly..
 
-spi_read will call spi_sync and this call may only be used from a
-context that may sleep.  The sleep
- is non-interruptible, and has no timeout. should use in
-non-interruptable context.
-you should put the spi_read on context which can sleep, as bottom half
-"work queue"
-Or use spi_async interface.
+One important thing to bear in mind is, the background work can run on
+for one hour, one day or whatever. During the time dirty inodes come
+and go, expired and cleaned.  If we only reset wbc.older_than_this and
+never restore it _inside_ the loop, we'll quickly lose the ability to
+"start with expired inodes" shortly after f.g. 5 minutes.
 
+So we need to start with searching for expired inodes at each
+queue_io() time.  wbc.older_than_this shall be properly restored to
+&oldest_jif inside the loop. Since no expired inodes found in this
+loop does not mean no new inodes will be expired in the next loop.
 
-> 90% of time, the read returns "-5" (I/O Error) and about 10% time it
-> gets "0".  However I added a little hexdump to check the content in
-> case the return value is "0". The register content is always "0".
->
-> Please let me know if I am doing any mistake.
-> Thanks & regards
-> Murali
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> >  	if (!wbc.range_cyclic) {
+> >  		wbc.range_start = 0;
+> >  		wbc.range_end = LLONG_MAX;
+> > @@ -713,10 +708,17 @@ static long wb_writeback(struct bdi_writ
+> >  		if (work->for_background && !over_bground_thresh())
+> >  			break;
+> >  
+> > +		if (work->for_kupdate || work->for_background) {
+> > +			oldest_jif = jiffies -
+> > +				msecs_to_jiffies(dirty_expire_interval * 10);
+> > +			wbc.older_than_this = &oldest_jif;
+> > +		}
+> > +
+> 
+> if you change that to:
+> 
+> 		if (wbc.older_than_this) {
+> 			*wbc.older_than_this = jiffies -
+> 				msecs_to_jiffies(dirty_expire_interval * 10);
+> 		}
+> 
+> >  		wbc.more_io = 0;
+> >  		wbc.nr_to_write = write_chunk;
+> >  		wbc.pages_skipped = 0;
+> >  
+> > +retry_all:
+> 
+> You can get rid of this retry_all label and have the changeover in
+> behaviour re-initialise nr_to_write, etc.
+> 
+> >  		trace_wbc_writeback_start(&wbc, wb->bdi);
+> >  		if (work->sb)
+> >  			__writeback_inodes_sb(work->sb, wb, &wbc);
+> > @@ -733,6 +735,17 @@ static long wb_writeback(struct bdi_writ
+> >  		if (wbc.nr_to_write <= 0)
+> >  			continue;
+> >  		/*
+> > +		 * No expired inode? Try all fresh ones
+> > +		 */
+> > +		if ((work->for_kupdate || work->for_background) &&
+> > +		    wbc.older_than_this &&
+> > +		    wbc.nr_to_write == write_chunk &&
+> > +		    list_empty(&wb->b_io) &&
+> > +		    list_empty(&wb->b_more_io)) {
+> > +			wbc.older_than_this = NULL;
+> > +			goto retry_all;
+> > +		}
+> 
+> And here only do this for work->for_background as kupdate writeback
+> stops when we run out of expired inodes (i.e. it doesn't writeback
+> non-expired inodes).
 
+Sorry for the mistake. I've fixed it in the v2 :)
 
-
--- 
-Best Regards
-Lin
+Thanks,
+Fengguang
