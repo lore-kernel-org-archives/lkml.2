@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab1DUVZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:25:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:55644 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab1DUVZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:25:40 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=XYJHFtupD_QA:10 a=ZFNFh-pPGIMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=aXVuY0ei1haJT1g6vp0A:9 a=1_3TpKKw-1K76L_uvfcA:7 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Thu, 21 Apr 2011 17:25:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
-        Ian Kent <raven@themaw.net>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Lockdep splat in autofs with 2.6.39-rc2
-Message-ID: <20110421212537.GC24898@home.goodmis.org>
-References: <20110407194403.GA29404@elliptictech.com>
+	id S1755055Ab1DUV2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:28:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753304Ab1DUV2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:28:34 -0400
+Date: Thu, 21 Apr 2011 17:28:13 -0400
+From: Dave Jones <davej@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Daney <ddaney@caviumnetworks.com>, Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        BorislavPetkov <bp@alien8.de>
+Subject: Re: annoying new gcc 4.6.0 warnings.
+Message-ID: <20110421212812.GA26680@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sam Ravnborg <sam@ravnborg.org>,
+	David Daney <ddaney@caviumnetworks.com>,
+	Joe Perches <joe@perches.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	BorislavPetkov <bp@alien8.de>
+References: <20110421192117.GA14249@redhat.com>
+ <BANLkTi=srdq69ZG8pWbzWOZLX5KX48DcbQ@mail.gmail.com>
+ <4DB087EC.1010205@caviumnetworks.com>
+ <1303415086.24766.84.camel@Joe-Laptop>
+ <20110421195801.GA15126@redhat.com>
+ <20110421200836.GA31709@merkur.ravnborg.org>
+ <20110421202713.GA19425@redhat.com>
+ <4DB09590.1040709@caviumnetworks.com>
+ <20110421204549.GA20508@redhat.com>
+ <20110421205612.GA4541@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110407194403.GA29404@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110421205612.GA4541@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 03:44:03PM -0400, Nick Bowler wrote:
-> Just saw this on 2.6.39-rc2 after half a day or so of uptime.  I've
-> never seen it before today so it may be a regression from 2.6.38.
-> Nothing seems have failed as a result.  Please let me know if you
-> need any more info.
->
+On Thu, Apr 21, 2011 at 10:56:12PM +0200, Sam Ravnborg wrote:
+ > 
+ > Seems soo. It semi works now.
+ > "make W=1" is broken for reasons that is not related to this patch - will submit
+ > a fix in a minute for that.
+ > 
+ > So you can add:
+ > Acked-by: Sam Ravnborg <sam@ravnborg.org>
+ > Tested-by: Sam Ravnborg <sam@ravnborg.org>
+ > 
+ > on the patch.
+ > 
+ > And if you really want to make me happy then you add a comment about _why_
+ > we disable the warning.
 
-Could you try this patch. I know it may be hard to reproduce, but the
-issue is that we are recursing down the locks in a tree/list and we changed a
-lock from being nested to being a parent. This patch tells lockdep about
-what we did.
+ok, last time for reals.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+	Dave
+
+-- 
+ 
+Disable the new -Wunused-but-set-variable that was added in gcc 4.6.0
+It produces more false positives than useful warnings.
+ 
+This can still be enabled using W=1
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Tested-by: Sam Ravnborg <sam@ravnborg.org>
+
+diff --git a/Makefile b/Makefile
+index b967b96..08c5484 100644
+--- a/Makefile
++++ b/Makefile
+@@ -559,6 +559,10 @@ ifndef CONFIG_CC_STACKPROTECTOR
+ KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
+ endif
+ 
++# This warning generated too much noise in a regular build.
++# Use make W=1 to enable this warning (see scripts/Makefile.build)
++KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
++
+ ifdef CONFIG_FRAME_POINTER
+ KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
+ else
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d5f925a..021f7eb 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -79,6 +79,7 @@ KBUILD_EXTRA_WARNINGS += -Wpointer-arith
+ KBUILD_EXTRA_WARNINGS += -Wredundant-decls
+ KBUILD_EXTRA_WARNINGS += -Wshadow
+ KBUILD_EXTRA_WARNINGS += -Wswitch-default
++KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wunused-but-set-variable)
+ KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wvla,)
+ KBUILD_CFLAGS += $(KBUILD_EXTRA_WARNINGS)
+ endif
 
 
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 450f529..1feb68e 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -124,6 +124,7 @@ start:
- 	/* Negative dentry - try next */
- 	if (!simple_positive(q)) {
- 		spin_unlock(&p->d_lock);
-+		lock_set_subclass(&q->d_lock.dep_map, 0, _RET_IP_);
- 		p = q;
- 		goto again;
- 	}
-@@ -186,6 +187,7 @@ again:
- 	/* Negative dentry - try next */
- 	if (!simple_positive(ret)) {
- 		spin_unlock(&p->d_lock);
-+		lock_set_subclass(&ret->d_lock.dep_map, 0, _RET_IP_);
- 		p = ret;
- 		goto again;
- 	}
+
