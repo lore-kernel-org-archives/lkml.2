@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab1DUV6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 17:58:32 -0400
-Received: from mail.perches.com ([173.55.12.10]:4896 "EHLO mail.perches.com"
+	id S1755384Ab1DUV7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 17:59:46 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:57231 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab1DUV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 17:58:31 -0400
-Subject: Re: [RFC PATCH] kbuild: implement several W= levels
-From: Joe Perches <joe@perches.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <20110421213903.GB9660@merkur.ravnborg.org>
-References: <20110421213903.GB9660@merkur.ravnborg.org>
+	id S1752998Ab1DUV7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 17:59:45 -0400
+Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <201104212100.18417.arnd@arndb.de>
+References: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com>
+	 <201104211823.21384.arnd@arndb.de> <20110421184713.GB29841@ericsson.com>
+	 <201104212100.18417.arnd@arndb.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Apr 2011 14:58:29 -0700
-Message-ID: <1303423109.24766.97.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Organization: Ericsson
+Date: Thu, 21 Apr 2011 14:58:44 -0700
+Message-ID: <1303423124.31666.5.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 23:39 +0200, Sam Ravnborg wrote:
-> Building a kernel with "make W=1" produce far too much noise
-> to be usefull.
-> Divide the warning options in three groups:
-> W=1 - usefull warning options
-> W=2 - noisy but semi usefull warnign options
-> W=3 - almost pure noise options
-> +warning-1 := -Wextra
-[]
-> +warning-2 += -Waggregate-return
+On Thu, 2011-04-21 at 15:00 -0400, Arnd Bergmann wrote:
+> On Thursday 21 April 2011 20:47:13 Guenter Roeck wrote:
+> > On Thu, Apr 21, 2011 at 12:23:21PM -0400, Arnd Bergmann wrote:
+> > > 
+> > > I think the generalization of the ARM code is currently being worked
+> > > on, so this should be there soon.
+> > > 
+> > Any pointers ?
+> > 
+> I believe the most recent discussion is at
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
+> 
+> 	Arnd
 
-This is a different form for this first warning-2 declaration
-than the first warning-1 declaration.
+Looks like that is going to take a while. Oh well. I'll put this driver
+on the backburner.
 
-Maybe this should be := instead?
-
-Maybe there's a way to do something akin to
-
-warning_type(level, option)
-
-So these become
-
-warning_type(1, extra)
-warning_type(2, aggregate-return)
-
-etc.
+Guenter
 
 
