@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1DUOUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 10:20:00 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:54609 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab1DUOT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 10:19:59 -0400
-Date: Thu, 21 Apr 2011 16:19:49 +0200
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, sliakh.lkml@gmail.com, jiang@cs.ncsu.edu,
-        mingo@elte.hu
-Subject: Re: Undoing module RONX protection
-Message-ID: <20110421141949.GA10675@hal>
-References: <20110418092348.GB7786@hal>
- <20110418092801.GC3837@infradead.org>
- <874o5v6drb.fsf@rustcorp.com.au>
+	id S1753824Ab1DUOWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 10:22:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753458Ab1DUOWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 10:22:14 -0400
+Date: Thu, 21 Apr 2011 10:22:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Don't forget to clear
+ cpuc->active_mask on overflow
+Message-ID: <20110421142207.GD31724@redhat.com>
+References: <4DAEF821.4050103@openvz.org>
+ <20110421125345.GC31724@redhat.com>
+ <20110421131748.GB1642@elte.hu>
+ <20110421135742.GZ20887@redhat.com>
+ <4DB03872.2020504@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <874o5v6drb.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DB03872.2020504@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 08:13:36PM +0930, Rusty Russell wrote:
-> On Mon, 18 Apr 2011 11:23:48 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
-> > While debugging I stumbled over two problems in the code that protects module
-> > pages.
+On Thu, Apr 21, 2011 at 06:00:18PM +0400, Cyrill Gorcunov wrote:
+> On 04/21/2011 05:57 PM, Don Zickus wrote:
+> ...
 > > 
-> > First issue is that disabling the protection before freeing init or unload of
-> > a module is not symmetric with the enablement. For instance, if pages are set
-> > to RO the page range from module_core to module_core + core_ro_size is
-> > protected. If a module is unloaded the page range from module_core to
-> > module_core + core_size is set back to RW.
-> > So pages that were not set to RO are also changed to RW.
-> > This is not critical but IMHO it should be symmetric.
+> > Cyril is that something you can do because I think all of these patches
+> > revolve around P4 fixes?  Though I don't know what are all the patches.  I
+> > know I had one and this patch.  Is there another on Cyril?
 > > 
-> > Second issue is that while set_memory_rw & set_memory_ro are used for
-> > RO/RW changes only set_memory_nx is involved for NX/X. One would await that
-> > the inverse function is called when the NX protection should be removed,
-> > which is not the case here, unless I'm missing something.
-> > 
-> > The following patch addresses both issues. Works on s390. Boot tested on x86.
-> > 
-> > Please comment,
+> > Cheers,
+> > Don
 > 
-> Applied, minus the S/390 EXPORT_SYMBOL which Christoph pointed out.  I
-> turned your mail into the commit message, since it was clearer and more
-> verbose.  I don't see why they would be different.
+> Don, I've two patches for P4 and one yours which is a fast fix for unknown-nmi.
+> So I could gather all three patches and send them to Ingo. And you'll see them
+> and review again as well. Deal? :)
 
-There's a bug in my patch which just killed one of my s390 machines.
-Can you merge this with the previuos patch?
+You can add my acked-by and/or review-by tags to the patches.  But yeah I
+can review them again.
 
-thanks, Jan
----
-
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-
-A module may not have an init part so set_page_attributes may try to
-change an invalid page range. Modifying page 0 is fatal on s390. Bail
-out in case the module_core or module_init is not present.
-
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
----
- kernel/module.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1610,14 +1610,14 @@ static void set_section_ro_nx(void *base
- /* Setting memory back to W+X before releasing it */
- void unset_section_ro_nx(struct module *mod, void *module_region)
- {
--	if (mod->module_core == module_region) {
-+	if (mod->module_core && mod->module_core == module_region) {
- 		set_page_attributes(mod->module_core + mod->core_text_size,
- 			mod->module_core + mod->core_size,
- 			set_memory_x);
- 		set_page_attributes(mod->module_core,
- 			mod->module_core + mod->core_ro_size,
- 			set_memory_rw);
--	} else if (mod->module_init == module_region) {
-+	} else if (mod->module_init && mod->module_init == module_region) {
- 		set_page_attributes(mod->module_init + mod->init_text_size,
- 			mod->module_init + mod->init_size,
- 			set_memory_x);
+Cheers,
+Don
