@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1DULH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 07:07:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54203 "EHLO mx1.redhat.com"
+	id S1753381Ab1DULIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 07:08:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42263 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab1DULHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 07:07:55 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <dfeng@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH -tip] sched: more sched_domain iterations fix
-Date: Thu, 21 Apr 2011 19:07:24 +0800
-Message-Id: <1303384044-7646-1-git-send-email-dfeng@redhat.com>
+	id S1751318Ab1DULIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 07:08:47 -0400
+Date: Thu, 21 Apr 2011 12:08:41 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        raz ben yehuda <raziebe@gmail.com>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+Message-ID: <20110421110841.GA612@suse.de>
+References: <20110415101248.GB22688@suse.de>
+ <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched_domain iterations needs to be protected by rcu_read_lock() now,
-this patch adds another two places which needs the rcu lock.
+On Thu, Apr 21, 2011 at 03:59:47PM +0900, Minchan Kim wrote:
+> Hi Mel,
+> 
+> On Fri, Apr 15, 2011 at 7:12 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > With transparent hugepage support, handle_mm_fault() has to be careful
+> > that a normal PMD has been established before handling a PTE fault. To
+> > achieve this, it used __pte_alloc() directly instead of pte_alloc_map
+> > as pte_alloc_map is unsafe to run against a huge PMD. pte_offset_map()
+> > is called once it is known the PMD is safe.
+> >
+> > pte_alloc_map() is smart enough to check if a PTE is already present
+> > before calling __pte_alloc but this check was lost. As a consequence,
+> > PTEs may be allocated unnecessarily and the page table lock taken.
+> > Thi useless PTE does get cleaned up but it's a performance hit which
+> > is visible in page_test from aim9.
+> >
+> > This patch simply re-adds the check normally done by pte_alloc_map to
+> > check if the PTE needs to be allocated before taking the page table
+> > lock. The effect is noticable in page_test from aim9.
+> >
+> > AIM9
+> >                2.6.38-vanilla 2.6.38-checkptenone
+> > creat-clo      446.10 ( 0.00%)   424.47 (-5.10%)
+> > page_test       38.10 ( 0.00%)    42.04 ( 9.37%)
+> > brk_test        52.45 ( 0.00%)    51.57 (-1.71%)
+> > exec_test      382.00 ( 0.00%)   456.90 (16.39%)
+> > fork_test       60.11 ( 0.00%)    67.79 (11.34%)
+> > MMTests Statistics: duration
+> > Total Elapsed Time (seconds)                611.90    612.22
+> >
+> > (While this affects 2.6.38, it is a performance rather than a
+> > functional bug and normally outside the rules -stable. While the big
+> > performance differences are to a microbench, the difference in fork
+> > and exec performance may be significant enough that -stable wants to
+> > consider the patch)
+> >
+> > Reported-by: Raz Ben Yehuda <raziebe@gmail.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > --
+> >  mm/memory.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 5823698..1659574 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >         * run pte_offset_map on the pmd, if an huge pmd could
+> >         * materialize from under us from a different thread.
+> >         */
+> > -       if (unlikely(__pte_alloc(mm, vma, pmd, address)))
+> > +       if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
+> >                return VM_FAULT_OOM;
+> >        /* if an huge pmd materialized from under us just retry later */
+> >        if (unlikely(pmd_trans_huge(*pmd)))
+> >
+> 
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
+> Sorry for jumping in too late. I have a just nitpick.
+> 
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched_rt.c    |    2 ++
- kernel/sched_stats.h |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+Better late than never :)
 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 19ecb31..901ed2a 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1282,7 +1282,9 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 	int cpu;
- 
- 	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
-+		rcu_read_lock();
- 		cpu = find_lowest_rq(task);
-+		rcu_read_unlock();
- 
- 		if ((cpu == -1) || (cpu == rq->cpu))
- 			break;
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 48ddf43..d25c8c1 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -38,6 +38,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- #ifdef CONFIG_SMP
- 		/* domain-specific stats */
- 		preempt_disable();
-+		rcu_read_lock();
- 		for_each_domain(cpu, sd) {
- 			enum cpu_idle_type itype;
- 
-@@ -64,6 +65,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 			    sd->ttwu_wake_remote, sd->ttwu_move_affine,
- 			    sd->ttwu_move_balance);
- 		}
-+		rcu_read_unlock();
- 		preempt_enable();
- #endif
- 	}
+> We have another place, do_huge_pmd_anonymous_page.
+> Although it isn't workload of page_test, is it valuable to expand your
+> patch to cover it?
+> If there is workload there are many thread and share one shared anon
+> vma in ALWAYS THP mode, same problem would happen.
+
+We already checked pmd_none() in handle_mm_fault() before calling
+into do_huge_pmd_anonymous_page(). We could race for the fault while
+attempting to allocate a huge page but it wouldn't be as severe a
+problem particularly as it is encountered after failing a 2M allocation.
+
 -- 
-1.7.1
-
+Mel Gorman
+SUSE Labs
