@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1DUBVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Apr 2011 21:21:43 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40382 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab1DUBVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Apr 2011 21:21:42 -0400
-Subject: [PATCH V3 3/8] Add userspace buffers support in skb
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: mst@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1303328216.19336.18.camel@localhost.localdomain>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 12:47:57 -0700
-Message-ID: <1303328877.19336.28.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754934Ab1DUBWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Apr 2011 21:22:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39832 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754812Ab1DUBWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Apr 2011 21:22:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,248,1301900400"; 
+   d="scan'208";a="736298816"
+Date: Thu, 21 Apr 2011 09:21:56 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110421012156.GA11120@localhost>
+References: <20110420080336.441157866@intel.com>
+ <20110420080918.383880412@intel.com>
+ <20110420164005.e3925965.akpm@linux-foundation.org>
+ <20110421011431.GA7828@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110421011431.GA7828@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds userspace buffers support in skb. A new struct
-skb_ubuf_info is needed to maintain the userspace buffers argument
-and index, a callback is used to notify userspace to release the
-buffers once lower device has done DMA (Last reference to that skb
-has gone).
+> > Are you testing for this failure scenario?  If so, can you briefly
+> > describe the testing?
+> 
+> Not yet.. But one possible scheme is to record the dirty time of each
+> page in a debug kernel and expose them to user space. Then we can run
+> any kind of workloads, and in the mean while run a background scanner
+> to collect and report the distribution of dirty page ages.
+> 
+> Does it sound too heavy weight? Or we may start by reporting the dirty
+> inode age first. To maintain a mapping->writeback_index_wrapped_when and
+> a mapping->pages_dirtied_when to follow it (or just reuse/reset
+> mapping->dirtied_when?). The former will be reset to jiffies on each
+> full scan of the pages. range_whole=1 scan can maintain its start time
+> in a local variable. Then we get an estimation "what's the max
+> possible dirty page age this inode has?". There will sure be redirtied
+> pages though..
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+Hmm the lighter scheme will fail the common "active sequential write
+to large file" case, because the full scan will never manage to come
+to an end..
 
- include/linux/skbuff.h |   14 ++++++++++++++
- net/core/skbuff.c      |   15 ++++++++++++++-
- 2 files changed, 28 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index d0ae90a..47a187b 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -189,6 +189,16 @@ enum {
- 	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
- };
- 
-+/* The callback notifies userspace to release buffers when skb DMA is done in
-+ * lower device, the desc is used to track userspace buffer index.
-+ */
-+struct skb_ubuf_info {
-+	/* support buffers allocation from userspace */
-+	void		(*callback)(struct sk_buff *);
-+	void		*arg;
-+	size_t		desc;
-+};
-+
- /* This data is invariant across clones and lives at
-  * the end of the header data, ie. at skb->end.
-  */
-@@ -211,6 +221,10 @@ struct skb_shared_info {
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
-+
-+	/* DMA mapping from/to userspace buffers */
-+	struct skb_ubuf_info ubuf;
-+
- 	/* must be last field, see pskb_expand_head() */
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 7ebeed0..822c07d 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	shinfo = skb_shinfo(skb);
- 	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
- 	atomic_set(&shinfo->dataref, 1);
-+	shinfo->ubuf.callback = NULL;
-+	shinfo->ubuf.arg = NULL;
- 	kmemcheck_annotate_variable(shinfo->destructor_arg);
- 
- 	if (fclone) {
-@@ -327,7 +329,15 @@ static void skb_release_data(struct sk_buff *skb)
- 			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
- 				put_page(skb_shinfo(skb)->frags[i].page);
- 		}
--
-+		/*
-+		 * if skb buf is from userspace, we need to notify the caller
-+		 * the lower device DMA has done;
-+		 */
-+		if (skb_shinfo(skb)->ubuf.callback) {
-+			skb_shinfo(skb)->ubuf.callback(skb);
-+			skb_shinfo(skb)->ubuf.callback = NULL;
-+			skb_shinfo(skb)->ubuf.arg = NULL;
-+		}
- 		if (skb_has_frag_list(skb))
- 			skb_drop_fraglist(skb);
- 
-@@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	if (irqs_disabled())
- 		return false;
- 
-+	if (shinfo->ubuf.callback)
-+		return false;
-+
- 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
- 		return false;
- 
-
-
+Thanks,
+Fengguang
