@@ -1,67 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab1DUPKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 11:10:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39151 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754444Ab1DUPKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 11:10:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,251,1301900400"; 
-   d="scan'208";a="632092662"
-Date: Thu, 21 Apr 2011 23:12:50 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tglx@linutronix.de, hpa@zytor.com,
-        hpa@linux.intel.com, suresh.b.siddha@intel.com,
-        yong.y.wang@linux.intel.com, joe@perches.com, jbaron@redhat.com,
-        trenn@suse.de, kent.liu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH v4 1/2] apic: Fix error interrupt report at all APs
-Message-ID: <20110422031250.GA30016@linux-youquan.bj.intel.com>
-References: <1302762968-24380-1-git-send-email-youquan.song@intel.com> <20110419170121.GA6640@elte.hu>
+	id S1754532Ab1DUPLe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 11:11:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45358 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754444Ab1DUPLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 11:11:33 -0400
+Date: Thu, 21 Apr 2011 16:11:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com, sameo@linux.intel.com,
+        Graeme Gregory <gg@slimlogic.co.uk>, grant@secretlab.ca
+Subject: Re: [PATCHv4 2/4] TPS65910: GPIO: Add GPIO driver
+Message-ID: <20110421151130.GB25526@opensource.wolfsonmicro.com>
+References: <8BC87CF8-EAB5-40A9-AAFB-D4F7521B3E04@slimlogic.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110419170121.GA6640@elte.hu>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <8BC87CF8-EAB5-40A9-AAFB-D4F7521B3E04@slimlogic.co.uk>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't disagree with this change, but unfortunately the changelog is in 
-> absolutely unreadable English. Please fix it or find someone who can fix it for 
-> you.
+On Thu, Apr 21, 2011 at 09:35:47AM -0500, Jorge Eduardo Candelaria wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
 > 
-> I decoded and fixed the changelog of the 2/2 patch of your series so no need to 
-> do it for that patch.
+> TPS65910 has one configurable GPIO that can be used for several
+> purposes. Subsequent versions of the TPS chip support more than
+> one GPIO.
+> 
+> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
 
-Thanks a lot Ingo!
+CCing in Grant who's taken over the GPIO subsystem.
 
-Here is the fixed changelog for 1/2 patch :Fix error interrupt report at all APs
-
-This patch fixes a bug reported from customer, who found many unreasonable error
- interrupts reported on all APs during the system boot stage. 
-
-According to Chapter 10 of Intel Software Developer Manual Volume 3A, Local APIC
- may signal an illegal vector error when an LVT entry is set as an illegal 
-vector value (0~15) under FIXED delivery mode (bits 8-11 is 0), regardless of 
-whether the mask bit is set or an interrupt actually happen. These errors are 
-seen as error interrupts. 
-
-The initial value of thermal LVT entries on all APs always reads 0x10000 because
- APs are woken up by BSP issuing INIT-SIPI-SIPI sequence to them and LVT 
-registers are reset to 0s except for the mask bits which are set to 1s when APs 
-receive INIT IPI.  When BIOS take over the thermal throttling interrupt, LVT 
-thermal deliver mode should be SMI and it is required to restore AP's LVT 
-thermal monitor register. 
-
-This issue happens when BIOS do not take over thermal throttling interrupt, 
-AP's LVT thermal monitor register will be restored to 0x10000 which means vector
- 0 and fixed deliver mode, so all APs will signal illegal vector error 
-interrupt.  This patch check if interrupt delivery mode is not fixed mode before
- restore AP's LVT thermal monitor register. 
-
--Youquan
- 
+> ---
+> drivers/mfd/Makefile         |    2 +-
+> drivers/mfd/tps65910-gpio.c  |  109 ++++++++++++++++++++++++++++++++++++++++++
+> drivers/mfd/tps65910.c       |    7 +++
+> include/linux/mfd/tps65910.h |    3 +
+> 4 files changed, 120 insertions(+), 1 deletions(-)
+> create mode 100644 drivers/mfd/tps65910-gpio.c
+> 
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 3afb7ac..012ed17 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -88,4 +88,4 @@ obj-$(CONFIG_MFD_VX855)		+= vx855.o
+> obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
+> obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+> obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
+> -obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
+> +obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o
+> diff --git a/drivers/mfd/tps65910-gpio.c b/drivers/mfd/tps65910-gpio.c
+> new file mode 100644
+> index 0000000..7bb8fe6
+> --- /dev/null
+> +++ b/drivers/mfd/tps65910-gpio.c
+> @@ -0,0 +1,109 @@
+> +/*
+> + * tps65910-gpio.c  --  TI TPS6591x
+> + *
+> + * Copyright 2010 Texas Instruments Inc.
+> + *
+> + * Author: Graeme Gregory <gg@slimlogic.co.uk>
+> + * Author: Jorge Eduardo Candelaria jedu@slimlogic.co.uk>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify it
+> + *  under  the terms of the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the License, or (at your
+> + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/errno.h>
+> +#include <linux/gpio.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mfd/tps65910.h>
+> +
+> +static int tps65910_gpio_get(struct gpio_chip *gc, unsigned offset)
+> +{
+> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
+> +	uint8_t val;
+> +
+> +	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
+> +
+> +	if (val & GPIO0_GPIO_STS_MASK)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +static void tps65910_gpio_set(struct gpio_chip *gc, unsigned offset,
+> +			      int value)
+> +{
+> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
+> +	uint8_t val;
+> +
+> +	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
+> +
+> +	if (value)
+> +		val |= GPIO0_GPIO_SET_MASK;
+> +	else
+> +		val &= ~GPIO0_GPIO_SET_MASK;
+> +
+> +	tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
+> +}
+> +
+> +static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
+> +				int value)
+> +{
+> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
+> +	uint8_t val;
+> +	int ret;
+> +
+> +	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	val |= GPIO0_GPIO_CFG_MASK;
+> +
+> +	/* Set the initial value */
+> +	tps65910_gpio_set(gc, 0, value);
+> +
+> +	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
+> +}
+> +
+> +static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
+> +{
+> +	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
+> +	uint8_t val;
+> +	int ret;
+> +
+> +	ret = tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	val &= ~GPIO0_GPIO_CFG_MASK;
+> +
+> +	return tps65910->write(tps65910, TPS65910_GPIO0, 1, &val);
+> +}
+> +
+> +void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
+> +{
+> +	int ret;
+> +
+> +	if (!gpio_base)
+> +		return;
+> +
+> +	tps65910->gpio.owner		= THIS_MODULE;
+> +	tps65910->gpio.label		= tps65910->i2c_client->name;
+> +	tps65910->gpio.dev		= tps65910->dev;
+> +	tps65910->gpio.base		= gpio_base;
+> +	tps65910->gpio.ngpio		= 1;
+> +	tps65910->gpio.can_sleep	= 1;
+> +
+> +	tps65910->gpio.direction_input	= tps65910_gpio_input;
+> +	tps65910->gpio.direction_output	= tps65910_gpio_output;
+> +	tps65910->gpio.set		= tps65910_gpio_set;
+> +	tps65910->gpio.get		= tps65910_gpio_get;
+> +
+> +	ret = gpiochip_add(&tps65910->gpio);
+> +
+> +	if (ret)
+> +		dev_warn(tps65910->dev, "GPIO registration failed: %d\n", ret);
+> +}
+> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> index f13e448..99c43b6 100644
+> --- a/drivers/mfd/tps65910.c
+> +++ b/drivers/mfd/tps65910.c
+> @@ -89,8 +89,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+> 			    const struct i2c_device_id *id)
+> {
+> 	struct tps65910 *tps65910;
+> +	struct tps65910_board *pmic_plat_data;
+> 	int ret = 0;
+> 
+> +	pmic_plat_data = dev_get_platdata(&i2c->dev);
+> +	if (!pmic_plat_data)
+> +		return -EINVAL;
+> +
+> 	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
+> 	if (tps65910 == NULL)
+> 		return -ENOMEM;
+> @@ -107,6 +112,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+> 	if (ret < 0)
+> 		goto err;
+> 
+> +	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
+> +
+> 	return ret;
+> 
+> err:
+> diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+> index 43c8631..bf3597e 100644
+> --- a/include/linux/mfd/tps65910.h
+> +++ b/include/linux/mfd/tps65910.h
+> @@ -714,6 +714,7 @@
+>  */
+> 
+> struct tps65910_board {
+> +	int gpio_base;
+> 	struct regulator_init_data *tps65910_pmic_init_data;
+> };
+> 
+> @@ -746,4 +747,6 @@ struct tps65910_platform_data {
+> 	int irq_base;
+> };
+> 
+> +void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
+> +
+> #endif /*  __LINUX_MFD_TPS65910_H */
+> -- 
+> 1.7.1
