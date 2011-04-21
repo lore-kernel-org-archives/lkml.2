@@ -1,189 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab1DUGnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 02:43:24 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51256 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1DUGnX convert rfc822-to-8bit (ORCPT
+	id S1752788Ab1DUGsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 02:48:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50202 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab1DUGsc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 02:43:23 -0400
+	Thu, 21 Apr 2011 02:48:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NaLYoaA2SROUtqD7VoFM0wOrO8dMw6dpwO96sSXc1pj8341GgnAPGWJR6mQQE8zwS1
-         Py2P4w3he8sCMPqBlueZN9gJ/vhVTOW8PSSgf/rUUXsC6ay9ai0tQhs1gZK4DOraSaJ8
-         /yaTKZIXBLSmXdm9V3eg+SnA2iIdsbkhoEnR8=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bB/c6o/EiIwDoiuti6b2IOaEroUBnkvlaDUBgxymJD6ifCW+JPoRmLcdalB8008yYb
+         zq/aH8TFj9PN8dIB06VArRRpZVRG3/H0w0lRlZisYM213sTnL3afbZK/eP8ifRiToh1T
+         THDj6ZIIM9WBLvG0bq6RYXpdWQ7dv1/uk4k5o=
 MIME-Version: 1.0
-In-Reply-To: <20110421014259.132728798@goodmis.org>
-References: <20110421014153.126662477@goodmis.org>
-	<20110421014259.132728798@goodmis.org>
-Date: Thu, 21 Apr 2011 14:43:22 +0800
-Message-ID: <BANLkTimdMP52JCWCJp9Qfz=kWDMYWdQqgg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq locking issue
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <E0A55C1E-9DA0-4FFE-90EE-575BB1E649CB@niasdigital.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+	<BANLkTi=W7jaVtW1FThvG_ca57q+yDz1kzQ@mail.gmail.com>
+	<E0A55C1E-9DA0-4FFE-90EE-575BB1E649CB@niasdigital.com>
+Date: Thu, 21 Apr 2011 08:48:31 +0200
+X-Google-Sender-Auth: Q6h2aNWoNWPQoYrtMqX96HX6ji8
+Message-ID: <BANLkTin_e1Kkn=KGvnqCHvnJVZczRwdnVA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ben Nizette <bn@niasdigital.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 9:41 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->  ---
->
-> The above is the case when the unsafe lock is taken while holding
-> a lock taken in irq context. But when a lock is taken that also
-> grabs a unsafe lock, the call chain is shown:
->
->  ---
-> other info that might help us debug this:
->
-> Chain exists of:
->  &rq->lock --> lockA --> lockC
->
->  Possible interrupt unsafe locking scenario:
->
->       CPU0                    CPU1
->       ----                    ----
->  lock(lockC);
->                               local_irq_disable();
->                               lock(&rq->lock);
->                               lock(lockA);
->  <Interrupt>
->    lock(&rq->lock);
->
->  *** DEADLOCK ***
+2011/4/21 Ben Nizette <bn@niasdigital.com>:
 
-But this is not a real deadlock, right? Or maybe you can teach me :)
+>> This patch is about biasing and drive modes. We need to alter
+>> these at runtime (from board code, indeed) due to the fact that
+>> when you go to sleep e.g. floating a pin yeilds better power
+>> characteristics.
+>
+> This is actually an interesting case because floating pins yeild
+> /worse/ power characteristics (each transistor of the push-pull
+> is on a little bit and you get a path straight through) [1]. �To
+> get good power performance you want to pull an input pin high or
+> low but which of those two directions depends on external
+> constraints, i.e. the board.
 
-I just assume your scenario should show a more real one, But for
-a possible irq-dependence deadlock, it seems not easy to find out.
+Yeah, mea culpa, I twisted it around in my head. I mean the
+reverse. So this is why there are GPIO_CONFIG_BIAS_HIGH
+and GPIO_CONFIG_BIAS_GROUND in the predefined pin
+bias states.
 
-Thanks,
-Yong
+(I do get it, don't worry, I was in electroscience before I
+turned computer science actually...)
 
+> �This is a case where the driver
+> should /not/ go playing with things it can't fully understand.
 >
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/lockdep.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 70 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 0d2058d..bb77c030 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
->        usage[i] = '\0';
->  }
->
-> +static int __print_lock_name(struct lock_class *class)
-> +{
-> +       char str[KSYM_NAME_LEN];
-> +       const char *name;
-> +
-> +       name = class->name;
-> +       if (!name)
-> +               name = __get_key_name(class->key, str);
-> +
-> +       return printk("%s", name);
-> +}
-> +
->  static void print_lock_name(struct lock_class *class)
->  {
->        char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
-> @@ -1325,6 +1337,62 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
->        return;
->  }
->
-> +static void
-> +print_irq_lock_scenario(struct lock_list *safe_entry,
-> +                       struct lock_list *unsafe_entry,
-> +                       struct held_lock *prev,
-> +                       struct held_lock *next)
-> +{
-> +       struct lock_class *safe_class = safe_entry->class;
-> +       struct lock_class *unsafe_class = unsafe_entry->class;
-> +       struct lock_class *middle_class = hlock_class(prev);
-> +
-> +       if (middle_class == safe_class)
-> +               middle_class = hlock_class(next);
-> +
-> +       /*
-> +        * A direct locking problem where unsafe_class lock is taken
-> +        * directly by safe_class lock, then all we need to show
-> +        * is the deadlock scenario, as it is obvious that the
-> +        * unsafe lock is taken under the safe lock.
-> +        *
-> +        * But if there is a chain instead, where the safe lock takes
-> +        * an intermediate lock (middle_class) where this lock is
-> +        * not the same as the safe lock, then the lock chain is
-> +        * used to describe the problem. Otherwise we would need
-> +        * to show a different CPU case for each link in the chain
-> +        * from the safe_class lock to the unsafe_class lock.
-> +        */
-> +       if (middle_class != unsafe_class) {
-> +               printk("Chain exists of:\n  ");
-> +               __print_lock_name(safe_class);
-> +               printk(" --> ");
-> +               __print_lock_name(middle_class);
-> +               printk(" --> ");
-> +               __print_lock_name(unsafe_class);
-> +               printk("\n\n");
-> +       }
-> +
-> +       printk(" Possible interrupt unsafe locking scenario:\n\n");
-> +       printk("       CPU0                    CPU1\n");
-> +       printk("       ----                    ----\n");
-> +       printk("  lock(");
-> +       __print_lock_name(unsafe_class);
-> +       printk(");\n");
-> +       printk("                               local_irq_disable();\n");
-> +       printk("                               lock(");
-> +       __print_lock_name(safe_class);
-> +       printk(");\n");
-> +       printk("                               lock(");
-> +       __print_lock_name(middle_class);
-> +       printk(");\n");
-> +       printk("  <Interrupt>\n");
-> +       printk("    lock(");
-> +       __print_lock_name(safe_class);
-> +       printk(");\n");
-> +       printk("\n *** DEADLOCK ***\n\n");
-> +}
-> +
->  static int
->  print_bad_irq_dependency(struct task_struct *curr,
->                         struct lock_list *prev_root,
-> @@ -1376,6 +1444,8 @@ print_bad_irq_dependency(struct task_struct *curr,
->        print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
->
->        printk("\nother info that might help us debug this:\n\n");
-> +       print_irq_lock_scenario(backwards_entry, forwards_entry, prev, next);
-> +
->        lockdep_print_held_locks(curr);
->
->        printk("\nthe dependencies between %s-irq-safe lock", irqclass);
-> --
-> 1.7.2.3
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> Perhaps one of the properties that a board can set in a gpio chip
+> driver is the suspend state and have suspend/resume hooks in the
+> gpio chip take care of setting things up on each side.
 
+Yes, the API is not only for drivers, it's for boards alright.
 
+Pushing it to drivers/gpio give us two advantages:
 
--- 
-Only stand for myself
+1. Depopulate the overpopulated arch/arm/* etc trees
+2. Give an overview so the GPIO maintainer and others can
+  think about consolidations
+3. Clear cut drivers that can have runtime PM hooks etc...
+
+Linus Walleij
