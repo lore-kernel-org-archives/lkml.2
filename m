@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab1DVVnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:43:22 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58238
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1756906Ab1DVVn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:43:26 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42359
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756754Ab1DVVnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756763Ab1DVVnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 17:43:08 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 06/21] Staging: hv: Get rid of the function blkvsc_do_flush()
-Date: Fri, 22 Apr 2011 14:55:11 -0700
-Message-Id: <1303509326-3094-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 18/21] Staging: hv: Fix a jump label (Cleanup) in blkvsc_drv
+Date: Fri, 22 Apr 2011 14:55:23 -0700
+Message-Id: <1303509326-3094-18-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1303509326-3094-1-git-send-email-kys@microsoft.com>
 References: <1303509246-3053-1-git-send-email-kys@microsoft.com>
@@ -24,121 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the function blkvsc_do_flush() and instead use the common function
-to force a device flush.
+One of the goto labels was named Cleanup; change it to cleanup.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   52 ++++++++++----------------------------
- 1 files changed, 14 insertions(+), 38 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 7fab3c7..a7ae437 100644
+index bf8647e..a47581c 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -49,6 +49,7 @@ enum blkvsc_device_type {
- enum blkvsc_op_type {
- 	DO_INQUIRY,
- 	DO_CAPACITY,
-+	DO_FLUSH,
- };
- 
- /*
-@@ -451,6 +452,13 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
- 		blkvsc_req->cmd_len = 16;
- 		blkvsc_req->request.data_buffer.len = 8;
- 		break;
-+
-+	case DO_FLUSH:
-+		blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
-+		blkvsc_req->cmd_len = 10;
-+		blkvsc_req->request.data_buffer.pfn_array[0] = 0;
-+		blkvsc_req->request.data_buffer.len = 0;
-+		break;
- 	default:
- 		ret = -EINVAL;
- 		goto cleanup;
-@@ -502,6 +510,9 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
- 		(buf[4] << 24) | (buf[5] << 16) |
- 		(buf[6] << 8) | buf[7];
- 		break;
-+	default:
-+		break;
-+
+@@ -963,7 +963,7 @@ static int blkvsc_probe(struct device *device)
+ 	blkdev = kzalloc(sizeof(struct block_device_context), GFP_KERNEL);
+ 	if (!blkdev) {
+ 		ret = -ENOMEM;
+-		goto Cleanup;
++		goto cleanup;
  	}
  
- cleanup:
-@@ -515,41 +526,6 @@ cleanup:
- 	return ret;
- }
- 
--static int blkvsc_do_flush(struct block_device_context *blkdev)
--{
--	struct blkvsc_request *blkvsc_req;
--
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_flush()\n");
--
--	if (blkdev->device_type != HARDDISK_TYPE)
--		return 0;
--
--	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
--	if (!blkvsc_req)
--		return -ENOMEM;
--
--	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
--	init_completion(&blkvsc_req->request.wait_event);
--	blkvsc_req->dev = blkdev;
--	blkvsc_req->req = NULL;
--	blkvsc_req->write = 0;
--
--	blkvsc_req->request.data_buffer.pfn_array[0] = 0;
--	blkvsc_req->request.data_buffer.offset = 0;
--	blkvsc_req->request.data_buffer.len = 0;
--
--	blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
--	blkvsc_req->cmd_len = 10;
--
--	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
--
--	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
--
--	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--
--	return 0;
--}
--
- 
- static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev)
- {
-@@ -676,7 +652,7 @@ static int blkvsc_remove(struct device *device)
- 		udelay(100);
+ 	INIT_LIST_HEAD(&blkdev->pending_list);
+@@ -977,14 +977,14 @@ static int blkvsc_probe(struct device *device)
+ 					SLAB_HWCACHE_ALIGN, NULL);
+ 	if (!blkdev->request_pool) {
+ 		ret = -ENOMEM;
+-		goto Cleanup;
++		goto cleanup;
  	}
  
--	blkvsc_do_flush(blkdev);
-+	blkvsc_do_operation(blkdev, DO_FLUSH);
  
- 	spin_lock_irqsave(&blkdev->lock, flags);
+ 	/* Call to the vsc driver to add the device */
+ 	ret = storvsc_drv_obj->base.dev_add(device_obj, &device_info);
+ 	if (ret != 0)
+-		goto Cleanup;
++		goto cleanup;
  
-@@ -720,7 +696,7 @@ static void blkvsc_shutdown(struct device *device)
- 		udelay(100);
+ 	blkdev->device_ctx = device_obj;
+ 	/* this identified the device 0 or 1 */
+@@ -1027,7 +1027,7 @@ static int blkvsc_probe(struct device *device)
+ 		}
+ 	} else {
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
  	}
  
--	blkvsc_do_flush(blkdev);
-+	blkvsc_do_operation(blkdev, DO_FLUSH);
- 
- 	spin_lock_irqsave(&blkdev->lock, flags);
- 
-@@ -740,7 +716,7 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
- 	spin_lock(&blkdev->lock);
- 	if (blkdev->users == 1) {
- 		spin_unlock(&blkdev->lock);
--		blkvsc_do_flush(blkdev);
-+		blkvsc_do_operation(blkdev, DO_FLUSH);
- 		spin_lock(&blkdev->lock);
+ 	DPRINT_INFO(BLKVSC_DRV, "blkvsc registered for major %d!!", major);
+@@ -1035,7 +1035,7 @@ static int blkvsc_probe(struct device *device)
+ 	blkdev->gd = alloc_disk(BLKVSC_MINORS);
+ 	if (!blkdev->gd) {
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
  	}
  
+ 	blkdev->gd->queue = blk_init_queue(blkvsc_request, &blkdev->lock);
+@@ -1074,7 +1074,7 @@ static int blkvsc_probe(struct device *device)
+ Remove:
+ 	storvsc_drv_obj->base.dev_rm(device_obj);
+ 
+-Cleanup:
++cleanup:
+ 	if (blkdev) {
+ 		if (blkdev->request_pool) {
+ 			kmem_cache_destroy(blkdev->request_pool);
 -- 
 1.7.4.1
 
