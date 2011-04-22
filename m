@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab1DVNkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 09:40:13 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:24021
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755368Ab1DVNkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 09:40:11 -0400
-X-SpamScore: -29
-X-BigFish: VPS-29(zz1803M936eK9371O542M1432N98dKzz1202hzz8275bhz2dh95h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755640Ab1DVNmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 09:42:37 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48251 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755367Ab1DVNmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 09:42:35 -0400
+Date: Fri, 22 Apr 2011 15:42:25 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20110422134225.GA22574@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Subject: RE: [PATCH V2] tty/serial: add support for Xilinx PS UART
-Date: Fri, 22 Apr 2011 07:40:06 -0600
-In-Reply-To: <1303464033.26896.11.camel@Joe-Laptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V2] tty/serial: add support for Xilinx PS UART
-Thread-Index: AcwAzorXrPTiDbf3R6CDIoyPokiHPQAI8CBw
-References: <90e49570-bc82-41a9-ac79-2f5007e93a2a@VA3EHSMHS018.ehs.local> <4DB14626.8090002@petalogix.com> <1303464033.26896.11.camel@Joe-Laptop>
-From: John Linn <John.Linn@xilinx.com>
-To: Joe Perches <joe@perches.com>, <michal.simek@petalogix.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <alan@lxorguk.ukuu.org.uk>, <greg@kroah.com>,
-        <grant.likely@secretlab.ca>
-X-OriginalArrivalTime: 22 Apr 2011 13:40:07.0399 (UTC) FILETIME=[CAF43770:01CC00F2]
-Message-ID: <15951ed5-383b-47ad-bbbd-47650f04735a@VA3EHSMHS026.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3MDeNXN030037
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Friday, April 22, 2011 3:21 AM
-> To: michal.simek@petalogix.com
-> Cc: John Linn; linux-kernel@vger.kernel.org; linux-
-> serial@vger.kernel.org; alan@lxorguk.ukuu.org.uk; greg@kroah.com;
-> grant.likely@secretlab.ca
-> Subject: Re: [PATCH V2] tty/serial: add support for Xilinx PS UART
-> 
-> On Fri, 2011-04-22 at 11:11 +0200, Michal Simek wrote:
-> > John Linn wrote:
-> > > The Xilinx PS Uart is used on the new ARM based SoC. This
-> > > UART is not compatible with others such that a seperate
-> > > driver is required.
-> []
-> > > +++ b/drivers/tty/serial/xilinx_uartps.c
-> []
-> > > +		rc = uart_add_one_port(&xuartps_uart_driver, port);
-> > > +		if (rc) {
-> > > +			dev_err(&pdev->dev, "uart_add_one_port() failed; \
-> > > +						err=%i\n", rc);
-> 
-> That's a whitespace error.
-> Please don't be concerned about 80 column lines used for formatting.
-> You could use something like this as well.
+Linus,
 
-Thanks Joe.  I'm surprised checkpatch didn't catch that.  Easy enough
-to fix on the next spin of the patch.
+Please pull the latest perf-fixes-for-linus git tree from:
 
-I thought checkpatch did complain if the lines were longer than 80, but
-maybe there are some exceptions I didn't realize.  
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
-Thanks for your time and input, learning more everyday :)
-John
+ Thanks,
 
-> 
-> 			dev_err(&pdev->dev,
-> 				"uart_add_one_port() failed; err=%d\n", rc);
-> 
-> 
+	Ingo
+
+------------------>
+Andi Kleen (1):
+      perf: Support Xeon E7's via the Westmere PMU driver
+
+Cyrill Gorcunov (1):
+      perf, x86: P4 PMU - Don't forget to clear cpuc->active_mask on overflow
+
+Ingo Molnar (1):
+      x86, perf event: Turn off unstructured raw event access to offcore registers
+
+Peter Zijlstra (1):
+      perf, x86: Update/fix Intel Nehalem cache events
 
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ arch/x86/kernel/cpu/perf_event.c       |    6 +++++-
+ arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++----
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ 3 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index eed3673a..632e5dc 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -586,8 +586,12 @@ static int x86_setup_perfctr(struct perf_event *event)
+ 			return -EOPNOTSUPP;
+ 	}
+ 
++	/*
++	 * Do not allow config1 (extended registers) to propagate,
++	 * there's no sane user-space generalization yet:
++	 */
+ 	if (attr->type == PERF_TYPE_RAW)
+-		return x86_pmu_extra_regs(event->attr.config, event);
++		return 0;
+ 
+ 	if (attr->type == PERF_TYPE_HW_CACHE)
+ 		return set_ext_hw_attr(hwc, event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 8fc2b2c..43fa20b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -391,12 +391,12 @@ static __initconst const u64 nehalem_hw_cache_event_ids
+ {
+  [ C(L1D) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0f40, /* L1D_CACHE_LD.MESI            */
+-		[ C(RESULT_MISS)   ] = 0x0140, /* L1D_CACHE_LD.I_STATE         */
++		[ C(RESULT_ACCESS) ] = 0x010b, /* MEM_INST_RETIRED.LOADS       */
++		[ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPL                     */
+ 	},
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0f41, /* L1D_CACHE_ST.MESI            */
+-		[ C(RESULT_MISS)   ] = 0x0141, /* L1D_CACHE_ST.I_STATE         */
++		[ C(RESULT_ACCESS) ] = 0x020b, /* MEM_INST_RETURED.STORES      */
++		[ C(RESULT_MISS)   ] = 0x0251, /* L1D.M_REPL                   */
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x014e, /* L1D_PREFETCH.REQUESTS        */
+@@ -1425,6 +1425,7 @@ static __init int intel_pmu_init(void)
+ 
+ 	case 37: /* 32 nm nehalem, "Clarkdale" */
+ 	case 44: /* 32 nm nehalem, "Gulftown" */
++	case 47: /* 32 nm Xeon E7 */
+ 		memcpy(hw_cache_event_ids, westmere_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, nehalem_hw_cache_extra_regs,
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index c2520e1..d1f77e2 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -947,7 +947,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		if (!x86_perf_event_set_period(event))
+ 			continue;
+ 		if (perf_event_overflow(event, 1, &data, regs))
+-			p4_pmu_disable_event(event);
++			x86_pmu_stop(event, 0);
+ 	}
+ 
+ 	if (handled) {
