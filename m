@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1DVUY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:24:58 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:60999 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab1DVUYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:24:55 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <1303496357.2590.38.camel@mulgrave.site>
-References: <1303337718.2587.51.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
-	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
-	 <1303403847.4025.11.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211328000.5741@router.home>
-	 <1303411537.9048.3583.camel@nimitz>
-	 <1303496357.2590.38.camel@mulgrave.site>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 22 Apr 2011 13:24:48 -0700
-Message-ID: <1303503888.9308.6661.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756600Ab1DVUas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:30:48 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43461 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418Ab1DVUaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 16:30:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=FJq/J8eMLPAKVdZ1IskUbCUOfsKPXQfGzaGyn2slJtp74q//eK8FrqUf/YNYmLAXEs
+         7SaPTF0zRg6Sz5tbLZ4Q==
+MIME-Version: 1.0
+In-Reply-To: <4DB1681B.9060208@fusionio.com>
+References: <20110420125824.GA3507@tiehlicka.suse.cz>
+	<4DAEDBEB.7060904@fusionio.com>
+	<20110420132903.GA13554@tiehlicka.suse.cz>
+	<4DAF18DF.9080205@fusionio.com>
+	<20110421071642.GA3556@tiehlicka.suse.cz>
+	<5F35AAD2-8277-44BD-86B6-B1D7B816071E@kernel.dk>
+	<BANLkTinYv+YW6HVCodsWcCKwMmdZFsXPRA@mail.gmail.com>
+	<20110421185112.GA4796@tiehlicka.suse.cz>
+	<4DB07ECA.5050309@fusionio.com>
+	<20110422070032.GA3575@tiehlicka.suse.cz>
+	<4DB1681B.9060208@fusionio.com>
+Date: Fri, 22 Apr 2011 13:30:42 -0700
+Message-ID: <BANLkTinsqMaKuUjTwByXopXb+4a83nfApw@mail.gmail.com>
+Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer dereference
+ at 0000000c IP: cfq_insert_request+0x1d/0x3f5
+From: Hugh Dickins <hughd@google.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 13:19 -0500, James Bottomley wrote:
-> I looked at converting parisc to sparsemem and there's one problem that
-> none of these cover.  How do you set up bootmem?  If I look at the
-> examples, they all seem to have enough memory in the first range to
-> allocate from, so there's no problem.  On parisc, with discontigmem, we
-> set up all of our ranges as bootmem (we can do this because we
-> effectively have one node per range).  Obviously, since sparsemem has a
-> single bitmap for all of the bootmem, we can no longer allocate all of
-> our memory to it (well, without exploding because some of our gaps are
-> gigabytes big).  How does everyone cope with this (do you search for
-> your largest range and use that as bootmem or something)? 
+On Fri, Apr 22, 2011 at 4:35 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-04-22 09:00, Michal Hocko wrote:
+>> On Thu 21-04-11 21:00:26, Jens Axboe wrote:
+>>> On 2011-04-21 20:51, Michal Hocko wrote:
+>>>> On Thu 21-04-11 07:38:57, Linus Torvalds wrote:
+>>>>> On Thu, Apr 21, 2011 at 12:25 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>>>
+>>>>>>> I am going to bisect, let's see if I can find anything.
+>>>>>>
+>>>>>> Thanks, that would be great!
+>>>>>
+>>>>> I'd expect it to be very timing-dependent, and thus could easily be
+>>>>> triggered (or hidden) by unrelated changes.
+>>>>>
+>>>>> Just happening to have a request added to the elevator at _just_ the
+>>>>> same moment that another CPU is changing it and getting rid of the
+>>>>> data structures for the old one.
+>>>>
+>>>> And it really looks like a timing issue. I have bisected down to
+>>>> e710d7d5a9cab1041b7a3cf9e655b75d92786857. I had to skip[1] some commits
+>>>> due to compile errors [2].
+>>>> At first it looked quite promising because I was able to boot after I
+>>>> reverted that patch but then I have tried to revert it on top of rc4
+>>>> (2f666bcf757cb72549f360ef6da02f03620a48b6) and saw the same problem
+>>>> again.
+>>>>
+>>>> So I do not think that bisecting will help here.
+>>>
+>>> It will be timing dependent. If there's no allocated IO requests when
+>>> the switch happens, it'll work.
+>>>
+>>> But the commit that caused this regression is 5e84ea3a. If you revert
+>>> that, it should work fine. Or just apply the patch I sent (or update to
+>>> Linus' tree, it's in now) and it'll work as well.
+>>
+>> Great. I can boot just fine with the current Linus tree
+>> (2.6.39-rc4-00149-g91e8549).
+>>
+>> Thanks a lot!
+>
+> Great, with that confirmed from you, we have no pending bugs in this
+> area.
 
-Sparsemem is purely post-bootmem.  It doesn't deal with sparse
-bootmem. :(
+Yes, I booted up last night's git kernel on the PowerPC G5, and
+confirm that CONFIG_IDE=y worked with that, whereas rc4 still had the
+hang (even with CONFIG_SMP=y CONFIG_PREEMPT=y).
 
-That said, I'm not sure you're in trouble.  One bit of bitmap covers 4k
-(with 4k pages of course) of memory, one byte covers 32k, and A 32MB
-bitmap can cover 1TB of address space.  It explodes, but I think it's
-manageable.  It hasn't been a problem enough up to this point to go fix
-it.
-
--- Dave
-
+Hugh
