@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab1DVEu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 00:50:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59390 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab1DVEu4 (ORCPT
+	id S1751359Ab1DVFAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 01:00:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50230 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab1DVFAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 00:50:56 -0400
-Date: Fri, 22 Apr 2011 00:50:54 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@toxicpanda.com>
-Cc: Eric Blake <eblake@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-Message-ID: <20110422045054.GB17795@infradead.org>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
- <loom.20110422T001650-760@post.gmane.org>
- <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com>
+	Fri, 22 Apr 2011 01:00:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=vpCGdBZxalJRVj66yAQCzsaWP7m+Y+ANEB30h92XK+0eBYlsAi2KBGe01EbLv/ABBy
+         6OyIbkca6Ki7e05zauGLw35QElOibPBkfaaXYHR0w7kvYifdDqNnW6yTNsJCuIZOrjX0
+         wiCm/V1RWSkk+M2bjfEFzK9Giv3/6Mac3Jscc=
+Message-ID: <4DB10B5D.1020602@gmail.com>
+Date: Fri, 22 Apr 2011 09:00:13 +0400
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mach-at91: gsia18s board improvements and bug fixes
+References: <1303291399-4075-1-git-send-email-plyatov@gmail.com> <4DB04588.9000201@atmel.com>
+In-Reply-To: <4DB04588.9000201@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Eric: please don't drop the Cc list, thanks!]
+Hi Nicolas!
+> Hi Igor,
+>
+> Le 20/04/2011 11:23, Igor Plyatov :
+>> * AT91_PIN_Pxxx port names replaced by human readable GPO_xxxx, GPI_xxxx,
+>>    GPIO_xxxx names. This simplify source code and schematic maintenance.
+> Maybe it simplifies schematic reading because the actual cpu pin names
+> are not indicated on your schematic... But for code, the AT91 pin names
+> are required, so, no for this part of the patch.
+> You may know that there is an effort ongoing to minimize the amount of
+> not needed / duplicated information in the kernel, I am afraid but I
+> think this renaming is not needed.
+>
+> Moreover, I think that the "Buttons" part of the file:
+> arch/arm/mach-at91/include/mach/gsia18s.h
+> should be removed.
 
-On Thu, Apr 21, 2011 at 09:22:55PM -0400, Josef Bacik wrote:
-> > since all files have a virtual hole at the end, but leaves the position
-> > unchanged). ??I'd have to write a test program on Solaris to see whether that
-> > definition is actually true, or if it is a bug in the Solaris man page.
-> >
-> 
-> lseek's purpose is to reposition the file position, so I'd imagine
-> this is just a bug in the man page.
+OK. Corrected.
 
-I would be surprised if the bug is around for such a long time, but
-otherwise I concur.
+>> * Active logic levels and default states corrected for GPOs.
+> Ok for this.
+>
+>> * Replace small functions which use platform_register_device() by its direct
+>>    calls.
+> Ok for this.
+>
+>> * Remove GPIO_CARD_UNMOUNT_1 gpio_keys_button, because it not used.
+> Ok for this.
+>
+>> * debounce_interval added for critical buttons.
+> Ok for this.
+>
+>> * Remove unneeded GPI setup code for buttons, because this done by corresponding
+>>    driver.
+> I do not see this, can you elaborate?
 
-> Except you can have blocks allocated past i_size, so returning i_size
-> isn't necessarily correct.  Obviously the idea is to have most of the
-> filesystems doing the correct thing, but for my first go around I just
-> was going to do one since I expect quite a bit of repainting for this
-> bikeshed is yet to be done.  But I guess if you have data past i_size
-> doing this would encourage the various fs people to fix it.
+The "gsia18s_add_device_buttons" function removed, because GPIs 
+initialization done by "gpio_keys" driver and this function replaced by 
+"platform_register_device" direct call.
 
-Trying to be smart about our semantics is not helpful here.  The
-interface has been out in Solaris for a while, and we'll have to either
-stick to it or use different names for the interface.  And staying
-compatible is far more useful for userspace programmers.
+>> * pcf8574x_0x20_setup() and pcf8574x_0x20_teardown functions small refactoring.
+> Ok for this.
+>
+>> Signed-off-by: Igor Plyatov<plyatov@gmail.com>
+> So, can you please rewrite your patch, we will be pleased to integrate
+> it in a "fix" update of at91 Linux.
+>
+> Thanks, best regards,
+
+Rewritten and will be published as "[PATCH v2] mach-at91: gsia18s board 
+improvements and bug fixes".
+
+Best regards!
+
+-- 
+Igor Plyatov
 
