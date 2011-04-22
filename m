@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1DVOac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 10:30:32 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36307 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750986Ab1DVOa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 10:30:29 -0400
-Date: Fri, 22 Apr 2011 15:30:27 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 8/7] signal: cleanup sys_rt_sigprocmask()
-Message-ID: <20110422153027.12d16b7e@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110418134700.GI15951@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
-	<20110418134700.GI15951@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+	id S1755620Ab1DVObs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 10:31:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60173 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab1DVObq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 10:31:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,253,1301900400"; 
+   d="scan'208";a="737052382"
+Subject: Re: perf_events: questions about cpu_has_ht_siblings() and offcore
+ support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+In-Reply-To: <BANLkTimXi0on1pLLqeW3C3YyKXNeyE1d5Q@mail.gmail.com>
+References: <BANLkTinNJERr_=ELO61UbrwCJjW1KAdK2A@mail.gmail.com>
+	 <1303478798.2461.11.camel@localhost>
+	 <BANLkTimXi0on1pLLqeW3C3YyKXNeyE1d5Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Apr 2011 22:31:42 +0800
+Message-Id: <1303482702.2461.40.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Apr 2011 15:47:00 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> sys_rt_sigprocmask() looks unnecessarily complicated, simplify it.
-> We can just read current->blocked lockless unconditionally before
-> anything else and then copy-to-user it if needed.  At worst we
-> copy 4 words on mips.
+On Fri, 2011-04-22 at 21:46 +0800, Stephane Eranian wrote:
+> On Fri, Apr 22, 2011 at 3:26 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > On Fri, 2011-04-22 at 20:59 +0800, Stephane Eranian wrote:
+> >> Lin,
+> >>
+> >> In arch/x86/include/asm/smp.h, you added:
+> >>
+> >> static inline bool cpu_has_ht_siblings(void)
+> >> {
+> >>        bool has_siblings = false;
+> >> #ifdef CONFIG_SMP
+> >>        has_siblings = cpu_has_ht && smp_num_siblings > 1;
+> >> #endif
+> >>        return has_siblings;
+> >> }
+> >>
+> >> I am wondering about the goal of this function.
+> >>
+> >> Is it supposed to return whether or not HT is enabled?
+> >>
+> >> Ht enabled != HT supported
+> >
+> > It's used to check if HT is supported.
+> >
+> Ok, that makes more sense.
 > 
-> We could copy-to-user the old mask first and simplify the code even
-> more, but the patch tries to keep the current behaviour: we change
-> current->block even if copy_to_user(oset) fails.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
-> 
->  kernel/signal.c |   40 +++++++++++++++++-----------------------
->  1 file changed, 17 insertions(+), 23 deletions(-)
-> 
-> --- sigprocmask/kernel/signal.c~8_sys_sigprocmask	2011-04-17 22:32:58.000000000 +0200
-> +++ sigprocmask/kernel/signal.c	2011-04-18 14:45:57.000000000 +0200
-> @@ -2172,40 +2172,34 @@ int sigprocmask(int how, sigset_t *set, 
->   *  @oset: previous value of signal mask if non-null
->   *  @sigsetsize: size of sigset_t type
->   */
-> -SYSCALL_DEFINE4(rt_sigprocmask, int, how, sigset_t __user *, set,
-> +SYSCALL_DEFINE4(rt_sigprocmask, int, how, sigset_t __user *, nset,
->  		sigset_t __user *, oset, size_t, sigsetsize)
->  {
-> -	int error = -EINVAL;
->  	sigset_t old_set, new_set;
-> +	int error;
->  
-> -	/* XXX: Don't preclude handling different sized sigset_t's.  */
-> +	/* Don't preclude handling different sized sigset_t's. */
->  	if (sigsetsize != sizeof(sigset_t))
-> -		goto out;
-> +		return -EINVAL;
+> > But unfortunately, we didn't find a way to check if HT is enabled.
+> > So I just check if HT is supported.
+> >
+> >>
+> >> +static inline int is_ht_enabled(void)
+> >> +{
+> >> +       bool has_ht = false;
+> >> +#ifdef CONFIG_SMP
+> >> +       int w;
+> >> +       w = cpumask_weight(cpu_sibling_mask(smp_processor_id()));
+> >> +       has_ht = cpu_has_ht && w > 1;
+> >> +#endif
+> >> +       return has_ht;
+> >> +}
+> >>
+> >> OTOH, you need some validation even in the case HT is off. No two events
+> >> scheduled together on the same PMU can have different values for the extra
 
-I don't think it's correct to remove the 'XXX'. The comment is
-currently saying "We don't handle different sized sigset_t's, but we
-should", whereas removing the 'XXX' says to me that we _DO_ handle
-different sized sigset_t's. If you don't like the 'XXX' you could
-always swap it for a 'TODO'?
+I got it now.
 
-Otherwise looks like a very nice cleanup.
+> >> reg. Thus, the fact that cpu_has_ht_siblings() is imune to HT state helps here,
+> >> but then what's the point of it?
+> >
+> > The points is to avoid the percore resource allocations(which are used
+> > to sync between HTs) if HT is not supported.
+> >
+> But if you check x86_pmu.extra_regs, that should do it as well.
 
-Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
+I don't understand here.
+Did you mean we can avoid the percore resource allocations by just
+checking x86_pmu.extra_regs? How?
+
+> 
+> Suppose HT is disabled and I do:
+> 
+> perf stat -e offcore_response_0:dmd_data_rd,offcore_response_0:dmnd_rfo ......
+> 
+> This should still not be allowed.
+
+Ah, you are right.
+We have to always check extra_config even HT is disabled and/or
+supported.
+
+> 
+> I think in this case, HT supported will cause your code to still allocate the
+> per-core struct. There will be no matching of per-core structs in starting().
+> So I suspect things work.
+
+This has no problem.
+If "no matching" found, then below if(...) statement won't be executed.
+
+intel_pmu_cpu_starting:
+
+        for_each_cpu(i, topology_thread_cpumask(cpu)) {
+                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+
+                if (pc && pc->core_id == core_id) {
+                        kfree(cpuc->per_core);
+                        cpuc->per_core = pc;
+                        break;
+                }
+        }
+
+Or do you see other potential problem?
+
+
