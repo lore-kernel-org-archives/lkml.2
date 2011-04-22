@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1DVQ2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:28:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40879 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab1DVQ22 (ORCPT
+	id S1756186Ab1DVQdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:33:39 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39315 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756154Ab1DVQdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:28:28 -0400
-Message-ID: <4DB1AC9D.3010706@oracle.com>
-Date: Fri, 22 Apr 2011 09:28:13 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Eric Blake <eblake@redhat.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com>
-In-Reply-To: <4DB16B72.1050702@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 22 Apr 2011 12:33:36 -0400
+Date: Fri, 22 Apr 2011 17:34:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Chris Samuel <chris@csamuel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on
+ quad Pentium Pro system
+Message-ID: <20110422173422.46134f20@lxorguk.ukuu.org.uk>
+In-Reply-To: <201104222333.25546.chris@csamuel.org>
+References: <201104222333.25546.chris@csamuel.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DB1ACA4.00CD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2011 04:50 AM, Eric Blake wrote:
-> That blog also mentioned the useful idea of adding FIND_HOLE and
-> FIND_DATA, not implemented in Solaris, but which could easily be
-> provided as additional lseek constants in Linux to locate the start of
-> the next chunk without repositioning and which could ease application
-> programmer's life a bit.  After all, cp wants to know where data ends
-> without repositioning (FIND_HOLE), read() that much data which
-> repositions in the process, then skip to the next chunk of data
-> (SEEK_DATA) - two lseek() calls per iteration if we have 4 constants,
-> but 3 per iteration if we only have SEEK_HOLE and have to manually rewind.
+> All result in the same behaviour and I'm somewhat at a loss
+> as to how to debug this further, being a sysadmin rather than
+> a real kernel hacker. :-(
+> 
+> I've attached the 2.6.39-rc4 kernel config from point 4, and
+> the kernel config for the working Debian kernel (2.6.18-6-686).
+> 
+> I've also attached the contents of /proc/cpuinfo, /proc/io*,
+> /proc/scsi/scsi, /proc/modules and the output of lspci -vvv
+> and of dmesg from Debian Sarge running the Debian Etch kernel
+> (2.6.18-6-686).
+> 
+> This box has given me good service over the past 8 years or
+> so and I'd hate to have to retire it now due to this when I
+> feel Linux should still work on it..
+> 
+> Any ideas please ?
 
-while(1) {
-     read(block);
-     if (block_all_zeroes)
-         lseek(SEEK_DATA);
-}
+earlyprintk=vga
 
-What's wrong with the above? If this is the case, even SEEK_HOLE
-is not needed but should be added as it is already in Solaris.
+(or better yet earlyprintk=ttyS0 and a serial port)
 
-My problem with FIND_* is that we are messing with the well understood
-semantics of lseek().
+There are a couple of PPro funnies - there's an area of memory that
+must be excluded due to a chip errata and I seem to remember some PPro
+boxes also having slightly quirking E820 (BIOS memory reporting behaviour)
 
-And if generic_file_llseek_unlocked() treats SEEK_DATA as SEEK_CUR and
-SEEK_HOLE as SEEK_END (both with zero offset) then we don't even
-have to bother with the finding the "correct" error code.
 
+Alan
