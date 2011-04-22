@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab1DVVZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:25:58 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:48111 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab1DVVZ5 (ORCPT
+	id S1756711Ab1DVVcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:32:55 -0400
+Received: from smtp102.prem.mail.sp1.yahoo.com ([98.136.44.57]:35359 "HELO
+	smtp102.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756572Ab1DVVcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 17:25:57 -0400
-Date: Fri, 22 Apr 2011 23:25:45 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: konrad.wilk@oracle.com, stefano.stabellini@eu.citrix.com,
-        xen-devel@lists.xensource.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
-Message-ID: <20110422212545.GA22846@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Fri, 22 Apr 2011 17:32:53 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: chiQjOEVM1lRj0hoccfnE.f7YB84z0EvAenkgtHjcpsaEBv
+ KvUH1FwWaxlsNEjpc3T2OfknS2Jr.pQQVCbqhIToMurhRaKM7fdXDjZgZk4P
+ b7W8NehYVRibdFz9EKMLd.Tlm.w5dCgO1knKsjPbERM6cTnKQg13fBeRY_8Q
+ 30fHNeVdN9NZdauYSaJOazRnFdssgv7o.UCyMtuwExefRHwklhKdXi6AVPwV
+ Xvpe0OGG2BCvVLMw8vONIhh9.w1BeOVV.iyNnrb9aEOAbRLhjACnq9kfZoHh
+ 05eEnF2MD7CK2DkdjcjGlzwhtIdFDcsekXap30jpU87hoqYTqKURNfF8HLob
+ iXERVqMMo2a6pFEoS8joYyRYNdTPPWtuueQ--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DB1F404.1060504@schaufler-ca.com>
+Date: Fri, 22 Apr 2011 14:32:52 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, npiggin@kernel.dk, shaohua.li@intel.com,
+        sds@tycho.nsa.gov, jmorris@namei.org,
+        linux-security-module@vger.kernel.org,
+        Eric Paris <eparis@parisplace.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Make RCU dcache work with CONFIG_SECURITY=y
+References: <1303431801-10540-1-git-send-email-andi@firstfloor.org> <BANLkTi=kod0vH3Ybb4Fe=Sa5zvzYSmoj1Q@mail.gmail.com> <20110422211649.GW16484@one.firstfloor.org>
+In-Reply-To: <20110422211649.GW16484@one.firstfloor.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missed Signed-off-by line.
+On 4/22/2011 2:16 PM, Andi Kleen wrote:
+> On Fri, Apr 22, 2011 at 11:26:09AM -0700, Linus Torvalds wrote:
+>> On Thu, Apr 21, 2011 at 5:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>>> I didn't find good test suites for the security modules, so
+>>> there wasn't a lot of testing on this unfortunately
+>>> (the selinux one for LTP doesn't seem to work). Some close
+>>> review of these changes is needed.
+>>>
+>>> On the other hand the VFS changes itself are very straight forward
+>>> and the 1/1 patch is very straight forward (and a win in itself)
+>>>
+>>> The bottom line is with this patchkit a CONFIG_SECURITY=y
+>>> kernel has as good VFS performance as a kernel with CONFIG_SECURITY
+>>> disabled.
+>> Gaah. My immediate reaction to the patch-series was "This is great, I
+>> was really hoping we could get all those annoying cases sorted out,
+>> and I'll queue them for the next merge window".
+>>
+>> Having then actually read through the patches a bit more, I then got
+>> convinced that at least the first patch should probably be applied
+>> right away and be marked for stable, since it looks pretty damn
+>> obvious to me, and it might already on its own fix the performance
+>> regression for some configurations (although realistically I guess few
+>> enough people really do the "selinux=0" thing, so the big advantage is
+>> making easier to backport the other patches later if we don't do them
+>> now).
+> Yes I agree. The first patch is (nearly) a no-brainer and already
+> has significant benefits. I would like to see it in .39.
+>
+>> Comments? I'd really like to see/hear feedback like "yeah, this looks
+>> really obviously safe" vs "yeah, looks good, but I really don't feel
+>> very comfortable with it" from the security people.
+> Especially SMACK review is needed.
 
-After a lot of debugging and long reading of Linux Kernel and Xen code
-finally I killed deeply hidden bug in pv-grub. Details below.
-Additionally, I am CC'ing this e-mail to LKML because this issue
-looks like Linux Kernel problem, however, it is not.
+I am happy to get all the help I can on this. I am not now
+nor have I ever been especially comfortable with sophisticated
+locking models. Where possible I have written code with minimal
+locking requirements, but sometimes you just can't avoid it. I
+have been fortunate in that several people have offered advice
+in the past.
 
-This patch applies to Xen Ver. 4.0, Xen Ver. 4.1 and unstable tree.
+> Or maybe selinux only for now,
+> already got one ack for that.
+>
+> (BTW I have some doubts on the locking in smack in general, 
+> but that's a separate issue -- see other thread)
+>
+> -Andi
+>
 
-# HG changeset patch
-# User dkiper@net-space.pl
-# Date 1303474763 -7200
-# Node ID b33bf24be129b7b9cd2248460beb1298088c6af5
-# Parent  dbf2ddf652dc3dd927447e79ef4bc586de55d708
-Introduction of Linux Kernel git commit ceefccc93932b920a8ec6f35f596db05202a12fe
-(x86: default CONFIG_PHYSICAL_START and CONFIG_PHYSICAL_ALIGN to 16 MB) revealed
-deeply hidden bug in pv-grub. During kernel load stage dom->p2m_host[] list has
-been incorrectly initialized.
-
-At the beginning of kernel load stage dom->p2m_host[] list is populated with
-current pfn->mfn layout. Later during memory allocation (memory is allocated
-page by page in kexec_allocate()) page order is changed to establish linear
-layout in new domain. It is done by exchanging subsequent mfns with newly
-allocated mfns. dom->p2m_host[] list is indexed by currently requested pfn
-(it is incremented from 0) and pfn of newly allocated paged. If pfn of newly
-allocated page is less than currently requested pfn then relevant earlier
-allocated mfn is overwritten which leads to domain crash later. This patch
-fix that issue. If pfn of newly allocated page is less then currently
-requested pfn then relevant pfn/mfn pair is properly calculated and usual
-exchange occurs later.
-
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-
-diff -r dbf2ddf652dc -r b33bf24be129 stubdom/grub/kexec.c
---- a/stubdom/grub/kexec.c	Thu Apr 07 15:26:58 2011 +0100
-+++ b/stubdom/grub/kexec.c	Fri Apr 22 14:19:23 2011 +0200
-@@ -91,6 +91,11 @@ int kexec_allocate(struct xc_dom_image *
-         new_pfn = PHYS_PFN(to_phys(pages[i]));
-         pages_mfns[i] = new_mfn = pfn_to_mfn(new_pfn);
- 
-+	if (new_pfn < i)
-+		for (new_pfn = i; new_pfn < dom->total_pages; ++new_pfn)
-+			if (dom->p2m_host[new_pfn] == new_mfn)
-+				break;
-+
-         /* Put old page at new PFN */
-         dom->p2m_host[new_pfn] = old_mfn;
- 
-Daniel
