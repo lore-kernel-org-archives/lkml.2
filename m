@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab1DVUel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:34:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44583 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756418Ab1DVUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:34:39 -0400
-Date: Fri, 22 Apr 2011 22:34:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: djwong <djwong@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
-Message-ID: <20110422203434.GA2977@quack.suse.cz>
-References: <20110406232938.GF1110@tux1.beaverton.ibm.com>
- <20110407165700.GB7363@quack.suse.cz>
- <20110408203135.GH1110@tux1.beaverton.ibm.com>
- <20110411124229.47bc28f6@corrin.poochiereds.net>
- <1302543595-sup-4352@think>
- <1302569212.2580.13.camel@mingming-laptop>
- <20110412005719.GA23077@infradead.org>
- <1302742128.2586.274.camel@mingming-laptop>
- <20110422000226.GA22189@tux1.beaverton.ibm.com>
- <1303476503-sup-4141@think>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303476503-sup-4141@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756652Ab1DVUf4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:35:56 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46869 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756418Ab1DVUfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 16:35:53 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <1303503888.9308.6661.camel@nimitz>
+References: <1303337718.2587.51.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
+	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
+	 <1303403847.4025.11.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104211328000.5741@router.home>
+	 <1303411537.9048.3583.camel@nimitz>
+	 <1303496357.2590.38.camel@mulgrave.site>
+	 <1303503888.9308.6661.camel@nimitz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Apr 2011 15:35:50 -0500
+Message-ID: <1303504550.2590.43.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-04-11 08:50:01, Chris Mason wrote:
-> Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
-> > Hi everyone,
-> > 
-> > I've finally managed to get together a patch that seems to provide stable pages
-> > during writeback, or at least gets us to the point that after several days of
-> > running tests I don't see DIF checksum errors anymore. :)
-> > 
-> > The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
-> > walk the process tree to find all userland ptes that map to a particular memory
-> > page and revoke write access, and
+On Fri, 2011-04-22 at 13:24 -0700, Dave Hansen wrote:
+> On Fri, 2011-04-22 at 13:19 -0500, James Bottomley wrote:
+> > I looked at converting parisc to sparsemem and there's one problem that
+> > none of these cover.  How do you set up bootmem?  If I look at the
+> > examples, they all seem to have enough memory in the first range to
+> > allocate from, so there's no problem.  On parisc, with discontigmem, we
+> > set up all of our ranges as bootmem (we can do this because we
+> > effectively have one node per range).  Obviously, since sparsemem has a
+> > single bitmap for all of the bootmem, we can no longer allocate all of
+> > our memory to it (well, without exploding because some of our gaps are
+> > gigabytes big).  How does everyone cope with this (do you search for
+> > your largest range and use that as bootmem or something)? 
 > 
-> Hmm, did you need the bio_integrity_prep change for all the filesystems?
-> This should be happening already as part of using page_mkwrite.
-  Or more precisely page_mkclean() should do what you try to do in
-bio_integrity_prep()... It would certainly be interesting (bug) if you
-could write to the page after calling page_mkclean() without page_mkwrite()
-being called.
+> Sparsemem is purely post-bootmem.  It doesn't deal with sparse
+> bootmem. :(
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Well, this is enabled in discontigmem, sigh.
+
+> That said, I'm not sure you're in trouble.  One bit of bitmap covers 4k
+> (with 4k pages of course) of memory, one byte covers 32k, and A 32MB
+> bitmap can cover 1TB of address space.  It explodes, but I think it's
+> manageable.  It hasn't been a problem enough up to this point to go fix
+> it.
+
+I think the platform limited physical address range is 42 bits, so I
+suppose that's 128MB ... hopefully we should have that as a contiguous
+range from the end of the loaded kernel.  We're lucky they didn't enable
+the full ZX1 address range; that would have been 48 bits (or a whole
+gigabyte just for the bitmap).
+
+James
+
+
