@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1DVMxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 08:53:21 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:65098 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750851Ab1DVMxR (ORCPT
+	id S1755086Ab1DVM7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 08:59:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19932 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab1DVM7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 08:53:17 -0400
-Message-ID: <4DB17A3B.3060609@blueyonder.co.uk>
-Date: Fri, 22 Apr 2011 13:53:15 +0100
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8 ThunderBrowse/3.3.5
+	Fri, 22 Apr 2011 08:59:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=mdp9Nbz77E9MLPRPVYd9XmT6GJcV57ujcEETWq9Pv9GPquF2pU4HdlHllwnAHwfGwk
+         2po0aMS+1NKlwXYsoPcQ==
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=RQ36K_f0x-kA:10 a=jP4ZM9dVWk4A:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=CfAdl1vy_98PchHglTcA:9 a=ZqaCy0LOAm4tKVGwBowA:7 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Date: Fri, 22 Apr 2011 14:59:10 +0200
+Message-ID: <BANLkTinNJERr_=ELO61UbrwCJjW1KAdK2A@mail.gmail.com>
+Subject: perf_events: questions about cpu_has_ht_siblings() and offcore support
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, andi.kleen@intel.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter Roeck wrote:
-Depends. In our case, turns out the devices consuming the clock
-have user mode drivers. Lots of history there, but the chip vendors
-provide those user mode drivers, and the teams responsible for
-integrating the drivers decided to not rewrite it to kernel mode drivers.
-Also, for special purposes such as margining, it is necessary to control
-the clock from userspace. So, for our use case, I need the user-visible
-interface. I _don't_ need the kernel interface, at least not right now,
-which is why I did not add it.
+Lin,
 
-Browsing through the web, it seems the chip is somewhat popular with
-Amateur Radio. No idea if it would ever be controlled for such a purpose
-from Linux, but if so, it would also require a user configurable frequency.
+In arch/x86/include/asm/smp.h, you added:
 
-If there is a better place for such a driver than misc, please let me know.
+static inline bool cpu_has_ht_siblings(void)
+{
+       bool has_siblings = false;
+#ifdef CONFIG_SMP
+       has_siblings = cpu_has_ht && smp_num_siblings > 1;
+#endif
+       return has_siblings;
+}
 
-Thanks,
-Guenter
-=============================================================================
-Support for these devices included in several Amateur radio programs 
-tend to differ greatly which means reinventing the wheel in most of them.
-Programs like Linrad, sdr-shell, quisk, lysdr, ghpsdr3, etc.
-It's a small addition to the kernel that would significantly help in the 
-development of software for the myriad of SDR (Software Defined Radio) 
-designs based on this chip family.
-I have 5 Amateur Radio transceivers using this chip and 2 more soon to 
-be added.
-They are all open hardware heavily reliant on Linux.
-The addition of UAC2 (USB Audio Class 2) kernel support has helped our 
-SDR hardware design efforts significantly.
-I and the rest of the Linux SDR community would be happy to see it included.
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+I am wondering about the goal of this function.
+
+Is it supposed to return whether or not HT is enabled?
+
+Ht enabled != HT supported
+
+On my systems (NHM or SNB), its value does not change
+when I enable/disable HT.
+
+Looking at Intel's AP-485 (CPUID documentation), they
+clearly say that none of the Leaf functions which report
+about HT or the number of logical cores, can be used to
+detect HT enabled or disabled. Seems those leaf functions
+are the basis for smp_num_siblings. The trick in Table-5.5
+for bit 28 with CPUID(1).EBX[23:16] used in detect_ht()
+is about HT supported and not HT enabled.
+
+HT supported means multi-core or multi-thread supported.
+
+Going back to the perf_event code, I wonder what is the
+point of using this function in intel_pmu_cpu_prepare(), then.
+
+I suspect you wanted to know whether or not HT was enabled.
+But that's not going to work. If you want that functionality, then
+I tried:
+
++static inline int is_ht_enabled(void)
++{
++       bool has_ht = false;
++#ifdef CONFIG_SMP
++       int w;
++       w = cpumask_weight(cpu_sibling_mask(smp_processor_id()));
++       has_ht = cpu_has_ht && w > 1;
++#endif
++       return has_ht;
++}
+
+But that cannot be used in the CPU hotplug callback for prepare(),
+it is too early.
+
+OTOH, you need some validation even in the case HT is off. No two events
+scheduled together on the same PMU can have different values for the extra
+reg. Thus, the fact that cpu_has_ht_siblings() is imune to HT state helps here,
+but then what's the point of it?
+
+I am preparing a patch that builds on your patch and improves
+support for those events or features which require an extra
+(shared) register. They are differences between NHM/WSM
+and SNB.
