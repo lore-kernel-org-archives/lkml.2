@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab1DVSQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 14:16:01 -0400
-Received: from shawmail.shawcable.com ([64.59.128.220]:37199 "EHLO
-	mail.shawcable.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab1DVSP6 convert rfc822-to-8bit (ORCPT
+	id S1755936Ab1DVSTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 14:19:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35461 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753697Ab1DVSTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 14:15:58 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Apr 2011 14:15:58 EDT
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=rhzBfl3TH6jSClqh7E8qe//hARbvbzCI0ETuu7/2kJU= c=1 sm=1
- a=VhSaPAebcz0A:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=yPCof4ZbAAAA:8 a=5W0eosO1bopyU7SEx2kA:9
- a=G7v-pEtmfS8SgnQ15QkA:7 a=CjuIK1q_8ugA:10 a=7DSvI1NPTFQA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-X-IronPort-AV: E=Sophos;i="4.64,254,1301896800"; 
-   d="scan'208";a="536311010"
-X-reinject: true
-References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com> <4DB1AC9D.3010706@oracle.com> <4DB1AF6F.4040706@redhat.com> <4DB1B37C.9070406@oracle.com> <4DB1B4F1.8070109@redhat.com> <4DB1B62B.3000700@oracle.com>
-In-Reply-To: <4DB1B62B.3000700@oracle.com>
-Mime-Version: 1.0 (iPhone Mail 8H7)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <B7EE7E9A-083C-4914-8A69-4DD3448D06B3@dilger.ca>
-Cc: Eric Blake <eblake@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Josef Bacik <josef@toxicpanda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-X-Mailer: iPhone Mail (8H7)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-Date: Fri, 22 Apr 2011 12:06:13 -0600
-To: Sunil Mushran <sunil.mushran@oracle.com>
+	Fri, 22 Apr 2011 14:19:20 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <1303411537.9048.3583.camel@nimitz>
+References: <1303337718.2587.51.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
+	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
+	 <1303403847.4025.11.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104211328000.5741@router.home>
+	 <1303411537.9048.3583.camel@nimitz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Apr 2011 13:19:16 -0500
+Message-ID: <1303496357.2590.38.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-22, at 11:08 AM, Sunil Mushran <sunil.mushran@oracle.com> wrote:
-> On 04/22/2011 10:03 AM, Eric Blake wrote:
->>> cp can read whatever blocksize it chooses. If that block contains
->>> zero, it would signal cp that maybe it should SEEK_DATA and skip
->>> reading all those blocks. That's all. We are not trying to achieve
->>> perfection. We are just trying to reduce cpu waste.
->>> 
->>> If the fs supports SEEK_*, then great. If it does not, then it is no
->>> worse than before.
->> But providing just SEEK_DATA _is_ worse than before if you don't provide
->> the correct SEEK_HOLE everywhere.  Because then your algorithm of trying
->> lseek(SEEK_DATA) after every run of zeros in the hopes of an
->> optimization is a wasted syscall, since it will just return your current
->> offset every time, so you end up with more syscalls than if you had used
->> the single lseek(SEEK_DATA) that returns the end of the file up front,
->> and known that the remainder of the file has no holes to even try
->> seeking past.
+On Thu, 2011-04-21 at 11:45 -0700, Dave Hansen wrote:
+> On Thu, 2011-04-21 at 13:33 -0500, Christoph Lameter wrote:
+> > http://www.linux-mips.org/archives/linux-mips/2008-08/msg00154.html
+> > 
+> > http://mytechkorner.blogspot.com/2010/12/sparsemem.html
+> > 
+> > Dave Hansen, Mel: Can you provide us with some help? (Its Easter and so
+> > the europeans may be off for awhile) 
 > 
-> You are over-optimizing. strace any process on your box and you
-> will find numerous wasted syscalls.
+> Yup, for sure.  It's also interesting how much code ppc64 removed when
+> they did this:
+> 
+> http://lists.ozlabs.org/pipermail/linuxppc64-dev/2005-November/006646.html
 
-Sure, there are lots of wasted syscalls, but in this case the cost of doing extra SEEK_DATA and SEEK_HOLE operations may be fairly costly. This involves scanning the whole disk layout, possibly over a network, which might need tens or hundreds of disk seeks to read the metadata, unlike regular SEEK_SET.
+I looked at converting parisc to sparsemem and there's one problem that
+none of these cover.  How do you set up bootmem?  If I look at the
+examples, they all seem to have enough memory in the first range to
+allocate from, so there's no problem.  On parisc, with discontigmem, we
+set up all of our ranges as bootmem (we can do this because we
+effectively have one node per range).  Obviously, since sparsemem has a
+single bitmap for all of the bootmem, we can no longer allocate all of
+our memory to it (well, without exploding because some of our gaps are
+gigabytes big).  How does everyone cope with this (do you search for
+your largest range and use that as bootmem or something)?
 
-Even SEEK_END is somewhat costly on a network filesystem, since the syscall needs to lock the file size in order to determine the end of the file, which can block other threads from writing to the file. 
+James
 
-So while I agree that the Linux mantra that "syscalls are cheap" is true if those syscalls don't actually do any work, I think it also ignores the cost of what some syscalls need to do behind the scenes. 
 
-Cheers, Andreas
+If 
+
