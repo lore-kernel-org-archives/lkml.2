@@ -1,69 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab1DVXAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 19:00:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20531 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700Ab1DVXAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 19:00:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,256,1301900400"; 
-   d="scan'208";a="424151878"
-Subject: Re: [PATCH] export kernel call get_task_comm().
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: Greg KH <gregkh@suse.de>
-Cc: akpm@linux-foundation.org, rientjes@google.com,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-In-Reply-To: <20110422224308.GA301@suse.de>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303511744-815-2-git-send-email-james_p_freyensee@linux.intel.com>
-	 <20110422224308.GA301@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 22 Apr 2011 15:59:42 -0700
-Message-ID: <1303513182.13457.134.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1756946Ab1DVXAl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 19:00:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18816 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535Ab1DVXA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 19:00:29 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=HbqUEYxPFnGHlmOtCKtDZI1LznMSUreTYN9J4SxN9xzTaI5TkqXCBDHg2dgG7j4Bl
+	hQDchteRect5GFZPEYf1g==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Jiaying Zhang <jiayingz@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] trace: Add tracepoints to fs subsystem
+Date: Fri, 22 Apr 2011 16:00:09 -0700
+Message-Id: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 15:43 -0700, Greg KH wrote:
-> On Fri, Apr 22, 2011 at 03:35:44PM -0700, james_p_freyensee@linux.intel.com wrote:
-> > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > 
-> > This allows drivers who call this function to be compiled modularly.
-> > Otherwise, a driver who is interested in this type of functionality
-> > has to implement their own get_task_comm() call, causing code
-> > duplication in the Linux source tree.
-> > 
-> > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> 
-> I think the goal is for the cleanup to happen now, to justify the
-> addition of the exported symbol.  Without that, there is no need to
-> export the symbol now at all, as who knows when your driver will be
-> accepted.
-> 
-> Or, just wait and make it part of your driver patch series, like you did
-> before, no need to get it accepted now, right?
->
+From: Jiaying Zhang <jiayingz@google.com>
 
-Well, at some point a few people like Alan Cox and Arjan VdV would like
-to see this work on it's way to Linus's tree.
+Many fs tracepoints can now be traced via ftrace, however there are a
+few other tracepoints needed. This patch adds entry and exit tracepoints
+for a few additional functions, viz.:
+wait_on_buffer
+block_write_full_page
+mpage_readpages
+file_read
 
-I'll do whatever is best and easiest for you and will bring a close to
-my submission attempts.  I can also just go into the Kconfig where the
-pti driver is configured and just make the selection bool, yes or no,
-and not make it an option to compile this modularly.  Then I'll drop
-this patch all together.  This is the whole reason why I'm making this
-change.  I don't have to have the pti driver as a module, just more
-convenient.  And within the fs/exec.c it states reads to 'current->comm'
-without a lock is safe.
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ fs/buffer.c               |   10 +++
+ fs/mpage.c                |    3 +
+ include/trace/events/fs.h |  166 +++++++++++++++++++++++++++++++++++++++++++++
+ mm/filemap.c              |    4 +-
+ 4 files changed, 182 insertions(+), 1 deletions(-)
+ create mode 100644 include/trace/events/fs.h
 
-> thanks,
-> 
-> greg k-h
-
+diff --git a/fs/buffer.c b/fs/buffer.c
+index a08bb8e..40a0ce3 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -42,6 +42,9 @@
+ #include <linux/mpage.h>
+ #include <linux/bit_spinlock.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/fs.h>
++
+ static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
+ 
+ #define BH_ENTRY(list) list_entry((list), struct buffer_head, b_assoc_buffers)
+@@ -82,7 +85,9 @@ EXPORT_SYMBOL(unlock_buffer);
+  */
+ void __wait_on_buffer(struct buffer_head * bh)
+ {
++	trace_fs_buffer_wait_start(bh);
+ 	wait_on_bit(&bh->b_state, BH_Lock, sleep_on_buffer, TASK_UNINTERRUPTIBLE);
++	trace_fs_buffer_wait_end(bh);
+ }
+ EXPORT_SYMBOL(__wait_on_buffer);
+ 
+@@ -1647,6 +1652,8 @@ static int __block_write_full_page(struct inode *inode, struct page *page,
+ 	head = page_buffers(page);
+ 	bh = head;
+ 
++	trace_block_write_full_page(inode, block, last_block);
++
+ 	/*
+ 	 * Get all the dirty buffers mapped to disk addresses and
+ 	 * handle any aliases from the underlying blockdev's mapping.
+@@ -1736,6 +1743,9 @@ done:
+ 		 * here on.
+ 		 */
+ 	}
++
++	trace_block_write_full_page_done(inode, nr_underway, err);
++
+ 	return err;
+ 
+ recover:
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 0afc809..1c3b8e1 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -28,6 +28,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/pagevec.h>
+ 
++#include <trace/events/fs.h>
+ /*
+  * I/O completion handler for multipage BIOs.
+  *
+@@ -373,6 +374,8 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
+ 	for (page_idx = 0; page_idx < nr_pages; page_idx++) {
+ 		struct page *page = list_entry(pages->prev, struct page, lru);
+ 
++		if (page_idx == 0)
++			trace_mpage_readpages(page, mapping, nr_pages);
+ 		prefetchw(&page->flags);
+ 		list_del(&page->lru);
+ 		if (!add_to_page_cache_lru(page, mapping,
+diff --git a/include/trace/events/fs.h b/include/trace/events/fs.h
+new file mode 100644
+index 0000000..40b71db
+--- /dev/null
++++ b/include/trace/events/fs.h
+@@ -0,0 +1,166 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM fs
++
++#if !defined(_TRACE_FS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_FS_H
++
++#include <linux/tracepoint.h>
++
++TRACE_EVENT(fs_buffer_wait_start,
++
++	TP_PROTO(struct buffer_head *bh),
++
++	TP_ARGS(bh),
++
++	TP_STRUCT__entry(
++		__field(	void *,	bh	)
++	),
++
++	TP_fast_assign(
++		__entry->bh = bh;
++	),
++
++	TP_printk("bh %p", __entry->bh)
++);
++
++TRACE_EVENT(fs_buffer_wait_end,
++
++	TP_PROTO(struct buffer_head *bh),
++
++	TP_ARGS(bh),
++
++	TP_STRUCT__entry(
++		__field(void *, bh)
++	),
++
++	TP_fast_assign(
++		__entry->bh = bh;
++	),
++
++	TP_printk("bh %p", __entry->bh)
++);
++
++TRACE_EVENT(block_write_full_page,
++
++	TP_PROTO(struct inode *inode, sector_t block, sector_t last_block),
++
++	TP_ARGS(inode, block, last_block),
++
++	TP_STRUCT__entry(
++		__field(	dev_t,		dev		)
++		__field(	unsigned long,	ino		)
++		__field(	sector_t,	block		)
++		__field(	sector_t,	last_block	)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= inode->i_sb->s_dev;
++		__entry->ino		= inode->i_ino;
++		__entry->block		= block;
++		__entry->last_block	= last_block;
++	),
++
++	TP_printk("dev %d,%d ino %lu block %lu last block %lu",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->ino,
++		  (unsigned long)__entry->block,
++		  (unsigned long)__entry->last_block)
++);
++
++TRACE_EVENT(block_write_full_page_done,
++
++	TP_PROTO(struct inode *inode, int nr_underway, int err),
++
++	TP_ARGS(inode, nr_underway, err),
++
++	TP_STRUCT__entry(
++		__field(	dev_t,		dev		)
++		__field(	unsigned long,	ino		)
++		__field(	int,		nr_underway	)
++		__field(	int,		err		)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= inode->i_sb->s_dev;
++		__entry->ino		= inode->i_ino;
++		__entry->nr_underway	= nr_underway;
++		__entry->err		= err;
++	),
++
++	TP_printk("dev %d,%d ino %lu nr_underway %d err %d",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->ino, __entry->nr_underway, __entry->err)
++);
++
++DECLARE_EVENT_CLASS(file_read,
++	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
++
++	TP_ARGS(inode, pos, len),
++
++	TP_STRUCT__entry(
++		__field(	ino_t,	ino			)
++		__field(	dev_t,	dev			)
++		__field(	loff_t,	pos			)
++		__field(	size_t,	len			)
++	),
++
++	TP_fast_assign(
++		__entry->ino	= inode->i_ino;
++		__entry->dev	= inode->i_sb->s_dev;
++		__entry->pos	= pos;
++		__entry->len	= len;
++	),
++
++	TP_printk("dev %d,%d ino %lu pos %llu len %lu",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  (unsigned long) __entry->ino,
++		  (unsigned long long) __entry->pos,
++		  (unsigned long) __entry->len)
++);
++
++DEFINE_EVENT(file_read, file_read_enter,
++
++	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
++
++	TP_ARGS(inode, pos, len)
++);
++
++DEFINE_EVENT(file_read, file_read_exit,
++
++	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
++
++	TP_ARGS(inode, pos, len)
++);
++
++TRACE_EVENT(mpage_readpages,
++	TP_PROTO(struct page *page, struct address_space *mapping,
++		 unsigned nr_pages),
++
++	TP_ARGS(page, mapping, nr_pages),
++
++	TP_STRUCT__entry(
++		__field(	pgoff_t, index			)
++		__field(	ino_t,	ino			)
++		__field(	dev_t,	dev			)
++		__field(	unsigned,	nr_pages	)
++
++	),
++
++	TP_fast_assign(
++		__entry->index	= page->index;
++		__entry->ino	= mapping->host->i_ino;
++		__entry->dev	= mapping->host->i_sb->s_dev;
++		__entry->nr_pages	= nr_pages;
++	),
++
++	TP_printk("dev %d,%d ino %lu page_index %lu nr_pages %u",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  (unsigned long) __entry->ino,
++		  __entry->index, __entry->nr_pages)
++);
++
++#endif /* _TRACE_FS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+diff --git a/mm/filemap.c b/mm/filemap.c
+index c641edf..94e549c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -42,7 +42,7 @@
+ #include <linux/buffer_head.h> /* for try_to_free_buffers */
+ 
+ #include <asm/mman.h>
+-
++#include <trace/events/fs.h>
+ /*
+  * Shared mappings implemented 30.11.1994. It's not fully working yet,
+  * though.
+@@ -1054,6 +1054,7 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+ 	unsigned int prev_offset;
+ 	int error;
+ 
++	trace_file_read_enter(inode, *ppos, desc->count);
+ 	index = *ppos >> PAGE_CACHE_SHIFT;
+ 	prev_index = ra->prev_pos >> PAGE_CACHE_SHIFT;
+ 	prev_offset = ra->prev_pos & (PAGE_CACHE_SIZE-1);
+@@ -1254,6 +1255,7 @@ out:
+ 	ra->prev_pos <<= PAGE_CACHE_SHIFT;
+ 	ra->prev_pos |= prev_offset;
+ 
++	trace_file_read_exit(inode, *ppos, desc->written);
+ 	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
+ 	file_accessed(filp);
+ }
+-- 
+1.7.3.1
 
