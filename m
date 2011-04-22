@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab1DVMUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 08:20:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57001 "EHLO hera.kernel.org"
+	id S1755175Ab1DVMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 08:20:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57023 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab1DVMUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 08:20:09 -0400
-Date: Fri, 22 Apr 2011 12:19:37 GMT
+	id S1753446Ab1DVMUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 08:20:21 -0400
+Date: Fri, 22 Apr 2011 12:20:00 GMT
 From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-3003eba313dd0e0502dd71548c36fe7c19801ce5@git.kernel.org>
+Message-ID: <tip-f4185812aa046ecb97e8817e10148cacdd7a6baa@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
         fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
@@ -17,89 +17,64 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
         fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
         srostedt@redhat.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110421014259.132728798@goodmis.org>
-References: <20110421014259.132728798@goodmis.org>
+In-Reply-To: <20110421014259.380621789@goodmis.org>
+References: <20110421014259.380621789@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Print a nicer description for irq lock inversions
-Git-Commit-ID: 3003eba313dd0e0502dd71548c36fe7c19801ce5
+Subject: [tip:core/locking] lockdep: Print a nicer description for normal deadlocks
+Git-Commit-ID: f4185812aa046ecb97e8817e10148cacdd7a6baa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Apr 2011 12:19:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Apr 2011 12:20:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3003eba313dd0e0502dd71548c36fe7c19801ce5
-Gitweb:     http://git.kernel.org/tip/3003eba313dd0e0502dd71548c36fe7c19801ce5
+Commit-ID:  f4185812aa046ecb97e8817e10148cacdd7a6baa
+Gitweb:     http://git.kernel.org/tip/f4185812aa046ecb97e8817e10148cacdd7a6baa
 Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 20 Apr 2011 21:41:54 -0400
+AuthorDate: Wed, 20 Apr 2011 21:41:55 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Fri, 22 Apr 2011 11:06:57 +0200
 
-lockdep: Print a nicer description for irq lock inversions
+lockdep: Print a nicer description for normal deadlocks
 
-Locking order inversion due to interrupts is a subtle problem.
+The lockdep output can be pretty cryptic, having nicer output
+can save a lot of head scratching. When a normal deadlock
+scenario is detected by lockdep (lock A -> lock B and there
+exists a place where lock B -> lock A) we now get the following
+new output:
 
-When an irq lockiinversion discovered by lockdep it currently
-reports something like:
-
-[ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-
-... and then prints out the locks that are involved, as back traces.
-
-Judging by lkml feedback developers were routinely confused by what
-a HARDIRQ->safe to unsafe issue is all about, and sometimes even
-blew it off as a bug in lockdep.
-
-It is not obvious when lockdep prints this message about a lock that
-is never taken in interrupt context.
-
-After explaining the problems that lockdep is reporting, I
-decided to add a description of the problem in visual form. Now
-the following is shown:
-
- ---
 other info that might help us debug this:
 
- Possible interrupt unsafe locking scenario:
+ Possible unsafe locking scenario:
 
        CPU0                    CPU1
        ----                    ----
-  lock(lockA);
-                               local_irq_disable();
-                               lock(&rq->lock);
+  lock(lockB);
                                lock(lockA);
-  <Interrupt>
-    lock(&rq->lock);
+                               lock(lockB);
+  lock(lockA);
 
  *** DEADLOCK ***
 
- ---
-
-The above is the case when the unsafe lock is taken while
-holding a lock taken in irq context. But when a lock is taken
-that also grabs a unsafe lock, the call chain is shown:
-
- ---
-other info that might help us debug this:
+On cases where there's a deeper chair, it shows the partial
+chain that can cause the issue:
 
 Chain exists of:
-  &rq->lock --> lockA --> lockC
+  lockC --> lockA --> lockB
 
- Possible interrupt unsafe locking scenario:
+ Possible unsafe locking scenario:
 
        CPU0                    CPU1
        ----                    ----
-  lock(lockC);
-                               local_irq_disable();
-                               lock(&rq->lock);
+  lock(lockB);
                                lock(lockA);
-  <Interrupt>
-    lock(&rq->lock);
+                               lock(lockB);
+  lock(lockC);
 
  *** DEADLOCK ***
 
@@ -108,51 +83,28 @@ Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20110421014259.132728798@goodmis.org
+Link: http://lkml.kernel.org/r/20110421014259.380621789@goodmis.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/lockdep.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 70 insertions(+), 0 deletions(-)
+ kernel/lockdep.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 55 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 53a6895..7b2ffee 100644
+index 7b2ffee..73cebd7 100644
 --- a/kernel/lockdep.c
 +++ b/kernel/lockdep.c
-@@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
- 	usage[i] = '\0';
- }
- 
-+static int __print_lock_name(struct lock_class *class)
-+{
-+	char str[KSYM_NAME_LEN];
-+	const char *name;
-+
-+	name = class->name;
-+	if (!name)
-+		name = __get_key_name(class->key, str);
-+
-+	return printk("%s", name);
-+}
-+
- static void print_lock_name(struct lock_class *class)
- {
- 	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
-@@ -1325,6 +1337,62 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
- 	return;
+@@ -1065,6 +1065,56 @@ print_circular_bug_entry(struct lock_list *target, int depth)
+ 	return 0;
  }
  
 +static void
-+print_irq_lock_scenario(struct lock_list *safe_entry,
-+			struct lock_list *unsafe_entry,
-+			struct held_lock *prev,
-+			struct held_lock *next)
++print_circular_lock_scenario(struct held_lock *src,
++			     struct held_lock *tgt,
++			     struct lock_list *prt)
 +{
-+	struct lock_class *safe_class = safe_entry->class;
-+	struct lock_class *unsafe_class = unsafe_entry->class;
-+	struct lock_class *middle_class = hlock_class(prev);
-+
-+	if (middle_class == safe_class)
-+		middle_class = hlock_class(next);
++	struct lock_class *source = hlock_class(src);
++	struct lock_class *target = hlock_class(tgt);
++	struct lock_class *parent = prt->class;
 +
 +	/*
 +	 * A direct locking problem where unsafe_class lock is taken
@@ -167,45 +119,60 @@ index 53a6895..7b2ffee 100644
 +	 * to show a different CPU case for each link in the chain
 +	 * from the safe_class lock to the unsafe_class lock.
 +	 */
-+	if (middle_class != unsafe_class) {
++	if (parent != source) {
 +		printk("Chain exists of:\n  ");
-+		__print_lock_name(safe_class);
++		__print_lock_name(source);
 +		printk(" --> ");
-+		__print_lock_name(middle_class);
++		__print_lock_name(parent);
 +		printk(" --> ");
-+		__print_lock_name(unsafe_class);
++		__print_lock_name(target);
 +		printk("\n\n");
 +	}
 +
-+	printk(" Possible interrupt unsafe locking scenario:\n\n");
++	printk(" Possible unsafe locking scenario:\n\n");
 +	printk("       CPU0                    CPU1\n");
 +	printk("       ----                    ----\n");
 +	printk("  lock(");
-+	__print_lock_name(unsafe_class);
-+	printk(");\n");
-+	printk("                               local_irq_disable();\n");
-+	printk("                               lock(");
-+	__print_lock_name(safe_class);
++	__print_lock_name(target);
 +	printk(");\n");
 +	printk("                               lock(");
-+	__print_lock_name(middle_class);
++	__print_lock_name(parent);
 +	printk(");\n");
-+	printk("  <Interrupt>\n");
-+	printk("    lock(");
-+	__print_lock_name(safe_class);
++	printk("                               lock(");
++	__print_lock_name(target);
++	printk(");\n");
++	printk("  lock(");
++	__print_lock_name(source);
 +	printk(");\n");
 +	printk("\n *** DEADLOCK ***\n\n");
 +}
 +
- static int
- print_bad_irq_dependency(struct task_struct *curr,
- 			 struct lock_list *prev_root,
-@@ -1376,6 +1444,8 @@ print_bad_irq_dependency(struct task_struct *curr,
- 	print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
+ /*
+  * When a circular dependency is detected, print the
+  * header first:
+@@ -1108,6 +1158,7 @@ static noinline int print_circular_bug(struct lock_list *this,
+ {
+ 	struct task_struct *curr = current;
+ 	struct lock_list *parent;
++	struct lock_list *first_parent;
+ 	int depth;
+ 
+ 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
+@@ -1121,6 +1172,7 @@ static noinline int print_circular_bug(struct lock_list *this,
+ 	print_circular_bug_header(target, depth, check_src, check_tgt);
+ 
+ 	parent = get_lock_parent(target);
++	first_parent = parent;
+ 
+ 	while (parent) {
+ 		print_circular_bug_entry(parent, --depth);
+@@ -1128,6 +1180,9 @@ static noinline int print_circular_bug(struct lock_list *this,
+ 	}
  
  	printk("\nother info that might help us debug this:\n\n");
-+	print_irq_lock_scenario(backwards_entry, forwards_entry, prev, next);
++	print_circular_lock_scenario(check_src, check_tgt,
++				     first_parent);
 +
  	lockdep_print_held_locks(curr);
  
- 	printk("\nthe dependencies between %s-irq-safe lock", irqclass);
+ 	printk("\nstack backtrace:\n");
