@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab1DVR5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 13:57:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58295 "EHLO mail.zytor.com"
+	id S1756534Ab1DVR5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 13:57:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6970 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756423Ab1DVR5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 13:57:13 -0400
-Message-ID: <4DB1C162.4090109@zytor.com>
-Date: Fri, 22 Apr 2011 10:56:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: John Reiser <jreiser@bitwagon.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
- use Linux style comparisons
-References: <20110421022825.535486725@goodmis.org>	 <20110421023737.290712238@goodmis.org>  <4DB19A1E.8070806@bitwagon.com> <1303488826.6225.9.camel@gandalf.stny.rr.com> <4DB1BD96.9090205@bitwagon.com>
-In-Reply-To: <4DB1BD96.9090205@bitwagon.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756423Ab1DVR5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 13:57:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
+   d="scan'208";a="682616109"
+Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+Reply-To: james_p_freyensee@linux.intel.com
+To: David Rientjes <rientjes@google.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        suhail.ahmed@intel.com, christophe.guerard@intel.com
+In-Reply-To: <alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
+References: <james_p_freyensee@linux.intel.com>
+	 <1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
+	 <alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 22 Apr 2011 10:57:14 -0700
+Message-ID: <1303495034.13457.121.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2011 10:40 AM, John Reiser wrote:
-> On 04/22/2011 09:13 AM, Steven Rostedt wrote:
->> Although, I have no idea why you choose the 0 < var, that totally
->> confuses me. It does not play any role in assignments. What bug is that
->> preventing? When I want to know if a variable is greater than zero, I
->> don't show it as zero less than the var.
+On Tue, 2011-04-19 at 18:25 -0700, David Rientjes wrote:
+> On Tue, 19 Apr 2011, james_p_freyensee@linux.intel.com wrote:
 > 
-> Using ">" can be confused visually with "->", and I want to reduce those
-> chances.  I also prefer a style that is prefix oriented, and with constants
-> on the left.  I mentally combine the left constant and the infix operator
-> into a special case prefix operator.  This speeds my parsing because it
-> reduces stack depth and enables faster scanning.  This is particularly
-> helpful when the constant is narrow and the other operand is wider.
+> > +static void pti_control_frame_built_and_sent(struct pti_masterchannel *mc)
+> > +{
+> > +	struct pti_masterchannel mccontrol = {.master = CONTROL_ID,
+> > +					      .channel = 0};
+> > +	const char *control_format = "%3d %3d %s";
+> > +
+> > +	char comm[sizeof(current->comm) + 1];
+> > +	u8 control_frame[CONTROL_FRAME_LEN];
+> > +
+> > +	if (!in_interrupt())
+> > +		get_task_comm(comm, current);
+> > +	else
+> > +		strcpy(comm, "Interrupt");
+> > +
+> > +	/* Ensure our buffer is zero terminated */
+> > +	comm[sizeof(current->comm)] = 0;
+> > +
 > 
+> You definitely need to use get_task_comm() here, but that means you can't 
+> allocate char comm[] on the stack with anything but TASK_COMM_LEN, which 
+> is small enough that it shouldn't be an issue.  Otherwise there's nothing 
+> protecting sizeof(current->comm) from changing without holding 
+> task_lock(current).
 
-I think you will find you're significantly in the minority when it comes
-to that preference.
+I'm going to look at utilizing get_task_comm() more in this function,
+but I think I am okay even if I miss one, as I am just doing a read from
+it.  What is written in set_task_comm() states that threads may read
+from current->comm without holding the task_lock().  The name could be
+incomplete, which would be non-ideal (but acceptable), but it's supposed
+to be safe from non-terminating string reads.
 
-	-hpa
+And it seems like the fix for
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> + comm[sizeof(current->comm)] = 0;
+
+can just be comm[TASK_COMM_LEN].
 
