@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1DVAvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 20:51:00 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46544 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab1DVAu6 (ORCPT
+	id S1755453Ab1DVAy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 20:54:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40532 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab1DVAyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 20:50:58 -0400
-Date: Thu, 21 Apr 2011 17:50:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
- related?)
-Message-ID: <20110422005046.GQ2235@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTinq=mC9rs5R3U8FPLCp-GgCJris_g@mail.gmail.com>
- <BANLkTimT9OhHLL5NaPOP30MdiMfmmmEcyQ@mail.gmail.com>
- <BANLkTikVW9Z=WxD7=w9c=Z6kHO-Za2ru8A@mail.gmail.com>
- <20110414224411.GF2141@linux.vnet.ibm.com>
- <20110421050823.GA4487@linux.vnet.ibm.com>
- <BANLkTinFmG5GVq6D8+wq_89OPF8snsQ=Jw@mail.gmail.com>
- <BANLkTi=c=+JnU9dQsVhgjZbOtArhHQz+EQ@mail.gmail.com>
- <BANLkTimEWqBVdq8MWbjAAfXCLPQdiHkuNg@mail.gmail.com>
- <20110421142853.GA2235@linux.vnet.ibm.com>
- <BANLkTineNYTXffcNT59STsk5nkLhi=o-kA@mail.gmail.com>
+	Thu, 21 Apr 2011 20:54:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=d2AMn8h2PBYz+sw7n4ssg65yagdcCktGLq0fYknSc45M98KWTO5IFZv6O5qar5FlO2
+         D8m4z45nMPZk3mlSEEcQ/ZiJ++Dp8deywkxde0QNL2Y3QPqpmurmgIqHMqoSzvX5J0C4
+         K7aNz+I9nRelKLgvG4mzS1ZBU3jxC6OdKIsj0=
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="Kj7319i9nmIyA2yE"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTineNYTXffcNT59STsk5nkLhi=o-kA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110421161402.GS5611@random.random>
+References: <20110415101248.GB22688@suse.de>
+	<BANLkTik7H+cmA8iToV4j1ncbQqeraCaeTg@mail.gmail.com>
+	<20110421110841.GA612@suse.de>
+	<20110421142636.GA1835@barrios-desktop>
+	<20110421160057.GA28712@suse.de>
+	<20110421161402.GS5611@random.random>
+Date: Fri, 22 Apr 2011 09:54:24 +0900
+Message-ID: <BANLkTi=+fGe-hrV3c8r2jKzWG2BHU0GsFA@mail.gmail.com>
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
+        raz ben yehuda <raziebe@gmail.com>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrea,
 
---Kj7319i9nmIyA2yE
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+On Fri, Apr 22, 2011 at 1:14 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Thu, Apr 21, 2011 at 05:00:57PM +0100, Mel Gorman wrote:
+>> If you want to create a new patch with either your comment or mine
+>> (whichever you prefer) I'll add my ack. I'm about to drop offline
+>> for a few days but if it's still there Tuesday, I'll put together an
+>> appropriate patch and submit. I'd keep it separate from the other patch
+>> because it's a performance fix (which I'd like to see in -stable) where
+>> as this is more of a cleanup IMO.
+>
+> I think the older patch should have more priority agreed. This one may
+> actually waste cpu cycles overall, rather than saving them, it
+> shouldn't be a common occurrence.
+>
+> From a code consistency point of view maybe we should just implement a
+> pte_alloc macro (to put after pte_alloc_map) and use it in both
+> places, and hide the glory details of the unlikely in the macro. When
+> implementing pte_alloc, I suggest also adding unlikely to both, I mean
+> we added unlikely to the fast path ok, but __pte_alloc is orders of
+> magnitude less likely to fail than pte_none, and it still runs 1 every
+> 512 4k page faults, so I think __pte_alloc deserves an unlikely too.
+>
+> Minchan, you suggested this cleanup, so I suggest you to send a patch,
+> but if you're busy we can help.
 
-On Thu, Apr 21, 2011 at 04:47:31PM +0200, Sedat Dilek wrote:
-> On Thu, Apr 21, 2011 at 4:28 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Apr 21, 2011 at 02:49:37PM +0200, Sedat Dilek wrote:
-> >> On Thu, Apr 21, 2011 at 12:24 PM, Sedat Dilek
-> >> <sedat.dilek@googlemail.com> wrote:
+It's no problem to send a patch but I can do it at out-of-office time.
+Maybe weekend. :)
+Before doing that, let's clear the point. You mentioned  it shouldn't
+be a common occurrence but you are suggesting we should do for code
+consistency POV. Am I right?
 
-[ . . . ]
+>
+> Thanks!
+> Andrea
+>
 
-> >> Here the results from the 2nd-run (PREEMPT_RCU enabled).
-> >
-> > OK, and the grace periods clearly stopped advancing early on.
-> >
-> > Beyond that point, the per-CPU kthread is blocked, but RCU has some
-> > work for it to do.  So someone has called invoke_rcu_cpu_kthread(),
-> > but rcu_cpu_kthread() is still blocked.  I don't see a bug right
-> > off-hand, but it is early in the morning for me, so I might easily
-> > be missing something.
-> >
-> > Hmmm...
-> >
-> > The synchronization between these two assumes that the per-CPU
-> > kthread is always bound to the respective CPU, so if was somehow
-> > being migrated off, that might explain these results.
-> >
-> > I will add some more diagnostics, test them locally, then push
-> > out an update.  Seem reasonable?
-> >
-> > And thank you again for the testing!!!
-> 
-> Ping me when you have new stuff for testing.
-> Tomorrow (friday), here is public holiday and monday, too.
-> So a looong weekend.
 
-;-)
 
-OK, I have a new sedat.2011.04.21a branch in the -rcu git tree:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-
-This is against 2.6.39-rc3, as before.  (Yes, I do need to rebase to
-2.6.39-rc4, but didn't want to change any more than I had to.)
-
-I also have an updated script, which is attached.  The output is similar
-to the earlier one, and it operated is pretty much the same way.
-
-Have a great weekend, and I look forward to seeing what shows up on
-this round.  I confess to still being quite puzzled!
-
-							Thanx, Paul
-
---Kj7319i9nmIyA2yE
-Content-Type: application/x-sh
-Content-Description: collectdebugfs.sh
-Content-Disposition: attachment; filename="collectdebugfs.sh"
-Content-Transfer-Encoding: quoted-printable
-
-#!/bin/sh=0A#=0A# Collect RCU-related debugfs data.  Set DEBUGFS_MP to the =
-debugfs=0A# mount point, defaults to /sys/kernel/debug.=0A#=0A# This progra=
-m is free software; you can redistribute it and/or modify=0A# it under the =
-terms of the GNU General Public License as published by=0A# the Free Softwa=
-re Foundation; either version 2 of the License, or=0A# (at your option) any=
- later version.=0A#=0A# This program is distributed in the hope that it wil=
-l be useful,=0A# but WITHOUT ANY WARRANTY; without even the implied warrant=
-y of=0A# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the=0A# =
-GNU General Public License for more details.=0A#=0A# You should have receiv=
-ed a copy of the GNU General Public License=0A# along with this program; if=
- not, write to the Free Software=0A# Foundation, Inc., 59 Temple Place - Su=
-ite 330, Boston, MA 02111-1307, USA.=0A#=0A# Copyright (C) IBM Corporation,=
- 2010=0A#=0A# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>=0A=0AD=
-EBUGFS_MP=3D/sys/kernel/debug=0ADRCU=3D$DEBUGFS_MP/rcu=0A=0Awhile :=0Ado=0A=
-	date=0A	echo $DRCU/rcugp:=0A	cat $DRCU/rcugp || echo no $DRCU/rcugp=0A	ech=
-o $DRCU/rcuhier:=0A	cat $DRCU/rcuhier || echo no $DRCU/rcuhier=0A	echo $DRC=
-U/rcudata:=0A	cat $DRCU/rcudata || echo no $DRCU/rcudata=0A	echo $DRCU/rcu_=
-pending:=0A	cat $DRCU/rcu_pending || echo no $DRCU/rcu_pending=0A	echo $DRC=
-U/rcutorture:=0A	cat $DRCU/rcutorture || echo no $DRCU/rcutorture=0A	echo $=
-DRCU/rcuboost:=0A	cat $DRCU/rcuboost || echo no $DRCU/rcuboost=0A	ps -eo cl=
-ass,sched,rtprio,stat,state,sgi_p,cmd | grep '\[rcuc[0-9]'=0A	ps -eo class,=
-sched,rtprio,stat,state,sgi_p,cmd | grep '\[rcun[0-9]'=0A	ps -eo class,sche=
-d,rtprio,stat,state,sgi_p,cmd | grep '\[rcub[0-9]'=0A	echo=0A	sleep 15=0Ado=
-ne=0A
---Kj7319i9nmIyA2yE--
+-- 
+Kind regards,
+Minchan Kim
