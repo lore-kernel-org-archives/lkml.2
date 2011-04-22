@@ -1,265 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab1DVQXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:23:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53418 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756012Ab1DVQXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:23:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
-   d="scan'208";a="913202767"
-Date: Fri, 22 Apr 2011 09:22:48 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110422162248.GC10755@tassilo.jf.intel.com>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org>
- <1303407662-15564-2-git-send-email-acme@infradead.org>
- <20110422063429.GA16643@elte.hu>
+	id S1756157Ab1DVQ2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:28:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40879 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107Ab1DVQ22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:28:28 -0400
+Message-ID: <4DB1AC9D.3010706@oracle.com>
+Date: Fri, 22 Apr 2011 09:28:13 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422063429.GA16643@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Blake <eblake@redhat.com>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com>
+In-Reply-To: <4DB16B72.1050702@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DB1ACA4.00CD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 08:34:29AM +0200, Ingo Molnar wrote:
-> This needs to be a *lot* more user friendly. Users do not want to type in 
-> stupid hexa magic numbers to get profiling. We have moved beyond the oprofile 
-> era really.
+On 04/22/2011 04:50 AM, Eric Blake wrote:
+> That blog also mentioned the useful idea of adding FIND_HOLE and
+> FIND_DATA, not implemented in Solaris, but which could easily be
+> provided as additional lseek constants in Linux to locate the start of
+> the next chunk without repositioning and which could ease application
+> programmer's life a bit.  After all, cp wants to know where data ends
+> without repositioning (FIND_HOLE), read() that much data which
+> repositions in the process, then skip to the next chunk of data
+> (SEEK_DATA) - two lseek() calls per iteration if we have 4 constants,
+> but 3 per iteration if we only have SEEK_HOLE and have to manually rewind.
 
-I agree that the raw events are quite user unfriendly.
+while(1) {
+     read(block);
+     if (block_all_zeroes)
+         lseek(SEEK_DATA);
+}
 
-Unfortunately they are the way of life in perf -- unlike oprofile -- currently
-if you want any CPU specific events like this.
+What's wrong with the above? If this is the case, even SEEK_HOLE
+is not needed but should be added as it is already in Solaris.
 
-Really to make sense out of all this you need per CPU full event lists.
+My problem with FIND_* is that we are messing with the well understood
+semantics of lseek().
 
-I have an own wrapper to make it more user friendly, but its functionality
-should arguably migrate into perf.
+And if generic_file_llseek_unlocked() treats SEEK_DATA as SEEK_CUR and
+SEEK_HOLE as SEEK_END (both with zero offset) then we don't even
+have to bother with the finding the "correct" error code.
 
-I did a patch to add a mapping file some time ago, but it likely
-needs some improvements before it can be merged (aka not .39), like
-auto selecting a suitable mapping file and backtranslating raw
-mappings on output.
-
-BTW the new perf lat code needs the raw events config1 specification
-internally, so this is needed in some form anyways.
-
-Short of that the extended raw events is the best we can get short term I 
-think. So I would prefer to have it for .39 to make this feature
-usable at all.
-
-I attached the old mapping file patch for your reference. 
-I also put up a few mapping files for Intel CPUs at 
-ftp://ftp.kernel.org/pub/linux/kernel/people/ak/pmu/*
-
-e.g. to use it with Nehalem offcore events and this patch you would 
-use today
-
-wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/pmu/nhm-ep.map
-perf --map-file nhm-ep.map top -e offcore_response_0.any_data.local_cache_dram
-
--Andi
-
-commit 37323c19ceb57101cc2160059c567ee14055b7c8
-Author: Andi Kleen <ak@linux.intel.com>
-Date:   Mon Nov 8 04:52:18 2010 +0100
-
-    mapping file support
-
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index a91f9f9..63bdbbb 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -120,6 +120,9 @@ Do not update the builid cache. This saves some overhead in situations
- where the information in the perf.data file (which includes buildids)
- is sufficient.
- 
-+--map-events=file
-+Use file as event mapping file.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 4b3a2d4..4f20af3 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,9 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
- In per-thread mode, this option is ignored. The -a option is still necessary
- to activate system-wide monitoring. Default is to count on all CPUs.
- 
-+--map-events=file
-+Use file as event mapping file.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 93bd2ff..6fdf892 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -794,6 +794,9 @@ const struct option record_options[] = {
- 	OPT_CALLBACK('e', "event", NULL, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events),
-+	OPT_CALLBACK(0, "map-events", NULL, "map-events",
-+		     "specify mapping file for events",
-+		     map_events),
- 	OPT_CALLBACK(0, "filter", NULL, "filter",
- 		     "event filter", parse_filter),
- 	OPT_INTEGER('p', "pid", &target_pid,
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..f21f307 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -525,6 +525,9 @@ static const struct option options[] = {
- 	OPT_CALLBACK('e', "event", NULL, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events),
-+	OPT_CALLBACK(0, "map-events", NULL, "map-events",
-+		     "specify mapping file for events",
-+		     map_events),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('p', "pid", &target_pid,
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4af5bd5..2cc7b3d 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -83,6 +83,14 @@ static const char *sw_event_names[] = {
- 	"emulation-faults",
- };
- 
-+struct mapping {
-+	const char *str;
-+	const char *res;
-+};
-+
-+static int 		mapping_max;
-+static struct mapping  *mappings;
-+
- #define MAX_ALIASES 8
- 
- static const char *hw_cache[][MAX_ALIASES] = {
-@@ -731,12 +739,28 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 	return 0;
- }
- 
-+static int cmp_mapping(const void *a, const void *b)
-+{
-+	const struct mapping *am = a;
-+	const struct mapping *bm = b;
-+	return strcmp(am->str, bm->str);
-+}
-+
-+static const char *
-+get_event_mapping(const char *str)
-+{
-+	struct mapping key = { .str = str };
-+	struct mapping *r = bsearch(&key, mappings, mapping_max,
-+				    sizeof(struct mapping), cmp_mapping);
-+	return r ? r->res : NULL;
-+}
-+
- /*
-  * Each event can have multiple symbolic names.
-  * Symbolic names are (almost) exactly matched.
-  */
- static enum event_result
--parse_event_symbols(const char **str, struct perf_event_attr *attr)
-+do_parse_event_symbols(const char **str, struct perf_event_attr *attr)
- {
- 	enum event_result ret;
- 
-@@ -774,6 +798,15 @@ modifier:
- 	return ret;
- }
- 
-+static enum event_result
-+parse_event_symbols(const char **str, struct perf_event_attr *attr)
-+{
-+	const char *map = get_event_mapping(*str);
-+	if (map)
-+		*str = map;
-+	return do_parse_event_symbols(str, attr);
-+}
-+
- static int store_event_type(const char *orgname)
- {
- 	char filename[PATH_MAX], *c;
-@@ -963,3 +996,54 @@ void print_events(void)
- 
- 	exit(129);
- }
-+
-+int map_events(const struct option *opt __used, const char *str,
-+		int unset __used)
-+{
-+	FILE *f;
-+	char *line = NULL;
-+	size_t linelen = 0;
-+	char *p;
-+	int lineno = 0;
-+	static int mapping_size;
-+	struct mapping *map;
-+
-+	f = fopen(str, "r");
-+	if (!f) {
-+		pr_err("Cannot open event map file");
-+		return -1;
-+	}
-+	while (getline(&line, &linelen, f) > 0) {
-+		lineno++;
-+		p = strpbrk(line, "\n#");
-+		if (p)
-+			*p = 0;
-+		p = line + strspn(line, " \t");
-+		if (*p == 0)
-+			continue;
-+		if (mapping_max >= mapping_size) {
-+			if (!mapping_size)
-+				mapping_size = 2048;
-+			mapping_size *= 2;
-+			mappings = realloc(mappings,
-+				      mapping_size * sizeof(struct mapping));
-+			if (!mappings) {
-+				pr_err("Out of memory\n");
-+				exit(ENOMEM);
-+			}
-+		}
-+		map = &mappings[mapping_max++];
-+		map->str = strsep(&p, " \t");
-+		map->res = strsep(&p, " \t");
-+		if (!map->str || !map->res) {
-+			fprintf(stderr, "%s:%d: Invalid line in map file\n",
-+				str, lineno);
-+		}
-+		line = NULL;
-+		linelen = 0;
-+	}
-+	fclose(f);
-+	qsort(mappings, mapping_max, sizeof(struct mapping),
-+	      cmp_mapping);
-+	return 0;
-+}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index fc4ab3f..1d6df9c 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -33,5 +33,6 @@ extern void print_events(void);
- extern char debugfs_path[];
- extern int valid_debugfs_mount(const char *debugfs);
- 
-+extern int map_events(const struct option *opt, const char *str, int unset);
- 
- #endif /* __PERF_PARSE_EVENTS_H */
