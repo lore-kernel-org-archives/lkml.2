@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1DVRxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 13:53:04 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50169 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407Ab1DVRxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 13:53:01 -0400
-Subject: Re: [PATCH V3 0/8] macvtap/vhost TX zero copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: mst@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1303328216.19336.18.camel@localhost.localdomain>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 10:52:53 -0700
-Message-ID: <1303494773.10632.22.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1756507Ab1DVR5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 13:57:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58295 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756423Ab1DVR5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 13:57:13 -0400
+Message-ID: <4DB1C162.4090109@zytor.com>
+Date: Fri, 22 Apr 2011 10:56:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: John Reiser <jreiser@bitwagon.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
+ use Linux style comparisons
+References: <20110421022825.535486725@goodmis.org>	 <20110421023737.290712238@goodmis.org>  <4DB19A1E.8070806@bitwagon.com> <1303488826.6225.9.camel@gandalf.stny.rr.com> <4DB1BD96.9090205@bitwagon.com>
+In-Reply-To: <4DB1BD96.9090205@bitwagon.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-20 at 12:36 -0700, Shirley Ma wrote:
-> I am collecting more test results against 2.6.39-rc3 kernel and will
-> provide the test matrix later.
+On 04/22/2011 10:40 AM, John Reiser wrote:
+> On 04/22/2011 09:13 AM, Steven Rostedt wrote:
+>> Although, I have no idea why you choose the 0 < var, that totally
+>> confuses me. It does not play any role in assignments. What bug is that
+>> preventing? When I want to know if a variable is greater than zero, I
+>> don't show it as zero less than the var.
+> 
+> Using ">" can be confused visually with "->", and I want to reduce those
+> chances.  I also prefer a style that is prefix oriented, and with constants
+> on the left.  I mentally combine the left constant and the infix operator
+> into a special case prefix operator.  This speeds my parsing because it
+> reduces stack depth and enables faster scanning.  This is particularly
+> helpful when the constant is narrow and the other operand is wider.
+> 
 
-Single TCP_STREAM 120 secs test results over ixgbe 10Gb NIC results:
+I think you will find you're significantly in the minority when it comes
+to that preference.
 
-Message	BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
-4K	7408.57		92.1%		22.6%		1229
-4K(Orig)4913.17		118.1%		84.1%		2086	
-8K	9129.90		89.3%		23.3%		1141
-8K(Orig)7094.55		115.9%		84.7%		2157
-16K	9178.81		89.1%		23.3%		1139
-16K(Orig)8927.1		118.7%		83.4%		2262
-64K	9171.43		88.4%		24.9%		1253
-64K(Orig)9085.85        115.9%		82.4%		2229
+	-hpa
 
-For message size less or equal than 2K, there is a known KVM guest TX
-overrun issue. With this zerocopy patch, the issue becomes more severe,
-guest io_exits has tripled than before, so the performance is not good.
-Once the TX overrun problem has been addressed, I will retest the small
-message size performance.
-
-Thanks
-Shirley
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
