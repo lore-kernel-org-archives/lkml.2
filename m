@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1DVUEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:04:30 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55183 "EHLO mgw2.diku.dk"
+	id S1756218Ab1DVUEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:04:33 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55181 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1DVUE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753042Ab1DVUE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 16:04:26 -0400
 From: Julia Lawall <julia@diku.dk>
 To: Paul Mundt <lethal@linux-sh.org>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] drivers/video: Convert release_resource to release_mem_region
-Date: Fri, 22 Apr 2011 22:11:21 +0200
-Message-Id: <1303503083-26170-1-git-send-email-julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 2/3] drivers/video/sm501fb.c: Convert release_resource to release_mem_region
+Date: Fri, 22 Apr 2011 22:11:22 +0200
+Message-Id: <1303503083-26170-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,56 +38,63 @@ expression e1,e2,e3,e4,e;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/video/s3c-fb.c   |    6 ++----
- drivers/video/sh7760fb.c |    6 ++----
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/video/sm501fb.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-index 3fa7911..d570e58 100644
---- a/drivers/video/s3c-fb.c
-+++ b/drivers/video/s3c-fb.c
-@@ -1449,8 +1449,7 @@ err_ioremap:
- 	iounmap(sfb->regs);
+diff --git a/drivers/video/sm501fb.c b/drivers/video/sm501fb.c
+index 56ef6b3..87f0be1 100644
+--- a/drivers/video/sm501fb.c
++++ b/drivers/video/sm501fb.c
+@@ -1625,22 +1625,22 @@ static int sm501fb_start(struct sm501fb_info *info,
+ 	return 0; /* everything is setup */
  
- err_req_region:
--	release_resource(sfb->regs_res);
--	kfree(sfb->regs_res);
-+	release_mem_region(sfb->regs_res->start, resource_size(sfb->regs_res));
+  err_mem_res:
+-	release_resource(info->fbmem_res);
+-	kfree(info->fbmem_res);
++	release_mem_region(info->fbmem_res->start,
++			   resource_size(info->fbmem_res));
  
- err_clk:
- 	clk_disable(sfb->bus_clk);
-@@ -1486,8 +1485,7 @@ static int __devexit s3c_fb_remove(struct platform_device *pdev)
- 	clk_disable(sfb->bus_clk);
- 	clk_put(sfb->bus_clk);
+  err_regs2d_map:
+ 	iounmap(info->regs2d);
  
--	release_resource(sfb->regs_res);
--	kfree(sfb->regs_res);
-+	release_mem_region(sfb->regs_res->start, resource_size(sfb->regs_res));
+  err_regs2d_res:
+-	release_resource(info->regs2d_res);
+-	kfree(info->regs2d_res);
++	release_mem_region(info->regs2d_res->start,
++			   resource_size(info->regs2d_res));
  
- 	kfree(sfb);
+  err_regs_map:
+ 	iounmap(info->regs);
  
-diff --git a/drivers/video/sh7760fb.c b/drivers/video/sh7760fb.c
-index 8fe1958..45e47d8 100644
---- a/drivers/video/sh7760fb.c
-+++ b/drivers/video/sh7760fb.c
-@@ -551,8 +551,7 @@ out_unmap:
- 		free_irq(par->irq, &par->vsync);
- 	iounmap(par->base);
- out_res:
--	release_resource(par->ioarea);
--	kfree(par->ioarea);
-+	release_mem_region(res->start, resource_size(res));
- out_fb:
- 	framebuffer_release(info);
+  err_regs_res:
+-	release_resource(info->regs_res);
+-	kfree(info->regs_res);
++	release_mem_region(info->regs_res->start,
++			   resource_size(info->regs_res));
+ 
+  err_release:
  	return ret;
-@@ -570,8 +569,7 @@ static int __devexit sh7760fb_remove(struct platform_device *dev)
- 	if (par->irq >= 0)
- 		free_irq(par->irq, par);
- 	iounmap(par->base);
--	release_resource(par->ioarea);
--	kfree(par->ioarea);
-+	release_mem_region(par->ioarea->start, resource_size(par->ioarea));
- 	framebuffer_release(info);
- 	platform_set_drvdata(dev, NULL);
+@@ -1652,16 +1652,16 @@ static void sm501fb_stop(struct sm501fb_info *info)
+ 	sm501_unit_power(info->dev->parent, SM501_GATE_DISPLAY, 0);
  
+ 	iounmap(info->fbmem);
+-	release_resource(info->fbmem_res);
+-	kfree(info->fbmem_res);
++	release_mem_region(info->fbmem_res->start,
++			   resource_size(info->fbmem_res));
+ 
+ 	iounmap(info->regs2d);
+-	release_resource(info->regs2d_res);
+-	kfree(info->regs2d_res);
++	release_mem_region(info->regs2d_res->start,
++			   resource_size(info->regs2d_res));
+ 
+ 	iounmap(info->regs);
+-	release_resource(info->regs_res);
+-	kfree(info->regs_res);
++	release_mem_region(info->regs_res->start,
++			   resource_size(info->regs_res));
+ }
+ 
+ static int sm501fb_init_fb(struct fb_info *fb,
 
