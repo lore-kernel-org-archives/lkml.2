@@ -1,179 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab1DVIGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 04:06:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60430 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab1DVIGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 04:06:20 -0400
-Date: Fri, 22 Apr 2011 10:06:04 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110422080604.GA22611@elte.hu>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org>
- <1303407662-15564-2-git-send-email-acme@infradead.org>
- <20110422063429.GA16643@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422063429.GA16643@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753022Ab1DVIKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 04:10:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60039 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1DVIKt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 04:10:49 -0400
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@novell.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <4DB12C1E.8050200@cn.fujitsu.com>
+References: <4D9CDACB.9050705@linux.intel.com>
+	 <20110407003041.GD2265@linux.vnet.ibm.com>
+	 <4D9D507F.2040006@cn.fujitsu.com>
+	 <20110407154737.GF2262@linux.vnet.ibm.com>
+	 <20110407162600.GA24227@linux.vnet.ibm.com>
+	 <4D9E6438.5030206@cn.fujitsu.com>
+	 <20110408051359.GA2318@linux.vnet.ibm.com> <4DA2709E.50902@cn.fujitsu.com>
+	 <20110411051241.GB18415@linux.vnet.ibm.com>
+	 <4DA2BC4E.4010000@cn.fujitsu.com>
+	 <20110411210223.GB2226@linux.vnet.ibm.com>
+	 <4DB12C1E.8050200@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 22 Apr 2011 10:10:20 +0200
+Message-ID: <1303459820.2298.4.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> This needs to be a *lot* more user friendly. Users do not want to type in 
-> stupid hexa magic numbers to get profiling. We have moved beyond the oprofile 
-> era really.
+On Fri, 2011-04-22 at 15:19 +0800, Lai Jiangshan wrote:
 > 
-> Unless there's proper generalized and human usable support i'm leaning 
-> towards turning off the offcore user-space accessible raw bits for now, and 
-> use them only kernel-internally, for the cache events.
+> What is the solution you prefer to?
+> 
+> I insist on the solution which split rcupdate.h into 2 parts,
+> the first part is rcupdate_defs.h which only contains:
+> 1) struct rcu_head
+> 2) MACRO rcu_dereference*
+> 3) MACRO rcu_access_pointer rcu_access_index rcu_assign_pointer RCU_INIT_POINTER
+> 4) rcu_*_lock_held() which is required by 2)
+> 
+> All of these is required by sched.h, it is all about 450 lines of code.
+> 
+> It does not just separate struct rcu_head out only, because rcu_dereference*()
+> and APIs in rculist.h are required by in sched.h or headers included by sched.h.
 
-I'm about to push out the patch attached below - it lays out the arguments in 
-detail. I don't think we have time to fix this properly for .39 - but memory 
-profiling could be a nice feature for v2.6.40.
+The only usage of rculist.h in the whole of sched.h is that _one_
+list_entry_rcu, of which we already have a macro user, so why not make
+that one a macro too and safe ourselves a ton of grief?
 
-Thanks,
-
-	Ingo
-
---------------------->
->From b52c55c6a25e4515b5e075a989ff346fc251ed09 Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@elte.hu>
-Date: Fri, 22 Apr 2011 08:44:38 +0200
-Subject: [PATCH] x86, perf event: Turn off unstructured raw event access to offcore registers
-
-Andi Kleen pointed out that the Intel offcore support patches were merged
-without user-space tool support to the functionality:
-
- |
- | The offcore_msr perf kernel code was merged into 2.6.39-rc*, but the
- | user space bits were not. This made it impossible to set the extra mask
- | and actually do the OFFCORE profiling
- |
-
-Andi submitted a preliminary patch for user-space support, as an
-extension to perf's raw event syntax:
-
- |
- | Some raw events -- like the Intel OFFCORE events -- support additional
- | parameters. These can be appended after a ':'.
- |
- | For example on a multi socket Intel Nehalem:
- |
- |    perf stat -e r1b7:20ff -a sleep 1
- |
- | Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0
- | that measures any access to DRAM on another socket.
- |
-
-But this kind of usability is absolutely unacceptable - users should not
-be expected to type in magic, CPU and model specific incantations to get
-access to useful hardware functionality.
-
-The proper solution is to expose useful offcore functionality via
-generalized events - that way users do not have to care which specific
-CPU model they are using, they can use the conceptual event and not some
-model specific quirky hexa number.
-
-We already have such generalization in place for CPU cache events,
-and it's all very extensible.
-
-"Offcore" events measure general DRAM access patters along various
-parameters. They are particularly useful in NUMA systems.
-
-We want to support them via generalized DRAM events: either as the
-fourth level of cache (after the last-level cache), or as a separate
-generalization category.
-
-That way user-space support would be very obvious, memory access
-profiling could be done via self-explanatory commands like:
-
-  perf record -e dram ./myapp
-  perf record -e dram-remote ./myapp
-
-... to measure DRAM accesses or more expensive cross-node NUMA DRAM
-accesses.
-
-These generalized events would work on all CPUs and architectures that
-have comparable PMU features.
-
-( Note, these are just examples: actual implementation could have more
-  sophistication and more parameter - as long as they center around
-  similarly simple usecases. )
-
-Now we do not want to revert *all* of the current offcore bits, as they
-are still somewhat useful for generic last-level-cache events, implemented
-in this commit:
-
-  e994d7d23a0b: perf: Fix LLC-* events on Intel Nehalem/Westmere
-
-But we definitely do not yet want to expose the unstructured raw events
-to user-space, until better generalization and usability is implemented
-for these hardware event features.
-
-( Note: after generalization has been implemented raw offcore events can be
-  supported as well: there can always be an odd event that is marginally
-  useful but not useful enough to generalize. DRAM profiling is definitely
-  *not* such a category so generalization must be done first. )
-
-Furthermore, PERF_TYPE_RAW access to these registers was not intended
-to go upstream without proper support - it was a side-effect of the above
-e994d7d23a0b commit, not mentioned in the changelog.
-
-As v2.6.39 is nearing release we go for the simplest approach: disable
-the PERF_TYPE_RAW offcore hack for now, before it escapes into a released
-kernel and becomes an ABI.
-
-Once proper structure is implemented for these hardware events and users
-are offered usable solutions we can revisit this issue.
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1302658203-4239-1-git-send-email-andi@firstfloor.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index eed3673a..632e5dc 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -586,8 +586,12 @@ static int x86_setup_perfctr(struct perf_event *event)
- 			return -EOPNOTSUPP;
- 	}
- 
-+	/*
-+	 * Do not allow config1 (extended registers) to propagate,
-+	 * there's no sane user-space generalization yet:
-+	 */
- 	if (attr->type == PERF_TYPE_RAW)
--		return x86_pmu_extra_regs(event->attr.config, event);
-+		return 0;
- 
- 	if (attr->type == PERF_TYPE_HW_CACHE)
- 		return set_ext_hw_attr(hwc, event);
+You're just making stuff harder than it needs to be.
