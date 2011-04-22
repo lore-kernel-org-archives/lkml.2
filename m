@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab1DVQrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:47:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39073 "EHLO mga09.intel.com"
+	id S1756298Ab1DVQwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:52:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64946 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756211Ab1DVQrg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:47:36 -0400
+	id S1755905Ab1DVQwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:52:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
-   d="scan'208";a="632717892"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Fri, 22 Apr 2011 09:47:34 -0700
-Subject: RE: [PATCH 2.6.39-rc3] i2c-i801: SMBus patch for Intel Panther
- Point DeviceIDs
-Thread-Topic: [PATCH 2.6.39-rc3] i2c-i801: SMBus patch for Intel Panther
- Point DeviceIDs
-Thread-Index: AcwBDJ+9/ounUJHQRde9Y/CVdORnxwAABnBQ
-Message-ID: <CF9C39F99A89134C9CF9C4CCB68B8DDF25DCDE2DBA@orsmsx501.amr.corp.intel.com>
-References: <201104201133.39979.seth.heasley@intel.com>
- <20110422184449.06116327@endymion.delvare>
-In-Reply-To: <20110422184449.06116327@endymion.delvare>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="737111227"
+Date: Fri, 22 Apr 2011 09:51:20 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+Message-ID: <20110422165120.GA16607@tassilo.jf.intel.com>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+ <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+> Once you have clear and precise definition, then we can look at the actual
+> events and figure out a mapping.
 
->With each new chip, we have to add the SMBus device ID to pci_ids.h,
->then wait for Jesse to merge that, and only then I can apply the
->changes to i2c-i801.c. This approach slows things down needlessly.
->
->It isn't mandatory to add IDs to pci_ids.h when an ID is only used
->locally in a device driver. So what I would like to propose is that we
->move all PCI_DEVICE_ID_INTEL_*_SMBUS declarations from pci_ids.h to
->i2c-i801.c now. Then you can resubmit your Panther Point patches, and
->the pci and i2c parts will be independent, so Jesse and myself don't
->depend on each other to apply them.
->
->Seth, if you agree, I can take care of the move, or you can send a
->patch doing that, whatever you prefer.
+It's unclear this can be even done. Linux runs on a wide variety of micro
+architectures, with all kinds of cache architectures.
 
-I've been thinking about this one myself, and I tend to agree.  It'd probably be simpler if you went ahead and made the changes, and I'll be happy to review them.
+Micro architectures are so different. I suspect a "generic" definition would
+need to be so vague as to be useless.
 
--Seth
+This in general seems to be the problem of the current cache events.
+
+Overall for any interesting analysis you need to go CPU specific.
+Abstracted performance analysis is a contradiction in terms.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
