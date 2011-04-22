@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab1DVQhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:37:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46301 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180Ab1DVQhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:37:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=O26SYgIGcY7YcZqKC7FqlrYbExEEE74ctk+e4IulSYBvfi3qWce76RIo6YR7EEd0cq
-         VSRr71icPq/bFxwcJrJvBA8GBumZcmos3Ym7qvwrtOiea7EOBaZmjNgNqIp/Qqrw1QQK
-         iVYgKRGs/SVbyu3f/lYI81l2LjXSlTMgqAGc4=
-Message-ID: <4DB1AED0.60600@gmail.com>
-Date: Fri, 22 Apr 2011 10:37:36 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756223Ab1DVQkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:40:06 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:35825 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756188Ab1DVQkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:40:03 -0400
+Date: Fri, 22 Apr 2011 18:29:32 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyle Spaans <kspaans@uwaterloo.ca>, linux-kernel@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+        dri-devel@lists.freedesktop.org, mjg@redhat.com,
+        maciej.rutecki@gmail.com, nouveau@lists.freedesktop.org,
+        Nigel Cunningham <lkml@nigelcunningham.com.au>,
+        Nick Piggin <npiggin@gmail.com>
+Subject: Re: 2.6.39-rc1 nouveau(?) regression (bisected)
+Message-ID: <20110422162932.GB7600@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Kyle Spaans <kspaans@uwaterloo.ca>, linux-kernel@vger.kernel.org,
+	Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+	dri-devel@lists.freedesktop.org, mjg@redhat.com,
+	maciej.rutecki@gmail.com, nouveau@lists.freedesktop.org,
+	Nigel Cunningham <lkml@nigelcunningham.com.au>,
+	Nick Piggin <npiggin@gmail.com>
+References: <20110415061136.GA21979@isilmar-3.linta.de>
+ <4DAA1453.5000604@nigelcunningham.com.au>
+ <20110416235028.GA6096@taurine.csclub.uwaterloo.ca>
+ <20110417151204.GA24519@taurine.csclub.uwaterloo.ca>
+ <20110417154557.GA2871@joi.lan>
+ <20110417162427.GB25242@taurine.csclub.uwaterloo.ca>
+ <20110417164920.GA2626@joi.lan>
+ <20110418200204.GA2522@joi.lan>
+ <BANLkTi=Oo03CQchHYh4EvEsk+wZy7akLNw@mail.gmail.com>
+ <20110419214747.GA2965@joi.lan>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Tim Blechmann <tim@klingt.org>, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-References: <inhgjs$54a$1@dough.gmane.org> <4D9C84D5.6090303@gmail.com> <20110406175217.GC4987@ghostprotocols.net> <201104062248.23853.tim@klingt.org> <4D9CE610.4020603@gmail.com> <4D9CECF5.3090309@gmail.com>
-In-Reply-To: <4D9CECF5.3090309@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110419214747.GA2965@joi.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know you've been busy with other stuff the past few weeks, but have
-you had a chance to look into this? Basically, perf in 2.6.39 is broken
-when trying to profile a process (-p argument to record or top).
+On Tue, Apr 19, 2011 at 11:47:47PM +0200, Marcin Slusarz wrote:
+> On Mon, Apr 18, 2011 at 01:27:10PM -0700, Linus Torvalds wrote:
+> > On Mon, Apr 18, 2011 at 1:02 PM, Marcin Slusarz
+> > <marcin.slusarz@gmail.com> wrote:
+> > >
+> > > It's some nasty corruption:
+> > 
+> > Looks like something wrote 0xffffffff to free'd memory.
+> > 
+> > Enabling DEBUG_PAGEALLOC *might* show where it happens.
+> > 
+> > >
+> > > [    6.523867] =============================================================================
+> > > [    6.523916] BUG sysfs_dir_cache: Poison overwritten
+> > > [    6.523949] -----------------------------------------------------------------------------
+> > > [    6.523950]
+> > > [    6.524016] INFO: 0xffff8801bb47df4c-0xffff8801bb47df4f. First byte 0xff instead of 0x6b
+> > > [    6.524061] INFO: Slab 0xffffea00060f7b58 objects=22 used=21 fp=0xffff8801bb47df18 flags=0x80000000000000c1
+> > > [    6.524110] INFO: Object 0xffff8801bb47df18 @offset=3864 fp=0x          (null)
+> > > [    6.524111]
+> > > [    6.524170] Bytes b4 0xffff8801bb47df08:  00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ........ZZZZZZZZ
+> > > [    6.524516]   Object 0xffff8801bb47df18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > > [    6.524862]   Object 0xffff8801bb47df28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > > [    6.525208]   Object 0xffff8801bb47df38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> > > [    6.525556]   Object 0xffff8801bb47df48:  6b 6b 6b 6b ff ff ff ff 6b 6b 6b 6b 6b 6b 6b 6b kkkk<FF><FF><FF><FF>kkkkkkkk
+> > 
+> > So here the 0xffffffff is pretty obvious.
+> > 
+> > > and in another boot:
+> > >
+> > > [    6.704786] BUG: unable to handle kernel paging request at ffffffffbc70b058
+> > 
+> > Here it is less obvious, but it was _probably_ a regular kernel
+> > pointer of the type 0xffff8801bc70b058 before the high bits were
+> > overwritten by a 0xffffffff.
+> > 
+> > So then sysfs_refresh_inode() follows that pointer, and crashes.
+> > 
+> > Just a guess, obviously, but it looks rather likely.
+> 
+> Thanks. It helped a bit.
+> I'll send two patches in response to this message, one of which fixes this bug.
 
-David
+Thanks Marcin, now my system boots finely again. Consider this bug CLOSED
+and FIXED. Thanks again,
 
-
-> On 04/06/11 16:15, David Ahern wrote:
->>
->>
->> On 04/06/11 14:48, Tim Blechmann wrote:
->>>>> David
->>>>>
->>>>>> this happens when running perf as the same process as the process and
->>>>>> when running perf as root.
->>>>
->>>> yep, works for me as well:
->>>>
->>>> [acme@emilia ~]$ cat vsyscall.c
->>>
->>> after including unistd.h, this compiles and works fine. however i cannot profile 
->>> any multithreaded program. does this work for you?
->>>
->>> tim
->>>
->>
->> That does fail:
->> # ps -C rsyslogd -L
->>   PID   LWP TTY          TIME CMD
->>   795   795 ?        00:00:00 rsyslogd
->>   795   797 ?        00:00:00 rsyslogd
->>   795   798 ?        00:00:00 rsyslogd
->>
->> # /tmp/build-perf/perf top -p 795
->> Failed to mmap with 22 (Invalid argument)
->>
->> strace shows it failing at:
->> ioctl(4, PERF_EVENT_IOC_SET_OUTPUT, 0x3) = -1 EINVAL (Invalid argument)
->>
->> Changing to use thread only works:
->> # /tmp/build-perf/perf top -t 795
-> 
-> git bisect points to:
-> 
-> 70db7533caef02350ec8d6852e589491bca3a951 is the first bad commit
-> commit 70db7533caef02350ec8d6852e589491bca3a951
-> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Date:   Wed Jan 12 22:39:13 2011 -0200
-> 
-> perf evlist: Move the mmap array from perf_evsel
-> 
-> Adopting the new model used in 'perf record', where we don't have a map
-> per thread per cpu, instead we have an mmap per cpu, established on the
-> first fd for that cpu and ask the kernel using the
-> PERF_EVENT_IOC_SET_OUTPUT ioctl to send events for the other fds on that
-> cpu for the one with the mmap.
-> 
-> The methods moved from perf_evsel to perf_evlist, but for easing review
-> they were modified in place, in evsel.c, the next patch will move the
-> migrated methods to evlist.c.
-> 
-> With this 'perf top' now uses the same mmap model used by 'perf record'
-> and the next patches will make 'perf record' use these new routines,
-> establishing a common codebase for both tools.
-> 
-> ----------
-> 
-> Coincidentally, perf-record is also broken. git bisect points to:
-> 
-> dd7927f4f8ee75b032ff15aeef4bda49719a443a is the first bad commit
-> commit dd7927f4f8ee75b032ff15aeef4bda49719a443a
-> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Date:   Wed Jan 12 14:28:51 2011 -0200
-> 
-> perf record: Use perf_evsel__open
-> 
-> Now its time to factor out the mmap handling bits into the perf_evsel
-> class.
+	Dominik
