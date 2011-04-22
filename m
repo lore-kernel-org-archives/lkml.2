@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab1DVQwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:52:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64946 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755905Ab1DVQwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:52:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
-   d="scan'208";a="737111227"
-Date: Fri, 22 Apr 2011 09:51:20 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
- missing user space support for config1/config2
-Message-ID: <20110422165120.GA16607@tassilo.jf.intel.com>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
- <20110422092322.GA1948@elte.hu>
- <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
- <20110422105211.GB1948@elte.hu>
- <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756325Ab1DVQxH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:53:07 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:59569 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756254Ab1DVQxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:53:05 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=LspiWLT23QcmWxcFEuYcuocjsw8WxTtCaHwp2+vkcwl78mbTiFL+q3o8r4t1rRy1ipl8jESHoVNmcqDR2Ynv8NjTi+jfCxhqK+GB0ReH4u4rdMVilxT+UPZTmm2umAOx;
+Date: Fri, 22 Apr 2011 09:52:59 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Seth Heasley <seth.heasley@intel.com>, linux-i2c@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.39-rc3] i2c-i801: SMBus patch for Intel Panther
+ Point DeviceIDs
+Message-ID: <20110422095259.4d5875d2@jbarnes-desktop>
+In-Reply-To: <20110422184449.06116327@endymion.delvare>
+References: <201104201133.39979.seth.heasley@intel.com>
+	<20110422184449.06116327@endymion.delvare>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Once you have clear and precise definition, then we can look at the actual
-> events and figure out a mapping.
+On Fri, 22 Apr 2011 18:44:49 +0200
+Jean Delvare <khali@linux-fr.org> wrote:
 
-It's unclear this can be even done. Linux runs on a wide variety of micro
-architectures, with all kinds of cache architectures.
+> Hi Seth,
+> 
+> On Wed, 20 Apr 2011 11:33:39 -0700, Seth Heasley wrote:
+> > This patch adds the SMBus controller DeviceID for the Intel Panther Point PCH.
+> 
+> With each new chip, we have to add the SMBus device ID to pci_ids.h,
+> then wait for Jesse to merge that, and only then I can apply the
+> changes to i2c-i801.c. This approach slows things down needlessly.
+> 
+> It isn't mandatory to add IDs to pci_ids.h when an ID is only used
+> locally in a device driver. So what I would like to propose is that we
+> move all PCI_DEVICE_ID_INTEL_*_SMBUS declarations from pci_ids.h to
+> i2c-i801.c now. Then you can resubmit your Panther Point patches, and
+> the pci and i2c parts will be independent, so Jesse and myself don't
+> depend on each other to apply them.
+> 
+> What do you think? Jesse, any objection?
+> 
+> Seth, if you agree, I can take care of the move, or you can send a
+> patch doing that, whatever you prefer.
 
-Micro architectures are so different. I suspect a "generic" definition would
-need to be so vague as to be useless.
-
-This in general seems to be the problem of the current cache events.
-
-Overall for any interesting analysis you need to go CPU specific.
-Abstracted performance analysis is a contradiction in terms.
-
--Andi
+Yeah, that makes sense.  I'd be happy to take a patch to pull the
+defines out of pci_ids.h and push them into the x86 irq.c and your i2c
+code.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Jesse Barnes, Intel Open Source Technology Center
