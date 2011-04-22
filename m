@@ -1,57 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1DVQdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:33:39 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39315 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756154Ab1DVQdg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:33:36 -0400
-Date: Fri, 22 Apr 2011 17:34:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Chris Samuel <chris@csamuel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on
- quad Pentium Pro system
-Message-ID: <20110422173422.46134f20@lxorguk.ukuu.org.uk>
-In-Reply-To: <201104222333.25546.chris@csamuel.org>
-References: <201104222333.25546.chris@csamuel.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756245Ab1DVQfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:35:15 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:3741 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756180Ab1DVQfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:35:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 5/5] dmaengine: at_hdmac: specialize AHB interfaces to optimize transfers
+Date: Fri, 22 Apr 2011 19:42:01 +0200
+Message-Id: <9cbba05f53a75eab5576f4a9d0383d6f3d4ada66.1303493836.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
+References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
+In-Reply-To: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1303493836.git.nicolas.ferre@atmel.com>
+References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1303493836.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> All result in the same behaviour and I'm somewhat at a loss
-> as to how to debug this further, being a sysadmin rather than
-> a real kernel hacker. :-(
-> 
-> I've attached the 2.6.39-rc4 kernel config from point 4, and
-> the kernel config for the working Debian kernel (2.6.18-6-686).
-> 
-> I've also attached the contents of /proc/cpuinfo, /proc/io*,
-> /proc/scsi/scsi, /proc/modules and the output of lspci -vvv
-> and of dmesg from Debian Sarge running the Debian Etch kernel
-> (2.6.18-6-686).
-> 
-> This box has given me good service over the past 8 years or
-> so and I'd hate to have to retire it now due to this when I
-> feel Linux should still work on it..
-> 
-> Any ideas please ?
+DMA controller has two AHB interfaces on the SOC internal
+matrix.
+It is more efficient to specialize each interface as the
+access to memory can introduce latencies that are not compatible
+with peripheral accesses requirements.
 
-earlyprintk=vga
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c      |   21 ++++++++++-----------
+ drivers/dma/at_hdmac_regs.h |    2 ++
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
-(or better yet earlyprintk=ttyS0 and a serial port)
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 65bd52a..73c2e99 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -37,8 +37,7 @@
+ 
+ #define	ATC_DEFAULT_CFG		(ATC_FIFOCFG_HALFFIFO)
+ #define	ATC_DEFAULT_CTRLA	(0)
+-#define	ATC_DEFAULT_CTRLB	(ATC_SIF(0)	\
+-				|ATC_DIF(1))
++#define	ATC_DEFAULT_CTRLB	(ATC_SIF(MEM_IF) | ATC_DIF(MEM_IF))
+ 
+ /*
+  * Initial number of descriptors to allocate for each channel. This could
+@@ -693,14 +692,14 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	reg_width = atslave->reg_width;
+ 
+ 	ctrla = ATC_DEFAULT_CTRLA | atslave->ctrla;
+-	ctrlb = ATC_DEFAULT_CTRLB | ATC_IEN;
++	ctrlb = ATC_IEN;
+ 
+ 	switch (direction) {
+ 	case DMA_TO_DEVICE:
+ 		ctrla |=  ATC_DST_WIDTH(reg_width);
+ 		ctrlb |=  ATC_DST_ADDR_MODE_FIXED
+ 			| ATC_SRC_ADDR_MODE_INCR
+-			| ATC_FC_MEM2PER;
++			| ATC_FC_MEM2PER | ATC_SIF(MEM_IF) | ATC_DIF(PER_IF);
+ 		reg = atslave->tx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct at_desc	*desc;
+@@ -741,7 +740,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		ctrla |=  ATC_SRC_WIDTH(reg_width);
+ 		ctrlb |=  ATC_DST_ADDR_MODE_INCR
+ 			| ATC_SRC_ADDR_MODE_FIXED
+-			| ATC_FC_PER2MEM;
++			| ATC_FC_PER2MEM | ATC_SIF(PER_IF) | ATC_DIF(MEM_IF);
+ 
+ 		reg = atslave->rx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+@@ -846,20 +845,20 @@ atc_dma_cyclic_fill_desc(struct at_dma_slave *atslave, struct at_desc *desc,
+ 		desc->lli.saddr = buf_addr + (period_len * period_index);
+ 		desc->lli.daddr = atslave->tx_reg;
+ 		desc->lli.ctrla = ctrla;
+-		desc->lli.ctrlb = ATC_DEFAULT_CTRLB
+-				| ATC_DST_ADDR_MODE_FIXED
++		desc->lli.ctrlb = ATC_DST_ADDR_MODE_FIXED
+ 				| ATC_SRC_ADDR_MODE_INCR
+-				| ATC_FC_MEM2PER;
++				| ATC_FC_MEM2PER
++				| ATC_SIF(MEM_IF) | ATC_DIF(PER_IF);
+ 		break;
+ 
+ 	case DMA_FROM_DEVICE:
+ 		desc->lli.saddr = atslave->rx_reg;
+ 		desc->lli.daddr = buf_addr + (period_len * period_index);
+ 		desc->lli.ctrla = ctrla;
+-		desc->lli.ctrlb = ATC_DEFAULT_CTRLB
+-				| ATC_DST_ADDR_MODE_INCR
++		desc->lli.ctrlb = ATC_DST_ADDR_MODE_INCR
+ 				| ATC_SRC_ADDR_MODE_FIXED
+-				| ATC_FC_PER2MEM;
++				| ATC_FC_PER2MEM
++				| ATC_SIF(PER_IF) | ATC_DIF(MEM_IF);
+ 		break;
+ 
+ 	default:
+diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+index c79a9e0..9afcb8d 100644
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -103,6 +103,8 @@
+ /* Bitfields in CTRLB */
+ #define	ATC_SIF(i)		(0x3 & (i))	/* Src tx done via AHB-Lite Interface i */
+ #define	ATC_DIF(i)		((0x3 & (i)) <<  4)	/* Dst tx done via AHB-Lite Interface i */
++#define MEM_IF			0		/* specify AHB interface 0 as memory interface */
++#define PER_IF			1		/* specify AHB interface 1 as peripheral interface */
+ #define	ATC_SRC_PIP		(0x1 <<  8)	/* Source Picture-in-Picture enabled */
+ #define	ATC_DST_PIP		(0x1 << 12)	/* Destination Picture-in-Picture enabled */
+ #define	ATC_SRC_DSCR_DIS	(0x1 << 16)	/* Src Descriptor fetch disable */
+-- 
+1.7.3
 
-There are a couple of PPro funnies - there's an area of memory that
-must be excluded due to a chip errata and I seem to remember some PPro
-boxes also having slightly quirking E820 (BIOS memory reporting behaviour)
-
-
-Alan
