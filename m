@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab1DVBe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 21:34:27 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:56195 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755700Ab1DVBe0 (ORCPT
+	id S1755911Ab1DVBeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 21:34:46 -0400
+Received: from hylle01.itea.ntnu.no ([129.241.56.100]:54144 "EHLO
+	hylle01.itea.ntnu.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab1DVBep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 21:34:26 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH] mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE
-Date: Thu, 21 Apr 2011 18:34:03 -0700
-Message-Id: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	Thu, 21 Apr 2011 21:34:45 -0400
+Date: Fri, 22 Apr 2011 03:36:24 +0200
+From: Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Fix typo in DRM_I915_OVERLAY_PUT_IMAGE ioctl define
+Message-ID: <20110422013624.GA25852@siv.localdomain>
+References: <20110412041018.GC17720@siv.localdomain>
+ <BANLkTimwL1yrT9xbsfnh_sH6HSiv1txMXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <BANLkTimwL1yrT9xbsfnh_sH6HSiv1txMXA@mail.gmail.com>
+X-PGP-Key: http://folk.ntnu.no/olehenja/files/pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+Calling ioctl with DRM_IOCTL_I915_OVERLAY_PUT_IMAGE is broken if the
+macro is used directly, because the define contains a typo. When using
+libdrm you do not hit the bug, since libdrm handles the ioctl encoding
+internally.
 
-This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-though it only had a few free pages. This in turn caused no contiguous memory
-to be reserved and frequent kswapd wakeups that emptied the caches to get more
-contiguous memory.
+The typo also leads to the .cmd and .cmd_drv fields of the drm_ioctl
+structure for DRM_I915_OVERLAY_PUT_IMAGE having inconsistent content.
 
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-[This patch was submitted and acked a little over a year ago
-(see: http://lkml.org/lkml/2010/4/6/172 ), but never seemingly
-made it upstream. Resending for comments. -jstultz]
-
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+Cc: Chris Wilson <chris at chris-wilson.co.uk>
+Acked-by: Daniel Vetter <daniel.vetter at ffwll.ch>
 ---
- mm/page_alloc.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ed87f3b..209d9bf 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3288,6 +3288,20 @@ static inline unsigned long wait_table_bits(unsigned long size)
- #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
+Included a bit more explanation about the problem. The impact of the
+inconsistency between .cmd and .cmd_drv does not seem to have any impact,
+since the only thing .cmd_drv seems to be used for is calculating the
+size of the copy_from_user() buffer. It incidentally result in the same
+size both with and without this patch (at least on 64bit).
+
+ include/drm/i915_drm.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
+index 0039f1f..ca7b8af 100644
+--- a/include/drm/i915_drm.h
++++ b/include/drm/i915_drm.h
+@@ -237,7 +237,7 @@ typedef struct _drm_i915_sarea {
+ #define DRM_IOCTL_I915_GEM_GET_APERTURE	DRM_IOR  (DRM_COMMAND_BASE + DRM_I915_GEM_GET_APERTURE, struct drm_i915_gem_get_aperture)
+ #define DRM_IOCTL_I915_GET_PIPE_FROM_CRTC_ID DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GET_PIPE_FROM_CRTC_ID, struct drm_i915_get_pipe_from_crtc_id)
+ #define DRM_IOCTL_I915_GEM_MADVISE	DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GEM_MADVISE, struct drm_i915_gem_madvise)
+-#define DRM_IOCTL_I915_OVERLAY_PUT_IMAGE	DRM_IOW(DRM_COMMAND_BASE + DRM_IOCTL_I915_OVERLAY_ATTRS, struct drm_intel_overlay_put_image)
++#define DRM_IOCTL_I915_OVERLAY_PUT_IMAGE	DRM_IOW(DRM_COMMAND_BASE + DRM_I915_OVERLAY_PUT_IMAGE, struct drm_intel_overlay_put_image)
+ #define DRM_IOCTL_I915_OVERLAY_ATTRS	DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_OVERLAY_ATTRS, struct drm_intel_overlay_attrs)
  
- /*
-+ * Check if a pageblock contains reserved pages
-+ */
-+static int pageblock_is_reserved(unsigned long start_pfn)
-+{
-+	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
-+	unsigned long pfn;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-+		if (PageReserved(pfn_to_page(pfn)))
-+			return 1;
-+	return 0;
-+}
-+
-+/*
-  * Mark a number of pageblocks as MIGRATE_RESERVE. The number
-  * of blocks reserved is based on min_wmark_pages(zone). The memory within
-  * the reserve will tend to store contiguous free pages. Setting min_free_kbytes
-@@ -3326,7 +3340,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			continue;
- 
- 		/* Blocks with reserved pages will never free, skip them. */
--		if (PageReserved(page))
-+		if (pageblock_is_reserved(pfn))
- 			continue;
- 
- 		block_migratetype = get_pageblock_migratetype(page);
+ /* Allow drivers to submit batchbuffers directly to hardware, relying
 -- 
-1.7.3.2.146.gca209
+1.7.5.rc1
 
