@@ -1,132 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1DVPMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 11:12:53 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:4012 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753275Ab1DVPMv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 11:12:51 -0400
-X-SpamScore: -40
-X-BigFish: VPS-40(zz1803M9371O1447R542M1432N98dK4015Lzz1202hzz8275bhz2dh95h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755985Ab1DVPPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 11:15:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47238 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab1DVPPS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 11:15:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=sezu0KByfXwQgWH59+epy6x7NZAumfxSXjATDDXkoAL9hcwbKs4fuV6RWZk1btJfu9
+         MLMNTqvLDljUdRY9lCjEzGFV0RNQyxlyYyol9OMxXB7a8BfRVByNFy3OKED69RoAS/ia
+         WGaAhnwYLwoQe6gX8Jq03VV80GsLbTQa/3en0=
+Message-ID: <4DB19B80.5000900@gmail.com>
+Date: Fri, 22 Apr 2011 19:15:12 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V2] tty/serial: add support for Xilinx PS UART
-Date: Fri, 22 Apr 2011 09:12:42 -0600
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V2] tty/serial: add support for Xilinx PS UART
-Thread-Index: AcwAzToumuHZAoknS3+YKZ3srosTCQAI9qlwAAN7YbA=
-References: <90e49570-bc82-41a9-ac79-2f5007e93a2a@VA3EHSMHS018.ehs.local> <4DB14626.8090002@petalogix.com> 
-From: John Linn <John.Linn@xilinx.com>
-To: <michal.simek@petalogix.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <alan@lxorguk.ukuu.org.uk>, <greg@kroah.com>,
-        <grant.likely@secretlab.ca>
-X-OriginalArrivalTime: 22 Apr 2011 15:12:42.0862 (UTC) FILETIME=[BA4498E0:01CC00FF]
-X-RCIS-Action: ALLOW
-Message-ID: <a9a3298f-e87b-476d-8fca-47ce72b7b0bb@VA3EHSMHS007.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
+References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>	 <1303398203-2918-5-git-send-email-dzickus@redhat.com>	 <20110422081838.GA24011@elte.hu>	 <BANLkTimh80LorfC8O-HOPAAWK9BLYNjcXA@mail.gmail.com>	 <1303462476.2035.215.camel@laptop>	 <BANLkTi=Eoa9jpiLmFTgcNrY334ZAfz6P=w@mail.gmail.com> <1303465546.2035.224.camel@laptop>
+In-Reply-To: <1303465546.2035.224.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: John Linn
-> Sent: Friday, April 22, 2011 7:36 AM
-> To: 'michal.simek@petalogix.com'
-> Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org;
-> alan@lxorguk.ukuu.org.uk; greg@kroah.com; grant.likely@secretlab.ca
-> Subject: RE: [PATCH V2] tty/serial: add support for Xilinx PS UART
+On 04/22/2011 01:45 PM, Peter Zijlstra wrote:
+...
 > 
-> > -----Original Message-----
-> > From: Michal Simek [mailto:michal.simek@petalogix.com]
-> > Sent: Friday, April 22, 2011 3:11 AM
-> > To: John Linn
-> > Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org;
-> > alan@lxorguk.ukuu.org.uk; greg@kroah.com; grant.likely@secretlab.ca
-> > Subject: Re: [PATCH V2] tty/serial: add support for Xilinx PS UART
-> >
-> > John Linn wrote:
-> > > The Xilinx PS Uart is used on the new ARM based SoC. This
-> > > UART is not compatible with others such that a seperate
-> > > driver is required.
-> > >
-> > > Signed-off-by: John Linn <john.linn@xilinx.com>
-> > > ---
-> > >
-> > > V2 Changes
-> > >
+> Right, so the idea is that one event (concept) has two (or more)
+> representations in the config space. And when scheduling the events we
+> find we have a conflict, we simply try the alternative encoding(s).
 > 
-> Hi Michal,
-> 
-> I don't have a problem removing the empty lines, but is there some
-> guideline on that
-> which I'm ignoring and should know?
+...
 
-Those were pretty ugly, didn't realize they were all in there, no big
-deal. I found a few more than you did :)
+  Yeah, Peter, I think it's quite possible to use alternative encoding for p4 as well,
+not sure tho if some "generalized" approach for all perf would be applied to p4 but
+we can make event "aliases" being per-pmu eventually.
 
-Thanks,
-John
+  So Ingo, drop this patch then ;)
 
-> 
-> > AFAIK. Grant proposed to write it in different style. I think he
-will
-> > agree with me.
-> >
-> > #ifdef CONFIG_OF
-> > static struct of_device_id xuartps_of_match[] __devinitdata = {
-> > 	{ .compatible = "xlnx,xuartps", },
-> > 	{}
-> > };
-> > MODULE_DEVICE_TABLE(of, xuartps_of_match);
-> > #else
-> > #define xuartps_of_match NULL
-> > #endif
-> >
-> >
-> > static struct platform_driver xuartps_platform_driver = {
-> > 	.probe   = xuartps_probe,		/* Probe method */
-> > 	.remove  = __exit_p(xuartps_remove),	/* Detach method */
-> > 	.suspend = xuartps_suspend,		/* Suspend */
-> > 	.resume  = xuartps_resume,		/* Resume after a
-suspend */
-> > 	.driver  = {
-> > 		.owner = THIS_MODULE,
-> > 		.name = XUARTPS_NAME,		/* Driver name */
-> > 		.of_match_table = xuartps_of_match,
-> > 	},
-> > };
-> >
-> 
-> I'll check it out, that does look familiar to me now that you say it.
-> We've had this
-> driver around for a while so it just needs to be updated to the newer
-> style.
-> 
-> Easy enough.
-> 
-> Thanks for the review and input,
-> John
-> 
-> > Regards,
-> > Michal
-> >
-> >
-> >
-> > --
-> > Michal Simek, Ing. (M.Eng)
-> > PetaLogix - Linux Solutions for a Reconfigurable World
-> > w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-
-> > 30090663
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+-- 
+    Cyrill
