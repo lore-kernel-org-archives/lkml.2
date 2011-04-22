@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1DVVp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:45:29 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47511
+	id S1756813Ab1DVVp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:45:27 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47496
 	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756783Ab1DVVnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756781Ab1DVVnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 17:43:09 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 9/21] Staging: hv: Simplify blkvsc_init_rw()
-Date: Fri, 22 Apr 2011 14:55:14 -0700
-Message-Id: <1303509326-3094-9-git-send-email-kys@microsoft.com>
+Subject: [PATCH 15/21] Staging: hv: Get rid of some DPRINT_ERR() calls
+Date: Fri, 22 Apr 2011 14:55:20 -0700
+Message-Id: <1303509326-3094-15-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1303509326-3094-1-git-send-email-kys@microsoft.com>
 References: <1303509246-3053-1-git-send-email-kys@microsoft.com>
@@ -24,87 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplyfify blkvsc_init_rw() by using a single scsi command independent of
-the start sector.
+Get rid of some DPRINT_ERR() calls.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   58 +++++++++------------------------------
- 1 files changed, 13 insertions(+), 45 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index b2cd04a..5cf82f0 100644
+index 92614d5..35ad3d5 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -305,53 +305,21 @@ static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
+@@ -17,6 +17,8 @@
+  * Authors:
+  *   Haiyang Zhang <haiyangz@microsoft.com>
+  *   Hank Janssen  <hjanssen@microsoft.com>
++ *
++ * 4/3/2011: K. Y. Srinivasan - Significant restructuring and cleanup.
+  */
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -967,7 +969,6 @@ static int blkvsc_probe(struct device *device)
  
- 	blkvsc_req->cmd_len = 16;
  
--	if (blkvsc_req->sector_start > 0xffffffff) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_16;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_16;
--		}
--
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
--
--		*(unsigned long long *)&blkvsc_req->cmnd[2] =
--				cpu_to_be64(blkvsc_req->sector_start);
--		*(unsigned int *)&blkvsc_req->cmnd[10] =
--				cpu_to_be32(blkvsc_req->sector_count);
--	} else if ((blkvsc_req->sector_count > 0xff) ||
--		   (blkvsc_req->sector_start > 0x1fffff)) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_10;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_10;
--		}
--
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
--
--		*(unsigned int *)&blkvsc_req->cmnd[2] =
--				cpu_to_be32(blkvsc_req->sector_start);
--		*(unsigned short *)&blkvsc_req->cmnd[7] =
--				cpu_to_be16(blkvsc_req->sector_count);
-+	if (rq_data_dir(blkvsc_req->req)) {
-+		blkvsc_req->write = 1;
-+		blkvsc_req->cmnd[0] = WRITE_16;
- 	} else {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_6;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_6;
--		}
--
--		*(unsigned int *)&blkvsc_req->cmnd[1] =
--				cpu_to_be32(blkvsc_req->sector_start) >> 8;
--		blkvsc_req->cmnd[1] &= 0x1f;
--		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
-+		blkvsc_req->write = 0;
-+		blkvsc_req->cmnd[0] = READ_16;
+ 	if (!storvsc_drv_obj->base.dev_add) {
+-		DPRINT_ERR(BLKVSC_DRV, "OnDeviceAdd() not set");
+ 		ret = -1;
+ 		goto Cleanup;
  	}
-+
-+	blkvsc_req->cmnd[1] |=
-+	(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
-+
-+	*(unsigned long long *)&blkvsc_req->cmnd[2] =
-+	cpu_to_be64(blkvsc_req->sector_start);
-+	*(unsigned int *)&blkvsc_req->cmnd[10] =
-+	cpu_to_be32(blkvsc_req->sector_count);
- }
+@@ -995,10 +996,8 @@ static int blkvsc_probe(struct device *device)
  
+ 	/* Call to the vsc driver to add the device */
+ 	ret = storvsc_drv_obj->base.dev_add(device_obj, &device_info);
+-	if (ret != 0) {
+-		DPRINT_ERR(BLKVSC_DRV, "unable to add blkvsc device");
++	if (ret != 0)
+ 		goto Cleanup;
+-	}
  
+ 	blkdev->device_ctx = device_obj;
+ 	/* this identified the device 0 or 1 */
+@@ -1040,7 +1039,6 @@ static int blkvsc_probe(struct device *device)
+ 			ide1_registered = 1;
+ 		}
+ 	} else {
+-		DPRINT_ERR(BLKVSC_DRV, "invalid pathid");
+ 		ret = -1;
+ 		goto Cleanup;
+ 	}
+@@ -1049,7 +1047,6 @@ static int blkvsc_probe(struct device *device)
+ 
+ 	blkdev->gd = alloc_disk(BLKVSC_MINORS);
+ 	if (!blkdev->gd) {
+-		DPRINT_ERR(BLKVSC_DRV, "register_blkdev() failed! ret %d", ret);
+ 		ret = -1;
+ 		goto Cleanup;
+ 	}
 -- 
 1.7.4.1
 
