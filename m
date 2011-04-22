@@ -1,116 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1DVPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 11:30:56 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56198 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275Ab1DVPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 11:30:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
-   d="scan'208";a="423939748"
-Subject: Re: perf_events: questions about cpu_has_ht_siblings() and offcore
- support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>
-In-Reply-To: <BANLkTinTRnSWbR8NTd5J-mmL=w7RecXk8g@mail.gmail.com>
-References: <BANLkTinNJERr_=ELO61UbrwCJjW1KAdK2A@mail.gmail.com>
-	 <1303478798.2461.11.camel@localhost>
-	 <BANLkTimXi0on1pLLqeW3C3YyKXNeyE1d5Q@mail.gmail.com>
-	 <1303482702.2461.40.camel@localhost>
-	 <BANLkTinxzH-3uXXfj4ALzkM48FnQ+shdvg@mail.gmail.com>
-	 <1303484597.2461.50.camel@localhost>
-	 <BANLkTinTRnSWbR8NTd5J-mmL=w7RecXk8g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 23:30:19 +0800
-Message-Id: <1303486219.2461.61.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755619Ab1DVPjM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 11:39:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54989 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab1DVPjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 11:39:11 -0400
+Date: Fri, 22 Apr 2011 11:39:08 -0400
+From: "hch@infradead.org" <hch@infradead.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, vgoyal@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110422153908.GA4430@infradead.org>
+References: <20110411212635.7959de70@notabene.brown>
+ <4DA2E7F0.9010904@fusionio.com>
+ <20110411220505.1028816e@notabene.brown>
+ <4DA2F00E.6010907@fusionio.com>
+ <20110418081922.1651474a@notabene.brown>
+ <4DABDC60.2090009@fusionio.com>
+ <20110418172551.55629fc6@notabene.brown>
+ <4DABF1EA.3070301@fusionio.com>
+ <20110418183343.036f412e@notabene.brown>
+ <20110418212306.GA21154@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110418212306.GA21154@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 23:05 +0800, Stephane Eranian wrote:
-> On Fri, Apr 22, 2011 at 5:03 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Fri, 2011-04-22 at 22:41 +0800, Stephane Eranian wrote:
-> >> On Fri, Apr 22, 2011 at 4:31 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> >> > On Fri, 2011-04-22 at 21:46 +0800, Stephane Eranian wrote:
-> >> >> On Fri, Apr 22, 2011 at 3:26 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> >> >> > On Fri, 2011-04-22 at 20:59 +0800, Stephane Eranian wrote:
-> >> >> >> Lin,
-> >> >> >>
-> >> >> >> In arch/x86/include/asm/smp.h, you added:
-> >> >> >>
-> >> >> >> static inline bool cpu_has_ht_siblings(void)
-> >> >> >> {
-> >> >> >>        bool has_siblings = false;
-> >> >> >> #ifdef CONFIG_SMP
-> >> >> >>        has_siblings = cpu_has_ht && smp_num_siblings > 1;
-> >> >> >> #endif
-> >> >> >>        return has_siblings;
-> >> >> >> }
-> >> >> >>
-> >> >> >> I am wondering about the goal of this function.
-> >> >> >>
-> >> >> >> Is it supposed to return whether or not HT is enabled?
-> >> >> >>
-> >> >> >> Ht enabled != HT supported
-> >> >> >
-> >> >> > It's used to check if HT is supported.
-> >> >> >
-> >> >> Ok, that makes more sense.
-> >> >>
-> >> >> > But unfortunately, we didn't find a way to check if HT is enabled.
-> >> >> > So I just check if HT is supported.
-> >> >> >
-> >> >> >>
-> >> >> >> +static inline int is_ht_enabled(void)
-> >> >> >> +{
-> >> >> >> +       bool has_ht = false;
-> >> >> >> +#ifdef CONFIG_SMP
-> >> >> >> +       int w;
-> >> >> >> +       w = cpumask_weight(cpu_sibling_mask(smp_processor_id()));
-> >> >> >> +       has_ht = cpu_has_ht && w > 1;
-> >> >> >> +#endif
-> >> >> >> +       return has_ht;
-> >> >> >> +}
-> >> >> >>
-> >> >> >> OTOH, you need some validation even in the case HT is off. No two events
-> >> >> >> scheduled together on the same PMU can have different values for the extra
-> >> >
-> >> > I got it now.
-> >> >
-> >> >> >> reg. Thus, the fact that cpu_has_ht_siblings() is imune to HT state helps here,
-> >> >> >> but then what's the point of it?
-> >> >> >
-> >> >> > The points is to avoid the percore resource allocations(which are used
-> >> >> > to sync between HTs) if HT is not supported.
-> >> >> >
-> >> >> But if you check x86_pmu.extra_regs, that should do it as well.
-> >> >
-> >> > I don't understand here.
-> >> > Did you mean we can avoid the percore resource allocations by just
-> >> > checking x86_pmu.extra_regs? How?
-> >>
-> >> Is you have not extra_regs, i.e., regs that are shared, then why would
-> >> you need the percore allocation?
-> >
-> > But "extra_regs" does not imply they are regs that are shared.
-> > It only means some events need to set extra registers to work.
-> >
-> Do you have example of such register that would not require the
-> extra mutual exclusion either between HT threads or between
-> events on the same PMU?
+On Mon, Apr 18, 2011 at 05:23:06PM -0400, hch@infradead.org wrote:
+> > NeilBrown (6):
+> >       md: use new plugging interface for RAID IO.
+> >       md/dm - remove remains of plug_fn callback.
+> >       md - remove old plugging code.
+> >       md: provide generic support for handling unplug callbacks.
+> >       md: incorporate new plugging into raid5.
+> >       md: fix up raid1/raid10 unplugging.
+> 
+> Looking over more of the unplugging left over, is there a reason to
+> keep the unplug_work bits in CFQ?  They seem to rather counter the
+> current scheme (and it is the last user of kblockd outside of
+> blk-core.c)
 
-No.
+Jens, Vivkek:
 
-I was thinking the case that "extra_regs" may be per-thread, instead of
-pef-core.
-
-So if there are "extra_regs" or not does not connected directly with if
-locking is needed or not.
+can you take a look at if cfq_schedule_dispatch is still needed in
+new unplugging world order?  It's the only kblockd user outside the
+block core that's still left, and it seems rather odd to me at least.
 
