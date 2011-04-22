@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab1DVQfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:35:10 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:30167 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab1DVQfH (ORCPT
+	id S1756204Ab1DVQhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:37:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46301 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756180Ab1DVQhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:35:07 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 1/5] dmaengine: at_hdmac: modify way to use interrupts
-Date: Fri, 22 Apr 2011 19:41:57 +0200
-Message-Id: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1303493836.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
-References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
+	Fri, 22 Apr 2011 12:37:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=O26SYgIGcY7YcZqKC7FqlrYbExEEE74ctk+e4IulSYBvfi3qWce76RIo6YR7EEd0cq
+         VSRr71icPq/bFxwcJrJvBA8GBumZcmos3Ym7qvwrtOiea7EOBaZmjNgNqIp/Qqrw1QQK
+         iVYgKRGs/SVbyu3f/lYI81l2LjXSlTMgqAGc4=
+Message-ID: <4DB1AED0.60600@gmail.com>
+Date: Fri, 22 Apr 2011 10:37:36 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Tim Blechmann <tim@klingt.org>, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
+References: <inhgjs$54a$1@dough.gmane.org> <4D9C84D5.6090303@gmail.com> <20110406175217.GC4987@ghostprotocols.net> <201104062248.23853.tim@klingt.org> <4D9CE610.4020603@gmail.com> <4D9CECF5.3090309@gmail.com>
+In-Reply-To: <4D9CECF5.3090309@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we use Buffer Transfer Completed interrupts. If we
-want a chained buffer completed information, we setup the
-ATC_IEN bit in CTRLB register in the lli.
-This is done by set_desc_eol() function and used by
-memcpy/slave_sg functions.
+I know you've been busy with other stuff the past few weeks, but have
+you had a chance to look into this? Basically, perf in 2.6.39 is broken
+when trying to profile a process (-p argument to record or top).
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/dma/at_hdmac.c      |    4 ++--
- drivers/dma/at_hdmac_regs.h |   11 ++++++++---
- 2 files changed, 10 insertions(+), 5 deletions(-)
+David
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 3d7d705..13050e6 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -464,7 +464,7 @@ static irqreturn_t at_dma_interrupt(int irq, void *dev_id)
- 
- 		for (i = 0; i < atdma->dma_common.chancnt; i++) {
- 			atchan = &atdma->chan[i];
--			if (pending & (AT_DMA_CBTC(i) | AT_DMA_ERR(i))) {
-+			if (pending & (AT_DMA_BTC(i) | AT_DMA_ERR(i))) {
- 				if (pending & AT_DMA_ERR(i)) {
- 					/* Disable channel on AHB error */
- 					dma_writel(atdma, CHDR, atchan->mask);
-@@ -549,7 +549,7 @@ atc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	}
- 
- 	ctrla =   ATC_DEFAULT_CTRLA;
--	ctrlb =   ATC_DEFAULT_CTRLB
-+	ctrlb =   ATC_DEFAULT_CTRLB | ATC_IEN
- 		| ATC_SRC_ADDR_MODE_INCR
- 		| ATC_DST_ADDR_MODE_INCR
- 		| ATC_FC_MEM2MEM;
-diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-index 495457e..8303306 100644
---- a/drivers/dma/at_hdmac_regs.h
-+++ b/drivers/dma/at_hdmac_regs.h
-@@ -309,8 +309,8 @@ static void atc_setup_irq(struct at_dma_chan *atchan, int on)
- 	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
- 	u32		ebci;
- 
--	/* enable interrupts on buffer chain completion & error */
--	ebci =    AT_DMA_CBTC(atchan->chan_common.chan_id)
-+	/* enable interrupts on buffer transfer completion & error */
-+	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
- 		| AT_DMA_ERR(atchan->chan_common.chan_id);
- 	if (on)
- 		dma_writel(atdma, EBCIER, ebci);
-@@ -347,7 +347,12 @@ static inline int atc_chan_is_enabled(struct at_dma_chan *atchan)
-  */
- static void set_desc_eol(struct at_desc *desc)
- {
--	desc->lli.ctrlb |= ATC_SRC_DSCR_DIS | ATC_DST_DSCR_DIS;
-+	u32 ctrlb = desc->lli.ctrlb;
-+
-+	ctrlb &= ~ATC_IEN;
-+	ctrlb |= ATC_SRC_DSCR_DIS | ATC_DST_DSCR_DIS;
-+
-+	desc->lli.ctrlb = ctrlb;
- 	desc->lli.dscr = 0;
- }
- 
--- 
-1.7.3
 
+> On 04/06/11 16:15, David Ahern wrote:
+>>
+>>
+>> On 04/06/11 14:48, Tim Blechmann wrote:
+>>>>> David
+>>>>>
+>>>>>> this happens when running perf as the same process as the process and
+>>>>>> when running perf as root.
+>>>>
+>>>> yep, works for me as well:
+>>>>
+>>>> [acme@emilia ~]$ cat vsyscall.c
+>>>
+>>> after including unistd.h, this compiles and works fine. however i cannot profile 
+>>> any multithreaded program. does this work for you?
+>>>
+>>> tim
+>>>
+>>
+>> That does fail:
+>> # ps -C rsyslogd -L
+>>   PID   LWP TTY          TIME CMD
+>>   795   795 ?        00:00:00 rsyslogd
+>>   795   797 ?        00:00:00 rsyslogd
+>>   795   798 ?        00:00:00 rsyslogd
+>>
+>> # /tmp/build-perf/perf top -p 795
+>> Failed to mmap with 22 (Invalid argument)
+>>
+>> strace shows it failing at:
+>> ioctl(4, PERF_EVENT_IOC_SET_OUTPUT, 0x3) = -1 EINVAL (Invalid argument)
+>>
+>> Changing to use thread only works:
+>> # /tmp/build-perf/perf top -t 795
+> 
+> git bisect points to:
+> 
+> 70db7533caef02350ec8d6852e589491bca3a951 is the first bad commit
+> commit 70db7533caef02350ec8d6852e589491bca3a951
+> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Date:   Wed Jan 12 22:39:13 2011 -0200
+> 
+> perf evlist: Move the mmap array from perf_evsel
+> 
+> Adopting the new model used in 'perf record', where we don't have a map
+> per thread per cpu, instead we have an mmap per cpu, established on the
+> first fd for that cpu and ask the kernel using the
+> PERF_EVENT_IOC_SET_OUTPUT ioctl to send events for the other fds on that
+> cpu for the one with the mmap.
+> 
+> The methods moved from perf_evsel to perf_evlist, but for easing review
+> they were modified in place, in evsel.c, the next patch will move the
+> migrated methods to evlist.c.
+> 
+> With this 'perf top' now uses the same mmap model used by 'perf record'
+> and the next patches will make 'perf record' use these new routines,
+> establishing a common codebase for both tools.
+> 
+> ----------
+> 
+> Coincidentally, perf-record is also broken. git bisect points to:
+> 
+> dd7927f4f8ee75b032ff15aeef4bda49719a443a is the first bad commit
+> commit dd7927f4f8ee75b032ff15aeef4bda49719a443a
+> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Date:   Wed Jan 12 14:28:51 2011 -0200
+> 
+> perf record: Use perf_evsel__open
+> 
+> Now its time to factor out the mmap handling bits into the perf_evsel
+> class.
