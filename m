@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1DWDaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 23:30:21 -0400
-Received: from www.ecorae.gob.ec ([174.142.111.34]:44084 "EHLO
+	id S1754783Ab1DWDbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 23:31:01 -0400
+Received: from www.ecorae.gob.ec ([174.142.111.34]:44358 "EHLO
 	server.ecorae.org.ec" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754097Ab1DWDaS (ORCPT
+	with ESMTP id S1753702Ab1DWDbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 23:30:18 -0400
-X-Greylist: delayed 47615 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Apr 2011 23:30:17 EDT
-Message-ID: <55664.41.71.144.130.1303481439.squirrel@www.ecorae.gov.ec>
-Date: Fri, 22 Apr 2011 09:10:39 -0500 (ECT)
+	Fri, 22 Apr 2011 23:31:00 -0400
+Message-ID: <55666.41.71.144.130.1303481395.squirrel@www.ecorae.gov.ec>
+Date: Fri, 22 Apr 2011 09:09:55 -0500 (ECT)
 Subject: 
 From: "Anglo Capital Loan Firm" <info@gmail.com>
 Reply-To: anglocapitalloanfirm@rediffmail.com
@@ -20,7 +19,7 @@ Content-Transfer-Encoding: 7BIT
 X-Priority: 3 (Normal)
 Importance: Normal
 X-yoursite-MailScanner-Information: Please contact the ISP for more information
-X-MailScanner-ID: p3MEAk8R026220
+X-MailScanner-ID: p3MEA9e0026124
 X-yoursite-MailScanner: Found to be clean
 X-yoursite-MailScanner-From: info@gmail.com
 To: unlisted-recipients:; (no To-header on input)
