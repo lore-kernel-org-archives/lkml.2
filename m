@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1DVJXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 05:23:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36030 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab1DVJXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 05:23:42 -0400
-Date: Fri, 22 Apr 2011 11:23:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110422092322.GA1948@elte.hu>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+	id S1754429Ab1DVJYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 05:24:48 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47129 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab1DVJYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 05:24:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=F6qXP08H0ucLpZ9wy1SGFNL/LfjeJ1I8llvqA9vL4cZNJ5cAuEGuzfa7EdJ7tcqctD
+         EGbkX1ScwjMUCND6xLE/f/l7CcSWXXVQnz5s+Dk9GtS1ndEiEI7ik7E87wRVG/cgrL2/
+         wG6o7BC2fkjYY6nXcZ42A+tIQ81xUu5vIaFRI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1303462476.2035.215.camel@laptop>
+References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
+	<1303398203-2918-5-git-send-email-dzickus@redhat.com>
+	<20110422081838.GA24011@elte.hu>
+	<BANLkTimh80LorfC8O-HOPAAWK9BLYNjcXA@mail.gmail.com>
+	<1303462476.2035.215.camel@laptop>
+Date: Fri, 22 Apr 2011 13:24:44 +0400
+Message-ID: <BANLkTi=Eoa9jpiLmFTgcNrY334ZAfz6P=w@mail.gmail.com>
+Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephane Eranian <eranian@google.com> wrote:
-
-> On Fri, Apr 22, 2011 at 10:06 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> >> This needs to be a *lot* more user friendly. Users do not want to type in
-> >> stupid hexa magic numbers to get profiling. We have moved beyond the oprofile
-> >> era really.
-> >>
-> >> Unless there's proper generalized and human usable support i'm leaning
-> >> towards turning off the offcore user-space accessible raw bits for now, and
-> >> use them only kernel-internally, for the cache events.
+On Fri, Apr 22, 2011 at 12:54 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2011-04-22 at 12:43 +0400, Cyrill Gorcunov wrote:
+>> we need a different event and counters for watchdog.
+>>
+> Does it count the same thing though? If so we could look at having
+> alternative encodings support (we might need something like that for
+> offcore too).
 >
-> Generic cache events are a myth. They are not usable. I keep getting 
-> questions from users because nobody knows what they are actually counting, 
-> thus nobody knows how to interpret the counts. You cannot really hide the 
-> micro-architecture if you want to make any sensible measurements.
 
-Well:
+Yes, they count the same thing (well some tech details are different but
+not much).By using different counters we are allowed to run them
+simultaneously which makes perf top works again.
 
- aldebaran:~> perf stat --repeat 10 -e instructions -e L1-dcache-loads -e L1-dcache-load-misses -e LLC-misses ./hackbench 10
- Time: 0.125
- Time: 0.136
- Time: 0.180
- Time: 0.103
- Time: 0.097
- Time: 0.125
- Time: 0.104
- Time: 0.125
- Time: 0.114
- Time: 0.158
-
- Performance counter stats for './hackbench 10' (10 runs):
-
-     2,102,556,398 instructions             #      0.000 IPC     ( +-   1.179% )
-       843,957,634 L1-dcache-loads            ( +-   1.295% )
-       130,007,361 L1-dcache-load-misses      ( +-   3.281% )
-         6,328,938 LLC-misses                 ( +-   3.969% )
-
-        0.146160287  seconds time elapsed   ( +-   5.851% )
-
-It's certainly useful if you want to get ballpark figures about cache behavior 
-of an app and want to do comparisons.
-
-There are inconsistencies in our generic cache events - but that's not really a 
-reason to obcure their usage behind nonsensical microarchitecture-specific 
-details.
-
-But i'm definitely in favor of making these generalized events more consistent 
-across different CPU types. Can you list examples of inconsistencies that we 
-should resolve? (and which you possibly consider impossible to resolve, right?)
-
-Thanks,
-
-	Ingo
+Could you elaborate what you have in mind with "alternative encodings"
+here?
