@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1DVS0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 14:26:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36484 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752679Ab1DVS0e (ORCPT
+	id S1755888Ab1DVSaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 14:30:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53880 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab1DVSaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 14:26:34 -0400
+	Fri, 22 Apr 2011 14:30:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PYwjojeLZgyh7eGTOwVcyY5Q9izHKkZFL3IJ5PDtue4Tj9Q+pFltSKiwSGKqw32x8L
+         k+k1pXiqueA0co1vXTcU9dXpfannnuOgRtYJBMoavO6LWUsFlKlvtIPae6IhhNFtUQQh
+         n2dbdw6KD+CFZIs7ep81bL0Fk5QOdPEdPCJUc=
+Date: Fri, 22 Apr 2011 20:30:11 +0200
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Steven Whitehouse <swhiteho@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Strange block/scsi/workqueue issue
+Message-ID: <20110422183011.GD21902@mtj.dyndns.org>
+References: <1302641036.2604.40.camel@mulgrave.site>
+ <20110413051846.GD24161@mtj.dyndns.org>
+ <20110413060651.GA27823@mtj.dyndns.org>
+ <1302686454.2613.4.camel@dolmen>
+ <1302703208.2613.18.camel@dolmen>
+ <1302714080.2597.29.camel@mulgrave.site>
+ <4DA603AF.9090202@fusionio.com>
+ <1302725866.2597.33.camel@mulgrave.site>
+ <20110422180158.GB21902@mtj.dyndns.org>
+ <1303495578.2590.33.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <1303431801-10540-1-git-send-email-andi@firstfloor.org>
-References: <1303431801-10540-1-git-send-email-andi@firstfloor.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 22 Apr 2011 11:26:09 -0700
-Message-ID: <BANLkTi=kod0vH3Ybb4Fe=Sa5zvzYSmoj1Q@mail.gmail.com>
-Subject: Re: Make RCU dcache work with CONFIG_SECURITY=y
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, npiggin@kernel.dk, shaohua.li@intel.com,
-        sds@tycho.nsa.gov, jmorris@namei.org,
-        linux-security-module@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303495578.2590.33.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 5:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> I didn't find good test suites for the security modules, so
-> there wasn't a lot of testing on this unfortunately
-> (the selinux one for LTP doesn't seem to work). Some close
-> review of these changes is needed.
->
-> On the other hand the VFS changes itself are very straight forward
-> and the 1/1 patch is very straight forward (and a win in itself)
->
-> The bottom line is with this patchkit a CONFIG_SECURITY=y
-> kernel has as good VFS performance as a kernel with CONFIG_SECURITY
-> disabled.
+On Fri, Apr 22, 2011 at 01:06:18PM -0500, James Bottomley wrote:
+> I've proposed the minimal fixes for this cycle here:
+> 
+> http://marc.info/?l=linux-scsi&m=130348665328233
+> http://marc.info/?l=linux-scsi&m=130348673628282
+> http://marc.info/?l=linux-scsi&m=130348680328356
+> 
+> And I'll merge at least the scsi one.
 
-Gaah. My immediate reaction to the patch-series was "This is great, I
-was really hoping we could get all those annoying cases sorted out,
-and I'll queue them for the next merge window".
+Great, looks good to me too.
 
-Having then actually read through the patches a bit more, I then got
-convinced that at least the first patch should probably be applied
-right away and be marked for stable, since it looks pretty damn
-obvious to me, and it might already on its own fix the performance
-regression for some configurations (although realistically I guess few
-enough people really do the "selinux=0" thing, so the big advantage is
-making easier to backport the other patches later if we don't do them
-now).
+> But there's been no long term conclusion yet.
 
-And now I'm vacillating about the two later patches too. They look
-fine to me, but I really have _zero_ familiarity with selinux and
-smack internals, so unlike the first patch, I can't go "that looks
-like the obviously right thing, and it clearly catches all the RCU
-cases".
+I'll clean up the workqueue conversion patch and try again.
 
-The "we can't use all the nifty RCU pathwalk in the config that most
-distros ship by default" is clearly a performance regression, and has
-meant that it's not been really showing its real advantages for most
-people. So in that sense, it's a regression fix and thus valid even
-though we're pretty late in the -rc series.
+Thank you.
 
-But at the same time, it's also a bit scary.
-
-Comments? I'd really like to see/hear feedback like "yeah, this looks
-really obviously safe" vs "yeah, looks good, but I really don't feel
-very comfortable with it" from the security people.
-
-                       Linus
+-- 
+tejun
