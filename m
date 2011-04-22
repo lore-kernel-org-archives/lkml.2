@@ -1,145 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab1DVXdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 19:33:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49653 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757011Ab1DVXcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 19:32:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,256,1301900400"; 
-   d="scan'208";a="737247188"
-From: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
-Subject: [PATCH 2/4] Kernel documentation for the PTI feature.
-Date: Fri, 22 Apr 2011 16:32:28 -0700
-Message-Id: <1303515150-1718-3-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
+	id S1757057Ab1DVXdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 19:33:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51423 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab1DVXde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 19:33:34 -0400
+Message-ID: <4DB21037.2060604@oracle.com>
+Date: Fri, 22 Apr 2011 16:33:11 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Andreas Dilger <adilger@dilger.ca>
+CC: Eric Blake <eblake@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com> <4DB1AC9D.3010706@oracle.com> <4DB1AF6F.4040706@redhat.com> <4DB1B37C.9070406@oracle.com> <4DB1B4F1.8070109@redhat.com> <4DB1B62B.3000700@oracle.com> <B7EE7E9A-083C-4914-8A69-4DD3448D06B3@dilger.ca>
+In-Reply-To: <B7EE7E9A-083C-4914-8A69-4DD3448D06B3@dilger.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DB21043.001B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+On 04/22/2011 11:06 AM, Andreas Dilger wrote:
+> Sure, there are lots of wasted syscalls, but in this case the cost of doing extra SEEK_DATA and SEEK_HOLE operations may be fairly costly. This involves scanning the whole disk layout, possibly over a network, which might need tens or hundreds of disk seeks to read the metadata, unlike regular SEEK_SET.
+>
+> Even SEEK_END is somewhat costly on a network filesystem, since the syscall needs to lock the file size in order to determine the end of the file, which can block other threads from writing to the file.
+>
+> So while I agree that the Linux mantra that "syscalls are cheap" is true if those syscalls don't actually do any work, I think it also ignores the cost of what some syscalls need to do behind the scenes.
 
-This provides Kernel documentation for the PTI
-feature and setting line discipline drivers
-on top of tty's for Linux mobile solutions.
+You have a point. I was just reviewing the possible patch for ocfs2
+and it looks heavy.
 
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
----
- Documentation/pti/pti_intel_mid.txt |   99 +++++++++++++++++++++++++++++++++++
- 1 files changed, 99 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/pti/pti_intel_mid.txt
-
-diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
-new file mode 100644
-index 0000000..ab8408b
---- /dev/null
-+++ b/Documentation/pti/pti_intel_mid.txt
-@@ -0,0 +1,99 @@
-+The Intel MID PTI project is HW implemented in Intel Atom
-+system-on-a-chip designs based on the Parallel Trace
-+Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
-+for this platform involves the following files:
-+
-+./include/linux/pti.h
-+./drivers/.../n_tracesink.h
-+./drivers/.../n_tracerouter.c
-+./drivers/.../n_tracesink.c
-+./drivers/.../pti.c
-+
-+pti.c is the driver that enables various debugging features
-+popular on platforms from certain mobile manufacturers.  
-+n_tracerouter.c and n_tracesink.c allow extra system information to 
-+be collected and routed to the pti driver, such as trace
-+debugging data from a modem.  Although n_tracerouter
-+and n_tracesink are a part of the complete PTI solution,
-+these two line disciplines can work separately from
-+pti.c and route any data stream from one /dev/tty node
-+to another /dev/tty node via kernel-space.  This provides
-+a stable, reliable connection that will not break unless
-+the user-space application shuts down (plus avoids
-+kernel->user->kernel context switch overheads of routing
-+data).
-+
-+An example debugging usage for this driver system:
-+   *Hook /dev/ttyPTI0 to syslogd.  Opening this port will also start
-+    a console device to further capture debugging messages to PTI.
-+   *Hook /dev/ttyPTI1 to modem debugging data to write to PTI HW.
-+    This is where n_tracerouter and n_tracesink are used.
-+   *Hook /dev/pti to a user-level debugging application for writing
-+    to PTI HW.
-+   *Use mipi_* Kernel Driver API in other device drivers for
-+    debugging to PTI by first requesting a PTI write address via
-+    mipi_request_masterchannel(1).
-+
-+Below is example pseudo-code on how a 'privileged' application
-+can hook up n_tracerouter and n_tracesink to any tty on
-+a system.  'Privileged' means the application has enough
-+privileges to successfully manipulate the ldisc drivers
-+but is not just blindly executing as 'root'. Keep in mind
-+the use of ioctl(,TIOCSETD,) is not specific to the n_tracerouter
-+and n_tracesink line discpline drivers but is a generic
-+operation for a program to use a line discpline driver
-+on a tty port other than the default n_tty.
-+
-+/////////// To hook up n_tracerouter and n_tracesink /////////
-+
-+// Note that n_tracerouter depends on n_tracesink.
-+#include <errno.h>
-+#define ONE_TTY "/dev/ttyOne"
-+#define TWO_TTY "/dev/ttyTwo"
-+
-+// needed global to hand onto ldisc connection
-+static int g_fd_source = -1;
-+static int g_fd_sink  = -1;
-+
-+// these two vars used to grab LDISC values from loaded ldisc drivers
-+// in OS.  Look at /proc/tty/ldiscs to get the right numbers from
-+// the ldiscs loaded in the system.
-+int source_ldisc_num, sink_ldisc_num = -1;
-+int retval;
-+
-+g_fd_source = open(ONE_TTY, O_RDWR); // must be R/W
-+g_fd_sink   = open(TWO_TTY, O_RDWR); // must be R/W
-+
-+if (g_fd_source <= 0) || (g_fd_sink <= 0) {
-+   // doubt you'll want to use these exact error lines of code
-+   printf("Error on open(). errno: %d\n",errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_sink, TIOCSETD, &sink_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_source, TIOCSETD, &source_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+/////////// To disconnect n_tracerouter and n_tracesink ////////
-+
-+// First make sure data through the ldiscs has stopped.
-+
-+// Second, disconnect ldiscs.  This provides a
-+// little cleaner shutdown on tty stack.
-+sink_ldisc_num = 0;
-+source_ldisc_num = 0;
-+ioctl(g_fd_uart, TIOCSETD, &sink_ldisc_num);
-+ioctl(g_fd_gadget, TIOCSETD, &source_ldisc_num);
-+
-+// Three, program closes connection, and cleanup:
-+close(g_fd_uart);
-+close(g_fd_gadget);
-+g_fd_uart = g_fd_gadget = NULL;
--- 
-1.7.2.3
-
+One option is to scrap SEEK_* and make another syscall llfind() with FIND_*.
+Or, do both.
