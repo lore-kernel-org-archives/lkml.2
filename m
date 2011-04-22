@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1DVGKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 02:10:46 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58842 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab1DVGKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 02:10:45 -0400
-Date: Fri, 22 Apr 2011 08:10:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq locking
- issue
-Message-ID: <20110422061030.GA13600@elte.hu>
-References: <20110421014153.126662477@goodmis.org>
- <20110421014259.132728798@goodmis.org>
- <BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
- <1303386029.7181.118.camel@gandalf.stny.rr.com>
- <20110421133541.GB2702@zhy>
- <1303395845.7181.127.camel@gandalf.stny.rr.com>
- <BANLkTikBk2n8x1gJBHHrpxZZrhEpVFxt4A@mail.gmail.com>
- <1303439684.7181.150.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303439684.7181.150.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752043Ab1DVGQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 02:16:22 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:17701 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1DVGQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 02:16:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6323"; a="87265120"
+From: Willie Ruan <wruan@codeaurora.org>
+To: sameo@linux.intel.com
+Cc: Willie Ruan <wruan@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mfd: pm8921-core: add pwm device for PM8921
+Date: Thu, 21 Apr 2011 23:15:52 -0700
+Message-Id: <1303452952-20499-2-git-send-email-wruan@codeaurora.org>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <1303452952-20499-1-git-send-email-wruan@codeaurora.org>
+References: <1303452952-20499-1-git-send-email-wruan@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Qualcomm PM8921 has a PWM module which can output 8 channels
+of PWM signals.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Signed-off-by: Willie Ruan <wruan@codeaurora.org>
+---
+ drivers/mfd/pm8921-core.c         |   11 +++++++++++
+ include/linux/mfd/pm8xxx/pm8921.h |    1 +
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-> On Fri, 2011-04-22 at 09:41 +0800, Yong Zhang wrote:
-> 
-> > > I probably should modify the lockdep selftests to add an option to show
-> > > the output as well as it triggers errors. This would allow me to make
-> > > sure the output still works.
-> > 
-> > This does make sense to keep things consistent if we have it.
-> 
-> Actually, Peter informed me that we already do this. Just need to boot
-> with debug_locks_verbose=1.
+diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
+index 2fbd42d..47b1189 100644
+--- a/drivers/mfd/pm8921-core.c
++++ b/drivers/mfd/pm8921-core.c
+@@ -107,6 +107,11 @@ static const struct resource mpp_cell_resources[] __devinitconst = {
+ 	},
+ };
+ 
++static struct mfd_cell pwm_cell __devinitdata = {
++	.name           = PM8XXX_PWM_DEV_NAME,
++	.id             = -1,
++};
++
+ static struct mfd_cell mpp_cell __devinitdata = {
+ 	.name		= PM8XXX_MPP_DEV_NAME,
+ 	.id		= -1,
+@@ -160,6 +165,12 @@ static int __devinit pm8921_add_subdevices(const struct pm8921_platform_data
+ 		}
+ 	}
+ 
++	ret = mfd_add_devices(pmic->dev, 0, &pwm_cell, 1, NULL, 0);
++	if (ret) {
++		pr_err("Failed to add pwm subdevice ret=%d\n", ret);
++		goto bail;
++	}
++
+ 	return 0;
+ bail:
+ 	if (pmic->irq_chip) {
+diff --git a/include/linux/mfd/pm8xxx/pm8921.h b/include/linux/mfd/pm8xxx/pm8921.h
+index 19cffb2..8132325 100644
+--- a/include/linux/mfd/pm8xxx/pm8921.h
++++ b/include/linux/mfd/pm8xxx/pm8921.h
+@@ -22,6 +22,7 @@
+ #include <linux/mfd/pm8xxx/irq.h>
+ #include <linux/mfd/pm8xxx/gpio.h>
+ #include <linux/mfd/pm8xxx/mpp.h>
++#include <linux/mfd/pm8xxx/pwm.h>
+ 
+ #define PM8921_NR_IRQS		256
+ 
+-- 
+1.6.5.2
 
-Yeah, that's been in lockdep since v1, that's how i prettified the original 
-lockdep output.
-
-Thanks,
-
-	Ingo
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
