@@ -1,16 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab1DVUbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:31:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51121 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756418Ab1DVUas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:30:48 -0400
-Date: Fri, 22 Apr 2011 22:30:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: arun@sharma-home.net
-Cc: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+	id S1756624Ab1DVUb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:31:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52969 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418Ab1DVUb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 16:31:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e3jTYJFGpkEgkCzYBzydRmtS7/BgacTdyneqA9xa6dOjhBBy1YrdXuANLvIirF5+tx
+         XhvrmIYv7JxMkM2QdSfg==
+MIME-Version: 1.0
+In-Reply-To: <20110422131846.GA20760@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+	<20110422092322.GA1948@elte.hu>
+	<BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+	<20110422105211.GB1948@elte.hu>
+	<BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
+	<20110422131846.GA20760@elte.hu>
+Date: Fri, 22 Apr 2011 22:31:53 +0200
+Message-ID: <BANLkTi=jdSG1Zefn_b7Pv2NyT1jdREzW8w@mail.gmail.com>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
         linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -19,115 +36,264 @@ Cc: Stephane Eranian <eranian@google.com>,
         Arun Sharma <asharma@fb.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
- missing user space support for config1/config2
-Message-ID: <20110422203022.GA20573@elte.hu>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
- <20110422092322.GA1948@elte.hu>
- <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
- <20110422105211.GB1948@elte.hu>
- <20110422165007.GA18401@vps.sharma-home.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422165007.GA18401@vps.sharma-home.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 22, 2011 at 3:18 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+> > > Say i'm a developer and i have an app with such code:
+> > >
+> > > #define THOUSAND 1000
+> > >
+> > > static char array[THOUSAND][THOUSAND];
+> > >
+> > > int init_array(void)
+> > > {
+> > >        int i, j;
+> > >
+> > >        for (i = 0; i < THOUSAND; i++) {
+> > >                for (j = 0; j < THOUSAND; j++) {
+> > >                        array[j][i]++;
+> > >                }
+> > >        }
+> > >
+> > >        return 0;
+> > > }
+> > >
+> > > Pretty common stuff, right?
+> > >
+> > > Using the generalized cache events i can run:
+> > >
+> > >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
+> > >
+> > >  Performance counter stats for './array' (10 runs):
+> > >
+> > >         6,719,130 cycles:u                   ( +-   0.662% )
+> > >         5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
+> > >         1,037,032 l1-dcache-loads:u          ( +-   0.009% )
+> > >         1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
+> > >
+> > >        0.003802098  seconds time elapsed   ( +-  13.395% )
+> > >
+> > > I consider that this is 'bad', because for almost every dcache-load there's a
+> > > dcache-miss - a 99% L1 cache miss rate!
+> > >
+> > > Then i think a bit, notice something, apply this performance optimization:
+> >
+> > I don't think this example is really representative of the kind of problems
+> > people face, it is just too small and obvious. [...]
+>
+> Well, the overwhelming majority of performance problems are 'small and obvious'
 
-* arun@sharma-home.net <arun@sharma-home.net> wrote:
+Problems are not simple. Most serious applications these days are huge, hundreds
+of MB of text, if not GB.
 
-> On Fri, Apr 22, 2011 at 12:52:11PM +0200, Ingo Molnar wrote:
-> > 
-> > Using the generalized cache events i can run:
-> > 
-> >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
-> > 
-> >  Performance counter stats for './array' (10 runs):
-> > 
-> >          6,719,130 cycles:u                   ( +-   0.662% )
-> >          5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
-> >          1,037,032 l1-dcache-loads:u          ( +-   0.009% )
-> >          1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
-> > 
-> >         0.003802098  seconds time elapsed   ( +-  13.395% )
-> > 
-> > I consider that this is 'bad', because for almost every dcache-load there's a 
-> > dcache-miss - a 99% L1 cache miss rate!
-> 
-> One could argue that all you need is cycles and instructions. [...]
+In your artificial example, you knew the answer before you started the
+measurement.
+Most of the time, applications are assembled out of hundreds of libraries, so no
+single developers knows all the code. Thus, the performance analyst is
+faced with a
+black box most of the time.
 
-Yes, and note that with instructions events we even have skid-less PEBS 
-profiling so seeing the precise .
+Let's go back to your example.
+Performance counter stats for './array' (10 runs):
 
-> [...] If there is an expensive load, you'll see that the load instruction 
-> takes many cycles and you can infer that it's a cache miss.
-> 
-> Questions app developers typically ask me:
-> 
-> * If I fix all my top 5 L3 misses how much faster will my app go?
+         6,719,130 cycles:u                   ( +-   0.662% )
+         5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
+         1,037,032 l1-dcache-loads:u          ( +-   0.009% )
+         1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
 
-This has come up: we could add a 'stalled/idle-cycles' generic event - i.e. 
-cycles spent without performing useful work in the pipelines. (Resource-stall 
-events on Intel CPUs.)
+Looking at this I don't think you can pinpoint which function has a problem and
+whether or not there is a real problem. You need to evaluate the penalty. Once
+you know that you can estimate any potential gain from fixing the code. Arun
+pointed that out rightfully in his answer. How do you know the penalty if you
+don't decompose some more?
 
-Then you would profile L3 misses (there's a generic event for that), plus 
-stalls, and the answer to your question would be the percentage of hits you get 
-in the stalled-cycles profile, multiplied by the stalled-cycles/cycles ratio.
+It's not because you see cache misses that they are harmful. They could be
+generated by the HW prefetchers and be harmless to your program. Does
+L1d-cache-load misses include HW prefetchers? Imagine it does on Intel Nehalem.
+Do you guarantee it does on AMD Shanghai as well? If not then how do I compare?
 
-> * Am I bottlenecked on memory bandwidth?
 
-This would be a variant of the measurement above: say the top 90% of L3 misses 
-profile-correlated with stalled-cycles, relative to total-cycles. If you get 
-'90% of L3 misses cause a 1% wall-time slowdown' then you are not memory 
-bottlenecked. If the answer is '35% slowdown' then you are memory bottlenecked.
+As I said, if you are only interested in generic events, then that's
+fine with me
+as long as you don't prevent others from accessing raw events.
 
-> * I have 4 L3 misses every 1000 instructions and 15 branch mispredicts per
->   1000 instructions. Which one should I focus on?
+As people have pointed, I don't see why raw events would be harmful to
+users. If you
+don't want to learn about them, just stick with the generic events.
 
-AFAICS this would be another variant of stalled-cycles measurements: you create 
-a stalled-cycles profile and check whether the top hits are branches or memory 
-loads.
 
-> It's hard to answer some of these without access to all events.
-
-I'm curious, how would you measure these properties - do you have some 
-different events in mind?
-
-> While your approach of having generic events for commonly used counters might 
-> be useful for some use cases, I don't see why exposing all vendor defined 
-> events is harmful.
-> 
-> A clear statement on the last point would be helpful.
-
-Well, the thing is, i think users are helped most if we add useful, highlevel 
-PMU features added and not just an opaque raw event pass-through engine. The 
-problem with lowlevel raw ABIs is that the tool space fragments into a zillion 
-small hacks and there's no good concentration of know-how. I'd like the art of 
-performance measurement to be generalized out, as well as it can be.
-
-We had this discussion in the big perf-counters flamewars 2+ years ago, where 
-one side wanted raw events, while we wanted intelligent kernel-side 
-abstractions and generalizations. I think the abstraction and generalization 
-angle worked out very well in practice - but we are having this discussion 
-again and again :-)
-
-As i stated it in my prior mails, i'm not against raw events as a rare 
-exception channel - that increases utility. I'm against what was attempted 
-here: an extension to raw events as the *primary* channel for DRAM measurement 
-features. That is just sloppy and *reduces* utility.
-
-I'm very simple-minded: when i see reduced utility i become sad :)
-
-Thanks,
-
-	Ingo
+> - once a tool roughly pinpoints their existence and location!
+>
+> And you have not offered a counter example either so you have not really
+> demonstrated what you consider a 'real' example and why you consider
+> generalized cache events inadequate.
+>
+> > [...] So I would not generalize on it.
+>
+> To the contrary, it demonstrates the most fundamental concept of cache
+> profiling: looking at the hits/misses ratios and identifying hotspots.
+>
+> That concept can be applied pretty nicely to all sorts of applications.
+>
+> Interestly, the exact hardware event doesnt even *matter* for most problems, as
+> long as it *correlates* with the conceptual entity we want to measure.
+>
+> So what we need are hardware events that correlate with:
+>
+>  - loads done
+>  - stores done
+>  - load misses suffered
+>  - store misses suffered
+>  - branches done
+>  - branches missed
+>  - instructions executed
+>
+> It is the *ratio* that matters in most cases: before-change versus
+> after-change, hits versus misses, etc.
+>
+> Yes, there will be imprecisions, CPU quirks, limitations and speculation
+> effects - but as long as we keep our eyes on the ball, generalizations are
+> useful for solving practical problems.
+>
+> > If you are happy with generalized cache events then, as I said, I am fine
+> > with it. But the API should ALWAYS allow users access to raw events when they
+> > need finer grain analysis.
+>
+> Well, that's a pretty far cry from calling it a 'myth' :-)
+>
+> So my point is (outlined in detail in the common changelog) that we need sane
+> generalized remote DRAM events *first* - before we think about exposing the
+> 'rest' of te offcore-PMU as raw events.
+>
+> > > diff --git a/array.c b/array.c
+> > > index 4758d9a..d3f7037 100644
+> > > --- a/array.c
+> > > +++ b/array.c
+> > > @@ -9,7 +9,7 @@ int init_array(void)
+> > >
+> > >        for (i = 0; i < THOUSAND; i++) {
+> > >                for (j = 0; j < THOUSAND; j++) {
+> > > -                       array[j][i]++;
+> > > +                       array[i][j]++;
+> > >                }
+> > >        }
+> > >
+> > > I re-run perf-stat:
+> > >
+> > >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
+> > >
+> > >  Performance counter stats for './array' (10 runs):
+> > >
+> > >         2,395,407 cycles:u                   ( +-   0.365% )
+> > >         5,084,788 instructions:u           #      2.123 IPC     ( +-   0.000% )
+> > >         1,035,731 l1-dcache-loads:u          ( +-   0.006% )
+> > >             3,955 l1-dcache-load-misses:u    ( +-   4.872% )
+> > >
+> > >  - I got absolute numbers in the right ballpark figure: i got a million loads as
+> > >   expected (the array has 1 million elements), and 1 million cache-misses in
+> > >   the 'bad' case.
+> > >
+> > >  - I did not care which specific Intel CPU model this was running on
+> > >
+> > >  - I did not care about *any* microarchitectural details - i only knew it's a
+> > >   reasonably modern CPU with caching
+> > >
+> > >  - I did not care how i could get access to L1 load and miss events. The events
+> > >   were named obviously and it just worked.
+> > >
+> > > So no, kernel driven generalization and sane tooling is not at all a 'myth'
+> > > today, really.
+> > >
+> > > So this is the general direction in which we want to move on. If you know about
+> > > problems with existing generalization definitions then lets *fix* them, not
+> > > pretend that generalizations and sane workflows are impossible ...
+> >
+> > Again, to fix them, you need to give us definitions for what you expect those
+> > events to count. Otherwise we cannot make forward progress.
+>
+> No, we do not 'need' to give exact definitions. This whole topic is more
+> analogous to physics than to mathematics. See my description above about how
+> ratios and high level structure matters more than absolute values and
+> definitions.
+>
+> Yes, if we can then 'loads' and 'stores' should correspond to the number of
+> loads a program flow does, which you get if you look at the assembly code.
+> 'Instructions' should correspond to the number of instructions executed.
+>
+> If the CPU cannot do it it's not a huge deal in practice - we will cope and
+> hopefully it will all be fixed in future CPU versions.
+>
+> That having said, most CPUs i have access to get the fundamentals right, so
+> it's not like we have huge problems in practice. Key CPU statistics are
+> available.
+>
+> > Let me give just one simple example: cycles
+> >
+> > What your definition for the generic cycle event?
+> >
+> > There are various flavors:
+> >   - count halted, unhalted cycles?
+>
+> Again i think you are getting lost in too much detail.
+>
+> For typical developers halted versus unhalted is mostly an uninteresting
+> distinction, as people tend to just type 'perf record ./myapp', which is per
+> workload profiling so it excludes idle time. So it would give the same result
+> to them regardless of whether it's halted or unhalted cycles.
+>
+> ( This simple example already shows the idiocy of the hardware names, calling
+>  cycles events "CPU_CLK_UNHALTED.REF". In most cases the developer does *not*
+>  care about those distinctions so the defaults should not be complicated with
+>  them. )
+>
+> >   - impacted by frequency scaling?
+>
+> The best default for developers is a frequency scaling invariant result - i.e.
+> one that is not against a reference clock but against the real CPU clock.
+>
+> ( Even that one will not be completely invariant due to the frequency-scaling
+>  dependent cost of misses and bus ops, etc. )
+>
+> But profiling against a reference frequency makes sense as well, especially for
+> system-wide profiling - this is the hardware equivalent of the cpu-clock /
+> elapsed time metric. We could implement the cpu-clock using reference cycles
+> events for example.
+>
+> > LLC-misses:
+> >   - what considered the LLC?
+>
+> The last level cache is whichever cache sits before DRAM.
+>
+> >   - does it include code, data or both?
+>
+> Both if possible as they tend to be unified caches anyway.
+>
+> >   - does it include demand, hw prefetch?
+>
+> Do you mean for the LLC-prefetch events? What would be your suggestion, which
+> is the most useful metric? Prefetches are not directly done by program logic so
+> this is borderline. We wanted to include them for completeness - and the metric
+> should probably include 'all activities that program flow has not caused
+> directly and which may be sucking up system resources' - i.e. including hw
+> prefetch.
+>
+> >   - it is to local or remote dram?
+>
+> The current definitions should include both.
+>
+> Measuring remote DRAM accesss is of course useful - that is the original point
+> of this thread. It should be done as an additional layer, basically local RAM
+> is yet another cache level - but we can take other generalized approach as
+> well, if they make more sense.
+>
+> Thanks,
+>
+>        Ingo
