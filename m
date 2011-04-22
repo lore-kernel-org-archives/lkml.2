@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab1DVNuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 09:50:04 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48108 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755372Ab1DVNt7 (ORCPT
+	id S1755806Ab1DVN5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 09:57:51 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:47555 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755692Ab1DVN5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 09:49:59 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        x86 maintainers <x86@kernel.org>
-In-Reply-To: <BANLkTi=JGeWiFm-9H-2vHDsU1v7ykDt1UA@mail.gmail.com>
-References: <1303317178.2587.30.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
-	 <20110421220351.9180.A69D9226@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1104211500170.5741@router.home>
-	 <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
-	 <1303421088.4025.52.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211431500.20201@chino.kir.corp.google.com>
-	 <1303422566.4025.56.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211505320.20201@chino.kir.corp.google.com>
-	 <BANLkTi=JGeWiFm-9H-2vHDsU1v7ykDt1UA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 08:49:54 -0500
-Message-ID: <1303480195.2590.2.camel@mulgrave.site>
+	Fri, 22 Apr 2011 09:57:50 -0400
+Date: Fri, 22 Apr 2011 15:57:35 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: konrad.wilk@oracle.com, stefano.stabellini@eu.citrix.com,
+        xen-devel@lists.xensource.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
+Message-ID: <20110422135735.GA19025@router-fw-old.local.net-space.pl>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 11:02 +0300, Pekka Enberg wrote:
-> On Fri, Apr 22, 2011 at 1:12 AM, David Rientjes <rientjes@google.com> wrote:
-> >> > diff --git a/init/Kconfig b/init/Kconfig
-> >> > index 56240e7..a7ad8fb 100644
-> >> > --- a/init/Kconfig
-> >> > +++ b/init/Kconfig
-> >> > @@ -1226,6 +1226,7 @@ config SLAB
-> >> >           per cpu and per node queues.
-> >> >
-> >> >  config SLUB
-> >> > +       depends on BROKEN || NUMA || !DISCONTIGMEM
-> >> >         bool "SLUB (Unqueued Allocator)"
-> >> >         help
-> >> >            SLUB is a slab allocator that minimizes cache line usage
-> >>
-> >>
-> >> I already sent it to linux-arch and there's been no dissent; there have
-> >> been a few "will that fix my slub bug?" type of responses.
-> >
-> > I was concerned about tile because it actually got all this right by using
-> > N_NORMAL_MEMORY appropriately and it uses slub by default, but it always
-> > enables NUMA at the moment so this won't impact it.
-> >
-> > Acked-by: David Rientjes <rientjes@google.com>
-> 
-> I'm OK with this Kconfig patch. Can someone send a proper patch with
-> signoffs and such? Do we want to tag this for -stable too?
+After a lot of debugging and long reading of Linux Kernel and Xen code
+finally I killed deeply hidden bug in pv-grub. Details below.
+Additionally, I am CC'ing this e-mail to LKML because this issue
+looks like Linux Kernel problem, however, it is not.
 
-I already did here:
+This patch applies to Xen Ver. 4.0, Xen Ver. 4.1 and unstable tree.
 
-http://marc.info/?l=linux-arch&m=130324857801976
+# HG changeset patch
+# User dkiper@net-space.pl
+# Date 1303474763 -7200
+# Node ID b33bf24be129b7b9cd2248460beb1298088c6af5
+# Parent  dbf2ddf652dc3dd927447e79ef4bc586de55d708
+Introduction of Linux Kernel git commit ceefccc93932b920a8ec6f35f596db05202a12fe
+(x86: default CONFIG_PHYSICAL_START and CONFIG_PHYSICAL_ALIGN to 16 MB) revealed
+deeply hidden bug in pv-grub. During kernel load stage dom->p2m_host[] list has
+been incorrectly initialized.
 
-I got the wrong linux-mm email address, though (I thought you were on
-vger).
+At the beginning of kernel load stage dom->p2m_host[] list is populated with
+current pfn->mfn layout. Later during memory allocation (memory is allocated
+page by page in kexec_allocate()) page order is changed to establish linear
+layout in new domain. It is done by exchanging subsequent mfns with newly
+allocated mfns. dom->p2m_host[] list is indexed by currently requested pfn
+(it is incremented from 0) and pfn of newly allocated paged. If pfn of newly
+allocated page is less than currently requested pfn then relevant earlier
+allocated mfn is overwritten which leads to domain crash later. This patch
+fix that issue. If pfn of newly allocated page is less then currently
+requested pfn then relevant pfn/mfn pair is properly calculated and usual
+exchange occurs later.
 
-I've got a parisc specific patch already for this (also for stable), so
-I can just queue this alongside if everyone's OK with that?
-
-James
-
-
+diff -r dbf2ddf652dc -r b33bf24be129 stubdom/grub/kexec.c
+--- a/stubdom/grub/kexec.c	Thu Apr 07 15:26:58 2011 +0100
++++ b/stubdom/grub/kexec.c	Fri Apr 22 14:19:23 2011 +0200
+@@ -91,6 +91,11 @@ int kexec_allocate(struct xc_dom_image *
+         new_pfn = PHYS_PFN(to_phys(pages[i]));
+         pages_mfns[i] = new_mfn = pfn_to_mfn(new_pfn);
+ 
++	if (new_pfn < i)
++		for (new_pfn = i; new_pfn < dom->total_pages; ++new_pfn)
++			if (dom->p2m_host[new_pfn] == new_mfn)
++				break;
++
+         /* Put old page at new PFN */
+         dom->p2m_host[new_pfn] = old_mfn;
+ 
+Daniel
