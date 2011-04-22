@@ -1,234 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1DVVDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:03:05 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33312
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755894Ab1DVVBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 17:01:20 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 10/18] Staging: hv: Get rid of the forward declaration of blkvsc_do_read_capacity16()
-Date: Fri, 22 Apr 2011 14:13:31 -0700
-Message-Id: <1303506819-1913-10-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1303506819-1913-1-git-send-email-kys@microsoft.com>
-References: <1303506780-1872-1-git-send-email-kys@microsoft.com>
- <1303506819-1913-1-git-send-email-kys@microsoft.com>
+	id S1756713Ab1DVVED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:04:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59586 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756647Ab1DVVEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 17:04:00 -0400
+Date: Fri, 22 Apr 2011 23:03:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+Message-ID: <20110422210335.GB21364@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+ <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
+ <20110422131846.GA20760@elte.hu>
+ <BANLkTi=jdSG1Zefn_b7Pv2NyT1jdREzW8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=jdSG1Zefn_b7Pv2NyT1jdREzW8w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_do_read_capacity16() by moving
-the code around.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c |  168 +++++++++++++++++++-------------------
- 1 files changed, 84 insertions(+), 84 deletions(-)
+* Stephane Eranian <eranian@google.com> wrote:
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 21be2ab..900ffc1 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -769,6 +769,90 @@ static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
- 	return 0;
- }
- 
-+
-+static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
-+{
-+	struct blkvsc_request *blkvsc_req;
-+	struct page *page_buf;
-+	unsigned char *buf;
-+	struct scsi_sense_hdr sense_hdr;
-+	struct vmscsi_request *vm_srb;
-+
-+	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
-+
-+	blkdev->sector_size = 0;
-+	blkdev->capacity = 0;
-+	blkdev->media_not_present = 0; /* assume a disk is present */
-+
-+	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
-+	if (!blkvsc_req)
-+		return -ENOMEM;
-+
-+	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
-+	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
-+	page_buf = alloc_page(GFP_KERNEL);
-+	if (!page_buf) {
-+		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
-+		return -ENOMEM;
-+	}
-+
-+	init_completion(&blkvsc_req->request.wait_event);
-+	blkvsc_req->dev = blkdev;
-+	blkvsc_req->req = NULL;
-+	blkvsc_req->write = 0;
-+
-+	blkvsc_req->request.data_buffer.pfn_array[0] =
-+	page_to_pfn(page_buf);
-+	blkvsc_req->request.data_buffer.offset = 0;
-+	blkvsc_req->request.data_buffer.len = 12;
-+
-+	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
-+	blkvsc_req->cmd_len = 16;
-+
-+	/*
-+	 * Set this here since the completion routine may be invoked
-+	 * and completed before we return
-+	 */
-+
-+	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
-+
-+	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
-+		   blkvsc_req);
-+
-+	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
-+
-+	/* check error */
-+	if (vm_srb->scsi_status) {
-+		scsi_normalize_sense(blkvsc_req->sense_buffer,
-+				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
-+		if (sense_hdr.asc == 0x3A) {
-+			/* Medium not present */
-+			blkdev->media_not_present = 1;
-+		}
-+		return 0;
-+	}
-+	buf = kmap(page_buf);
-+
-+	/* be to le */
-+	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
-+	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
-+
-+#if 0
-+	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
-+			    (buf[2] << 8) | buf[3]) + 1;
-+	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
-+			      (buf[6] << 8) | buf[7];
-+#endif
-+
-+	kunmap(page_buf);
-+
-+	__free_page(page_buf);
-+
-+	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
-+
-+	return 0;
-+}
-+
- /* Static decl */
- static int blkvsc_probe(struct device *dev);
- static int blkvsc_revalidate_disk(struct gendisk *gd);
-@@ -777,7 +861,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request);
- static int blkvsc_do_request(struct block_device_context *blkdev,
- 			     struct request *req);
- static int blkvsc_do_inquiry(struct block_device_context *blkdev);
--static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
- static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
- 
- static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
-@@ -1110,89 +1193,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 	return 0;
- }
- 
--static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
--{
--	struct blkvsc_request *blkvsc_req;
--	struct page *page_buf;
--	unsigned char *buf;
--	struct scsi_sense_hdr sense_hdr;
--	struct vmscsi_request *vm_srb;
--
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
--
--	blkdev->sector_size = 0;
--	blkdev->capacity = 0;
--	blkdev->media_not_present = 0; /* assume a disk is present */
--
--	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
--	if (!blkvsc_req)
--		return -ENOMEM;
--
--	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
--	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
--	page_buf = alloc_page(GFP_KERNEL);
--	if (!page_buf) {
--		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--		return -ENOMEM;
--	}
--
--	init_completion(&blkvsc_req->request.wait_event);
--	blkvsc_req->dev = blkdev;
--	blkvsc_req->req = NULL;
--	blkvsc_req->write = 0;
--
--	blkvsc_req->request.data_buffer.pfn_array[0] =
--	page_to_pfn(page_buf);
--	blkvsc_req->request.data_buffer.offset = 0;
--	blkvsc_req->request.data_buffer.len = 12;
--
--	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
--	blkvsc_req->cmd_len = 16;
--
--	/*
--	 * Set this here since the completion routine may be invoked
--	 * and completed before we return
--	 */
--
--	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
--
--	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
--		   blkvsc_req);
--
--	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
--
--	/* check error */
--	if (vm_srb->scsi_status) {
--		scsi_normalize_sense(blkvsc_req->sense_buffer,
--				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
--		if (sense_hdr.asc == 0x3A) {
--			/* Medium not present */
--			blkdev->media_not_present = 1;
--		}
--		return 0;
--	}
--	buf = kmap(page_buf);
--
--	/* be to le */
--	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
--	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
--
--#if 0
--	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
--			    (buf[2] << 8) | buf[3]) + 1;
--	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
--			      (buf[6] << 8) | buf[7];
--#endif
--
--	kunmap(page_buf);
--
--	__free_page(page_buf);
--
--	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--
--	return 0;
--}
--
- /*
-  * We break the request into 1 or more blkvsc_requests and submit
-  * them.  If we can't submit them all, we put them on the
--- 
-1.7.4.1
+> Let's go back to your example.
+> Performance counter stats for './array' (10 runs):
+> 
+>          6,719,130 cycles:u                   ( +-   0.662% )
+>          5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
+>          1,037,032 l1-dcache-loads:u          ( +-   0.009% )
+>          1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
+> 
+> Looking at this I don't think you can pinpoint which function has a problem 
+> [...]
 
+In my previous mail i showed how to pinpoint specific functions. You bring up 
+an interesting question, cost/benefit analysis:
+
+> [...] and whether or not there is a real problem. You need to evaluate the 
+> penalty. Once you know that you can estimate any potential gain from fixing 
+> the code. Arun pointed that out rightfully in his answer. How do you know the 
+> penalty if you don't decompose some more?
+
+We can measure that even with today's tooling - which doesnt do cost/benefit 
+analysis out of box. In my previous example i showed the cachemisses profile:
+
+   weight    samples  pcnt funct DSO
+   ______    _______ _____ _____ ______________________
+
+      1.9       6184 98.8% func2 /home/mingo/opt/array2
+      0.0         69  1.1% func1 /home/mingo/opt/array2
+
+and here's the cycles profile:
+
+             samples  pcnt funct DSO
+             _______ _____ _____ ______________________
+
+             2555.00 67.4% func2 /home/mingo/opt/array2
+             1220.00 32.2% func1 /home/mingo/opt/array2
+
+So, given that there was no other big miss sources:
+
+ $ perf stat -a -e branch-misses:u -e l1-dcache-load-misses:u -e l1-dcache-store-misses:u -e l1-icache-load-misses:u sleep 1
+
+ Performance counter stats for 'sleep 1':
+
+            70,674 branch-misses:u         
+       347,992,027 l1-dcache-load-misses:u 
+             1,779 l1-dcache-store-misses:u
+             8,007 l1-icache-load-misses:u 
+
+        1.000982021  seconds time elapsed
+
+I can tell you that by fixing the cache-misses in that function, the code will 
+be roughly 33% faster.
+
+So i fixed the bug, and before it 100 iterations of func1+func2 took 300 msecs:
+
+ $ perf stat -e cpu-clock --repeat 10 ./array2
+
+ Performance counter stats for './array2' (10 runs):
+
+        298.405074 cpu-clock                  ( +-   1.823% )
+
+After the fix it took 190 msecs:
+
+ $ perf stat -e cpu-clock --repeat 10 ./array2
+
+ Performance counter stats for './array2' (10 runs):
+
+        189.409569 cpu-clock                  ( +-   0.019% )
+
+        0.190007596  seconds time elapsed   ( +-   0.025% )
+
+Which is 63% of the original speed - 37% faster. And no, i first did the 
+calculation, then did the measurement of the optimized code.
+
+Now it would be nice to automate such analysis some more within perf - but i 
+think i have established the principle well enough that we can use generic 
+cache events for such measurements.
+
+Also, we could certainly add more generic events - a stalled-cycles event would 
+certainly be useful for example, to collect all (or at least most) 'harmful 
+delays' the execution flow can experience. Want to take a stab at that patch?
+
+Thanks,
+
+	Ingo
