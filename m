@@ -1,77 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab1DVMTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 08:19:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56089 "EHLO hera.kernel.org"
+	id S1754091Ab1DVMUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 08:20:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57001 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1DVMT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 08:19:28 -0400
-Date: Fri, 22 Apr 2011 12:19:10 GMT
-From: tip-bot for Cyrill Gorcunov <gorcunov@gmail.com>
-Message-ID: <tip-1ea5a6afd95a4803900c97ed63a47a883ebe7b3e@git.kernel.org>
+	id S1752993Ab1DVMUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 08:20:09 -0400
+Date: Fri, 22 Apr 2011 12:19:37 GMT
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-3003eba313dd0e0502dd71548c36fe7c19801ce5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        gorcunov@openvz.org, gorcunov@gmail.com, ming.m.lin@intel.com,
-        tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gorcunov@openvz.org, gorcunov@gmail.com, ming.m.lin@intel.com,
-        tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
-In-Reply-To: <1303398203-2918-3-git-send-email-dzickus@redhat.com>
-References: <1303398203-2918-3-git-send-email-dzickus@redhat.com>
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110421014259.132728798@goodmis.org>
+References: <20110421014259.132728798@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: P4 PMU - Don't forget to clear cpuc->active_mask on overflow
-Git-Commit-ID: 1ea5a6afd95a4803900c97ed63a47a883ebe7b3e
+Subject: [tip:core/locking] lockdep: Print a nicer description for irq lock inversions
+Git-Commit-ID: 3003eba313dd0e0502dd71548c36fe7c19801ce5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Apr 2011 12:19:10 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Apr 2011 12:19:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ea5a6afd95a4803900c97ed63a47a883ebe7b3e
-Gitweb:     http://git.kernel.org/tip/1ea5a6afd95a4803900c97ed63a47a883ebe7b3e
-Author:     Cyrill Gorcunov <gorcunov@gmail.com>
-AuthorDate: Thu, 21 Apr 2011 11:03:21 -0400
+Commit-ID:  3003eba313dd0e0502dd71548c36fe7c19801ce5
+Gitweb:     http://git.kernel.org/tip/3003eba313dd0e0502dd71548c36fe7c19801ce5
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Wed, 20 Apr 2011 21:41:54 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 22 Apr 2011 10:21:34 +0200
+CommitDate: Fri, 22 Apr 2011 11:06:57 +0200
 
-perf, x86: P4 PMU - Don't forget to clear cpuc->active_mask on overflow
+lockdep: Print a nicer description for irq lock inversions
 
-It's not enough to simply disable event on overflow the
-cpuc->active_mask should be cleared as well otherwise counter
-may stall in "active" even in real being already disabled (which
-potentially may lead to the situation that user may not use this
-counter further).
+Locking order inversion due to interrupts is a subtle problem.
 
-Don pointed out that:
+When an irq lockiinversion discovered by lockdep it currently
+reports something like:
 
- " I also noticed this patch fixed some unknown NMIs
-   on a P4 when I stressed the box".
+[ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
 
-Tested-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Link: http://lkml.kernel.org/r/1303398203-2918-3-git-send-email-dzickus@redhat.com
+... and then prints out the locks that are involved, as back traces.
+
+Judging by lkml feedback developers were routinely confused by what
+a HARDIRQ->safe to unsafe issue is all about, and sometimes even
+blew it off as a bug in lockdep.
+
+It is not obvious when lockdep prints this message about a lock that
+is never taken in interrupt context.
+
+After explaining the problems that lockdep is reporting, I
+decided to add a description of the problem in visual form. Now
+the following is shown:
+
+ ---
+other info that might help us debug this:
+
+ Possible interrupt unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(lockA);
+                               local_irq_disable();
+                               lock(&rq->lock);
+                               lock(lockA);
+  <Interrupt>
+    lock(&rq->lock);
+
+ *** DEADLOCK ***
+
+ ---
+
+The above is the case when the unsafe lock is taken while
+holding a lock taken in irq context. But when a lock is taken
+that also grabs a unsafe lock, the call chain is shown:
+
+ ---
+other info that might help us debug this:
+
+Chain exists of:
+  &rq->lock --> lockA --> lockC
+
+ Possible interrupt unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(lockC);
+                               local_irq_disable();
+                               lock(&rq->lock);
+                               lock(lockA);
+  <Interrupt>
+    lock(&rq->lock);
+
+ *** DEADLOCK ***
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20110421014259.132728798@goodmis.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_p4.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/lockdep.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 70 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index c2520e1..d1f77e2 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -947,7 +947,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 		if (!x86_perf_event_set_period(event))
- 			continue;
- 		if (perf_event_overflow(event, 1, &data, regs))
--			p4_pmu_disable_event(event);
-+			x86_pmu_stop(event, 0);
- 	}
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 53a6895..7b2ffee 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
+ 	usage[i] = '\0';
+ }
  
- 	if (handled) {
++static int __print_lock_name(struct lock_class *class)
++{
++	char str[KSYM_NAME_LEN];
++	const char *name;
++
++	name = class->name;
++	if (!name)
++		name = __get_key_name(class->key, str);
++
++	return printk("%s", name);
++}
++
+ static void print_lock_name(struct lock_class *class)
+ {
+ 	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
+@@ -1325,6 +1337,62 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
+ 	return;
+ }
+ 
++static void
++print_irq_lock_scenario(struct lock_list *safe_entry,
++			struct lock_list *unsafe_entry,
++			struct held_lock *prev,
++			struct held_lock *next)
++{
++	struct lock_class *safe_class = safe_entry->class;
++	struct lock_class *unsafe_class = unsafe_entry->class;
++	struct lock_class *middle_class = hlock_class(prev);
++
++	if (middle_class == safe_class)
++		middle_class = hlock_class(next);
++
++	/*
++	 * A direct locking problem where unsafe_class lock is taken
++	 * directly by safe_class lock, then all we need to show
++	 * is the deadlock scenario, as it is obvious that the
++	 * unsafe lock is taken under the safe lock.
++	 *
++	 * But if there is a chain instead, where the safe lock takes
++	 * an intermediate lock (middle_class) where this lock is
++	 * not the same as the safe lock, then the lock chain is
++	 * used to describe the problem. Otherwise we would need
++	 * to show a different CPU case for each link in the chain
++	 * from the safe_class lock to the unsafe_class lock.
++	 */
++	if (middle_class != unsafe_class) {
++		printk("Chain exists of:\n  ");
++		__print_lock_name(safe_class);
++		printk(" --> ");
++		__print_lock_name(middle_class);
++		printk(" --> ");
++		__print_lock_name(unsafe_class);
++		printk("\n\n");
++	}
++
++	printk(" Possible interrupt unsafe locking scenario:\n\n");
++	printk("       CPU0                    CPU1\n");
++	printk("       ----                    ----\n");
++	printk("  lock(");
++	__print_lock_name(unsafe_class);
++	printk(");\n");
++	printk("                               local_irq_disable();\n");
++	printk("                               lock(");
++	__print_lock_name(safe_class);
++	printk(");\n");
++	printk("                               lock(");
++	__print_lock_name(middle_class);
++	printk(");\n");
++	printk("  <Interrupt>\n");
++	printk("    lock(");
++	__print_lock_name(safe_class);
++	printk(");\n");
++	printk("\n *** DEADLOCK ***\n\n");
++}
++
+ static int
+ print_bad_irq_dependency(struct task_struct *curr,
+ 			 struct lock_list *prev_root,
+@@ -1376,6 +1444,8 @@ print_bad_irq_dependency(struct task_struct *curr,
+ 	print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
+ 
+ 	printk("\nother info that might help us debug this:\n\n");
++	print_irq_lock_scenario(backwards_entry, forwards_entry, prev, next);
++
+ 	lockdep_print_held_locks(curr);
+ 
+ 	printk("\nthe dependencies between %s-irq-safe lock", irqclass);
