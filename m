@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab1DVMw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 08:52:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24555 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1DVMwz (ORCPT
+	id S1755280Ab1DVMxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 08:53:21 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:65098 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750851Ab1DVMxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 08:52:55 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: djwong <djwong@us.ibm.com>
-Cc: Mingming Cao <cmm@us.ibm.com>, Christoph Hellwig <hch@infradead.org>,
-        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
-In-reply-to: <20110422000226.GA22189@tux1.beaverton.ibm.com>
-References: <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com> <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com>
-Date: Fri, 22 Apr 2011 08:50:01 -0400
-Message-Id: <1303476503-sup-4141@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DB179F1.00DC:SCFMA922111,ss=1,fgs=0
+	Fri, 22 Apr 2011 08:53:17 -0400
+Message-ID: <4DB17A3B.3060609@blueyonder.co.uk>
+Date: Fri, 22 Apr 2011 13:53:15 +0100
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8 ThunderBrowse/3.3.5
+MIME-Version: 1.0
+To: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=RQ36K_f0x-kA:10 a=jP4ZM9dVWk4A:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=CfAdl1vy_98PchHglTcA:9 a=ZqaCy0LOAm4tKVGwBowA:7 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
-> Hi everyone,
-> 
-> I've finally managed to get together a patch that seems to provide stable pages
-> during writeback, or at least gets us to the point that after several days of
-> running tests I don't see DIF checksum errors anymore. :)
-> 
-> The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
-> walk the process tree to find all userland ptes that map to a particular memory
-> page and revoke write access, and
+Guenter Roeck wrote:
+Depends. In our case, turns out the devices consuming the clock
+have user mode drivers. Lots of history there, but the chip vendors
+provide those user mode drivers, and the teams responsible for
+integrating the drivers decided to not rewrite it to kernel mode drivers.
+Also, for special purposes such as margining, it is necessary to control
+the clock from userspace. So, for our use case, I need the user-visible
+interface. I _don't_ need the kernel interface, at least not right now,
+which is why I did not add it.
 
-Hmm, did you need the bio_integrity_prep change for all the filesystems?
-This should be happening already as part of using page_mkwrite.
+Browsing through the web, it seems the chip is somewhat popular with
+Amateur Radio. No idea if it would ever be controlled for such a purpose
+from Linux, but if so, it would also require a user configurable frequency.
 
--chris
+If there is a better place for such a driver than misc, please let me know.
+
+Thanks,
+Guenter
+=============================================================================
+Support for these devices included in several Amateur radio programs 
+tend to differ greatly which means reinventing the wheel in most of them.
+Programs like Linrad, sdr-shell, quisk, lysdr, ghpsdr3, etc.
+It's a small addition to the kernel that would significantly help in the 
+development of software for the myriad of SDR (Software Defined Radio) 
+designs based on this chip family.
+I have 5 Amateur Radio transceivers using this chip and 2 more soon to 
+be added.
+They are all open hardware heavily reliant on Linux.
+The addition of UAC2 (USB Audio Class 2) kernel support has helped our 
+SDR hardware design efforts significantly.
+I and the rest of the Linux SDR community would be happy to see it included.
+Regards
+Sid.
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
