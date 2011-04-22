@@ -1,353 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab1DVHW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 03:22:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59736 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab1DVHWz (ORCPT
+	id S1752421Ab1DVH1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 03:27:31 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:65382 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab1DVH13 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 03:22:55 -0400
+	Fri, 22 Apr 2011 03:27:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=e8/haGl9Z6iT5ZNVyfbv0UpI9p2ftAa1qHQVGZqcRvQ4EHrYC8jdALaRCkbfJ55rU2
-         b0WmGBUDjB2dhZhpOOMFP6nnopaBdI4qZmbhcmFMxHpgS8/eVqH7Tn7pmxKuqPogunV8
-         vLBZoMXOKSbrgMChlj6K/ukPzA9nMmcB8cCfI=
-From: Igor Plyatov <plyatov@gmail.com>
-To: linux@maxim.org.za, <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
-        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Igor Plyatov <plyatov@gmail.com>
-Subject: [PATCH v2] mach-at91: gsia18s board improvements and bug fixes
-Date: Fri, 22 Apr 2011 11:22:36 +0400
-Message-Id: <1303456956-24009-1-git-send-email-plyatov@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rT4ZRzKrSvDDD5FFQ9MZVL2gvN1+ptGpvdL3DlMNSxw9O1SzzCQzqI5o0fmjNBOSIa
+         iln2F+sOAx673Q42HCeSrsLekVE1X0+DwnHd22TAm0MBsps20iiqEYwbFpoMUcvwtnAQ
+         GQjTP1k2ha2E3xK8QHyUEkgc4eCc0BJF8O2+I=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikYwWe6E6mb3PLE3L7a3VHWdtEvfQ@mail.gmail.com>
+References: <20110417094505.865828233@chello.nl>
+	<201104180341.p3I3fnxc000638@www262.sakura.ne.jp>
+	<BANLkTikYwWe6E6mb3PLE3L7a3VHWdtEvfQ@mail.gmail.com>
+Date: Fri, 22 Apr 2011 15:27:27 +0800
+Message-ID: <BANLkTimMYTSFvzz-1ycu338zWJ4iSAu3AA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/7] lockdep: Support recurise-read locks
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: a.p.zijlstra@chello.nl, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Igor Plyatov <plyatov@gmail.com>
+On Fri, Apr 22, 2011 at 3:19 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> 2011/4/18 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>:
+>> (Continued from https://lkml.org/lkml/2011/3/31/240 "Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().")
+>> Test results for above program:
+>>
+>> "cat /proc/locktest1 /proc/locktest2" => Detect fail
+>> "cat /proc/locktest2 /proc/locktest1" => Detect fail
+>> "cat /proc/locktest3 /proc/locktest4" => Detect fail
+>> "cat /proc/locktest4 /proc/locktest3" => Detect fail
+>>
+>> If I change from rwlock_acquire_read() to spin_acquire() in read_seqbegin2()
+>> and from rwlock_release() to spin_release() in read_seqretry2():
+>>
+>> "cat /proc/locktest1 /proc/locktest2" => Detect fail
+>> "cat /proc/locktest2 /proc/locktest1" => Detect OK (shown below)
+>> "cat /proc/locktest3 /proc/locktest4" => Detect fail
+>> "cat /proc/locktest4 /proc/locktest3" => Detect OK (shown below)
+>>
+>> Guessing from my testcases, read_seqbegin2() will fail to detect the problem
+>> unless we use spin_acquire()/spin_release() rather than
+>> rwlock_acquire_read()/rwlock_release().
+>>
+>> Also, something is still wrong because lockdep fails to detect the problem
+>> for "cat /proc/locktest1 /proc/locktest2" and
+>> "cat /proc/locktest3 /proc/locktest4" cases.
+>
+> It fails because we never add the recursive read to prev->after evev if
+> it passed the validation.
+>
+> check_prev_add()::1671
+>        /*
+>         * For recursive read-locks we do all the dependency checks,
+>         * but we dont store read-triggered dependencies (only
+>         * write-triggered dependencies). This ensures that only the
+>         * write-side dependencies matter, and that if for example a
+>         * write-lock never takes any other locks, then the reads are
+>         * equivalent to a NOP.
+>         */
+>        if (next->read == 2 || prev->read == 2)
 
-* Active logic levels and default states corrected for GPOs.
-* Replace small functions which use platform_register_device() by its direct
-  calls.
-* GPIO_xxxx pin names replaced by AT91_PIN_Pxxx port names as requested by
-  kernel developers.
-* Remove GPIO_CARD_UNMOUNT_1 gpio_keys_button, because it not used.
-* debounce_interval added for critical buttons.
-* Remove unneeded GPI setup code for buttons (gsia18s_add_device_buttons
-  function), because this done by gpio_keys driver.
-* pcf8574x_0x20_setup() and pcf8574x_0x20_teardown functions small refactoring.
+And the semantic doesn't change in Peter's patch.
 
-Signed-off-by: Igor Plyatov <plyatov@gmail.com>
----
- arch/arm/mach-at91/board-gsia18s.c        |  126 +++++++++++------------------
- arch/arm/mach-at91/include/mach/gsia18s.h |    6 --
- 2 files changed, 47 insertions(+), 85 deletions(-)
+>                return 1;
+>
+> So we have no chain after opening locktest1 or locktest3.
+>
+> But adding recursive read to prev->after will introduce spurious
+> lockdep warnings.
+>
+> Thanks,
+> Yong
+>
+>>
+>> [   83.551455]
+>> [   83.551457] =======================================================
+>> [   83.555293] [ INFO: possible circular locking dependency detected ]
+>> [   83.555293] 2.6.39-rc3-00228-gd733ed6-dirty #259
+>> [   83.555293] -------------------------------------------------------
+>> [   83.555293] cat/2768 is trying to acquire lock:
+>> [   83.555293]  (brlock1_lock_dep_map){++++..}, at: [<e08150b0>] brlock1_local_lock+0x0/0x90 [locktest]
+>> [   83.555293]
+>> [   83.555293] but task is already holding lock:
+>> [   83.555293]  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e08154dd>] locktest_open1+0xd/0x40 [locktest]
+>> [   83.555293]
+>> [   83.555293] which lock already depends on the new lock.
+>> [   83.555293]
+>> [   83.555293]
+>> [   83.555293] the existing dependency chain (in reverse order) is:
+>> [   83.555293]
+>> [   83.555293] -> #1 (&(&(&seqlock1)->lock)->rlock){+.+...}:
+>> [   83.635281]        [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   83.635281]        [<c106c840>] validate_chain+0x320/0x5a0
+>> [   83.635281]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   83.635281]        [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   83.635281]        [<e0815555>] locktest_open2+0x45/0x70 [locktest]
+>> [   83.635281]        [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   83.635281]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   83.635281]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   83.635281]        [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   83.635281]        [<c10dc846>] path_openat+0xa6/0x340
+>> [   83.635281]        [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   83.635281]        [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   83.635281]        [<c10cf069>] sys_open+0x29/0x40
+>> [   83.635281]        [<c13b43c1>] syscall_call+0x7/0xb
+>> [   83.635281]
+>> [   83.635281] -> #0 (brlock1_lock_dep_map){++++..}:
+>> [   83.635281]        [<c106c34c>] check_prev_add+0x78c/0x820
+>> [   83.635281]        [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   83.635281]        [<c106c840>] validate_chain+0x320/0x5a0
+>> [   83.635281]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   83.635281]        [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   83.635281]        [<e08150e3>] brlock1_local_lock+0x33/0x90 [locktest]
+>> [   83.635281]        [<e08154e8>] locktest_open1+0x18/0x40 [locktest]
+>> [   83.635281]        [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   83.635281]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   83.635281]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   83.635281]        [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   83.635281]        [<c10dc846>] path_openat+0xa6/0x340
+>> [   83.635281]        [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   83.635281]        [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   83.635281]        [<c10cf069>] sys_open+0x29/0x40
+>> [   83.635281]        [<c13b43c1>] syscall_call+0x7/0xb
+>> [   83.635281]
+>> [   83.635281] other info that might help us debug this:
+>> [   83.635281]
+>> [   83.635281] 1 lock held by cat/2768:
+>> [   83.635281]  #0:  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e08154dd>] locktest_open1+0xd/0x40 [locktest]
+>> [   83.635281]
+>> [   83.635281] stack backtrace:
+>> [   83.635281] Pid: 2768, comm: cat Not tainted 2.6.39-rc3-00228-gd733ed6-dirty #259
+>> [   83.635281] Call Trace:
+>> [   83.635281]  [<c106ade6>] print_circular_bug+0xc6/0xd0
+>> [   83.635281]  [<c106c34c>] check_prev_add+0x78c/0x820
+>> [   83.635281]  [<c1005d3b>] ? print_context_stack+0x3b/0xa0
+>> [   83.635281]  [<c1004fa1>] ? dump_trace+0x81/0xe0
+>> [   83.635281]  [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   83.635281]  [<c106c840>] validate_chain+0x320/0x5a0
+>> [   83.635281]  [<c106df7c>] ? mark_lock+0x21c/0x3c0
+>> [   83.635281]  [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   83.635281]  [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   83.635281]  [<e08150b0>] ? brlock1_lock_init+0xb0/0xb0 [locktest]
+>> [   83.635281]  [<e08154d0>] ? brlock1_global_unlock+0xa0/0xa0 [locktest]
+>> [   83.635281]  [<e08150e3>] brlock1_local_lock+0x33/0x90 [locktest]
+>> [   83.635281]  [<e08150b0>] ? brlock1_lock_init+0xb0/0xb0 [locktest]
+>> [   83.635281]  [<e08154e8>] locktest_open1+0x18/0x40 [locktest]
+>> [   83.635281]  [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   83.635281]  [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   83.635281]  [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   83.635281]  [<c11182f0>] ? proc_reg_mmap+0x80/0x80
+>> [   83.635281]  [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   83.635281]  [<c10db00c>] ? path_init+0x2cc/0x3c0
+>> [   83.635281]  [<c10dc846>] path_openat+0xa6/0x340
+>> [   83.635281]  [<c106d80b>] ? trace_hardirqs_off+0xb/0x10
+>> [   83.635281]  [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   83.635281]  [<c13b3a5d>] ? _raw_spin_unlock+0x1d/0x20
+>> [   83.635281]  [<c10e9f11>] ? alloc_fd+0xe1/0x1a0
+>> [   83.635281]  [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   83.635281]  [<c10cfc8b>] ? vfs_write+0x10b/0x130
+>> [   83.635281]  [<c10cf069>] sys_open+0x29/0x40
+>> [   83.635281]  [<c13b43c1>] syscall_call+0x7/0xb
+>>
+>>
+>>
+>> [   82.758647]
+>> [   82.758649] =======================================================
+>> [   82.762520] [ INFO: possible circular locking dependency detected ]
+>> [   82.762520] 2.6.39-rc3-00228-gd733ed6-dirty #259
+>> [   82.762520] -------------------------------------------------------
+>> [   82.762520] cat/2768 is trying to acquire lock:
+>> [   82.762520]  (rwlock1){++++..}, at: [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
+>> [   82.762520]
+>> [   82.762520] but task is already holding lock:
+>> [   82.762520]  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e081558d>] locktest_open3+0xd/0x40 [locktest]
+>> [   82.762520]
+>> [   82.762520] which lock already depends on the new lock.
+>> [   82.762520]
+>> [   82.762520]
+>> [   82.762520] the existing dependency chain (in reverse order) is:
+>> [   82.762520]
+>> [   82.762520] -> #1 (&(&(&seqlock1)->lock)->rlock){+.+...}:
+>> [   82.841627]        [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   82.841627]        [<c106c840>] validate_chain+0x320/0x5a0
+>> [   82.841627]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   82.841627]        [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   82.841627]        [<e081560a>] locktest_open4+0x4a/0x90 [locktest]
+>> [   82.841627]        [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   82.841627]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   82.841627]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   82.841627]        [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   82.841627]        [<c10dc846>] path_openat+0xa6/0x340
+>> [   82.841627]        [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   82.841627]        [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   82.841627]        [<c10cf069>] sys_open+0x29/0x40
+>> [   82.841627]        [<c13b43c1>] syscall_call+0x7/0xb
+>> [   82.841627]
+>> [   82.841627] -> #0 (rwlock1){++++..}:
+>> [   82.841627]        [<c106c34c>] check_prev_add+0x78c/0x820
+>> [   82.841627]        [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   82.841627]        [<c106c840>] validate_chain+0x320/0x5a0
+>> [   82.841627]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   82.841627]        [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   82.841627]        [<c13b3ba9>] _raw_read_lock+0x39/0x70
+>> [   82.841627]        [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
+>> [   82.841627]        [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   82.841627]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   82.841627]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   82.841627]        [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   82.841627]        [<c10dc846>] path_openat+0xa6/0x340
+>> [   82.841627]        [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   82.841627]        [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   82.841627]        [<c10cf069>] sys_open+0x29/0x40
+>> [   82.841627]        [<c13b43c1>] syscall_call+0x7/0xb
+>> [   82.841627]
+>> [   82.841627] other info that might help us debug this:
+>> [   82.841627]
+>> [   82.841627] 1 lock held by cat/2768:
+>> [   82.841627]  #0:  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e081558d>] locktest_open3+0xd/0x40 [locktest]
+>> [   82.841627]
+>> [   82.841627] stack backtrace:
+>> [   82.841627] Pid: 2768, comm: cat Not tainted 2.6.39-rc3-00228-gd733ed6-dirty #259
+>> [   82.841627] Call Trace:
+>> [   82.841627]  [<c106ade6>] print_circular_bug+0xc6/0xd0
+>> [   82.841627]  [<c106c34c>] check_prev_add+0x78c/0x820
+>> [   82.841627]  [<c1005d3b>] ? print_context_stack+0x3b/0xa0
+>> [   82.841627]  [<c1004fa1>] ? dump_trace+0x81/0xe0
+>> [   82.841627]  [<c106c499>] check_prevs_add+0xb9/0x110
+>> [   82.841627]  [<c106c840>] validate_chain+0x320/0x5a0
+>> [   82.841627]  [<c106df7c>] ? mark_lock+0x21c/0x3c0
+>> [   82.841627]  [<c106e927>] __lock_acquire+0x2a7/0x8f0
+>> [   82.841627]  [<c107001a>] lock_acquire+0x7a/0xa0
+>> [   82.841627]  [<e081559d>] ? locktest_open3+0x1d/0x40 [locktest]
+>> [   82.841627]  [<e0815580>] ? locktest_open2+0x70/0x70 [locktest]
+>> [   82.841627]  [<c13b3ba9>] _raw_read_lock+0x39/0x70
+>> [   82.841627]  [<e081559d>] ? locktest_open3+0x1d/0x40 [locktest]
+>> [   82.841627]  [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
+>> [   82.841627]  [<c1118355>] proc_reg_open+0x65/0xe0
+>> [   82.841627]  [<c10ce78f>] __dentry_open+0x16f/0x2e0
+>> [   82.841627]  [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
+>> [   82.841627]  [<c11182f0>] ? proc_reg_mmap+0x80/0x80
+>> [   82.841627]  [<c10dc1d8>] do_last+0xf8/0x6c0
+>> [   82.841627]  [<c10db00c>] ? path_init+0x2cc/0x3c0
+>> [   82.841627]  [<c10dc846>] path_openat+0xa6/0x340
+>> [   82.841627]  [<c106d80b>] ? trace_hardirqs_off+0xb/0x10
+>> [   82.841627]  [<c10dcb10>] do_filp_open+0x30/0x80
+>> [   82.841627]  [<c13b3a5d>] ? _raw_spin_unlock+0x1d/0x20
+>> [   82.841627]  [<c10e9f11>] ? alloc_fd+0xe1/0x1a0
+>> [   82.841627]  [<c10cefa1>] do_sys_open+0x101/0x1a0
+>> [   82.841627]  [<c10cfc8b>] ? vfs_write+0x10b/0x130
+>> [   82.841627]  [<c10cf069>] sys_open+0x29/0x40
+>> [   82.841627]  [<c13b43c1>] syscall_call+0x7/0xb
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
+>
+> --
+> Only stand for myself
+>
 
-diff --git a/arch/arm/mach-at91/board-gsia18s.c b/arch/arm/mach-at91/board-gsia18s.c
-index bc28136..ebd7413 100644
---- a/arch/arm/mach-at91/board-gsia18s.c
-+++ b/arch/arm/mach-at91/board-gsia18s.c
-@@ -117,14 +117,14 @@ static struct gpio_led gpio_leds[] = {
- 	{
- 		.name			= "gpo:trig_net_out",
- 		.gpio			= AT91_PIN_PB20,
--		.active_low		= 0,
-+		.active_low		= 1,
- 		.default_trigger	= "none",
- 		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
- 	},
- 	{
- 		.name			= "gpo:trig_net_dir",
- 		.gpio			= AT91_PIN_PB19,
--		.active_low		= 0,
-+		.active_low		= 1,
- 		.default_trigger	= "none",
- 		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
- 	},
-@@ -171,11 +171,6 @@ static struct platform_device leds = {
- 	}
- };
- 
--static void __init gsia18s_leds_init(void)
--{
--	platform_device_register(&leds);
--}
--
- /* PCF8574 0x20 GPIO - U1 on the GS_IA18-CB_V3 board */
- static struct gpio_led pcf_gpio_leds1[] = {
- 	{ /* bit 0 */
-@@ -188,31 +183,31 @@ static struct gpio_led pcf_gpio_leds1[] = {
- 	{ /* bit 1 */
- 		.name			= "gpo:wifi_setup",
- 		.gpio			= PCF_GPIO_WIFI_SETUP,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 2 */
- 		.name			= "gpo:wifi_enable",
- 		.gpio			= PCF_GPIO_WIFI_ENABLE,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 3	*/
- 		.name			= "gpo:wifi_reset",
- 		.gpio			= PCF_GPIO_WIFI_RESET,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_ON,
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
- 	},
- 	/* bit 4 used as GPI	*/
- 	{ /* bit 5 */
- 		.name			= "gpo:gps_setup",
- 		.gpio			= PCF_GPIO_GPS_SETUP,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 6 */
- 		.name			= "gpo:gps_standby",
-@@ -248,30 +243,30 @@ static struct gpio_led pcf_gpio_leds2[] = {
- 	{ /* bit 0 */
- 		.name			= "gpo:alarm_1",
- 		.gpio			= PCF_GPIO_ALARM1,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 1 */
- 		.name			= "gpo:alarm_2",
- 		.gpio			= PCF_GPIO_ALARM2,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 2 */
- 		.name			= "gpo:alarm_3",
- 		.gpio			= PCF_GPIO_ALARM3,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	{ /* bit 3 */
- 		.name			= "gpo:alarm_4",
- 		.gpio			= PCF_GPIO_ALARM4,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 	/* bits 4, 5, 6 not used */
- 	{ /* bit 7 */
-@@ -301,25 +296,25 @@ static struct gpio_led pcf_gpio_leds3[] = {
- 	{ /* bit 0 */
- 		.name			= "gpo:modem_power",
- 		.gpio			= PCF_GPIO_MODEM_POWER,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
- 	},
- 		/* bits 1 and 2 not used */
- 	{ /* bit 3 */
- 		.name			= "gpo:modem_reset",
- 		.gpio			= PCF_GPIO_MODEM_RESET,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_ON,
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
- 	},
- 		/* bits 4, 5 and 6 not used */
- 	{ /* bit 7 */
- 		.name			= "gpo:trx_reset",
- 		.gpio			= PCF_GPIO_TRX_RESET,
--		.active_low		= 1,
-+		.active_low		= 0,
- 		.default_trigger	= "none",
--		.default_state		= LEDS_GPIO_DEFSTATE_ON,
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
- 	}
- };
- 
-@@ -336,13 +331,6 @@ static struct platform_device pcf_leds3 = {
- 	}
- };
- 
--static void __init gsia18s_pcf_leds_init(void)
--{
--	platform_device_register(&pcf_leds1);
--	platform_device_register(&pcf_leds2);
--	platform_device_register(&pcf_leds3);
--}
--
- /*
-  * SPI busses.
-  */
-@@ -389,7 +377,7 @@ static struct spi_board_info gsia18s_spi_devices[] = {
-  */
- static struct gpio_keys_button buttons[] = {
- 	{
--		.gpio		= GPIO_TRIG_NET_IN,
-+		.gpio		= AT91_PIN_PB21,
- 		.code		= BTN_1,
- 		.desc		= "TRIG_NET_IN",
- 		.type		= EV_KEY,
-@@ -397,28 +385,22 @@ static struct gpio_keys_button buttons[] = {
- 		.wakeup		= 1,
- 	},
- 	{ /* SW80 on the GS_IA18_S-MN board*/
--		.gpio		= GPIO_CARD_UNMOUNT_0,
-+		.gpio		= AT91_PIN_PB13,
- 		.code		= BTN_2,
- 		.desc		= "Card umount 0",
- 		.type		= EV_KEY,
- 		.active_low	= 1,
- 		.wakeup		= 1,
--	},
--	{ /* SW79 on the GS_IA18_S-MN board*/
--		.gpio		= GPIO_CARD_UNMOUNT_1,
--		.code		= BTN_3,
--		.desc		= "Card umount 1",
--		.type		= EV_KEY,
--		.active_low	= 1,
--		.wakeup		= 1,
-+		.debounce_interval = 10,
- 	},
- 	{ /* SW280 on the GS_IA18-CB board*/
--		.gpio		= GPIO_KEY_POWER,
-+		.gpio		= AT91_PIN_PA25,
- 		.code		= KEY_POWER,
- 		.desc		= "Power Off Button",
- 		.type		= EV_KEY,
- 		.active_low	= 0,
- 		.wakeup		= 1,
-+		.debounce_interval = 10,
- 	}
- };
- 
-@@ -436,60 +418,44 @@ static struct platform_device button_device = {
- 	}
- };
- 
--static void __init gsia18s_add_device_buttons(void)
--{
--	at91_set_gpio_input(GPIO_TRIG_NET_IN, 1);
--	at91_set_deglitch(GPIO_TRIG_NET_IN, 1);
--	at91_set_gpio_input(GPIO_CARD_UNMOUNT_0, 1);
--	at91_set_deglitch(GPIO_CARD_UNMOUNT_0, 1);
--	at91_set_gpio_input(GPIO_CARD_UNMOUNT_1, 1);
--	at91_set_deglitch(GPIO_CARD_UNMOUNT_1, 1);
--	at91_set_gpio_input(GPIO_KEY_POWER, 0);
--	at91_set_deglitch(GPIO_KEY_POWER, 1);
--
--	platform_device_register(&button_device);
--}
--
- /*
-  * I2C
-  */
--static int pcf8574x_0x20_setup(struct i2c_client *client, int gpio,
-+static int pcf8574x_0x20_setup(struct i2c_client *client, int gpio_base,
- 				unsigned int ngpio, void *context)
- {
- 	int status;
-+	int gpio;
- 
--	status = gpio_request(gpio + PCF_GPIO_ETH_DETECT, "eth_det");
-+	gpio = gpio_base + PCF_GPIO_ETH_DETECT;
-+	status = gpio_request(gpio, "eth_det");
- 	if (status < 0) {
--		pr_err("error: can't request GPIO%d\n",
--			gpio + PCF_GPIO_ETH_DETECT);
-+		pr_err("error: can't request GPIO%d\n", gpio);
- 		return status;
- 	}
--	status = gpio_direction_input(gpio + PCF_GPIO_ETH_DETECT);
-+	status = gpio_direction_input(gpio);
- 	if (status < 0) {
--		pr_err("error: can't setup GPIO%d as input\n",
--			gpio + PCF_GPIO_ETH_DETECT);
-+		pr_err("error: can't setup GPIO%d as input\n", gpio);
- 		return status;
- 	}
--	status = gpio_export(gpio + PCF_GPIO_ETH_DETECT, false);
-+	status = gpio_export(gpio, false);
- 	if (status < 0) {
--		pr_err("error: can't export GPIO%d\n",
--			gpio + PCF_GPIO_ETH_DETECT);
-+		pr_err("error: can't export GPIO%d\n", gpio);
- 		return status;
- 	}
--	status = gpio_sysfs_set_active_low(gpio + PCF_GPIO_ETH_DETECT, 1);
-+	status = gpio_sysfs_set_active_low(gpio, 1);
- 	if (status < 0) {
--		pr_err("error: gpio_sysfs_set active_low(GPIO%d, 1)\n",
--			gpio + PCF_GPIO_ETH_DETECT);
-+		pr_err("error: gpio_sysfs_set active_low(GPIO%d, 1)\n", gpio);
- 		return status;
- 	}
- 
- 	return 0;
- }
- 
--static int pcf8574x_0x20_teardown(struct i2c_client *client, int gpio,
-+static int pcf8574x_0x20_teardown(struct i2c_client *client, int gpio_base,
- 					unsigned ngpio, void *context)
- {
--	gpio_free(gpio + PCF_GPIO_ETH_DETECT);
-+	gpio_free(gpio_base + PCF_GPIO_ETH_DETECT);
- 	return 0;
- }
- 
-@@ -564,9 +530,11 @@ static void __init gsia18s_board_init(void)
- 	at91_add_device_usbh(&usbh_data);
- 	at91_add_device_udc(&udc_data);
- 	at91_add_device_eth(&macb_data);
--	gsia18s_leds_init();
--	gsia18s_pcf_leds_init();
--	gsia18s_add_device_buttons();
-+	platform_device_register(&leds);
-+	platform_device_register(&pcf_leds1);
-+	platform_device_register(&pcf_leds2);
-+	platform_device_register(&pcf_leds3);
-+	platform_device_register(&button_device);
- 	at91_add_device_i2c(gsia18s_i2c_devices,
- 				ARRAY_SIZE(gsia18s_i2c_devices));
- 	at91_add_device_cf(&gsia18s_cf1_data);
-diff --git a/arch/arm/mach-at91/include/mach/gsia18s.h b/arch/arm/mach-at91/include/mach/gsia18s.h
-index 307c194..e54e58d 100644
---- a/arch/arm/mach-at91/include/mach/gsia18s.h
-+++ b/arch/arm/mach-at91/include/mach/gsia18s.h
-@@ -1,9 +1,3 @@
--/* Buttons */
--#define GPIO_TRIG_NET_IN		AT91_PIN_PB21
--#define GPIO_CARD_UNMOUNT_0		AT91_PIN_PB13
--#define GPIO_CARD_UNMOUNT_1		AT91_PIN_PB12
--#define GPIO_KEY_POWER			AT91_PIN_PA25
--
- /* PCF8574 0x20 GPIO - U1 on the GS_IA18-CB_V3 board */
- #define GS_IA18_S_PCF_GPIO_BASE0	NR_BUILTIN_GPIO
- #define PCF_GPIO_HDC_POWER		(GS_IA18_S_PCF_GPIO_BASE0 + 0)
+
+
 -- 
-1.7.1
-
+Only stand for myself
