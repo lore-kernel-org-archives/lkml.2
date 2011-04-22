@@ -1,114 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab1DVVXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:23:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46397 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab1DVVXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 17:23:03 -0400
-Date: Fri, 22 Apr 2011 23:23:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
- was written
-Message-ID: <20110422212300.GC2977@quack.suse.cz>
-References: <20110419102016.GD5257@quack.suse.cz>
- <20110419111601.GA18961@localhost>
- <20110419211008.GD9556@quack.suse.cz>
- <20110420075053.GB30672@localhost>
- <20110420152211.GC4991@quack.suse.cz>
- <20110421033325.GA13764@localhost>
- <20110421043940.GC22423@infradead.org>
- <20110421060556.GA24232@localhost>
- <20110421164154.GC4476@quack.suse.cz>
- <20110422023226.GB6199@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422023226.GB6199@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756752Ab1DVVXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:23:41 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:56235
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754527Ab1DVVXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 17:23:36 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 03/18] Staging: hv: Get rid of the forward declaration of blkvsc_cmd_completion()
+Date: Fri, 22 Apr 2011 14:13:24 -0700
+Message-Id: <1303506819-1913-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1303506819-1913-1-git-send-email-kys@microsoft.com>
+References: <1303506780-1872-1-git-send-email-kys@microsoft.com>
+ <1303506819-1913-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-04-11 10:32:26, Wu Fengguang wrote:
-> On Fri, Apr 22, 2011 at 12:41:54AM +0800, Jan Kara wrote:
-> > On Thu 21-04-11 14:05:56, Wu Fengguang wrote:
-> > > On Thu, Apr 21, 2011 at 12:39:40PM +0800, Christoph Hellwig wrote:
-> > > > On Thu, Apr 21, 2011 at 11:33:25AM +0800, Wu Fengguang wrote:
-> > > > > I collected the writeback_single_inode() traces (patch attached for
-> > > > > your reference) each for several test runs, and find much more
-> > > > > I_DIRTY_PAGES after patchset. Dave, do you know why there are so many
-> > > > > I_DIRTY_PAGES (or radix tag) remained after the XFS ->writepages() call,
-> > > > > even for small files?
-> > > > 
-> > > > What is your defintion of a small file?  As soon as it has multiple
-> > > > extents or holes there's absolutely no way to clean it with a single
-> > > > writepage call.
-> > > 
-> > > It's writing a kernel source tree to XFS. You can find in the below
-> > > trace that it often leaves more dirty pages behind (indicated by the
-> > > I_DIRTY_PAGES flag) after writing as less as 1 page (indicated by the
-> > > wrote=1 field).
-> >   As Dave said, it's probably just a race since XFS redirties the inode on
-> > IO completion. So I think the inodes are just small so they have only a few
-> > dirty pages so you don't have much to write and they are written and
-> > redirtied before you check the I_DIRTY flags. You could use radix tree
-> > dirty tag to verify whether there are really dirty pages or not...
-> 
-> Yeah, Dave and Christoph root caused it in the other email -- XFS sets
-> I_DIRTY which accidentally sets I_DIRTY_PAGES. We can safely bet there
-> are no real dirty pages -- otherwise it would have turned up as
-> performance regressions.
-  Yes, but then the question what we actually do better is still open,
-right? :) I'm really curious what it could be because especially in your
-copy-kernel case I should not make much different - maybe except if we
-occasionally managed to block on PageLock behind the writing thread and now
-we don't because we queue the inode later but I find that highly unlikely.
+Get rid of the forward declaration of blkvsc_cmd_completion() by moving the
+code  around.
 
-> >   BTW a quick check of kernel tree shows the following distribution of
-> > sizes (in KB):
-> >   Count KB  Cumulative Percent
-> >     257 0   0.9%
-> >   13309 4   45%
-> >    5553 8   63%
-> >    2997 12  73%
-> >    1879 16  80%
-> >    1275 20  83%
-> >     987 24  87%
-> >     685 28  89%
-> >     540 32  91%
-> >     387 36  ...
-> >     309 40
-> >     264 44
-> >     249 48
-> >     170 52
-> >     143 56
-> >     144 60
-> >     132 64
-> >     100 68
-> >     ...
-> > Total 30155
-> > 
-> > And the distribution of your 'wrote=xxx' roughly corresponds to this...
-> 
-> Nice numbers! How do you manage to account them? :)
-  Easy shell command (and I handcomputed the percentages because I was lazy
-to write a script for that):
-find . -type f -name "*.[ch]" -exec du {} \; | cut -d '	' -f 1 |
-sort -n | uniq -c
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/blkvsc_drv.c |   48 +++++++++++++++++++-------------------
+ 1 files changed, 24 insertions(+), 24 deletions(-)
 
-								Honza
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index a0d3d6c..197955c 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -434,6 +434,30 @@ static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
+ 	return ret;
+ }
+ 
++static void blkvsc_cmd_completion(struct hv_storvsc_request *request)
++{
++	struct blkvsc_request *blkvsc_req =
++			(struct blkvsc_request *)request->context;
++	struct block_device_context *blkdev =
++			(struct block_device_context *)blkvsc_req->dev;
++	struct scsi_sense_hdr sense_hdr;
++	struct vmscsi_request *vm_srb;
++
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_cmd_completion() - req %p\n",
++		   blkvsc_req);
++
++	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
++	blkdev->num_outstanding_reqs--;
++
++	if (vm_srb->scsi_status)
++		if (scsi_normalize_sense(blkvsc_req->sense_buffer,
++					 SCSI_SENSE_BUFFERSIZE, &sense_hdr))
++			scsi_print_sense_hdr("blkvsc", &sense_hdr);
++
++	complete(&blkvsc_req->request.wait_event);
++}
++
++
+ /* Static decl */
+ static int blkvsc_probe(struct device *dev);
+ static int blkvsc_remove(struct device *device);
+@@ -445,7 +469,6 @@ static void blkvsc_request(struct request_queue *queue);
+ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 			     struct request *req);
+-static void blkvsc_cmd_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
+@@ -1248,29 +1271,6 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 	return pending;
+ }
+ 
+-static void blkvsc_cmd_completion(struct hv_storvsc_request *request)
+-{
+-	struct blkvsc_request *blkvsc_req =
+-			(struct blkvsc_request *)request->context;
+-	struct block_device_context *blkdev =
+-			(struct block_device_context *)blkvsc_req->dev;
+-	struct scsi_sense_hdr sense_hdr;
+-	struct vmscsi_request *vm_srb;
+-
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_cmd_completion() - req %p\n",
+-		   blkvsc_req);
+-
+-	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
+-	blkdev->num_outstanding_reqs--;
+-
+-	if (vm_srb->scsi_status)
+-		if (scsi_normalize_sense(blkvsc_req->sense_buffer,
+-					 SCSI_SENSE_BUFFERSIZE, &sense_hdr))
+-			scsi_print_sense_hdr("blkvsc", &sense_hdr);
+-
+-	complete(&blkvsc_req->request.wait_event);
+-}
+-
+ static void blkvsc_request_completion(struct hv_storvsc_request *request)
+ {
+ 	struct blkvsc_request *blkvsc_req =
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.4.1
+
