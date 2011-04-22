@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1DVUE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:04:29 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55179 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab1DVUEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:04:25 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: kernel-janitors@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] drivers/video/s3c2410fb.c: Convert release_resource to release_mem_region
-Date: Fri, 22 Apr 2011 22:11:23 +0200
-Message-Id: <1303503083-26170-3-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1756021Ab1DVUKP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:10:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34389 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab1DVUKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 16:10:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=w++ssQmqRkwFzzpq67Xu5xmeJbfZf5FkurZ2Dkpunok0ugGDkyF6utbTVc9oWMuqJN
+         JlD7QeY+ktdITBxzzmKicwhW6gNg99bBvlv3JPAXP2zsTG/leW9ZhCGhcpJg1VZip6cb
+         +wgSDp50oqHSzmXdjsfNZjUmPZ7ADbkhK+EZY=
+Date: Fri, 22 Apr 2011 15:10:01 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+Message-ID: <20110422200945.GA15387@elie>
+References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303414954-3315-1-git-send-email-josef@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Request_mem_region should be used with release_mem_region, not
-release_resource.
+Hi,
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Josef Bacik wrote:
 
-// <smpl>
-@s exists@
-expression e1,e2,e3,e4,e;
-@@
+> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
+> using fiemap in things like cp cause more problems than it solves, so lets try
+> and give userspace an interface that doesn't suck.  So we have
 
-*e4 = request_mem_region(e1,e2,e3)
-... when != e4 = e
-*release_resource(e4);
-// </smpl>
+That's easy to believe, but could you elaborate?  What problem does
+using fiemap cause?  I assume the answer is somewhere in somewhere in
+the thread
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+ http://thread.gmane.org/gmane.comp.file-systems.xfs.general/37895/focus=24404
 
----
- drivers/video/s3c2410fb.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+but it would be nice to have a summary in the commit log for
+posterity.
 
-diff --git a/drivers/video/s3c2410fb.c b/drivers/video/s3c2410fb.c
-index 61c819e..0aa1376 100644
---- a/drivers/video/s3c2410fb.c
-+++ b/drivers/video/s3c2410fb.c
-@@ -867,7 +867,7 @@ static int __devinit s3c24xxfb_probe(struct platform_device *pdev,
- 		goto dealloc_fb;
- 	}
- 
--	size = (res->end - res->start) + 1;
-+	size = resource_size(res);
- 	info->mem = request_mem_region(res->start, size, pdev->name);
- 	if (info->mem == NULL) {
- 		dev_err(&pdev->dev, "failed to get memory region\n");
-@@ -997,8 +997,7 @@ release_irq:
- release_regs:
- 	iounmap(info->io);
- release_mem:
--	release_resource(info->mem);
--	kfree(info->mem);
-+	release_mem_region(res->start, size);
- dealloc_fb:
- 	platform_set_drvdata(pdev, NULL);
- 	framebuffer_release(fbinfo);
-@@ -1044,8 +1043,7 @@ static int __devexit s3c2410fb_remove(struct platform_device *pdev)
- 
- 	iounmap(info->io);
- 
--	release_resource(info->mem);
--	kfree(info->mem);
-+	release_mem_region(info->mem->start, resource_size(info->mem));
- 
- 	platform_set_drvdata(pdev, NULL);
- 	framebuffer_release(fbinfo);
-
+Thanks for working on this.
