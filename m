@@ -1,78 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab1DVKCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 06:02:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57286 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab1DVKCC (ORCPT
+	id S1754717Ab1DVKCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 06:02:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57339 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab1DVKCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 06:02:02 -0400
+	Fri, 22 Apr 2011 06:02:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Mv8ptn+KOov3fE8Q20sYcxTeZP5MadlGSPk30+YVu87aasnAxx+gH1JypjmTX4YWNX
-         9UsTqjeX6F6k7ncj4zzXa5gQB+vlS5orrKiXi+3i9g3KancvtspoXjMGbSpPGpZU7NpW
-         gr7YjFVIrseo05OB9BuvR24PzgaMv0fdWMbf8=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=llY1UPG+8l/3U6qtuFCe6GNSyDIw4fHVfOTrPtRFoUqYcJ0AQE1j2+OVvqUdRxZUHd
+         HVqr8P7k+ku1gOMIryEG0xZF6xvB5NjuQzk0iV3kygLQGzoAHgEq1/cIkMuLIRmj65xo
+         xglBwFdigKEkxjtfTakFUdIjSZGWXW87cys3I=
+Date: Fri, 22 Apr 2011 12:02:23 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH V15 0/4] ptp: IEEE 1588 hardware clock support
+Message-ID: <cover.1303466102.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
-In-Reply-To: <1303465546.2035.224.camel@laptop>
-References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
-	<1303398203-2918-5-git-send-email-dzickus@redhat.com>
-	<20110422081838.GA24011@elte.hu>
-	<BANLkTimh80LorfC8O-HOPAAWK9BLYNjcXA@mail.gmail.com>
-	<1303462476.2035.215.camel@laptop>
-	<BANLkTi=Eoa9jpiLmFTgcNrY334ZAfz6P=w@mail.gmail.com>
-	<1303465546.2035.224.camel@laptop>
-Date: Fri, 22 Apr 2011 14:02:01 +0400
-Message-ID: <BANLkTinVs7_Fm38zosuZ1RcgYRvQicf1Ww@mail.gmail.com>
-Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks! Looks interesting. Need to think if duch scheme is possible for p4 case.
+Here is V15 of the PHC patch series. I had been a bit lazy in adding
+the acks that have accumulated since V13, and so now I have added them
+into the commit message, unless the particular patch changed
+substantially since the ack.
 
-On Friday, April 22, 2011, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2011-04-22 at 13:24 +0400, Cyrill Gorcunov wrote:
->> On Fri, Apr 22, 2011 at 12:54 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > On Fri, 2011-04-22 at 12:43 +0400, Cyrill Gorcunov wrote:
->> >> we need a different event and counters for watchdog.
->> >>
->> > Does it count the same thing though? If so we could look at having
->> > alternative encodings support (we might need something like that for
->> > offcore too).
->> >
->>
->> Yes, they count the same thing (well some tech details are different but
->> not much).By using different counters we are allowed to run them
->> simultaneously which makes perf top works again.
->>
->> Could you elaborate what you have in mind with "alternative encodings"
->> here?
->
-> Right, so the idea is that one event (concept) has two (or more)
-> representations in the config space. And when scheduling the events we
-> find we have a conflict, we simply try the alternative encoding(s).
->
-> For example, with the offcore bits, we have two events: r1b7 and r1bb
-> that both have an extra MSR to fill (01A6 and 01A7 resp). Now if you
-> were to write the same value to these MSRs these events would count the
-> exact same thing.
->
-> So eg. for counting remote dram hits, you can use: r1b7:20ff or
-> r1bb:20ff, both count the same. So if we want to support a generic event
-> that counts remote dram hits we must pick one. Now if that one is taken
-> for measuring some L3 event, we'll have a conflict and not schedule the
-> thing, even though the other counter might be available.
->
-> POWER has something similar and has already implemented this alternative
-> encoding scheme.
->
->
->
->
+* Introduction
+
+  The aim of this patch set is to add support for PTP Hardware Clocks
+  (PHCs) into the Linux kernel. The patch series builds upon the
+  dynamic posix clock work appearing in kernel version 2.6.39.
+
+  Support for obtaining timestamps from a PHC already exists via the
+  SO_TIMESTAMPING socket option, integrated in kernel version 2.6.30.
+  This patch set completes the picture by allow user space programs to
+  adjust the PHC and to control its ancillary features.
+
+* Patches for ptpd on sf.net
+  https://sourceforge.net/tracker/?group_id=139814&atid=744634
+  3225599 [PATCH 1/3] Convert to POSIX clock API.
+  3225603 [PATCH 2/3] Adapted to use the Linux PTP Hardware Clock API. 
+  3225607 [PATCH 3/3] Adapted to use the newer SO_TIMESTAMPING Linux API.
+
+* PHC Patch ChangeLog
+** v15
+*** general
+    - allow test program to set system time from PTP HW clock
+*** ixp46x and phyter packet matching
+    - check packet bounds
+    - handle variable ipv4 header length
+    - replace magic numbers with macros
+
+* Why all the CCs?
+  - One driver is for PowerPC, and adds device tree stuff.
+  - One driver is for the ARM Xscale IXP465.
+
+* Previous Discussions
+  - [V14] http://lkml.org/lkml/2011/4/18/16
+  - [V13] http://lkml.org/lkml/2011/3/27/2
+  - [V12] http://lkml.org/lkml/2011/2/28/53
+  - [V11] http://lkml.org/lkml/2011/2/23/107
+  - [V10] http://lkml.org/lkml/2011/1/27/71
+  - [V9]  http://lkml.org/lkml/2011/1/13/65
+  - [V8]  http://lkml.org/lkml/2010/12/31/128
+  - [V7]  http://lkml.org/lkml/2010/12/16/195
+  - [V6]  http://lkml.org/lkml/2010/9/23/310
+  - [V5]  http://lkml.org/lkml/2010/8/16/90
+  - Thomas Gleixner: Rework of the PTP support series core code
+    http://lkml.org/lkml/2011/2/1/137
+  - Dynamic clock devices [RFC]
+    http://lkml.org/lkml/2010/11/4/290
+  - POSIX clock tuning syscall with dynamic clock ids
+    http://lkml.org/lkml/2010/9/3/119
+  - POSIX clock tuning syscall with static clock ids
+    http://lkml.org/lkml/2010/8/23/49
+  - Versions 1-4 appeared on the netdev list.
+
+
+Richard Cochran (4):
+  ptp: Added a brand new class driver for ptp clocks.
+  ptp: Added a clock that uses the eTSEC found on the MPC85xx.
+  ptp: Added a clock driver for the IXP46x.
+  ptp: Added a clock driver for the National Semiconductor PHYTER.
+
+ Documentation/ABI/testing/sysfs-ptp                |   98 ++
+ .../devicetree/bindings/net/fsl-tsec-phy.txt       |   54 +
+ Documentation/ptp/ptp.txt                          |   89 ++
+ Documentation/ptp/testptp.c                        |  381 +++++++
+ Documentation/ptp/testptp.mk                       |   33 +
+ arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h      |   78 ++
+ arch/powerpc/boot/dts/mpc8313erdb.dts              |   13 +
+ arch/powerpc/boot/dts/mpc8572ds.dts                |   13 +
+ arch/powerpc/boot/dts/p2020ds.dts                  |   13 +
+ arch/powerpc/boot/dts/p2020rdb.dts                 |   13 +
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    1 +
+ drivers/net/Makefile                               |    1 +
+ drivers/net/arm/ixp4xx_eth.c                       |  195 ++++-
+ drivers/net/gianfar_ptp.c                          |  588 +++++++++++
+ drivers/net/phy/Makefile                           |    1 +
+ drivers/net/phy/dp83640.c                          | 1100 ++++++++++++++++++++
+ drivers/net/phy/dp83640_reg.h                      |  267 +++++
+ drivers/ptp/Kconfig                                |   75 ++
+ drivers/ptp/Makefile                               |    7 +
+ drivers/ptp/ptp_chardev.c                          |  159 +++
+ drivers/ptp/ptp_clock.c                            |  343 ++++++
+ drivers/ptp/ptp_ixp46x.c                           |  332 ++++++
+ drivers/ptp/ptp_private.h                          |   92 ++
+ drivers/ptp/ptp_sysfs.c                            |  230 ++++
+ include/linux/Kbuild                               |    1 +
+ include/linux/ptp_classify.h                       |    7 +
+ include/linux/ptp_clock.h                          |   84 ++
+ include/linux/ptp_clock_kernel.h                   |  139 +++
+ 29 files changed, 4406 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-ptp
+ create mode 100644 Documentation/ptp/ptp.txt
+ create mode 100644 Documentation/ptp/testptp.c
+ create mode 100644 Documentation/ptp/testptp.mk
+ create mode 100644 arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h
+ create mode 100644 drivers/net/gianfar_ptp.c
+ create mode 100644 drivers/net/phy/dp83640.c
+ create mode 100644 drivers/net/phy/dp83640_reg.h
+ create mode 100644 drivers/ptp/Kconfig
+ create mode 100644 drivers/ptp/Makefile
+ create mode 100644 drivers/ptp/ptp_chardev.c
+ create mode 100644 drivers/ptp/ptp_clock.c
+ create mode 100644 drivers/ptp/ptp_ixp46x.c
+ create mode 100644 drivers/ptp/ptp_private.h
+ create mode 100644 drivers/ptp/ptp_sysfs.c
+ create mode 100644 include/linux/ptp_clock.h
+ create mode 100644 include/linux/ptp_clock_kernel.h
+
