@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1DVAgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 20:36:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34868 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab1DVAgS (ORCPT
+	id S1754918Ab1DVAlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 20:41:01 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:3787 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab1DVAlA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 20:36:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: [patch] mm: always set nodes with regular memory in N_NORMAL_MEMORY
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1104211440240.20201@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com> <alpine.DEB.2.00.1104211440240.20201@chino.kir.corp.google.com>
-Message-Id: <20110422093619.FA5A.A69D9226@jp.fujitsu.com>
+	Thu, 21 Apr 2011 20:41:00 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 05/22] Staging: hv: Get rid of the forward declaration
+ of blkvsc_init_rw()
+Thread-Topic: [PATCH 05/22] Staging: hv: Get rid of the forward declaration
+ of blkvsc_init_rw()
+Thread-Index: AQHL9KD0e5QrnzfrjEyMPlp8XpyJEZRnwPQAgAFYzdA=
+Date: Fri, 22 Apr 2011 00:40:58 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481CCC12@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1302125655-10741-1-git-send-email-kys@microsoft.com>
+ <1302125720-10808-1-git-send-email-kys@microsoft.com>
+ <1302125720-10808-5-git-send-email-kys@microsoft.com>
+ <20110420203506.GA15317@kroah.com>
+In-Reply-To: <20110420203506.GA15317@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.73]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Fri, 22 Apr 2011 09:36:15 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> N_NORMAL_MEMORY is intended to include all nodes that have present memory 
-> in regular zones, that is, zones below ZONE_HIGHMEM.  This should be done 
-> regardless of whether CONFIG_HIGHMEM is set or not.
-> 
-> This fixes ia64 so that the nodes get set appropriately in the nodemask 
-> for DISCONTIGMEM and mips if it does not enable CONFIG_HIGHMEM even for 
-> 32-bit kernels.
-> 
-> If N_NORMAL_MEMORY is not accurate, slub may encounter errors since it 
-> relies on this nodemask to setup kmem_cache_node data structures for each 
-> cache.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/page_alloc.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4727,7 +4727,6 @@ out:
->  /* Any regular memory on that node ? */
->  static void check_for_regular_memory(pg_data_t *pgdat)
->  {
-> -#ifdef CONFIG_HIGHMEM
->  	enum zone_type zone_type;
->  
->  	for (zone_type = 0; zone_type <= ZONE_NORMAL; zone_type++) {
-> @@ -4735,7 +4734,6 @@ static void check_for_regular_memory(pg_data_t *pgdat)
->  		if (zone->present_pages)
->  			node_set_state(zone_to_nid(zone), N_NORMAL_MEMORY);
->  	}
-> -#endif
 
-enum node_states {
-        N_POSSIBLE,             /* The node could become online at some point */
-        N_ONLINE,               /* The node is online */
-        N_NORMAL_MEMORY,        /* The node has regular memory */
-#ifdef CONFIG_HIGHMEM
-        N_HIGH_MEMORY,          /* The node has regular or high memory */
-#else
-        N_HIGH_MEMORY = N_NORMAL_MEMORY,
-#endif
-        N_CPU,          /* The node has one or more cpus */
-        NR_NODE_STATES
-};
 
-Then, only node_set_state(nid, N_HIGH_MEMORY) is enough initialization, IIUC.
-Can you please explain when do we need this patch?
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, April 20, 2011 4:35 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 05/22] Staging: hv: Get rid of the forward declaration of
+> blkvsc_init_rw()
+> 
+> On Wed, Apr 06, 2011 at 02:35:03PM -0700, K. Y. Srinivasan wrote:
+> > Get rid of the forward declaration of blkvsc_init_rw() by moving the
+> > code around.
+> 
+> This patch fails to apply:
+> 
+> Applying: Staging: hv: Get rid of the forward declaration of blkvsc_init_rw()
+> error: patch failed: drivers/staging/hv/blkvsc_drv.c:1000
+> error: drivers/staging/hv/blkvsc_drv.c: patch does not apply
+> Patch failed at 0005 Staging: hv: Get rid of the forward declaration of
+> blkvsc_init_rw()
+> 
+> So I'll stop at this patch in the series.
+
+As I look at the git log in today's tree,
+the topmost patch of mine that is applied is:
+
+Staging: hv: Get rid of blkvsc_check_events()
+
+This is a patch that is not even in the patch-set that you were currently
+applying. On April 6th, I sent three patch-sets (all these 3 were resends
+after the tree opened):
+
+0000-Staging-hv-Cleanup-storage-drivers-phase-II-fixup: This was a two patch series to
+fix-up some bugs. This has been applied.
+
+0000-Staging-hv-Cleanup-storage-drivers-phase-III: This was a 22 patch-set of 
+which you applied 4 patches and the application of the fifth caused a failure
+(as noted by you in this mail).
+
+0000-Staging-hv-Cleanup-storage-drivers-phase-IV: This was a 22 patch set
+That should have been applied last.
+
+For some reason, after you applied 4 patches from the second set,
+looking at the git log, it looks like a patch from the third set was
+applied: 
+
+Subject: [PATCH 01/22]  Staging: hv: Get rid of blkvsc_check_events()
+
+This is the reason why 
+[PATCH 05/22] Staging: hv: Get rid of the forward declaration of blkvsc_init_rw()
+failed to apply. I am curious if I did something wrong that might have caused
+this problem.
+
+With regards to rectifying this problem, if you can roll-back that last patch
+that was applied out of order, then I think everything should apply just
+fine. If this is not possible, I would need to re-spin the 40 odd patches 
+that currently fail to apply.
+
+Regards,
+
+K. Y  
+
+
+
 
 
