@@ -1,47 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1DVOhs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 10:37:48 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:36481 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751741Ab1DVOhr (ORCPT
+	id S1754439Ab1DVOlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 10:41:50 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:4521 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab1DVOls convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 10:37:47 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAIKRsU1XQD0k/2dsb2JhbAClXXjEHoV2BJI0iWA
-Message-ID: <4DB191C8.10501@computer.org>
-Date: Fri, 22 Apr 2011 16:33:44 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Fri, 22 Apr 2011 10:41:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IVFGVjHQ79pz+Vkmxh5r9disYrs+W8tmqkYJotaksSkD7IkIFEUNIhZfpkn5kVyat7
+         yJ42C/KioGcmteCBLXfA==
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>
-Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-In-Reply-To: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1303482702.2461.40.camel@localhost>
+References: <BANLkTinNJERr_=ELO61UbrwCJjW1KAdK2A@mail.gmail.com>
+	<1303478798.2461.11.camel@localhost>
+	<BANLkTimXi0on1pLLqeW3C3YyKXNeyE1d5Q@mail.gmail.com>
+	<1303482702.2461.40.camel@localhost>
+Date: Fri, 22 Apr 2011 16:41:44 +0200
+Message-ID: <BANLkTinxzH-3uXXfj4ALzkM48FnQ+shdvg@mail.gmail.com>
+Subject: Re: perf_events: questions about cpu_has_ht_siblings() and offcore support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/11 21:32, Andrew Lutomirski wrote:
-> Hi all-
+On Fri, Apr 22, 2011 at 4:31 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Fri, 2011-04-22 at 21:46 +0800, Stephane Eranian wrote:
+>> On Fri, Apr 22, 2011 at 3:26 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > On Fri, 2011-04-22 at 20:59 +0800, Stephane Eranian wrote:
+>> >> Lin,
+>> >>
+>> >> In arch/x86/include/asm/smp.h, you added:
+>> >>
+>> >> static inline bool cpu_has_ht_siblings(void)
+>> >> {
+>> >>        bool has_siblings = false;
+>> >> #ifdef CONFIG_SMP
+>> >>        has_siblings = cpu_has_ht && smp_num_siblings > 1;
+>> >> #endif
+>> >>        return has_siblings;
+>> >> }
+>> >>
+>> >> I am wondering about the goal of this function.
+>> >>
+>> >> Is it supposed to return whether or not HT is enabled?
+>> >>
+>> >> Ht enabled != HT supported
+>> >
+>> > It's used to check if HT is supported.
+>> >
+>> Ok, that makes more sense.
+>>
+>> > But unfortunately, we didn't find a way to check if HT is enabled.
+>> > So I just check if HT is supported.
+>> >
+>> >>
+>> >> +static inline int is_ht_enabled(void)
+>> >> +{
+>> >> +       bool has_ht = false;
+>> >> +#ifdef CONFIG_SMP
+>> >> +       int w;
+>> >> +       w = cpumask_weight(cpu_sibling_mask(smp_processor_id()));
+>> >> +       has_ht = cpu_has_ht && w > 1;
+>> >> +#endif
+>> >> +       return has_ht;
+>> >> +}
+>> >>
+>> >> OTOH, you need some validation even in the case HT is off. No two events
+>> >> scheduled together on the same PMU can have different values for the extra
 >
-> I'd appreciate some help testing rdtsc's ordering wrt memory on
-> various hardware.
+> I got it now.
+>
+>> >> reg. Thus, the fact that cpu_has_ht_siblings() is imune to HT state helps here,
+>> >> but then what's the point of it?
+>> >
+>> > The points is to avoid the percore resource allocations(which are used
+>> > to sync between HTs) if HT is not supported.
+>> >
+>> But if you check x86_pmu.extra_regs, that should do it as well.
+>
+> I don't understand here.
+> Did you mean we can avoid the percore resource allocations by just
+> checking x86_pmu.extra_regs? How?
 
-$ ./evil-clock-test
-CPU vendor   : GenuineIntel
-CPU model    : Intel(R) Core(TM) i3 CPU         540  @ 3.07GHz
-CPU stepping : 2
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using lfence_rdtsc because you have an Intel CPU
-Will test the "lfence;rdtsc" clock.
-Now test passed  : margin 96 with 64336568 samples
-Load3 test passed: margin 72 with 7731224 samples
-Load test passed : margin 88 with 13575597 samples
-Store test failed as expected: worst error 892 with 9605781 samples
+Is you have not extra_regs, i.e., regs that are shared, then why would
+you need the percore allocation?
 
-Jan
+
+>
+>>
+>> Suppose HT is disabled and I do:
+>>
+>> perf stat -e offcore_response_0:dmd_data_rd,offcore_response_0:dmnd_rfo ......
+>>
+>> This should still not be allowed.
+>
+> Ah, you are right.
+> We have to always check extra_config even HT is disabled and/or
+> supported.
+>
+Yes. You won't need the locking, though.
+
+>>
+>> I think in this case, HT supported will cause your code to still allocate the
+>> per-core struct. There will be no matching of per-core structs in starting().
+>> So I suspect things work.
+>
+> This has no problem.
+> If "no matching" found, then below if(...) statement won't be executed.
+>
+> intel_pmu_cpu_starting:
+>
+>        for_each_cpu(i, topology_thread_cpumask(cpu)) {
+>                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+>
+>                if (pc && pc->core_id == core_id) {
+>                        kfree(cpuc->per_core);
+>                        cpuc->per_core = pc;
+>                        break;
+>                }
+>        }
+>
+> Or do you see other potential problem?
+>
+I think when HT is off, you will never execute the if statement, because
+no core_id will ever match another.
+
+Another thing that struck me when locking at the hotplug code for
+per-core is the lack of locking. I assume that's because hotplug
+cpu is inherently serialized. You cannot have a CPU going offline
+and one going online at the same time. is that right? Otherwise
+I wonder if you could simply do per_core->refcnt++ vs.
+per_core->refcnt--
