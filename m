@@ -1,70 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab1DVInk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 04:43:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33947 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab1DVInj convert rfc822-to-8bit (ORCPT
+	id S1753719Ab1DVIrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 04:47:45 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61657 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab1DVIrm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 04:43:39 -0400
+	Fri, 22 Apr 2011 04:47:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=B1GOvuMiZi1hRuq12TJZHHUqMvlo60kTEoPZGJicVboQ6Aj3k9Mc5Mu51aPAeOVfgb
-         nRyIP0Qibfo2VZrg+b7bHvN/lR+BWu+J/Q25wR6PpnyGBgoev3uaOt3Z0Q/E9u1lz1UZ
-         alP93BCKOQpIhqm/Ix6mPugagi3yaSvdvY400=
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Io/3q/oVpJGJx+Sr4X3QH6m1Z36fwcRyzvuT3BNs6TJG03fL82rFZ05pIQqYcDBxQE
+         5iH2zKH5T2C8WPTdlI5Q==
 MIME-Version: 1.0
-In-Reply-To: <20110422081838.GA24011@elte.hu>
-References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
-	<1303398203-2918-5-git-send-email-dzickus@redhat.com>
-	<20110422081838.GA24011@elte.hu>
-Date: Fri, 22 Apr 2011 12:43:38 +0400
-Message-ID: <BANLkTimh80LorfC8O-HOPAAWK9BLYNjcXA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+Date: Fri, 22 Apr 2011 10:47:40 +0200
+Message-ID: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for config1/config2
+From: Stephane Eranian <eranian@google.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P4 cant move events between counters in compare with architectural
-event so when nmi-watchdog is used perf top is blocked because it
-needs same counters but the counters already borrowed for watchdog. as
-result we need a different event and counters for watchdog.
-
-Ingo, nonsleeping cycles is from intel sdm, so when someone start
-reading this code in future will find this term in sdm fast. or i
-could put the reference from sdm itself here, hm?
-
-On Friday, April 22, 2011, Ingo Molnar <mingo@elte.hu> wrote:
+On Fri, Apr 22, 2011 at 10:06 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> * Don Zickus <dzickus@redhat.com> wrote:
+> * Ingo Molnar <mingo@elte.hu> wrote:
 >
->> From: Cyrill Gorcunov <gorcunov@gmail.com>
+>> This needs to be a *lot* more user friendly. Users do not want to type in
+>> stupid hexa magic numbers to get profiling. We have moved beyond the oprofile
+>> era really.
 >>
->> Due to restriction and specifics of Netburst PMU we need
->> a separated event for NMI watchdog. Note that on all other
->> than P4 PMU cpus this event is a simple alias for PERF_COUNT_HW_CPU_CYCLES.
->>
->> This event is only used by x86 for now so no other archs involved.
+>> Unless there's proper generalized and human usable support i'm leaning
+>> towards turning off the offcore user-space accessible raw bits for now, and
+>> use them only kernel-internally, for the cache events.
 >
-> hm, there's no explanation exactly why this is needed and what the alternatives
-> are.
+Generic cache events are a myth. They are not usable. I keep getting questions
+from users because nobody knows what they are actually counting, thus nobody
+knows how to interpret the counts. You cannot really hide the micro-architecture
+if you want to make any sensible measurements.
+
+I agree with the poor usability of perf when you have to pass hex
+values for events.
+But that's why I have a user level library to map event strings to
+event codes for perf.
+Arun Sharma posted a patch a while ago to connect this library with perf, so far
+it's been ignored, it seems:
+    perf stat -e offcore_response_0:dmd_data_rd foo
+
+
+> I'm about to push out the patch attached below - it lays out the arguments in
+> detail. I don't think we have time to fix this properly for .39 - but memory
+> profiling could be a nice feature for v2.6.40.
 >
-> This sentence:
+You will not be able to do any reasonable memory profiling using
+offcore response
+events. Dont' expect a profile to point to the missing loads. If
+you're lucky it would
+point to the use instruction.
+
+
+> --------------------->
+> From b52c55c6a25e4515b5e075a989ff346fc251ed09 Mon Sep 17 00:00:00 2001
+> From: Ingo Molnar <mingo@elte.hu>
+> Date: Fri, 22 Apr 2011 08:44:38 +0200
+> Subject: [PATCH] x86, perf event: Turn off unstructured raw event access to offcore registers
 >
->> + �/* we use that named non-sleeping calls */
+> Andi Kleen pointed out that the Intel offcore support patches were merged
+> without user-space tool support to the functionality:
 >
-> does not parse for me.
+>  |
+>  | The offcore_msr perf kernel code was merged into 2.6.39-rc*, but the
+>  | user space bits were not. This made it impossible to set the extra mask
+>  | and actually do the OFFCORE profiling
+>  |
 >
-> Thanks,
+> Andi submitted a preliminary patch for user-space support, as an
+> extension to perf's raw event syntax:
 >
->  � � � �Ingo
+>  |
+>  | Some raw events -- like the Intel OFFCORE events -- support additional
+>  | parameters. These can be appended after a ':'.
+>  |
+>  | For example on a multi socket Intel Nehalem:
+>  |
+>  |    perf stat -e r1b7:20ff -a sleep 1
+>  |
+>  | Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0
+>  | that measures any access to DRAM on another socket.
+>  |
+>
+> But this kind of usability is absolutely unacceptable - users should not
+> be expected to type in magic, CPU and model specific incantations to get
+> access to useful hardware functionality.
+>
+> The proper solution is to expose useful offcore functionality via
+> generalized events - that way users do not have to care which specific
+> CPU model they are using, they can use the conceptual event and not some
+> model specific quirky hexa number.
+>
+> We already have such generalization in place for CPU cache events,
+> and it's all very extensible.
+>
+> "Offcore" events measure general DRAM access patters along various
+> parameters. They are particularly useful in NUMA systems.
+>
+> We want to support them via generalized DRAM events: either as the
+> fourth level of cache (after the last-level cache), or as a separate
+> generalization category.
+>
+> That way user-space support would be very obvious, memory access
+> profiling could be done via self-explanatory commands like:
+>
+>  perf record -e dram ./myapp
+>  perf record -e dram-remote ./myapp
+>
+> ... to measure DRAM accesses or more expensive cross-node NUMA DRAM
+> accesses.
+>
+> These generalized events would work on all CPUs and architectures that
+> have comparable PMU features.
+>
+> ( Note, these are just examples: actual implementation could have more
+>  sophistication and more parameter - as long as they center around
+>  similarly simple usecases. )
+>
+> Now we do not want to revert *all* of the current offcore bits, as they
+> are still somewhat useful for generic last-level-cache events, implemented
+> in this commit:
+>
+>  e994d7d23a0b: perf: Fix LLC-* events on Intel Nehalem/Westmere
+>
+> But we definitely do not yet want to expose the unstructured raw events
+> to user-space, until better generalization and usability is implemented
+> for these hardware event features.
+>
+> ( Note: after generalization has been implemented raw offcore events can be
+>  supported as well: there can always be an odd event that is marginally
+>  useful but not useful enough to generalize. DRAM profiling is definitely
+>  *not* such a category so generalization must be done first. )
+>
+> Furthermore, PERF_TYPE_RAW access to these registers was not intended
+> to go upstream without proper support - it was a side-effect of the above
+> e994d7d23a0b commit, not mentioned in the changelog.
+>
+> As v2.6.39 is nearing release we go for the simplest approach: disable
+> the PERF_TYPE_RAW offcore hack for now, before it escapes into a released
+> kernel and becomes an ABI.
+>
+> Once proper structure is implemented for these hardware events and users
+> are offered usable solutions we can revisit this issue.
+>
+> Reported-by: Andi Kleen <ak@linux.intel.com>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Link: http://lkml.kernel.org/r/1302658203-4239-1-git-send-email-andi@firstfloor.org
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index eed3673a..632e5dc 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -586,8 +586,12 @@ static int x86_setup_perfctr(struct perf_event *event)
+>                        return -EOPNOTSUPP;
+>        }
+>
+> +       /*
+> +        * Do not allow config1 (extended registers) to propagate,
+> +        * there's no sane user-space generalization yet:
+> +        */
+>        if (attr->type == PERF_TYPE_RAW)
+> -               return x86_pmu_extra_regs(event->attr.config, event);
+> +               return 0;
+>
+>        if (attr->type == PERF_TYPE_HW_CACHE)
+>                return set_ext_hw_attr(hwc, event);
 >
