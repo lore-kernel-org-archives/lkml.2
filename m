@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab1DVVBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:01:44 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:43914
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	id S1756719Ab1DVVBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:01:52 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60281
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756391Ab1DVVBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756348Ab1DVVBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 17:01:20 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 18/18] Staging: hv: Get rid of some dead code in blkvsc_drv.c
-Date: Fri, 22 Apr 2011 14:13:39 -0700
-Message-Id: <1303506819-1913-18-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/18] Staging: hv: Get rid of the forward declaration of blkvsc_revalidate_disk()
+Date: Fri, 22 Apr 2011 14:13:32 -0700
+Message-Id: <1303506819-1913-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1303506819-1913-1-git-send-email-kys@microsoft.com>
 References: <1303506780-1872-1-git-send-email-kys@microsoft.com>
@@ -25,109 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of some dead code in blkvsc_drv.c.
+Get rid of the forward declaration of blkvsc_revalidate_disk() by moving
+the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   26 --------------------------
- 1 files changed, 0 insertions(+), 26 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   31 +++++++++++++++----------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 0177c45..3a344d2 100644
+index 900ffc1..2094d00 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -172,7 +172,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
- 	stor_driver = hvdr_to_stordr(driver);
+@@ -853,9 +853,23 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
+ 	return 0;
+ }
  
- 	/* Make sure we are at least 2 pages since 1 page is used for control */
--	/* ASSERT(stor_driver->RingBufferSize >= (PAGE_SIZE << 1)); */
++static int blkvsc_revalidate_disk(struct gendisk *gd)
++{
++	struct block_device_context *blkdev = gd->private_data;
++
++	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
++
++	if (blkdev->device_type == DVD_TYPE) {
++		blkvsc_do_read_capacity(blkdev);
++		set_capacity(blkdev->gd, blkdev->capacity *
++			    (blkdev->sector_size/512));
++		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
++	}
++	return 0;
++}
++
+ /* Static decl */
+ static int blkvsc_probe(struct device *dev);
+-static int blkvsc_revalidate_disk(struct gendisk *gd);
+ static void blkvsc_request(struct request_queue *queue);
+ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_request(struct block_device_context *blkdev,
+@@ -1504,21 +1518,6 @@ static void blkvsc_request(struct request_queue *queue)
+ 	}
+ }
  
- 	driver->name = g_blk_driver_name;
- 	memcpy(&driver->dev_type, &g_blk_device_type, sizeof(struct hv_guid));
-@@ -224,14 +223,6 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- 		   blkvsc_req->sector_count,
- 		   blkvsc_req->request.data_buffer.offset,
- 		   blkvsc_req->request.data_buffer.len);
--#if 0
--	for (i = 0; i < (blkvsc_req->request.data_buffer.len >> 12); i++) {
--		DPRINT_DBG(BLKVSC_DRV, "blkvsc_submit_request() - "
--			   "req %p pfn[%d] %llx\n",
--			   blkvsc_req, i,
--			   blkvsc_req->request.data_buffer.pfn_array[i]);
--	}
--#endif
- 
- 	storvsc_req = &blkvsc_req->request;
- 	vm_srb = &storvsc_req->vstor_packet.vm_srb;
-@@ -368,9 +359,6 @@ static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
- 
- static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
- {
--	/* ASSERT(blkvsc_req->req); */
--	/* ASSERT(blkvsc_req->sector_count <=
--	   (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
- 
- 	blkvsc_req->cmd_len = 16;
- 
-@@ -427,7 +415,6 @@ static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
- static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
- 			unsigned cmd, unsigned long argument)
- {
--/*	struct block_device_context *blkdev = bd->bd_disk->private_data; */
- 	int ret;
- 
- 	switch (cmd) {
-@@ -854,13 +841,6 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
- 	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
- 	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
- 
--#if 0
--	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
--			    (buf[2] << 8) | buf[3]) + 1;
--	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
--			      (buf[6] << 8) | buf[7];
--#endif
+-static int blkvsc_revalidate_disk(struct gendisk *gd)
+-{
+-	struct block_device_context *blkdev = gd->private_data;
 -
- 	kunmap(page_buf);
- 
- 	__free_page(page_buf);
-@@ -932,7 +912,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 
- 	buf = kmap(page_buf);
- 
--	/* print_hex_dump_bytes("", DUMP_PREFIX_NONE, buf, 64); */
- 	/* be to le */
- 	device_type = buf[0] & 0x1F;
- 
-@@ -952,8 +931,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 		blkdev->device_id_len = 64;
- 
- 	memcpy(blkdev->device_id, &buf[8], blkdev->device_id_len);
--	/* printk_hex_dump_bytes("", DUMP_PREFIX_NONE, blkdev->device_id,
--	 * blkdev->device_id_len); */
- 
- 	kunmap(page_buf);
- 
-@@ -1337,8 +1314,6 @@ static int blkvsc_probe(struct device *device)
- 	/* Initialize what we can here */
- 	spin_lock_init(&blkdev->lock);
- 
--	/* ASSERT(sizeof(struct blkvsc_request_group) <= */
--	/* 	sizeof(struct blkvsc_request)); */
- 
- 	blkdev->request_pool = kmem_cache_create(dev_name(&device_obj->device),
- 					sizeof(struct blkvsc_request), 0,
-@@ -1475,7 +1450,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request)
- 	struct blkvsc_request *comp_req, *tmp;
- 	struct vmscsi_request *vm_srb;
- 
--	/* ASSERT(blkvsc_req->group); */
- 
- 	DPRINT_DBG(BLKVSC_DRV, "blkdev %p blkvsc_req %p group %p type %s "
- 		   "sect_start %lu sect_count %ld len %d group outstd %d "
+-	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
+-
+-	if (blkdev->device_type == DVD_TYPE) {
+-		blkvsc_do_read_capacity(blkdev);
+-		set_capacity(blkdev->gd, blkdev->capacity *
+-			    (blkdev->sector_size/512));
+-		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
+-	}
+-	return 0;
+-}
+-
+ static int __init blkvsc_init(void)
+ {
+ 	int ret;
 -- 
 1.7.4.1
 
