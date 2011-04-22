@@ -1,57 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab1DVRla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 13:41:30 -0400
-Received: from trent.utfs.org ([194.246.123.103]:48618 "EHLO trent.utfs.org"
+	id S1756474Ab1DVRuu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 13:50:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41415 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756395Ab1DVRl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 13:41:29 -0400
-Date: Fri, 22 Apr 2011 10:41:26 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com, rientjes@google.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <BANLkTi=P5z4iON+ULiUEAeuuCJCJ_nMxWw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.01.1104221033220.18728@trent.utfs.org>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <BANLkTi=P5z4iON+ULiUEAeuuCJCJ_nMxWw@mail.gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1756236Ab1DVRus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 13:50:48 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Dave Jones <davej@redhat.com>
+Subject: [PATCH v3.1] kbuild: implement several W= levels
+Date: Fri, 22 Apr 2011 19:50:42 +0200
+Message-Id: <1303494642-18594-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.7.5.rc1.16.g9db1
+In-Reply-To: <20110422110947.GA20715@merkur.ravnborg.org>
+References: <20110422110947.GA20715@merkur.ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Apr 2011 at 11:58, Minchan Kim wrote:
-> You would try to allocate a page from DMA as you don't have a normal zone.
-> 
-> Although free pages in DMA zone is about 3M, free pages of zone is
-> below min of DMA zone. So zone_watermark_ok would be failed.
-> 
-> But I wonder why VM can't reclaim the pages. As I see the log, there
-> are lots of slab pages(710M) in DMA zone while LRU pages are very
-> small. SLAB pages are things VM has a trouble to reclaim. I am not
-> sure 710M of SLAB is reasonable size. Don't you have experience same
-> problem in old kernel?
-> If you see the problem first in 2.6.39-rc4, maybe it would be a
-> regression(ex, might be slab memory leak)
-> Could you get the information about slabinfo(ex, cat /proc/slabinfo)
-> right before OOM happens.
-> It could say culprit.
+From: Sam Ravnborg <sam@ravnborg.org>
 
-It happened again, and again it's du(1) invoking the OOM killer (I'm 
-running du(1) accross a few directories every 6hrs). This time I got 
-/proc/slabinfo as well:
+Building a kernel with "make W=1" produce far too much noise
+to be usefull.
 
-  http://nerdbynature.de/bits/2.6.39-rc4/oom/
-  * NOTE: slabinfo.txt.gz deflates to ~40MB!)
-  * messages-2.txt contains the messages of last night's OOM, which
-   started at Apr 22 00:10:16 PDT
+Divide the warning options in three groups:
 
-Thanks for looking into it.
+    W=1 - warnings that may be relevant and does not occur too often
+    W=2 - warnings that occur quite often but may still be relevant
+    W=3 - the more obscure warnings, can most likely be ignored
 
-Christian.
+When building init/ on my box the levels produces:
+
+W=1 - 46 warnings
+W=2 - 863 warnings
+W=3 - 6496 warnings
+
+Many warnings occur from .h files so fixing one file may have a nice
+effect on the total number of warnings.
+
+With these changes I am actually tempted to try W=1 now and then.
+Previously there were just too much noise.
+
+Borislav:
+
+- make the W= levels exclusive
+- move very noisy and making little sense for the kernel warnings to W=3
+- drop -Woverlength-strings due to useless warning message
+- copy explanatory text for the different warning levels to 'make help'
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+Cc: Dave Jones <davej@redhat.com>
+---
+ Makefile               |    8 ++++-
+ scripts/Makefile.build |   65 ++++++++++++++++++++++++++++--------------------
+ 2 files changed, 44 insertions(+), 29 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b967b96..17ce5d5 100644
+--- a/Makefile
++++ b/Makefile
+@@ -103,7 +103,7 @@ ifeq ("$(origin O)", "command line")
+ endif
+ 
+ ifeq ("$(origin W)", "command line")
+-  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := 1
++  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
+ endif
+ 
+ # That's our default target when none is given on the command line
+@@ -1267,7 +1267,11 @@ help:
+ 	@echo  '  make O=dir [targets] Locate all output files in "dir", including .config'
+ 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
+ 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
+-	@echo  '  make W=1   [targets] Enable extra gcc checks'
++	@echo  '  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where'
++	@echo  '		1: warnings which may be relevant and do not occur too often'
++	@echo  '		2: warnings which occur quite often but may still be relevant'
++	@echo  '		3: more obscure warnings, can most likely be ignored'
++
+ 	@echo  ''
+ 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+ 	@echo  'For further info see the ./README file'
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d5f925a..ffb383c 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -51,36 +51,47 @@ ifeq ($(KBUILD_NOPEDANTIC),)
+ endif
+ 
+ #
+-# make W=1 settings
++# make W=... settings
+ #
+-# $(call cc-option... ) handles gcc -W.. options which
++# W=1 - warnings that may be relevant and does not occur too often
++# W=2 - warnings that occur quite often but may still be relevant
++# W=3 - the more obscure warnings, can most likely be ignored
++#
++# $(call cc-option, -W...) handles gcc -W.. options which
+ # are not supported by all versions of the compiler
+ ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
+-KBUILD_EXTRA_WARNINGS := -Wextra
+-KBUILD_EXTRA_WARNINGS += -Wunused -Wno-unused-parameter
+-KBUILD_EXTRA_WARNINGS += -Waggregate-return
+-KBUILD_EXTRA_WARNINGS += -Wbad-function-cast
+-KBUILD_EXTRA_WARNINGS += -Wcast-qual
+-KBUILD_EXTRA_WARNINGS += -Wcast-align
+-KBUILD_EXTRA_WARNINGS += -Wconversion
+-KBUILD_EXTRA_WARNINGS += -Wdisabled-optimization
+-KBUILD_EXTRA_WARNINGS += -Wlogical-op
+-KBUILD_EXTRA_WARNINGS += -Wmissing-declarations
+-KBUILD_EXTRA_WARNINGS += -Wmissing-format-attribute
+-KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wmissing-include-dirs,)
+-KBUILD_EXTRA_WARNINGS += -Wmissing-prototypes
+-KBUILD_EXTRA_WARNINGS += -Wnested-externs
+-KBUILD_EXTRA_WARNINGS += -Wold-style-definition
+-KBUILD_EXTRA_WARNINGS += $(call cc-option, -Woverlength-strings,)
+-KBUILD_EXTRA_WARNINGS += -Wpacked
+-KBUILD_EXTRA_WARNINGS += -Wpacked-bitfield-compat
+-KBUILD_EXTRA_WARNINGS += -Wpadded
+-KBUILD_EXTRA_WARNINGS += -Wpointer-arith
+-KBUILD_EXTRA_WARNINGS += -Wredundant-decls
+-KBUILD_EXTRA_WARNINGS += -Wshadow
+-KBUILD_EXTRA_WARNINGS += -Wswitch-default
+-KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wvla,)
+-KBUILD_CFLAGS += $(KBUILD_EXTRA_WARNINGS)
++warning-1 := -Wextra -Wunused -Wno-unused-parameter
++warning-1 += -Wmissing-declarations
++warning-1 += -Wmissing-format-attribute
++warning-1 += -Wmissing-prototypes
++warning-1 += -Wold-style-definition
++warning-1 += $(call cc-option, -Wmissing-include-dirs)
++
++warning-2 := -Waggregate-return
++warning-2 += -Wcast-align
++warning-2 += -Wdisabled-optimization
++warning-2 += -Wnested-externs
++warning-2 += -Wshadow
++warning-2 += $(call cc-option, -Wlogical-op)
++
++warning-3 := -Wbad-function-cast
++warning-3 += -Wcast-qual
++warning-3 += -Wconversion
++warning-3 += -Wpacked
++warning-3 += -Wpadded
++warning-3 += -Wpointer-arith
++warning-3 += -Wredundant-decls
++warning-3 += -Wswitch-default
++warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
++warning-3 += $(call cc-option, -Wvla)
++
++warning := $(warning-$(KBUILD_ENABLE_EXTRA_GCC_CHECKS))
++
++ifeq ("$(warning)","")
++        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
++endif
++
++KBUILD_CFLAGS += $(warning)
+ endif
+ 
+ include scripts/Makefile.lib
 -- 
-BOFH excuse #140:
+1.7.5.rc1.16.g9db1
 
-LBNC (luser brain not connected)
