@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab1DVAdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 20:33:08 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14300 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752227Ab1DVAdG (ORCPT
+	id S1755197Ab1DVAeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 20:34:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43013 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960Ab1DVAeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 20:33:06 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca>
-Subject: RE: Question: GPIO driver how to get irq_base
-Date: Fri, 22 Apr 2011 09:33:03 +0900
-Message-ID: <C0A959D4238142B6AFB2F3C43CEFC7E0@hacdom.okisemi.com>
+	Thu, 21 Apr 2011 20:34:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=yBHI7hMyWFE4Aht5DkyOoreTlgcGRcQvgo7qk58EFzWdZoB9N0atYPI43NMTzslPF1
+         5QbYz9D4HA5Mefbe4EijAEh3IRvl6eYS1saBDY2PMG3SU8KBzJlgmrxHPj5mIomUcgWf
+         L7xywSquT73zAqK3iISbTFOoTqAdZsS4ISVlw=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-In-Reply-To: <20110421142422.GC32725@ponder.secretlab.ca>
-Thread-Index: AcwAL++Wzb/0BazWToqDvM5Zkn5jZQAUXwsg
+In-Reply-To: <BANLkTim5umALqafjA2e88UCLzMp9LQu3_Q@mail.gmail.com>
+References: <201104212129.17013.arnd@arndb.de>
+	<20110421130930.4be9e9e1@jbarnes-desktop>
+	<BANLkTim5umALqafjA2e88UCLzMp9LQu3_Q@mail.gmail.com>
+Date: Fri, 22 Apr 2011 09:34:00 +0900
+X-Google-Sender-Auth: iH1vnr-ti67jYxPzf3-gSZFL23c
+Message-ID: <BANLkTimz8zprEw7H_i8g2qj8RyyougiBBw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Zach Pfeffer <zach.pfeffer@linaro.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Ilho Lee <ilho215.lee@samsung.com>, sanghyun75.lee@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant, Lars-Peter Clausen
+On Fri, Apr 22, 2011 at 6:52 AM, Zach Pfeffer <zach.pfeffer@linaro.org> wrote:
+>
+> I agree with Jesse that the separation of mapping from allocation is
+> central to the current usage models. I realize most people didn't like
+> VCMM, but it provided an abstraction for this - if software can handle
+> the multiple mapper approach in a rational way across ARM than we can
+> solve a lot of problems with all the map and unmap current solutions
+> and we don't have to hack in coherency.
+>
 
-Thank you for your information.
+Hi.
+I've also noticed that VCMM is the reasonable idea for IOMMU mappings.
+We often deal with physical memory blocks to map multiple way.
+Allocation of physical memory itself is also important for some
+peripheral devices
+because it is beneficial to get larger page frame for their performance.
 
-It seems nothing driver uses irq_alloc_descs.
-Thus, let me clarify my using.
+IOMMU api does not provide virtual memory management.
+DMA api is not flexible for all our use-cases.
 
-int irq_base = irq_alloc_descs(-1, 0, 12, GFP_KERNEL)
-(Intel-ET20T-PCH has GPIO~GPIO11)
-
-Using the above, I can see "irq_base = 18d".
-Is the above TRUE ?
-
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
+Regards,
+KyongHo.
