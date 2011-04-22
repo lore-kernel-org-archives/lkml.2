@@ -1,105 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab1DVPC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 11:02:26 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:51266 "EHLO e4.ny.us.ibm.com"
+	id S1755963Ab1DVPDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 11:03:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56077 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275Ab1DVPCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 11:02:25 -0400
-Date: Fri, 22 Apr 2011 08:02:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
- related?)
-Message-ID: <20110422150222.GA2300@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTikVW9Z=WxD7=w9c=Z6kHO-Za2ru8A@mail.gmail.com>
- <20110414224411.GF2141@linux.vnet.ibm.com>
- <20110421050823.GA4487@linux.vnet.ibm.com>
- <BANLkTinFmG5GVq6D8+wq_89OPF8snsQ=Jw@mail.gmail.com>
- <BANLkTi=c=+JnU9dQsVhgjZbOtArhHQz+EQ@mail.gmail.com>
- <BANLkTimEWqBVdq8MWbjAAfXCLPQdiHkuNg@mail.gmail.com>
- <20110421142853.GA2235@linux.vnet.ibm.com>
- <BANLkTineNYTXffcNT59STsk5nkLhi=o-kA@mail.gmail.com>
- <20110422005046.GQ2235@linux.vnet.ibm.com>
- <BANLkTi=W=s876U===LVfp59Nnfui8d-1RQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=W=s876U===LVfp59Nnfui8d-1RQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753275Ab1DVPDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 11:03:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,253,1301900400"; 
+   d="scan'208";a="737063961"
+Subject: Re: perf_events: questions about cpu_has_ht_siblings() and offcore
+ support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+In-Reply-To: <BANLkTinxzH-3uXXfj4ALzkM48FnQ+shdvg@mail.gmail.com>
+References: <BANLkTinNJERr_=ELO61UbrwCJjW1KAdK2A@mail.gmail.com>
+	 <1303478798.2461.11.camel@localhost>
+	 <BANLkTimXi0on1pLLqeW3C3YyKXNeyE1d5Q@mail.gmail.com>
+	 <1303482702.2461.40.camel@localhost>
+	 <BANLkTinxzH-3uXXfj4ALzkM48FnQ+shdvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Apr 2011 23:03:17 +0800
+Message-Id: <1303484597.2461.50.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 11:40:54AM +0200, Sedat Dilek wrote:
-> On Fri, Apr 22, 2011 at 2:50 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Apr 21, 2011 at 04:47:31PM +0200, Sedat Dilek wrote:
-> >> On Thu, Apr 21, 2011 at 4:28 PM, Paul E. McKenney
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > On Thu, Apr 21, 2011 at 02:49:37PM +0200, Sedat Dilek wrote:
-> >> >> On Thu, Apr 21, 2011 at 12:24 PM, Sedat Dilek
-> >> >> <sedat.dilek@googlemail.com> wrote:
-> >
-> > [ . . . ]
-> >
-> >> >> Here the results from the 2nd-run (PREEMPT_RCU enabled).
+On Fri, 2011-04-22 at 22:41 +0800, Stephane Eranian wrote:
+> On Fri, Apr 22, 2011 at 4:31 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > On Fri, 2011-04-22 at 21:46 +0800, Stephane Eranian wrote:
+> >> On Fri, Apr 22, 2011 at 3:26 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> >> > On Fri, 2011-04-22 at 20:59 +0800, Stephane Eranian wrote:
+> >> >> Lin,
+> >> >>
+> >> >> In arch/x86/include/asm/smp.h, you added:
+> >> >>
+> >> >> static inline bool cpu_has_ht_siblings(void)
+> >> >> {
+> >> >>        bool has_siblings = false;
+> >> >> #ifdef CONFIG_SMP
+> >> >>        has_siblings = cpu_has_ht && smp_num_siblings > 1;
+> >> >> #endif
+> >> >>        return has_siblings;
+> >> >> }
+> >> >>
+> >> >> I am wondering about the goal of this function.
+> >> >>
+> >> >> Is it supposed to return whether or not HT is enabled?
+> >> >>
+> >> >> Ht enabled != HT supported
 > >> >
-> >> > OK, and the grace periods clearly stopped advancing early on.
+> >> > It's used to check if HT is supported.
 > >> >
-> >> > Beyond that point, the per-CPU kthread is blocked, but RCU has some
-> >> > work for it to do.  So someone has called invoke_rcu_cpu_kthread(),
-> >> > but rcu_cpu_kthread() is still blocked.  I don't see a bug right
-> >> > off-hand, but it is early in the morning for me, so I might easily
-> >> > be missing something.
-> >> >
-> >> > Hmmm...
-> >> >
-> >> > The synchronization between these two assumes that the per-CPU
-> >> > kthread is always bound to the respective CPU, so if was somehow
-> >> > being migrated off, that might explain these results.
-> >> >
-> >> > I will add some more diagnostics, test them locally, then push
-> >> > out an update.  Seem reasonable?
-> >> >
-> >> > And thank you again for the testing!!!
+> >> Ok, that makes more sense.
 > >>
-> >> Ping me when you have new stuff for testing.
-> >> Tomorrow (friday), here is public holiday and monday, too.
-> >> So a looong weekend.
+> >> > But unfortunately, we didn't find a way to check if HT is enabled.
+> >> > So I just check if HT is supported.
+> >> >
+> >> >>
+> >> >> +static inline int is_ht_enabled(void)
+> >> >> +{
+> >> >> +       bool has_ht = false;
+> >> >> +#ifdef CONFIG_SMP
+> >> >> +       int w;
+> >> >> +       w = cpumask_weight(cpu_sibling_mask(smp_processor_id()));
+> >> >> +       has_ht = cpu_has_ht && w > 1;
+> >> >> +#endif
+> >> >> +       return has_ht;
+> >> >> +}
+> >> >>
+> >> >> OTOH, you need some validation even in the case HT is off. No two events
+> >> >> scheduled together on the same PMU can have different values for the extra
 > >
-> > ;-)
+> > I got it now.
 > >
-> > OK, I have a new sedat.2011.04.21a branch in the -rcu git tree:
+> >> >> reg. Thus, the fact that cpu_has_ht_siblings() is imune to HT state helps here,
+> >> >> but then what's the point of it?
+> >> >
+> >> > The points is to avoid the percore resource allocations(which are used
+> >> > to sync between HTs) if HT is not supported.
+> >> >
+> >> But if you check x86_pmu.extra_regs, that should do it as well.
 > >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> >
-> > This is against 2.6.39-rc3, as before.  (Yes, I do need to rebase to
-> > 2.6.39-rc4, but didn't want to change any more than I had to.)
-> >
-> > I also have an updated script, which is attached.  The output is similar
-> > to the earlier one, and it operated is pretty much the same way.
-> >
-> > Have a great weekend, and I look forward to seeing what shows up on
-> > this round.  I confess to still being quite puzzled!
-> >
-> >                                                        Thanx, Paul
-> >
+> > I don't understand here.
+> > Did you mean we can avoid the percore resource allocations by just
+> > checking x86_pmu.extra_regs? How?
 > 
-> Here are the results of the Sedat's vote (European song contest :-)).
+> Is you have not extra_regs, i.e., regs that are shared, then why would
+> you need the percore allocation?
 
-;-)
+But "extra_regs" does not imply they are regs that are shared.
+It only means some events need to set extra registers to work.
 
-Very strange.  RCU has told the per-CPU kthread that it needs to get
-to work, but this kthread is still waiting from RCU's viewpoint.
-Yet the "ps" command believes that this kthread is in fact runnable
-at SCHED_FIFO priority 1.
+> 
+> 
+> >
+> >>
+> >> Suppose HT is disabled and I do:
+> >>
+> >> perf stat -e offcore_response_0:dmd_data_rd,offcore_response_0:dmnd_rfo ......
+> >>
+> >> This should still not be allowed.
+> >
+> > Ah, you are right.
+> > We have to always check extra_config even HT is disabled and/or
+> > supported.
+> >
+> Yes. You won't need the locking, though.
+> 
+> >>
+> >> I think in this case, HT supported will cause your code to still allocate the
+> >> per-core struct. There will be no matching of per-core structs in starting().
+> >> So I suspect things work.
+> >
+> > This has no problem.
+> > If "no matching" found, then below if(...) statement won't be executed.
+> >
+> > intel_pmu_cpu_starting:
+> >
+> >        for_each_cpu(i, topology_thread_cpumask(cpu)) {
+> >                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+> >
+> >                if (pc && pc->core_id == core_id) {
+> >                        kfree(cpuc->per_core);
+> >                        cpuc->per_core = pc;
+> >                        break;
+> >                }
+> >        }
+> >
+> > Or do you see other potential problem?
+> >
+> I think when HT is off, you will never execute the if statement, because
+> no core_id will ever match another.
 
-I can tell that this one will require some thought...  And more
-diagnostics...
+The "if" statement is not executed so the per-core structs allocated in
+intel_pmu_cpu_prepare is not freed.
 
-							Thanx, Paul
+This is the intended behavior since we don't have a way to check if HT
+is off.
+
+> 
+> Another thing that struck me when locking at the hotplug code for
+> per-core is the lack of locking. I assume that's because hotplug
+> cpu is inherently serialized. You cannot have a CPU going offline
+> and one going online at the same time. is that right? Otherwise
+> I wonder if you could simply do per_core->refcnt++ vs.
+> per_core->refcnt--
+
+
