@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1DVNEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 09:04:38 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:35619 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1DVNEh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 09:04:37 -0400
-Message-ID: <4DB17CDE.3050603@tilera.com>
-Date: Fri, 22 Apr 2011 15:04:30 +0200
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1755387Ab1DVNGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 09:06:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab1DVNGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 09:06:45 -0400
+Message-ID: <4DB17D5B.2090303@redhat.com>
+Date: Fri, 22 Apr 2011 07:06:35 -0600
+From: Eric Blake <eblake@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Matt Fleming <matt@console-pimps.org>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: arch/tile/kernel/hardwall.c:do_hardwall_trap unsafe/wrong usage
- of	->sighand
-References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-3-git-send-email-matt@console-pimps.org> <20110413194231.GA15330@redhat.com> <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com> <20110414190012.GA23517@redhat.com> <20110416140813.5c90b1fc@mfleming-mobl1.ger.corp.intel.com> <20110418164513.GA25930@redhat.com> <20110421190332.GA2570@redhat.com>
-In-Reply-To: <20110421190332.GA2570@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@toxicpanda.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Coreutils <coreutils@gnu.org>
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de>
+In-Reply-To: <20110422112852.GB1627@x4.trippels.de>
+X-Enigmail-Version: 1.1.2
+OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig3440113740B5193E68F3D547"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/21/2011 9:03 PM, Oleg Nesterov wrote:
-> On 04/18, Oleg Nesterov wrote:
->> On 04/16, Matt Fleming wrote:
->>> 	3. I suspect most people find the rules of ->sighand pretty
->>> 	confusing. Just look at
->>>
->>> 		arch/tile/kernel/hardwall.c:do_hardwall_trap()
->>>
->>> 	the use of siglock there looks buggy to me.
->> Indeed, I agree. It shouldn't use __group_send_sig_info() at all.
->> I'll send the patch. Nobody outside of signal code should play with
->> ->sighand, this is almost always wrong.
-> Hmm. It turns out, I can't make the patch because I do not understand
-> what this code tries to do.
->
-> hardwall_activate() adds the thread to hardwall_list, but do_hardwall_trap()
-> sends the signal to the whole process. I know nothing about arch/tile and
-> probably this is correct, but could you confirm this?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig3440113740B5193E68F3D547
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, the intended behavior is to send the signal to the process, as a way
-of indicating the OS's displeasure with sending a malformed packet on the
-user network.  But I think sending it to the specific thread is reasonable
-too; I don't have a strong preference in this design.
+On 04/22/2011 05:28 AM, Markus Trippelsdorf wrote:
+>> I would be surprised if the bug is around for such a long time, but
+>> otherwise I concur.
+>=20
+> It's a bug. Let me quote what Jeff Bonwick wrote on his blog:
+>=20
+> =BBI'm not sure where you got the impression that either SEEK_HOLE or
+> SEEK_DATA doesn't set the file pointer. They do. (If they didn't, that
+> would be weird, and we'd call it out explicitly.)=AB
+>=20
+> http://blogs.sun.com/bonwick/entry/seek_hole_and_seek_data
 
-> Note that SIGILL can be delivered to another thread in the thread-group, is
-> it correct?
->
-> Also. Is it supposed that SIGILL can have a hanlder or can be blocked, or
-> it should always kill the whole thread group?
+I've created a request to standardize SEEK_HOLE and SEEK_DATA in the
+next revision of POSIX; comments are welcome to make sure that everyone
+is happy with wording:
+http://austingroupbugs.net/view.php?id=3D415
 
-A handler would be reasonable for the process.
+--=20
+Eric Blake   eblake@redhat.com    +1-801-349-2682
+Libvirt virtualization library http://libvirt.org
 
-> I think we need the patch below, assuming that SIGILL should be sent to
-> the single thread and it is fine to have a handler for SIGILL.
 
-Thanks; I appreciate the additional code review in any case.  I'll look at
-the ramifications of the change in more detail when I return from vacation
-late next week.
+--------------enig3440113740B5193E68F3D547
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> Oleg.
->
-> --- sigprocmask/arch/tile/kernel/hardwall.c~1_sighand	2011-04-06 21:33:42.000000000 +0200
-> +++ sigprocmask/arch/tile/kernel/hardwall.c	2011-04-21 20:56:36.000000000 +0200
-> @@ -268,12 +268,10 @@ void __kprobes do_hardwall_trap(struct p
->  	found_processes = 0;
->  	list_for_each_entry(p, &rect->task_head, thread.hardwall_list) {
->  		BUG_ON(p->thread.hardwall != rect);
-> -		if (p->sighand) {
-> +		if (!(p->flags & PF_EXITING)) {
->  			found_processes = 1;
->  			pr_notice("hardwall: killing %d\n", p->pid);
-> -			spin_lock(&p->sighand->siglock);
-> -			__group_send_sig_info(info.si_signo, &info, p);
-> -			spin_unlock(&p->sighand->siglock);
-> +			do_send_sig_info(info.si_signo, &info, p, false);
->  		}
->  	}
->  	if (!found_processes)
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+iQEcBAEBCAAGBQJNsX1bAAoJEKeha0olJ0NqwNMH/RFHCct8i8aE8TKB3gvFAfMB
+Mf+TiHebzAitBX6/FfdoWb1+MPPG4kNVXd8sjOyjHG/AfeqfCtUHr6gJ/kRbS17p
+b8uuEaH4OO/see4Q4ghuSo/dELCthm1IVIwHg7TBF5LBsuFWI561GIgM+bRL0iPU
+bt0SFrddLWEjZQaWxG/myZeQwzV1BHDr8p4S1K5TkKfw6D3K5XHW9hISWo/drBuW
+haOLA7y26bupunEZrTuK9igS9vgcMrpnYui/Ly+/87c0Dn+eE04FtxHArsV4v66g
+16o7NsBl8qIdXhGJiGOBg8CJouRDfOcPlLakbQXnAFPrjsoJeKRrd2iO7HlANk0=
+=iKrP
+-----END PGP SIGNATURE-----
 
+--------------enig3440113740B5193E68F3D547--
