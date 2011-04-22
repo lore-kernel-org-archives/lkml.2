@@ -1,258 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab1DVWqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 18:46:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6501 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab1DVWqr (ORCPT
+	id S1756904Ab1DVWrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 18:47:15 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52184 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab1DVWrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 18:46:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=vLJ4dqg4gZacPYJnhAGUZH85bTU5FWDvJHMZwIc4tWOWRnH0G2zkza/at8JZzhrkR
-	cv0lbkwIX/DrpIdUcQugQ==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Add a free on close control mechanism for buffer_size_kb
-Date: Fri, 22 Apr 2011 15:46:13 -0700
-Message-Id: <1303512373-25992-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 22 Apr 2011 18:47:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QqPFw4Tz8dOoY9nUD9clOkU2TjZuvOi/9wdsjRTN+07/yN7QdrTkTDbKAINOm9u1f2
+         OPZe1WbLMykfNcazy/lltiDOiQ4ejwg/+KlsGEOEdbdSBCEbsJyK94vr4c30YzyBd2GL
+         ryKdjf1FM5OYI8nsvOYq36QNIj96xAvigxOzk=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.01.1104221142150.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
+	<BANLkTi=P5z4iON+ULiUEAeuuCJCJ_nMxWw@mail.gmail.com>
+	<alpine.DEB.2.01.1104221033220.18728@trent.utfs.org>
+	<alpine.DEB.2.01.1104221142150.18728@trent.utfs.org>
+Date: Sat, 23 Apr 2011 07:47:10 +0900
+Message-ID: <BANLkTinvr+K0WEhDMshbMuU5aYuB0Ve6BA@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com, rientjes@google.com,
+        Dave Chinner <dchinner@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc file entry buffer_size_kb is used to set the size of tracing
-buffer. The memory to expand the buffer size is kernel memory. Consider
-a use case where tracing is handled by a user space utility, which acts
-as a gate keeper for tracing requests. In an OOM condition, tracing is
-considered a low priority task and if the utility gets killed the ring
-buffer memory cannot be released back to the kernel.
+On Sat, Apr 23, 2011 at 3:46 AM, Christian Kujau <lists@nerdbynature.de> wrote:
+> On Fri, 22 Apr 2011 at 10:41, Christian Kujau wrote:
+>> It happened again, and again it's du(1) invoking the OOM killer (I'm
+>> running du(1) accross a few directories every 6hrs).
+>
+> Btw, xfs* showed up again in the first backtrace. This might be just
+> because du(1) came across an XFS filesystem (~1TB) or it's something else:
+>
+> [20546.774480] du invoked oom-killer: gfp_mask=0x842d0, order=0, oom_adj=0, oom_score_adj=0
+> [20546.776130] Call Trace:
+> [20546.777754] [ed53f9e0] [c0009ce4] show_stack+0x70/0x1bc (unreliable)
+> [20546.779363] [ed53fa20] [c008f508] T.528+0x74/0x1cc
+> [20546.780945] [ed53fa70] [c008f734] T.526+0xd4/0x2a0
+> [20546.782484] [ed53fab0] [c008fb7c] out_of_memory+0x27c/0x360
+> [20546.784028] [ed53fb00] [c0093b3c] __alloc_pages_nodemask+0x6f8/0x708
+> [20546.785594] [ed53fba0] [c00c00b4] new_slab+0x244/0x27c
+> [20546.787143] [ed53fbd0] [c00c0620] T.879+0x1cc/0x37c
+> [20546.788687] [ed53fbf0] [c00c08d0] kmem_cache_alloc+0x100/0x108
+> [20546.790244] [ed53fc10] [c01cb2b8] kmem_zone_alloc+0xa4/0x114
+> [20546.791780] [ed53fc40] [c01a7d58] xfs_inode_alloc+0x40/0x13c
+> [20546.793273] [ed53fc60] [c01a8218] xfs_iget+0x258/0x5a0
+> [20546.794701] [ed53fcc0] [c01c922c] xfs_lookup+0xf8/0x114
+> [20546.796115] [ed53fd00] [c01d70b0] xfs_vn_lookup+0x5c/0xb0
+> [20546.797531] [ed53fd20] [c00d14c8] d_alloc_and_lookup+0x54/0x90
+> [20546.798914] [ed53fd40] [c00d1d4c] do_lookup+0x248/0x2bc
+> [20546.800281] [ed53fd90] [c00d33cc] path_lookupat+0xfc/0x8f4
+> [20546.801656] [ed53fe10] [c00d3bf8] do_path_lookup+0x34/0xac
+> [20546.803004] [ed53fe30] [c00d53e0] user_path_at+0x64/0xb4
+> [20546.804336] [ed53feb0] [c00ca638] vfs_fstatat+0x58/0xbc
+> [20546.805682] [ed53fee0] [c00ca6c0] sys_fstatat64+0x24/0x50
+> [20546.807026] [ed53ff40] [c00124f4] ret_from_syscall+0x0/0x38
+> [20546.808380] --- Exception: c01 at 0xff4b050
+> [20546.808384]     LR = 0x10008cf8
+> [20546.811051] Mem-Info:
+> [20546.812324] DMA per-cpu:
+> [20546.813567] CPU    0: hi:  186, btch:  31 usd: 107
+> [20546.814819] HighMem per-cpu:
+> [20546.816065] CPU    0: hi:  186, btch:  31 usd:  30
+> [20546.817328] active_anon:8813 inactive_anon:9740 isolated_anon:0
+> [20546.817332]  active_file:22597 inactive_file:20784 isolated_file:0
+> [20546.817336]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [20546.817340]  free:69629 slab_reclaimable:181633 slab_unreclaimable:4393
+> [20546.817345]  mapped:3810 shmem:169 pagetables:395 bounce:0
+> [20546.823525] DMA free:3536kB min:3532kB low:4412kB high:5296kB active_anon:0kB inactive_anon:0kB active_file:32kB inactive_file:256kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:780288kB mlocked:0kB dirty:0kB writeback:0kB mapped:8kB shmem:0kB slab_reclaimable:726532kB slab_unreclaimable:17572kB kernel_stack:1064kB pagetables:1580kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:449 all_unreclaimable? yes
+> [20546.828690] lowmem_reserve[]: 0 0 508 508
+> [20546.830057] HighMem free:274980kB min:508kB low:1096kB high:1684kB active_anon:35252kB inactive_anon:38960kB active_file:90356kB inactive_file:82880kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:520192kB mlocked:0kB dirty:0kB writeback:0kB mapped:15232kB shmem:676kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+> [20546.835656] lowmem_reserve[]: 0 0 0 0
+> [20546.837081] DMA: 70*4kB 295*8kB 0*16kB 0*32kB 0*64kB 1*128kB 1*256kB 1*512kB 0*1024kB 0*2048kB 0*4096kB = 3536kB
+> [20546.838629] HighMem: 4245*4kB 3604*8kB 2151*16kB 1238*32kB 736*64kB 296*128kB 96*256kB 47*512kB 17*1024kB 2*2048kB 0*4096kB = 274980kB
+> [20546.841678] 44154 total pagecache pages
+> [20546.843160] 604 pages in swap cache
+> [20546.844631] Swap cache stats: add 2932, delete 2328, find 417/545
+> [20546.846145] Free swap  = 1164320kB
+> [20546.847647] Total swap = 1171868kB
+> [20546.882384] 327680 pages RAM
+> [20546.883921] 131072 pages HighMem
+> [20546.885438] 6467 pages reserved
+> [20546.886903] 17653 pages shared
+> [20546.888362] 246912 pages non-shared
+>
+> Again, full dmesg & config on: http://nerdbynature.de/bits/2.6.39-rc4/oom/
+>
 
-This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
-When this boolean is enabled, closing buffer_size_kb file will cause
-tracing to stop and free up the ring buffer memory.
+xfs_inode slab is using about 200M.
+It seems rather huge. Let's Cced XFS guys.
 
-The user space process can then open the buffer_size_kb file to set the
-new buffer size for tracing, enable the boolean through IOCTL and keep
-the file open. Under OOM condition, if the process gets killed, the
-kernel closes the file descriptor for buffer_size_kb. The release
-handler stops the tracing and releases the kernel memory automatically.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- include/linux/ftrace.h |    3 +
- kernel/trace/trace.c   |  135 ++++++++++++++++++++++++++++++++++++------------
- 2 files changed, 105 insertions(+), 33 deletions(-)
+> Thanks,
+> Christian.
+> --
+> BOFH excuse #158:
+>
+> Defunct processes
+>
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ca29e03..30c8a23 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -114,6 +114,9 @@ struct ftrace_func_command {
- 					char *params, int enable);
- };
- 
-+/* enable/disable auto free ring buffer on file close */
-+#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- int ftrace_arch_code_modify_prepare(void);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d38c16a..c676f17 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2817,6 +2817,42 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	return ret;
- }
- 
-+static ssize_t tracing_buffer_resize_atomic(unsigned long size)
-+{
-+	int cpu, ret = 0;
-+
-+	mutex_lock(&trace_types_lock);
-+
-+	tracing_stop();
-+
-+	/* disable all cpu buffers */
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_inc(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_inc(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	if (size != global_trace.entries)
-+		ret = tracing_resize_ring_buffer(size);
-+
-+	/* If check pages failed, return ENOMEM */
-+	if (tracing_disabled)
-+		ret = -ENOMEM;
-+
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_dec(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_dec(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	tracing_start();
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
-+}
-+
- 
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-@@ -3399,11 +3435,37 @@ out_err:
- 	goto out;
- }
- 
-+struct ftrace_entries_info {
-+	struct trace_array	*tr;
-+	int			free_buffer_on_close;
-+};
-+
-+static int
-+tracing_entries_open(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	info->tr = (struct trace_array *)inode->i_private;
-+	info->free_buffer_on_close = 0;
-+
-+	filp->private_data = info;
-+
-+	return 0;
-+}
-+
- static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
--	struct trace_array *tr = filp->private_data;
-+	struct ftrace_entries_info *info = filp->private_data;
-+	struct trace_array *tr = info->tr;
- 	char buf[96];
- 	int r;
- 
-@@ -3425,7 +3487,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- {
- 	unsigned long val;
- 	char buf[64];
--	int ret, cpu;
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3443,46 +3505,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	if (!val)
- 		return -EINVAL;
- 
--	mutex_lock(&trace_types_lock);
-+	/* value is in KB */
-+	val <<= 10;
- 
--	tracing_stop();
-+	ret = tracing_buffer_resize_atomic(val);
-+	if (ret < 0)
-+		return ret;
- 
--	/* disable all cpu buffers */
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_inc(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_inc(&max_tr.data[cpu]->disabled);
--	}
-+	*ppos += cnt;
- 
--	/* value is in KB */
--	val <<= 10;
-+	return cnt;
-+}
- 
--	if (val != global_trace.entries) {
--		ret = tracing_resize_ring_buffer(val);
--		if (ret < 0) {
--			cnt = ret;
--			goto out;
--		}
-+static long
-+tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	int ret = -ENOIOCTLCMD;
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	switch (cmd) {
-+	case TRACE_RINGBUF_FREE_ON_CLOSE: {
-+		info->free_buffer_on_close = !!arg;
-+		ret = 0;
-+		break;
-+	}
- 	}
- 
--	*ppos += cnt;
-+	return ret;
-+}
- 
--	/* If check pages failed, return ENOMEM */
--	if (tracing_disabled)
--		cnt = -ENOMEM;
-- out:
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_dec(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_dec(&max_tr.data[cpu]->disabled);
-+static int
-+tracing_entries_release(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	if (info->free_buffer_on_close) {
-+		/* disable tracing */
-+		tracing_off();
-+		/* resize the ring buffer to 0 */
-+		tracing_buffer_resize_atomic(0);
- 	}
- 
--	tracing_start();
--	mutex_unlock(&trace_types_lock);
-+	kfree(info);
- 
--	return cnt;
-+	return 0;
- }
- 
- static int mark_printk(const char *fmt, ...)
-@@ -3624,9 +3690,12 @@ static const struct file_operations tracing_pipe_fops = {
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_entries_open,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
-+	.unlocked_ioctl	= tracing_entries_ioctl,
-+	.compat_ioctl	= tracing_entries_ioctl,
-+	.release	= tracing_entries_release,
- 	.llseek		= generic_file_llseek,
- };
- 
+
+
 -- 
-1.7.3.1
-
+Kind regards,
+Minchan Kim
