@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab1DVGWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 02:22:22 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:36177 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1DVGWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 02:22:19 -0400
-X-SENDER-IP: [85.230.169.19]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjhLAOsdsU1V5qkTPGdsb2JhbACJGZxCCwEBAQEeGQ0lwmkOhWgEkj8
-X-IronPort-AV: E=Sophos;i="4.64,253,1301868000"; 
-   d="scan'208";a="182007740"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 22 Apr 2011 08:23:57 +0200
-To: riyer@nvidia.com
-Cc: dmitry.torokhov@gmail.com, olof@lixom.net, amartin@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2] Input: tegra-kbc - add ghost key filter.
-Message-ID: <20110422062357.GA16703@polaris.bitmath.org>
-References: <1303423815-22786-1-git-send-email-riyer@nvidia.com>
+	id S1752020Ab1DVGer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 02:34:47 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42013 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746Ab1DVGeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 02:34:46 -0400
+Date: Fri, 22 Apr 2011 08:34:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110422063429.GA16643@elte.hu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303423815-22786-1-git-send-email-riyer@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1303407662-15564-2-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 03:10:15PM -0700, riyer@nvidia.com wrote:
-> From: Rakesh Iyer <riyer@nvidia.com>
-> 
-> Add ghost key filtering support for the Nvidia Tegra matrix keyboard.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
-> v2: Incorporated Henrik Rydberg's suggestions.
-> v1: Do not report keypresses when matrix keyboard encounters key ghosting.
-> 
->  arch/arm/mach-tegra/include/mach/kbc.h |    1 +
->  drivers/input/keyboard/tegra-kbc.c     |   36 ++++++++++++++++++++++++++++++++
->  2 files changed, 37 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-> index 04c7798..bd99744 100644
-> --- a/arch/arm/mach-tegra/include/mach/kbc.h
-> +++ b/arch/arm/mach-tegra/include/mach/kbc.h
-> @@ -58,5 +58,6 @@ struct tegra_kbc_platform_data {
->  
->  	bool wakeup;
->  	bool use_fn_map;
-> +	bool use_ghost_filter;
->  };
->  #endif
-> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-> index 99ce903..56f6668 100644
-> --- a/drivers/input/keyboard/tegra-kbc.c
-> +++ b/drivers/input/keyboard/tegra-kbc.c
-> @@ -72,6 +72,7 @@ struct tegra_kbc {
->  	unsigned int repoll_dly;
->  	unsigned long cp_dly_jiffies;
->  	bool use_fn_map;
-> +	bool use_ghost_filter;
->  	const struct tegra_kbc_platform_data *pdata;
->  	unsigned short keycode[KBC_MAX_KEY * 2];
->  	unsigned short current_keys[KBC_MAX_KPENT];
-> @@ -260,6 +261,8 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
->  	unsigned int num_down = 0;
->  	unsigned long flags;
->  	bool fn_keypress = false;
-> +	bool key_in_same_row = false;
-> +	bool key_in_same_col = false;
->  
->  	spin_lock_irqsave(&kbc->lock, flags);
->  	for (i = 0; i < KBC_MAX_KPENT; i++) {
-> @@ -285,6 +288,34 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
->  	}
->  
->  	/*
-> +	 * Matrix keyboard designs are prone to keyboard ghosting.
-> +	 * Ghosting occurs if there are 3 keys such that -
-> +	 * any 2 of the 3 keys share a row, and any 2 of them share a column.
-> +	 * If so ignore the keypresses for this iteration.
-> +	 */
-> +	if ((kbc->use_ghost_filter) && (num_down >= 3)) {
-> +		for (i = 0; i < num_down; i++) {
-> +			unsigned int j;
-> +			u8 curr_col = scancodes[i] & 0x07;
-> +			u8 curr_row = scancodes[i] >> KBC_ROW_SHIFT;
-> +
-> +			/*
-> +			 * Find 2 keys such that one key is in the same row
-> +			 * and the other is in the same column as the i-th key.
-> +			 */
-> +			for (j = i + 1; j < num_down; j++) {
-> +				u8 col = scancodes[j] & 0x07;
-> +				u8 row = scancodes[j] >> KBC_ROW_SHIFT;
-> +
-> +				if (col == curr_col)
-> +					key_in_same_col = true;
-> +				if (row == curr_row)
-> +					key_in_same_row = true;
-> +			}
-> +		}
-> +	}
-> +
-> +	/*
->  	 * If the platform uses Fn keymaps, translate keys on a Fn keypress.
->  	 * Function keycodes are KBC_MAX_KEY apart from the plain keycodes.
->  	 */
-> @@ -297,6 +328,10 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
->  
->  	spin_unlock_irqrestore(&kbc->lock, flags);
->  
-> +	/* Ignore the keypresses for this iteration? */
-> +	if (key_in_same_col && key_in_same_row)
-> +		return;
-> +
->  	tegra_kbc_report_released_keys(kbc->idev,
->  				       kbc->current_keys, kbc->num_pressed_keys,
->  				       keycodes, num_down);
-> @@ -652,6 +687,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
->  		input_dev->keycodemax *= 2;
->  
->  	kbc->use_fn_map = pdata->use_fn_map;
-> +	kbc->use_ghost_filter = pdata->use_ghost_filter;
->  	keymap_data = pdata->keymap_data ?: &tegra_kbc_default_keymap_data;
->  	matrix_keypad_build_keymap(keymap_data, KBC_ROW_SHIFT,
->  				   input_dev->keycode, input_dev->keybit);
-> -- 
-> 1.7.1
-> 
 
-Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> The offcore_msr perf kernel code was merged into 2.6.39-rc*, but the
+> user space bits were not. This made it impossible to set the extra mask
+> and actually do the OFFCORE profiling
+> 
+> This patch fixes this. It adds a new syntax ':' to raw events to specify
+> additional event masks. I also added support for setting config2, even
+> though that is not needed currently.
+> 
+> [Note: the original version back in time used , -- but that actually
+> conflicted with event lists, so now it's :]
+> 
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@gmail.com>
+> Cc: Lin Ming <ming.m.lin@intel.com>
+> Link: http://lkml.kernel.org/r/1302658203-4239-1-git-send-email-andi@firstfloor.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/Documentation/perf-list.txt |   11 +++++++++++
+>  tools/perf/util/parse-events.c         |   18 +++++++++++++++++-
+>  2 files changed, 28 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+> index 7a527f7..f19f1e5 100644
+> --- a/tools/perf/Documentation/perf-list.txt
+> +++ b/tools/perf/Documentation/perf-list.txt
+> @@ -61,6 +61,17 @@ raw encoding of 0x1A8 can be used:
+>  You should refer to the processor specific documentation for getting these
+>  details. Some of them are referenced in the SEE ALSO section below.
+>  
+> +Some raw events -- like the Intel OFFCORE events -- support additional
+> +parameters. These can be appended after a ':'.
+> +
+> +For example on a multi socket Intel Nehalem:
+> +
+> + perf stat -e r1b7:20ff -a sleep 1
+> +
+> +Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0
+> +that measures any access to DRAM on another socket.  Upto two parameters can
+> +be specified with additional ':'
+
+This needs to be a *lot* more user friendly. Users do not want to type in 
+stupid hexa magic numbers to get profiling. We have moved beyond the oprofile 
+era really.
+
+Unless there's proper generalized and human usable support i'm leaning towards 
+turning off the offcore user-space accessible raw bits for now, and use them 
+only kernel-internally, for the cache events.
 
 Thanks,
-Henrik
+
+	Ingo
