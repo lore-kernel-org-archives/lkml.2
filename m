@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab1DVUas (ORCPT <rfc822;w@1wt.eu>);
+	id S1756634Ab1DVUbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:31:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51121 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756418Ab1DVUas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 16:30:48 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43461 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab1DVUaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:30:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FJq/J8eMLPAKVdZ1IskUbCUOfsKPXQfGzaGyn2slJtp74q//eK8FrqUf/YNYmLAXEs
-         7SaPTF0zRg6Sz5tbLZ4Q==
-MIME-Version: 1.0
-In-Reply-To: <4DB1681B.9060208@fusionio.com>
-References: <20110420125824.GA3507@tiehlicka.suse.cz>
-	<4DAEDBEB.7060904@fusionio.com>
-	<20110420132903.GA13554@tiehlicka.suse.cz>
-	<4DAF18DF.9080205@fusionio.com>
-	<20110421071642.GA3556@tiehlicka.suse.cz>
-	<5F35AAD2-8277-44BD-86B6-B1D7B816071E@kernel.dk>
-	<BANLkTinYv+YW6HVCodsWcCKwMmdZFsXPRA@mail.gmail.com>
-	<20110421185112.GA4796@tiehlicka.suse.cz>
-	<4DB07ECA.5050309@fusionio.com>
-	<20110422070032.GA3575@tiehlicka.suse.cz>
-	<4DB1681B.9060208@fusionio.com>
-Date: Fri, 22 Apr 2011 13:30:42 -0700
-Message-ID: <BANLkTinsqMaKuUjTwByXopXb+4a83nfApw@mail.gmail.com>
-Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer dereference
- at 0000000c IP: cfq_insert_request+0x1d/0x3f5
-From: Hugh Dickins <hughd@google.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
+Date: Fri, 22 Apr 2011 22:30:22 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: arun@sharma-home.net
+Cc: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+Message-ID: <20110422203022.GA20573@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+ <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <20110422165007.GA18401@vps.sharma-home.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422165007.GA18401@vps.sharma-home.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 4:35 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On 2011-04-22 09:00, Michal Hocko wrote:
->> On Thu 21-04-11 21:00:26, Jens Axboe wrote:
->>> On 2011-04-21 20:51, Michal Hocko wrote:
->>>> On Thu 21-04-11 07:38:57, Linus Torvalds wrote:
->>>>> On Thu, Apr 21, 2011 at 12:25 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>>>>
->>>>>>> I am going to bisect, let's see if I can find anything.
->>>>>>
->>>>>> Thanks, that would be great!
->>>>>
->>>>> I'd expect it to be very timing-dependent, and thus could easily be
->>>>> triggered (or hidden) by unrelated changes.
->>>>>
->>>>> Just happening to have a request added to the elevator at _just_ the
->>>>> same moment that another CPU is changing it and getting rid of the
->>>>> data structures for the old one.
->>>>
->>>> And it really looks like a timing issue. I have bisected down to
->>>> e710d7d5a9cab1041b7a3cf9e655b75d92786857. I had to skip[1] some commits
->>>> due to compile errors [2].
->>>> At first it looked quite promising because I was able to boot after I
->>>> reverted that patch but then I have tried to revert it on top of rc4
->>>> (2f666bcf757cb72549f360ef6da02f03620a48b6) and saw the same problem
->>>> again.
->>>>
->>>> So I do not think that bisecting will help here.
->>>
->>> It will be timing dependent. If there's no allocated IO requests when
->>> the switch happens, it'll work.
->>>
->>> But the commit that caused this regression is 5e84ea3a. If you revert
->>> that, it should work fine. Or just apply the patch I sent (or update to
->>> Linus' tree, it's in now) and it'll work as well.
->>
->> Great. I can boot just fine with the current Linus tree
->> (2.6.39-rc4-00149-g91e8549).
->>
->> Thanks a lot!
->
-> Great, with that confirmed from you, we have no pending bugs in this
-> area.
 
-Yes, I booted up last night's git kernel on the PowerPC G5, and
-confirm that CONFIG_IDE=y worked with that, whereas rc4 still had the
-hang (even with CONFIG_SMP=y CONFIG_PREEMPT=y).
+* arun@sharma-home.net <arun@sharma-home.net> wrote:
 
-Hugh
+> On Fri, Apr 22, 2011 at 12:52:11PM +0200, Ingo Molnar wrote:
+> > 
+> > Using the generalized cache events i can run:
+> > 
+> >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
+> > 
+> >  Performance counter stats for './array' (10 runs):
+> > 
+> >          6,719,130 cycles:u                   ( +-   0.662% )
+> >          5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
+> >          1,037,032 l1-dcache-loads:u          ( +-   0.009% )
+> >          1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
+> > 
+> >         0.003802098  seconds time elapsed   ( +-  13.395% )
+> > 
+> > I consider that this is 'bad', because for almost every dcache-load there's a 
+> > dcache-miss - a 99% L1 cache miss rate!
+> 
+> One could argue that all you need is cycles and instructions. [...]
+
+Yes, and note that with instructions events we even have skid-less PEBS 
+profiling so seeing the precise .
+
+> [...] If there is an expensive load, you'll see that the load instruction 
+> takes many cycles and you can infer that it's a cache miss.
+> 
+> Questions app developers typically ask me:
+> 
+> * If I fix all my top 5 L3 misses how much faster will my app go?
+
+This has come up: we could add a 'stalled/idle-cycles' generic event - i.e. 
+cycles spent without performing useful work in the pipelines. (Resource-stall 
+events on Intel CPUs.)
+
+Then you would profile L3 misses (there's a generic event for that), plus 
+stalls, and the answer to your question would be the percentage of hits you get 
+in the stalled-cycles profile, multiplied by the stalled-cycles/cycles ratio.
+
+> * Am I bottlenecked on memory bandwidth?
+
+This would be a variant of the measurement above: say the top 90% of L3 misses 
+profile-correlated with stalled-cycles, relative to total-cycles. If you get 
+'90% of L3 misses cause a 1% wall-time slowdown' then you are not memory 
+bottlenecked. If the answer is '35% slowdown' then you are memory bottlenecked.
+
+> * I have 4 L3 misses every 1000 instructions and 15 branch mispredicts per
+>   1000 instructions. Which one should I focus on?
+
+AFAICS this would be another variant of stalled-cycles measurements: you create 
+a stalled-cycles profile and check whether the top hits are branches or memory 
+loads.
+
+> It's hard to answer some of these without access to all events.
+
+I'm curious, how would you measure these properties - do you have some 
+different events in mind?
+
+> While your approach of having generic events for commonly used counters might 
+> be useful for some use cases, I don't see why exposing all vendor defined 
+> events is harmful.
+> 
+> A clear statement on the last point would be helpful.
+
+Well, the thing is, i think users are helped most if we add useful, highlevel 
+PMU features added and not just an opaque raw event pass-through engine. The 
+problem with lowlevel raw ABIs is that the tool space fragments into a zillion 
+small hacks and there's no good concentration of know-how. I'd like the art of 
+performance measurement to be generalized out, as well as it can be.
+
+We had this discussion in the big perf-counters flamewars 2+ years ago, where 
+one side wanted raw events, while we wanted intelligent kernel-side 
+abstractions and generalizations. I think the abstraction and generalization 
+angle worked out very well in practice - but we are having this discussion 
+again and again :-)
+
+As i stated it in my prior mails, i'm not against raw events as a rare 
+exception channel - that increases utility. I'm against what was attempted 
+here: an extension to raw events as the *primary* channel for DRAM measurement 
+features. That is just sloppy and *reduces* utility.
+
+I'm very simple-minded: when i see reduced utility i become sad :)
+
+Thanks,
+
+	Ingo
