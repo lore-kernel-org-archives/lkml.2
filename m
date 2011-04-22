@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab1DVIKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 04:10:52 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60039 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1DVIKt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 04:10:49 -0400
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@novell.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <4DB12C1E.8050200@cn.fujitsu.com>
-References: <4D9CDACB.9050705@linux.intel.com>
-	 <20110407003041.GD2265@linux.vnet.ibm.com>
-	 <4D9D507F.2040006@cn.fujitsu.com>
-	 <20110407154737.GF2262@linux.vnet.ibm.com>
-	 <20110407162600.GA24227@linux.vnet.ibm.com>
-	 <4D9E6438.5030206@cn.fujitsu.com>
-	 <20110408051359.GA2318@linux.vnet.ibm.com> <4DA2709E.50902@cn.fujitsu.com>
-	 <20110411051241.GB18415@linux.vnet.ibm.com>
-	 <4DA2BC4E.4010000@cn.fujitsu.com>
-	 <20110411210223.GB2226@linux.vnet.ibm.com>
-	 <4DB12C1E.8050200@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 22 Apr 2011 10:10:20 +0200
-Message-ID: <1303459820.2298.4.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753075Ab1DVISu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 04:18:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49085 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752537Ab1DVISq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 04:18:46 -0400
+Date: Fri, 22 Apr 2011 10:18:38 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
+Message-ID: <20110422081838.GA24011@elte.hu>
+References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
+ <1303398203-2918-5-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303398203-2918-5-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 15:19 +0800, Lai Jiangshan wrote:
-> 
-> What is the solution you prefer to?
-> 
-> I insist on the solution which split rcupdate.h into 2 parts,
-> the first part is rcupdate_defs.h which only contains:
-> 1) struct rcu_head
-> 2) MACRO rcu_dereference*
-> 3) MACRO rcu_access_pointer rcu_access_index rcu_assign_pointer RCU_INIT_POINTER
-> 4) rcu_*_lock_held() which is required by 2)
-> 
-> All of these is required by sched.h, it is all about 450 lines of code.
-> 
-> It does not just separate struct rcu_head out only, because rcu_dereference*()
-> and APIs in rculist.h are required by in sched.h or headers included by sched.h.
 
-The only usage of rculist.h in the whole of sched.h is that _one_
-list_entry_rcu, of which we already have a macro user, so why not make
-that one a macro too and safe ourselves a ton of grief?
+* Don Zickus <dzickus@redhat.com> wrote:
 
-You're just making stuff harder than it needs to be.
+> From: Cyrill Gorcunov <gorcunov@gmail.com>
+> 
+> Due to restriction and specifics of Netburst PMU we need
+> a separated event for NMI watchdog. Note that on all other
+> than P4 PMU cpus this event is a simple alias for PERF_COUNT_HW_CPU_CYCLES.
+> 
+> This event is only used by x86 for now so no other archs involved.
+
+hm, there's no explanation exactly why this is needed and what the alternatives 
+are.
+
+This sentence:
+
+> +  /* we use that named non-sleeping calls */
+
+does not parse for me.
+
+Thanks,
+
+	Ingo
