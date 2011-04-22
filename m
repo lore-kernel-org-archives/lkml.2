@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab1DVBKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 21:10:40 -0400
-Received: from core.signal11.us ([64.251.29.136]:56952 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab1DVBKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 21:10:38 -0400
-Message-ID: <4DB0D58E.4030508@signal11.us>
-Date: Thu, 21 Apr 2011 21:10:38 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1755735Ab1DVBMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 21:12:33 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27962 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754041Ab1DVBMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 21:12:32 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
+References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> 
+Subject: RE: Question: GPIO driver how to get irq_base
+Date: Fri, 22 Apr 2011 10:12:29 +0900
+Message-ID: <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com>
 MIME-Version: 1.0
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, Steve Sakoman <sakoman@gmail.com>,
-        Steve Calfee <stevecalfee@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Regression?] Removed regulator support in ehci-omap
-References: <20110411093214.GA18215@rainbow> <4DA3350E.2060400@gmail.com> <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com> <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com> <20110412040420.GB25239@rainbow> <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com>
-In-Reply-To: <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF99B7D0629AC0D232F4FA9B1"
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Apr 21 21:10:37 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4db0d58d23364041079757
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+In-Reply-To: 
+Thread-Index: AcwAL++Wzb/0BazWToqDvM5Zkn5jZQAUXwsgAAHzuLA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF99B7D0629AC0D232F4FA9B1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Grant, Lars-Peter Clausen,
 
-On 04/12/2011 12:20 PM, Keshava Munegowda wrote:
->> Ah, so EHCI/OHCI common code was moved into drivers/mfd... Good.
->> But seems regulators support was lost somewhere during transition - th=
-e
->> only mentioning about regulators in omap-usb-host.c is "#include" :
->>
->> mad@macmini:~/kernel-hack/linux-2.6(master)$ grep -i regulator
-> drivers/mfd/omap-usb-host.c
-> Thanks ! I will add some time next week!
+- Executing the following command,
+  cd /sys/class/gpio/gpio244
+  echo "falling" > edge
 
-I have confirmed this on my BeagleBoard-xM. 2.6.38 works, but the
-2.6.39-rc4+ head from yesterday did not. It seems that the regulator
-does not turn the power on for the USB hub which the ethernet is
-attached to.
+- I can see the following error message.
+  IRQ handler type mismatch for IRQ 18
+  current handler: spi_topcliff_pch
+  Pid: 3269, comm: bash Not tainted 2.6.38.3.upstream_check+ #23
+  Call Trace:
+   [<c0470682>] ? __setup_irq+0x257/0x2a9
+   [<c054a45f>] ? gpio_sysfs_irq+0x0/0x11
+   [<c047077c>] ? request_threaded_irq+0xa8/0xce
+   [<c04707fb>] ? request_any_context_irq+0x59/0x64
+   [<c054a45f>] ? gpio_sysfs_irq+0x0/0x11
+   [<c054a8f5>] ? gpio_setup_irq.clone.4+0x1fa/0x292
+   [<c054ae2c>] ? gpio_edge_store+0xa3/0xd2
+   [<c054ad89>] ? gpio_edge_store+0x0/0xd2
+   [<c05bf270>] ? dev_attr_store+0x1b/0x23
+   [<c04e90a5>] ? sysfs_write_file+0xae/0xe7
+   [<c04e8ff7>] ? sysfs_write_file+0x0/0xe7
+   [<c04a71a1>] ? vfs_write+0x82/0xd9
+   [<c04a7366>] ? sys_write+0x3b/0x5d
+   [<c0403018>] ? sysenter_do_call+0x12/0x28
 
-I connected this issue to bug 33092 in bugzilla[1].
+> Using the above, I can see "irq_base = 18d".
+- According to the following "/proc/interrupts" information,
+  I suspect pch_gpio can't use IRQ18.
 
-Alan.
+[morinaga@localhost ~]$ cat /proc/interrupts 
+           CPU0       CPU1       
+  0:      30881          0   IO-APIC-edge      timer
+  1:          2          0   IO-APIC-edge      i8042
+  4:          2          0   IO-APIC-edge    
+  8:        128          0   IO-APIC-edge      rtc0
+  9:          0          0   IO-APIC-fasteoi   acpi
+ 12:          4          0   IO-APIC-edge      i8042
+ 16:        385          0   IO-APIC-fasteoi   intel-eg20t-pch, ehci_hcd:usb2, ohci_hcd:usb6, ohci_hcd:usb7, ohci_hcd:usb8,
+hda_intel
+ 17:          0          0   IO-APIC-fasteoi   eth1
+ 18:          0          0   IO-APIC-fasteoi   spi_topcliff_pch, i2c_eg20t, pch-dma, mmc0, mmc1
+ 19:       3599          0   IO-APIC-fasteoi   ehci_hcd:usb1, ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5, pch-dma,
+mga@pci:0000:07:00.0
+ 40:      10298          0   PCI-MSI-edge      ahci
+ 42:         98          0   PCI-MSI-edge      eth0
+NMI:          0          0   Non-maskable interrupts
+LOC:      76268      72502   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+PMI:          0          0   Performance monitoring interrupts
+IWI:          0          0   IRQ work interrupts
+RES:       1383       1842   Rescheduling interrupts
+CAL:         67        108   Function call interrupts
+TLB:        224        292   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:          1          1   Machine check polls
+ERR:          0
+MIS:          0
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=3D33092
+Let me know your opinion.
 
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
---------------enigF99B7D0629AC0D232F4FA9B1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEcBAEBAgAGBQJNsNWOAAoJEFZEOVT5235i0EQH/0qbMsJAw7TEM0g+QbnZhfHd
-jWykJ/rreihk8HiERHbygawgmy+z+j6Uiw9QuWlclXQDEinZvv76dUQFGD2Zh+0J
-Puv7/BEj7VNvjwBwZvOaDXZuQUjv2SB7bScWPDnMqogaXADd2541pTQpdbqSP3zR
-w3C6ULq5OJI89Vc7l90FJpcJBm+4xh5MRyUB9IsWxz2iekYpmKlfnesn6OzOk2v2
-AoBPCS9KhTzCmhLLgUliyovpcHujIUA6fJ7g/Tjzs18VPFjjVQl6Ul1111AjDaUJ
-y/6COTIE47q6vVULjwVHl5vSSUrXo32K+MsX+ku5JqeUFsM3xkAngIms0CtsjR4=
-=LZoa
------END PGP SIGNATURE-----
-
---------------enigF99B7D0629AC0D232F4FA9B1--
-
+> -----Original Message-----
+> From: Tomoya MORINAGA [mailto:tomoya-linux@dsn.okisemi.com] 
+> Sent: Friday, April 22, 2011 9:33 AM
+> To: 'Grant Likely'; 'Lars-Peter Clausen'
+> Cc: 'linux-kernel@vger.kernel.org'; 'toshiharu-linux@dsn.okisemi.com'
+> Subject: RE: Question: GPIO driver how to get irq_base
+> 
+> Hi Grant, Lars-Peter Clausen
+> 
+> Thank you for your information.
+> 
+> It seems nothing driver uses irq_alloc_descs.
+> Thus, let me clarify my using.
+> 
+> int irq_base = irq_alloc_descs(-1, 0, 12, GFP_KERNEL) 
+> (Intel-ET20T-PCH has GPIO~GPIO11)
+> 
+> Using the above, I can see "irq_base = 18d".
+> Is the above TRUE ?
+> 
+> Thanks,
+> -----------------------------------------
+> Tomoya MORINAGA
+> OKI SEMICONDUCTOR CO., LTD.
+> 
 
