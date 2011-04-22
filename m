@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1DVVBZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:01:25 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33299
+	id S1756521Ab1DVVBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:01:23 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33275
 	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754527Ab1DVVBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753659Ab1DVVBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Apr 2011 17:01:19 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,177 +14,169 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 06/18] Staging: hv: Get rid of the forward declaration of blkvsc_remove()
-Date: Fri, 22 Apr 2011 14:13:27 -0700
-Message-Id: <1303506819-1913-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 01/18] Staging: hv: Get rid of the forward declaration of blkvsc_init_rw()
+Date: Fri, 22 Apr 2011 14:13:22 -0700
+Message-Id: <1303506819-1913-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1303506819-1913-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1303506780-1872-1-git-send-email-kys@microsoft.com>
 References: <1303506780-1872-1-git-send-email-kys@microsoft.com>
- <1303506819-1913-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_remove() by moving the code around.
+Get rid of the forward declaration of blkvsc_init_rw() by moving the
+code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |  130 +++++++++++++++++++-------------------
- 1 files changed, 65 insertions(+), 65 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |  117 ++++++++++++++++++++-------------------
+ 1 files changed, 59 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index cab317c..0669b84 100644
+index c0d38a8..f4f6545 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -572,9 +572,73 @@ out:
- 	return ret;
+@@ -348,6 +348,65 @@ static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
+ 	return 0;
  }
  
 +
-+/*
-+ * blkvsc_remove() - Callback when our device is removed
-+ */
-+static int blkvsc_remove(struct device *device)
++static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
 +{
-+	struct hv_driver *drv =
-+				drv_to_hv_drv(device->driver);
-+	struct storvsc_driver_object *storvsc_drv_obj =
-+				drv->priv;
-+	struct hv_device *device_obj = device_to_hv_device(device);
-+	struct block_device_context *blkdev = dev_get_drvdata(device);
-+	unsigned long flags;
-+	int ret;
++	/* ASSERT(blkvsc_req->req); */
++	/* ASSERT(blkvsc_req->sector_count <=
++	   (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
 +
-+	DPRINT_DBG(BLKVSC_DRV, "blkvsc_remove()\n");
++	blkvsc_req->cmd_len = 16;
 +
-+	if (!storvsc_drv_obj->base.dev_rm)
-+		return -1;
++	if (blkvsc_req->sector_start > 0xffffffff) {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_16;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_16;
++		}
 +
-+	/*
-+	 * Call to the vsc driver to let it know that the device is being
-+	 * removed
-+	 */
-+	ret = storvsc_drv_obj->base.dev_rm(device_obj);
-+	if (ret != 0) {
-+		/* TODO: */
-+		DPRINT_ERR(BLKVSC_DRV,
-+			   "unable to remove blkvsc device (ret %d)", ret);
++		blkvsc_req->cmnd[1] |=
++			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++
++		*(unsigned long long *)&blkvsc_req->cmnd[2] =
++				cpu_to_be64(blkvsc_req->sector_start);
++		*(unsigned int *)&blkvsc_req->cmnd[10] =
++				cpu_to_be32(blkvsc_req->sector_count);
++	} else if ((blkvsc_req->sector_count > 0xff) ||
++		   (blkvsc_req->sector_start > 0x1fffff)) {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_10;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_10;
++		}
++
++		blkvsc_req->cmnd[1] |=
++			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++
++		*(unsigned int *)&blkvsc_req->cmnd[2] =
++				cpu_to_be32(blkvsc_req->sector_start);
++		*(unsigned short *)&blkvsc_req->cmnd[7] =
++				cpu_to_be16(blkvsc_req->sector_count);
++	} else {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_6;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_6;
++		}
++
++		*(unsigned int *)&blkvsc_req->cmnd[1] =
++				cpu_to_be32(blkvsc_req->sector_start) >> 8;
++		blkvsc_req->cmnd[1] &= 0x1f;
++		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
 +	}
-+
-+	/* Get to a known state */
-+	spin_lock_irqsave(&blkdev->lock, flags);
-+
-+	blkdev->shutting_down = 1;
-+
-+	blk_stop_queue(blkdev->gd->queue);
-+
-+	spin_unlock_irqrestore(&blkdev->lock, flags);
-+
-+	while (blkdev->num_outstanding_reqs) {
-+		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
-+			    blkdev->num_outstanding_reqs);
-+		udelay(100);
-+	}
-+
-+	blkvsc_do_flush(blkdev);
-+
-+	spin_lock_irqsave(&blkdev->lock, flags);
-+
-+	blkvsc_cancel_pending_reqs(blkdev);
-+
-+	spin_unlock_irqrestore(&blkdev->lock, flags);
-+
-+	blk_cleanup_queue(blkdev->gd->queue);
-+
-+	del_gendisk(blkdev->gd);
-+
-+	kmem_cache_destroy(blkdev->request_pool);
-+
-+	kfree(blkdev);
-+
-+	return ret;
 +}
++
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
--static int blkvsc_remove(struct device *device);
- static void blkvsc_shutdown(struct device *device);
- 
- static int blkvsc_release(struct gendisk *disk, fmode_t mode);
-@@ -1111,70 +1175,6 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
+ static int blkvsc_remove(struct device *device);
+@@ -361,7 +420,6 @@ static void blkvsc_request(struct request_queue *queue);
+ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 			     struct request *req);
+-static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req);
+ static void blkvsc_cmd_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
+@@ -991,63 +1049,6 @@ static int blkvsc_remove(struct device *device)
+ 	return ret;
  }
  
- /*
-- * blkvsc_remove() - Callback when our device is removed
-- */
--static int blkvsc_remove(struct device *device)
+-static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
 -{
--	struct hv_driver *drv =
--				drv_to_hv_drv(device->driver);
--	struct storvsc_driver_object *storvsc_drv_obj =
--				drv->priv;
--	struct hv_device *device_obj = device_to_hv_device(device);
--	struct block_device_context *blkdev = dev_get_drvdata(device);
--	unsigned long flags;
--	int ret;
+-	/* ASSERT(blkvsc_req->req); */
+-	/* ASSERT(blkvsc_req->sector_count <= (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
 -
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_remove()\n");
+-	blkvsc_req->cmd_len = 16;
 -
--	if (!storvsc_drv_obj->base.dev_rm)
--		return -1;
+-	if (blkvsc_req->sector_start > 0xffffffff) {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_16;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_16;
+-		}
 -
--	/*
--	 * Call to the vsc driver to let it know that the device is being
--	 * removed
--	 */
--	ret = storvsc_drv_obj->base.dev_rm(device_obj);
--	if (ret != 0) {
--		/* TODO: */
--		DPRINT_ERR(BLKVSC_DRV,
--			   "unable to remove blkvsc device (ret %d)", ret);
+-		blkvsc_req->cmnd[1] |=
+-			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-
+-		*(unsigned long long *)&blkvsc_req->cmnd[2] =
+-				cpu_to_be64(blkvsc_req->sector_start);
+-		*(unsigned int *)&blkvsc_req->cmnd[10] =
+-				cpu_to_be32(blkvsc_req->sector_count);
+-	} else if ((blkvsc_req->sector_count > 0xff) ||
+-		   (blkvsc_req->sector_start > 0x1fffff)) {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_10;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_10;
+-		}
+-
+-		blkvsc_req->cmnd[1] |=
+-			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-
+-		*(unsigned int *)&blkvsc_req->cmnd[2] =
+-				cpu_to_be32(blkvsc_req->sector_start);
+-		*(unsigned short *)&blkvsc_req->cmnd[7] =
+-				cpu_to_be16(blkvsc_req->sector_count);
+-	} else {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_6;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_6;
+-		}
+-
+-		*(unsigned int *)&blkvsc_req->cmnd[1] =
+-				cpu_to_be32(blkvsc_req->sector_start) >> 8;
+-		blkvsc_req->cmnd[1] &= 0x1f;
+-		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
 -	}
--
--	/* Get to a known state */
--	spin_lock_irqsave(&blkdev->lock, flags);
--
--	blkdev->shutting_down = 1;
--
--	blk_stop_queue(blkdev->gd->queue);
--
--	spin_unlock_irqrestore(&blkdev->lock, flags);
--
--	while (blkdev->num_outstanding_reqs) {
--		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
--			    blkdev->num_outstanding_reqs);
--		udelay(100);
--	}
--
--	blkvsc_do_flush(blkdev);
--
--	spin_lock_irqsave(&blkdev->lock, flags);
--
--	blkvsc_cancel_pending_reqs(blkdev);
--
--	spin_unlock_irqrestore(&blkdev->lock, flags);
--
--	blk_cleanup_queue(blkdev->gd->queue);
--
--	del_gendisk(blkdev->gd);
--
--	kmem_cache_destroy(blkdev->request_pool);
--
--	kfree(blkdev);
--
--	return ret;
 -}
 -
--/*
+-
+ /*
   * We break the request into 1 or more blkvsc_requests and submit
   * them.  If we can't submit them all, we put them on the
-  * pending_list. The blkvsc_request() will work on the pending_list.
 -- 
 1.7.4.1
 
