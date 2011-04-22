@@ -1,270 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1DVHTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 03:19:20 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:41914 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1DVHTR convert rfc822-to-8bit (ORCPT
+	id S1752233Ab1DVHU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 03:20:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53050 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab1DVHUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 03:19:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XvHABtW9y4OUxrmyTxHp1fj+gStSpe55elvrez7pJRD7vxfPzxIj/Tu+wXuYvwnqsX
-         AGG2HArk9yTX5spElP6uxts7cWSZXEJvo46PZkRwB6ZHiLx4Lx4jx8Cg8wN1XfGVXEgf
-         fxxmvCv/gLfyCm0Hq/XLS9MNM8FX2MRk+sZ6I=
+	Fri, 22 Apr 2011 03:20:25 -0400
+From: Martin <marogge@onlinehome.de>
+To: "vger.kernel.org " <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: Re: Linux 2.6.38.4
+Date: Fri, 22 Apr 2011 09:20:20 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38.3-ck3; KDE/4.5.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <201104180341.p3I3fnxc000638@www262.sakura.ne.jp>
-References: <20110417094505.865828233@chello.nl>
-	<201104180341.p3I3fnxc000638@www262.sakura.ne.jp>
-Date: Fri, 22 Apr 2011 15:19:15 +0800
-Message-ID: <BANLkTikYwWe6E6mb3PLE3L7a3VHWdtEvfQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/7] lockdep: Support recurise-read locks
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: a.p.zijlstra@chello.nl, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104220920.20842.marogge@onlinehome.de>
+X-Provags-ID: V02:K0:6DOxZlhKtmXusMMMRzVBZPQ/MpEzZDDmRIinaF9XFuM
+ AOjwmR6N+CBshc9Y7PoLz4w+gJ0BttakvFhgaGtc58/C2h8Nuk
+ 78Dg4DSTp2luDhMlWkn3cyldoh5aXU4rcF+RSD5IeHzVsh+nYh
+ 3TIBDgySwDfv5c5hc4Uz4vA3zQot8TX8dLunLojc2Q/YqKg4m6
+ 9jtSI6EblLXG4K+mlf/xw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/18 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>:
-> (Continued from https://lkml.org/lkml/2011/3/31/240 "Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().")
-> Test results for above program:
->
-> "cat /proc/locktest1 /proc/locktest2" => Detect fail
-> "cat /proc/locktest2 /proc/locktest1" => Detect fail
-> "cat /proc/locktest3 /proc/locktest4" => Detect fail
-> "cat /proc/locktest4 /proc/locktest3" => Detect fail
->
-> If I change from rwlock_acquire_read() to spin_acquire() in read_seqbegin2()
-> and from rwlock_release() to spin_release() in read_seqretry2():
->
-> "cat /proc/locktest1 /proc/locktest2" => Detect fail
-> "cat /proc/locktest2 /proc/locktest1" => Detect OK (shown below)
-> "cat /proc/locktest3 /proc/locktest4" => Detect fail
-> "cat /proc/locktest4 /proc/locktest3" => Detect OK (shown below)
->
-> Guessing from my testcases, read_seqbegin2() will fail to detect the problem
-> unless we use spin_acquire()/spin_release() rather than
-> rwlock_acquire_read()/rwlock_release().
->
-> Also, something is still wrong because lockdep fails to detect the problem
-> for "cat /proc/locktest1 /proc/locktest2" and
-> "cat /proc/locktest3 /proc/locktest4" cases.
+Greg KH wrote:
 
-It fails because we never add the recursive read to prev->after evev if
-it passed the validation.
+> I'm announcing the release of the 2.6.38.4 kernel.
 
-check_prev_add()::1671
-	/*
-	 * For recursive read-locks we do all the dependency checks,
-	 * but we dont store read-triggered dependencies (only
-	 * write-triggered dependencies). This ensures that only the
-	 * write-side dependencies matter, and that if for example a
-	 * write-lock never takes any other locks, then the reads are
-	 * equivalent to a NOP.
-	 */
-	if (next->read == 2 || prev->read == 2)
-		return 1;
+not a biggie, just to let you know, the incremental patch didn't hit the usual 
+directory. It is currently sitting in /pub/linux/kernel/v2.6/ on kernel.org.
 
-So we have no chain after opening locktest1 or locktest3.
-
-But adding recursive read to prev->after will introduce spurious
-lockdep warnings.
-
-Thanks,
-Yong
-
->
-> [   83.551455]
-> [   83.551457] =======================================================
-> [   83.555293] [ INFO: possible circular locking dependency detected ]
-> [   83.555293] 2.6.39-rc3-00228-gd733ed6-dirty #259
-> [   83.555293] -------------------------------------------------------
-> [   83.555293] cat/2768 is trying to acquire lock:
-> [   83.555293]  (brlock1_lock_dep_map){++++..}, at: [<e08150b0>] brlock1_local_lock+0x0/0x90 [locktest]
-> [   83.555293]
-> [   83.555293] but task is already holding lock:
-> [   83.555293]  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e08154dd>] locktest_open1+0xd/0x40 [locktest]
-> [   83.555293]
-> [   83.555293] which lock already depends on the new lock.
-> [   83.555293]
-> [   83.555293]
-> [   83.555293] the existing dependency chain (in reverse order) is:
-> [   83.555293]
-> [   83.555293] -> #1 (&(&(&seqlock1)->lock)->rlock){+.+...}:
-> [   83.635281]        [<c106c499>] check_prevs_add+0xb9/0x110
-> [   83.635281]        [<c106c840>] validate_chain+0x320/0x5a0
-> [   83.635281]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   83.635281]        [<c107001a>] lock_acquire+0x7a/0xa0
-> [   83.635281]        [<e0815555>] locktest_open2+0x45/0x70 [locktest]
-> [   83.635281]        [<c1118355>] proc_reg_open+0x65/0xe0
-> [   83.635281]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   83.635281]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   83.635281]        [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   83.635281]        [<c10dc846>] path_openat+0xa6/0x340
-> [   83.635281]        [<c10dcb10>] do_filp_open+0x30/0x80
-> [   83.635281]        [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   83.635281]        [<c10cf069>] sys_open+0x29/0x40
-> [   83.635281]        [<c13b43c1>] syscall_call+0x7/0xb
-> [   83.635281]
-> [   83.635281] -> #0 (brlock1_lock_dep_map){++++..}:
-> [   83.635281]        [<c106c34c>] check_prev_add+0x78c/0x820
-> [   83.635281]        [<c106c499>] check_prevs_add+0xb9/0x110
-> [   83.635281]        [<c106c840>] validate_chain+0x320/0x5a0
-> [   83.635281]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   83.635281]        [<c107001a>] lock_acquire+0x7a/0xa0
-> [   83.635281]        [<e08150e3>] brlock1_local_lock+0x33/0x90 [locktest]
-> [   83.635281]        [<e08154e8>] locktest_open1+0x18/0x40 [locktest]
-> [   83.635281]        [<c1118355>] proc_reg_open+0x65/0xe0
-> [   83.635281]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   83.635281]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   83.635281]        [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   83.635281]        [<c10dc846>] path_openat+0xa6/0x340
-> [   83.635281]        [<c10dcb10>] do_filp_open+0x30/0x80
-> [   83.635281]        [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   83.635281]        [<c10cf069>] sys_open+0x29/0x40
-> [   83.635281]        [<c13b43c1>] syscall_call+0x7/0xb
-> [   83.635281]
-> [   83.635281] other info that might help us debug this:
-> [   83.635281]
-> [   83.635281] 1 lock held by cat/2768:
-> [   83.635281]  #0:  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e08154dd>] locktest_open1+0xd/0x40 [locktest]
-> [   83.635281]
-> [   83.635281] stack backtrace:
-> [   83.635281] Pid: 2768, comm: cat Not tainted 2.6.39-rc3-00228-gd733ed6-dirty #259
-> [   83.635281] Call Trace:
-> [   83.635281]  [<c106ade6>] print_circular_bug+0xc6/0xd0
-> [   83.635281]  [<c106c34c>] check_prev_add+0x78c/0x820
-> [   83.635281]  [<c1005d3b>] ? print_context_stack+0x3b/0xa0
-> [   83.635281]  [<c1004fa1>] ? dump_trace+0x81/0xe0
-> [   83.635281]  [<c106c499>] check_prevs_add+0xb9/0x110
-> [   83.635281]  [<c106c840>] validate_chain+0x320/0x5a0
-> [   83.635281]  [<c106df7c>] ? mark_lock+0x21c/0x3c0
-> [   83.635281]  [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   83.635281]  [<c107001a>] lock_acquire+0x7a/0xa0
-> [   83.635281]  [<e08150b0>] ? brlock1_lock_init+0xb0/0xb0 [locktest]
-> [   83.635281]  [<e08154d0>] ? brlock1_global_unlock+0xa0/0xa0 [locktest]
-> [   83.635281]  [<e08150e3>] brlock1_local_lock+0x33/0x90 [locktest]
-> [   83.635281]  [<e08150b0>] ? brlock1_lock_init+0xb0/0xb0 [locktest]
-> [   83.635281]  [<e08154e8>] locktest_open1+0x18/0x40 [locktest]
-> [   83.635281]  [<c1118355>] proc_reg_open+0x65/0xe0
-> [   83.635281]  [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   83.635281]  [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   83.635281]  [<c11182f0>] ? proc_reg_mmap+0x80/0x80
-> [   83.635281]  [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   83.635281]  [<c10db00c>] ? path_init+0x2cc/0x3c0
-> [   83.635281]  [<c10dc846>] path_openat+0xa6/0x340
-> [   83.635281]  [<c106d80b>] ? trace_hardirqs_off+0xb/0x10
-> [   83.635281]  [<c10dcb10>] do_filp_open+0x30/0x80
-> [   83.635281]  [<c13b3a5d>] ? _raw_spin_unlock+0x1d/0x20
-> [   83.635281]  [<c10e9f11>] ? alloc_fd+0xe1/0x1a0
-> [   83.635281]  [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   83.635281]  [<c10cfc8b>] ? vfs_write+0x10b/0x130
-> [   83.635281]  [<c10cf069>] sys_open+0x29/0x40
-> [   83.635281]  [<c13b43c1>] syscall_call+0x7/0xb
->
->
->
-> [   82.758647]
-> [   82.758649] =======================================================
-> [   82.762520] [ INFO: possible circular locking dependency detected ]
-> [   82.762520] 2.6.39-rc3-00228-gd733ed6-dirty #259
-> [   82.762520] -------------------------------------------------------
-> [   82.762520] cat/2768 is trying to acquire lock:
-> [   82.762520]  (rwlock1){++++..}, at: [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
-> [   82.762520]
-> [   82.762520] but task is already holding lock:
-> [   82.762520]  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e081558d>] locktest_open3+0xd/0x40 [locktest]
-> [   82.762520]
-> [   82.762520] which lock already depends on the new lock.
-> [   82.762520]
-> [   82.762520]
-> [   82.762520] the existing dependency chain (in reverse order) is:
-> [   82.762520]
-> [   82.762520] -> #1 (&(&(&seqlock1)->lock)->rlock){+.+...}:
-> [   82.841627]        [<c106c499>] check_prevs_add+0xb9/0x110
-> [   82.841627]        [<c106c840>] validate_chain+0x320/0x5a0
-> [   82.841627]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   82.841627]        [<c107001a>] lock_acquire+0x7a/0xa0
-> [   82.841627]        [<e081560a>] locktest_open4+0x4a/0x90 [locktest]
-> [   82.841627]        [<c1118355>] proc_reg_open+0x65/0xe0
-> [   82.841627]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   82.841627]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   82.841627]        [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   82.841627]        [<c10dc846>] path_openat+0xa6/0x340
-> [   82.841627]        [<c10dcb10>] do_filp_open+0x30/0x80
-> [   82.841627]        [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   82.841627]        [<c10cf069>] sys_open+0x29/0x40
-> [   82.841627]        [<c13b43c1>] syscall_call+0x7/0xb
-> [   82.841627]
-> [   82.841627] -> #0 (rwlock1){++++..}:
-> [   82.841627]        [<c106c34c>] check_prev_add+0x78c/0x820
-> [   82.841627]        [<c106c499>] check_prevs_add+0xb9/0x110
-> [   82.841627]        [<c106c840>] validate_chain+0x320/0x5a0
-> [   82.841627]        [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   82.841627]        [<c107001a>] lock_acquire+0x7a/0xa0
-> [   82.841627]        [<c13b3ba9>] _raw_read_lock+0x39/0x70
-> [   82.841627]        [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
-> [   82.841627]        [<c1118355>] proc_reg_open+0x65/0xe0
-> [   82.841627]        [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   82.841627]        [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   82.841627]        [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   82.841627]        [<c10dc846>] path_openat+0xa6/0x340
-> [   82.841627]        [<c10dcb10>] do_filp_open+0x30/0x80
-> [   82.841627]        [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   82.841627]        [<c10cf069>] sys_open+0x29/0x40
-> [   82.841627]        [<c13b43c1>] syscall_call+0x7/0xb
-> [   82.841627]
-> [   82.841627] other info that might help us debug this:
-> [   82.841627]
-> [   82.841627] 1 lock held by cat/2768:
-> [   82.841627]  #0:  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e081558d>] locktest_open3+0xd/0x40 [locktest]
-> [   82.841627]
-> [   82.841627] stack backtrace:
-> [   82.841627] Pid: 2768, comm: cat Not tainted 2.6.39-rc3-00228-gd733ed6-dirty #259
-> [   82.841627] Call Trace:
-> [   82.841627]  [<c106ade6>] print_circular_bug+0xc6/0xd0
-> [   82.841627]  [<c106c34c>] check_prev_add+0x78c/0x820
-> [   82.841627]  [<c1005d3b>] ? print_context_stack+0x3b/0xa0
-> [   82.841627]  [<c1004fa1>] ? dump_trace+0x81/0xe0
-> [   82.841627]  [<c106c499>] check_prevs_add+0xb9/0x110
-> [   82.841627]  [<c106c840>] validate_chain+0x320/0x5a0
-> [   82.841627]  [<c106df7c>] ? mark_lock+0x21c/0x3c0
-> [   82.841627]  [<c106e927>] __lock_acquire+0x2a7/0x8f0
-> [   82.841627]  [<c107001a>] lock_acquire+0x7a/0xa0
-> [   82.841627]  [<e081559d>] ? locktest_open3+0x1d/0x40 [locktest]
-> [   82.841627]  [<e0815580>] ? locktest_open2+0x70/0x70 [locktest]
-> [   82.841627]  [<c13b3ba9>] _raw_read_lock+0x39/0x70
-> [   82.841627]  [<e081559d>] ? locktest_open3+0x1d/0x40 [locktest]
-> [   82.841627]  [<e081559d>] locktest_open3+0x1d/0x40 [locktest]
-> [   82.841627]  [<c1118355>] proc_reg_open+0x65/0xe0
-> [   82.841627]  [<c10ce78f>] __dentry_open+0x16f/0x2e0
-> [   82.841627]  [<c10ce9fe>] nameidata_to_filp+0x5e/0x70
-> [   82.841627]  [<c11182f0>] ? proc_reg_mmap+0x80/0x80
-> [   82.841627]  [<c10dc1d8>] do_last+0xf8/0x6c0
-> [   82.841627]  [<c10db00c>] ? path_init+0x2cc/0x3c0
-> [   82.841627]  [<c10dc846>] path_openat+0xa6/0x340
-> [   82.841627]  [<c106d80b>] ? trace_hardirqs_off+0xb/0x10
-> [   82.841627]  [<c10dcb10>] do_filp_open+0x30/0x80
-> [   82.841627]  [<c13b3a5d>] ? _raw_spin_unlock+0x1d/0x20
-> [   82.841627]  [<c10e9f11>] ? alloc_fd+0xe1/0x1a0
-> [   82.841627]  [<c10cefa1>] do_sys_open+0x101/0x1a0
-> [   82.841627]  [<c10cfc8b>] ? vfs_write+0x10b/0x130
-> [   82.841627]  [<c10cf069>] sys_open+0x29/0x40
-> [   82.841627]  [<c13b43c1>] syscall_call+0x7/0xb
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-
--- 
-Only stand for myself
+Martin
