@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab1DVGer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 02:34:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42013 "EHLO mx3.mail.elte.hu"
+	id S1752115Ab1DVHAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 03:00:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48377 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746Ab1DVGeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 02:34:46 -0400
-Date: Fri, 22 Apr 2011 08:34:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110422063429.GA16643@elte.hu>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org>
- <1303407662-15564-2-git-send-email-acme@infradead.org>
+	id S1751829Ab1DVHAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 03:00:35 -0400
+Date: Fri, 22 Apr 2011 09:00:33 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer dereference
+ at 0000000c IP: cfq_insert_request+0x1d/0x3f5
+Message-ID: <20110422070032.GA3575@tiehlicka.suse.cz>
+References: <20110420125824.GA3507@tiehlicka.suse.cz>
+ <4DAEDBEB.7060904@fusionio.com>
+ <20110420132903.GA13554@tiehlicka.suse.cz>
+ <4DAF18DF.9080205@fusionio.com>
+ <20110421071642.GA3556@tiehlicka.suse.cz>
+ <5F35AAD2-8277-44BD-86B6-B1D7B816071E@kernel.dk>
+ <BANLkTinYv+YW6HVCodsWcCKwMmdZFsXPRA@mail.gmail.com>
+ <20110421185112.GA4796@tiehlicka.suse.cz>
+ <4DB07ECA.5050309@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303407662-15564-2-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DB07ECA.5050309@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Thu 21-04-11 21:00:26, Jens Axboe wrote:
+> On 2011-04-21 20:51, Michal Hocko wrote:
+> > On Thu 21-04-11 07:38:57, Linus Torvalds wrote:
+> >> On Thu, Apr 21, 2011 at 12:25 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> >>>>
+> >>>> I am going to bisect, let's see if I can find anything.
+> >>>
+> >>> Thanks, that would be great!
+> >>
+> >> I'd expect it to be very timing-dependent, and thus could easily be
+> >> triggered (or hidden) by unrelated changes.
+> >>
+> >> Just happening to have a request added to the elevator at _just_ the
+> >> same moment that another CPU is changing it and getting rid of the
+> >> data structures for the old one.
+> > 
+> > And it really looks like a timing issue. I have bisected down to
+> > e710d7d5a9cab1041b7a3cf9e655b75d92786857. I had to skip[1] some commits
+> > due to compile errors [2].
+> > At first it looked quite promising because I was able to boot after I
+> > reverted that patch but then I have tried to revert it on top of rc4
+> > (2f666bcf757cb72549f360ef6da02f03620a48b6) and saw the same problem
+> > again.
+> > 
+> > So I do not think that bisecting will help here.
 > 
-> The offcore_msr perf kernel code was merged into 2.6.39-rc*, but the
-> user space bits were not. This made it impossible to set the extra mask
-> and actually do the OFFCORE profiling
+> It will be timing dependent. If there's no allocated IO requests when
+> the switch happens, it'll work.
 > 
-> This patch fixes this. It adds a new syntax ':' to raw events to specify
-> additional event masks. I also added support for setting config2, even
-> though that is not needed currently.
-> 
-> [Note: the original version back in time used , -- but that actually
-> conflicted with event lists, so now it's :]
-> 
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@gmail.com>
-> Cc: Lin Ming <ming.m.lin@intel.com>
-> Link: http://lkml.kernel.org/r/1302658203-4239-1-git-send-email-andi@firstfloor.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/Documentation/perf-list.txt |   11 +++++++++++
->  tools/perf/util/parse-events.c         |   18 +++++++++++++++++-
->  2 files changed, 28 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-> index 7a527f7..f19f1e5 100644
-> --- a/tools/perf/Documentation/perf-list.txt
-> +++ b/tools/perf/Documentation/perf-list.txt
-> @@ -61,6 +61,17 @@ raw encoding of 0x1A8 can be used:
->  You should refer to the processor specific documentation for getting these
->  details. Some of them are referenced in the SEE ALSO section below.
->  
-> +Some raw events -- like the Intel OFFCORE events -- support additional
-> +parameters. These can be appended after a ':'.
-> +
-> +For example on a multi socket Intel Nehalem:
-> +
-> + perf stat -e r1b7:20ff -a sleep 1
-> +
-> +Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0
-> +that measures any access to DRAM on another socket.  Upto two parameters can
-> +be specified with additional ':'
+> But the commit that caused this regression is 5e84ea3a. If you revert
+> that, it should work fine. Or just apply the patch I sent (or update to
+> Linus' tree, it's in now) and it'll work as well.
 
-This needs to be a *lot* more user friendly. Users do not want to type in 
-stupid hexa magic numbers to get profiling. We have moved beyond the oprofile 
-era really.
+Great. I can boot just fine with the current Linus tree
+(2.6.39-rc4-00149-g91e8549).
 
-Unless there's proper generalized and human usable support i'm leaning towards 
-turning off the offcore user-space accessible raw bits for now, and use them 
-only kernel-internally, for the cache events.
-
-Thanks,
-
-	Ingo
+Thanks a lot!
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
