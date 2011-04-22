@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab1DVUWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:22:24 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49588
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756409Ab1DVUWW (ORCPT
+	id S1756552Ab1DVUYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:24:50 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41649 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756420Ab1DVUYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:22:22 -0400
-Date: Fri, 22 Apr 2011 13:21:48 -0700 (PDT)
-Message-Id: <20110422.132148.189688282.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-04-22
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110422201142.GA27119@tuxdriver.com>
-References: <20110422201142.GA27119@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Apr 2011 16:24:47 -0400
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX1+c84x0EPGcE+F5E/AnZZJB4UZRXYhTNrAMONWIqt
+	OKSN7M4vcyK88v
+Date: Fri, 22 Apr 2011 22:24:43 +0200
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Jimmy Chen =?utf-8?B?KOmZs+awuOmBlCk=?= <jimmy.chen@moxa.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [[PATCH 0/2] misc: add support to MOXA V2100 serial io driver
+Message-ID: <20110422202443.GA1258@debian.debian>
+References: <ECB3782BB8F03341905DD923270296115D5A34@mhqms01.moxa.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <ECB3782BB8F03341905DD923270296115D5A34@mhqms01.moxa.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 22 Apr 2011 16:11:43 -0400
+On Fri, Apr 22, 2011 at 06:37:11PM +0800, Jimmy Chen (陳永達) wrote:
+> From: Jimmy Chen <jimmy.chen@moxa.com>
+> 
+> moxa_serial_io driver support on MOXA V2100 platform to switch different serial mode, such as rs232/rs422/rs485.
+> 
+> Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
+> ---
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> Here are some fixes intended for 2.6.39...
-> 
-> This includes a Bluetooth pull, described thusly by Gustavo:
-> 
-> 	Four small fixes for 2.6.39. An incorrect refcnt balance for
-> 	hci connection by Ville Tervo, a warning fix in the command
-> 	timer by Vinicius Gomes, an ERTM fix by Ruiyi Zhang, and SCO
-> 	synchronization fix by Luiz Augusto von Dentz.
-> 
-> On top of those, there are some use-after-free fixes from Stansilaw for
-> iwlegacy and iwlwifi, a mac80211 debugfs locking fix from Johannes, and
-> a small logic fix for the return code of ath9k's ah_stoprecv from Felix,
-> and an iwlwifi fix for frame injection from Daniel Halperin.
-> 
-> Please let me know if there are problems!
+I'm sorry, your patch is, well, not there.
+Maybe you need to read Documentation/email-clients.txt.
 
-Pulled, thanks John.
+Thanks,
+	Jonathan Neuschäfer
