@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab1DVPTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 11:19:19 -0400
-Received: from bitwagon.com ([74.82.39.175]:55216 "HELO bitwagon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755905Ab1DVPTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 11:19:18 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Apr 2011 11:19:18 EDT
-Message-ID: <4DB19A1E.8070806@bitwagon.com>
-Date: Fri, 22 Apr 2011 08:09:18 -0700
-From: John Reiser <jreiser@bitwagon.com>
-Organization: -
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1755992Ab1DVPVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 11:21:23 -0400
+Received: from kroah.org ([198.145.64.141]:47521 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab1DVPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 11:21:21 -0400
+Date: Fri, 22 Apr 2011 08:22:07 -0700
+From: Greg KH <greg@kroah.com>
+To: John Linn <John.Linn@xilinx.com>
+Cc: michal.simek@petalogix.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH V2] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110422152207.GA12927@kroah.com>
+References: <90e49570-bc82-41a9-ac79-2f5007e93a2a@VA3EHSMHS018.ehs.local>
+ <4DB14626.8090002@petalogix.com>
+ <a9a3298f-e87b-476d-8fca-47ce72b7b0bb@VA3EHSMHS007.ehs.local>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
- use Linux style comparisons
-References: <20110421022825.535486725@goodmis.org> <20110421023737.290712238@goodmis.org>
-In-Reply-To: <20110421023737.290712238@goodmis.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a9a3298f-e87b-476d-8fca-47ce72b7b0bb@VA3EHSMHS007.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2011 07:28 PM, Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+On Fri, Apr 22, 2011 at 09:12:42AM -0600, John Linn wrote:
+> This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 > 
-> The Linux style for comparing is:
-> 
->   var == 1
->   var > 0
-> 
-> and not:
-> 
->   1 == var
->   0 < var
-> 
-> It is considered that Linux developers are smart enough not to do the
-> 
->   if (var = 1)
-> 
-> mistake.
 
-It's not just a matter of 'smart', it's a matter of safety.
-For me it still catches a bug (typo, copy+paste, fumble in editor script, ...)
-every year or two.  Compilers haven't always warned, or the option to warn
-might be turned off.
+Please remove these lines, they are incompatible with opensource kernel
+development efforts.
 
-> -	return 0 == strcmp(".text",           txtname) ||
-> +	return strcmp(".text",           txtname) == 0 ||
+sorry,
 
-I consider "0==strcmp(" to be an idiom.  Too often "strcmp(...) == 0"
-overflows my mental stack because of the typographic width of the operands
-in the source code.  If you still object in this case then please consider
-using something like:
-	#define strequ(a,b) (strcmp((a), (b)) == 0)
-or
-	static int strequ(char const *a, char const *b)
-	{
-		return strcmp(a, b) == 0;
-	}
-which names the idiom.
-
--- 
-John Reiser
+greg k-h
