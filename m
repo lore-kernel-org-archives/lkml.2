@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab1DVR5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 13:57:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6970 "EHLO mga11.intel.com"
+	id S1756527Ab1DVR7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 13:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43278 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756423Ab1DVR5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 13:57:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,254,1301900400"; 
-   d="scan'208";a="682616109"
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: David Rientjes <rientjes@google.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        suhail.ahmed@intel.com, christophe.guerard@intel.com
-In-Reply-To: <alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303253889-10074-4-git-send-email-james_p_freyensee@linux.intel.com>
-	 <alpine.DEB.2.00.1104191822440.8047@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 22 Apr 2011 10:57:14 -0700
-Message-ID: <1303495034.13457.121.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1756423Ab1DVR7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 13:59:07 -0400
+Date: Fri, 22 Apr 2011 13:59:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH] cfq-iosched: Get rid of cfqd->unplug_work and use
+ blk_run_queue_async()
+Message-ID: <20110422175900.GD8255@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 18:25 -0700, David Rientjes wrote:
-> On Tue, 19 Apr 2011, james_p_freyensee@linux.intel.com wrote:
-> 
-> > +static void pti_control_frame_built_and_sent(struct pti_masterchannel *mc)
-> > +{
-> > +	struct pti_masterchannel mccontrol = {.master = CONTROL_ID,
-> > +					      .channel = 0};
-> > +	const char *control_format = "%3d %3d %s";
-> > +
-> > +	char comm[sizeof(current->comm) + 1];
-> > +	u8 control_frame[CONTROL_FRAME_LEN];
-> > +
-> > +	if (!in_interrupt())
-> > +		get_task_comm(comm, current);
-> > +	else
-> > +		strcpy(comm, "Interrupt");
-> > +
-> > +	/* Ensure our buffer is zero terminated */
-> > +	comm[sizeof(current->comm)] = 0;
-> > +
-> 
-> You definitely need to use get_task_comm() here, but that means you can't 
-> allocate char comm[] on the stack with anything but TASK_COMM_LEN, which 
-> is small enough that it shouldn't be an issue.  Otherwise there's nothing 
-> protecting sizeof(current->comm) from changing without holding 
-> task_lock(current).
+Hi Jens,
 
-I'm going to look at utilizing get_task_comm() more in this function,
-but I think I am okay even if I miss one, as I am just doing a read from
-it.  What is written in set_task_comm() states that threads may read
-from current->comm without holding the task_lock().  The name could be
-incomplete, which would be non-ideal (but acceptable), but it's supposed
-to be safe from non-terminating string reads.
+As hinted by Christoph, will this be a good little cleanup. I have one
+concern though. Now it might happen that cfq schedules work and then exits
+without cleaning up the scheduled work. AFAIK, that should not create problem
+as long as queue is around. If queue is exiting, it should cancel all the
+pending work on kblockd. So I am hoping it is not an issue.
 
-And it seems like the fix for
+I have done basic boot testing and IO scheduler switching.
 
-> + comm[sizeof(current->comm)] = 0;
+ 
+CFQ needs to kick the queue asynchronously in some situations like upon
+expiry of idle timer. CFQ was using its own work structure to queue on
+kblockd workqueue to achieve this. Now blk_run_queue_async() does it
+by putting delay_work on kblockd workqueue. Use that instead of queuing
+your own work.
 
-can just be comm[TASK_COMM_LEN].
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com> 
+---
+ block/cfq-iosched.c |   23 ++++-------------------
+ 1 file changed, 4 insertions(+), 19 deletions(-)
 
+Index: linux-2.6/block/cfq-iosched.c
+===================================================================
+--- linux-2.6.orig/block/cfq-iosched.c	2011-04-21 11:17:01.000000000 -0400
++++ linux-2.6/block/cfq-iosched.c	2011-04-22 13:31:08.411895257 -0400
+@@ -262,7 +262,6 @@ struct cfq_data {
+ 	 * idle window management
+ 	 */
+ 	struct timer_list idle_slice_timer;
+-	struct work_struct unplug_work;
+ 
+ 	struct cfq_queue *active_queue;
+ 	struct cfq_io_context *active_cic;
+@@ -498,7 +497,7 @@ static inline void cfq_schedule_dispatch
+ {
+ 	if (cfqd->busy_queues) {
+ 		cfq_log(cfqd, "schedule dispatch");
+-		kblockd_schedule_work(cfqd->queue, &cfqd->unplug_work);
++		blk_run_queue_async(cfqd->queue);
+ 	}
+ }
+ 
+@@ -3728,17 +3727,6 @@ queue_fail:
+ 	return 1;
+ }
+ 
+-static void cfq_kick_queue(struct work_struct *work)
+-{
+-	struct cfq_data *cfqd =
+-		container_of(work, struct cfq_data, unplug_work);
+-	struct request_queue *q = cfqd->queue;
+-
+-	spin_lock_irq(q->queue_lock);
+-	__blk_run_queue(cfqd->queue);
+-	spin_unlock_irq(q->queue_lock);
+-}
+-
+ /*
+  * Timer running if the active_queue is currently idling inside its time slice
+  */
+@@ -3795,10 +3783,9 @@ out_cont:
+ 	spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
+ }
+ 
+-static void cfq_shutdown_timer_wq(struct cfq_data *cfqd)
++static void cfq_shutdown_timer(struct cfq_data *cfqd)
+ {
+ 	del_timer_sync(&cfqd->idle_slice_timer);
+-	cancel_work_sync(&cfqd->unplug_work);
+ }
+ 
+ static void cfq_put_async_queues(struct cfq_data *cfqd)
+@@ -3826,7 +3813,7 @@ static void cfq_exit_queue(struct elevat
+ 	struct cfq_data *cfqd = e->elevator_data;
+ 	struct request_queue *q = cfqd->queue;
+ 
+-	cfq_shutdown_timer_wq(cfqd);
++	cfq_shutdown_timer(cfqd);
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 
+@@ -3847,7 +3834,7 @@ static void cfq_exit_queue(struct elevat
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 
+-	cfq_shutdown_timer_wq(cfqd);
++	cfq_shutdown_timer(cfqd);
+ 
+ 	spin_lock(&cic_index_lock);
+ 	ida_remove(&cic_index_ida, cfqd->cic_index);
+@@ -3944,8 +3931,6 @@ static void *cfq_init_queue(struct reque
+ 	cfqd->idle_slice_timer.function = cfq_idle_slice_timer;
+ 	cfqd->idle_slice_timer.data = (unsigned long) cfqd;
+ 
+-	INIT_WORK(&cfqd->unplug_work, cfq_kick_queue);
+-
+ 	cfqd->cfq_quantum = cfq_quantum;
+ 	cfqd->cfq_fifo_expire[0] = cfq_fifo_expire[0];
+ 	cfqd->cfq_fifo_expire[1] = cfq_fifo_expire[1];
