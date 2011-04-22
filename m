@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1DVBkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Apr 2011 21:40:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22701 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab1DVBku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Apr 2011 21:40:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,252,1301900400"; 
-   d="scan'208";a="912949113"
-Subject: Re: Make RCU dcache work with CONFIG_SECURITY=y
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-In-Reply-To: <1303431801-10540-1-git-send-email-andi@firstfloor.org>
-References: <1303431801-10540-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 09:40:48 +0800
-Message-ID: <1303436448.3981.222.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755925Ab1DVBlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Apr 2011 21:41:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47865 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab1DVBll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Apr 2011 21:41:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=TKvUTvdfiKEPHwsfp0aiyKEwYbIzClA7POBcHFTX1Pl1gOZAHC+QQ19wXLk3v1LHOI
+         jJ9snDlaz/R8uzRd58IMV3L2jxnL1ZWw5fwNigPY7StywcpALcVMrbgb6YcdxTZIgAcj
+         NiyRJhu91CsEN956K4gdz1+PGBCRL8LIuqRPQ=
+MIME-Version: 1.0
+In-Reply-To: <1303395845.7181.127.camel@gandalf.stny.rr.com>
+References: <20110421014153.126662477@goodmis.org>
+	<20110421014259.132728798@goodmis.org>
+	<BANLkTimzhTqOXZ6BFGP68EB4Wqrx9OAH7Q@mail.gmail.com>
+	<1303386029.7181.118.camel@gandalf.stny.rr.com>
+	<20110421133541.GB2702@zhy>
+	<1303395845.7181.127.camel@gandalf.stny.rr.com>
+Date: Fri, 22 Apr 2011 09:41:40 +0800
+Message-ID: <BANLkTikBk2n8x1gJBHHrpxZZrhEpVFxt4A@mail.gmail.com>
+Subject: Re: [PATCH 1/7] lockdep: Print a nice description of an irq locking issue
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 08:23 +0800, Andi Kleen wrote:
-> We found that all .38+ kernels with CONFIG_SECURITY just enables -- but
-> not even any security module active -- are slower than .37. And also
-> they don't really scale on larger machines. CONFIG_SECURITY
-> is a quite common configuration, so this was seen multiple times.
-> 
-> The problem is that with CONFIG_SECURITY every directory permission
-> check will drop out of the RCU walk and redo a bunch of work
-> (and not scale of course), just in case the security module
-> cannot handle it.
-> 
-> This patchkit tries to address this. First it moves the check for 
-> RCU walks into the low level security module, so for the 
-> CONFIG_SECURITY=y selinux=0 at runtime case you always get full
-> performance. This is an independent patch.
-> 
-> Then it turned out that the two security modules who use the
-> inode_exec_permission hook that impacts dcache walking -- SMACK
-> and selinux -- already use RCU internally. So I added two
-> followon patches that make them not drop out of the RCU walk,
-> as long as they stay in their RCU "fast" path. For selinux
-> this means a cache hit only and no audit event. For smack
-> it means any check as long as auditing is disabled.
-> 
-> I didn't find good test suites for the security modules, so
-> there wasn't a lot of testing on this unfortunately
-> (the selinux one for LTP doesn't seem to work). Some close
-> review of these changes is needed.
-> 
-> On the other hand the VFS changes itself are very straight forward
-> and the 1/1 patch is very straight forward (and a win in itself)
-> 
-> The bottom line is with this patchkit a CONFIG_SECURITY=y
-> kernel has as good VFS performance as a kernel with CONFIG_SECURITY
-> disabled.
-Great! This fully recovers the dbench regression I reported back:
-http://marc.info/?l=linux-fsdevel&m=129591574123544&w=2
-and we get a better throughput than 2.6.37
+On Thu, Apr 21, 2011 at 10:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2011-04-21 at 21:35 +0800, Yong Zhang wrote:
+>> On Thu, Apr 21, 2011 at 07:40:29AM -0400, Steven Rostedt wrote:
+>
+>> > I
+>> > could show the entire chain too.
+>>
+>> Sure :)
+>
+> I talked a little about this with Peter Zijlstra on IRC, and we agreed
+> that we'll keep this as is until we notice that kernel developers are
+> still confused with the output.
+
+OK :)
+
+>
+> The more advanced I make this output, the more likely I'll make a
+> mistake and show something that is not what actually happens. I wrote a
+> module to trigger each of these cases and the problems that lockdep can
+> detect grows exponentially as we make the output more specific.
+>
+> I probably should modify the lockdep selftests to add an option to show
+> the output as well as it triggers errors. This would allow me to make
+> sure the output still works.
+
+This does make sense to keep things consistent if we have it.
+
+>
+> But for now, I have other things to work on ;)
+
+If you want, you can show more details on your ideas,
+maybe I could get some time to finish it :)
 
 Thanks,
-Shaohua
+Yong
 
 
+
+-- 
+Only stand for myself
