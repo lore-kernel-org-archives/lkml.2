@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1DVLgI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 07:36:08 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:40311 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755066Ab1DVLgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 07:36:03 -0400
-X-ASG-Debug-ID: 1303472159-01de284cf817efc0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DB1681B.9060208@fusionio.com>
-Date: Fri, 22 Apr 2011 13:35:55 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755245Ab1DVLgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 07:36:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58183 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab1DVLgo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 07:36:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XXSqINHNhVx1+E26jmv59h+EEI8Cz++t+H09r5GF8CVAz0ELBiqPnrHk31B19yADcA
+         33RswZh0+24l1hQdpGB+SRcuI6FjYSyF8Ae/oKI9C2QGlmy6cYRdFujzGbjW3M7W5bXT
+         TDqFaR9Jc5SVcRU/8sJSOlJ1Ms/7Ad/PLltB4=
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at 0000000c IP: cfq_insert_request+0x1d/0x3f5
-References: <20110420125824.GA3507@tiehlicka.suse.cz> <4DAEDBEB.7060904@fusionio.com> <20110420132903.GA13554@tiehlicka.suse.cz> <4DAF18DF.9080205@fusionio.com> <20110421071642.GA3556@tiehlicka.suse.cz> <5F35AAD2-8277-44BD-86B6-B1D7B816071E@kernel.dk> <BANLkTinYv+YW6HVCodsWcCKwMmdZFsXPRA@mail.gmail.com> <20110421185112.GA4796@tiehlicka.suse.cz> <4DB07ECA.5050309@fusionio.com> <20110422070032.GA3575@tiehlicka.suse.cz>
-X-ASG-Orig-Subj: Re: 2.6.39-rc4 BUG: unable to handle kernel NULL pointer  dereference
- at 0000000c IP: cfq_insert_request+0x1d/0x3f5
-In-Reply-To: <20110422070032.GA3575@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303472159
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.20
-X-Barracuda-Spam-Status: No, SCORE=0.20 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=PR0N_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61594
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.20 PR0N_SUBJECT           Subject has letters around special characters (pr0n)
+In-Reply-To: <BANLkTinrtoGhL3CXJZGWzf8+BwFSRsdk0w@mail.gmail.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<BANLkTinrtoGhL3CXJZGWzf8+BwFSRsdk0w@mail.gmail.com>
+Date: Fri, 22 Apr 2011 13:36:44 +0200
+X-Google-Sender-Auth: 3NA-nkd_1-YLeZRA9tOymIbLNpA
+Message-ID: <BANLkTikDCmH-WX1u3e9c7gc2U9HJ88RBUQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stijn Devriendt <highguy@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-22 09:00, Michal Hocko wrote:
-> On Thu 21-04-11 21:00:26, Jens Axboe wrote:
->> On 2011-04-21 20:51, Michal Hocko wrote:
->>> On Thu 21-04-11 07:38:57, Linus Torvalds wrote:
->>>> On Thu, Apr 21, 2011 at 12:25 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>>>
->>>>>> I am going to bisect, let's see if I can find anything.
->>>>>
->>>>> Thanks, that would be great!
->>>>
->>>> I'd expect it to be very timing-dependent, and thus could easily be
->>>> triggered (or hidden) by unrelated changes.
->>>>
->>>> Just happening to have a request added to the elevator at _just_ the
->>>> same moment that another CPU is changing it and getting rid of the
->>>> data structures for the old one.
->>>
->>> And it really looks like a timing issue. I have bisected down to
->>> e710d7d5a9cab1041b7a3cf9e655b75d92786857. I had to skip[1] some commits
->>> due to compile errors [2].
->>> At first it looked quite promising because I was able to boot after I
->>> reverted that patch but then I have tried to revert it on top of rc4
->>> (2f666bcf757cb72549f360ef6da02f03620a48b6) and saw the same problem
->>> again.
->>>
->>> So I do not think that bisecting will help here.
->>
->> It will be timing dependent. If there's no allocated IO requests when
->> the switch happens, it'll work.
->>
->> But the commit that caused this regression is 5e84ea3a. If you revert
->> that, it should work fine. Or just apply the patch I sent (or update to
->> Linus' tree, it's in now) and it'll work as well.
-> 
-> Great. I can boot just fine with the current Linus tree
-> (2.6.39-rc4-00149-g91e8549).
-> 
-> Thanks a lot!
+2011/4/21 Stijn Devriendt <highguy@gmail.com>:
 
-Great, with that confirmed from you, we have no pending bugs in this
-area.
+> There's a couple of things I added on top of what you already seem to have:
+> - in include/linux/of_gpio.h the of_gpio_flags were extended to
+> support open-drain in device-trees.
 
--- 
-Jens Axboe
+Device tree support can very well be handled as an add-on I believe,
+please feel free to do that on top of my patch set :-)
 
+> - the debugfs support in gpiolib was also updated to export the current state to
+>  the user through sysfs.
+
+Hm, I've rewritten the mechanism (see latest patch set) to just take
+anonymous parameter and argument. This means it's hard to do
+this in any generic manner, and debugfs printing och config parameters
+need to be pushed to each driver.
+
+> I'd also like to add (if not already mentioned by others) that in
+> general drivers that use GPIOs are unaware of their physical
+> connection on the board. Having this information
+> in device-tree or platform-data equivalent solves this.
+
+Yes, this has been mentioned a few times, and a few times I have
+replied that there is not one word in the patch set that says anything
+about whether drivers or board code or whatever shall make use of
+the mechanism, it's just an interface...
+
+I don't understand why this keeps popping up, have I written
+*anything* unclear about this?
+
+> Secondly I tend to disagree with the "silently ignored" case when the
+> underlying driver
+> does not support setting drive mode. You can easily break the chip if
+> setting the drive
+> mode fails (although the HW designers may have selected the faulty
+> chip then ;) ).
+
+In the latest version the config operation returns an error code.
+
+Yours,
+Linus Walleij
