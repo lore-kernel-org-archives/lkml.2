@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab1DVSaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 14:30:21 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53880 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab1DVSaS (ORCPT
+	id S1756029Ab1DVSod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 14:44:33 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:50859 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755554Ab1DVSoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 14:30:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PYwjojeLZgyh7eGTOwVcyY5Q9izHKkZFL3IJ5PDtue4Tj9Q+pFltSKiwSGKqw32x8L
-         k+k1pXiqueA0co1vXTcU9dXpfannnuOgRtYJBMoavO6LWUsFlKlvtIPae6IhhNFtUQQh
-         n2dbdw6KD+CFZIs7ep81bL0Fk5QOdPEdPCJUc=
-Date: Fri, 22 Apr 2011 20:30:11 +0200
-From: Tejun Heo <tj@kernel.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Steven Whitehouse <swhiteho@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Strange block/scsi/workqueue issue
-Message-ID: <20110422183011.GD21902@mtj.dyndns.org>
-References: <1302641036.2604.40.camel@mulgrave.site>
- <20110413051846.GD24161@mtj.dyndns.org>
- <20110413060651.GA27823@mtj.dyndns.org>
- <1302686454.2613.4.camel@dolmen>
- <1302703208.2613.18.camel@dolmen>
- <1302714080.2597.29.camel@mulgrave.site>
- <4DA603AF.9090202@fusionio.com>
- <1302725866.2597.33.camel@mulgrave.site>
- <20110422180158.GB21902@mtj.dyndns.org>
- <1303495578.2590.33.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303495578.2590.33.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 22 Apr 2011 14:44:32 -0400
+Subject: End of FAT directories
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: linux kernel FAT <hirofumi@mail.parknet.co.jp>,
+        dosfstools <daniel@debian.org>, mtools <Alain@linux.lu>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Apr 2011 20:48:56 +0200
+Message-ID: <1303498136.8485.128.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 87.123.66.109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 01:06:18PM -0500, James Bottomley wrote:
-> I've proposed the minimal fixes for this cycle here:
-> 
-> http://marc.info/?l=linux-scsi&m=130348665328233
-> http://marc.info/?l=linux-scsi&m=130348673628282
-> http://marc.info/?l=linux-scsi&m=130348680328356
-> 
-> And I'll merge at least the scsi one.
+Hello Linux FAT developers and developers of related tools,
 
-Great, looks good to me too.
+there seem to be different interpretations around how to read a FAT
+directory that contains an entry starting with a NUL byte before further
+entries *NOT* starting with NUL bytes. I uploaded an example image of
+this type to [1]. It contains three zero-byte files "WINDOWS", "IS",
+"GREAT", an empty directory slot and a file with contents named "NOT".
 
-> But there's been no long term conclusion yet.
+Listing a floppy with this directory contents in Windows gives the
+output "WINDOWS", "IS" and "GREAT". Mounting the image in Linux results
+in four visible files. Running dosfsck on that image outputs four files,
+everything OK, while Windows CHKDSK will found one lost cluster in one
+chain. mdir only lists the three files Windows will find too, but when
+you copy a file that needs a long name to the image using mcopy, the
+file will be appended where there are enough free slots in succession,
+i.e. it will not fill the single empty slot. That means mcopy allocates
+space for the file, writes a directory entry for it, but mdir does not
+see it afterwards. On the other hand, as soon as you add a file that
+does not need a long name entry that fills the hole, mdir shows all the
+files it previously didn't show.
 
-I'll clean up the workqueue conversion patch and try again.
+I'm afraid this is not a pure academic post, but I write it because I
+spent hours on trying to find out why I had problem to make some USB
+flash drive bootable with syslinux (which follows the MS model on
+loading files while booting) after copying files with the linux kernel
+(which follows the Linux model, obviously), additionally dosfsck on that
+stick showed quite strange results (it dived into a directory that does
+no longer exist). Another incarnation is mentioned in
+https://wiki.physik.fu-berlin.de/linux-minidisc/doku.php?id=himddiskformat
+in the section "Filesystem Issues with some Models on Linux". Some of
+the Sony devices clear only the first half of the cluster containing
+that subdirectory to zeroes, which works fine if software aborts on the
+first entry being zero, but obviously makes problem if the second half
+of the cluster is accessed.
 
-Thank you.
+I would really appreciate it if all FOSS working on FAT would agree to
+one behaviour, and I think we have no choice except being MS compatible
+(i.e. implement the behaviour as it has always been in DOS and Windows)
 
--- 
-tejun
+Please comment.
+
+Regards,
+  Michael Karcher
+
