@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab1DVVw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:52:26 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:48580 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756785Ab1DVVwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 17:52:21 -0400
-Subject: Re: End of FAT directories
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: dosfstools <daniel@debian.org>, mtools <Alain@linux.lu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <87hb9qnho4.fsf@devron.myhome.or.jp>
-References: <1303498136.8485.128.camel@localhost>
-	 <87hb9qnho4.fsf@devron.myhome.or.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 23:56:48 +0200
-Message-ID: <1303509408.8485.146.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756790Ab1DVWM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 18:12:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45241 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756740Ab1DVWMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 18:12:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] pm / core bugfix: report error return from suspend_enter
+Date: Sat, 23 Apr 2011 00:13:27 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+References: <1303456931-11657-1-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1303456931-11657-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 87.123.66.109
+Message-Id: <201104230013.27359.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 23.04.2011, 05:40 +0900 schrieb OGAWA Hirofumi:
-
-
-> It is simply the bug of Sony devices, and can't work on it for both of
-> Windows and Linux (it have to be fixed by fsck).
-You are right. Although as the sony device *does* clear out the first 8K
-of the 16K cluster, that makes 256 correctly working directory entries.
-This directory is only used for storing a dozen of files with no long
-names, the existing problem you correctly describe is not relevant in
-practice.
-
-> Assume 0-3 directory entires fine, 4 is zeroed entry, and 5- is crappy data.
+On Friday, April 22, 2011, MyungJoo Ham wrote:
+> The current implementation of suspend-to-RAM returns 0 if there is an
+> error from suspend_enter() because suspend_devices_and_enter() ignores
+> the return value from suspend_enter(). This patch addresses this issue
+> and properly keep the error return from suspend_enter() and let
+> suspend_devices_and_enter relay the error return.
 > 
-> 1| ENT1        valid
-> 2| ENT2        valid
-> 3| ENT3        valid
-> 4|             zeroed
-> 5| djafdjoi    crappy data
-> ...
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+Applied to suspend-2.6/linux-next.
+
+Thanks,
+Rafael
+
+
+> ---
+>  kernel/power/suspend.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Windows will stop at 4, but if windows write new entry as 4, 5- will
-> show those up as crap like linux.
-You are right. Thanks for your input. This means Windows and mtools
-behave exactly the same way (and thus mtools can not really be
-considered buggy). I expected Windows to fix up the end, but it does
-not.
-
-I still would prefer greatly if Windows and Linux at least read media
-the same way (i.e. stop on the first zeroed entry), I even have a patch
-for that somewhere around I can dig out.
-I furthermore think it is quite important for dosfsck and the linux
-kernel to behave consistent (think of valid entries after the zeroed
-entry linking to "lost clusters"). If I prepare patches for the Linux
-kernel to
- - terminate reading at the first zeroed entry
- - making sure that if a zeroed entry gets populated, the next entry
-gets zeroed unless we hit the end of the directory (deviating from
-Windows behaviour, intentionally, to keep the filesystem consistent)
-And for dosfsck to
- - terminate reading at the first zeroed entry
- - offer filling the remainder of a directory cluster with zero bytes.
-Would this set of patches be acceptable?
-
-
-> In short, in spec, directory must be initialized by
-> zero (it is same assumption on linux and windows).
-Turns out you are right. Sorry for making the implicit assumption that
-windows handles the case better.
-
-Regards,
-  Michael Karcher
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 2814c32..08515b4 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -224,7 +224,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+>  	if (suspend_test(TEST_DEVICES))
+>  		goto Recover_platform;
+>  
+> -	suspend_enter(state);
+> +	error = suspend_enter(state);
+>  
+>   Resume_devices:
+>  	suspend_test_start();
+> 
 
