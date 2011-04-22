@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1DVQBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 12:01:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44374 "EHLO mx1.redhat.com"
+	id S1756065Ab1DVQCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 12:02:24 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:60152 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756021Ab1DVQBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 12:01:19 -0400
-Date: Fri, 22 Apr 2011 12:01:10 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "hch@infradead.org" <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110422160110.GB8255@redhat.com>
-References: <4DA2E7F0.9010904@fusionio.com>
- <20110411220505.1028816e@notabene.brown>
- <4DA2F00E.6010907@fusionio.com>
- <20110418081922.1651474a@notabene.brown>
- <4DABDC60.2090009@fusionio.com>
- <20110418172551.55629fc6@notabene.brown>
- <4DABF1EA.3070301@fusionio.com>
- <20110418183343.036f412e@notabene.brown>
- <20110418212306.GA21154@infradead.org>
- <20110422153908.GA4430@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422153908.GA4430@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756021Ab1DVQCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 12:02:23 -0400
+Subject: Re: [PATCH] mm: Check if any page in a pageblock is reserved
+ before marking it MIGRATE_RESERVE
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
+References: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 22 Apr 2011 09:02:10 -0700
+Message-ID: <1303488130.9308.5883.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 11:39:08AM -0400, hch@infradead.org wrote:
-> On Mon, Apr 18, 2011 at 05:23:06PM -0400, hch@infradead.org wrote:
-> > > NeilBrown (6):
-> > >       md: use new plugging interface for RAID IO.
-> > >       md/dm - remove remains of plug_fn callback.
-> > >       md - remove old plugging code.
-> > >       md: provide generic support for handling unplug callbacks.
-> > >       md: incorporate new plugging into raid5.
-> > >       md: fix up raid1/raid10 unplugging.
-> > 
-> > Looking over more of the unplugging left over, is there a reason to
-> > keep the unplug_work bits in CFQ?  They seem to rather counter the
-> > current scheme (and it is the last user of kblockd outside of
-> > blk-core.c)
-> 
-> Jens, Vivkek:
-> 
-> can you take a look at if cfq_schedule_dispatch is still needed in
-> new unplugging world order?  It's the only kblockd user outside the
-> block core that's still left, and it seems rather odd to me at least.
+On Thu, 2011-04-21 at 18:34 -0700, John Stultz wrote:
+> This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
+> though it only had a few free pages. This in turn caused no contiguous memory
+> to be reserved and frequent kswapd wakeups that emptied the caches to get more
+> contiguous memory.
 
-I guess cfq_schedule_dispatch() will still be required. One use case is
-that CFQ might not dispatch requests to driver even if it has one (idling on
-cfqq) and once the timer fires, it still need to be able to kick the queue
-and dispatch requests.
+This looks sane to me.
 
-To me this sounds independent of plugging logic. Or am I missing something.
+Acked-by: Dave Hansen <dave@linux.vnet.ibm.com> 
 
-Thanks
-Vivek
+-- Dave
+
