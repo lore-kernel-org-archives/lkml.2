@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1DVIcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 04:32:09 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:61525 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1DVIcG (ORCPT
+	id S1753642Ab1DVIf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 04:35:58 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:33132 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab1DVIf4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 04:32:06 -0400
-X-Nat-Received: from [202.181.97.72]:59328 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1303461102.2222
-Message-Id: <201104220831.p3M8VgAO017323@www262.sakura.ne.jp>
-Subject: Re: [RFC][PATCH 0/7] lockdep: Support recurise-read locks
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: yong.zhang0@gmail.com
-Cc: a.p.zijlstra@chello.nl, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-kernel@vger.kernel.org
+	Fri, 22 Apr 2011 04:35:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=j1Z9ml5FOMuqF99UR7gXIFXMZsHya/InYrYx0/HXHZMiimAo1uRlBJDYd0FimN22fv
+         2lL0xP7H2s1wlUvvaF8c5BZgqTVANpSmLtPkgWXMougm4St30ZiMFJ8Af32UummMWfGB
+         IXb2pdt0Vh5aaB7abZRwMwaKaQyd4V9BGTYaM=
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Fri, 22 Apr 2011 17:31:42 +0900
-References: <20110417094505.865828233@chello.nl> <201104180341.p3I3fnxc000638@www262.sakura.ne.jp> <BANLkTikYwWe6E6mb3PLE3L7a3VHWdtEvfQ@mail.gmail.com> <201104220744.p3M7indA004922@www262.sakura.ne.jp> <BANLkTikXSz-AK6BFvnDGEr6Qhx-dekzOQg@mail.gmail.com>
-In-Reply-To: <BANLkTikXSz-AK6BFvnDGEr6Qhx-dekzOQg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 22042011 #5325729, status: clean
+In-Reply-To: <20110422082048.GB24011@elte.hu>
+References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
+	<1303398203-2918-2-git-send-email-dzickus@redhat.com>
+	<20110422082048.GB24011@elte.hu>
+Date: Fri, 22 Apr 2011 12:35:55 +0400
+Message-ID: <BANLkTin2R9vO08xzYFc7ctLzY-MhbUtm8Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] perf, x86: P4 PMU -- Use perf_sample_data_init helper
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yong Zhang wrote:
-> When you are using spin_acquire()/spin_release() in read_seqbegin2()/
-> read_seqretry2(), if you call locktest2/locktest4 firstly, the chain will
-> be established, so when call locktest1/locktest3, lockdep warns on it.
+yeah, it can wait
 
-This part is OK.
-
-> But if you call locktest1/locktest2 firstly, the chain will not be established
-> just because recursive read is not added to prev->after.
-
-This part is not OK. At least, I think lockdep should be able to establish the
-chain when locktest1 is called AGAIN after locktest2 is called (i.e.
-"cat /proc/locktest1 /proc/locktest2 /proc/locktest1" case). But lockdep can
-establish the chain for only "cat /proc/locktest2 /proc/locktest1" case.
-I think there is a bug that prevents the lockdep from establishing the chain
-when locktest1 is called AGAIN after locktest2 is called. If we can't fix the
-bug, we should consider periodically (or upon printing stall warning messages)
-revalidating already established chains.
+On Friday, April 22, 2011, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Don Zickus <dzickus@redhat.com> wrote:
+>
+>> From: Cyrill Gorcunov <gorcunov@gmail.com>
+>>
+>> Instead of opencoded assignments better to use
+>> perf_sample_data_init helper.
+>>
+>> Tested-by: Lin Ming <ming.m.lin@intel.com>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> Signed-off-by: Don Zickus <dzickus@redhat.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_p4.c |    3 +--
+>>  1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+>> index c2520e1..6f2bd89 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_p4.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_p4.c
+>> @@ -912,8 +912,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+>>       int idx, handled = 0;
+>>       u64 val;
+>>
+>> -     data.addr = 0;
+>> -     data.raw = NULL;
+>> +     perf_sample_data_init(&data, 0);
+>
+> This one sure can wait for v2.6.40, right?
+>
+> Thanks,
+>
+>         Ingo
+>
