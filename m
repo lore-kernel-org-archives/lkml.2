@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab1DVLJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 07:09:52 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:49113 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab1DVLJs (ORCPT
+	id S1755145Ab1DVL25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 07:28:57 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:54936 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab1DVL2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 07:09:48 -0400
-Date: Fri, 22 Apr 2011 13:09:47 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
-        Dave Jones <davej@redhat.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] kbuild: implement several W= levels
-Message-ID: <20110422110947.GA20715@merkur.ravnborg.org>
-References: <20110422102028.GA8324@liondog.tnic> <20110422104646.GB8324@liondog.tnic>
+	Fri, 22 Apr 2011 07:28:54 -0400
+Date: Fri, 22 Apr 2011 13:28:52 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Josef Bacik <josef@toxicpanda.com>, Eric Blake <eblake@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+Message-ID: <20110422112852.GB1627@x4.trippels.de>
+References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+ <loom.20110422T001650-760@post.gmane.org>
+ <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com>
+ <20110422045054.GB17795@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110422104646.GB8324@liondog.tnic>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110422045054.GB17795@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Borislav:
+On 2011.04.22 at 00:50 -0400, Christoph Hellwig wrote:
+> [Eric: please don't drop the Cc list, thanks!]
 > 
-> - drop -Wmissing-prototypes since it is being added to the toplevel Makefile
+> On Thu, Apr 21, 2011 at 09:22:55PM -0400, Josef Bacik wrote:
+> > > since all files have a virtual hole at the end, but leaves the position
+> > > unchanged). ??I'd have to write a test program on Solaris to see whether that
+> > > definition is actually true, or if it is a bug in the Solaris man page.
+> > >
+> > 
+> > lseek's purpose is to reposition the file position, so I'd imagine
+> > this is just a bug in the man page.
+> 
+> I would be surprised if the bug is around for such a long time, but
+> otherwise I concur.
 
-This is actually bogus..
-We only add this to HOSTCFLAGS - which is used to build programs
-that run on your build host. These options do not propagate to gcc
-used to build the kernel modules.
+It's a bug. Let me quote what Jeff Bonwick wrote on his blog:
 
-The rest looks good.
+»I'm not sure where you got the impression that either SEEK_HOLE or
+SEEK_DATA doesn't set the file pointer. They do. (If they didn't, that
+would be weird, and we'd call it out explicitly.)«
 
-	Sam
+http://blogs.sun.com/bonwick/entry/seek_hole_and_seek_data
+
+-- 
+Markus
