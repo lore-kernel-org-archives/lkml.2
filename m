@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab1DVVRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 17:17:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33413 "EHLO mx1.redhat.com"
+	id S1756682Ab1DVVXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 17:23:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46397 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab1DVVRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 17:17:48 -0400
-Subject: Re: Make RCU dcache work with CONFIG_SECURITY=y
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        npiggin@kernel.dk, shaohua.li@intel.com, sds@tycho.nsa.gov,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>
-In-Reply-To: <BANLkTi=kod0vH3Ybb4Fe=Sa5zvzYSmoj1Q@mail.gmail.com>
-References: <1303431801-10540-1-git-send-email-andi@firstfloor.org>
-	 <BANLkTi=kod0vH3Ybb4Fe=Sa5zvzYSmoj1Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 17:17:29 -0400
-Message-ID: <1303507049.2441.3.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756469Ab1DVVXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 17:23:03 -0400
+Date: Fri, 22 Apr 2011 23:23:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
+ was written
+Message-ID: <20110422212300.GC2977@quack.suse.cz>
+References: <20110419102016.GD5257@quack.suse.cz>
+ <20110419111601.GA18961@localhost>
+ <20110419211008.GD9556@quack.suse.cz>
+ <20110420075053.GB30672@localhost>
+ <20110420152211.GC4991@quack.suse.cz>
+ <20110421033325.GA13764@localhost>
+ <20110421043940.GC22423@infradead.org>
+ <20110421060556.GA24232@localhost>
+ <20110421164154.GC4476@quack.suse.cz>
+ <20110422023226.GB6199@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422023226.GB6199@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 11:26 -0700, Linus Torvalds wrote:
-> On Thu, Apr 21, 2011 at 5:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > I didn't find good test suites for the security modules, so
-> > there wasn't a lot of testing on this unfortunately
-> > (the selinux one for LTP doesn't seem to work). Some close
-> > review of these changes is needed.
-> >
-> > On the other hand the VFS changes itself are very straight forward
-> > and the 1/1 patch is very straight forward (and a win in itself)
-> >
-> > The bottom line is with this patchkit a CONFIG_SECURITY=y
-> > kernel has as good VFS performance as a kernel with CONFIG_SECURITY
-> > disabled.
+On Fri 22-04-11 10:32:26, Wu Fengguang wrote:
+> On Fri, Apr 22, 2011 at 12:41:54AM +0800, Jan Kara wrote:
+> > On Thu 21-04-11 14:05:56, Wu Fengguang wrote:
+> > > On Thu, Apr 21, 2011 at 12:39:40PM +0800, Christoph Hellwig wrote:
+> > > > On Thu, Apr 21, 2011 at 11:33:25AM +0800, Wu Fengguang wrote:
+> > > > > I collected the writeback_single_inode() traces (patch attached for
+> > > > > your reference) each for several test runs, and find much more
+> > > > > I_DIRTY_PAGES after patchset. Dave, do you know why there are so many
+> > > > > I_DIRTY_PAGES (or radix tag) remained after the XFS ->writepages() call,
+> > > > > even for small files?
+> > > > 
+> > > > What is your defintion of a small file?  As soon as it has multiple
+> > > > extents or holes there's absolutely no way to clean it with a single
+> > > > writepage call.
+> > > 
+> > > It's writing a kernel source tree to XFS. You can find in the below
+> > > trace that it often leaves more dirty pages behind (indicated by the
+> > > I_DIRTY_PAGES flag) after writing as less as 1 page (indicated by the
+> > > wrote=1 field).
+> >   As Dave said, it's probably just a race since XFS redirties the inode on
+> > IO completion. So I think the inodes are just small so they have only a few
+> > dirty pages so you don't have much to write and they are written and
+> > redirtied before you check the I_DIRTY flags. You could use radix tree
+> > dirty tag to verify whether there are really dirty pages or not...
 > 
-> Gaah. My immediate reaction to the patch-series was "This is great, I
-> was really hoping we could get all those annoying cases sorted out,
-> and I'll queue them for the next merge window".
-> 
-> Having then actually read through the patches a bit more, I then got
-> convinced that at least the first patch should probably be applied
-> right away and be marked for stable, since it looks pretty damn
-> obvious to me, and it might already on its own fix the performance
-> regression for some configurations (although realistically I guess few
-> enough people really do the "selinux=0" thing, so the big advantage is
-> making easier to backport the other patches later if we don't do them
-> now).
-> 
-> And now I'm vacillating about the two later patches too. They look
-> fine to me, but I really have _zero_ familiarity with selinux and
-> smack internals, so unlike the first patch, I can't go "that looks
-> like the obviously right thing, and it clearly catches all the RCU
-> cases".
-> 
-> The "we can't use all the nifty RCU pathwalk in the config that most
-> distros ship by default" is clearly a performance regression, and has
-> meant that it's not been really showing its real advantages for most
-> people. So in that sense, it's a regression fix and thus valid even
-> though we're pretty late in the -rc series.
-> 
-> But at the same time, it's also a bit scary.
-> 
-> Comments? I'd really like to see/hear feedback like "yeah, this looks
-> really obviously safe" vs "yeah, looks good, but I really don't feel
-> very comfortable with it" from the security people.
+> Yeah, Dave and Christoph root caused it in the other email -- XFS sets
+> I_DIRTY which accidentally sets I_DIRTY_PAGES. We can safely bet there
+> are no real dirty pages -- otherwise it would have turned up as
+> performance regressions.
+  Yes, but then the question what we actually do better is still open,
+right? :) I'm really curious what it could be because especially in your
+copy-kernel case I should not make much different - maybe except if we
+occasionally managed to block on PageLock behind the writing thread and now
+we don't because we queue the inode later but I find that highly unlikely.
 
->From an SELinux PoV (And I feel semi confident about SMACK) patch 1/3
-can and should go in as soon as you want.  2/3 looked safe on first
-glance, but I think I can make it smaller and better.  I'll try to get a
-version of 2/3 on list in the next couple of days.  My first thought was
-that it should probably go in via my SELinux tree next window......
+> >   BTW a quick check of kernel tree shows the following distribution of
+> > sizes (in KB):
+> >   Count KB  Cumulative Percent
+> >     257 0   0.9%
+> >   13309 4   45%
+> >    5553 8   63%
+> >    2997 12  73%
+> >    1879 16  80%
+> >    1275 20  83%
+> >     987 24  87%
+> >     685 28  89%
+> >     540 32  91%
+> >     387 36  ...
+> >     309 40
+> >     264 44
+> >     249 48
+> >     170 52
+> >     143 56
+> >     144 60
+> >     132 64
+> >     100 68
+> >     ...
+> > Total 30155
+> > 
+> > And the distribution of your 'wrote=xxx' roughly corresponds to this...
+> 
+> Nice numbers! How do you manage to account them? :)
+  Easy shell command (and I handcomputed the percentages because I was lazy
+to write a script for that):
+find . -type f -name "*.[ch]" -exec du {} \; | cut -d '	' -f 1 |
+sort -n | uniq -c
 
--Eric
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
