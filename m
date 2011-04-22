@@ -1,909 +1,487 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab1DVWzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 18:55:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50047 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab1DVWzO (ORCPT
+	id S1756931Ab1DVW5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 18:57:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:13394 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab1DVW5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 18:55:14 -0400
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1303509293.4865.10.camel@laptop>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org>
-	 <1303407662-15564-2-git-send-email-acme@infradead.org>
-	 <20110422063429.GA16643@elte.hu>  <20110422080604.GA22611@elte.hu>
-	 <1303508226.4865.8.camel@laptop>  <1303509293.4865.10.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Apr 2011 00:57:42 +0200
-Message-ID: <1303513062.4865.20.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Apr 2011 18:57:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=AG6FQfmrAx1dixYBCMx9ATbQ2BGLEUYMxUeGS2jc14uo3LfF2kRvsV8r8m6LhMy0K
+	4VnBxrtzrhZ8lqluvak2Q==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] trace: Add special x86 irq entry/exit tracepoints
+Date: Fri, 22 Apr 2011 15:56:21 -0700
+Message-Id: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 23:54 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-04-22 at 23:37 +0200, Peter Zijlstra wrote:
-> > The below needs filling out for !x86 (which I filled out with
-> > unsupported events) and x86 needs the offcore bits fixed to auto select
-> > between the two offcore events.
-> 
-> Urgh, so SNB has different MSR_OFFCORE_RESPONSE bits and needs another table.
+From: Jiaying Zhang <jiayingz@google.com>
 
-Also, NHM offcore bits were wrong... it implemented _ACCESS as _HIT and
-counted OTHER_CORE_HIT* as MISS even though its clearly documented as an
-L3 hit.
+With this patch, following 'special' interrupts are logged by ftrace
+(when enabled):
 
-Current scribblings below..
+Interrupt as in /proc/interrupts        Name as it appears in ftrace log
+NMI: Non-maskable interrupts           : NMI_VECTOR
+LOC: Local timer interrupts            : LOCAL_TIMER_VECTOR
+SPU: Spurious interrupts               : SPURIOUS_APIC_VECTOR
+PMI: Performance monitoring interrupts : <not added>
+PND: Performance pending work          : LOCAL_PENDING_VECTOR
+RES: Rescheduling interrupts           : RESCHEDULE_VECTOR
+CAL: Function call interrupts          : CALL_FUNCTION_VECTOR or
+                                         CALL_FUNCTION_SINGLE_VECTOR
+TLB: TLB shootdowns                    : INVALIDATE_TLB_VECTOR_START to
+                                         INVALIDATE_TLB_VECTOR_END
+TRM: Thermal event interrupts          : THERMAL_APIC_VECTOR
+THR: Threshold APIC interrupts         : THRESHOLD_APIC_VECTOR
+MCE: Machine check exceptions          : <not added>
+MCP: Machine check polls               : <not added>
+ERR:                                   : ERROR_APIC_VECTOR
+MIS:                                   : <not added>
+PLT: Platform interrupts               : X86_PLATFORM_IPI_VECTOR
 
+Enabled the added tracepoints and verified the output:
+$ echo 1 > debug/tracing/events/irq/special_irq_entry/enable
+$ echo 1 > debug/tracing/events/irq/special_irq_exit/enable
+$ cat debug/tracing/trace | more
+<idle>-0     [000]   263.699530: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [003]   263.699700: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [004]   263.699749: special_irq_entry: irq=237
+name=INVALIDATE_TLB_VECTOR tlb_vector=30
+<...>-9483  [000]   263.700498: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [004]   263.700498: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [003]   263.700519: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+
+A custom script compares the two:
+$ sh ~/ftrace_test.sh
+tracing...
+  cpu0: overrun: 0
+  cpu1: overrun: 0
+  cpu2: overrun: 0
+  cpu3: overrun: 0
+IRQ ftrace record counts (ignoring numeric  irq=(0|1|4|5|7|9|10|24) )
+      2 irq=242 name=INVALIDATE_TLB_VECTOR_2
+      3 irq=252 name=CALL_FUNCTION_VECTOR
+      6 irq=241 name=INVALIDATE_TLB_VECTOR_1
+      6 irq=2 name=NMI_VECTOR
+     22 irq=240 name=INVALIDATE_TLB_VECTOR_0
+     40 irq=251 name=CALL_FUNCTION_SINGLE_VECTOR
+    587 irq=253 name=RESCHEDULE_VECTOR
+  15013 irq=239 name=LOCAL_TIMER_VECTOR
+/proc/interrupts stats difference
+      6 NMI (Non-maskable interrupts)
+  14945 LOC (Local timer interrupts)
+      6 PMI (Performance monitoring interrupts)
+    578 RES (Rescheduling interrupts)
+     42 CAL (Function call interrupts)
+     30 TLB (TLB shootdowns)
+      4 MCP (Machine check polls)
+
+In above output:
+NMI (Non-maskable interrupts) == NMI_VECTOR (irq 2)
+LOC (Local timer interrupts) == LOCAL_TIMER_VECTOR (irq 239)
+RES (Rescheduling interrupts) == RESCHEDULE_VECTOR (irq=253)
+CAL (Function call interrupts) == CALL_FUNCTION_VECTOR (irq 252) +
+                                  CALL_FUNCTION_SINGLE_VECTOR (irq 251)
+TLB (TLB shootdowns) == INVALIDATE_TLB_VECTOR_0 (irq=240) +
+                        INVALIDATE_TLB_VECTOR_1 (irq=241) +
+                        INVALIDATE_TLB_VECTOR_2 (irq=242)
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- arch/arm/kernel/perf_event_v6.c        |   28 ++++
- arch/arm/kernel/perf_event_v7.c        |   28 ++++
- arch/arm/kernel/perf_event_xscale.c    |   14 ++
- arch/mips/kernel/perf_event_mipsxx.c   |   28 ++++
- arch/powerpc/kernel/e500-pmu.c         |    5 +
- arch/powerpc/kernel/mpc7450-pmu.c      |    5 +
- arch/powerpc/kernel/power4-pmu.c       |    5 +
- arch/powerpc/kernel/power5+-pmu.c      |    5 +
- arch/powerpc/kernel/power5-pmu.c       |    5 +
- arch/powerpc/kernel/power6-pmu.c       |    5 +
- arch/powerpc/kernel/power7-pmu.c       |    5 +
- arch/powerpc/kernel/ppc970-pmu.c       |    5 +
- arch/sh/kernel/cpu/sh4/perf_event.c    |   15 ++
- arch/sh/kernel/cpu/sh4a/perf_event.c   |   15 ++
- arch/sparc/kernel/perf_event.c         |   42 ++++++
- arch/x86/kernel/cpu/perf_event_amd.c   |   14 ++
- arch/x86/kernel/cpu/perf_event_intel.c |  253 +++++++++++++++++++++++++++-----
- arch/x86/kernel/cpu/perf_event_p4.c    |   14 ++
- include/linux/perf_event.h             |    3 +-
- 19 files changed, 458 insertions(+), 36 deletions(-)
+ arch/x86/kernel/apic/apic.c              |    7 +++
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 +
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    3 +
+ arch/x86/kernel/irq.c                    |    4 +-
+ arch/x86/kernel/irq_work.c               |    4 ++
+ arch/x86/kernel/smp.c                    |    7 +++
+ arch/x86/kernel/time.c                   |    6 +++
+ arch/x86/kernel/traps.c                  |    3 +
+ arch/x86/mm/tlb.c                        |    3 +
+ include/trace/events/irq.h               |   68 ++++++++++++++++++++++++++++++
+ 10 files changed, 107 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
-index f1e8dd9..02178da 100644
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -173,6 +173,20 @@ static const unsigned armv6_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
- 		},
- 	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
- };
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index fabf01e..e601c27 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -33,6 +33,7 @@
+ #include <linux/dmi.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
++#include <trace/events/irq.h>
  
- enum armv6mpcore_perf_types {
-@@ -310,6 +324,20 @@ static const unsigned armv6mpcore_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 			[C(RESULT_MISS)]    = CACHE_OP_UNSUPPORTED,
- 		},
- 	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]  = CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]    = CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]  = CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]    = CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]  = CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]    = CACHE_OP_UNSUPPORTED,
-+		},
-+	},
- };
+ #include <asm/perf_event.h>
+ #include <asm/x86_init.h>
+@@ -857,7 +858,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 */
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(LOCAL_TIMER_VECTOR);
+ 	local_apic_timer_interrupt();
++	trace_special_irq_exit(LOCAL_TIMER_VECTOR);
+ 	irq_exit();
  
- static inline unsigned long
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 4960686..79ffc83 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -255,6 +255,20 @@ static const unsigned armv7_a8_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
- 		},
- 	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
- };
+ 	set_irq_regs(old_regs);
+@@ -1790,6 +1793,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
  
- /*
-@@ -371,6 +385,20 @@ static const unsigned armv7_a9_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
- 		},
- 	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
- };
- 
- /*
-diff --git a/arch/arm/kernel/perf_event_xscale.c b/arch/arm/kernel/perf_event_xscale.c
-index 39affbe..7ed1a55 100644
---- a/arch/arm/kernel/perf_event_xscale.c
-+++ b/arch/arm/kernel/perf_event_xscale.c
-@@ -144,6 +144,20 @@ static const unsigned xscale_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
- 		},
- 	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
- };
- 
- #define	XSCALE_PMU_ENABLE	0x001
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index 75266ff..e5ad09a 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -377,6 +377,20 @@ static const struct mips_perf_event mipsxxcore_cache_map
- 		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
- 	},
- },
-+[C(NODE)] = {
-+	[C(OP_READ)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+	[C(OP_WRITE)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+	[C(OP_PREFETCH)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+},
- };
- 
- /* 74K core has completely different cache event map. */
-@@ -480,6 +494,20 @@ static const struct mips_perf_event mipsxx74Kcore_cache_map
- 		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
- 	},
- },
-+[C(NODE)] = {
-+	[C(OP_READ)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+	[C(OP_WRITE)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+	[C(OP_PREFETCH)] = {
-+		[C(RESULT_ACCESS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+		[C(RESULT_MISS)]	= { UNSUPPORTED_PERF_EVENT_ID },
-+	},
-+},
- };
- 
- #ifdef CONFIG_MIPS_MT_SMP
-diff --git a/arch/powerpc/kernel/e500-pmu.c b/arch/powerpc/kernel/e500-pmu.c
-index b150b51..cb2e294 100644
---- a/arch/powerpc/kernel/e500-pmu.c
-+++ b/arch/powerpc/kernel/e500-pmu.c
-@@ -75,6 +75,11 @@ static int e500_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1	},
- 		[C(OP_PREFETCH)] = {	-1,		-1	},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1 	},
-+		[C(OP_WRITE)] = {	-1,		-1	},
-+		[C(OP_PREFETCH)] = {	-1,		-1	},
-+	},
- };
- 
- static int num_events = 128;
-diff --git a/arch/powerpc/kernel/mpc7450-pmu.c b/arch/powerpc/kernel/mpc7450-pmu.c
-index 2cc5e03..845a584 100644
---- a/arch/powerpc/kernel/mpc7450-pmu.c
-+++ b/arch/powerpc/kernel/mpc7450-pmu.c
-@@ -388,6 +388,11 @@ static int mpc7450_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1	},
- 		[C(OP_PREFETCH)] = {	-1,		-1	},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1	},
-+		[C(OP_WRITE)] = {	-1,		-1	},
-+		[C(OP_PREFETCH)] = {	-1,		-1	},
-+	},
- };
- 
- struct power_pmu mpc7450_pmu = {
-diff --git a/arch/powerpc/kernel/power4-pmu.c b/arch/powerpc/kernel/power4-pmu.c
-index ead8b3c..e9dbc2d 100644
---- a/arch/powerpc/kernel/power4-pmu.c
-+++ b/arch/powerpc/kernel/power4-pmu.c
-@@ -587,6 +587,11 @@ static int power4_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1	},
- 		[C(OP_PREFETCH)] = {	-1,		-1	},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1	},
-+		[C(OP_WRITE)] = {	-1,		-1	},
-+		[C(OP_PREFETCH)] = {	-1,		-1	},
-+	},
- };
- 
- static struct power_pmu power4_pmu = {
-diff --git a/arch/powerpc/kernel/power5+-pmu.c b/arch/powerpc/kernel/power5+-pmu.c
-index eca0ac5..f58a2bd 100644
---- a/arch/powerpc/kernel/power5+-pmu.c
-+++ b/arch/powerpc/kernel/power5+-pmu.c
-@@ -653,6 +653,11 @@ static int power5p_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1		},
- 		[C(OP_PREFETCH)] = {	-1,		-1		},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1		},
-+		[C(OP_WRITE)] = {	-1,		-1		},
-+		[C(OP_PREFETCH)] = {	-1,		-1		},
-+	},
- };
- 
- static struct power_pmu power5p_pmu = {
-diff --git a/arch/powerpc/kernel/power5-pmu.c b/arch/powerpc/kernel/power5-pmu.c
-index d5ff0f6..b1acab6 100644
---- a/arch/powerpc/kernel/power5-pmu.c
-+++ b/arch/powerpc/kernel/power5-pmu.c
-@@ -595,6 +595,11 @@ static int power5_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1		},
- 		[C(OP_PREFETCH)] = {	-1,		-1		},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1		},
-+		[C(OP_WRITE)] = {	-1,		-1		},
-+		[C(OP_PREFETCH)] = {	-1,		-1		},
-+	},
- };
- 
- static struct power_pmu power5_pmu = {
-diff --git a/arch/powerpc/kernel/power6-pmu.c b/arch/powerpc/kernel/power6-pmu.c
-index 3160392..b24a3a2 100644
---- a/arch/powerpc/kernel/power6-pmu.c
-+++ b/arch/powerpc/kernel/power6-pmu.c
-@@ -516,6 +516,11 @@ static int power6_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1		},
- 		[C(OP_PREFETCH)] = {	-1,		-1		},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1		},
-+		[C(OP_WRITE)] = {	-1,		-1		},
-+		[C(OP_PREFETCH)] = {	-1,		-1		},
-+	},
- };
- 
- static struct power_pmu power6_pmu = {
-diff --git a/arch/powerpc/kernel/power7-pmu.c b/arch/powerpc/kernel/power7-pmu.c
-index 593740f..6d9dccb 100644
---- a/arch/powerpc/kernel/power7-pmu.c
-+++ b/arch/powerpc/kernel/power7-pmu.c
-@@ -342,6 +342,11 @@ static int power7_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1	},
- 		[C(OP_PREFETCH)] = {	-1,		-1	},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1	},
-+		[C(OP_WRITE)] = {	-1,		-1	},
-+		[C(OP_PREFETCH)] = {	-1,		-1	},
-+	},
- };
- 
- static struct power_pmu power7_pmu = {
-diff --git a/arch/powerpc/kernel/ppc970-pmu.c b/arch/powerpc/kernel/ppc970-pmu.c
-index 9a6e093..b121de9 100644
---- a/arch/powerpc/kernel/ppc970-pmu.c
-+++ b/arch/powerpc/kernel/ppc970-pmu.c
-@@ -467,6 +467,11 @@ static int ppc970_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 		[C(OP_WRITE)] = {	-1,		-1	},
- 		[C(OP_PREFETCH)] = {	-1,		-1	},
- 	},
-+	[C(NODE)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-+		[C(OP_READ)] = {	-1,		-1	},
-+		[C(OP_WRITE)] = {	-1,		-1	},
-+		[C(OP_PREFETCH)] = {	-1,		-1	},
-+	},
- };
- 
- static struct power_pmu ppc970_pmu = {
-diff --git a/arch/sh/kernel/cpu/sh4/perf_event.c b/arch/sh/kernel/cpu/sh4/perf_event.c
-index 748955d..fa4f724 100644
---- a/arch/sh/kernel/cpu/sh4/perf_event.c
-+++ b/arch/sh/kernel/cpu/sh4/perf_event.c
-@@ -180,6 +180,21 @@ static const int sh7750_cache_events
- 			[ C(RESULT_MISS)   ] = -1,
- 		},
- 	},
-+
-+	[ C(NODE) ] = {
-+		[ C(OP_READ) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+		[ C(OP_WRITE) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+		[ C(OP_PREFETCH) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+	},
- };
- 
- static int sh7750_event_map(int event)
-diff --git a/arch/sh/kernel/cpu/sh4a/perf_event.c b/arch/sh/kernel/cpu/sh4a/perf_event.c
-index 17e6beb..84a2c39 100644
---- a/arch/sh/kernel/cpu/sh4a/perf_event.c
-+++ b/arch/sh/kernel/cpu/sh4a/perf_event.c
-@@ -205,6 +205,21 @@ static const int sh4a_cache_events
- 			[ C(RESULT_MISS)   ] = -1,
- 		},
- 	},
-+
-+	[ C(NODE) ] = {
-+		[ C(OP_READ) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+		[ C(OP_WRITE) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+		[ C(OP_PREFETCH) ] = {
-+			[ C(RESULT_ACCESS) ] = -1,
-+			[ C(RESULT_MISS)   ] = -1,
-+		},
-+	},
- };
- 
- static int sh4a_event_map(int event)
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index ee8426e..d890e0f 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -245,6 +245,20 @@ static const cache_map_t ultra3_cache_map = {
- 		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
- 	},
- },
-+[C(NODE)] = {
-+	[C(OP_READ)] = {
-+		[C(RESULT_ACCESS)] = { CACHE_OP_UNSUPPORTED },
-+		[C(RESULT_MISS)  ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+},
- };
- 
- static const struct sparc_pmu ultra3_pmu = {
-@@ -360,6 +374,20 @@ static const cache_map_t niagara1_cache_map = {
- 		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
- 	},
- },
-+[C(NODE)] = {
-+	[C(OP_READ)] = {
-+		[C(RESULT_ACCESS)] = { CACHE_OP_UNSUPPORTED },
-+		[C(RESULT_MISS)  ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+},
- };
- 
- static const struct sparc_pmu niagara1_pmu = {
-@@ -472,6 +500,20 @@ static const cache_map_t niagara2_cache_map = {
- 		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
- 	},
- },
-+[C(NODE)] = {
-+	[C(OP_READ)] = {
-+		[C(RESULT_ACCESS)] = { CACHE_OP_UNSUPPORTED },
-+		[C(RESULT_MISS)  ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = { CACHE_OP_UNSUPPORTED },
-+		[ C(RESULT_MISS)   ] = { CACHE_OP_UNSUPPORTED },
-+	},
-+},
- };
- 
- static const struct sparc_pmu niagara2_pmu = {
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index cf4e369..01c7dd3 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -89,6 +89,20 @@ static __initconst const u64 amd_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xb8e9, /* CPU Request to Memory, l+r */
-+		[ C(RESULT_MISS)   ] = 0x98e9, /* CPU Request to Memory, r   */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
- };
- 
- /*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 43fa20b..fe4e8b1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -150,6 +150,86 @@ static u64 intel_pmu_event_map(int hw_event)
- 	return intel_perfmon_event_map[hw_event];
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(SPURIOUS_APIC_VECTOR);
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1804,6 +1808,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+ 	pr_info("spurious APIC interrupt on CPU#%d, "
+ 		"should never happen.\n", smp_processor_id());
++	trace_special_irq_exit(SPURIOUS_APIC_VECTOR);
+ 	irq_exit();
  }
  
-+/*
-+ * Sandy Bridge MSR_OFFCORE_RESPONSE bits;
-+ * See IA32 SDM Vol 3B 30.8.5
-+ */
-+
-+#define SNB_DMND_DATA_RD	(1 << 0)
-+#define SNB_DMND_RFO		(1 << 1)
-+#define SNB_DMND_IFETCH		(1 << 2)
-+#define SNB_DMND_WB		(1 << 3)
-+#define SNB_PF_DATA_RD		(1 << 4)
-+#define SNB_PF_DATA_RFO		(1 << 5)
-+#define SNB_PF_IFETCH		(1 << 6)
-+#define SNB_PF_LLC_DATA_RD	(1 << 7)
-+#define SNB_PF_LLC_RFO		(1 << 8)
-+#define SNB_PF_LLC_IFETCH	(1 << 9)
-+#define SNB_BUS_LOCKS		(1 << 10)
-+#define SNB_STRM_ST		(1 << 11)
-+        			/* hole */
-+#define SNB_OFFCORE_OTHER	(1 << 15)
-+#define SNB_COMMON		(1 << 16)
-+#define SNB_NO_SUPP		(1 << 17)
-+#define SNB_LLC_HITM		(1 << 18)
-+#define SNB_LLC_HITE		(1 << 19)
-+#define SNB_LLC_HITS		(1 << 20)
-+#define SNB_LLC_HITF		(1 << 21)
-+				/* hole */
-+#define SNB_SNP_NONE		(1 << 31)
-+#define SNB_SNP_NOT_NEEDED	(1 << 32)
-+#define SNB_SNP_MISS		(1 << 33)
-+#define SNB_SNP_NO_FWD		(1 << 34)
-+#define SNB_SNP_FWD		(1 << 35)
-+#define SNB_HITM		(1 << 36)
-+#define SNB_NON_DRAM		(1 << 37)
-+
-+#define SNB_DMND_READ		(SNB_DMND_DATA_RD)
-+#define SNB_DMND_WRITE		(SNB_DMND_RFO|SNB_DMND_WB|SNB_STRM_ST)
-+#define SNB_DMND_PREFETCH	(SNB_PF_DATA_RD|SNB_PF_DATA_RFO)
-+
-+#define SNB_L3_HIT		()
-+#define SNB_L3_MISS		()
-+#define SNB_L3_ACCESS		(SNB_L3_HIT|SNB_L3_MISS)
-+
-+#define SNB_ALL_DRAM		()
-+#define SNB_REMOTE_DRAM		()
-+
-+static __initconst const u64 snb_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_READ|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_READ|SNB_L3_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_WRITE|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_WRITE|SNB_L3_MISS,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_PREFETCH|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_PREFETCH|SNB_L3_MISS,
-+	},
-+ }
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_READ|SNB_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_READ|SNB_REMOTE_DRAM,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_WRITE|SNB_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_WRITE|SNB_REMOTE_DRAM,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_PREFETCH|SNB_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_PREFETCH|SNB_REMOTE_DRAM,
-+	},
-+ },
-+};
-+
- static __initconst const u64 snb_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -184,26 +264,23 @@ static __initconst const u64 snb_hw_cache_event_ids
- 	},
-  },
-  [ C(LL  ) ] = {
--	/*
--	 * TBD: Need Off-core Response Performance Monitoring support
--	 */
- 	[ C(OP_READ) ] = {
--		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
-+		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
- 		[ C(RESULT_ACCESS) ] = 0x01b7,
--		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
--		[ C(RESULT_MISS)   ] = 0x01bb,
-+		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	[ C(OP_WRITE) ] = {
--		/* OFFCORE_RESPONSE_0.ANY_RFO.LOCAL_CACHE */
-+		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
- 		[ C(RESULT_ACCESS) ] = 0x01b7,
--		/* OFFCORE_RESPONSE_1.ANY_RFO.ANY_LLC_MISS */
--		[ C(RESULT_MISS)   ] = 0x01bb,
-+		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
-+		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
- 		[ C(RESULT_ACCESS) ] = 0x01b7,
--		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
--		[ C(RESULT_MISS)   ] = 0x01bb,
-+		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
-  },
-  [ C(DTLB) ] = {
-@@ -248,6 +325,20 @@ static __initconst const u64 snb_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7, /* OFFCORE_RESP */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+ },
- };
+@@ -1816,6 +1821,7 @@ void smp_error_interrupt(struct pt_regs *regs)
  
- static __initconst const u64 westmere_hw_cache_event_ids
-@@ -285,26 +376,26 @@ static __initconst const u64 westmere_hw_cache_event_ids
-  },
-  [ C(LL  ) ] = {
- 	[ C(OP_READ) ] = {
--		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
-+		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
- 		[ C(RESULT_ACCESS) ] = 0x01b7,
--		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
--		[ C(RESULT_MISS)   ] = 0x01bb,
-+		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	/*
- 	 * Use RFO, not WRITEBACK, because a write miss would typically occur
- 	 * on RFO.
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(ERROR_APIC_VECTOR);
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+@@ -1836,6 +1842,7 @@ void smp_error_interrupt(struct pt_regs *regs)
  	 */
- 	[ C(OP_WRITE) ] = {
--		/* OFFCORE_RESPONSE_1.ANY_RFO.LOCAL_CACHE */
--		[ C(RESULT_ACCESS) ] = 0x01bb,
--		/* OFFCORE_RESPONSE_0.ANY_RFO.ANY_LLC_MISS */
-+		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
- 		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
-+		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
- 		[ C(RESULT_ACCESS) ] = 0x01b7,
--		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
--		[ C(RESULT_MISS)   ] = 0x01bb,
-+		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
-  },
-  [ C(DTLB) ] = {
-@@ -349,19 +440,53 @@ static __initconst const u64 westmere_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7, /* OFFCORE_RESP */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+ },
- };
+ 	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
+ 		smp_processor_id(), v , v1);
++	trace_special_irq_exit(ERROR_APIC_VECTOR);
+ 	irq_exit();
+ }
  
- /*
-- * OFFCORE_RESPONSE MSR bits (subset), See IA32 SDM Vol 3 30.6.1.3
-+ * Nehalem/Westmere MSR_OFFCORE_RESPONSE bits;
-+ * See IA32 SDM Vol 3B 30.6.1.3
-  */
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..abdec08 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
++#include <trace/events/irq.h>
  
--#define DMND_DATA_RD     (1 << 0)
--#define DMND_RFO         (1 << 1)
--#define DMND_WB          (1 << 3)
--#define PF_DATA_RD       (1 << 4)
--#define PF_DATA_RFO      (1 << 5)
--#define RESP_UNCORE_HIT  (1 << 8)
--#define RESP_MISS        (0xf600) /* non uncore hit */
-+#define NHM_DMND_DATA_RD	(1 << 0)
-+#define NHM_DMND_RFO		(1 << 1)
-+#define NHM_DMND_IFETCH		(1 << 2)
-+#define NHM_DMND_WB		(1 << 3)
-+#define NHM_PF_DATA_RD		(1 << 4)
-+#define NHM_PF_DATA_RFO		(1 << 5)
-+#define NHM_PF_IFETCH		(1 << 6)
-+#define NHM_OFFCORE_OTHER	(1 << 7)
-+#define NHM_UNCORE_HIT		(1 << 8)
-+#define NHM_OTHER_CORE_HIT_SNP	(1 << 9)
-+#define NHM_OTHER_CORE_HITM	(1 << 10)
-+        			/* reserved */
-+#define NHM_REMOTE_CACHE_FWD	(1 << 12)
-+#define NHM_REMOTE_DRAM		(1 << 13)
-+#define NHM_LOCAL_DRAM		(1 << 14)
-+#define NHM_NON_DRAM		(1 << 15)
-+
-+#define NHM_ALL_DRAM		(NHM_REMOTE_DRAM|NHM_LOCAL_DRAM)
-+
-+#define NHM_DMND_READ		(NHM_DMND_DATA_RD)
-+#define NHM_DMND_WRITE		(NHM_DMND_RFO|NHM_DMND_WB)
-+#define NHM_DMND_PREFETCH	(NHM_PF_DATA_RD|NHM_PF_DATA_RFO)
-+
-+#define NHM_L3_HIT	(NHM_UNCORE_HIT|NHM_OTHER_CORE_HIT_SNP|NHM_OTHER_CORE_HITM)
-+#define NHM_L3_MISS	(NHM_NON_DRAM|NHM_ALL_DRAM|NHM_REMOTE_CACHE_FWD)
-+#define NHM_L3_ACCESS	(NHM_L3_HIT|NHM_L3_MISS)
- 
- static __initconst const u64 nehalem_hw_cache_extra_regs
- 				[PERF_COUNT_HW_CACHE_MAX]
-@@ -370,18 +495,32 @@ static __initconst const u64 nehalem_hw_cache_extra_regs
+ #include <asm/processor.h>
+ #include <asm/system.h>
+@@ -402,8 +403,10 @@ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
  {
-  [ C(LL  ) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = DMND_DATA_RD|RESP_UNCORE_HIT,
--		[ C(RESULT_MISS)   ] = DMND_DATA_RD|RESP_MISS,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_L3_MISS,
- 	},
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = DMND_RFO|DMND_WB|RESP_UNCORE_HIT,
--		[ C(RESULT_MISS)   ] = DMND_RFO|DMND_WB|RESP_MISS,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_L3_MISS,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		[ C(RESULT_ACCESS) ] = PF_DATA_RD|PF_DATA_RFO|RESP_UNCORE_HIT,
--		[ C(RESULT_MISS)   ] = PF_DATA_RD|PF_DATA_RFO|RESP_MISS,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_L3_MISS,
- 	},
-  }
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_REMOTE_DRAM,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_REMOTE_DRAM,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_ALL_DRAM,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_REMOTE_DRAM,
-+	},
-+ },
- };
- 
- static __initconst const u64 nehalem_hw_cache_event_ids
-@@ -483,6 +622,20 @@ static __initconst const u64 nehalem_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7, /* OFFCORE_RESP */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+ },
- };
- 
- static __initconst const u64 core2_hw_cache_event_ids
-@@ -574,6 +727,20 @@ static __initconst const u64 core2_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
- };
- 
- static __initconst const u64 atom_hw_cache_event_ids
-@@ -665,6 +832,20 @@ static __initconst const u64 atom_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
- };
- 
- static void intel_pmu_disable_all(void)
-@@ -1444,6 +1625,8 @@ static __init int intel_pmu_init(void)
- 	case 42: /* SandyBridge */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
-+		       sizeof(hw_cache_extra_regs));
- 
- 		intel_pmu_lbr_init_nhm();
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 74507c1..e802c7e 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -554,6 +554,20 @@ static __initconst const u64 p4_hw_cache_event_ids
- 		[ C(RESULT_MISS)   ] = -1,
- 	},
-  },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
- };
- 
- static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index ee9f1e7..df4a841 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -59,7 +59,7 @@ enum perf_hw_id {
- /*
-  * Generalized hardware cache events:
-  *
-- *       { L1-D, L1-I, LLC, ITLB, DTLB, BPU } x
-+ *       { L1-D, L1-I, LLC, ITLB, DTLB, BPU, NODE } x
-  *       { read, write, prefetch } x
-  *       { accesses, misses }
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(THERMAL_APIC_VECTOR);
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
++	trace_special_irq_exit(THERMAL_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index d746df2..1943d9e 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -3,6 +3,7 @@
   */
-@@ -70,6 +70,7 @@ enum perf_hw_cache_id {
- 	PERF_COUNT_HW_CACHE_DTLB		= 3,
- 	PERF_COUNT_HW_CACHE_ITLB		= 4,
- 	PERF_COUNT_HW_CACHE_BPU			= 5,
-+	PERF_COUNT_HW_CACHE_NODE		= 6,
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <trace/events/irq.h>
  
- 	PERF_COUNT_HW_CACHE_MAX,		/* non-ABI */
- };
-
+ #include <asm/irq_vectors.h>
+ #include <asm/apic.h>
+@@ -21,8 +22,10 @@ asmlinkage void smp_threshold_interrupt(void)
+ {
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(THRESHOLD_APIC_VECTOR);
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
++	trace_special_irq_exit(THRESHOLD_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 1cb0b9f..6f857c5 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -8,6 +8,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/smp.h>
+ #include <linux/ftrace.h>
++#include <trace/events/irq.h>
+ #include <linux/delay.h>
+ 
+ #include <asm/apic.h>
+@@ -211,12 +212,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 	exit_idle();
+ 
+ 	irq_enter();
+-
++	trace_special_irq_entry(X86_PLATFORM_IPI_VECTOR);
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+ 		x86_platform_ipi_callback();
+ 
++	trace_special_irq_exit(X86_PLATFORM_IPI_VECTOR);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index ca8f703..9ee00ba 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -8,13 +8,17 @@
+ #include <linux/irq_work.h>
+ #include <linux/hardirq.h>
+ #include <asm/apic.h>
++#include <asm/irq_vectors.h>
++#include <trace/events/irq.h>
+ 
+ void smp_irq_work_interrupt(struct pt_regs *regs)
+ {
+ 	irq_enter();
+ 	ack_APIC_irq();
++	trace_special_irq_entry(IRQ_WORK_VECTOR);
+ 	inc_irq_stat(apic_irq_work_irqs);
+ 	irq_work_run();
++	trace_special_irq_exit(IRQ_WORK_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 513deac..51ec1f8 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -201,7 +202,9 @@ static void native_stop_other_cpus(int wait)
+ void smp_reschedule_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
++	trace_special_irq_entry(RESCHEDULE_VECTOR);
+ 	inc_irq_stat(irq_resched_count);
++	trace_special_irq_exit(RESCHEDULE_VECTOR);
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+@@ -211,8 +214,10 @@ void smp_call_function_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_special_irq_entry(CALL_FUNCTION_VECTOR);
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_special_irq_exit(CALL_FUNCTION_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -220,8 +225,10 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_special_irq_entry(CALL_FUNCTION_SINGLE_VECTOR);
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_special_irq_exit(CALL_FUNCTION_SINGLE_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index 25a28a2..687b087 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/time.h>
+ #include <linux/mca.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+@@ -26,6 +27,8 @@
+ volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
+ #endif
+ 
++static struct irqaction *irq0_action;
++
+ unsigned long profile_pc(struct pt_regs *regs)
+ {
+ 	unsigned long pc = instruction_pointer(regs);
+@@ -59,7 +62,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	/* Keep nmi watchdog up to date */
+ 	inc_irq_stat(irq0_irqs);
+ 
++	trace_irq_handler_entry(0, irq0_action);
+ 	global_clock_event->event_handler(global_clock_event);
++	trace_irq_handler_exit(0, irq0_action, 1);
+ 
+ 	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
+ 	if (MCA_bus)
+@@ -76,6 +81,7 @@ static struct irqaction irq0  = {
+ 
+ void __init setup_default_timer_irq(void)
+ {
++	irq0_action = &irq0;
+ 	setup_irq(0, &irq0);
+ }
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b9b6716..4857ff6 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -31,6 +31,7 @@
+ #include <linux/mm.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <trace/events/irq.h>
+ 
+ #ifdef CONFIG_EISA
+ #include <linux/ioport.h>
+@@ -434,12 +435,14 @@ dotraplinkage notrace __kprobes void
+ do_nmi(struct pt_regs *regs, long error_code)
+ {
+ 	nmi_enter();
++	trace_special_irq_entry(NMI_VECTOR);
+ 
+ 	inc_irq_stat(__nmi_count);
+ 
+ 	if (!ignore_nmis)
+ 		default_do_nmi(regs);
+ 
++	trace_special_irq_exit(NMI_VECTOR);
+ 	nmi_exit();
+ }
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..f119306 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -5,6 +5,7 @@
+ #include <linux/smp.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <trace/events/irq.h>
+ #include <linux/cpu.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -141,6 +142,7 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 	sender = ~regs->orig_ax - INVALIDATE_TLB_VECTOR_START;
+ 	f = &flush_state[sender];
+ 
++	trace_special_irq_entry(INVALIDATE_TLB_VECTOR_START + sender);
+ 	if (!cpumask_test_cpu(cpu, to_cpumask(f->flush_cpumask)))
+ 		goto out;
+ 		/*
+@@ -167,6 +169,7 @@ out:
+ 	cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+ 	smp_mb__after_clear_bit();
+ 	inc_irq_stat(irq_tlb_count);
++	trace_special_irq_exit(INVALIDATE_TLB_VECTOR_START + sender);
+ }
+ 
+ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index 4b4c7d9..6c0af78 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -139,6 +139,74 @@ DEFINE_EVENT(softirq, softirq_raise,
+ 	TP_ARGS(vec_nr)
+ );
+ 
++#ifdef CONFIG_X86
++#include <asm/irq_vectors.h>
++
++#define special_irq_name(sirq) { sirq, #sirq }
++#define show_special_irq_name(val)					\
++	__print_symbolic(val,						\
++			 special_irq_name(NMI_VECTOR),			\
++			 special_irq_name(LOCAL_TIMER_VECTOR),		\
++			 special_irq_name(ERROR_APIC_VECTOR),		\
++			 special_irq_name(RESCHEDULE_VECTOR),		\
++			 special_irq_name(CALL_FUNCTION_VECTOR),	\
++			 special_irq_name(CALL_FUNCTION_SINGLE_VECTOR),	\
++			 special_irq_name(THERMAL_APIC_VECTOR),		\
++			 special_irq_name(THRESHOLD_APIC_VECTOR),	\
++			 special_irq_name(REBOOT_VECTOR),		\
++			 special_irq_name(SPURIOUS_APIC_VECTOR),	\
++			 special_irq_name(IRQ_WORK_VECTOR),		\
++			 special_irq_name(X86_PLATFORM_IPI_VECTOR)	\
++			)
++
++#define IS_INVALIDATE_TLB_VECTOR(__irq) (\
++		__irq >= INVALIDATE_TLB_VECTOR_START && \
++		__irq <= INVALIDATE_TLB_VECTOR_END)
++
++DECLARE_EVENT_CLASS(special_irq,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq),
++
++	TP_STRUCT__entry(
++		__field(	int,	irq	)
++	),
++
++	TP_fast_assign(
++		__entry->irq = irq;
++	),
++
++	TP_printk("irq=%d name=%s tlb_vector=%d", __entry->irq,
++		IS_INVALIDATE_TLB_VECTOR(__entry->irq) ?
++		"INVALIDATE_TLB_VECTOR" : show_special_irq_name(__entry->irq),
++		IS_INVALIDATE_TLB_VECTOR(__entry->irq) ?
++		__entry->irq - INVALIDATE_TLB_VECTOR_START : -1)
++);
++
++/*
++ * special_irq_entry - called before enterring a special interrupt
++ * such as apic timer, spurious interrupt, and etc.
++ */
++DEFINE_EVENT(special_irq, special_irq_entry,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq)
++);
++
++/*
++ * special_irq_exit - called immediately after the special interrupt
++ * handler returns
++ */
++DEFINE_EVENT(special_irq, special_irq_exit,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq)
++);
++#endif /* CONFIG_X86 */
++
+ #endif /*  _TRACE_IRQ_H */
+ 
+ /* This part must be outside protection */
+-- 
+1.7.3.1
 
