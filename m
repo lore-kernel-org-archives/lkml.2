@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab1DVUf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 16:35:56 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46869 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756418Ab1DVUfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 16:35:53 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <1303503888.9308.6661.camel@nimitz>
-References: <1303337718.2587.51.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104201530430.13948@chino.kir.corp.google.com>
-	 <20110421221712.9184.A69D9226@jp.fujitsu.com>
-	 <1303403847.4025.11.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1104211328000.5741@router.home>
-	 <1303411537.9048.3583.camel@nimitz>
-	 <1303496357.2590.38.camel@mulgrave.site>
-	 <1303503888.9308.6661.camel@nimitz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Apr 2011 15:35:50 -0500
-Message-ID: <1303504550.2590.43.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1756422Ab1DVUjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 16:39:25 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53558 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab1DVUjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 16:39:22 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/tty/moxa.c: Put correct tty value
+Date: Fri, 22 Apr 2011 22:46:21 +0200
+Message-Id: <1303505181-16359-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-22 at 13:24 -0700, Dave Hansen wrote:
-> On Fri, 2011-04-22 at 13:19 -0500, James Bottomley wrote:
-> > I looked at converting parisc to sparsemem and there's one problem that
-> > none of these cover.  How do you set up bootmem?  If I look at the
-> > examples, they all seem to have enough memory in the first range to
-> > allocate from, so there's no problem.  On parisc, with discontigmem, we
-> > set up all of our ranges as bootmem (we can do this because we
-> > effectively have one node per range).  Obviously, since sparsemem has a
-> > single bitmap for all of the bootmem, we can no longer allocate all of
-> > our memory to it (well, without exploding because some of our gaps are
-> > gigabytes big).  How does everyone cope with this (do you search for
-> > your largest range and use that as bootmem or something)? 
-> 
-> Sparsemem is purely post-bootmem.  It doesn't deal with sparse
-> bootmem. :(
+The tty value that should be put is the one that was just gotten by
+tty_port_tty_get, not the one that is the argument to the enclosing
+function.
 
-Well, this is enabled in discontigmem, sigh.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-> That said, I'm not sure you're in trouble.  One bit of bitmap covers 4k
-> (with 4k pages of course) of memory, one byte covers 32k, and A 32MB
-> bitmap can cover 1TB of address space.  It explodes, but I think it's
-> manageable.  It hasn't been a problem enough up to this point to go fix
-> it.
+// <smpl>
+@exists@
+local idexpression struct tty_struct *x;
+expression ra,rr;
+statement S1,S2;
+@@
 
-I think the platform limited physical address range is 42 bits, so I
-suppose that's 128MB ... hopefully we should have that as a contiguous
-range from the end of the loaded kernel.  We're lucky they didn't enable
-the full ZX1 address range; that would have been 48 bits (or a whole
-gigabyte just for the bitmap).
+x = tty_port_tty_get(...)
+... when != x = rr
+    when any
+    when != tty_kref_put(x,...)
+    when != if (...) { ... tty_kref_put(x,...) ...}
+(
+if(<+...x...+>) S1 else S2
+|
+if(...) { ... when != x = ra
+     when forall
+     when != tty_kref_put(x,...)
+*return...;
+}
+)
+// </smpl>
 
-James
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
+---
+ drivers/tty/moxa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
+index 35b0c38..e097a23 100644
+--- a/drivers/tty/moxa.c
++++ b/drivers/tty/moxa.c
+@@ -371,7 +371,7 @@ static int moxa_ioctl(struct tty_struct *tty,
+ 					tmp.cflag = p->cflag;
+ 				else
+ 					tmp.cflag = ttyp->termios->c_cflag;
+-				tty_kref_put(tty);
++				tty_kref_put(ttyp);
+ copy:
+ 				if (copy_to_user(argm, &tmp, sizeof(tmp)))
+ 					return -EFAULT;
 
