@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab1DWQa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 12:30:26 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40219 "EHLO
+	id S932156Ab1DWQal (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 12:30:41 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40245 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab1DWQaT (ORCPT
+	with ESMTP id S932100Ab1DWQac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 12:30:19 -0400
+	Sat, 23 Apr 2011 12:30:32 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 15/18] perf: Export evlist.[ch]
-Date: Sat, 23 Apr 2011 18:28:17 +0200
-Message-Id: <1303576100-425-16-git-send-email-bp@amd64.org>
+Subject: [PATCH 17/18] perf: Export tracepoint_id_to_path
+Date: Sat, 23 Apr 2011 18:28:19 +0200
+Message-Id: <1303576100-425-18-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1303576100-425-1-git-send-email-bp@amd64.org>
 References: <1303576100-425-1-git-send-email-bp@amd64.org>
@@ -30,385 +30,472 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Export for other tools to use too. Also, add a weak ui_warning version
-when using evlist outside of perf.
+This is needed when linking against libtrace.a so move it to
+<lib/trace/trace-event-info.c> and adjust all headers accordingly.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/lib/perf/Makefile                  |    3 +++
- tools/lib/perf/cgroup.c                  |    6 +++---
- tools/{perf/util => lib/perf}/evlist.c   |   11 ++++++++++-
- tools/{perf/util => lib/perf}/evlist.h   |    4 ++--
- tools/lib/perf/evsel.c                   |    2 +-
- tools/perf/Makefile                      |    3 ---
- tools/perf/builtin-annotate.c            |    2 +-
- tools/perf/builtin-evlist.c              |    2 +-
- tools/perf/builtin-record.c              |    2 +-
- tools/perf/builtin-report.c              |    2 +-
- tools/perf/builtin-script.c              |    2 +-
- tools/perf/builtin-stat.c                |    2 +-
- tools/perf/builtin-test.c                |    2 +-
- tools/perf/builtin-top.c                 |    2 +-
- tools/perf/util/header.c                 |    2 +-
- tools/perf/util/include/linux/compiler.h |    1 +
- tools/perf/util/parse-events.c           |    2 +-
- tools/perf/util/python.c                 |    2 +-
- tools/perf/util/session.c                |    2 +-
- tools/perf/util/setup.py                 |    2 +-
- tools/perf/util/top.c                    |    2 +-
- tools/perf/util/ui/browsers/hists.c      |    2 +-
- tools/perf/util/ui/browsers/top.c        |    2 +-
- 23 files changed, 36 insertions(+), 26 deletions(-)
- rename tools/{perf/util => lib/perf}/evlist.c (98%)
- rename tools/{perf/util => lib/perf}/evlist.h (96%)
+ tools/lib/trace/event-info.c    |  120 +++++++++++++++++++++++++++++++++------
+ tools/lib/trace/trace-event.h   |   19 ++++++
+ tools/perf/util/parse-events.c  |  104 +--------------------------------
+ tools/perf/util/parse-events.h  |    1 -
+ tools/perf/util/parse-options.h |    1 +
+ 5 files changed, 126 insertions(+), 119 deletions(-)
 
-diff --git a/tools/lib/perf/Makefile b/tools/lib/perf/Makefile
-index e43008d..1e5c857 100644
---- a/tools/lib/perf/Makefile
-+++ b/tools/lib/perf/Makefile
-@@ -6,11 +6,14 @@ LIB_OBJS=
- 
- LIB_H += evsel.h
- LIB_H += cgroup.h
-+LIB_H += evlist.h
- 
- LIB_OBJS += evsel.o
- LIB_OBJS += cgroup.o
-+LIB_OBJS += evlist.o
- 
- PYRF_OBJS += evsel.o
-+PYRF_OBJS += evlist.o
- 
- LIBFILE = $(LIB_OUTPUT)liblkperf.a
- 
-diff --git a/tools/lib/perf/cgroup.c b/tools/lib/perf/cgroup.c
-index 5c9c554..8181353 100644
---- a/tools/lib/perf/cgroup.c
-+++ b/tools/lib/perf/cgroup.c
-@@ -1,10 +1,10 @@
- #include <lk/util.h>
-+#include <lk/debugfs.h> /* MAX_PATH, STR() */
+diff --git a/tools/lib/trace/event-info.c b/tools/lib/trace/event-info.c
+index 9da00af..fb71c34 100644
+--- a/tools/lib/trace/event-info.c
++++ b/tools/lib/trace/event-info.c
+@@ -18,7 +18,6 @@
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+-#define _GNU_SOURCE
+ #include <dirent.h>
+ #include <mntent.h>
+ #include <stdio.h>
+@@ -26,6 +25,7 @@
+ #include <string.h>
+ #include <stdarg.h>
+ #include <sys/types.h>
++#include <sys/param.h>
+ #include <sys/stat.h>
+ #include <sys/wait.h>
+ #include <pthread.h>
+@@ -40,6 +40,7 @@
  #include "../../perf/perf.h"
- #include "../../perf/util/parse-options.h"
--#include <perf/evsel.h>
-+#include "evsel.h"
- #include "cgroup.h"
--#include <lk/debugfs.h> /* MAX_PATH, STR() */
--#include "../../perf/util/evlist.h"
-+#include "evlist.h"
- 
- int nr_cgroups;
- 
-diff --git a/tools/perf/util/evlist.c b/tools/lib/perf/evlist.c
-similarity index 98%
-rename from tools/perf/util/evlist.c
-rename to tools/lib/perf/evlist.c
-index eb728d0..ccbcf04 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/lib/perf/evlist.c
-@@ -11,7 +11,7 @@
- #include <lk/thread_map.h>
- #include "evlist.h"
+ #include "trace-event.h"
+ #include <lk/debugfs.h>
++#include <lk/util.h>
  #include <perf/evsel.h>
--#include "debug.h"
-+#include "../../perf/util/debug.h"
- #include <lk/util.h>
  
- #include <sys/mman.h>
-@@ -248,6 +248,15 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ #define VERSION "0.5"
+@@ -58,6 +59,7 @@
+ unsigned int page_size;
+ 
+ static const char *output_file = "trace.info";
++static const char *dfs_path;
+ static int output_fd;
+ 
+ struct event_list {
+@@ -72,7 +74,7 @@ struct events {
+ 	char *name;
+ };
+ 
+-static void die(const char *fmt, ...)
++static void t_die(const char *fmt, ...)
+ {
+ 	va_list ap;
+ 	int ret = errno;
+@@ -97,7 +99,7 @@ void *malloc_or_die(unsigned int size)
+ 
+ 	data = malloc(size);
+ 	if (!data)
+-		die("malloc");
++		t_die("malloc");
+ 	return data;
  }
  
-+void __weak ui__warning(const char *format, ...)
+@@ -106,7 +108,7 @@ static const char *find_debugfs(void)
+ 	const char *path = debugfs_mount(NULL);
+ 
+ 	if (!path)
+-		die("Your kernel not support debugfs filesystem");
++		t_die("Your kernel not support debugfs filesystem");
+ 
+ 	return path;
+ }
+@@ -167,7 +169,7 @@ static ssize_t write_or_die(const void *buf, size_t len)
+ 
+ 	ret = write(output_fd, buf, len);
+ 	if (ret < 0)
+-		die("writing to '%s'", output_file);
++		t_die("writing to '%s'", output_file);
+ 
+ 	return ret;
+ }
+@@ -205,7 +207,7 @@ static unsigned long long copy_file(const char *file)
+ 
+ 	fd = open(file, O_RDONLY);
+ 	if (fd < 0)
+-		die("Can't read '%s'", file);
++		t_die("Can't read '%s'", file);
+ 	size = copy_file_fd(fd);
+ 	close(fd);
+ 
+@@ -236,7 +238,7 @@ unsigned long get_filesize(const char *file)
+ 
+ 	fd = open(file, O_RDONLY);
+ 	if (fd < 0)
+-		die("Can't read '%s'", file);
++		t_die("Can't read '%s'", file);
+ 	size = get_size_fd(fd);
+ 	close(fd);
+ 
+@@ -252,7 +254,7 @@ static void read_header_files(void)
+ 	path = get_tracing_file("events/header_page");
+ 	fd = open(path, O_RDONLY);
+ 	if (fd < 0)
+-		die("can't read '%s'", path);
++		t_die("can't read '%s'", path);
+ 
+ 	/* unfortunately, you can not stat debugfs files for size */
+ 	size = get_size_fd(fd);
+@@ -263,14 +265,14 @@ static void read_header_files(void)
+ 	close(fd);
+ 
+ 	if (size != check_size)
+-		die("wrong size for '%s' size=%lld read=%lld",
++		t_die("wrong size for '%s' size=%lld read=%lld",
+ 		    path, size, check_size);
+ 	put_tracing_file(path);
+ 
+ 	path = get_tracing_file("events/header_event");
+ 	fd = open(path, O_RDONLY);
+ 	if (fd < 0)
+-		die("can't read '%s'", path);
++		t_die("can't read '%s'", path);
+ 
+ 	size = get_size_fd(fd);
+ 
+@@ -278,7 +280,7 @@ static void read_header_files(void)
+ 	write_or_die(&size, 8);
+ 	check_size = copy_file_fd(fd);
+ 	if (size != check_size)
+-		die("wrong size for '%s'", path);
++		t_die("wrong size for '%s'", path);
+ 	put_tracing_file(path);
+ 	close(fd);
+ }
+@@ -306,7 +308,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 
+ 	dir = opendir(sys);
+ 	if (!dir)
+-		die("can't read directory '%s'", sys);
++		t_die("can't read directory '%s'", sys);
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -342,7 +344,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 			write_or_die(&size, 8);
+ 			check_size = copy_file(format);
+ 			if (size != check_size)
+-				die("error in size of file '%s'", format);
++				t_die("error in size of file '%s'", format);
+ 		}
+ 
+ 		free(format);
+@@ -386,7 +388,7 @@ static void read_event_files(struct tracepoint_path *tps)
+ 
+ 	dir = opendir(path);
+ 	if (!dir)
+-		die("can't read directory '%s'", path);
++		t_die("can't read directory '%s'", path);
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -440,7 +442,7 @@ static void read_proc_kallsyms(void)
+ 	write_or_die(&size, 4);
+ 	check_size = copy_file(path);
+ 	if (size != check_size)
+-		die("error in size of file '%s'", path);
++		t_die("error in size of file '%s'", path);
+ 
+ }
+ 
+@@ -463,11 +465,95 @@ static void read_ftrace_printk(void)
+ 	write_or_die(&size, 4);
+ 	check_size = copy_file(path);
+ 	if (size != check_size)
+-		die("error in size of file '%s'", path);
++		t_die("error in size of file '%s'", path);
+ out:
+ 	put_tracing_file(path);
+ }
+ 
++int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
 +{
-+	va_list params;
++	char evt_path[MAXPATHLEN];
++	int fd;
 +
-+	va_start(params, format);
-+	warning(format, params);
-+	va_end(params);
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", dfs_path,
++			sys_dir->d_name, evt_dir->d_name);
++	fd = open(evt_path, O_RDONLY);
++	if (fd < 0)
++		return -EINVAL;
++	close(fd);
++
++	return 0;
 +}
 +
- static int __perf_evlist__mmap(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			       int cpu, int prot, int mask, int fd)
++struct tracepoint_path *tracepoint_id_to_path(u64 config)
++{
++	struct tracepoint_path *path = NULL;
++	DIR *sys_dir, *evt_dir;
++	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
++	char id_buf[4];
++	int fd;
++	u64 id;
++	char evt_path[MAXPATHLEN];
++	char dir_path[MAXPATHLEN];
++
++	dfs_path = debugfs_mount(NULL);
++	if (!dfs_path)
++		return NULL;
++
++	sys_dir = opendir(dfs_path);
++	if (!sys_dir)
++		return NULL;
++
++	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
++
++		snprintf(dir_path, MAXPATHLEN, "%s/%s", dfs_path,
++			 sys_dirent.d_name);
++		evt_dir = opendir(dir_path);
++		if (!evt_dir)
++			continue;
++
++		for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next) {
++
++			snprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
++				 evt_dirent.d_name);
++			fd = open(evt_path, O_RDONLY);
++			if (fd < 0)
++				continue;
++			if (read(fd, id_buf, sizeof(id_buf)) < 0) {
++				close(fd);
++				continue;
++			}
++			close(fd);
++			id = atoll(id_buf);
++			if (id == config) {
++				closedir(evt_dir);
++				closedir(sys_dir);
++				path = zalloc(sizeof(*path));
++				path->system = malloc(MAX_EVENT_LENGTH);
++				if (!path->system) {
++					free(path);
++					return NULL;
++				}
++				path->name = malloc(MAX_EVENT_LENGTH);
++				if (!path->name) {
++					free(path->system);
++					free(path);
++					return NULL;
++				}
++				strncpy(path->system, sys_dirent.d_name,
++					MAX_EVENT_LENGTH);
++				strncpy(path->name, evt_dirent.d_name,
++					MAX_EVENT_LENGTH);
++				return path;
++			}
++		}
++		closedir(evt_dir);
++	}
++
++	closedir(sys_dir);
++	return NULL;
++}
++
+ static struct tracepoint_path *
+ get_tracepoints_path(struct list_head *pattrs)
  {
-diff --git a/tools/perf/util/evlist.h b/tools/lib/perf/evlist.h
-similarity index 96%
-rename from tools/perf/util/evlist.h
-rename to tools/lib/perf/evlist.h
-index 8b1cb7a..9480b1d 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/lib/perf/evlist.h
-@@ -2,8 +2,8 @@
- #define __PERF_EVLIST_H 1
+@@ -481,7 +567,7 @@ get_tracepoints_path(struct list_head *pattrs)
+ 		++nr_tracepoints;
+ 		ppath->next = tracepoint_id_to_path(pos->attr.config);
+ 		if (!ppath->next)
+-			die("%s\n", "No memory to alloc tracepoints list");
++			t_die("%s\n", "No memory to alloc tracepoints list");
+ 		ppath = ppath->next;
+ 	}
  
- #include <linux/list.h>
--#include "../perf.h"
--#include "event.h"
-+#include "../../perf/perf.h"
-+#include "../../perf/util/event.h"
+diff --git a/tools/lib/trace/trace-event.h b/tools/lib/trace/trace-event.h
+index 8510207..1477eca 100644
+--- a/tools/lib/trace/trace-event.h
++++ b/tools/lib/trace/trace-event.h
+@@ -2,6 +2,7 @@
+ #define __LIB_TRACE_EVENTS_H
  
- struct pollfd;
- struct thread_map;
-diff --git a/tools/lib/perf/evsel.c b/tools/lib/perf/evsel.c
-index a66501c..3a63422 100644
---- a/tools/lib/perf/evsel.c
-+++ b/tools/lib/perf/evsel.c
-@@ -8,7 +8,7 @@
-  */
+ #include <stdbool.h>
++#include <dirent.h>
+ #include <linux/compiler.h>
  
- #include "evsel.h"
--#include "../../perf/util/evlist.h"
-+#include "evlist.h"
- #include <lk/util.h>
- #include <lk/cpumap.h>
- #include <lk/thread_map.h>
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d134897..2edfa70 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -212,7 +212,6 @@ LIB_H += util/callchain.h
- LIB_H += util/build-id.h
- LIB_H += util/debug.h
- LIB_H += util/event.h
--LIB_H += util/evlist.h
- LIB_H += util/exec_cmd.h
- LIB_H += util/levenshtein.h
- LIB_H += util/map.h
-@@ -248,7 +247,6 @@ LIB_OBJS += $(OUTPUT)util/config.o
- LIB_OBJS += $(OUTPUT)util/ctype.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
--LIB_OBJS += $(OUTPUT)util/evlist.o
- LIB_OBJS += $(OUTPUT)util/exec_cmd.o
- LIB_OBJS += $(OUTPUT)util/help.o
- LIB_OBJS += $(OUTPUT)util/levenshtein.o
-@@ -324,7 +322,6 @@ PERFLIBS = $(LIB_FILE) $(EXTRA_LIBS)
- # tools/perf/util/setup.py
+ #include "../../perf/util/session.h"
+@@ -317,4 +318,22 @@ int common_pc(struct scripting_context *context);
+ int common_flags(struct scripting_context *context);
+ int common_lock_depth(struct scripting_context *context);
  
- PYRF_OBJS += $(OUTPUT)util/ctype.o
--PYRF_OBJS += $(OUTPUT)util/evlist.o
- PYRF_OBJS += $(OUTPUT)util/python.o
- 
- #
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 6386254..da5bd09 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -19,7 +19,7 @@
- #include "perf.h"
- #include "util/debug.h"
- 
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/annotate.h"
- #include "util/event.h"
-diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-index 3619582..0f869cc 100644
---- a/tools/perf/builtin-evlist.c
-+++ b/tools/perf/builtin-evlist.c
-@@ -8,7 +8,7 @@
- #include <linux/list.h>
- 
- #include "perf.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/parse-events.h"
- #include "util/parse-options.h"
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 77ffcc5..5f1b66a 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -18,7 +18,7 @@
- 
- #include "util/header.h"
- #include "util/event.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/debug.h"
- #include "util/session.h"
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 0700778..07568f4 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -21,7 +21,7 @@
- 
- #include "perf.h"
- #include "util/debug.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/header.h"
- #include "util/session.h"
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 65583d8..9c95a72 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -12,7 +12,7 @@
- #include <trace/trace-event.h>
- #include "util/parse-options.h"
- #include <lk/util.h>
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- 
- static char const		*script_name;
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 58374af..b56dc56 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -43,7 +43,7 @@
- #include "util/parse-options.h"
- #include "util/parse-events.h"
- #include "util/event.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/debug.h"
- #include "util/header.h"
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 12feeb4..f045eb0 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -7,7 +7,7 @@
- 
- #include "util/cache.h"
- #include "util/debug.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include "util/parse-options.h"
- #include "util/parse-events.h"
- #include "util/symbol.h"
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 0d778aa..16d94be 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -23,7 +23,7 @@
- #include "util/annotate.h"
- #include "util/cache.h"
- #include "util/color.h"
--#include "util/evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "util/session.h"
- #include "util/symbol.h"
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8fc4d21..1948c88 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -8,7 +8,7 @@
- #include <linux/list.h>
- #include <linux/kernel.h>
- 
--#include "evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include <lk/util.h>
- #include "header.h"
-diff --git a/tools/perf/util/include/linux/compiler.h b/tools/perf/util/include/linux/compiler.h
-index 791f9dd..62165bc 100644
---- a/tools/perf/util/include/linux/compiler.h
-+++ b/tools/perf/util/include/linux/compiler.h
-@@ -8,5 +8,6 @@
- #define __attribute_const__
- 
- #define __used		__attribute__((__unused__))
-+#define __weak		__attribute__((weak))
- 
- #endif
++#define MAX_EVENT_LENGTH 512
++#define TP_PATH_LEN (MAX_EVENT_LENGTH * 2 + 1)
++
++#define for_each_subsystem(sys_dir, sys_dirent, sys_next)	       \
++	while (!readdir_r(sys_dir, &sys_dirent, &sys_next) && sys_next)	       \
++	if (sys_dirent.d_type == DT_DIR &&				       \
++	   (strcmp(sys_dirent.d_name, ".")) &&				       \
++	   (strcmp(sys_dirent.d_name, "..")))
++
++#define for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next)	       \
++	while (!readdir_r(evt_dir, &evt_dirent, &evt_next) && evt_next)        \
++	if (evt_dirent.d_type == DT_DIR &&				       \
++	   (strcmp(evt_dirent.d_name, ".")) &&				       \
++	   (strcmp(evt_dirent.d_name, "..")) &&				       \
++	   (!tp_event_has_id(&sys_dirent, &evt_dirent)))
++
++extern int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir);
++extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+ #endif /* __LIB_TRACE_EVENTS_H */
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 9acaab1..05e8e65 100644
+index 05e8e65..c76008f 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -1,7 +1,7 @@
+@@ -1,5 +1,4 @@
  #include "../../../include/linux/hw_breakpoint.h"
- #include <lk/util.h>
+-#include <lk/util.h>
  #include "../perf.h"
--#include "evlist.h"
-+#include <perf/evlist.h>
+ #include <perf/evlist.h>
  #include <perf/evsel.h>
- #include "parse-options.h"
- #include "parse-events.h"
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index c049b9a..4f2745e 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -2,7 +2,7 @@
- #include <structmember.h>
- #include <inttypes.h>
- #include <poll.h>
--#include "evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "event.h"
- #include <lk/cpumap.h>
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 445a6b9..a81bb60 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -7,7 +7,7 @@
- #include <sys/types.h>
- #include <sys/mman.h>
- 
--#include "evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "session.h"
- #include "sort.h"
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index c8d0d8d..7172967 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -7,7 +7,7 @@ cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
- cflags += getenv('CFLAGS', '').split()
- 
- perf = Extension('perf',
--		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
-+		  sources = ['util/python.c', 'util/ctype.c', '../lib/perf/evlist.c',
- 			     '../lib/perf/evsel.c', '../lib/lk/cpumap.c', '../lib/lk/thread_map.c',
- 			     '../lib/lk/util.c', '../lib/lk/xyarray.c', 'util/cgroup.c'],
- 		  include_dirs = ['util/include', '../lib'],
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 7fb9658..5d939b6 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -8,7 +8,7 @@
- 
- #include <lk/cpumap.h>
- #include "event.h"
--#include "evlist.h"
-+#include <perf/evlist.h>
- #include <perf/evsel.h>
- #include "parse-events.h"
+@@ -10,7 +9,10 @@
  #include "symbol.h"
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index c4f424b..d9dae5d 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -8,7 +8,7 @@
- #include <linux/rbtree.h>
+ #include "cache.h"
+ #include "header.h"
++
+ #include <lk/debugfs.h>
++#include <lk/util.h>
++#include <trace/trace-event.h>
  
- #include <perf/evsel.h>
--#include "../../evlist.h"
-+#include <perf/evlist.h>
- #include "../../hist.h"
- #include "../../pstack.h"
- #include "../../sort.h"
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-index 5a06538..ba59d3d 100644
---- a/tools/perf/util/ui/browsers/top.c
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -11,7 +11,7 @@
- #include "../helpline.h"
- #include "../libslang.h"
- #include "../util.h"
--#include "../../evlist.h"
-+#include <perf/evlist.h>
- #include "../../hist.h"
- #include "../../sort.h"
- #include "../../symbol.h"
+ struct event_symbol {
+ 	u8		type;
+@@ -122,106 +124,6 @@ static unsigned long hw_cache_stat[C(MAX)] = {
+  [C(BPU)]	= (CACHE_READ),
+ };
+ 
+-#define for_each_subsystem(sys_dir, sys_dirent, sys_next)	       \
+-	while (!readdir_r(sys_dir, &sys_dirent, &sys_next) && sys_next)	       \
+-	if (sys_dirent.d_type == DT_DIR &&				       \
+-	   (strcmp(sys_dirent.d_name, ".")) &&				       \
+-	   (strcmp(sys_dirent.d_name, "..")))
+-
+-static int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
+-{
+-	char evt_path[MAXPATHLEN];
+-	int fd;
+-
+-	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
+-			sys_dir->d_name, evt_dir->d_name);
+-	fd = open(evt_path, O_RDONLY);
+-	if (fd < 0)
+-		return -EINVAL;
+-	close(fd);
+-
+-	return 0;
+-}
+-
+-#define for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next)	       \
+-	while (!readdir_r(evt_dir, &evt_dirent, &evt_next) && evt_next)        \
+-	if (evt_dirent.d_type == DT_DIR &&				       \
+-	   (strcmp(evt_dirent.d_name, ".")) &&				       \
+-	   (strcmp(evt_dirent.d_name, "..")) &&				       \
+-	   (!tp_event_has_id(&sys_dirent, &evt_dirent)))
+-
+-#define MAX_EVENT_LENGTH 512
+-
+-
+-struct tracepoint_path *tracepoint_id_to_path(u64 config)
+-{
+-	struct tracepoint_path *path = NULL;
+-	DIR *sys_dir, *evt_dir;
+-	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
+-	char id_buf[4];
+-	int fd;
+-	u64 id;
+-	char evt_path[MAXPATHLEN];
+-	char dir_path[MAXPATHLEN];
+-
+-	if (debugfs_valid_mountpoint(debugfs_path))
+-		return NULL;
+-
+-	sys_dir = opendir(debugfs_path);
+-	if (!sys_dir)
+-		return NULL;
+-
+-	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
+-
+-		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
+-			 sys_dirent.d_name);
+-		evt_dir = opendir(dir_path);
+-		if (!evt_dir)
+-			continue;
+-
+-		for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next) {
+-
+-			snprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
+-				 evt_dirent.d_name);
+-			fd = open(evt_path, O_RDONLY);
+-			if (fd < 0)
+-				continue;
+-			if (read(fd, id_buf, sizeof(id_buf)) < 0) {
+-				close(fd);
+-				continue;
+-			}
+-			close(fd);
+-			id = atoll(id_buf);
+-			if (id == config) {
+-				closedir(evt_dir);
+-				closedir(sys_dir);
+-				path = zalloc(sizeof(*path));
+-				path->system = malloc(MAX_EVENT_LENGTH);
+-				if (!path->system) {
+-					free(path);
+-					return NULL;
+-				}
+-				path->name = malloc(MAX_EVENT_LENGTH);
+-				if (!path->name) {
+-					free(path->system);
+-					free(path);
+-					return NULL;
+-				}
+-				strncpy(path->system, sys_dirent.d_name,
+-					MAX_EVENT_LENGTH);
+-				strncpy(path->name, evt_dirent.d_name,
+-					MAX_EVENT_LENGTH);
+-				return path;
+-			}
+-		}
+-		closedir(evt_dir);
+-	}
+-
+-	closedir(sys_dir);
+-	return NULL;
+-}
+-
+-#define TP_PATH_LEN (MAX_EVENT_LENGTH * 2 + 1)
+ static const char *tracepoint_id_to_name(u64 config)
+ {
+ 	static char buf[TP_PATH_LEN];
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 746d3fc..8b05b03 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -17,7 +17,6 @@ struct tracepoint_path {
+ 	struct tracepoint_path *next;
+ };
+ 
+-extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+ extern bool have_tracepoints(struct list_head *evlist);
+ 
+ const char *event_type(int type);
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index abc31a1..6bcb9a4 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <stdbool.h>
++#include <lk/util.h>
+ 
+ enum parse_opt_type {
+ 	/* special types */
 -- 
 1.7.4.rc2
 
