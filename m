@@ -1,51 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1DWR76 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 13:59:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58072 "EHLO mx1.redhat.com"
+	id S1754265Ab1DWSAP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 14:00:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49537 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab1DWR75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 13:59:57 -0400
-Date: Sat, 23 Apr 2011 19:59:01 +0200
+	id S1752797Ab1DWSAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 14:00:12 -0400
+Date: Sat, 23 Apr 2011 19:59:22 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Tejun Heo <tj@kernel.org>,
         "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
         Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] do_sigtimedwait() needs retarget_shared_pending()
-Message-ID: <20110423175901.GA484@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+Subject: [PATCH 1/3] signal: sys_rt_sigtimedwait: simplify the timeout logic
+Message-ID: <20110423175922.GB484@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+In-Reply-To: <20110423175901.GA484@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18, Linus Torvalds wrote:
->
-> In that case, this series looks fairly ok to me. I'm still unsure
-> whether it's _required_,
+No functional changes, cleanup compat_sys_rt_sigtimedwait() and
+sys_rt_sigtimedwait().
 
-Indeed! It is a bit annoying, I am not sure too. This "problem" is
-very, very, old. And nobody complained so far. Except, this _might_
-explain the hang reported by Nikita.
+Calculate the timeout before we take ->siglock, this simplifies and
+lessens the code. Use timespec_valid() to check the timespec.
 
-OTOH. Probably set_current_blocked() makes sense anyway, it would be
-nice to require that nobody can play with ->blocked directly. We can
-reconsider retarget_shared_pendind() or simply kill it if it adds the
-noticeable overhead in practice.
+I don't understand why we are adding (ts.tv_sec || ts.tv_nsec) to
+timespec_to_jiffies(&ts). Perhaps to ensure we will sleep at least
+one jiffy if ts != 0? But in this case we should only check tv_nsec,
+I don't think timespec_to_jiffies() can return zero if tv_sec != 0.
+In fact I suspect timespec_to_jiffies() can only return zero if
+tv_sec == tv_nsec == 0 because we add "TICK_NSEC - 1", but I am not
+sure I understand correctly this math.
 
-So, I'll assume we need this changes. Correctness is always good. All
-further changes should be simple and straightforward, I am going to
-trim CC. Except sys_rt_sigtimedwait() is nasty, we need another helper
-for simplicity.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-If nobody objects, I'll send at lot of other "needs set_current_blocked"
-simple patches to Andrew.
+ kernel/signal.c |   46 ++++++++++++++++++++--------------------------
+ kernel/compat.c |   38 ++++++++++++++++----------------------
+ 2 files changed, 36 insertions(+), 48 deletions(-)
 
-Oleg.
+--- sigprocmask/kernel/signal.c~1_sigtimedwait_to	2011-04-22 15:48:33.000000000 +0200
++++ sigprocmask/kernel/signal.c	2011-04-22 19:05:51.000000000 +0200
+@@ -2327,7 +2327,7 @@ SYSCALL_DEFINE4(rt_sigtimedwait, const s
+ 	sigset_t these;
+ 	struct timespec ts;
+ 	siginfo_t info;
+-	long timeout = 0;
++	long timeout;
+ 
+ 	/* XXX: Don't preclude handling different sized sigset_t's.  */
+ 	if (sigsetsize != sizeof(sigset_t))
+@@ -2343,41 +2343,35 @@ SYSCALL_DEFINE4(rt_sigtimedwait, const s
+ 	sigdelsetmask(&these, sigmask(SIGKILL)|sigmask(SIGSTOP));
+ 	signotset(&these);
+ 
++	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (uts) {
+ 		if (copy_from_user(&ts, uts, sizeof(ts)))
+ 			return -EFAULT;
+-		if (ts.tv_nsec >= 1000000000L || ts.tv_nsec < 0
+-		    || ts.tv_sec < 0)
++		if (!timespec_valid(&ts))
+ 			return -EINVAL;
++		timeout = timespec_to_jiffies(&ts) + (ts.tv_sec || ts.tv_nsec);
+ 	}
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	sig = dequeue_signal(current, &these, &info);
+-	if (!sig) {
+-		timeout = MAX_SCHEDULE_TIMEOUT;
+-		if (uts)
+-			timeout = (timespec_to_jiffies(&ts)
+-				   + (ts.tv_sec || ts.tv_nsec));
+-
+-		if (timeout) {
+-			/*
+-			 * None ready -- temporarily unblock those we're
+-			 * interested while we are sleeping in so that we'll
+-			 * be awakened when they arrive.
+-			 */
+-			current->real_blocked = current->blocked;
+-			sigandsets(&current->blocked, &current->blocked, &these);
+-			recalc_sigpending();
+-			spin_unlock_irq(&current->sighand->siglock);
++	if (!sig && timeout) {
++		/*
++		 * None ready -- temporarily unblock those we're
++		 * interested while we are sleeping in so that we'll
++		 * be awakened when they arrive.
++		 */
++		current->real_blocked = current->blocked;
++		sigandsets(&current->blocked, &current->blocked, &these);
++		recalc_sigpending();
++		spin_unlock_irq(&current->sighand->siglock);
+ 
+-			timeout = schedule_timeout_interruptible(timeout);
++		timeout = schedule_timeout_interruptible(timeout);
+ 
+-			spin_lock_irq(&current->sighand->siglock);
+-			sig = dequeue_signal(current, &these, &info);
+-			current->blocked = current->real_blocked;
+-			siginitset(&current->real_blocked, 0);
+-			recalc_sigpending();
+-		}
++		spin_lock_irq(&current->sighand->siglock);
++		sig = dequeue_signal(current, &these, &info);
++		current->blocked = current->real_blocked;
++		siginitset(&current->real_blocked, 0);
++		recalc_sigpending();
+ 	}
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
+--- sigprocmask/kernel/compat.c~1_sigtimedwait_to	2011-04-14 21:23:22.000000000 +0200
++++ sigprocmask/kernel/compat.c	2011-04-22 19:19:39.000000000 +0200
+@@ -893,7 +893,7 @@ compat_sys_rt_sigtimedwait (compat_sigse
+ 	int sig;
+ 	struct timespec t;
+ 	siginfo_t info;
+-	long ret, timeout = 0;
++	long ret, timeout;
+ 
+ 	if (sigsetsize != sizeof(sigset_t))
+ 		return -EINVAL;
+@@ -904,36 +904,30 @@ compat_sys_rt_sigtimedwait (compat_sigse
+ 	sigdelsetmask(&s,sigmask(SIGKILL)|sigmask(SIGSTOP));
+ 	signotset(&s);
+ 
++	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (uts) {
+ 		if (get_compat_timespec (&t, uts))
+ 			return -EFAULT;
+-		if (t.tv_nsec >= 1000000000L || t.tv_nsec < 0
+-				|| t.tv_sec < 0)
++		if (!timespec_valid(&t))
+ 			return -EINVAL;
++		timeout = timespec_to_jiffies(&t) + (t.tv_sec || t.tv_nsec);
+ 	}
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	sig = dequeue_signal(current, &s, &info);
+-	if (!sig) {
+-		timeout = MAX_SCHEDULE_TIMEOUT;
+-		if (uts)
+-			timeout = timespec_to_jiffies(&t)
+-				+(t.tv_sec || t.tv_nsec);
+-		if (timeout) {
+-			current->real_blocked = current->blocked;
+-			sigandsets(&current->blocked, &current->blocked, &s);
+-
+-			recalc_sigpending();
+-			spin_unlock_irq(&current->sighand->siglock);
++	if (!sig && timeout) {
++		current->real_blocked = current->blocked;
++		sigandsets(&current->blocked, &current->blocked, &s);
++		recalc_sigpending();
++		spin_unlock_irq(&current->sighand->siglock);
+ 
+-			timeout = schedule_timeout_interruptible(timeout);
++		timeout = schedule_timeout_interruptible(timeout);
+ 
+-			spin_lock_irq(&current->sighand->siglock);
+-			sig = dequeue_signal(current, &s, &info);
+-			current->blocked = current->real_blocked;
+-			siginitset(&current->real_blocked, 0);
+-			recalc_sigpending();
+-		}
++		spin_lock_irq(&current->sighand->siglock);
++		sig = dequeue_signal(current, &s, &info);
++		current->blocked = current->real_blocked;
++		siginitset(&current->real_blocked, 0);
++		recalc_sigpending();
+ 	}
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
+@@ -943,7 +937,7 @@ compat_sys_rt_sigtimedwait (compat_sigse
+ 			if (copy_siginfo_to_user32(uinfo, &info))
+ 				ret = -EFAULT;
+ 		}
+-	}else {
++	} else {
+ 		ret = timeout?-EINTR:-EAGAIN;
+ 	}
+ 	return ret;
 
