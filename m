@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab1DWPTw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 11:19:52 -0400
-Received: from kroah.org ([198.145.64.141]:53498 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab1DWPTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 11:19:51 -0400
-Date: Sat, 23 Apr 2011 08:20:55 -0700
-From: Greg KH <greg@kroah.com>
-To: Greg KH <gregkh@suse.de>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: Hyper-V vmbus driver
-Message-ID: <20110423152055.GA29109@kroah.com>
-References: <6E21E5352C11B742B20C142EB499E0481C8D35@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110411190708.GA21355@suse.de>
+	id S1755169Ab1DWPpf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 11:45:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56027 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab1DWPpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 11:45:33 -0400
+Message-ID: <4DB2F406.404@oracle.com>
+Date: Sat, 23 Apr 2011 08:45:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110411190708.GA21355@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arvind R <arvino55@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        bluesmoke-devel@lists.sourceforge.net, linux-edac@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>
+Subject: Re: linux-next: Tree for April 21 (i82975x_edac)
+References: <20110421132045.5af1b953.sfr@canb.auug.org.au>	<20110421085124.4a44d048.randy.dunlap@oracle.com> <BANLkTinoi1SeuuPj5SeTzssyBTvTQu6pMA@mail.gmail.com>
+In-Reply-To: <BANLkTinoi1SeuuPj5SeTzssyBTvTQu6pMA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DB2F410.0066:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 12:07:08PM -0700, Greg KH wrote:
-> > With that patch-set, I think I have addressed all architectural issues that I
-> > am aware of.
-> > 
-> > I was wondering if you would have the time to let me know what else would have
-> > to be addressed
-> > 
-> > in the vmbus driver, before it could be considered ready for exiting staging.
-> > As always your help is
-> > 
-> > greatly appreciated.
+On 04/23/11 01:21, Arvind R wrote:
+> On Thu, Apr 21, 2011 at 9:21 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> On Thu, 21 Apr 2011 13:20:45 +1000 Stephen Rothwell wrote:
+>>
+>>> Changes since 20110420:
+>>
+>>
+>> on i386:
+>>
+>> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for 'unsigned long' type
+>>
+>> which is:
+>>
+>>        if (info->xeap & 1)
+>>                page |= 0x100000000ul; <<<<<<<<<<<<<<<
+>>
+>> but page is unsigned long (32 bits), while 0x100000000ul is more than 32 bits,
+>> so that line isn't setting a bit in <page>.  Is it a bug, or this driver isn't
+>> applicable to X86_32, or what?
+>>
+> would defining page variable to unsigned long long solve it for x86_32?
+
+I think that the goal should be to get your 4-patch series merged.
+
+> That would still not fix the wrong error-info reported by the driver - this is
+> fixed by the patch-set titled '[RFC PATCH 2.6.37 0/4] i3000_edac : merge
+> i82975x support' dated 2011-02-14 in the linux-edac archives.
 > 
-> Anyway, yes, I discussed this with Hank last week at the LF Collab
-> summit.  I'll look at the vmbus code later this week when I catch up on
-> all of my other work (stable, usb, tty, staging, etc.) that has piled up
-> during my 2 week absence, and get back to you with what I feel is still
-> needed to be done, if anything.
+> Please advise on getting the patch into main-stream. The I3000 is a re-labeled
+> i82975x (or vice-versa). Hence the patch-set to merge the drivers. If separate
+> i82975x driver is needed - I can provide the patch. The reported bug is not
+> present in the merge-patched driver.
 
-Due to other external issues, my patch backlog is still not gotten
-through yet, sorry.  Sometimes "real life" intrudes on the best of
-plans.
+Doug, any plans to merge this 4-patch series from Arvind?
 
-I'll get to this when I get through the rest of your hv patches, and the
-other patches pending that I have in my queues.
+Arvind, was bluesmoke-devel@lists.sourceforge.net copied on this patch series?
 
-But, I would recommend you going through and looking at the code and
-verifying that you feel the bus code is "ready".  At a very quick
-glance, you should not have individual drivers have to set their 'struct
-device' pointers directly, that is something that the bus does, not the
-driver.  The driver core will call your bus and your bus will then do
-the matching and call the probe function of the driver if needed.
+and was the I3000 driver maintainer copied?  (added)
+I can't tell this from the marc.info archives.
 
-See the PCI driver structure for an example of this if you are curious.
-It should also allow you to get rid of that unneeded *priv pointer in
-the struct hv_driver.  You should be able to set that structure
-constant, like all other busses.  Right now you can not which shows a
-design issue.
-
-So, take a look at that and let me know what you think.
-
-thanks,
-
-greg k-h
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
