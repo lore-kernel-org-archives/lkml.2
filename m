@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1DWVAn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 17:00:43 -0400
-Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:57699 "EHLO
-	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755911Ab1DWVAm (ORCPT
+	id S1757241Ab1DWVFk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 17:05:40 -0400
+Received: from glenfiddich.ikibiki.org ([88.191.124.82]:33318 "EHLO
+	glenfiddich.ikibiki.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab1DWVFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 17:00:42 -0400
-Message-ID: <4DB33F4A.3080903@gmail.com>
-Date: Sat, 23 Apr 2011 23:06:18 +0200
-From: Rene Herman <rene.herman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Lanikai/3.1.9
+	Sat, 23 Apr 2011 17:05:38 -0400
+Date: Sat, 23 Apr 2011 23:05:37 +0200
+From: Cyril Brulebois <kibi@debian.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH 3/4] Documentation/00-INDEX.sh: add script to help
+ keeping the index up-to-date
+Message-ID: <20110423210537.GI32680@debian.org>
+References: <1303575344-10403-1-git-send-email-kibi@debian.org>
+ <1303575344-10403-3-git-send-email-kibi@debian.org>
+ <20110423093304.8a31e512.rdunlap@xenotime.net>
 MIME-Version: 1.0
-To: Len Brown <len.brown@intel.com>
-CC: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH] thermal: Drop CONFIG_THERMAL_HWMON
-References: <20110423150703.78ba86db@endymion.delvare>
-In-Reply-To: <20110423150703.78ba86db@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
-X-ZiggoSMTP-MailScanner-ID: 1QDjwS-00065S-4R
-X-ZiggoSMTP-MailScanner: Found to be clean
-X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
-	score=-3.638, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
-	BAYES_00 -1.90, FREEMAIL_FROM 0.50, PROLO_TRUST_RDNS -3.00,
-	RDNS_DYNAMIC 0.98, RFC_ABUSE_POST 0.00, SPF_NEUTRAL 0.78)
-X-ZiggoSMTP-MailScanner-From: rene.herman@gmail.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qLni7iB6Dl8qUSwk"
+Content-Disposition: inline
+In-Reply-To: <20110423093304.8a31e512.rdunlap@xenotime.net>
+Organization: Debian
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2011 03:07 PM, Jean Delvare wrote:
 
-> It's about time to revert 16d752397301b95abaa95cbaf9e785d221872311.
-> Anybody running a kernel>= 2.6.40 would also be running a recent
-> enough version of lm-sensors.
->
-> Signed-off-by: Jean Delvare<khali@linux-fr.org>
-> Cc: Rene Herman<rene.herman@gmail.com>
-> Cc: Len Brown<len.brown@intel.com>
+--qLni7iB6Dl8qUSwk
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rene Herman <rene.herman@gmail.com>
+Randy Dunlap <rdunlap@xenotime.net> (23/04/2011):
+> The "undocumented" list looks correct (well, it could omit .orig
+> files), but the "Documented but missing" list contains words, e.g.:
+> [=E2=80=A6]
 
-Rene.
+One coffee later=E2=80=A6 Looks like your grep is behaving as if "grep -F" =
+was
+passed; that might be better with an explicit "grep -G" (which is the
+default), see patch below?
+
+diff --git a/Documentation/00-INDEX.sh b/Documentation/00-INDEX.sh
+index 31d92d2..f22c260 100755
+--- a/Documentation/00-INDEX.sh
++++ b/Documentation/00-INDEX.sh
+@@ -4,7 +4,7 @@
+ # Try and keep the 00-INDEX file up-to-date.
+=20
+ # List all entries below the 00-INDEX entry:
+-documented=3D$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -v '^\s'|sed 's,/$,,')
++documented=3D$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -G -v '^\s'|sed 's,/$,,=
+')
+=20
+ # List all files/directories except 00-INDEX* and Makefile:
+ present=3D$(ls -1|grep -v '^00-INDEX'|grep -v '^Makefile$')
+
+
+Maybe some grep alias in your environment? I couldn't reproduce the
+behaviour you mentioned even using (unpack+PATH+LD_LIBRARY_PATH)
+pcre-7.8-2.fc11.ppc.rpm and sed-4.2.1-1.fc11.ppc.rpm, until I tried
+various options like passing -F to grep.
+
+KiBi.
+
+--qLni7iB6Dl8qUSwk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk2zPyEACgkQeGfVPHR5Nd2PJACdE/is+AYLo3e68jtKRsFY4Kr/
+wFEAoKTFDRWFn06ozf8L5IFow5TzUe+N
+=JpLY
+-----END PGP SIGNATURE-----
+
+--qLni7iB6Dl8qUSwk--
