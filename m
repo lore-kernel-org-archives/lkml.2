@@ -1,112 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab1DWCIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 22:08:52 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:47460 "EHLO zene.cmpxchg.org"
+	id S1757215Ab1DWC0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 22:26:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59688 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757143Ab1DWCIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 22:08:51 -0400
-Date: Sat, 23 Apr 2011 04:08:35 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
-Message-ID: <20110423020835.GM2333@cmpxchg.org>
-References: <20110414211656.GB1700@cmpxchg.org>
- <20110419093118.GB23041@csn.ul.ie>
- <20110419233905.GA2333@cmpxchg.org>
- <20110420094647.GB1306@csn.ul.ie>
+	id S1757163Ab1DWC0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 22:26:25 -0400
+Message-ID: <4DB238BB.2010204@zytor.com>
+Date: Fri, 22 Apr 2011 19:26:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110420094647.GB1306@csn.ul.ie>
+To: Yuhong Bao <yuhongbao_386@hotmail.com>
+CC: chris@csamuel.org, alan@lxorguk.ukuu.org.uk, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad
+ Pentium Pro system
+References: <201104222333.25546.chris@csamuel.org> <201104231016.23579.chris@csamuel.org> <SNT125-W638277FA9F3B49B316DC9FC3940@phx.gbl>,<201104231135.54966.chris@csamuel.org> <SNT125-W632CB71E47020C0C05FBDCC3940@phx.gbl>
+In-Reply-To: <SNT125-W632CB71E47020C0C05FBDCC3940@phx.gbl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 10:46:47AM +0100, Mel Gorman wrote:
-> On Wed, Apr 20, 2011 at 01:39:05AM +0200, Johannes Weiner wrote:
-> > On Tue, Apr 19, 2011 at 10:31:18AM +0100, Mel Gorman wrote:
-> > > On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
-> > > > Space in a vmap block that was once allocated is considered dirty and
-> > > > not made available for allocation again before the whole block is
-> > > > recycled.
-> > > > 
-> > > > The result is that free space within a vmap block is always contiguous
-> > > > and the allocation bitmap can be replaced by remembering the offset of
-> > > > free space in the block.
-> > > > 
-> > > > The fragmented block purging was never invoked from vb_alloc() either,
-> > > > as it skips blocks that do not have enough free space for the
-> > > > allocation in the first place.  According to the above, it is
-> > > > impossible for a block to have enough free space and still fail the
-> > > > allocation.  Thus, this dead code is removed.  Partially consumed
-> > > > blocks will be reclaimed anyway when an attempt is made to allocate a
-> > > > new vmap block altogether and no free space is found.
-> > > > 
-> > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > Cc: Nick Piggin <npiggin@kernel.dk>
-> > > > Cc: Mel Gorman <mel@csn.ul.ie>
-> > > > Cc: Hugh Dickins <hughd@google.com>
-> > > 
-> > > I didn't see a problem with the patch per-se but I wonder if your patch
-> > > is the intended behaviour. It looks like the intention was that dirty
-> > > blocks could be flushed from the TLB and made available for allocations
-> > > leading to the possibility of fragmented vmap blocks.
-> > >
-> > > It's this check that is skipping over blocks without taking dirty into
-> > > account.
-> > > 
-> > >   		spin_lock(&vb->lock);
-> > >  		if (vb->free < 1UL << order)
-> > >  			goto next;
-> > > 
-> > > It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
-> > > but is there any possibility that this is what should be fixed instead?
-> > 
-> > I would like to emphasize that the quoted check only made it clear
-> > that the allocation bitmap is superfluous.  There is no partial
-> > recycling of a block with live allocations, not even before this
-> > commit.
+On 04/22/2011 06:46 PM, Yuhong Bao wrote:
 > 
-> You're right in that the allocation bitmap does look superfluous. I was
-> wondering if it was meant to be doing something useful.
+> If it was really BIOS-e801 and not BIOS-88 returning this, looks like this is probably a kernel bug in the parsing of the results.
+>>> This would be easy to diagnose with DOS DEBUG with no himem.sys
+>>> loaded.
+>>
+>> Would be happy to try with some instructions if it would help.
+> Enter these instructions using the A command and execute with the T command:
+> mov AX, E801
+> INT 15
+> INT 3
+> And provide the results of the AX, BX, CX, and DX registers after the INT 15h.
+>  
 
-Ok, just wanted to make sure we are on the same page.
+Executing these from DOS DEBUG won't give you real results, because DOS
+intercepts this call.
 
-> > Theoretically, we could end up with all possible vmap blocks being
-> > pinned by single allocations with most of their area being dirty and
-> > not reusable.  But I believe this is unlikely to happen.
-> > 
-> > Would you be okay with printing out block usage statistics on
-> > allocation errors for the time being, so we can identify this case if
-> > problems show up?
-> 
-> It'd be interesting but for the purposes of this patch I think it
-> would be more useful to see the results of some benchmark that is vmap
-> intensive. Something directory intensive running on XFS should do the
-> job just to confirm no regression, right? A profile might indicate
-> how often we end up scanning the full list, finding it dirty and
-> calling new_vmap_block but even if something odd showed up there,
-> it would be a new patch.
+	-hpa
 
-Ok, I am still a bit confused.  You say 'regression' in the overall
-flow of vmap block allocation, but my patch does not change that.
-Which kernel versions do you want to have compared?
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Profiling the algorithm in general sounds like a good idea and I shall
-give it a go.
-
-> > And consider this patch an optimization/simplification of a status quo
-> > that does not appear problematic?  We can still revert it and
-> > implement live block recycling when it turns out to be necessary.
-> 
-> I see no problem with your patch so;
-> 
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-Thanks!
-
-	Hannes
