@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1DWHO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 03:14:28 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58735 "EHLO
+	id S1752229Ab1DWHOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 03:14:39 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58739 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab1DWHOZ (ORCPT
+	with ESMTP id S1751286Ab1DWHO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 03:14:25 -0400
+	Sat, 23 Apr 2011 03:14:26 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: EDAC devel <linux-edac@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 2/3] amd64_edac: Factor in CC6 save area
-Date: Sat, 23 Apr 2011 09:13:58 +0200
-Message-Id: <1303542839-28442-2-git-send-email-bp@amd64.org>
+Subject: [PATCH 3/3] amd64_edac: Erratum #637 workaround
+Date: Sat, 23 Apr 2011 09:13:59 +0200
+Message-Id: <1303542839-28442-3-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,82 +21,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-F15h and later use a portion of DRAM as a CC6 storage area. BIOS
-programs D18F1x[17C:140,7C:40] DRAM Base/Limit accordingly by
-subtracting the storage area from the DRAM limit setting. However, in
-order for edac to consider that part of DRAM too, we need to include it
-into the per-node range.
+F15h CPUs may report a non-DRAM address when reporting an error address
+belonging to a CC6 state save area. Add a workaround to detect this
+condition and compute the actual DRAM address of the error as documented
+in the Revision Guide for AMD Family 15h Models 00h-0Fh Processors.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/amd64_edac.c |   28 +++++++++++++++++++++++++++-
- drivers/edac/amd64_edac.h |    2 ++
- 2 files changed, 29 insertions(+), 1 deletions(-)
+ drivers/edac/amd64_edac.c |   52 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/edac/amd64_edac.h |    1 +
+ 2 files changed, 51 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 8dff05b..91f620f 100644
+index 91f620f..03b0011 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -946,12 +946,13 @@ static u64 get_error_address(struct mce *m)
- 
- static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
+@@ -933,15 +933,63 @@ static int k8_early_channel_count(struct amd64_pvt *pvt)
+ /* On F10h and later ErrAddr is MC4_ADDR[47:1] */
+ static u64 get_error_address(struct mce *m)
  {
 +	struct cpuinfo_x86 *c = &boot_cpu_data;
- 	int off = range << 3;
++	u64 addr;
+ 	u8 start_bit = 1;
+ 	u8 end_bit   = 47;
  
- 	amd64_read_pci_cfg(pvt->F1, DRAM_BASE_LO + off,  &pvt->ranges[range].base.lo);
- 	amd64_read_pci_cfg(pvt->F1, DRAM_LIMIT_LO + off, &pvt->ranges[range].lim.lo);
+-	if (boot_cpu_data.x86 == 0xf) {
++	if (c->x86 == 0xf) {
+ 		start_bit = 3;
+ 		end_bit   = 39;
+ 	}
  
--	if (boot_cpu_data.x86 == 0xf)
-+	if (c->x86 == 0xf)
- 		return;
- 
- 	if (!dram_rw(pvt, range))
-@@ -959,6 +960,31 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- 
- 	amd64_read_pci_cfg(pvt->F1, DRAM_BASE_HI + off,  &pvt->ranges[range].base.hi);
- 	amd64_read_pci_cfg(pvt->F1, DRAM_LIMIT_HI + off, &pvt->ranges[range].lim.hi);
+-	return m->addr & GENMASK(start_bit, end_bit);
++	addr = m->addr & GENMASK(start_bit, end_bit);
 +
-+	/* Factor in CC6 save area by reading dst node's limit reg */
++	/*
++	 * Erratum 637 workaround
++	 */
 +	if (c->x86 == 0x15) {
-+		struct pci_dev *f1 = NULL;
-+		u8 nid = dram_dst_node(pvt, range);
-+		u32 llim;
++		struct amd64_pvt *pvt;
++		u64 cc6_base, tmp_addr;
++		u32 tmp;
++		u8 mce_nid, intlv_en;
 +
-+		f1 = pci_get_domain_bus_and_slot(0, 0, PCI_DEVFN(0x18 + nid, 1));
-+		if (WARN_ON(!f1))
-+			return;
++		if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
++			return addr;
 +
-+		amd64_read_pci_cfg(f1, DRAM_LOCAL_NODE_LIM, &llim);
++		mce_nid	= amd_get_nb_id(m->extcpu);
++		pvt	= mcis[mce_nid]->pvt_info;
 +
-+		pvt->ranges[range].lim.lo &= GENMASK(0, 15);
++		amd64_read_pci_cfg(pvt->F1, DRAM_LOCAL_NODE_LIM, &tmp);
++		intlv_en = tmp >> 21 & 0x7;
 +
-+					    /* {[39:27],111b} */
-+		pvt->ranges[range].lim.lo |= ((llim & 0x1fff) << 3 | 0x7) << 16;
++		/* add [47:27] + 3 trailing bits */
++		cc6_base  = (tmp & GENMASK(0, 20)) << 3;
 +
-+		pvt->ranges[range].lim.hi &= GENMASK(0, 7);
++		/* reverse and add DramIntlvEn */
++		cc6_base |= intlv_en ^ 0x7;
 +
-+					    /* [47:40] */
-+		pvt->ranges[range].lim.hi |= llim >> 13;
++		/* pin at [47:24] */
++		cc6_base <<= 24;
 +
-+		pci_dev_put(f1);
++		if (!intlv_en)
++			return cc6_base | (addr & GENMASK(0, 23));
++
++		amd64_read_pci_cfg(pvt->F1, DRAM_LOCAL_NODE_BASE, &tmp);
++
++							/* faster log2 */
++		tmp_addr  = (addr & GENMASK(12, 23)) << __fls(intlv_en + 1);
++
++		/* OR DramIntlvSel into bits [14:12] */
++		tmp_addr |= (tmp & GENMASK(21, 23)) >> 9;
++
++		/* add remaining [11:0] bits from original MC4_ADDR */
++		tmp_addr |= addr & GENMASK(0, 11);
++
++		return cc6_base | tmp_addr;
 +	}
++
++	return addr;
  }
  
- static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
 diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 11be36a..0110930 100644
+index 0110930..9a666cb 100644
 --- a/drivers/edac/amd64_edac.h
 +++ b/drivers/edac/amd64_edac.h
-@@ -196,6 +196,8 @@
+@@ -196,6 +196,7 @@
  
  #define DCT_CFG_SEL			0x10C
  
-+#define DRAM_LOCAL_NODE_LIM		0x124
-+
- #define DRAM_BASE_HI			0x140
- #define DRAM_LIMIT_HI			0x144
++#define DRAM_LOCAL_NODE_BASE		0x120
+ #define DRAM_LOCAL_NODE_LIM		0x124
  
+ #define DRAM_BASE_HI			0x140
 -- 
 1.7.4.rc2
 
