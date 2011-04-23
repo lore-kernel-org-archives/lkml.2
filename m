@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab1DWKP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 06:15:57 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63083 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877Ab1DWKP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 06:15:56 -0400
-Message-ID: <4DB2A6A2.90803@metafoo.de>
-Date: Sat, 23 Apr 2011 12:14:58 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	id S1753269Ab1DWKgU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 06:36:20 -0400
+Received: from csamuel.org ([74.50.50.137]:53056 "EHLO csamuel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab1DWKgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 06:36:18 -0400
+From: Chris Samuel <chris@csamuel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
+Date: Sat, 23 Apr 2011 20:35:59 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201104222333.25546.chris@csamuel.org> <201104231016.23579.chris@csamuel.org> <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
+	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
+	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
+	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: Question: GPIO driver how to get irq_base
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com>
-In-Reply-To: <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1393430.9uuplCYmxS";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104232036.02758.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2011 03:12 AM, Tomoya MORINAGA wrote:
-> Hi Grant, Lars-Peter Clausen,
-> 
-> - Executing the following command,
->   cd /sys/class/gpio/gpio244
->   echo "falling" > edge
-> 
-> - I can see the following error message.
->   IRQ handler type mismatch for IRQ 18
->   current handler: spi_topcliff_pch
->   Pid: 3269, comm: bash Not tainted 2.6.38.3.upstream_check+ #23
->   Call Trace:
->    [<c0470682>] ? __setup_irq+0x257/0x2a9
->    [<c054a45f>] ? gpio_sysfs_irq+0x0/0x11
->    [<c047077c>] ? request_threaded_irq+0xa8/0xce
->    [<c04707fb>] ? request_any_context_irq+0x59/0x64
->    [<c054a45f>] ? gpio_sysfs_irq+0x0/0x11
->    [<c054a8f5>] ? gpio_setup_irq.clone.4+0x1fa/0x292
->    [<c054ae2c>] ? gpio_edge_store+0xa3/0xd2
->    [<c054ad89>] ? gpio_edge_store+0x0/0xd2
->    [<c05bf270>] ? dev_attr_store+0x1b/0x23
->    [<c04e90a5>] ? sysfs_write_file+0xae/0xe7
->    [<c04e8ff7>] ? sysfs_write_file+0x0/0xe7
->    [<c04a71a1>] ? vfs_write+0x82/0xd9
->    [<c04a7366>] ? sys_write+0x3b/0x5d
->    [<c0403018>] ? sysenter_do_call+0x12/0x28
-> 
->> Using the above, I can see "irq_base = 18d".
-> - According to the following "/proc/interrupts" information,
->   I suspect pch_gpio can't use IRQ18.
-> 
-> [morinaga@localhost ~]$ cat /proc/interrupts 
->            CPU0       CPU1       
->   0:      30881          0   IO-APIC-edge      timer
->   1:          2          0   IO-APIC-edge      i8042
->   4:          2          0   IO-APIC-edge    
->   8:        128          0   IO-APIC-edge      rtc0
->   9:          0          0   IO-APIC-fasteoi   acpi
->  12:          4          0   IO-APIC-edge      i8042
->  16:        385          0   IO-APIC-fasteoi   intel-eg20t-pch, ehci_hcd:usb2, ohci_hcd:usb6, ohci_hcd:usb7, ohci_hcd:usb8,
-> hda_intel
->  17:          0          0   IO-APIC-fasteoi   eth1
->  18:          0          0   IO-APIC-fasteoi   spi_topcliff_pch, i2c_eg20t, pch-dma, mmc0, mmc1
->  19:       3599          0   IO-APIC-fasteoi   ehci_hcd:usb1, ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5, pch-dma,
-> mga@pci:0000:07:00.0
->  40:      10298          0   PCI-MSI-edge      ahci
->  42:         98          0   PCI-MSI-edge      eth0
-> NMI:          0          0   Non-maskable interrupts
-> LOC:      76268      72502   Local timer interrupts
-> SPU:          0          0   Spurious interrupts
-> PMI:          0          0   Performance monitoring interrupts
-> IWI:          0          0   IRQ work interrupts
-> RES:       1383       1842   Rescheduling interrupts
-> CAL:         67        108   Function call interrupts
-> TLB:        224        292   TLB shootdowns
-> TRM:          0          0   Thermal event interrupts
-> THR:          0          0   Threshold APIC interrupts
-> MCE:          0          0   Machine check exceptions
-> MCP:          1          1   Machine check polls
-> ERR:          0
-> MIS:          0
-> 
-> Let me know your opinion.
-> 
-> Thanks,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
+--nextPart1393430.9uuplCYmxS
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Hi
+On Sat, 23 Apr 2011 07:35:36 PM Alan Cox wrote:
 
-It looks as both your driver and IO-APIC have allocated the same IRQ. You could
-try to add some debug code to alloc_irq_and_cfg_at to figure out what is going
-wrong.
+> On Sat, 23 Apr 2011 10:16:18 +1000
+>  Chris Samuel <chris@csamuel.org> wrote:
+> > Syt mae Alan! ;-)
+>=20
+> G'day ;)
 
-- Lars
+Touch=E9!
+
+> > That would explain an awful lot..
+>=20
+> Could be something has disturbed its memory detect or could be a
+> bug in the PPro memory quirk.
+>=20
+> If you boot with mem=3D and force the memory size what happens ?
+
+Same behaviour I'm afraid, hangs claiming 16MB of LOWMEM. :-(
+
+> > INT 15h =3D f000:f859 DOS RAM: 638K (0x9f800) INT 12h: 638K
+> > (0x9f800) INT 15 88: 0x3c00 (15360K) INT 15 E801: 0x0000 (0K)
+> > 0x0000 (0K)
+>=20
+> Ah.. do you have a BIOS setting called something like OS/2
+> compatibility ?
+
+That's the really odd thing, I am yet to find a way to access
+the BIOS settings on this beast. I've tried the usual DEL, F2
+and F1 with no success and there is no prompt I've ever seen
+to offer access to one.  I do have a ZIP file that contains
+the last BIOS upgrade for it that was released so I'll see if
+I can make that bootable and see if that reveals any options.
+
+> > Hope life is still good in Abertawe!
+>=20
+> This part of the world has changed rather a lot. Not sure
+> you'd recognize half of it.
+
+I can imagine, it's been a while since I've been back in
+South Wales!
+
+Take care,
+Chris
+=2D-=20
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+
+This email may come with a PGP signature as a file. Do not panic.
+=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+
+--nextPart1393430.9uuplCYmxS
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUATbKrj41yjaOTJg85AQJpNgf/YgCGfNT9mteq+O4ssE7wS76CE36qduHx
+jk8qN5MlxIYi02QDr9X+PbJ/EzSVC3s9ebol4slwnJYAsNz/e5g5Iv+dAmmBAkj1
+b/aIjLi5mPk6+p98fxe2kgC0goDnfxkyissYrfgLPswOqfwkUhm6aKkW2DPyNquG
+ZUD+F+aq2DlHotS5AGClSNxzFGCi/RX9cb9x+dPOH7dYP+yMB89JzoPxYXARfiFH
+NEyNUlEfrRcx3jrvdzmF+/1pf0EMbhy/FIf+uSMF6jn/woM8ingBzLQtSldPG7+p
+nqYFFt3A1p5ODwj51vEOuLrrS7q1KcSrSXNX1KdqH3icVfisM7iPtw==
+=BQD2
+-----END PGP SIGNATURE-----
+
+--nextPart1393430.9uuplCYmxS--
