@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab1DWNqO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 09:46:14 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:43847 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab1DWNqL (ORCPT
+	id S1754402Ab1DWNwf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:52:35 -0400
+Received: from www17.your-server.de ([213.133.104.17]:40751 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab1DWNwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 09:46:11 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Cc: dosfstools <daniel@debian.org>, mtools <Alain@linux.lu>,
+	Sat, 23 Apr 2011 09:52:34 -0400
+Subject: Re: FW: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel"
+ on quad Pentium Pro system
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Yuhong Bao <yuhongbao_386@hotmail.com>
+Cc: hpa@zytor.com, chris@csamuel.org, alan@lxorguk.ukuu.org.uk,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: End of FAT directories
-References: <1303498136.8485.128.camel@localhost>
-	<87hb9qnho4.fsf@devron.myhome.or.jp>
-	<1303509408.8485.146.camel@localhost>
-	<87bozxomqd.fsf@devron.myhome.or.jp>
-	<1303558711.8485.166.camel@localhost>
-Date: Sat, 23 Apr 2011 22:46:05 +0900
-In-Reply-To: <1303558711.8485.166.camel@localhost> (Michael Karcher's message
-	of "Sat, 23 Apr 2011 13:38:31 +0200")
-Message-ID: <8762q5nkrm.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <SNT125-W501A69BD9948F037646EDFC3940@phx.gbl>
+References: <201104222333.25546.chris@csamuel.org>
+	 <201104231522.06057.chris@csamuel.org>
+	 <SNT125-W25B0C502FF72465BC6B55BC3940@phx.gbl>
+	 ,<201104231855.47680.chris@csamuel.org>
+	 <SNT125-W501A69BD9948F037646EDFC3940@phx.gbl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Apr 2011 15:52:27 +0200
+Message-ID: <1303566747.12067.10.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de> writes:
+Am Samstag, den 23.04.2011, 03:47 -0700 schrieb Yuhong Bao:
+> FYI, I walked Chris on how to use DOS DEBUG via private email, and below is the results after the INT 15, using the instruction sequence I posted on the mailing list.Notice HIMEM was not loaded. 
+> 
+> ----------------------------------------
+> > From: chris@csamuel.org
+> > To: yuhongbao_386@hotmail.com
+> > Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
+> > Date: Sat, 23 Apr 2011 18:55:44 +1000
+> >
+> > On Sat, 23 Apr 2011 06:28:26 PM Yuhong Bao wrote:
+> >
+> >> Actually, execute with G instead, and do it without HIMEM.SYS
+> >> loaded.
+> >
+> > I couldn't see any HIMEM.SYS on the FreeDOS floppy (including
+> > looking for hidden files) so I'm presuming it's not there. There
+> > was a HIMEM.EXE so I've renamed it to NOHIMEM.OFF in the hope
+> > that it won't get executed, even in the safe mode I was using.
+> >
+> > Using G instead of A I now get:
+> >
+> > -G
+> > Unexpected breakpoint interrupt.
+> > AX=3C00 BX=0F00 CX=0000 DX=0000 SP=FFFE BP=0000 SI=0000 DI=0000
+> > DS=2890 ES=2890 SS=2890 CS=2890 IP=0106 NV UP DI PL NZ NA PE NC
+> > 2890:0106 0000 ADD [BX+SI], AL D:0F00=00
+> > -
+> >
 
->> And the above is simulate Windows implementation over specs, why isn't
->> here?
-> Wow, there actually *is* a formal specification for FAT? I am positively
-> surprised by that. I used to think that the "spec" for FAT is "do as DOS
-> does". On a quick google, I do find the MS EFI FAT32 specification,
-> which is obviuosly non-free. Is there anything else?
+so your bios seems to report the size in AX/BX. the code in
+arch/x86/boot/memory.c move the return sizes from CX/DX into AX/BX, when
+CX or DX is not zero.
 
-I guess it is called fatgen.doc in past, but I'm not sure. I can't help
-about what MS does.
+Could you try to change the line:
 
->>  For overwriting the
->> zeroed entry, why we have to check all entries until see next zeroed
->> (yeah, now, we allowed the crappy data after zeroed)?
-> My point was not about checking all entries until the next zeroed entry,
-> which is overcomplicating stuff. I meant that if we hit the end (i.e.
-> the first zeroed entry) when searching for free slots, in that case we
-> just clear the one entry directly following the inserted entries. This
-> makes sure that no files magically appear. I *do* understand that they
-> also appear on Windows, though. My point about "modifying a FAT system
-> that passes MS chkdsk with Linux should result in a FAT system that
-> passes MS chkdsk" is in my eyes more important than "Windows damages a
-> file system it considers fine in this situation, so we should do the
-> same."
+	} else if (oreg.ax == 15*1024) {
+		boot_params.alt_mem_k = (oreg.dx << 6) + oreg.ax;
 
-I'll call it - first step of in-kernel fsck.
+to
+	} else if (oreg.ax == 15*1024) {
+		boot_params.alt_mem_k = (oreg.bx << 6) + oreg.ax;
 
-> In the end, there are two valid interpretations on the problem at hand:
->  - DOS/Windows is buggy in exposing the crap when filling the "hole",
-> which is proven by chkdsk not complaining about the garbage in the
-> directory, and we should not follow the bug in DOS/Windows
+That should fix your misdetection.
 
-First of all, the bug is non-initialized directory. That's all.
+The assembler code in arch/i386/boot/setup.S seemed to move AX/BX into
+CX/DX, when CX and(!) DX were zero. Then used CX/DX to calc the memory
+size.
 
-Yes, chkdsk should fix it. But, unfortunately chkdsk is not perfect, I
-remember another breakage of chkdsk can't fix.
+PS: gitk --follow arch/x86/boot/memory.c seems to react strangley...
 
->  - chkdsk is buggy in not complaining about trailing garbage in
-> directories, which are proven to be invalid by DOS/Windows messing up on
-> them, and we shouldn't complicate our FAT implementation by trying to
-> work around a bug in chkdsk.
->
-> Obviously, I tend to the first interpretation while you prefer the
-> second interpretation. As you are the maintainer, it looks like I have
-> to get away with that.
 
-Because fsck is the job of fsck. Furthermore, without interactivity,
-fsck can't perfectly decide how to fix it actually (yes, it can guess,
-but that's guess).
-
->> My state is simple - the current implement should be fine.
->> I.e. uninitialized directory is the simply bug.
-> For the uninitialized entries on Hi-MD media, I agree with you that
-> these are caused by a firmware bug of older Sony devices. And to support
-> these devices "good enough", the stop-at-zero would be enough.
-> Regretfully I don't know the history of the USB flash memory I recently
-> got where the root directory was ended by a single entry starting with a
-> NUL byte and containing valid entries past that. The experience with the
-> inconsistent behaviour of different tools on that flash memory made me
-> write the mail about the current state of the FAT implementation.
-
-Yes, zero is the end of directory. It's right and said in the above
-fatgen. Guys might misread - fatgen says the rest of entries must be
-zero (i.e. it means initialized by zero). Or some spec (I know there is
-the FS spec in SD specs, I can't recall the detail though) may not
-mention about latter part, I don't know.
-
-> I think the *most* important fact is to have at least dosfsck and linux
-> consistent about directories with trailing garbage. So I won't even try
-> to submit a patch to the Linux kernel that stops reading at the first
-> unused directory entry if dosfsck will not accept to stop reading at the
-> first unused directory entry.
-
-OK. I think "stop at zero" is not effected by dosfsck though. With "stop
-at zero", linux will do like windows does, but crap data is already
-showed in current implementation.
-
-Whether dosfsck can fix it or not would be another story. Of course, I
-hope it does though.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
