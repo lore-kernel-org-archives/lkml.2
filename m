@@ -1,84 +1,949 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1DWNwf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 09:52:35 -0400
-Received: from www17.your-server.de ([213.133.104.17]:40751 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab1DWNwe (ORCPT
+	id S1754492Ab1DWNyl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:54:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:64850 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab1DWNyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 09:52:34 -0400
-Subject: Re: FW: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel"
- on quad Pentium Pro system
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Yuhong Bao <yuhongbao_386@hotmail.com>
-Cc: hpa@zytor.com, chris@csamuel.org, alan@lxorguk.ukuu.org.uk,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <SNT125-W501A69BD9948F037646EDFC3940@phx.gbl>
-References: <201104222333.25546.chris@csamuel.org>
-	 <201104231522.06057.chris@csamuel.org>
-	 <SNT125-W25B0C502FF72465BC6B55BC3940@phx.gbl>
-	 ,<201104231855.47680.chris@csamuel.org>
-	 <SNT125-W501A69BD9948F037646EDFC3940@phx.gbl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Apr 2011 15:52:27 +0200
-Message-ID: <1303566747.12067.10.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Sat, 23 Apr 2011 09:54:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jcd0cv8VzgSlFIw3oCjQwF2Ys7+bg9411nbtufF9/e0eHor4vynBTQU1KhBy5M/bz/
+         kh6s9/0ZcVedGIA1bchLjO+8XzB/d389H0mmvEal7AVuPXCmObri3OKcX3AEhNxY8eA+
+         uO4NGeCBNoUHxz6LWq5YkZIU3E8dJAfr1BUfc=
+From: Kenji Toyama <kenji.toyama@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu, apatard@mandriva.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Kenji Toyama <kenji.toyama@gmail.com>
+Subject: [PATCH 6/6] Staging: xgifb: Fixed almost all style warnings.
+Date: Sat, 23 Apr 2011 21:54:07 +0800
+Message-Id: <1303566847-1590-1-git-send-email-kenji.toyama@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 23.04.2011, 03:47 -0700 schrieb Yuhong Bao:
-> FYI, I walked Chris on how to use DOS DEBUG via private email, and below is the results after the INT 15, using the instruction sequence I posted on the mailing list.Notice HIMEM was not loaded. 
-> 
-> ----------------------------------------
-> > From: chris@csamuel.org
-> > To: yuhongbao_386@hotmail.com
-> > Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
-> > Date: Sat, 23 Apr 2011 18:55:44 +1000
-> >
-> > On Sat, 23 Apr 2011 06:28:26 PM Yuhong Bao wrote:
-> >
-> >> Actually, execute with G instead, and do it without HIMEM.SYS
-> >> loaded.
-> >
-> > I couldn't see any HIMEM.SYS on the FreeDOS floppy (including
-> > looking for hidden files) so I'm presuming it's not there. There
-> > was a HIMEM.EXE so I've renamed it to NOHIMEM.OFF in the hope
-> > that it won't get executed, even in the safe mode I was using.
-> >
-> > Using G instead of A I now get:
-> >
-> > -G
-> > Unexpected breakpoint interrupt.
-> > AX=3C00 BX=0F00 CX=0000 DX=0000 SP=FFFE BP=0000 SI=0000 DI=0000
-> > DS=2890 ES=2890 SS=2890 CS=2890 IP=0106 NV UP DI PL NZ NA PE NC
-> > 2890:0106 0000 ADD [BX+SI], AL D:0F00=00
-> > -
-> >
+I've removed all the warnings except one that I believe is a false
+positive. The original author has used a macro to #define EXTERN to be
+'extern', so in this case 'extern' is not used to define the storage
+class of anything, but just the value of the macro. We can safely ignore
+this warning.
 
-so your bios seems to report the size in AX/BX. the code in
-arch/x86/boot/memory.c move the return sizes from CX/DX into AX/BX, when
-CX or DX is not zero.
+Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
+---
+ drivers/staging/xgifb/vb_struct.h |  823 +++++++++++++++++-------------------
+ 1 files changed, 389 insertions(+), 434 deletions(-)
 
-Could you try to change the line:
-
-	} else if (oreg.ax == 15*1024) {
-		boot_params.alt_mem_k = (oreg.dx << 6) + oreg.ax;
-
-to
-	} else if (oreg.ax == 15*1024) {
-		boot_params.alt_mem_k = (oreg.bx << 6) + oreg.ax;
-
-That should fix your misdetection.
-
-The assembler code in arch/i386/boot/setup.S seemed to move AX/BX into
-CX/DX, when CX and(!) DX were zero. Then used CX/DX to calc the memory
-size.
-
-PS: gitk --follow arch/x86/boot/memory.c seems to react strangley...
-
+diff --git a/drivers/staging/xgifb/vb_struct.h b/drivers/staging/xgifb/vb_struct.h
+index 9c6e0c7..377d27c 100644
+--- a/drivers/staging/xgifb/vb_struct.h
++++ b/drivers/staging/xgifb/vb_struct.h
+@@ -7,369 +7,324 @@
+ #define EXTERN extern
+ #endif
+ 
++struct XGI_PanelDelayTblStruct {
++	unsigned char timer[2];
++};
+ 
++struct XGI_LCDDataStruct {
++	unsigned short RVBHCMAX;
++	unsigned short RVBHCFACT;
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short LCDHT;
++	unsigned short LCDVT;
++};
+ 
+ 
+-struct XGI_PanelDelayTblStruct
+-{
+- unsigned char timer[2];
++struct XGI_LVDSCRT1HDataStruct {
++	unsigned char Reg[8];
+ };
+ 
+-struct XGI_LCDDataStruct
+-{
+- unsigned short RVBHCMAX;
+- unsigned short RVBHCFACT;
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short LCDHT;
+- unsigned short LCDVT;
++struct XGI_LVDSCRT1VDataStruct {
++	unsigned char Reg[7];
+ };
+ 
++struct XGI_TVDataStruct {
++	unsigned short RVBHCMAX;
++	unsigned short RVBHCFACT;
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short TVHDE;
++	unsigned short TVVDE;
++	unsigned short RVBHRS;
++	unsigned char FlickerMode;
++	unsigned short HALFRVBHRS;
++	unsigned char RY1COE;
++	unsigned char RY2COE;
++	unsigned char RY3COE;
++	unsigned char RY4COE;
++};
+ 
+-struct XGI_LVDSCRT1HDataStruct
+-{
+- unsigned char Reg[8];
++struct XGI_LVDSDataStruct {
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short LCDHT;
++	unsigned short LCDVT;
+ };
+ 
+-struct XGI_LVDSCRT1VDataStruct
+-{
+- unsigned char Reg[7];
++struct XGI_LVDSDesStruct {
++	unsigned short LCDHDES;
++	unsigned short LCDVDES;
+ };
+ 
++struct XGI_LVDSCRT1DataStruct {
++	unsigned char CR[15];
++};
+ 
+-struct XGI_TVDataStruct
+-{
+- unsigned short RVBHCMAX;
+- unsigned short RVBHCFACT;
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short TVHDE;
+- unsigned short TVVDE;
+- unsigned short RVBHRS;
+- unsigned char FlickerMode;
+- unsigned short HALFRVBHRS;
+- unsigned char RY1COE;
+- unsigned char RY2COE;
+- unsigned char RY3COE;
+- unsigned char RY4COE;
++/*add for LCDA*/
++
++struct XGI_StStruct {
++	unsigned char St_ModeID;
++	unsigned short St_ModeFlag;
++	unsigned char St_StTableIndex;
++	unsigned char St_CRT2CRTC;
++	unsigned char St_CRT2CRTC2;
++	unsigned char St_ResInfo;
++	unsigned char VB_StTVFlickerIndex;
++	unsigned char VB_StTVEdgeIndex;
++	unsigned char VB_StTVYFilterIndex;
++};
++
++struct XGI_StandTableStruct {
++	unsigned char CRT_COLS;
++	unsigned char ROWS;
++	unsigned char CHAR_HEIGHT;
++	unsigned short CRT_LEN;
++	unsigned char SR[4];
++	unsigned char MISC;
++	unsigned char CRTC[0x19];
++	unsigned char ATTR[0x14];
++	unsigned char GRC[9];
+ };
+ 
+-struct XGI_LVDSDataStruct
+-{
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short LCDHT;
+- unsigned short LCDVT;
++struct XGI_ExtStruct {
++	unsigned char Ext_ModeID;
++	unsigned short Ext_ModeFlag;
++	unsigned short Ext_ModeInfo;
++	unsigned short Ext_Point;
++	unsigned short Ext_VESAID;
++	unsigned char Ext_VESAMEMSize;
++	unsigned char Ext_RESINFO;
++	unsigned char VB_ExtTVFlickerIndex;
++	unsigned char VB_ExtTVEdgeIndex;
++	unsigned char VB_ExtTVYFilterIndex;
++	unsigned char REFindex;
+ };
+ 
+-struct XGI_LVDSDesStruct
+-{
+- unsigned short LCDHDES;
+- unsigned short LCDVDES;
++struct XGI_Ext2Struct {
++	unsigned short Ext_InfoFlag;
++	unsigned char Ext_CRT1CRTC;
++	unsigned char Ext_CRTVCLK;
++	unsigned char Ext_CRT2CRTC;
++	unsigned char Ext_CRT2CRTC2;
++	unsigned char  ModeID;
++	unsigned short XRes;
++	unsigned short YRes;
++	/* unsigned short ROM_OFFSET; */
+ };
+ 
+-struct XGI_LVDSCRT1DataStruct
+-{
+- unsigned char CR[15];
++
++struct XGI_MCLKDataStruct {
++	unsigned char SR28, SR29, SR2A;
++	unsigned short CLOCK;
+ };
+ 
+-/*add for LCDA*/
++struct XGI_ECLKDataStruct {
++	unsigned char SR2E, SR2F, SR30;
++	unsigned short CLOCK;
++};
++
++struct XGI_VCLKDataStruct {
++	unsigned char SR2B, SR2C;
++	unsigned short CLOCK;
++};
+ 
+-struct XGI_StStruct
+-{
+- unsigned char St_ModeID;
+- unsigned short St_ModeFlag;
+- unsigned char St_StTableIndex;
+- unsigned char St_CRT2CRTC;
+- unsigned char St_CRT2CRTC2;
+- unsigned char St_ResInfo;
+- unsigned char VB_StTVFlickerIndex;
+- unsigned char VB_StTVEdgeIndex;
+- unsigned char VB_StTVYFilterIndex;
+-};
+-
+-struct XGI_StandTableStruct
+-{
+- unsigned char CRT_COLS;
+- unsigned char ROWS;
+- unsigned char CHAR_HEIGHT;
+- unsigned short CRT_LEN;
+- unsigned char SR[4];
+- unsigned char MISC;
+- unsigned char CRTC[0x19];
+- unsigned char ATTR[0x14];
+- unsigned char GRC[9];
+-};
+-
+-struct XGI_ExtStruct
+-{
+- unsigned char Ext_ModeID;
+- unsigned short Ext_ModeFlag;
+- unsigned short Ext_ModeInfo;
+- unsigned short Ext_Point;
+- unsigned short Ext_VESAID;
+- unsigned char Ext_VESAMEMSize;
+- unsigned char Ext_RESINFO;
+- unsigned char VB_ExtTVFlickerIndex;
+- unsigned char VB_ExtTVEdgeIndex;
+- unsigned char VB_ExtTVYFilterIndex;
+- unsigned char REFindex;
+-};
+-
+-struct XGI_Ext2Struct
+-{
+- unsigned short Ext_InfoFlag;
+- unsigned char Ext_CRT1CRTC;
+- unsigned char Ext_CRTVCLK;
+- unsigned char Ext_CRT2CRTC;
+- unsigned char Ext_CRT2CRTC2;
+- unsigned char  ModeID;
+- unsigned short XRes;
+- unsigned short YRes;
+- /* unsigned short ROM_OFFSET; */
+-};
+-
+-
+-struct XGI_MCLKDataStruct
+-{
+- unsigned char SR28, SR29, SR2A;
+- unsigned short CLOCK;
+-};
+-
+-struct XGI_ECLKDataStruct
+-{
+- unsigned char SR2E, SR2F, SR30;
+- unsigned short CLOCK;
+-};
+-
+-struct XGI_VCLKDataStruct
+-{
+- unsigned char SR2B, SR2C;
+- unsigned short CLOCK;
+-};
+-
+-struct XGI_VBVCLKDataStruct
+-{
+- unsigned char Part4_A, Part4_B;
+- unsigned short CLOCK;
+-};
+-
+-struct XGI_StResInfoStruct
+-{
+- unsigned short HTotal;
+- unsigned short VTotal;
+-};
+-
+-struct XGI_ModeResInfoStruct
+-{
+- unsigned short HTotal;
+- unsigned short VTotal;
+- unsigned char  XChar;
+- unsigned char  YChar;
+-};
+-
+-struct XGI_LCDNBDesStruct
+-{
+-  unsigned char NB[12];
+-};
+- /*add for new UNIVGABIOS*/
+-struct XGI_LCDDesStruct
+-{
+- unsigned short LCDHDES;
+- unsigned short LCDHRS;
+- unsigned short LCDVDES;
+- unsigned short LCDVRS;
++struct XGI_VBVCLKDataStruct {
++	unsigned char Part4_A, Part4_B;
++	unsigned short CLOCK;
+ };
+ 
+-struct XGI_LCDDataTablStruct
+-{
+- unsigned char  PANELID;
+- unsigned short MASK;
+- unsigned short CAP;
+- unsigned short DATAPTR;
++struct XGI_StResInfoStruct {
++	unsigned short HTotal;
++	unsigned short VTotal;
+ };
+ 
+-struct XGI_TVTablDataStruct
+-{
+- unsigned short MASK;
+- unsigned short CAP;
+- unsigned short DATAPTR;
++struct XGI_ModeResInfoStruct {
++	unsigned short HTotal;
++	unsigned short VTotal;
++	unsigned char  XChar;
++	unsigned char  YChar;
+ };
+ 
+-struct XGI330_LCDDataDesStruct
+-{
+- unsigned short LCDHDES;
+- unsigned short LCDHRS;
+- unsigned short LCDVDES;
+- unsigned short LCDVRS;
++struct XGI_LCDNBDesStruct {
++	unsigned char NB[12];
+ };
+ 
++/*add for new UNIVGABIOS*/
++struct XGI_LCDDesStruct {
++	unsigned short LCDHDES;
++	unsigned short LCDHRS;
++	unsigned short LCDVDES;
++	unsigned short LCDVRS;
++};
+ 
+-struct XGI330_LVDSDataStruct
+-{
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short LCDHT;
+- unsigned short LCDVT;
++struct XGI_LCDDataTablStruct {
++	unsigned char  PANELID;
++	unsigned short MASK;
++	unsigned short CAP;
++	unsigned short DATAPTR;
+ };
+ 
+-struct XGI330_LCDDataDesStruct2
+-{
+- unsigned short LCDHDES;
+- unsigned short LCDHRS;
+- unsigned short LCDVDES;
+- unsigned short LCDVRS;
+- unsigned short LCDHSync;
+- unsigned short LCDVSync;
++struct XGI_TVTablDataStruct {
++	unsigned short MASK;
++	unsigned short CAP;
++	unsigned short DATAPTR;
+ };
+ 
+-struct XGI330_LCDDataStruct
+-{
+- unsigned short RVBHCMAX;
+- unsigned short RVBHCFACT;
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short LCDHT;
+- unsigned short LCDVT;
++struct XGI330_LCDDataDesStruct {
++	unsigned short LCDHDES;
++	unsigned short LCDHRS;
++	unsigned short LCDVDES;
++	unsigned short LCDVRS;
+ };
+ 
+ 
+-struct XGI330_TVDataStruct
+-{
+- unsigned short RVBHCMAX;
+- unsigned short RVBHCFACT;
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short TVHDE;
+- unsigned short TVVDE;
+- unsigned short RVBHRS;
+- unsigned char FlickerMode;
+- unsigned short HALFRVBHRS;
+-};
+-
+-struct XGI330_LCDDataTablStruct
+-{
+- unsigned char  PANELID;
+- unsigned short MASK;
+- unsigned short CAP;
+- unsigned short DATAPTR;
+-};
+-
+-struct XGI330_TVDataTablStruct
+-{
+- unsigned short MASK;
+- unsigned short CAP;
+- unsigned short DATAPTR;
+-};
+-
+-
+-struct XGI330_CHTVDataStruct
+-{
+- unsigned short VGAHT;
+- unsigned short VGAVT;
+- unsigned short LCDHT;
+- unsigned short LCDVT;
+-};
+-
+-struct XGI_TimingHStruct
+-{
+-  unsigned char data[8];
+-};
++struct XGI330_LVDSDataStruct {
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short LCDHT;
++	unsigned short LCDVT;
++};
+ 
+-struct XGI_TimingVStruct
+-{
+-  unsigned char data[7];
++struct XGI330_LCDDataDesStruct2 {
++	unsigned short LCDHDES;
++	unsigned short LCDHRS;
++	unsigned short LCDVDES;
++	unsigned short LCDVRS;
++	unsigned short LCDHSync;
++	unsigned short LCDVSync;
+ };
+ 
+-struct XGI_CH7007TV_TimingHStruct
+-{
+-  unsigned char data[10];
++struct XGI330_LCDDataStruct {
++	unsigned short RVBHCMAX;
++	unsigned short RVBHCFACT;
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short LCDHT;
++	unsigned short LCDVT;
+ };
+ 
+-struct XGI_CH7007TV_TimingVStruct
+-{
+-  unsigned char data[10];
+-};
+-
+-struct XGI_XG21CRT1Struct
+-{
+- unsigned char ModeID, CR02, CR03, CR15, CR16;
++
++struct XGI330_TVDataStruct {
++	unsigned short RVBHCMAX;
++	unsigned short RVBHCFACT;
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short TVHDE;
++	unsigned short TVVDE;
++	unsigned short RVBHRS;
++	unsigned char FlickerMode;
++	unsigned short HALFRVBHRS;
+ };
+ 
+-struct XGI330_CHTVRegDataStruct
+-{
+- unsigned char Reg[16];
++struct XGI330_LCDDataTablStruct {
++	unsigned char  PANELID;
++	unsigned short MASK;
++	unsigned short CAP;
++	unsigned short DATAPTR;
+ };
+ 
+-struct XGI330_LCDCapStruct
+-{
+-		unsigned char	   LCD_ID;
+-		unsigned short	   LCD_Capability;
+-		unsigned char	   LCD_SetFlag;
+-		unsigned char	   LCD_DelayCompensation;
+-		unsigned char	   LCD_HSyncWidth;
+-		unsigned char	   LCD_VSyncWidth;
+-		unsigned char	   LCD_VCLK;
+-		unsigned char	   LCDA_VCLKData1;
+-		unsigned char	   LCDA_VCLKData2;
+-		unsigned char	   LCUCHAR_VCLKData1;
+-		unsigned char	   LCUCHAR_VCLKData2;
+-		unsigned char	   PSC_S1;
+-		unsigned char	   PSC_S2;
+-		unsigned char	   PSC_S3;
+-		unsigned char	   PSC_S4;
+-		unsigned char	   PSC_S5;
+-		unsigned char	   PWD_2B;
+-		unsigned char	   PWD_2C;
+-		unsigned char	   PWD_2D;
+-		unsigned char	   PWD_2E;
+-		unsigned char	   PWD_2F;
+-		unsigned char	   Spectrum_31;
+-		unsigned char	   Spectrum_32;
+-		unsigned char	   Spectrum_33;
+-		unsigned char	   Spectrum_34;
++struct XGI330_TVDataTablStruct {
++	unsigned short MASK;
++	unsigned short CAP;
++	unsigned short DATAPTR;
+ };
+ 
+-struct XGI21_LVDSCapStruct
+-{
+-		unsigned short	   LVDS_Capability;
+-		unsigned short	   LVDSHT;
+-		unsigned short	   LVDSVT;
+-		unsigned short	   LVDSHDE;
+-		unsigned short	   LVDSVDE;
+-		unsigned short	   LVDSHFP;
+-		unsigned short	   LVDSVFP;
+-		unsigned short	   LVDSHSYNC;
+-		unsigned short	   LVDSVSYNC;
+-		unsigned char	   VCLKData1;
+-		unsigned char	   VCLKData2;
+-		unsigned char	   PSC_S1;
+-		unsigned char	   PSC_S2;
+-		unsigned char	   PSC_S3;
+-		unsigned char	   PSC_S4;
+-		unsigned char	   PSC_S5;
++
++struct XGI330_CHTVDataStruct {
++	unsigned short VGAHT;
++	unsigned short VGAVT;
++	unsigned short LCDHT;
++	unsigned short LCDVT;
+ };
+ 
+-struct XGI_CRT1TableStruct
+-{
+-  unsigned char CR[16];
++struct XGI_TimingHStruct {
++	unsigned char data[8];
+ };
+ 
++struct XGI_TimingVStruct {
++	unsigned char data[7];
++};
+ 
+-struct XGI330_VCLKDataStruct
+-{
+-    unsigned char SR2B, SR2C;
+-    unsigned short CLOCK;
++struct XGI_CH7007TV_TimingHStruct {
++	unsigned char data[10];
+ };
+ 
+-struct XGI301C_Tap4TimingStruct
+-{
+-    unsigned short DE;
+-    unsigned char  Reg[64];   /* C0-FF */
+-};
++struct XGI_CH7007TV_TimingVStruct {
++	unsigned char data[10];
++};
++
++struct XGI_XG21CRT1Struct {
++	unsigned char ModeID, CR02, CR03, CR15, CR16;
++};
++
++struct XGI330_CHTVRegDataStruct {
++	unsigned char Reg[16];
++};
++
++struct XGI330_LCDCapStruct {
++	unsigned char	LCD_ID;
++	unsigned short	LCD_Capability;
++	unsigned char	LCD_SetFlag;
++	unsigned char	LCD_DelayCompensation;
++	unsigned char	LCD_HSyncWidth;
++	unsigned char	LCD_VSyncWidth;
++	unsigned char	LCD_VCLK;
++	unsigned char	LCDA_VCLKData1;
++	unsigned char	LCDA_VCLKData2;
++	unsigned char	LCUCHAR_VCLKData1;
++	unsigned char	LCUCHAR_VCLKData2;
++	unsigned char	PSC_S1;
++	unsigned char	PSC_S2;
++	unsigned char	PSC_S3;
++	unsigned char	PSC_S4;
++	unsigned char	PSC_S5;
++	unsigned char	PWD_2B;
++	unsigned char	PWD_2C;
++	unsigned char	PWD_2D;
++	unsigned char	PWD_2E;
++	unsigned char	PWD_2F;
++	unsigned char	Spectrum_31;
++	unsigned char	Spectrum_32;
++	unsigned char	Spectrum_33;
++	unsigned char	Spectrum_34;
++};
++
++struct XGI21_LVDSCapStruct {
++	unsigned short LVDS_Capability;
++	unsigned short LVDSHT;
++	unsigned short LVDSVT;
++	unsigned short LVDSHDE;
++	unsigned short LVDSVDE;
++	unsigned short LVDSHFP;
++	unsigned short LVDSVFP;
++	unsigned short LVDSHSYNC;
++	unsigned short LVDSVSYNC;
++	unsigned char  VCLKData1;
++	unsigned char  VCLKData2;
++	unsigned char  PSC_S1;
++	unsigned char  PSC_S2;
++	unsigned char  PSC_S3;
++	unsigned char  PSC_S4;
++	unsigned char  PSC_S5;
++};
++
++struct XGI_CRT1TableStruct {
++	unsigned char CR[16];
++};
++
++
++struct XGI330_VCLKDataStruct {
++	unsigned char SR2B, SR2C;
++	unsigned short CLOCK;
++};
++
++struct XGI301C_Tap4TimingStruct {
++	unsigned short DE;
++	unsigned char  Reg[64];   /* C0-FF */
++};
+ 
+-struct XGI_New_StandTableStruct
+-{
++struct XGI_New_StandTableStruct {
+ 	unsigned char  CRT_COLS;
+ 	unsigned char  ROWS;
+ 	unsigned char  CHAR_HEIGHT;
+@@ -381,36 +336,37 @@ struct XGI_New_StandTableStruct
+ 	unsigned char  GRC[9];
+ };
+ 
+-struct vb_device_info
+-{
+-    unsigned char  ISXPDOS;
+-    unsigned long   P3c4,P3d4,P3c0,P3ce,P3c2,P3cc;
+-    unsigned long   P3ca,P3c6,P3c7,P3c8,P3c9,P3da;
+-    unsigned long   Part0Port,Part1Port,Part2Port;
+-    unsigned long   Part3Port,Part4Port,Part5Port;
+-    unsigned short   RVBHCFACT,RVBHCMAX,RVBHRS;
+-    unsigned short   VGAVT,VGAHT,VGAVDE,VGAHDE;
+-    unsigned short   VT,HT,VDE,HDE;
+-    unsigned short   LCDHRS,LCDVRS,LCDHDES,LCDVDES;
+-
+-    unsigned short   ModeType;
+-    unsigned short   IF_DEF_LVDS,IF_DEF_TRUMPION,IF_DEF_DSTN;/* ,IF_DEF_FSTN; add for dstn */
+-    unsigned short   IF_DEF_CRT2Monitor,IF_DEF_VideoCapture;
+-    unsigned short   IF_DEF_LCDA,IF_DEF_CH7017,IF_DEF_YPbPr,IF_DEF_ScaleLCD,IF_DEF_OEMUtil,IF_DEF_PWD;
+-    unsigned short   IF_DEF_ExpLink;
+-    unsigned short   IF_DEF_CH7005,IF_DEF_HiVision;
+-    unsigned short   IF_DEF_CH7007; /* Billy 2007/05/03 */
+-    unsigned short   LCDResInfo,LCDTypeInfo, VBType;/*301b*/
+-    unsigned short   VBInfo,TVInfo,LCDInfo, Set_VGAType;
+-    unsigned short   VBExtInfo;/*301lv*/
+-    unsigned short   SetFlag;
+-    unsigned short   NewFlickerMode;
+-    unsigned short   SelectCRT2Rate;
+-
+-    unsigned char *ROMAddr;
+-    unsigned char *FBAddr;
+-    unsigned long BaseAddr;
+-    unsigned long RelIO;
++struct vb_device_info {
++	unsigned char  ISXPDOS;
++	unsigned long   P3c4, P3d4, P3c0, P3ce, P3c2, P3cc;
++	unsigned long   P3ca, P3c6, P3c7, P3c8, P3c9, P3da;
++	unsigned long   Part0Port, Part1Port, Part2Port;
++	unsigned long   Part3Port, Part4Port, Part5Port;
++	unsigned short   RVBHCFACT, RVBHCMAX, RVBHRS;
++	unsigned short   VGAVT, VGAHT, VGAVDE, VGAHDE;
++	unsigned short   VT, HT, VDE, HDE;
++	unsigned short   LCDHRS, LCDVRS, LCDHDES, LCDVDES;
++
++	unsigned short   ModeType;
++	/* ,IF_DEF_FSTN; add for dstn */
++	unsigned short   IF_DEF_LVDS, IF_DEF_TRUMPION, IF_DEF_DSTN;
++	unsigned short   IF_DEF_CRT2Monitor, IF_DEF_VideoCapture;
++	unsigned short   IF_DEF_LCDA, IF_DEF_CH7017, IF_DEF_YPbPr,
++			 IF_DEF_ScaleLCD, IF_DEF_OEMUtil, IF_DEF_PWD;
++	unsigned short   IF_DEF_ExpLink;
++	unsigned short   IF_DEF_CH7005, IF_DEF_HiVision;
++	unsigned short   IF_DEF_CH7007; /* Billy 2007/05/03 */
++	unsigned short   LCDResInfo, LCDTypeInfo, VBType;/*301b*/
++	unsigned short   VBInfo, TVInfo, LCDInfo, Set_VGAType;
++	unsigned short   VBExtInfo;/*301lv*/
++	unsigned short   SetFlag;
++	unsigned short   NewFlickerMode;
++	unsigned short   SelectCRT2Rate;
++
++	unsigned char *ROMAddr;
++	unsigned char *FBAddr;
++	unsigned long BaseAddr;
++	unsigned long RelIO;
+ 
+ 	unsigned char (*CR6B)[4];
+ 	unsigned char (*CR6E)[4];
+@@ -420,107 +376,106 @@ struct vb_device_info
+ 	unsigned char (*SR15)[8];
+ 	unsigned char (*CR40)[8];
+ 
+-    unsigned char  *pSoftSetting;
+-    unsigned char  *pOutputSelect;
+-
+-    unsigned short *pRGBSenseData;
+-    unsigned short *pRGBSenseData2; /*301b*/
+-    unsigned short *pVideoSenseData;
+-    unsigned short *pVideoSenseData2;
+-    unsigned short *pYCSenseData;
+-    unsigned short *pYCSenseData2;
+-
+-    unsigned char  *pSR07;
+-    unsigned char  *CR49;
+-    unsigned char  *pSR1F;
+-    unsigned char  *AGPReg;
+-    unsigned char  *SR16;
+-    unsigned char  *pSR21;
+-    unsigned char  *pSR22;
+-    unsigned char  *pSR23;
+-    unsigned char  *pSR24;
+-    unsigned char  *SR25;
+-    unsigned char  *pSR31;
+-    unsigned char  *pSR32;
+-    unsigned char  *pSR33;
+-    unsigned char  *pSR36;      /* alan 12/07/2006 */
+-    unsigned char  *pCRCF;
+-    unsigned char  *pCRD0;      /* alan 12/07/2006 */
+-    unsigned char  *pCRDE;      /* alan 12/07/2006 */
+-    unsigned char  *pCR8F;      /* alan 12/07/2006 */
+-    unsigned char  *pSR40;      /* alan 12/07/2006 */
+-    unsigned char  *pSR41;      /* alan 12/07/2006 */
+-    unsigned char  *pDVOSetting;
+-    unsigned char  *pCR2E;
+-    unsigned char  *pCR2F;
+-    unsigned char  *pCR46;
+-    unsigned char  *pCR47;
+-    unsigned char  *pCRT2Data_1_2;
+-    unsigned char  *pCRT2Data_4_D;
+-    unsigned char  *pCRT2Data_4_E;
+-    unsigned char  *pCRT2Data_4_10;
+-    struct XGI_MCLKDataStruct  *MCLKData;
+-    struct XGI_ECLKDataStruct  *ECLKData;
+-
+-    unsigned char   *XGI_TVDelayList;
+-    unsigned char   *XGI_TVDelayList2;
+-    unsigned char   *CHTVVCLKUNTSC;
+-    unsigned char   *CHTVVCLKONTSC;
+-    unsigned char   *CHTVVCLKUPAL;
+-    unsigned char   *CHTVVCLKOPAL;
+-    unsigned char   *NTSCTiming;
+-    unsigned char   *PALTiming;
+-    unsigned char   *HiTVExtTiming;
+-    unsigned char   *HiTVSt1Timing;
+-    unsigned char   *HiTVSt2Timing;
+-    unsigned char   *HiTVTextTiming;
+-    unsigned char   *YPbPr750pTiming;
+-    unsigned char   *YPbPr525pTiming;
+-    unsigned char   *YPbPr525iTiming;
+-    unsigned char   *HiTVGroup3Data;
+-    unsigned char   *HiTVGroup3Simu;
+-    unsigned char   *HiTVGroup3Text;
+-    unsigned char   *Ren525pGroup3;
+-    unsigned char   *Ren750pGroup3;
+-    unsigned char   *ScreenOffset;
+-    unsigned char   *pXGINew_DRAMTypeDefinition;
+-    unsigned char   *pXGINew_I2CDefinition ;
+-    unsigned char   *pXGINew_CR97 ;
+-
+-    struct XGI330_LCDCapStruct  *LCDCapList;
+-    struct XGI21_LVDSCapStruct  *XG21_LVDSCapList;
+-
+-    struct XGI_TimingHStruct  *TimingH;
+-    struct XGI_TimingVStruct  *TimingV;
+-
+-    struct XGI_StStruct          *SModeIDTable;
+-    struct XGI_StandTableStruct  *StandTable;
+-    struct XGI_ExtStruct         *EModeIDTable;
+-    struct XGI_Ext2Struct        *RefIndex;
+-    /* XGINew_CRT1TableStruct *CRT1Table; */
+-    struct XGI_CRT1TableStruct    *XGINEWUB_CRT1Table;
+-    struct XGI_VCLKDataStruct    *VCLKData;
+-    struct XGI_VBVCLKDataStruct  *VBVCLKData;
+-    struct XGI_StResInfoStruct   *StResInfo;
+-    struct XGI_ModeResInfoStruct *ModeResInfo;
+-    struct XGI_XG21CRT1Struct	  *UpdateCRT1;
++	unsigned char  *pSoftSetting;
++	unsigned char  *pOutputSelect;
++
++	unsigned short *pRGBSenseData;
++	unsigned short *pRGBSenseData2; /*301b*/
++	unsigned short *pVideoSenseData;
++	unsigned short *pVideoSenseData2;
++	unsigned short *pYCSenseData;
++	unsigned short *pYCSenseData2;
++
++	unsigned char  *pSR07;
++	unsigned char  *CR49;
++	unsigned char  *pSR1F;
++	unsigned char  *AGPReg;
++	unsigned char  *SR16;
++	unsigned char  *pSR21;
++	unsigned char  *pSR22;
++	unsigned char  *pSR23;
++	unsigned char  *pSR24;
++	unsigned char  *SR25;
++	unsigned char  *pSR31;
++	unsigned char  *pSR32;
++	unsigned char  *pSR33;
++	unsigned char  *pSR36;      /* alan 12/07/2006 */
++	unsigned char  *pCRCF;
++	unsigned char  *pCRD0;      /* alan 12/07/2006 */
++	unsigned char  *pCRDE;      /* alan 12/07/2006 */
++	unsigned char  *pCR8F;      /* alan 12/07/2006 */
++	unsigned char  *pSR40;      /* alan 12/07/2006 */
++	unsigned char  *pSR41;      /* alan 12/07/2006 */
++	unsigned char  *pDVOSetting;
++	unsigned char  *pCR2E;
++	unsigned char  *pCR2F;
++	unsigned char  *pCR46;
++	unsigned char  *pCR47;
++	unsigned char  *pCRT2Data_1_2;
++	unsigned char  *pCRT2Data_4_D;
++	unsigned char  *pCRT2Data_4_E;
++	unsigned char  *pCRT2Data_4_10;
++	struct XGI_MCLKDataStruct  *MCLKData;
++	struct XGI_ECLKDataStruct  *ECLKData;
++
++	unsigned char   *XGI_TVDelayList;
++	unsigned char   *XGI_TVDelayList2;
++	unsigned char   *CHTVVCLKUNTSC;
++	unsigned char   *CHTVVCLKONTSC;
++	unsigned char   *CHTVVCLKUPAL;
++	unsigned char   *CHTVVCLKOPAL;
++	unsigned char   *NTSCTiming;
++	unsigned char   *PALTiming;
++	unsigned char   *HiTVExtTiming;
++	unsigned char   *HiTVSt1Timing;
++	unsigned char   *HiTVSt2Timing;
++	unsigned char   *HiTVTextTiming;
++	unsigned char   *YPbPr750pTiming;
++	unsigned char   *YPbPr525pTiming;
++	unsigned char   *YPbPr525iTiming;
++	unsigned char   *HiTVGroup3Data;
++	unsigned char   *HiTVGroup3Simu;
++	unsigned char   *HiTVGroup3Text;
++	unsigned char   *Ren525pGroup3;
++	unsigned char   *Ren750pGroup3;
++	unsigned char   *ScreenOffset;
++	unsigned char   *pXGINew_DRAMTypeDefinition;
++	unsigned char   *pXGINew_I2CDefinition ;
++	unsigned char   *pXGINew_CR97 ;
++
++	struct XGI330_LCDCapStruct  *LCDCapList;
++	struct XGI21_LVDSCapStruct  *XG21_LVDSCapList;
++
++	struct XGI_TimingHStruct  *TimingH;
++	struct XGI_TimingVStruct  *TimingV;
++
++	struct XGI_StStruct          *SModeIDTable;
++	struct XGI_StandTableStruct  *StandTable;
++	struct XGI_ExtStruct         *EModeIDTable;
++	struct XGI_Ext2Struct        *RefIndex;
++	/* XGINew_CRT1TableStruct *CRT1Table; */
++	struct XGI_CRT1TableStruct    *XGINEWUB_CRT1Table;
++	struct XGI_VCLKDataStruct    *VCLKData;
++	struct XGI_VBVCLKDataStruct  *VBVCLKData;
++	struct XGI_StResInfoStruct   *StResInfo;
++	struct XGI_ModeResInfoStruct *ModeResInfo;
++	struct XGI_XG21CRT1Struct	  *UpdateCRT1;
+ };  /* _struct vb_device_info */
+ 
+ 
+-struct TimingInfo
+-{
+-    unsigned short    Horizontal_ACTIVE;
+-    unsigned short    Horizontal_FP;
+-    unsigned short    Horizontal_SYNC;
+-    unsigned short    Horizontal_BP;
+-    unsigned short    Vertical_ACTIVE;
+-    unsigned short    Vertical_FP;
+-    unsigned short    Vertical_SYNC;
+-    unsigned short    Vertical_BP;
+-    double    DCLK;
+-    unsigned char     FrameRate;
+-    unsigned char     Interlace;
+-    unsigned short    Margin;
++struct TimingInfo {
++	unsigned short Horizontal_ACTIVE;
++	unsigned short Horizontal_FP;
++	unsigned short Horizontal_SYNC;
++	unsigned short Horizontal_BP;
++	unsigned short Vertical_ACTIVE;
++	unsigned short Vertical_FP;
++	unsigned short Vertical_SYNC;
++	unsigned short Vertical_BP;
++	double	       DCLK;
++	unsigned char  FrameRate;
++	unsigned char  Interlace;
++	unsigned short Margin;
+ };
+ 
+ #define _VB_STRUCT_
+-- 
+1.7.1
 
