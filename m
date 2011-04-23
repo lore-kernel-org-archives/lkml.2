@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1DWAQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 20:16:42 -0400
-Received: from csamuel.org ([74.50.50.137]:46623 "EHLO csamuel.org"
+	id S1757128Ab1DWAUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 20:20:38 -0400
+Received: from csamuel.org ([74.50.50.137]:56390 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab1DWAQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 20:16:41 -0400
+	id S1756572Ab1DWAUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 20:20:37 -0400
 From: Chris Samuel <chris@csamuel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
 Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
-Date: Sat, 23 Apr 2011 10:16:18 +1000
+Date: Sat, 23 Apr 2011 10:20:21 +1000
 User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201104222333.25546.chris@csamuel.org> <20110422173422.46134f20@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110422173422.46134f20@lxorguk.ukuu.org.uk>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
-	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
-	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
-	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+References: <201104222333.25546.chris@csamuel.org> <20110422134648.GB23965@elte.hu>
+In-Reply-To: <20110422134648.GB23965@elte.hu>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@
+ =?iso-8859-1?q?=5ESdaXtmdYGRq=0A=09=5B?=>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<
+ =?iso-8859-1?q?=7Bn8m=3BX=5F=0A=09g=5CY9LQ=3Dv/b5=60?=)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)
+ =?iso-8859-1?q?F!1M3=3Dw=3Ai9MsWp=26v=3B=25usOXL=3Bw=0A=096kF=3FwAZjss=2E?=
+ =?iso-8859-1?q?+y?=(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart1531560.jZSmrLU9EB";
+  boundary="nextPart1778686.OYxBQx9UpA";
   protocol="application/pgp-signature";
   micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104231016.23579.chris@csamuel.org>
+Message-Id: <201104231020.21557.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1531560.jZSmrLU9EB
+--nextPart1778686.OYxBQx9UpA
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: quoted-printable
 
-Syt mae Alan! ;-)
+Hi Ingo,
 
-On Sat, 23 Apr 2011 02:34:22 AM Alan Cox wrote:
+On Fri, 22 Apr 2011 11:46:48 PM Ingo Molnar wrote:
 
-> earlyprintk=3Dvga
+> Have you tried the earlyprintk=3Dvga boot parameter yet? Maybe that
+> shows more  than just a silent hang ...
 
-Ahh, that's a new one on me, and it reveals that the kernel
-has gone from 2.6.18 detecting:
+Thanks for that, just responded to Alan's email mentioning the
+same option - I'd not come stumbled across it before.  It reveals
+the cause is the kernel misdetecting the amount of LOWMEM as 16MB
+and, I suspect, is the same issue as I had an offlist conversation
+with H. Peter Anvin with in 2008 which tailed off due to work
+pressure on his part.  There are more details in my response to Alan.
 
-256MB LOWMEM available.
+> Other than that, do you have some other box where you can build
+> bzImages for  this system in reasonable time? If yes then you
+> might be able to bisect to the commit that broke it.
 
-to 2.6.39-rc4 detecting:
+I can indeed, I'm lucky enough to be able to build that image
+in about 4 minutes on my production desktop.  Is that still of
+use given that there's now a better view of what's going on ?
 
-16MB LOWMEM available.
-
-That would explain an awful lot..
-
-> (or better yet earlyprintk=3DttyS0 and a serial port)
-
-Hmm, I might still have a null modem cable hanging around..
-
-> There are a couple of PPro funnies - there's an area of memory that
-> must be excluded due to a chip errata and I seem to remember some
-> PPro boxes also having slightly quirking E820 (BIOS memory
-> reporting behaviour)
-
-Sigh, that's just reminded me that a couple of years ago I
-had a private discussion with H. Peter Anvin about 2.6.25
-panic'ing on boot with:
-
-initrd extends beyond end of memory (0x0ffef173 > ox01000000)
-
-He gave me a modified syslinux to dump out memory information
-and it reported:
-
-INT 15h =3D f000:f859 DOS RAM: 638K (0x9f800) INT 12h: 638K (0x9f800)
-INT 15 88: 0x3c00 (15360K) INT 15 E801: 0x0000 (0K) 0x0000 (0K)
-
-He responded with:
-
-# Right... you have a system dependent on E801, and somehow E801
-# returns crap.
-#
-# I'm going to cook up a modified meminfo.c32 for you and see if
-# we can't track this down.
-
-Unfortunately nothing happened and when I prodded him it turned
-out he'd been too busy, so I just kept on running old kernels
-from that point on and completely forgot about why. :-(
-
-Hope life is still good in Abertawe!
-
+All the best,
 Chris
 =2D-=20
  Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
@@ -95,20 +67,20 @@ Chris
 This email may come with a PGP signature as a file. Do not panic.
 =46or more info see: http://en.wikipedia.org/wiki/OpenPGP
 
---nextPart1531560.jZSmrLU9EB
+--nextPart1778686.OYxBQx9UpA
 Content-Type: application/pgp-signature; name=signature.asc 
 Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEVAwUATbIaUo1yjaOTJg85AQJpJggAtMkLRdwvwjZjpUCQX2iqm2WIPN9ALILi
-W9j7zm9tF9GHsy8DdetnYojrriHf7slzDvj0j5jXGM0oASQoRGmMG2cX7NZ21cNz
-Um1cRR+SxiwDaUuo8XfZuWKxDSzGdAJhk1u1J5E9VJmOWhVs1fPmXnFTb21zUHXV
-KRLLrYxZ6w/nf4Ub12SY+sQGqldedHCeb0TTVplzIikU2JivBl6VpCU2ZMajtQ1g
-katYBtA4wD30dUkJaL5ziJtf/rtYYZpkSDe2iapOPjhEzIYZ1llIX3IlsAmocTNG
-Zt4CvOYIfe5r5YhBgp5SgXfbscYJvYYnKgegvCHh5xfoGSOMF80z0w==
-=frIZ
+iQEVAwUATbIbRY1yjaOTJg85AQLneggAiR+jpq8xlmM1uM0cgjTpBIjq99cz4fEo
+XslM2xsc2DZPZt8riJno88QlHVTFr40QIIm/GV6iiM7K8ugOsgJdP2MXvxtRMz/K
+UZxR2DoQMooXPo4X1k8DDxcJRvvK4IGdRpEfNyO9FVO+mIXEUpHHnv/PIqs8hHp/
+UY426soxuWMwOxNs4Zaf033AyHAGY3C8AzC8ZsOCwnL6l/ZlFvl1gOgBFOMA9brv
+tt0JPIwaKpdPatRUVD0rok2ymVBsJtDP0oF0GHgZkgXmRyvh9XTVI1GGeE/U50E6
+6oe2vh6iQ6OMZI8XH5/PGfhA51LDw2FNnn3UP9vU5EPWmHm7uBhPOg==
+=DDV9
 -----END PGP SIGNATURE-----
 
---nextPart1531560.jZSmrLU9EB--
+--nextPart1778686.OYxBQx9UpA--
