@@ -1,217 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab1DWMtr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 08:49:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57643 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab1DWMtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 08:49:46 -0400
-Date: Sat, 23 Apr 2011 14:49:19 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
- missing user space support for config1/config2
-Message-ID: <20110423124919.GB5147@elte.hu>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
- <20110422092322.GA1948@elte.hu>
- <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
- <20110422105211.GB1948@elte.hu>
- <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
- <20110422131846.GA20760@elte.hu>
- <BANLkTi=jdSG1Zefn_b7Pv2NyT1jdREzW8w@mail.gmail.com>
- <20110422204740.GA21364@elte.hu>
- <BANLkTi=YWStNmamjhWjh_yeitqGhtKJssw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=YWStNmamjhWjh_yeitqGhtKJssw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753903Ab1DWNFC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:05:02 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53964 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab1DWNE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 09:04:59 -0400
+X-Nat-Received: from [202.181.97.72]:62352 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1303563852.11514
+To: yong.zhang0@gmail.com
+Cc: a.p.zijlstra@chello.nl, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lockdep: ignore cached chain key for recursive read
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <BANLkTikXSz-AK6BFvnDGEr6Qhx-dekzOQg@mail.gmail.com>
+	<201104220831.p3M8VgAO017323@www262.sakura.ne.jp>
+	<BANLkTikaU-2g-p676+a6aMdk+CPdSBQE1g@mail.gmail.com>
+	<201104220919.p3M9JWfw029700@www262.sakura.ne.jp>
+	<20110423123310.GA7404@zhy>
+In-Reply-To: <20110423123310.GA7404@zhy>
+Message-Id: <201104232204.AHB56276.OFtMHSVFQJOOLF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 23 Apr 2011 22:04:06 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 23042011 #5329548, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yong Zhang wrote:
+> I think below patch could fix it.
+Great!
 
-* Stephane Eranian <eranian@google.com> wrote:
+With this patch applied (on 2.6.39-rc4), lockdep warns on
+"cat /proc/locktest1 /proc/locktest2 /proc/locktest1" case
+as with "cat /proc/locktest2 /proc/locktest1" case.
 
-> On Fri, Apr 22, 2011 at 10:47 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >
-> >> On Fri, Apr 22, 2011 at 3:18 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> >
-> >> > * Stephane Eranian <eranian@google.com> wrote:
-> >> >
-> >> > > > Say i'm a developer and i have an app with such code:
-> >> > > >
-> >> > > > #define THOUSAND 1000
-> >> > > >
-> >> > > > static char array[THOUSAND][THOUSAND];
-> >> > > >
-> >> > > > int init_array(void)
-> >> > > > {
-> >> > > >        int i, j;
-> >> > > >
-> >> > > >        for (i = 0; i < THOUSAND; i++) {
-> >> > > >                for (j = 0; j < THOUSAND; j++) {
-> >> > > >                        array[j][i]++;
-> >> > > >                }
-> >> > > >        }
-> >> > > >
-> >> > > >        return 0;
-> >> > > > }
-> >> > > >
-> >> > > > Pretty common stuff, right?
-> >> > > >
-> >> > > > Using the generalized cache events i can run:
-> >> > > >
-> >> > > >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
-> >> > > >
-> >> > > >  Performance counter stats for './array' (10 runs):
-> >> > > >
-> >> > > >         6,719,130 cycles:u                   ( +-   0.662% )
-> >> > > >         5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
-> >> > > >         1,037,032 l1-dcache-loads:u          ( +-   0.009% )
-> >> > > >         1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
-> >> > > >
-> >> > > >        0.003802098  seconds time elapsed   ( +-  13.395% )
-> >> > > >
-> >> > > > I consider that this is 'bad', because for almost every dcache-load there's a
-> >> > > > dcache-miss - a 99% L1 cache miss rate!
-> >> > > >
-> >> > > > Then i think a bit, notice something, apply this performance optimization:
-> >> > >
-> >> > > I don't think this example is really representative of the kind of problems
-> >> > > people face, it is just too small and obvious. [...]
-> >> >
-> >> > Well, the overwhelming majority of performance problems are 'small and obvious'
-> >>
-> >> Problems are not simple. Most serious applications these days are huge,
-> >> hundreds of MB of text, if not GB.
-> >>
-> >> In your artificial example, you knew the answer before you started the
-> >> measurement.
-> >>
-> >> Most of the time, applications are assembled out of hundreds of libraries, so
-> >> no single developers knows all the code. Thus, the performance analyst is
-> >> faced with a black box most of the time.
-> >
-> > I isolated out an example and assumed that you'd agree that identifying hot
-> > spots is trivial with generic cache events.
-> >
-> > My assumption was wrong so let me show you how trivial it really is.
-> >
-> > Here's an example with *two* problematic functions (but it could have hundreds,
-> > it does not matter):
-> >
-> > -------------------------------->
-> > #define THOUSAND 1000
-> >
-> > static char array1[THOUSAND][THOUSAND];
-> >
-> > static char array2[THOUSAND][THOUSAND];
-> >
-> > void func1(void)
-> > {
-> >        int i, j;
-> >
-> >        for (i = 0; i < THOUSAND; i++)
-> >                for (j = 0; j < THOUSAND; j++)
-> >                        array1[i][j]++;
-> > }
-> >
-> > void func2(void)
-> > {
-> >        int i, j;
-> >
-> >        for (i = 0; i < THOUSAND; i++)
-> >                for (j = 0; j < THOUSAND; j++)
-> >                        array2[j][i]++;
-> > }
-> >
-> > int main(void)
-> > {
-> >        for (;;) {
-> >                func1();
-> >                func2();
-> >        }
-> >
-> >        return 0;
-> > }
-> > <--------------------------------
-> >
-> > We do not know which one has the cache-misses problem, func1() or func2(), it's
-> > all a black box, right?
-> >
-> > Using generic cache events you simply type this:
-> >
-> >  $ perf top -e l1-dcache-load-misses -e l1-dcache-loads
-> >
-> > And you get such output:
-> >
-> >   PerfTop:    1923 irqs/sec  kernel: 0.0%  exact:  0.0% [l1-dcache-load-misses:u/l1-dcache-loads:u],  (all, 16 CPUs)
-> > -------------------------------------------------------------------------------------------------------
-> >
-> >   weight    samples  pcnt funct DSO
-> >   ______    _______ _____ _____ ______________________
-> >
-> >      1.9       6184 98.8% func2 /home/mingo/opt/array2
-> >      0.0         69  1.1% func1 /home/mingo/opt/array2
-> >
-> > It has pinpointed the problem in func2 *very* precisely.
-> >
-> > Obviously this can be used to analyze larger apps as well, with thousands 
-> > of functions, to pinpoint cachemiss problems in specific functions.
->
-> No, it does not.
+Thank you.
 
-The thing is, you will need to come up with more convincing and concrete 
-arguments than a blanket, unsupported "No, it does not" claim.
+=======================================================
+[ INFO: possible circular locking dependency detected ]
+2.6.39-rc4 #3
+-------------------------------------------------------
+cat/4363 is trying to acquire lock:
+ (brlock1_lock_dep_map){++++..}, at: [<e0838000>] brlock1_local_lock+0x0/0x60 [locktest]
 
-I *just showed* you an example which you claimed just two mails ago is 
-impossible to analyze. I showed an example two functions and claimed that the 
-same thing works with 3 or more functions as well: perf top will happily 
-display the ones with the highest cachemiss ratio, regardless of how many there 
-are.
+but task is already holding lock:
+ (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e083811d>] locktest_open1+0xd/0x40 [locktest]
 
-> As I said before, your example is just to trivial to be representative. You 
-> keep thinking that what you see in the profile pinpoints exactly the 
-> instruction or even the function where the problem always occurs. This is not 
-> always the case. There is skid, and it can be very big, the IP you get may 
-> not even be in the same function where the load was issued.
+which lock already depends on the new lock.
 
-So now you claim a narrow special case (most of the hot-spot overhead skidding 
-out of a function) as a counter-proof?
 
-Sometimes skid causes problems - in practice it rarely does, and i do a lot of 
-profiling.
+the existing dependency chain (in reverse order) is:
 
-Also, i'd expect PEBS to be extended in the future to more and more events - 
-including cachemiss events. That will solve this kind of skidding in a pretty 
-natural way.
+-> #1 (&(&(&seqlock1)->lock)->rlock){+.+...}:
+       [<c1068d14>] __lock_acquire+0x244/0x6d0
+       [<c106921b>] lock_acquire+0x7b/0xa0
+       [<e0838575>] locktest_open2+0x45/0x70 [locktest]
+       [<c1107ec9>] proc_reg_open+0x79/0x100
+       [<c10bf35e>] __dentry_open+0xce/0x2f0
+       [<c10bff7e>] nameidata_to_filp+0x5e/0x70
+       [<c10cd35b>] do_last+0x21b/0x930
+       [<c10ce3aa>] path_openat+0x9a/0x360
+       [<c10ce750>] do_filp_open+0x30/0x80
+       [<c10c0a35>] do_sys_open+0xe5/0x1a0
+       [<c10c0b59>] sys_open+0x29/0x40
+       [<c13a40cc>] sysenter_do_call+0x12/0x32
 
-Also, lets analyze your narrow special case: if a function is indeed 
-"invisible" to profiling because most overhead skids out of it then there's 
-little you can do with raw events to begin with ...
+-> #0 (brlock1_lock_dep_map){++++..}:
+       [<c1068ac5>] validate_chain+0x1135/0x1140
+       [<c1068d14>] __lock_acquire+0x244/0x6d0
+       [<c106921b>] lock_acquire+0x7b/0xa0
+       [<e0838033>] brlock1_local_lock+0x33/0x60 [locktest]
+       [<e0838129>] locktest_open1+0x19/0x40 [locktest]
+       [<c1107ec9>] proc_reg_open+0x79/0x100
+       [<c10bf35e>] __dentry_open+0xce/0x2f0
+       [<c10bff7e>] nameidata_to_filp+0x5e/0x70
+       [<c10cd35b>] do_last+0x21b/0x930
+       [<c10ce3aa>] path_openat+0x9a/0x360
+       [<c10ce750>] do_filp_open+0x30/0x80
+       [<c10c0a35>] do_sys_open+0xe5/0x1a0
+       [<c10c0b59>] sys_open+0x29/0x40
+       [<c13a40cc>] sysenter_do_call+0x12/0x32
 
-You really need to specifically demonstrate how raw events help your example.
+other info that might help us debug this:
 
-Thanks,
+1 lock held by cat/4363:
+ #0:  (&(&(&seqlock1)->lock)->rlock){+.+...}, at: [<e083811d>] locktest_open1+0xd/0x40 [locktest]
 
-	Ingo
+stack backtrace:
+Pid: 4363, comm: cat Not tainted 2.6.39-rc4 #3
+Call Trace:
+ [<c103acab>] ? printk+0x1b/0x20
+ [<c10673cb>] print_circular_bug+0xbb/0xc0
+ [<c1068ac5>] validate_chain+0x1135/0x1140
+ [<c1068d14>] __lock_acquire+0x244/0x6d0
+ [<c106921b>] lock_acquire+0x7b/0xa0
+ [<e0838000>] ? 0xe0837fff
+ [<e0838110>] ? locktest_open4+0xb0/0xb0 [locktest]
+ [<e0838033>] brlock1_local_lock+0x33/0x60 [locktest]
+ [<e0838000>] ? 0xe0837fff
+ [<e0838129>] locktest_open1+0x19/0x40 [locktest]
+ [<c1107ec9>] proc_reg_open+0x79/0x100
+ [<c10bf35e>] __dentry_open+0xce/0x2f0
+ [<c10bff7e>] nameidata_to_filp+0x5e/0x70
+ [<c1107e50>] ? proc_reg_release+0x100/0x100
+ [<c10cd35b>] do_last+0x21b/0x930
+ [<c10ce3aa>] path_openat+0x9a/0x360
+ [<c1059149>] ? sched_clock_cpu+0x119/0x160
+ [<c10ce750>] do_filp_open+0x30/0x80
+ [<c13a380d>] ? _raw_spin_unlock+0x1d/0x20
+ [<c10dadf1>] ? alloc_fd+0x171/0x1b0
+ [<c10c0a35>] do_sys_open+0xe5/0x1a0
+ [<c10c0b59>] sys_open+0x29/0x40
+ [<c13a40cc>] sysenter_do_call+0x12/0x32
