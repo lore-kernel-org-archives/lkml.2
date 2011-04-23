@@ -1,132 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1DWJg3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 05:36:29 -0400
-Received: from mx4.wp.pl ([212.77.101.8]:23307 "EHLO mx4.wp.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809Ab1DWJg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 05:36:27 -0400
-Date: Sat, 23 Apr 2011 11:36:23 +0200
-From: Stanislaw Gruszka <stf_xl@wp.pl>
-To: Igor Plyatov <plyatov@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ATA: pata_at91.c bugfixes
-Message-ID: <20110423093623.GA3410@localhost.localdomain>
-References: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
+	id S932102Ab1DWJ55 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 05:57:57 -0400
+Received: from fall-lakeland.atl.sa.earthlink.net ([207.69.195.103]:37340 "EHLO
+	fall-lakeland.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752861Ab1DWJ54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 05:57:56 -0400
+thread-index: AcwBnGIMRwrdV06mT7WljqfXQLRovw==
+Thread-Topic: I thought you would enjoy this page on villasitalia.com!
+From: <bestincome@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: I thought you would enjoy this page on villasitalia.com!
+Date: Sat, 23 Apr 2011 05:54:05 -0400
+Message-ID: <D671893C8FCE41AD967491B2C20110B8@g27.win.smewh.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
-X-WP-SPAM: NO 0000000 [oXPE]                               
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Igor
+"bestincome@gmail.com" <bestincome@gmail.com> has recommended that you visit this page:
 
-On Wed, Apr 20, 2011 at 03:44:37PM +0400, Igor Plyatov wrote:
-> * Fix "initial_timing" structure initialisation. The "struct ata_timing" must
->   contain 10 members, but ".dmack_hold" member was not initialised.
-> * The AT91SAM9 microcontrollers use special coding scheme for SMC_SETUP,
->   SMC_PULSE, SMC_CYCLE registers.
->   Old driver operates correctly only with low master clock values, but
->   with high master clock it incorrectly calculates SMC values and stops
->   to operate, because SMC can be setup only to admissible ranges in special
->   format.
->   New code correctly calculates SMC registers values, adjusts calculated
->   to admissible ranges, enlarges cycles if required and converts values
->   into SMC's format.
-> * Old driver calculates CS_SETUP and CS_PULSE cycles incorrectly
->   because of wrong assumptions.
->   New code calculates:
->       CS_SETUP = SETUP/2
 
-If you to this, then {RD,WR}_SETUP have to be equal SETUP + SETUP/2
-to generate proper setup (t0) time on IDE bus. I think the best way is
-set CS_SETUP and CS_HOLD to 0 (what your code do if SETUP and HOLD <=1),
-but to do this you need to take care of data float (t6z) 
 
-> +static const struct ata_timing initial_timing = {
-> +	.mode		= XFER_PIO_0,
-> +	.setup		= 70,
-> +	.act8b		= 290,
-> +	.rec8b		= 240,
-> +	.cyc8b		= 600,
-> +	.active		= 165,
-> +	.recover	= 150,
-> +	.dmack_hold	= 0,
-> +	.cycle		= 600,
-> +	.udma		= 0
-> +};
 
-Is this really needed, why not use ata_timing_find_mode(XFER_PIO_0)?
+Dear Friend,
 
-> +static int adjust_smc_value(unsigned int *value, int *prange,
-> +				unsigned int size)
-> +{
-> +	unsigned char i;
-> +	int remainder;
-> +
-> +	for (i = 0; i < size; i = i + 2) {
-> +		if (*value < prange[i]) {
-> +			remainder = prange[i] - *value;
-> +			*value = prange[i]; /* nearest valid value */
-> +			return remainder;
-> +		}
-> +		else if ((prange[i] <= *value) && (*value <= prange[i+1])) {
-> +			return 0;
-> +		}
-> +	}
-> +	*value = prange[size - 1]; /* assign maximal possible value */
-> +
-> +	return -1; /* invalid value */
-> +}
-[snip]
-> +static void calc_smc_vals(struct device *dev,
-> +				unsigned int *setup, unsigned int *cs_setup,
-> +				unsigned int *pulse, unsigned int *cs_pulse,
-> +				unsigned int *cycle)
-> +{
-> +	int ret_val;
-> +	int cs_hold;
-> +	int range_setup[] = {	/* SMC_SETUP valid ranges */
-> +		0, 31,		/* first  range */
-> +		128, 159,	/* second range */
-> +	};
-> +	int range_pulse[] = {	/* SMC_PULSE valid ranges */
-> +		0, 63,		/* first  range */
-> +		256, 319,	/* second range */
-> +	};
-> +	int range_cycle[] = {	/* SMC_CYCLE valid ranges */
-> +		0, 127,		/* first  range */
-> +		256, 383,	/* second range */
-> +		512, 639,	/* third  range */
-> +		768, 895,	/* fourth range */
-> +	};
+Introducing...Auto Blog Samurai Makes Money Inside Your Home Starting Today!!!
 
-Introducing helper structure like
+Believe It Or Not All Computer Program Can Earn From Youngest To Oldest unbelievable
+but truth.Imagine 108 Years old Making a Millionare if she can do it you can too... 
 
-struct smc_range {
-	u16 min, max;
-};
+CONGRATULATIONS: Get Your Free Money Cash $838 USD Commissions Now!!!
 
-would be a bit cleaner way of coding that (hint: ARRAY_SIZE could be used
-instead of sizeof then)
+It's Easy To Make Money Everyday From Home With This Software...Even If Are a
+New Member Starting From Scratch With Zero Knowledge, Experience Or Budget!
+I'll Show You Exactly How.
 
-> -	dev_dbg(dev, "ATA timings: nrd_setup = %lu nrd_pulse = %lu nrd_cycle = %lu\n",
-> -			nrd_setup, nrd_pulse, read_cycle);
-> -	dev_dbg(dev, "ATA timings: nwe_setup = %lu nwe_pulse = %lu nwe_cycle = %lu\n",
-> -			nwe_setup, nwe_pulse, write_cycle);
-> -	dev_dbg(dev, "ATA timings: ncs_read_setup = %lu ncs_read_pulse = %lu\n",
-> -			ncs_read_setup, ncs_read_pulse);
-> -	dev_dbg(dev, "ATA timings: ncs_write_setup = %lu ncs_write_pulse = %lu\n",
-> -			ncs_write_setup, ncs_write_pulse);
+We've Start putting New 28 Members in YOUR Team for the APRIL 18 to 25-/2011
+commission cycle...and  GROWING everyday earn by $838 a day.Guaranteed & Proven 
 
-It's worth to have some debugging prints to check if values are calculated
-properly.
+This Program Is Handsfree And very popular you know this.Once you are advance to 
+set up your membership you are Secure to access the monthly Commission On This Spot!!! 
 
-Thanks
-Stanislaw
+IMPORTANT: Join Before APRIL 25, 2011 is the Cut-Off day to lock in your
+position then faster you act the higher commission you  will earn!!!
+
+Go Here To Secure not less than $838 commission Now and it still growing
+as  many people joining under you. if you secure your position right away:
+
+Your commission will Arrive online Through your Paypal or Credit Card On MAY /20/2011    
+Next month. Hurry'this limited time, only 8 remaining Positions are available Now.
+
+Your money Is Easy To Access in any ATM in your Area when you follow the instructions...
+ 
+Click below!!For More Details.Be Sure To Get The $838 Commissions Before Cut-off!!!  
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2938642&referrer=earnhere2011
+ 
+Easy makes Money Every Day In All Countrys If You Join Early Hurry!!!
+
+>>>>>  This Screen Snapshot Easy to earn w/in oneday After Join  <<<<<
+
+TYPE   DATE  &   TIME ---------- NEW MEMBERS --------- COUNTRYs
+
+P -- APRIL.21  @ 2:38  AM-----Jasmine--- Clinton------ United States
+P -- APRIL.21  @ 2:53  AM-----Jo-ann---- Denver ------ United Kingdom
+P -- APRIL.21  @ 2:56  AM-----Mark ----- Jonhson------ Germany
+M -- APRIL.21  @ 4:19  AM-----Charesse-- Reos--------- Hungary
+P -- APRIL.21  @ 4:28  AM-----Renny----- Pacson------- Italy
+M -- APRIL.21  @ 6:01  AM-----Laura----- Anderson----- Australia
+P -- APRIL.20  @ 7:11  AM-----Rebecca--- Hotfild------ Canada
+P -- APRIL.20  @ 7:39  AM-----Jericho--- Morales------ Mexico
+P -- APRIL.20  @ 9:42  AM-----Thomas---- Silva ------- California
+M -- APRIL.20  @ 9:58  PM-----Grace----- Taylor------- Singapore
+P -- APRIL.20  @ 10:21 PM-----Gina------ Henry-------- New Zealand
+P -- APRIL.19  @ 11:24 PM-----Mohammed-- Ahmen ------- Oman
+M -- APRIL.19  @ 11:33 PM-----Tracia---- Furlong------ Puerto Rico
+P -- APRIL.19  @ 11:41 PM-----Jane------ McLarry------ Russia
+P -- APRIL.19  @ 9:42  AM-----Steve----- Scott ------- Netherlands
+M -- APRIL.19  @ 9:58  PM-----Greg------ Stanley------ Denmark
+P -- March.19  @ 10:21 PM-----Jack------ Perkins------ Amsterdam
+P -- March.19  @ 11:24 PM-----Arlene---- Tan --------- China
+M -- March.19  @ 11:33 PM-----Andy------ Hopekins----- New York
+P -- March.19  @ 11:41 PM-----Jhon------ Robinson----- United States
+M -- March.19  @ 2:34  AM --- Kevin----- Hunt -------- Sweden
+P -- March.19  @ 12:34 AM --- Delia----- Lane -------- New York
+P -- March.19  @ 6:45  AM --- Mohamed--- Abdol-------- Saudi Arabia
+M -- March.19  @ 5:34  AM --- Aleks----- Gjuroski ---- Japan
+P -- March.18  @ 12:34 PM --- Andrew---- Karim ------- England
+P -- March.18  @ 8:23  AM --- Carla----- Pereira ----- South Korea
+P -- March.18  @ 2:34  PM --- Carl------ Krause ------ India
+M -- March.18  @ 9:14  AM --- David----- Cook -------- Denmark
+P -- March.18  @ 8:23  AM --- Cheryl---- Pacquiao ---- Philippines
+P -- March.18  @ 2:34  PM --- Vergie---- Petter ------ Ingland
+M -- March.18  @ 9:14  AM --- Tito------ Warren ------ Bangladish
+P -  March.18  @ 7:46  AM --- Raul------ Regan ------- United States
+
+Therefore, you have a GUARANTEED $838 CommissionS  every month from now on!.
+
+Earn $29.95 Per Process!Each $29.95 x 28 = $838 Commission  will be yours...!
+
+Be Sure to Copy the link below & Paste into your browser and press enter:
+To Secure your $838 commission!
+
+You will access your money in any ATM when you follow the instructions you receive.
+
+Click below!!For More Details And Get Your $838 Commissions w/in 1 minutes!!! 
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2938642&referrer=earnhere2011
+
+Just one simple payment of $29.95 For a new member Automatic earn $838 USD,And This is    
+your big Profitable this year.becuase your $29.95 Multiply into more $$$ every month!!!     
+
+You must UPGRADE right away or before others do....
+
+Caring for Your Success, Paul Ponna
+
+Your Affiliate Business Manager
+   
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Site privacy policy: This page was sent using the villasitalia.com send-to-a-friend link. Your email has not been added to any list and has not been recorded at our site.
