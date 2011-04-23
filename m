@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab1DWJet (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 05:34:49 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36233 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752743Ab1DWJer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 05:34:47 -0400
-Date: Sat, 23 Apr 2011 10:35:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Chris Samuel <chris@csamuel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	id S1752986Ab1DWJg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 05:36:29 -0400
+Received: from mx4.wp.pl ([212.77.101.8]:23307 "EHLO mx4.wp.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab1DWJg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 05:36:27 -0400
+Date: Sat, 23 Apr 2011 11:36:23 +0200
+From: Stanislaw Gruszka <stf_xl@wp.pl>
+To: Igor Plyatov <plyatov@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on
- quad Pentium Pro system
-Message-ID: <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
-In-Reply-To: <201104231016.23579.chris@csamuel.org>
-References: <201104222333.25546.chris@csamuel.org>
-	<20110422173422.46134f20@lxorguk.ukuu.org.uk>
-	<201104231016.23579.chris@csamuel.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] ATA: pata_at91.c bugfixes
+Message-ID: <20110423093623.GA3410@localhost.localdomain>
+References: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
+X-WP-SPAM: NO 0000000 [oXPE]                               
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Apr 2011 10:16:18 +1000
-Chris Samuel <chris@csamuel.org> wrote:
+Hi Igor
 
-> Syt mae Alan! ;-)
+On Wed, Apr 20, 2011 at 03:44:37PM +0400, Igor Plyatov wrote:
+> * Fix "initial_timing" structure initialisation. The "struct ata_timing" must
+>   contain 10 members, but ".dmack_hold" member was not initialised.
+> * The AT91SAM9 microcontrollers use special coding scheme for SMC_SETUP,
+>   SMC_PULSE, SMC_CYCLE registers.
+>   Old driver operates correctly only with low master clock values, but
+>   with high master clock it incorrectly calculates SMC values and stops
+>   to operate, because SMC can be setup only to admissible ranges in special
+>   format.
+>   New code correctly calculates SMC registers values, adjusts calculated
+>   to admissible ranges, enlarges cycles if required and converts values
+>   into SMC's format.
+> * Old driver calculates CS_SETUP and CS_PULSE cycles incorrectly
+>   because of wrong assumptions.
+>   New code calculates:
+>       CS_SETUP = SETUP/2
 
-G'day ;)
+If you to this, then {RD,WR}_SETUP have to be equal SETUP + SETUP/2
+to generate proper setup (t0) time on IDE bus. I think the best way is
+set CS_SETUP and CS_HOLD to 0 (what your code do if SETUP and HOLD <=1),
+but to do this you need to take care of data float (t6z) 
 
-> Ahh, that's a new one on me, and it reveals that the kernel
-> has gone from 2.6.18 detecting:
-> 
-> 256MB LOWMEM available.
-> 
-> to 2.6.39-rc4 detecting:
-> 
-> 16MB LOWMEM available.
-> 
-> That would explain an awful lot..
+> +static const struct ata_timing initial_timing = {
+> +	.mode		= XFER_PIO_0,
+> +	.setup		= 70,
+> +	.act8b		= 290,
+> +	.rec8b		= 240,
+> +	.cyc8b		= 600,
+> +	.active		= 165,
+> +	.recover	= 150,
+> +	.dmack_hold	= 0,
+> +	.cycle		= 600,
+> +	.udma		= 0
+> +};
 
-Could be something has disturbed its memory detect or could be a bug in
-the PPro memory quirk.
+Is this really needed, why not use ata_timing_find_mode(XFER_PIO_0)?
 
-If you boot with mem= and force the memory size what happens ?
+> +static int adjust_smc_value(unsigned int *value, int *prange,
+> +				unsigned int size)
+> +{
+> +	unsigned char i;
+> +	int remainder;
+> +
+> +	for (i = 0; i < size; i = i + 2) {
+> +		if (*value < prange[i]) {
+> +			remainder = prange[i] - *value;
+> +			*value = prange[i]; /* nearest valid value */
+> +			return remainder;
+> +		}
+> +		else if ((prange[i] <= *value) && (*value <= prange[i+1])) {
+> +			return 0;
+> +		}
+> +	}
+> +	*value = prange[size - 1]; /* assign maximal possible value */
+> +
+> +	return -1; /* invalid value */
+> +}
+[snip]
+> +static void calc_smc_vals(struct device *dev,
+> +				unsigned int *setup, unsigned int *cs_setup,
+> +				unsigned int *pulse, unsigned int *cs_pulse,
+> +				unsigned int *cycle)
+> +{
+> +	int ret_val;
+> +	int cs_hold;
+> +	int range_setup[] = {	/* SMC_SETUP valid ranges */
+> +		0, 31,		/* first  range */
+> +		128, 159,	/* second range */
+> +	};
+> +	int range_pulse[] = {	/* SMC_PULSE valid ranges */
+> +		0, 63,		/* first  range */
+> +		256, 319,	/* second range */
+> +	};
+> +	int range_cycle[] = {	/* SMC_CYCLE valid ranges */
+> +		0, 127,		/* first  range */
+> +		256, 383,	/* second range */
+> +		512, 639,	/* third  range */
+> +		768, 895,	/* fourth range */
+> +	};
 
-> INT 15h = f000:f859 DOS RAM: 638K (0x9f800) INT 12h: 638K (0x9f800)
-> INT 15 88: 0x3c00 (15360K) INT 15 E801: 0x0000 (0K) 0x0000 (0K)
+Introducing helper structure like
 
-Ah.. do you have a BIOS setting called something like OS/2 compatibility ?
+struct smc_range {
+	u16 min, max;
+};
 
-> Hope life is still good in Abertawe!
+would be a bit cleaner way of coding that (hint: ARRAY_SIZE could be used
+instead of sizeof then)
 
-This part of the world has changed rather a lot. Not sure you'd recognize
-half of it.
+> -	dev_dbg(dev, "ATA timings: nrd_setup = %lu nrd_pulse = %lu nrd_cycle = %lu\n",
+> -			nrd_setup, nrd_pulse, read_cycle);
+> -	dev_dbg(dev, "ATA timings: nwe_setup = %lu nwe_pulse = %lu nwe_cycle = %lu\n",
+> -			nwe_setup, nwe_pulse, write_cycle);
+> -	dev_dbg(dev, "ATA timings: ncs_read_setup = %lu ncs_read_pulse = %lu\n",
+> -			ncs_read_setup, ncs_read_pulse);
+> -	dev_dbg(dev, "ATA timings: ncs_write_setup = %lu ncs_write_pulse = %lu\n",
+> -			ncs_write_setup, ncs_write_pulse);
 
-Alan
+It's worth to have some debugging prints to check if values are calculated
+properly.
+
+Thanks
+Stanislaw
