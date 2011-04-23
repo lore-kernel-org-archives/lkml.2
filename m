@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1DWNpk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 09:45:40 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:46109 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab1DWNpf (ORCPT
+	id S1754431Ab1DWNqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:46:14 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:43847 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab1DWNqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 09:45:35 -0400
-Date: Sat, 23 Apr 2011 15:45:28 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-Message-ID: <20110423154528.4145698d@endymion.delvare>
-In-Reply-To: <BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-References: <20110419145303.111aead7@endymion.delvare>
-	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Apr 2011 09:46:11 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Cc: dosfstools <daniel@debian.org>, mtools <Alain@linux.lu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: End of FAT directories
+References: <1303498136.8485.128.camel@localhost>
+	<87hb9qnho4.fsf@devron.myhome.or.jp>
+	<1303509408.8485.146.camel@localhost>
+	<87bozxomqd.fsf@devron.myhome.or.jp>
+	<1303558711.8485.166.camel@localhost>
+Date: Sat, 23 Apr 2011 22:46:05 +0900
+In-Reply-To: <1303558711.8485.166.camel@localhost> (Michael Karcher's message
+	of "Sat, 23 Apr 2011 13:38:31 +0200")
+Message-ID: <8762q5nkrm.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de> writes:
 
-On Tue, 19 Apr 2011 08:44:29 -0600, Grant Likely wrote:
-> On Tue, Apr 19, 2011 at 6:53 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> > I need this to handle SMBus multiplexing on my Asus Z8NA-D6 board. It
-> > has an ICH10, I've added support for older ICH chips in case someone
-> > needs it, as it was relatively simply to do that.
+>> And the above is simulate Windows implementation over specs, why isn't
+>> here?
+> Wow, there actually *is* a formal specification for FAT? I am positively
+> surprised by that. I used to think that the "spec" for FAT is "do as DOS
+> does". On a quick google, I do find the MS EFI FAT32 specification,
+> which is obviuosly non-free. Is there anything else?
+
+I guess it is called fatgen.doc in past, but I'm not sure. I can't help
+about what MS does.
+
+>>  For overwriting the
+>> zeroed entry, why we have to check all entries until see next zeroed
+>> (yeah, now, we allowed the crappy data after zeroed)?
+> My point was not about checking all entries until the next zeroed entry,
+> which is overcomplicating stuff. I meant that if we hit the end (i.e.
+> the first zeroed entry) when searching for free slots, in that case we
+> just clear the one entry directly following the inserted entries. This
+> makes sure that no files magically appear. I *do* understand that they
+> also appear on Windows, though. My point about "modifying a FAT system
+> that passes MS chkdsk with Linux should result in a FAT system that
+> passes MS chkdsk" is in my eyes more important than "Windows damages a
+> file system it considers fine in this situation, so we should do the
+> same."
+
+I'll call it - first step of in-kernel fsck.
+
+> In the end, there are two valid interpretations on the problem at hand:
+>  - DOS/Windows is buggy in exposing the crap when filling the "hole",
+> which is proven by chkdsk not complaining about the garbage in the
+> directory, and we should not follow the bug in DOS/Windows
+
+First of all, the bug is non-initialized directory. That's all.
+
+Yes, chkdsk should fix it. But, unfortunately chkdsk is not perfect, I
+remember another breakage of chkdsk can't fix.
+
+>  - chkdsk is buggy in not complaining about trailing garbage in
+> directories, which are proven to be invalid by DOS/Windows messing up on
+> them, and we shouldn't complicate our FAT implementation by trying to
+> work around a bug in chkdsk.
 >
-> Your timing is impeccable.  You're getting caught up in the big gpio
-> driver consolidation.  :-)
-> 
-> Most gpio drivers end up looking pretty darn similar.  Instead of
-> writing the same types of drivers over and over again, the new
-> approach is to try and consolidate the mmio drivers down to using
-> basic_mmio_gpio.c.
-> 
-> In this particular case, you've got a PCI device which looks to be
-> going into config space to get some information about how the chip is
-> layed out.  What I would do is keep your existing pci probe & remove
-> hooks, but use them to create and register child basic_mmio_gpio
-> platform_devices for each gpio bank.
+> Obviously, I tend to the first interpretation while you prefer the
+> second interpretation. As you are the maintainer, it looks like I have
+> to get away with that.
 
-I can see there are still discussions going on with regards to
-basic_mmio_gpio. To be honest, I don't have any opinion on this. My
-only concern is that I have driver code which appears to work well
-enough for me and I would like it to be merged in kernel 2.6.40.
+Because fsck is the job of fsck. Furthermore, without interactivity,
+fsck can't perfectly decide how to fix it actually (yes, it can guess,
+but that's guess).
 
-So my questions are as follows: what do I get to do for it to happen?
-If there a chance that my driver as it currently exists (i.e. not using
-basic_mmio_gpio) gets reviewed and merged? Or do I have to rewrite it
-using basic_mmio_gpio to get a chance?
+>> My state is simple - the current implement should be fine.
+>> I.e. uninitialized directory is the simply bug.
+> For the uninitialized entries on Hi-MD media, I agree with you that
+> these are caused by a firmware bug of older Sony devices. And to support
+> these devices "good enough", the stop-at-zero would be enough.
+> Regretfully I don't know the history of the USB flash memory I recently
+> got where the root directory was ended by a single entry starting with a
+> NUL byte and containing valid entries past that. The experience with the
+> inconsistent behaviour of different tools on that flash memory made me
+> write the mail about the current state of the FAT implementation.
 
-I can't see any driver currently relying on basic_mmio_gpio in the
-kernel tree. Why is that, and why would my driver have to, if none else
-did yet?
+Yes, zero is the end of directory. It's right and said in the above
+fatgen. Guys might misread - fatgen says the rest of entries must be
+zero (i.e. it means initialized by zero). Or some spec (I know there is
+the FS spec in SD specs, I can't recall the detail though) may not
+mention about latter part, I don't know.
 
-And a technical question (which makes me feel somewhat ashamed as I
-guess I really should know the answer): the ICH is using I/O ports for
-GPIO control, not a memory mapping. Would basic_mmio_gpio work for it
-still?
+> I think the *most* important fact is to have at least dosfsck and linux
+> consistent about directories with trailing garbage. So I won't even try
+> to submit a patch to the Linux kernel that stops reading at the first
+> unused directory entry if dosfsck will not accept to stop reading at the
+> first unused directory entry.
 
-Thanks,
+OK. I think "stop at zero" is not effected by dosfsck though. With "stop
+at zero", linux will do like windows does, but crap data is already
+showed in current implementation.
+
+Whether dosfsck can fix it or not would be another story. Of course, I
+hope it does though.
+
+Thanks.
 -- 
-Jean Delvare
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
