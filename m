@@ -1,177 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab1DWUOp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 16:14:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40269 "EHLO mx2.mail.elte.hu"
+	id S1756795Ab1DWUaL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 16:30:11 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60480 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343Ab1DWUOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 16:14:43 -0400
-Date: Sat, 23 Apr 2011 22:14:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: arun@sharma-home.net
-Cc: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] perf events: Add stalled cycles generic event -
- PERF_COUNT_HW_STALLED_CYCLES
-Message-ID: <20110423201409.GA20072@elte.hu>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
- <20110422092322.GA1948@elte.hu>
- <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
- <20110422105211.GB1948@elte.hu>
- <20110422165007.GA18401@vps.sharma-home.net>
- <20110422203022.GA20573@elte.hu>
+	id S1755652Ab1DWUaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 16:30:07 -0400
+Date: Sat, 23 Apr 2011 13:30:01 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110423203001.GG2628@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D9D507F.2040006@cn.fujitsu.com>
+ <20110407154737.GF2262@linux.vnet.ibm.com>
+ <20110407162600.GA24227@linux.vnet.ibm.com>
+ <4D9E6438.5030206@cn.fujitsu.com>
+ <20110408051359.GA2318@linux.vnet.ibm.com>
+ <4DA2709E.50902@cn.fujitsu.com>
+ <20110411051241.GB18415@linux.vnet.ibm.com>
+ <4DA2BC4E.4010000@cn.fujitsu.com>
+ <20110411210223.GB2226@linux.vnet.ibm.com>
+ <4DB12C1E.8050200@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110422203022.GA20573@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DB12C1E.8050200@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> > [...] If there is an expensive load, you'll see that the load instruction 
-> > takes many cycles and you can infer that it's a cache miss.
+On Fri, Apr 22, 2011 at 03:19:58PM +0800, Lai Jiangshan wrote:
+> On 04/12/2011 05:02 AM, Paul E. McKenney wrote:
+> > On Mon, Apr 11, 2011 at 04:31:10PM +0800, Lai Jiangshan wrote:
+> >> On 04/11/2011 01:12 PM, Paul E. McKenney wrote:
+> >>
+> >>> -static inline struct task_struct *next_thread(const struct task_struct *p)
+> >>> -{
+> >>> -	return list_entry_rcu(p->thread_group.next,
+> >>> -			      struct task_struct, thread_group);
+> >>> -}
+> >>> +/* Avoid #include hell for inlining rcu_read_lock(). */
+> >>> +#define next_thread(p) \
+> >>> +	list_entry_rcu((p)->thread_group.next, struct task_struct, thread_group)
+> >>>  
+> >>
+> >>
+> >> It is strange for me.
+> >> The user of the API "next_thread(p)" must has two headers included, sched.h and rculist.h
+> >>
+> >> I know this is a very popular pattern of user space code, is it OK for kernel?
+> >> I think a file(even a header file) uses API(Marco), it should includes the the corresponding
+> >> headers, it reduces surprises(example, the name of "next_thread()" has no "rcu",
+> >> it is not expected that rcuxxxx.h is required).
+> >>
+> >> I admit the work will become very much simpler if this pattern is allowed.
 > > 
-> > Questions app developers typically ask me:
+> > The guy who maintains much of sched.h suggested it.  ;-)
 > > 
-> > * If I fix all my top 5 L3 misses how much faster will my app go?
+> > 							Thanx, Paul
+> > 
+> >> man fcntl:
+> >>        #include <unistd.h>
+> >>        #include <fcntl.h>
+> >>
+> >>        int fcntl(int fd, int cmd, ... /* arg */ );
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
 > 
-> This has come up: we could add a 'stalled/idle-cycles' generic event - i.e. 
-> cycles spent without performing useful work in the pipelines. (Resource-stall 
-> events on Intel CPUs.)
+> Hi, Paul
+> 
+> What is the solution you prefer to?
+> 
+> I insist on the solution which split rcupdate.h into 2 parts,
+> the first part is rcupdate_defs.h which only contains:
+> 1) struct rcu_head
+> 2) MACRO rcu_dereference*
+> 3) MACRO rcu_access_pointer rcu_access_index rcu_assign_pointer RCU_INIT_POINTER
+> 4) rcu_*_lock_held() which is required by 2)
+> 
+> All of these is required by sched.h, it is all about 450 lines of code.
+> 
+> It does not just separate struct rcu_head out only, because rcu_dereference*()
+> and APIs in rculist.h are required by in sched.h or headers included by sched.h.
+> 
+> Any suggestion?
 
-How about something like the patch below?
+My belief is that the Linux kernel's include files need to have a designed
+approach to reduce the include-file problems.  For example, one approach
+would be to split out the data declarations from the access functions --
+but it is not clear to me that this is the right approach.  But whatever
+approach is chosen, that approach needs to have a clear design behind it,
+because otherwise we will end up continually refactoring.  And whatever
+approach is chosen, putting simple/small data/type declarations into
+types.h is very likely to be part of the approach, given that types.h
+has worked well in a great many projects over a long period of time.
+I do hope that whatever overall approach we evolve to, that this approach
+will allow use of inline functions rather than macros.  But it is easy
+to change these back and forth, so I am not too worried about them.
 
-	Ingo
----
-Subject: perf events: Add stalled cycles generic event - PERF_COUNT_HW_STALLED_CYCLES
-From: Ingo Molnar <mingo@elte.hu>
+In the meantime, for rcupdate.h, it appears that putting struct rcu_head
+into types.h and then converting a few inline functions to macros will
+suffice.  Furthermore, this split of the rcupdate.h functionality will
+likely hold up for quite some time.
 
-The new PERF_COUNT_HW_STALLED_CYCLES event tries to approximate
-cycles the CPU does nothing useful, because it is stalled on a
-cache-miss or some other condition.
+You have been doing a much more thorough job of testing this change than
+I have, so it does make sense that you carry out the change.
 
-Note: this is still a incomplete and will work on Intel Nehalem
-      CPUs for now, the intel_perfmon_event_map[] needs to be
-      properly split between the major models.
+So, could you please try out this approach?  Put rcu_head into types.h,
+re-order rcupdate.h as needed, and convert a few inline functions to
+macros?
 
-Also update 'perf stat' to print:
+As I have said before, it will be really cool to allow rcu_read_lock()
+and rcu_read_unlock() to be inline functions for preemptible RCU!!!
 
-           611,527 cycles
-           400,553 instructions             # ( 0.7 instructions per cycle )
-            77,809 stalled-cycles           # ( 12.7% of all cycles )
-
-        0.000610987  seconds time elapsed
-
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    2 ++
- include/linux/perf_event.h             |    1 +
- tools/perf/builtin-stat.c              |   11 +++++++++--
- tools/perf/util/parse-events.c         |    1 +
- tools/perf/util/python.c               |    1 +
- 5 files changed, 14 insertions(+), 2 deletions(-)
-
-Index: linux/arch/x86/kernel/cpu/perf_event_intel.c
-===================================================================
---- linux.orig/arch/x86/kernel/cpu/perf_event_intel.c
-+++ linux/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -34,6 +34,8 @@ static const u64 intel_perfmon_event_map
-   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
-   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
-   [PERF_COUNT_HW_BUS_CYCLES]		= 0x013c,
-+  [PERF_COUNT_HW_STALLED_CYCLES]	= 0xffa2, /* 0xff: All reasons, 0xa2: Resource stalls */
-+
- };
- 
- static struct event_constraint intel_core_event_constraints[] =
-Index: linux/include/linux/perf_event.h
-===================================================================
---- linux.orig/include/linux/perf_event.h
-+++ linux/include/linux/perf_event.h
-@@ -52,6 +52,7 @@ enum perf_hw_id {
- 	PERF_COUNT_HW_BRANCH_INSTRUCTIONS	= 4,
- 	PERF_COUNT_HW_BRANCH_MISSES		= 5,
- 	PERF_COUNT_HW_BUS_CYCLES		= 6,
-+	PERF_COUNT_HW_STALLED_CYCLES		= 7,
- 
- 	PERF_COUNT_HW_MAX,			/* non-ABI */
- };
-Index: linux/tools/perf/builtin-stat.c
-===================================================================
---- linux.orig/tools/perf/builtin-stat.c
-+++ linux/tools/perf/builtin-stat.c
-@@ -442,7 +442,7 @@ static void abs_printout(int cpu, struct
- 		if (total)
- 			ratio = avg / total;
- 
--		fprintf(stderr, " # %10.3f IPC  ", ratio);
-+		fprintf(stderr, " # ( %3.1f instructions per cycle )", ratio);
- 	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
- 			runtime_branches_stats[cpu].n != 0) {
- 		total = avg_stats(&runtime_branches_stats[cpu]);
-@@ -450,7 +450,7 @@ static void abs_printout(int cpu, struct
- 		if (total)
- 			ratio = avg * 100 / total;
- 
--		fprintf(stderr, " # %10.3f %%    ", ratio);
-+		fprintf(stderr, " # %10.3f %%", ratio);
- 
- 	} else if (runtime_nsecs_stats[cpu].n != 0) {
- 		total = avg_stats(&runtime_nsecs_stats[cpu]);
-@@ -459,6 +459,13 @@ static void abs_printout(int cpu, struct
- 			ratio = 1000.0 * avg / total;
- 
- 		fprintf(stderr, " # %10.3f M/sec", ratio);
-+	} else if (perf_evsel__match(evsel, HARDWARE, HW_STALLED_CYCLES)) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+
-+		if (total)
-+			ratio = avg / total * 100.0;
-+
-+		fprintf(stderr, " # (%5.1f%% of all cycles )", ratio);
- 	}
- }
- 
-Index: linux/tools/perf/util/parse-events.c
-===================================================================
---- linux.orig/tools/perf/util/parse-events.c
-+++ linux/tools/perf/util/parse-events.c
-@@ -38,6 +38,7 @@ static struct event_symbol event_symbols
-   { CHW(BRANCH_INSTRUCTIONS),	"branch-instructions",	"branches"	},
-   { CHW(BRANCH_MISSES),		"branch-misses",	""		},
-   { CHW(BUS_CYCLES),		"bus-cycles",		""		},
-+  { CHW(STALLED_CYCLES),	"stalled-cycles",	""		},
- 
-   { CSW(CPU_CLOCK),		"cpu-clock",		""		},
-   { CSW(TASK_CLOCK),		"task-clock",		""		},
-Index: linux/tools/perf/util/python.c
-===================================================================
---- linux.orig/tools/perf/util/python.c
-+++ linux/tools/perf/util/python.c
-@@ -798,6 +798,7 @@ static struct {
- 	{ "COUNT_HW_BRANCH_INSTRUCTIONS", PERF_COUNT_HW_BRANCH_INSTRUCTIONS },
- 	{ "COUNT_HW_BRANCH_MISSES",	  PERF_COUNT_HW_BRANCH_MISSES },
- 	{ "COUNT_HW_BUS_CYCLES",	  PERF_COUNT_HW_BUS_CYCLES },
-+	{ "COUNT_HW_STALLED_CYCLES",	  PERF_COUNT_HW_STALLED_CYCLES },
- 	{ "COUNT_HW_CACHE_L1D",		  PERF_COUNT_HW_CACHE_L1D },
- 	{ "COUNT_HW_CACHE_L1I",		  PERF_COUNT_HW_CACHE_L1I },
- 	{ "COUNT_HW_CACHE_LL",	  	  PERF_COUNT_HW_CACHE_LL },
+							Thanx, Paul
