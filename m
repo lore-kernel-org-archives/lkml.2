@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab1DWOqN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 10:46:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48588 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754648Ab1DWOqM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 10:46:12 -0400
-Date: Sat, 23 Apr 2011 15:47:07 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-Message-ID: <20110423154707.454e1010@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110423154528.4145698d@endymion.delvare>
-References: <20110419145303.111aead7@endymion.delvare>
-	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-	<20110423154528.4145698d@endymion.delvare>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1754933Ab1DWOvM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 10:51:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3049 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754064Ab1DWOvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 10:51:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,259,1301900400"; 
+   d="scan'208";a="424341829"
+Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
+From: Lin Ming <ming.m.lin@intel.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Tim Blechmann <tim@klingt.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com>
+References: <inhgjs$54a$1@dough.gmane.org>	<4D9C84D5.6090303@gmail.com>
+	 <20110406175217.GC4987@ghostprotocols.net>
+	 <201104062248.23853.tim@klingt.org>	<4D9CE610.4020603@gmail.com>
+	 <4D9CECF5.3090309@gmail.com>	<4DB1AED0.60600@gmail.com>
+	 <BANLkTimosBfOBsUWQaimT0O53=pALx54AA@mail.gmail.com>
+	 <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Apr 2011 22:51:11 +0800
+Message-Id: <1303570271.3363.4.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And a technical question (which makes me feel somewhat ashamed as I
-> guess I really should know the answer): the ICH is using I/O ports for
-> GPIO control, not a memory mapping. Would basic_mmio_gpio work for it
-> still?
+On Sat, 2011-04-23 at 22:36 +0800, Lin Ming wrote:
+> On Sat, Apr 23, 2011 at 12:37 AM, David Ahern <dsahern@gmail.com> wrote:
+> > I know you've been busy with other stuff the past few weeks, but have
+> > you had a chance to look into this? Basically, perf in 2.6.39 is broken
+> > when trying to profile a process (-p argument to record or top).
+> 
+> Let me take a look at this.
 
-basic_mmio_gpio would need to use iomap for this and a lot of platforms
-don't support generic iomap - so no it won't.
+Below patch fixes the same problem on my box.
+Could you have a try it? 
 
-You don't generally want want to create sub platform devices anyway
-without care as it makes sysfs, pci removal and power management ugly and
-takes up *more* memory than repeating the code in the first places.
+>From 89f1ab02cd8da55f8829b2f2d7e700fdae77b3af Mon Sep 17 00:00:00 2001
+From: Lin Ming <ming.m.lin@intel.com>
+Date: Sat, 23 Apr 2011 14:54:33 +0000
+Subject: [PATCH] perf: Allow set output event for task in the same thread group
 
-Alan
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ kernel/perf_event.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 8e81a98..17dbc49 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -6379,9 +6379,10 @@ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
+ 		goto out;
+ 
+ 	/*
+-	 * If its not a per-cpu buffer, it must be the same task.
++	 * If its not a per-cpu buffer, it must be the same task or in the same thread group.
+ 	 */
+-	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
++	if (output_event->cpu == -1 &&
++			!same_thread_group(output_event->ctx->task, event->ctx->task))
+ 		goto out;
+ 
+ set:
+
+
+> 
+> Lin Ming
+> 
+> >
+> > David
+
+
