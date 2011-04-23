@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab1DWQdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 12:33:11 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:47217 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755203Ab1DWQdG (ORCPT
+	id S1755454Ab1DWQhl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 12:37:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34711 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab1DWQhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 12:33:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=P676//7KYBC+ktMKBPyrZfJx/Lz+LLr609WfT/VEPOYgeNJiyRtSJ4KRrImtltbLyNG0Zv7zNxQSrxkE5IA8E8SPX/hmlrbzTpmAC+wG7uwDyQdG1zob+3ahCuVZ2L1k;
-Date: Sat, 23 Apr 2011 09:33:04 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Cyril Brulebois <kibi@debian.org>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH 3/4] Documentation/00-INDEX.sh: add script to help
- keeping the index up-to-date
-Message-Id: <20110423093304.8a31e512.rdunlap@xenotime.net>
-In-Reply-To: <1303575344-10403-3-git-send-email-kibi@debian.org>
-References: <1303575344-10403-1-git-send-email-kibi@debian.org>
-	<1303575344-10403-3-git-send-email-kibi@debian.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 23 Apr 2011 12:37:39 -0400
+Date: Sat, 23 Apr 2011 13:37:59 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Keith Packard <keithp@keithp.com>
+Cc: Vinicius Gomes <vinicius.gomes@openbossa.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
+ b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
+Message-ID: <20110423163759.GB2323@joana>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Vinicius Gomes <vinicius.gomes@openbossa.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-bluetooth@vger.kernel.org
+References: <yun1v1fj024.fsf@aiko.keithp.com>
+ <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
+ <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
+ <yunaag0tjzb.fsf@aiko.keithp.com>
+ <20110409000857.GB25581@piper>
+ <20110411173409.1567679c@lxorguk.ukuu.org.uk>
+ <BANLkTinK-cA67X6Knp-h5SKpjpDpwaMgZg@mail.gmail.com>
+ <yunaafjs28n.fsf@aiko.keithp.com>
+ <20110421225953.GA2323@joana>
+ <yun62q7i21o.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yun62q7i21o.fsf@aiko.keithp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Apr 2011 18:15:43 +0200 Cyril Brulebois wrote:
+* Keith Packard <keithp@keithp.com> [2011-04-21 17:04:51 -0700]:
 
-> Signed-off-by: Cyril Brulebois <kibi@debian.org>
-> ---
->  Documentation/00-INDEX.sh |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
->  create mode 100755 Documentation/00-INDEX.sh
 > 
-> diff --git a/Documentation/00-INDEX.sh b/Documentation/00-INDEX.sh
-> new file mode 100755
-> index 0000000..31d92d2
-> --- /dev/null
-> +++ b/Documentation/00-INDEX.sh
-> @@ -0,0 +1,24 @@
-> +#!/bin/sh
-> +# Copyright 2011 Cyril Brulebois <kibi@debian.org>
-> +#
-> +# Try and keep the 00-INDEX file up-to-date.
-> +
-> +# List all entries below the 00-INDEX entry:
-> +documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -v '^\s'|sed 's,/$,,')
-> +
-> +# List all files/directories except 00-INDEX* and Makefile:
-> +present=$(ls -1|grep -v '^00-INDEX'|grep -v '^Makefile$')
-> +
-> +echo "Undocumented:"
-> +for i in $present; do
-> +  if ! echo "$documented"|grep -qs "\<$i\>"; then
-> +    echo "  $i"
-> +  fi
-> +done
-> +
-> +echo "Documented but missing:"
-> +for i in $documented; do
-> +  if [ ! -e $i ]; then
-> +    echo "  $i"
-> +  fi
-> +done
-> -- 
+> On Thu, 21 Apr 2011 19:59:53 -0300, "Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
+> 
+> > Patch is on the way to mainline. It's currently on wireless-2.6. Next steps
+> > are net-2.6 -> linux-2.6.
+> 
+> I didn't see it on linux-kernel, so I was a bit worried. I'd love to
+> test it in place of the kludge that Vinicius sent me.
 
-Good idea, thanks.
+I usually don't cc linux-kernel in my pull-requests, maybe I should.
 
-but what am I doing wrong?
-
-cd Documentation
-sh ./00-INDEX.sh
-
-The "undocumented" list looks correct (well, it could omit .orig files),
-but the "Documented but missing" list contains words, e.g.:
-
-  -
-  this
-  file.
-  -
-  info
-  on
-  kernel
-  <->
-  userspace
-  and
-  relative
-  interface
-  stability.
-  -
-  brute
-  force
-  method
-  of
-  doing
-  binary
-  search
-  of
-  patches
-
-on and on and on ...
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
