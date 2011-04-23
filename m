@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab1DWIfj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 04:35:39 -0400
-Received: from outbound.icp-qv1-irony-out6.iinet.net.au ([203.59.1.109]:45822
-	"EHLO outbound.icp-qv1-irony-out6.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752216Ab1DWIfh (ORCPT
+	id S1752895Ab1DWJet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 05:34:49 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36233 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752743Ab1DWJer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 04:35:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEBACGOsk3LrQ63/2dsb2JhbAANr0K7O4V2BJJYg08
-X-IronPort-AV: E=Sophos;i="4.64,258,1301846400"; 
-   d="scan'208";a="234921697"
-Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Ben Nizette <bn@niasdigital.com>
-In-Reply-To: <BANLkTikDCmH-WX1u3e9c7gc2U9HJ88RBUQ@mail.gmail.com>
-Date: Sat, 23 Apr 2011 18:35:34 +1000
-Cc: Stijn Devriendt <highguy@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+	Sat, 23 Apr 2011 05:34:47 -0400
+Date: Sat, 23 Apr 2011 10:35:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Chris Samuel <chris@csamuel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on
+ quad Pentium Pro system
+Message-ID: <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
+In-Reply-To: <201104231016.23579.chris@csamuel.org>
+References: <201104222333.25546.chris@csamuel.org>
+	<20110422173422.46134f20@lxorguk.ukuu.org.uk>
+	<201104231016.23579.chris@csamuel.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <4083C8C3-920B-4CE1-B393-D8BA0E7BFB13@niasdigital.com>
-References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com> <BANLkTinrtoGhL3CXJZGWzf8+BwFSRsdk0w@mail.gmail.com> <BANLkTikDCmH-WX1u3e9c7gc2U9HJ88RBUQ@mail.gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 23 Apr 2011 10:16:18 +1000
+Chris Samuel <chris@csamuel.org> wrote:
 
-On 22/04/2011, at 9:36 PM, Linus Walleij wrote:
+> Syt mae Alan! ;-)
 
-> 2011/4/21 Stijn Devriendt <highguy@gmail.com>:
+G'day ;)
+
+> Ahh, that's a new one on me, and it reveals that the kernel
+> has gone from 2.6.18 detecting:
 > 
+> 256MB LOWMEM available.
 > 
->> I'd also like to add (if not already mentioned by others) that in
->> general drivers that use GPIOs are unaware of their physical
->> connection on the board. Having this information
->> in device-tree or platform-data equivalent solves this.
+> to 2.6.39-rc4 detecting:
 > 
-> Yes, this has been mentioned a few times, and a few times I have
-> replied that there is not one word in the patch set that says anything
-> about whether drivers or board code or whatever shall make use of
-> the mechanism, it's just an interface...
+> 16MB LOWMEM available.
 > 
-> I don't understand why this keeps popping up, have I written
-> *anything* unclear about this?
+> That would explain an awful lot..
 
-You haven't, no!  Just that the use case for gpiolib was always to expose
-gpio functionality to drivers/ in a generic way.  The fact that it's
-now been picked up extensively throughout arch/ is a (very) happy
-side-effect.
+Could be something has disturbed its memory detect or could be a bug in
+the PPro memory quirk.
 
-	--Ben.
+If you boot with mem= and force the memory size what happens ?
 
+> INT 15h = f000:f859 DOS RAM: 638K (0x9f800) INT 12h: 638K (0x9f800)
+> INT 15 88: 0x3c00 (15360K) INT 15 E801: 0x0000 (0K) 0x0000 (0K)
+
+Ah.. do you have a BIOS setting called something like OS/2 compatibility ?
+
+> Hope life is still good in Abertawe!
+
+This part of the world has changed rather a lot. Not sure you'd recognize
+half of it.
+
+Alan
