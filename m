@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab1DWNMV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 09:12:21 -0400
-Received: from csamuel.org ([74.50.50.137]:39202 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753495Ab1DWNMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 09:12:19 -0400
-From: Chris Samuel <chris@csamuel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
-Date: Sat, 23 Apr 2011 23:11:58 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201104222333.25546.chris@csamuel.org> <201104231016.23579.chris@csamuel.org> <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110423103536.1c7ff2a8@lxorguk.ukuu.org.uk>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
-	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
-	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
-	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1813187.xNYfgVGlxX";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104232312.02713.chris@csamuel.org>
+	id S1754095Ab1DWNQl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:16:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58185 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab1DWNQk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 09:16:40 -0400
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        arun@sharma-home.net, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+	 <20110422092322.GA1948@elte.hu>
+	 <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+	 <20110422105211.GB1948@elte.hu>
+	 <20110422165007.GA18401@vps.sharma-home.net>
+	 <20110422203022.GA20573@elte.hu> <20110422203222.GA21219@elte.hu>
+	 <20110423000347.GC9328@tassilo.jf.intel.com>
+	 <1303545012.2298.44.camel@twins>
+	 <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 23 Apr 2011 15:16:01 +0200
+Message-ID: <1303564561.2298.62.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1813187.xNYfgVGlxX
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2011-04-23 at 14:06 +0200, Stephane Eranian wrote:
+> On Sat, Apr 23, 2011 at 9:50 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, 2011-04-22 at 17:03 -0700, Andi Kleen wrote:
+> >> > > Yes, and note that with instructions events we even have skid-less PEBS
+> >> > > profiling so seeing the precise .
+> >> >                                   - location of instructions is possible.
+> >>
+> >> It was better when it was eaten. PEBS does not actually eliminated
+> >> skid unfortunately. The interrupt still occurs later, so the
+> >> instruction location is off.
+> >>
+> >> PEBS merely gives you more information.
+> >
+> > You're so skilled at not actually saying anything useful. Are you
+> > perchance referring to the fact that the IP reported in the PEBS data is
+> > exactly _one_ instruction off? Something that is demonstrated to be
+> > fixable?
+> >
+> > Or are you defining skid differently and not telling us your definition?
+> >
+> 
+> PEBS is guaranteed to return an IP that is just after AN instruction that
+> caused the event. However, that instruction is NOT the one at the end
+> of your period. Let's take an example with INST_RETIRED, period=100000.
+> Then, the IP you get is NOT after the 100,000th retired instruction. It's an
+> instruction that is N cycles after that one. There is internal skid due to the
+> way PEBS is implemented.
+> 
+> That is what Andi is referring to. The issue causes bias and thus impacts
+> the quality of the samples. On SNB, there is a new INST_RETIRED:PREC_DIST
+> event. PREC_DIST=precise distribution. It tries to correct for the skid
+> on this event on INST_RETIRED with PEBS (look at Vol3b).
 
-On Sat, 23 Apr 2011 07:35:36 PM Alan Cox wrote:
+Sure, but who cares? So your period isn't exactly what you specified,
+but the effective period will have an average and a fairly small stdev
+(assuming the initial period is much larger than the relatively few
+cycles it takes to arm the PEBS assist), therefore you still get a
+fairly uniform spread.
 
-> If you boot with mem=3D and force the memory size what happens ?
+I don't much get the obsession with precision here, its all a statistics
+game anyway.
 
-Using memmap=3D636K@0 memmap=3D255M@1M (from just naively converting
-the e801 numbers from the 2.6.18 boot) it appears to get past that
-issue and then panic because of no root filesystem (unsurprisingly
-as it's based on an allnoconfig config).
+And while you keep saying the examples are too trivial and Andi keep
+sprouting vague non-statements, neither of you actually provide anything
+sensible to the discussion.
 
-Trying the same with the Debian Squeeze 2.6.32 based kernel results
-in it not panic'ing when unpacking the initramfs but there are many
-complaints about IRQ's happening and nobody caring and the system
-ends up shutting itself down due to timing out bringing up the root
-filesystem from the software RAID.
+So stop f*cking whining and start talking sense or stop talking all
+together.
 
-I'll be away from email for a few days now because of the Easter
-holidays here, but I'll catch up when I'm back.
+I mean, you were in the room where Intel presented their research on
+event correlations based on pathological micro-benches. That clearly
+shows that exact event definitions simply don't matter.
 
-All the best, and thanks to everyone for the help so far!
+Similarly all this precision wanking isn't _that_ important, the big
+fish clearly stand out, its only when you start shaving off the last few
+cycles that all that really comes in handy, before that its mostly: ooh
+thinking is hard, lets go shopping.
 
-Chris
-=2D-=20
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
-
-This email may come with a PGP signature as a file. Do not panic.
-=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
-
---nextPart1813187.xNYfgVGlxX
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEVAwUATbLQHo1yjaOTJg85AQKiEgf/VUwSqeUCU+kQB/5ylZeCCIztbiJhcXQ+
-P24EiPiw8r2K9t8Svp2FAsr3JwN1JSmnPIkDgbsMraKN58uiEX0olw40YkGBZSKC
-BMvdOcDYlpE7o9s+LDdNC7w/umK3wBsNvqosOA60m4DI8s0J1BpchJkShT9wkZCD
-0MrApH4izn3ZZlU1tUYE9DHM/rr2bbX5HnrRyU5kUPJ+ZpgMS2b40v4RfsRI+aVo
-DbKeLJj4iqmgLahXA62uS8/nRl1WvV5GAEprfOCI0Zsp741AOfKClYzW8dtGMzfw
-ukBka9rXfWUKSASI/HuPlcDmdiJhR0XoSlHgoA+dP+xcfD+nw/KAAA==
-=3o9n
------END PGP SIGNATURE-----
-
---nextPart1813187.xNYfgVGlxX--
