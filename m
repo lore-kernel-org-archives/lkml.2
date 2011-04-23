@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab1DWObo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 10:31:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373Ab1DWObn (ORCPT
+	id S1754890Ab1DWOkr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 10:40:47 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38497 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab1DWOkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 10:31:43 -0400
+	Sat, 23 Apr 2011 10:40:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LnDGbh5ep8ipL3mhJA375tMwpoxVC3KWDO78RGUaz3pVVpNvLhBIV+VvRJH2evgafI
-         2fuk1Eh6wG3ZdxlsDKslXfNOY0QUIQq2RM/TTpU1wtiGlBPqbCFfVP1DhzxJg/P4Iv8k
-         5YzypDkehLPVbLE1Mvxaeet9/pxymolnxibsA=
-Date: Sat, 23 Apr 2011 22:31:28 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] sched: try to rewrite tg_has_rt_tasks()
-Message-ID: <20110423143128.GC7747@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <BANLkTimyN49J0UTo69Rabppeow9Fz-LcfQ@mail.gmail.com>
- <20110423141113.GA7747@zhy>
- <BANLkTi=DqsxwrWhh-FxcdvvJ0cjemHp3sw@mail.gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=I2kQo7rcWQTwy5NQImB4vllAO8LfWDgVjVGCUyVjBmR0g6bBiA5xpLMrzyLGcdGZG6
+         zZiYbL5gGTekGUxsU/anln16/d85bvGHfpJoz1ui0aXzIeiEx7hlFe3P/BTScAOh8TY6
+         Bv06UNzxHrZpSS4Cju2MaKXtXxFpUQN/pV6H0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=DqsxwrWhh-FxcdvvJ0cjemHp3sw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1303541890-14528-1-git-send-email-jipeng2005@gmail.com>
+References: <1303541890-14528-1-git-send-email-jipeng2005@gmail.com>
+Date: Sat, 23 Apr 2011 16:40:44 +0200
+Message-ID: <BANLkTinYzLJAPdpNsZYuDML0eszgw00JcQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] libata: ahci_start_engine compliant to AHCI spec
+From: Tejun Heo <htejun@gmail.com>
+To: Jian Peng <jipeng2005@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 23, 2011 at 10:19:19PM +0800, Hillf Danton wrote:
-> On Sat, Apr 23, 2011 at 10:11 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Sat, Apr 23, 2011 at 09:39:40PM +0800, Hillf Danton wrote:
-> >> It is reshuffled not based upon scanning the list of existing threads
-> >> but upon the relevant info carried by the input task group. Compared
-> >> with the original, it is simpler, and nothing important is missed.
-> >
-> > Oh, no.
-> >
-> > There may be sleep task which is attach this group.
-> >
-> 
-> Would you please say a few more words about the "sleep task"?
+On Sat, Apr 23, 2011 at 8:58 AM, Jian Peng <jipeng2005@gmail.com> wrote:
+> At the end of section 10.1 of AHCI spec (rev 1.3), it states
+>
+> Software shall not set PxCMD.ST to 1 until it is determined that
+> a functoinal device is present on the port as determined by
+> PxTFD.STS.BSY=0, PxTFD.STS.DRQ=0 and PxSSTS.DET=3h
+>
+> Even though most AHCI host controller works without this check,
+> specific controller will fail under this condition.
+>
+> Signed-off-by: Jian Peng <jipeng2005@gmail.com>
 
-Only RUNNING task is counted to rt_nr_running, SLEEP task
-is not on the run queue.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Thanks,
-Yong
+Thanks.
+
+-- 
+tejun
