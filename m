@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab1DWQoX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 12:44:23 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59481 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab1DWQoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 12:44:18 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/char/ppdev.c: Put gotten port value
-Date: Sat, 23 Apr 2011 18:51:23 +0200
-Message-Id: <1303577483-16064-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1751614Ab1DWRAI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 13:00:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63869 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab1DWRAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 13:00:04 -0400
+Message-ID: <4DB3058F.5020400@online.de>
+Date: Sat, 23 Apr 2011 18:59:59 +0200
+From: Denis Washington <denisw@online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Reverse-engineer GPU fan control method on Toshiba Satellite L500?
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:0Myq7Gbp6G9uMoBfGHp1bLg2kJZa0HwD9ybGsjpesdV
+ 6v1upRO372YbiARuUHYGg5WUSFlRAdU2IkSU+/XNDq4aLMZOI4
+ vAy9YMLzp7g0qQ19baFZIeEneU7uWWZlqer6pqs0n4xQ3Xznlc
+ S0AUtJD3mBXkjS9uChVW9TL3jykH4+liGjoq8bBJJniO2ETZjO
+ 5DxPQIdzH/h4sRGMnYR7pMFR3hr5xngoht/rXi4LUQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parport_find_number calls parport_get_port on its result, so there should
-be a corresponding call to parport_put_port before dropping the reference.
-Similar code is found in the function register_device in the same file.
+Hello,
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+I have a Toshiba Satellite L500-164 (PSLJ3E) whose GPU fan (AMD Radeon 
+HD 4650) keeps spinning loudly without slowing down when using the 
+radeon driver. The propietary fglrx driver controls the fan correctly, 
+though, so there must be a way to control it. However, I don't know how 
+the needed information and/or operations are exposed by the laptop; 
+lm-sensors detects no gpu-internal i2c thermal sensor (as would be 
+supported by the radeon driver) and /sys/class/thermal shows no thermal 
+zones. (Tested with today's mainline kernel.)
 
-// <smpl>
-@exists@
-local idexpression struct parport * x;
-expression ra,rr;
-statement S1,S2;
-@@
+How can I find out how GPU fan control works on this laptop, e.g. if 
+there is a Toshiba-specific ACPI interface for this? I am annoyed enough 
+by this problem to do the needed reverse engineering research and at 
+least help with the coding as much as I can, but I really don't know how 
+to start. Any pointers would be welcome. (Please CC me when replying, as 
+I am not subscribed to the lkml.)
 
-x = parport_find_number(...)
-... when != x = rr
-    when any
-    when != parport_put_port(x,...)
-    when != if (...) { ... parport_put_port(x,...) ...}
-(
-if(<+...x...+>) S1 else S2
-|
-if(...) { ... when != x = ra
-     when forall
-     when != parport_put_port(x,...)
-*return...;
-}
-)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/char/ppdev.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/char/ppdev.c b/drivers/char/ppdev.c
-index f176dba..3fcf80f 100644
---- a/drivers/char/ppdev.c
-+++ b/drivers/char/ppdev.c
-@@ -457,6 +457,7 @@ static int pp_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 			return -ENODEV;
- 
- 		modes = port->modes;
-+		parport_put_port(port);
- 		if (copy_to_user (argp, &modes, sizeof (modes))) {
- 			return -EFAULT;
- 		}
-
+Regards,
+Denis Washington
