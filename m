@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab1DWA4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Apr 2011 20:56:55 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60500 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757054Ab1DWA4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Apr 2011 20:56:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EQ3mO7O4SVJtnR3FWpGYuXJXvGAn7eTsjaqsEi+64K6uGMDv3ArM1CgNBR8ql9Yyzj
-         lXF/X0/N5U7xA/gSEQjc5c3D1BvmuSLrlkNPAjiLQA/Sky6SwsxJTJiZnYzg9uCUYyHt
-         5Q1Ocom4SRKj22WlAu19eRZMDL+n98UeJ3dz8=
-Date: Sat, 23 Apr 2011 02:56:47 +0200
-From: Tejun Heo <htejun@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Bruce Stenning <b.stenning@indigovision.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Justin Maggard <jmaggard10@gmail.com>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Message-ID: <20110423005647.GD1576@mtj.dyndns.org>
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
- <4D9CD275.9000002@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
- <4D9FACC9.7020200@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
- <4DA5BCF3.5080205@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772DA491@gretna.indigovision.com>
- <4DA79134.1010508@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772DA5DD@gretna.indigovision.com>
- <4DA86606.308@teksavvy.com>
+	id S932075Ab1DWBec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Apr 2011 21:34:32 -0400
+Received: from snt0-omc3-s45.snt0.hotmail.com ([65.54.51.82]:46649 "EHLO
+	snt0-omc3-s45.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757143Ab1DWBea convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Apr 2011 21:34:30 -0400
+X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Apr 2011 21:34:30 EDT
+Message-ID: <SNT125-W638277FA9F3B49B316DC9FC3940@phx.gbl>
+X-Originating-IP: [50.47.160.44]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <chris@csamuel.org>, <alan@lxorguk.ukuu.org.uk>
+CC: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: RE: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on
+ quad Pentium Pro system
+Date: Fri, 22 Apr 2011 18:28:20 -0700
+Importance: Normal
+In-Reply-To: <201104231016.23579.chris@csamuel.org>
+References: <201104222333.25546.chris@csamuel.org>
+ <20110422173422.46134f20@lxorguk.ukuu.org.uk>,<201104231016.23579.chris@csamuel.org>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA86606.308@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 23 Apr 2011 01:28:20.0443 (UTC) FILETIME=[BAC82AB0:01CC0155]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 11:36:38AM -0400, Mark Lord wrote:
-> On 11-04-15 09:21 AM, Bruce Stenning wrote:
-> ..
-> > sata_mv 0000:00:04.0: Gen-II 32 slots 4 ports SCSI mode IRQ via INTx
-> ..
-> > 
-> > I had noticed occasional messages similar to the following earlier in the week:
-> > 
-> > ata4.00: limiting speed to UDMA/100:PIO4
-> 
-> Ugh.   Tejun:  that's just plain silly.
-> Why would we EVER EVER EVER fall back to "PIO" for SATA ???
 
-Nah, it's just printing both DMA and PIO speed settings.  It's limited
-to UDMA/100 not PIO4.
+> Sigh, that's just reminded me that a couple of years ago I
+> had a private discussion with H. Peter Anvin about 2.6.25
+> panic'ing on boot with:
+>
+> initrd extends beyond end of memory (0x0ffef173 > ox01000000)
+>
+> He gave me a modified syslinux to dump out memory information
+> and it reported:
+>
+> INT 15h = f000:f859 DOS RAM: 638K (0x9f800) INT 12h: 638K (0x9f800)
+> INT 15 88: 0x3c00 (15360K) INT 15 E801: 0x0000 (0K) 0x0000 (0K)
+>
+> He responded with:
+>
+> # Right... you have a system dependent on E801, and somehow E801
+> # returns crap.
+> #
+> # I'm going to cook up a modified meminfo.c32 for you and see if
+> # we can't track this down.
 
-Thanks.
+This is a stupid BIOS, but do you know if it used E820 in  the old kernel?
+I wonder if this has something to do with the changes made to support ACPI 3.0 changes to E820?
+This would be easy to diagnose with DOS DEBUG with no himem.sys loaded.
 
--- 
-tejun
+Yuhong Bao
+ 		 	   		  
