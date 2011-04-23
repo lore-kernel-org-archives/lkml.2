@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1DWNjm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 09:39:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62439 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab1DWNjl (ORCPT
+	id S1754344Ab1DWNpR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 09:45:17 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51504 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1DWNpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 09:39:41 -0400
+	Sat, 23 Apr 2011 09:45:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ic5er7hDGXP+3uQs6B2MeFTAfVa4WtG8Y2xhkhqja6YK39SUBQbP/GFZhaaAzckd1E
-         qUrCjQYw9uFl1yhiSqhOnvoDdeWlRKXF9jVYN+fd2Nx7EQAqVNYC8fTIWZvXWn/2DLuf
-         /s0CuvUciIKL0yUlKnhPWq5kYtg6nLV6W9q18=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tQ8loogEfJxqFjOmk8/JVSFegM4Nh8zvytKA4yTb8QuNVvLS01TYzif1RKgCgnrrBE
+         zdM/pF2Eqg+t++G3crsOxF9A4ZpDHVnbGo74ax585ZBftbDW9yRF0354D9x57YW1sywf
+         qpjwCEpDJwnMaPhHXFH1ToUFwbX/Np5Ah/CXg=
 MIME-Version: 1.0
-Date: Sat, 23 Apr 2011 21:39:40 +0800
-Message-ID: <BANLkTimyN49J0UTo69Rabppeow9Fz-LcfQ@mail.gmail.com>
-Subject: [PATCH] sched: try to rewrite tg_has_rt_tasks()
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4DB1AED0.60600@gmail.com>
+References: <inhgjs$54a$1@dough.gmane.org>
+	<4D9C84D5.6090303@gmail.com>
+	<20110406175217.GC4987@ghostprotocols.net>
+	<201104062248.23853.tim@klingt.org>
+	<4D9CE610.4020603@gmail.com>
+	<4D9CECF5.3090309@gmail.com>
+	<4DB1AED0.60600@gmail.com>
+Date: Sat, 23 Apr 2011 21:45:14 +0800
+Message-ID: <BANLkTimosBfOBsUWQaimT0O53=pALx54AA@mail.gmail.com>
+Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
+From: Lin Ming <minggr@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Tim Blechmann <tim@klingt.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is reshuffled not based upon scanning the list of existing threads
-but upon the relevant info carried by the input task group. Compared
-with the original, it is simpler, and nothing important is missed.
+On Sat, Apr 23, 2011 at 12:37 AM, David Ahern <dsahern@gmail.com> wrote:
+> I know you've been busy with other stuff the past few weeks, but have
+> you had a chance to look into this? Basically, perf in 2.6.39 is broken
+> when trying to profile a process (-p argument to record or top).
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Let me take a look at this.
 
---- a/kernel/sched.c	2011-03-30 03:09:48.000000000 +0800
-+++ b/kernel/sched.c	2011-04-23 21:48:14.000000000 +0800
-@@ -8756,13 +8756,11 @@ static unsigned long to_ratio(u64 period
- /* Must be called with tasklist_lock held */
- static inline int tg_has_rt_tasks(struct task_group *tg)
- {
--	struct task_struct *g, *p;
--
--	do_each_thread(g, p) {
--		if (rt_task(p) && rt_rq_of_se(&p->rt)->tg == tg)
-+	int cpu;
-+	for_each_online_cpu(cpu) {
-+		if (tg->rt_rq[cpu]->rt_nr_running != 0)
- 			return 1;
--	} while_each_thread(g, p);
--
-+	}
- 	return 0;
- }
+Lin Ming
+
+>
+> David
