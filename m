@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1DWMhW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 08:37:22 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34105 "EHLO mx2.mail.elte.hu"
+	id S1753795Ab1DWMtr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 08:49:47 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57643 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab1DWMhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 08:37:21 -0400
-Date: Sat, 23 Apr 2011 14:36:50 +0200
+	id S1753529Ab1DWMtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 08:49:46 -0400
+Date: Sat, 23 Apr 2011 14:49:19 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <ak@linux.intel.com>,
-        arun@sharma-home.net, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
         Arun Sharma <asharma@fb.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
  missing user space support for config1/config2
-Message-ID: <20110423123650.GA5147@elte.hu>
+Message-ID: <20110423124919.GB5147@elte.hu>
 References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
  <20110422092322.GA1948@elte.hu>
  <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
  <20110422105211.GB1948@elte.hu>
- <20110422165007.GA18401@vps.sharma-home.net>
- <20110422203022.GA20573@elte.hu>
- <20110422203222.GA21219@elte.hu>
- <20110423000347.GC9328@tassilo.jf.intel.com>
- <1303545012.2298.44.camel@twins>
- <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
+ <BANLkTinaZyHNV2Bm7CJFJ11WBCPGgsYijQ@mail.gmail.com>
+ <20110422131846.GA20760@elte.hu>
+ <BANLkTi=jdSG1Zefn_b7Pv2NyT1jdREzW8w@mail.gmail.com>
+ <20110422204740.GA21364@elte.hu>
+ <BANLkTi=YWStNmamjhWjh_yeitqGhtKJssw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=YWStNmamjhWjh_yeitqGhtKJssw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -50,42 +50,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Stephane Eranian <eranian@google.com> wrote:
 
-> On Sat, Apr 23, 2011 at 9:50 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2011-04-22 at 17:03 -0700, Andi Kleen wrote:
-> >> > > Yes, and note that with instructions events we even have skid-less PEBS
-> >> > > profiling so seeing the precise .
-> >> >                                   - location of instructions is possible.
+> On Fri, Apr 22, 2011 at 10:47 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Stephane Eranian <eranian@google.com> wrote:
+> >
+> >> On Fri, Apr 22, 2011 at 3:18 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> >
+> >> > * Stephane Eranian <eranian@google.com> wrote:
+> >> >
+> >> > > > Say i'm a developer and i have an app with such code:
+> >> > > >
+> >> > > > #define THOUSAND 1000
+> >> > > >
+> >> > > > static char array[THOUSAND][THOUSAND];
+> >> > > >
+> >> > > > int init_array(void)
+> >> > > > {
+> >> > > >        int i, j;
+> >> > > >
+> >> > > >        for (i = 0; i < THOUSAND; i++) {
+> >> > > >                for (j = 0; j < THOUSAND; j++) {
+> >> > > >                        array[j][i]++;
+> >> > > >                }
+> >> > > >        }
+> >> > > >
+> >> > > >        return 0;
+> >> > > > }
+> >> > > >
+> >> > > > Pretty common stuff, right?
+> >> > > >
+> >> > > > Using the generalized cache events i can run:
+> >> > > >
+> >> > > >  $ perf stat --repeat 10 -e cycles:u -e instructions:u -e l1-dcache-loads:u -e l1-dcache-load-misses:u ./array
+> >> > > >
+> >> > > >  Performance counter stats for './array' (10 runs):
+> >> > > >
+> >> > > >         6,719,130 cycles:u                   ( +-   0.662% )
+> >> > > >         5,084,792 instructions:u           #      0.757 IPC     ( +-   0.000% )
+> >> > > >         1,037,032 l1-dcache-loads:u          ( +-   0.009% )
+> >> > > >         1,003,604 l1-dcache-load-misses:u    ( +-   0.003% )
+> >> > > >
+> >> > > >        0.003802098  seconds time elapsed   ( +-  13.395% )
+> >> > > >
+> >> > > > I consider that this is 'bad', because for almost every dcache-load there's a
+> >> > > > dcache-miss - a 99% L1 cache miss rate!
+> >> > > >
+> >> > > > Then i think a bit, notice something, apply this performance optimization:
+> >> > >
+> >> > > I don't think this example is really representative of the kind of problems
+> >> > > people face, it is just too small and obvious. [...]
+> >> >
+> >> > Well, the overwhelming majority of performance problems are 'small and obvious'
 > >>
-> >> It was better when it was eaten. PEBS does not actually eliminated
-> >> skid unfortunately. The interrupt still occurs later, so the
-> >> instruction location is off.
+> >> Problems are not simple. Most serious applications these days are huge,
+> >> hundreds of MB of text, if not GB.
 > >>
-> >> PEBS merely gives you more information.
+> >> In your artificial example, you knew the answer before you started the
+> >> measurement.
+> >>
+> >> Most of the time, applications are assembled out of hundreds of libraries, so
+> >> no single developers knows all the code. Thus, the performance analyst is
+> >> faced with a black box most of the time.
 > >
-> > You're so skilled at not actually saying anything useful. Are you
-> > perchance referring to the fact that the IP reported in the PEBS data is
-> > exactly _one_ instruction off? Something that is demonstrated to be
-> > fixable?
+> > I isolated out an example and assumed that you'd agree that identifying hot
+> > spots is trivial with generic cache events.
 > >
-> > Or are you defining skid differently and not telling us your definition?
+> > My assumption was wrong so let me show you how trivial it really is.
 > >
-> 
-> PEBS is guaranteed to return an IP that is just after AN instruction that 
-> caused the event. However, that instruction is NOT the one at the end of your 
-> period. Let's take an example with INST_RETIRED, period=100000. Then, the IP 
-> you get is NOT after the 100,000th retired instruction. It's an instruction 
-> that is N cycles after that one. There is internal skid due to the way PEBS 
-> is implemented.
+> > Here's an example with *two* problematic functions (but it could have hundreds,
+> > it does not matter):
+> >
+> > -------------------------------->
+> > #define THOUSAND 1000
+> >
+> > static char array1[THOUSAND][THOUSAND];
+> >
+> > static char array2[THOUSAND][THOUSAND];
+> >
+> > void func1(void)
+> > {
+> >        int i, j;
+> >
+> >        for (i = 0; i < THOUSAND; i++)
+> >                for (j = 0; j < THOUSAND; j++)
+> >                        array1[i][j]++;
+> > }
+> >
+> > void func2(void)
+> > {
+> >        int i, j;
+> >
+> >        for (i = 0; i < THOUSAND; i++)
+> >                for (j = 0; j < THOUSAND; j++)
+> >                        array2[j][i]++;
+> > }
+> >
+> > int main(void)
+> > {
+> >        for (;;) {
+> >                func1();
+> >                func2();
+> >        }
+> >
+> >        return 0;
+> > }
+> > <--------------------------------
+> >
+> > We do not know which one has the cache-misses problem, func1() or func2(), it's
+> > all a black box, right?
+> >
+> > Using generic cache events you simply type this:
+> >
+> >  $ perf top -e l1-dcache-load-misses -e l1-dcache-loads
+> >
+> > And you get such output:
+> >
+> >   PerfTop:    1923 irqs/sec  kernel: 0.0%  exact:  0.0% [l1-dcache-load-misses:u/l1-dcache-loads:u],  (all, 16 CPUs)
+> > -------------------------------------------------------------------------------------------------------
+> >
+> >   weight    samples  pcnt funct DSO
+> >   ______    _______ _____ _____ ______________________
+> >
+> >      1.9       6184 98.8% func2 /home/mingo/opt/array2
+> >      0.0         69  1.1% func1 /home/mingo/opt/array2
+> >
+> > It has pinpointed the problem in func2 *very* precisely.
+> >
+> > Obviously this can be used to analyze larger apps as well, with thousands 
+> > of functions, to pinpoint cachemiss problems in specific functions.
+>
+> No, it does not.
 
-You are really misapplying the common-sense definition of 'skid'.
+The thing is, you will need to come up with more convincing and concrete 
+arguments than a blanket, unsupported "No, it does not" claim.
 
-Skid refers to the instruction causing a profiler hit being mis-identified. 
-Google 'x86 pmu skid' and read the third entry: your own prior posting ;-)
+I *just showed* you an example which you claimed just two mails ago is 
+impossible to analyze. I showed an example two functions and claimed that the 
+same thing works with 3 or more functions as well: perf top will happily 
+display the ones with the highest cachemiss ratio, regardless of how many there 
+are.
 
-What you are referring to here is not really classic skid but a small, mostly 
-constant skew in the period length with some very small amount of variability. 
-It's thus mostly immaterial - at most a second or third order effect with 
-typical frequencies of sampling.
+> As I said before, your example is just to trivial to be representative. You 
+> keep thinking that what you see in the profile pinpoints exactly the 
+> instruction or even the function where the problem always occurs. This is not 
+> always the case. There is skid, and it can be very big, the IP you get may 
+> not even be in the same function where the load was issued.
+
+So now you claim a narrow special case (most of the hot-spot overhead skidding 
+out of a function) as a counter-proof?
+
+Sometimes skid causes problems - in practice it rarely does, and i do a lot of 
+profiling.
+
+Also, i'd expect PEBS to be extended in the future to more and more events - 
+including cachemiss events. That will solve this kind of skidding in a pretty 
+natural way.
+
+Also, lets analyze your narrow special case: if a function is indeed 
+"invisible" to profiling because most overhead skids out of it then there's 
+little you can do with raw events to begin with ...
+
+You really need to specifically demonstrate how raw events help your example.
 
 Thanks,
 
