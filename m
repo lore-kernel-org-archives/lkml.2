@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1DWQ31 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 12:29:27 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35058 "EHLO
+	id S1757262Ab1DWQ3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 12:29:35 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35085 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755927Ab1DWQ3S (ORCPT
+	with ESMTP id S1755245Ab1DWQ3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 12:29:18 -0400
+	Sat, 23 Apr 2011 12:29:30 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 03/18] x86, mce: Add persistent MCE event
-Date: Sat, 23 Apr 2011 18:28:05 +0200
-Message-Id: <1303576100-425-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 06/18] tools: Add a toplevel Makefile
+Date: Sat, 23 Apr 2011 18:28:08 +0200
+Message-Id: <1303576100-425-7-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1303576100-425-1-git-send-email-bp@amd64.org>
 References: <1303576100-425-1-git-send-email-bp@amd64.org>
@@ -30,164 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add the necessary glue to enable the mce_record tracepoint on boot,
-turning it into a persistent event. This exports the MCE buffer through
-a debugfs per-CPU file which a userspace daemon can read and process the
-error data further.
+Add a Makefile with all the targets under tools/. Make perf the default
+one and add a minimalistic Makefile to slub/ for completeness.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/include/asm/mce.h       |    8 +++
- arch/x86/kernel/cpu/mcheck/mce.c |   89 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 97 insertions(+), 0 deletions(-)
+ tools/Makefile             |   42 ++++++++++++++++++++++++++++++++++++++++++
+ tools/scripts/Makefile.lib |   14 ++++++++++++--
+ tools/slub/Makefile        |    4 ++++
+ 3 files changed, 58 insertions(+), 2 deletions(-)
+ create mode 100644 tools/Makefile
+ create mode 100644 tools/slub/Makefile
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index eb16e94..81f5545 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -115,6 +115,14 @@ struct mce_log {
+diff --git a/tools/Makefile b/tools/Makefile
+new file mode 100644
+index 0000000..74b20a9
+--- /dev/null
++++ b/tools/Makefile
+@@ -0,0 +1,42 @@
++include scripts/Makefile.lib
++
++PERF_TOP_DIR := $(CURDIR)
++export PERF_TOP_DIR
++
++BASIC_CFLAGS = -I$(CURDIR)/lib
++
++# temporary for lib/trace/
++BASIC_CFLAGS += -I$(CURDIR)/perf/util/include
++export BASIC_CFLAGS
++
++perf: .FORCE
++	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1)
++
++firewire: .FORCE
++	$(QUIET_SUBDIR0)firewire/ $(QUIET_SUBDIR1)
++
++slabinfo: .FORCE
++	$(QUIET_SUBDIR0)slub/ $(QUIET_SUBDIR1)
++
++turbostat: .FORCE
++	$(QUIET_SUBDIR0)power/x86/turbostat/ $(QUIET_SUBDIR1)
++
++usb: .FORCE
++	$(QUIET_SUBDIR0)usb/ $(QUIET_SUBDIR1)
++
++virtio: .FORCE
++	$(QUIET_SUBDIR0)virtio/ $(QUIET_SUBDIR1)
++
++x86_energy: .FORCE
++	$(QUIET_SUBDIR0)power/x86/x86_energy_perf_policy/ $(QUIET_SUBDIR1)
++
++clean:
++	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)firewire/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)slub/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)power/x86/turbostat/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)usb/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)virtio/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)power/x86/x86_energy_perf_policy/ $(QUIET_SUBDIR1) clean
++
++.PHONY: clean .FORCE
+diff --git a/tools/scripts/Makefile.lib b/tools/scripts/Makefile.lib
+index 854fefb..9dfa0f9 100644
+--- a/tools/scripts/Makefile.lib
++++ b/tools/scripts/Makefile.lib
+@@ -33,6 +33,15 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
  
- #ifdef __KERNEL__
- 
-+/*
-+ * a per-cpu descriptor of the persistent MCE tracepoint
-+ */
-+struct mce_tp_desc {
-+	struct perf_event *event;
-+	struct dentry *debugfs_entry;
-+};
++QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
++QUIET_SUBDIR1  =
 +
- extern struct atomic_notifier_head x86_mce_decoder_chain;
- 
- #include <linux/percpu.h>
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..9589ebf 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -96,6 +96,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
- 
- static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
- static DEFINE_PER_CPU(struct mce, mces_seen);
-+static DEFINE_PER_CPU(struct mce_tp_desc, mce_event);
- static int			cpu_missing;
- 
- /*
-@@ -2055,6 +2056,91 @@ static void __cpuinit mce_reenable_cpu(void *h)
- 	}
- }
- 
-+static struct perf_event_attr pattr = {
-+	.type		= PERF_TYPE_TRACEPOINT,
-+	.size		= sizeof(pattr),
-+	.sample_type	= PERF_SAMPLE_RAW,
-+	.persistent	= 1,
-+};
++ifneq ($(findstring $(MAKEFLAGS),w),w)
++PRINT_DIR = --no-print-directory
++else # "make -w"
++NO_SUBDIR = :
++endif
 +
-+static struct dentry *mce_add_event_debugfs(struct perf_event *event, int cpu)
-+{
-+	char buf[14];
+ ifneq ($(findstring $(MAKEFLAGS),s),s)
+ ifndef V
+ 	QUIET_CC       = @echo '   ' CC $@;
+@@ -40,7 +49,8 @@ ifndef V
+ 	QUIET_LINK     = @echo '   ' LINK $@;
+ 	QUIET_MKDIR    = @echo '   ' MKDIR $@;
+ 	QUIET_GEN      = @echo '   ' GEN $@;
++	QUIET_SUBDIR0  = +@subdir=
++	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
++			$(MAKE) $(PRINT_DIR) -C $$subdir
+ endif
+ endif
+-
+-
+diff --git a/tools/slub/Makefile b/tools/slub/Makefile
+new file mode 100644
+index 0000000..b2cf6b4
+--- /dev/null
++++ b/tools/slub/Makefile
+@@ -0,0 +1,4 @@
++slabinfo: slabinfo.c
 +
-+	sprintf(buf, "mce_record%d", cpu);
-+
-+	return debugfs_create_file(buf, S_IRUGO | S_IWUSR,
-+				   mce_get_debugfs_dir(),
-+				   event, &perf_pers_fops);
-+}
-+
-+#define MCE_BUF_PAGES	4
-+
-+static int mce_enable_perf_event_on_cpu(int cpu)
-+{
-+	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-+	int err = -EINVAL;
-+
-+	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
-+	if (IS_ERR(d->event)) {
-+		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
-+		goto ret;
-+	}
-+
-+	d->debugfs_entry = mce_add_event_debugfs(d->event, cpu);
-+	if (!d->debugfs_entry) {
-+		printk(KERN_ERR "MCE: Error adding event debugfs entry on cpu %d\n", cpu);
-+		goto disable;
-+	}
-+
-+	return 0;
-+
-+disable:
-+	perf_disable_persistent_event(d->event, cpu);
-+
-+ret:
-+	return err;
-+}
-+
-+static void mce_disable_perf_event_on_cpu(int cpu)
-+{
-+	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-+	debugfs_remove(d->debugfs_entry);
-+	perf_disable_persistent_event(d->event, cpu);
-+}
-+
-+static __init int mcheck_init_persistent_event(void)
-+{
-+	int cpu, err = 0;
-+
-+	get_online_cpus();
-+
-+	pattr.config = event_mce_record.event.type;
-+	pattr.sample_period = 1;
-+	pattr.wakeup_events = 1;
-+
-+	for_each_online_cpu(cpu)
-+		if (mce_enable_perf_event_on_cpu(cpu))
-+			goto err_unwind;
-+
-+	goto unlock;
-+
-+err_unwind:
-+	err = -EINVAL;
-+	for (--cpu; cpu >= 0; cpu--)
-+		mce_disable_perf_event_on_cpu(cpu);
-+
-+unlock:
-+	put_online_cpus();
-+
-+	return err;
-+}
-+
-+/*
-+ * This has to run after event_trace_init()
-+ */
-+device_initcall(mcheck_init_persistent_event);
-+
- /* Get notified when a cpu comes on/off. Be hotplug friendly. */
- static int __cpuinit
- mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-@@ -2068,6 +2154,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		mce_create_device(cpu);
- 		if (threshold_cpu_callback)
- 			threshold_cpu_callback(action, cpu);
-+		mce_enable_perf_event_on_cpu(cpu);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -2077,6 +2164,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
-+		mce_disable_perf_event_on_cpu(cpu);
- 		del_timer_sync(t);
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
- 		break;
-@@ -2088,6 +2176,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 			add_timer_on(t, cpu);
- 		}
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
-+		mce_enable_perf_event_on_cpu(cpu);
- 		break;
- 	case CPU_POST_DEAD:
- 		/* intentionally ignoring frozen here */
++clean:
++	rm -rf slabinfo
 -- 
 1.7.4.rc2
 
