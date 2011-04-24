@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab1DXNwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 09:52:22 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:56623 "EHLO mail001.aei.ca"
+	id S1757505Ab1DXOYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 10:24:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34654 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936Ab1DXNwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 09:52:19 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Hui Zhu <teawater@gmail.com>
-Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
-Date: Sun, 24 Apr 2011 09:52:14 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39-rc4-crc+; KDE/4.6.2; x86_64; ; )
-Cc: Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
-References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com> <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com> <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
-In-Reply-To: <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
+	id S1755577Ab1DXOYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 10:24:46 -0400
+Date: Sat, 23 Apr 2011 18:51:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: james_p_freyensee@linux.intel.com, linux-kernel@vger.kernel.org,
+        suhail.ahmed@intel.com, christophe.guerard@intel.com
+Subject: Re: [PATCH 4/4] n_tracerouter and n_tracesink ldisc additions.
+Message-ID: <20110424015116.GA689@suse.de>
+References: <james_p_freyensee@linux.intel.com>
+ <1303515150-1718-5-git-send-email-james_p_freyensee@linux.intel.com>
+ <alpine.LNX.2.00.1104240256160.28014@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104240952.14848.edt@aei.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1104240256160.28014@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011 11:34:30 Hui Zhu wrote:
-> Do you part is OK?
+On Sun, Apr 24, 2011 at 03:04:31AM +0200, Jesper Juhl wrote:
+> > --- a/include/linux/tty.h
+> > +++ b/include/linux/tty.h
+> > @@ -50,6 +50,8 @@
+> >  #define N_CAIF		20      /* CAIF protocol for talking to modems */
+> >  #define N_GSM0710	21	/* GSM 0710 Mux */
+> >  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+> > +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+> > +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+> >  
 > 
-> I think it will be very easy to reproduce.
-> 
-> Thanks,
-> Hui
-> 
-> On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
-> >> Cannot connect to any outside devices through bluetooth.
-> >>
-> >> And I think this is not a bug of low level driver.  Because both my
-> >> laptop and a usb bluetooth card cannot work.
-> >
-> > Hi, please explain the "cannot work" in detail,
-> > Firstly check dmesg and hciconfig to see if there's anything wrong.
+> Lining up those defines would be nice :)
 
-I am also seeing problems with bluetooth in .39-rc4+
+They are lined up in the original file just fine.
 
-[54511.033258] usb 2-4.4: USB disconnect, device number 5
-[54513.920060] usb 2-4.3: new full speed USB device number 6 using ehci_hcd
-[54514.063057] usb 2-4.3: New USB device found, idVendor=0a12, idProduct=0001
-[54514.070281] usb 2-4.3: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-grover ~ # hciconfig -a
-hci0:   Type: BR/EDR  Bus: USB
-        BD Address: 00:0A:3A:55:07:5A  ACL MTU: 192:8  SCO MTU: 64:8
-        DOWN 
-        RX bytes:718 acl:0 sco:0 events:25 errors:0
-        TX bytes:108 acl:0 sco:0 commands:24 errors:0
-        Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00
-        Packet type: DM1 DM3 DM5 DH1 DH3 DH5 HV1 HV2 HV3 
-        Link policy: CONFIG_BT_HCIBTUSB=m
-        Link mode: SLAVE ACCEPT 
+thanks,
 
-grover ~ # hciconfig hci0 up
-Can't init device hci0: Invalid argument (22)
-
-The same error happens If I just try a hciconfig hci0 up after boot (without replugging the adaptor).
-
-CONFIG_BT_HCIBTSDIO=m
-CONFIG_BT_HCIUART=m
-CONFIG_BT_HCIUART_H4=y
-CONFIG_BT_HCIUART_BCSP=y
-# CONFIG_BT_HCIUART_ATH3K is not set
-CONFIG_BT_HCIUART_LL=y
-CONFIG_BT_HCIBCM203X=m
-CONFIG_BT_HCIBPA10X=m
-CONFIG_BT_HCIBFUSB=m
-CONFIG_BT_HCIVHCI=m
-
-and bluez-4.91 is installed
-
-Ideas?
-Ed Tomlinson
+greg k-h
