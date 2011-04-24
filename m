@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab1DXS2M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 14:28:12 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:49250 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab1DXS2K (ORCPT
+	id S1755060Ab1DXSzU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 14:55:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49762 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab1DXSzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 14:28:10 -0400
-X-Greylist: delayed 2338 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 14:28:09 EDT
-Date: Sun, 24 Apr 2011 18:49:02 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Sunil Mushran <sunil.mushran@oracle.com>
-Cc: Eric Blake <eblake@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-Message-ID: <20110424174902.GA20461@shareable.org>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com> <4DB1AC9D.3010706@oracle.com>
+	Sun, 24 Apr 2011 14:55:19 -0400
+Message-ID: <4DB47211.90901@dynato-kyma.net>
+Date: Sun, 24 Apr 2011 20:55:13 +0200
+From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <peetz@dynato-kyma.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB1AC9D.3010706@oracle.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Borislav Petkov <bp@alien8.de>,
+        =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>,
+        linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: Linux 2.6.38.4 : regression due to x86 AMD ARAT feature
+References: <20110421213926.GA19721@kroah.com> <4DB3DA0C.1050003@web.de> <20110424182041.GA19984@liondog.tnic>
+In-Reply-To: <20110424182041.GA19984@liondog.tnic>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:BnNmgrdx9WTZN6VhubAxwBbzakmxQAxAGfzOCDlyEDQ
+ Jy45ymwS3ojJP9Kjx7MQCD30gYp30nV/adHOwjJnF/GtAOXQIb
+ zyox6ciTBTPZBdTfuisf2EgI87Js4MK3IcY2xtbBHF6mW/0I2z
+ rZn2YKv1PvaDhtgu1oiHkPG0Ofd/pZVxR1jfwYtZ87japerFwm
+ e9p2OsYv/mEV5MQYp/wWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sunil Mushran wrote:
-> On 04/22/2011 04:50 AM, Eric Blake wrote:
-> >That blog also mentioned the useful idea of adding FIND_HOLE and
-> >FIND_DATA, not implemented in Solaris, but which could easily be
-> >provided as additional lseek constants in Linux to locate the start of
-> >the next chunk without repositioning and which could ease application
-> >programmer's life a bit.  After all, cp wants to know where data ends
-> >without repositioning (FIND_HOLE), read() that much data which
-> >repositions in the process, then skip to the next chunk of data
-> >(SEEK_DATA) - two lseek() calls per iteration if we have 4 constants,
-> >but 3 per iteration if we only have SEEK_HOLE and have to manually rewind.
+Borislav Petkov wrote, on 04/24/11 20:20:
+> On Sun, Apr 24, 2011 at 10:06:36AM +0200, Jörg-Volker Peetz wrote:
+>> With 2.6.38.4 the clock slows down and the affected laptop sometimes, e.g. for
+>> the output of "ps axuw" to appear, needs an input from the keyboard or the
+>> touchpad. Please find attached the kernel config file and the output of dmesg.
+>>
+>> Commenting out the the lines
+>>
+>> 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
+>> 		set_cpu_cap(c, X86_FEATURE_ARAT);
+>>
+>> in arch/x86/kernel/cpu/amd.c makes this laptop work as before with kernel
+>> 2.6.38.3. I think these lines came with commit
+>> d7b7f0c401303dd7eafcff11752fe74d3b75c766.
 > 
-> while(1) {
->     read(block);
->     if (block_all_zeroes)
->         lseek(SEEK_DATA);
-> }
+> Hmm, interesting.
 > 
-> What's wrong with the above? If this is the case, even SEEK_HOLE
-> is not needed but should be added as it is already in Solaris.
+> Can you send also /proc/cpuinfo please?
+> 
+> Looks like your CPU is a single core K8 revE or something but we'd need
+> the exact family info.
+> 
+> Thanks.
+> 
 
-Apart from the obvious waste of effort (scanning *all* data for zeros
-is cheap but not free if the file is mostly non-hole zeros), you can't
-do a pread() version of the above in parallel over different parts of
-the same file/device.
+Here it comes:
 
-> My problem with FIND_* is that we are messing with the well understood
-> semantics of lseek().
 
-fcntl() looks a better fit for FIND_HOLE/DATA anyway.
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 15
+model		: 36
+model name	: AMD Turion(tm) 64 Mobile Technology MT-40
+stepping	: 2
+cpu MHz		: 800.000
+cache size	: 1024 KB
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 1
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36
+clflush mmx fxsr sse sse2 syscall nx mmxext fxsr_opt lm 3dnowext 3dnow rep_good
+nopl pni lahf_lm
+bogomips	: 1592.98
+TLB size	: 1024 4K pages
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management: ts fid vid ttp tm stc
 
--- Jamie
+This is a nice mobile processor and i thought it was sold quite a lot.
+-- 
+Best regards,
+Jörg-Volker.
