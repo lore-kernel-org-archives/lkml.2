@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1DXSzU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 14:55:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49762 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab1DXSzT (ORCPT
+	id S1755370Ab1DXS6S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 14:58:18 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:45587 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754782Ab1DXS6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 14:55:19 -0400
-Message-ID: <4DB47211.90901@dynato-kyma.net>
-Date: Sun, 24 Apr 2011 20:55:13 +0200
-From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <peetz@dynato-kyma.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>,
-        linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: Linux 2.6.38.4 : regression due to x86 AMD ARAT feature
-References: <20110421213926.GA19721@kroah.com> <4DB3DA0C.1050003@web.de> <20110424182041.GA19984@liondog.tnic>
-In-Reply-To: <20110424182041.GA19984@liondog.tnic>
-X-Enigmail-Version: 1.1.2
+	Sun, 24 Apr 2011 14:58:14 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=CW40JI9pdd8cLEQ+bWgvzNrHOcBj+WFiC4QDch/9N7Gz/zOulgnIMckDJXQGiNN8jhCm2/ZHsueCQXHyt9s4dELKh6hOrwSq6wkWjF6qNoIF5GA077BPQzWgYbiQbse9;
+Date: Sun, 24 Apr 2011 11:58:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Cyril Brulebois <kibi@debian.org>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH 3/4] Documentation/00-INDEX.sh: add script to help
+ keeping the index up-to-date
+Message-Id: <20110424115811.e96c121f.rdunlap@xenotime.net>
+In-Reply-To: <20110423210537.GI32680@debian.org>
+References: <1303575344-10403-1-git-send-email-kibi@debian.org>
+	<1303575344-10403-3-git-send-email-kibi@debian.org>
+	<20110423093304.8a31e512.rdunlap@xenotime.net>
+	<20110423210537.GI32680@debian.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:BnNmgrdx9WTZN6VhubAxwBbzakmxQAxAGfzOCDlyEDQ
- Jy45ymwS3ojJP9Kjx7MQCD30gYp30nV/adHOwjJnF/GtAOXQIb
- zyox6ciTBTPZBdTfuisf2EgI87Js4MK3IcY2xtbBHF6mW/0I2z
- rZn2YKv1PvaDhtgu1oiHkPG0Ofd/pZVxR1jfwYtZ87japerFwm
- e9p2OsYv/mEV5MQYp/wWQ==
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote, on 04/24/11 20:20:
-> On Sun, Apr 24, 2011 at 10:06:36AM +0200, Jörg-Volker Peetz wrote:
->> With 2.6.38.4 the clock slows down and the affected laptop sometimes, e.g. for
->> the output of "ps axuw" to appear, needs an input from the keyboard or the
->> touchpad. Please find attached the kernel config file and the output of dmesg.
->>
->> Commenting out the the lines
->>
->> 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
->> 		set_cpu_cap(c, X86_FEATURE_ARAT);
->>
->> in arch/x86/kernel/cpu/amd.c makes this laptop work as before with kernel
->> 2.6.38.3. I think these lines came with commit
->> d7b7f0c401303dd7eafcff11752fe74d3b75c766.
-> 
-> Hmm, interesting.
-> 
-> Can you send also /proc/cpuinfo please?
-> 
-> Looks like your CPU is a single core K8 revE or something but we'd need
-> the exact family info.
-> 
-> Thanks.
-> 
+On Sat, 23 Apr 2011 23:05:37 +0200 Cyril Brulebois wrote:
 
-Here it comes:
+> Randy Dunlap <rdunlap@xenotime.net> (23/04/2011):
+> > The "undocumented" list looks correct (well, it could omit .orig
+> > files), but the "Documented but missing" list contains words, e.g.:
+> > […]
+> 
+> One coffee later… Looks like your grep is behaving as if "grep -F" was
+> passed; that might be better with an explicit "grep -G" (which is the
+> default), see patch below?
 
+Sorry, this patch didn't help (did not change the output).
 
-processor	: 0
-vendor_id	: AuthenticAMD
-cpu family	: 15
-model		: 36
-model name	: AMD Turion(tm) 64 Mobile Technology MT-40
-stepping	: 2
-cpu MHz		: 800.000
-cache size	: 1024 KB
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 1
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36
-clflush mmx fxsr sse sse2 syscall nx mmxext fxsr_opt lm 3dnowext 3dnow rep_good
-nopl pni lahf_lm
-bogomips	: 1592.98
-TLB size	: 1024 4K pages
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 40 bits physical, 48 bits virtual
-power management: ts fid vid ttp tm stc
+> diff --git a/Documentation/00-INDEX.sh b/Documentation/00-INDEX.sh
+> index 31d92d2..f22c260 100755
+> --- a/Documentation/00-INDEX.sh
+> +++ b/Documentation/00-INDEX.sh
+> @@ -4,7 +4,7 @@
+>  # Try and keep the 00-INDEX file up-to-date.
+>  
+>  # List all entries below the 00-INDEX entry:
+> -documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -v '^\s'|sed 's,/$,,')
+> +documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -G -v '^\s'|sed 's,/$,,')
+>  
+>  # List all files/directories except 00-INDEX* and Makefile:
+>  present=$(ls -1|grep -v '^00-INDEX'|grep -v '^Makefile$')
+> 
+> 
+> Maybe some grep alias in your environment? I couldn't reproduce the
+> behaviour you mentioned even using (unpack+PATH+LD_LIBRARY_PATH)
+> pcre-7.8-2.fc11.ppc.rpm and sed-4.2.1-1.fc11.ppc.rpm, until I tried
+> various options like passing -F to grep.
 
-This is a nice mobile processor and i thought it was sold quite a lot.
--- 
-Best regards,
-Jörg-Volker.
+I couldn't find any grep alias, but I changed "grep" in 00-INDEX.sh to "/bin/grep"
+anyway, and still got the same results.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
