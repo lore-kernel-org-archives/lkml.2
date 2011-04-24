@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab1DXLsP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 07:48:15 -0400
-Received: from mail.klingt.org ([86.59.21.178]:43416 "EHLO klingt.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756598Ab1DXLsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 07:48:10 -0400
-From: Tim Blechmann <tim@klingt.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-Date: Sun, 24 Apr 2011 13:47:52 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.2; x86_64; ; )
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <inhgjs$54a$1@dough.gmane.org> <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com> <1303570271.3363.4.camel@localhost>
-In-Reply-To: <1303570271.3363.4.camel@localhost>
+	id S1757493Ab1DXLve (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 07:51:34 -0400
+Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:47760 "EHLO
+	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598Ab1DXLvc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 07:51:32 -0400
+X-Greylist: delayed 707 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 07:51:32 EDT
+Date: Sun, 24 Apr 2011 11:32:47 +0000 (UTC)
+From: Thorsten Glaser <tg@mirbsd.de>
+X-X-Sender: tg@herc.mirbsd.org
+To: Michael Schmitz <schmitzmic@googlemail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: David Rientjes <rientjes@google.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, schwab@linux-m68k.org
+Subject: Re: [patch] m68k, mm: set all online nodes in N_NORMAL_MEMORY
+In-Reply-To: <BANLkTi=vm-qs48-JySCpv+YHyC+9sO9U0A@mail.gmail.com>
+Message-ID: <Pine.BSM.4.64L.1104241131460.8787@herc.mirbsd.org>
+References: <1303317178.2587.30.camel@mulgrave.site>
+ <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
+ <20110421220351.9180.A69D9226@jp.fujitsu.com>
+ <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1104211500170.5741@router.home>
+ <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1104211501470.20201@chino.kir.corp.google.com>
+ <4DB3840F.3060503@gmail.com> <BANLkTi=vm-qs48-JySCpv+YHyC+9sO9U0A@mail.gmail.com>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6037847.iQ4GQFuWLV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha256
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104241347.52486.tim@klingt.org>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.8 (klingt.org [86.59.21.178]); Sun, 24 Apr 2011 13:47:54 +0200 (CEST)
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6037847.iQ4GQFuWLV
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Michael Schmitz dixit:
 
-> > > I know you've been busy with other stuff the past few weeks, but have
-> > > you had a chance to look into this? Basically, perf in 2.6.39 is brok=
-en
-> > > when trying to profile a process (-p argument to record or top).
-> >=20
-> > Let me take a look at this.
->=20
-> Below patch fixes the same problem on my box.
-> Could you have a try it?
+> Tested on my ARAnyM test setup so far. I'd like to wait for an independent
+> kernel image built by Thorsten before I test on the actual hardware. Sorry but
+> you'll have to restart your build Thorsten :-)
 
-i have done some quick tests with this patch applied on linus/master ... wo=
-rks=20
-fine for me, thanks a lot!
+Heh okay, if you want. But only cross-compiling :D
 
-> >From 89f1ab02cd8da55f8829b2f2d7e700fdae77b3af Mon Sep 17 00:00:00 2001
->=20
-> From: Lin Ming <ming.m.lin@intel.com>
-> Date: Sat, 23 Apr 2011 14:54:33 +0000
-> Subject: [PATCH] perf: Allow set output event for task in the same thread
-> group
->=20
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 
-Tested-by: Tim Blechmann <tim@klingt.org>
+KOSAKI Motohiro dixit:
 
-cheers, tim
+>I think you are right. however I doubt m68k need to care memoryless node check.
+>probably following patch just work.
 
-=2D-=20
-tim@klingt.org
-http://tim.klingt.org
+That’s what we have now. Compiles, boots, works fine.
 
-When you open windows, bugs get in.
 
---nextPart6037847.iQ4GQFuWLV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+So, which of these do you guys want?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iF4EABEIAAYFAk20DegACgkQMLNj2qIwZ4WQogEAlt+stEA/rdtpcQV097iZVujs
-ZPeUK1m1P/6lSFM4zWcA/RXiGverrigq9jyX6ae/UmF8a5DKdrjcSCq0KmD4poNs
-=jn34
------END PGP SIGNATURE-----
-
---nextPart6037847.iQ4GQFuWLV--
+bye,
+//mirabilos
+-- 
+13:47⎜<tobiasu> if i were omnipotent, i would divide by zero
+                all day long ;)
+(thinking about http://lobacevski.tumblr.com/post/3260866481 by waga)
