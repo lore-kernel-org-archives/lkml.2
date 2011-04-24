@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab1DXXFT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 19:05:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62246 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab1DXXFP (ORCPT
+	id S1757907Ab1DXXKM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 19:10:12 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13240 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757805Ab1DXXKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 19:05:15 -0400
-From: Martin <marogge@onlinehome.de>
-To: "vger.kernel.org, " <linux-kernel@vger.kernel.org>
-Subject: ehci_hcd 0000:00:1d.0: HC died; cleaning up
-Date: Mon, 25 Apr 2011 01:05:13 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4-ck3; KDE/4.5.5; x86_64; ; )
+	Sun, 24 Apr 2011 19:10:09 -0400
+Date: Mon, 25 Apr 2011 01:03:50 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <gregkh@suse.de>
+cc: james_p_freyensee@linux.intel.com, linux-kernel@vger.kernel.org,
+        suhail.ahmed@intel.com, christophe.guerard@intel.com
+Subject: Re: [PATCH 4/4] n_tracerouter and n_tracesink ldisc additions.
+In-Reply-To: <20110424015116.GA689@suse.de>
+Message-ID: <alpine.LNX.2.00.1104250102480.32416@swampdragon.chaosbits.net>
+References: <james_p_freyensee@linux.intel.com> <1303515150-1718-5-git-send-email-james_p_freyensee@linux.intel.com> <alpine.LNX.2.00.1104240256160.28014@swampdragon.chaosbits.net> <20110424015116.GA689@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104250105.13141.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:vEDYkWsejFiwVV74Llphzhrq9n2z+y8hCdFcoMX4zMu
- GQoMxR2WOPijGKryPf/ejHZFYebhnin/tD66nrsqBDDkJCDNo1
- S770zd87DLSHb2/fiHBIqNW3m/079nkRRSuw1A+MhzZ0DDLNl9
- 9Sy6FCyUc+u+15bw2ICqAObgycAQVErIY0XDJMRPdDy/sjUHS+
- pt9r6kpVuX/yZJ4IEMIOg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-recently, when plugging in my webcam (UVC driver) my USB stack seems to 
-collapse. All USB devices including the mouse & keyboard stop working, the 
-syslog says:
+On Sat, 23 Apr 2011, Greg KH wrote:
 
-Apr 24 19:03:45 arnold kernel: ehci_hcd 0000:00:1d.0: fatal error
-Apr 24 19:03:45 arnold kernel: ehci_hcd 0000:00:1d.0: force halt; handshake 
-ffffc90000052024 00004000 00004000 -> -110
-Apr 24 19:03:45 arnold kernel: ehci_hcd 0000:00:1d.0: HC died; cleaning up
-Apr 24 19:03:45 arnold kernel: usb 2-1.3: device descriptor read/all, error 
--108
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot disable port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot reset port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot disable port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot reset port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot disable port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot reset port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot disable port 3 (err = -19)
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: unable to enumerate USB device on 
-port 3
-Apr 24 19:03:45 arnold kernel: hub 2-1:1.0: cannot disable port 3 (err = -19)
+> On Sun, Apr 24, 2011 at 03:04:31AM +0200, Jesper Juhl wrote:
+> > > --- a/include/linux/tty.h
+> > > +++ b/include/linux/tty.h
+> > > @@ -50,6 +50,8 @@
+> > >  #define N_CAIF		20      /* CAIF protocol for talking to modems */
+> > >  #define N_GSM0710	21	/* GSM 0710 Mux */
+> > >  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+> > > +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+> > > +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+> > >  
+> > 
+> > Lining up those defines would be nice :)
+> 
+> They are lined up in the original file just fine.
+> 
+Ok, then my email client is messing things up for me.
 
-Cycling through run level 1 (which restarts udev etc.) doesn't help, only 
-remedy I found is a reboot.
-
-So far it is only the UVC webcam causing the problem. Memory sticks seem to 
-work as expected.
-
-I seem to remember it used to work previously and most likely one of my recent 
-kernel upgrades is the trigger (currently on 2.6.38.4). However, before I 
-delve into bisecting (the weather forecast for Easter Monday is too good): can 
-someone tell what's going on from those error codes in the syslog?
-
-Thanks,
-
-Martin
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
