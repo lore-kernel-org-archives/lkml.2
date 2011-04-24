@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab1DXNqB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 09:46:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49320 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab1DXNp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 09:45:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hA/0bXEGoM/OxgMVBmIn4/fjxeX3hNOVer78veO2ZiNQlZgXJLCWJ0p2ifXIOVJIH+
-         EOYsFuwTFshgQt66ZUgKyLWqtqrVbcubVFwJxYXNZetfCKJmrXE/5OnBChnevbEMyQBG
-         EZk6VMWQrTC5dc8Xr4edcIlITP1TCVEoahqfY=
-Message-ID: <4DB42988.7060607@gmail.com>
-Date: Sun, 24 Apr 2011 07:45:44 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756639Ab1DXNwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 09:52:22 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:56623 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754936Ab1DXNwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 09:52:19 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Hui Zhu <teawater@gmail.com>
+Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
+Date: Sun, 24 Apr 2011 09:52:14 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.39-rc4-crc+; KDE/4.6.2; x86_64; ; )
+Cc: Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
+References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com> <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com> <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
+In-Reply-To: <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tim Blechmann <tim@klingt.org>, Lin Ming <ming.m.lin@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-References: <inhgjs$54a$1@dough.gmane.org> <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com> <1303570271.3363.4.camel@localhost> <201104241347.52486.tim@klingt.org>
-In-Reply-To: <201104241347.52486.tim@klingt.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104240952.14848.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 19 April 2011 11:34:30 Hui Zhu wrote:
+> Do you part is OK?
+> 
+> I think it will be very easy to reproduce.
+> 
+> Thanks,
+> Hui
+> 
+> On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
+> >> Cannot connect to any outside devices through bluetooth.
+> >>
+> >> And I think this is not a bug of low level driver.  Because both my
+> >> laptop and a usb bluetooth card cannot work.
+> >
+> > Hi, please explain the "cannot work" in detail,
+> > Firstly check dmesg and hciconfig to see if there's anything wrong.
 
+I am also seeing problems with bluetooth in .39-rc4+
 
-On 04/24/11 05:47, Tim Blechmann wrote:
->>>> I know you've been busy with other stuff the past few weeks, but have
->>>> you had a chance to look into this? Basically, perf in 2.6.39 is broken
->>>> when trying to profile a process (-p argument to record or top).
->>>
->>> Let me take a look at this.
->>
->> Below patch fixes the same problem on my box.
->> Could you have a try it?
-> 
-> i have done some quick tests with this patch applied on linus/master ... works 
-> fine for me, thanks a lot!
+[54511.033258] usb 2-4.4: USB disconnect, device number 5
+[54513.920060] usb 2-4.3: new full speed USB device number 6 using ehci_hcd
+[54514.063057] usb 2-4.3: New USB device found, idVendor=0a12, idProduct=0001
+[54514.070281] usb 2-4.3: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+grover ~ # hciconfig -a
+hci0:   Type: BR/EDR  Bus: USB
+        BD Address: 00:0A:3A:55:07:5A  ACL MTU: 192:8  SCO MTU: 64:8
+        DOWN 
+        RX bytes:718 acl:0 sco:0 events:25 errors:0
+        TX bytes:108 acl:0 sco:0 commands:24 errors:0
+        Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00
+        Packet type: DM1 DM3 DM5 DH1 DH3 DH5 HV1 HV2 HV3 
+        Link policy: CONFIG_BT_HCIBTUSB=m
+        Link mode: SLAVE ACCEPT 
 
-Works for me as well.
+grover ~ # hciconfig hci0 up
+Can't init device hci0: Invalid argument (22)
 
-> 
->> >From 89f1ab02cd8da55f8829b2f2d7e700fdae77b3af Mon Sep 17 00:00:00 2001
->>
->> From: Lin Ming <ming.m.lin@intel.com>
->> Date: Sat, 23 Apr 2011 14:54:33 +0000
->> Subject: [PATCH] perf: Allow set output event for task in the same thread
->> group
->>
->> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> 
-> Tested-by: Tim Blechmann <tim@klingt.org>
-> 
-> cheers, tim
-> 
+The same error happens If I just try a hciconfig hci0 up after boot (without replugging the adaptor).
+
+CONFIG_BT_HCIBTSDIO=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_H4=y
+CONFIG_BT_HCIUART_BCSP=y
+# CONFIG_BT_HCIUART_ATH3K is not set
+CONFIG_BT_HCIUART_LL=y
+CONFIG_BT_HCIBCM203X=m
+CONFIG_BT_HCIBPA10X=m
+CONFIG_BT_HCIBFUSB=m
+CONFIG_BT_HCIVHCI=m
+
+and bluez-4.91 is installed
+
+Ideas?
+Ed Tomlinson
