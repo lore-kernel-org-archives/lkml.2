@@ -1,31 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab1DXS0y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 14:26:54 -0400
-Received: from bet.iach.cz ([147.231.204.15]:2114 "EHLO mail.iach.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab1DXS0w convert rfc822-to-8bit (ORCPT
+	id S1754668Ab1DXS2M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 14:28:12 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:49250 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab1DXS2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 14:26:52 -0400
-X-Greylist: delayed 26040 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 14:26:51 EDT
-From: "Radka Jaksova" <dept001@gmail.com>
-Reply-to: butler.james@gncn.net
-Organization: HSBC MALTA
-Subject: 
-X-Mailer: Kerio Connect 7.1.4 WebMail Mini
-To: undisclosed-recipients:;
-Message-ID: <20110424123628.e75901c2@mail.iach.cz>
-Date: Sun, 24 Apr 2011 12:36:28 +0200
-X-User-Agent: Opera/9.80 (Windows NT 5.1; U; en) Presto/2.8.131 Version/11.10
+	Sun, 24 Apr 2011 14:28:10 -0400
+X-Greylist: delayed 2338 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 14:28:09 EDT
+Date: Sun, 24 Apr 2011 18:49:02 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Sunil Mushran <sunil.mushran@oracle.com>
+Cc: Eric Blake <eblake@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+Message-ID: <20110424174902.GA20461@shareable.org>
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com> <4DB1AC9D.3010706@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB1AC9D.3010706@oracle.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I kindly want you to receive funds on my behalf,When you reply this message i will send you full details and more information about myself and the funds.
-Warm Regards From Malta.
-Mr. Butler James.
-Email:butler.james@gncn.net
+Sunil Mushran wrote:
+> On 04/22/2011 04:50 AM, Eric Blake wrote:
+> >That blog also mentioned the useful idea of adding FIND_HOLE and
+> >FIND_DATA, not implemented in Solaris, but which could easily be
+> >provided as additional lseek constants in Linux to locate the start of
+> >the next chunk without repositioning and which could ease application
+> >programmer's life a bit.  After all, cp wants to know where data ends
+> >without repositioning (FIND_HOLE), read() that much data which
+> >repositions in the process, then skip to the next chunk of data
+> >(SEEK_DATA) - two lseek() calls per iteration if we have 4 constants,
+> >but 3 per iteration if we only have SEEK_HOLE and have to manually rewind.
+> 
+> while(1) {
+>     read(block);
+>     if (block_all_zeroes)
+>         lseek(SEEK_DATA);
+> }
+> 
+> What's wrong with the above? If this is the case, even SEEK_HOLE
+> is not needed but should be added as it is already in Solaris.
+
+Apart from the obvious waste of effort (scanning *all* data for zeros
+is cheap but not free if the file is mostly non-hole zeros), you can't
+do a pread() version of the above in parallel over different parts of
+the same file/device.
+
+> My problem with FIND_* is that we are messing with the well understood
+> semantics of lseek().
+
+fcntl() looks a better fit for FIND_HOLE/DATA anyway.
+
+-- Jamie
