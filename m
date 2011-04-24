@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab1DXG3q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 02:29:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57096 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab1DXG3n convert rfc822-to-8bit (ORCPT
+	id S1754716Ab1DXGhu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 02:37:50 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:42308 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753174Ab1DXGhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 02:29:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sEg1lZqzHPJfEAb+TIMsmi0qy87D9rO///ITxAoHTRe4Wc1aZcVMtuon4yhPRTDQqc
-         g9JkjzPyM+CS+vhosanYy4ojfIgkpJiN/UsPxKgYq/0/6dDLmOMg5u5rRwvwfOcpqlOq
-         FKIJmFWn3qh1MB6Gn4kiY08j698w49RY55g8Q=
+	Sun, 24 Apr 2011 02:37:46 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+References: <20110411093214.GA18215@rainbow> <4DA3350E.2060400@gmail.com>
+ <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com> <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
+ <20110412040420.GB25239@rainbow> <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com>
+ <4DB0D58E.4030508@signal11.us>
 MIME-Version: 1.0
-In-Reply-To: <4DB2F406.404@oracle.com>
-References: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-	<20110421085124.4a44d048.randy.dunlap@oracle.com>
-	<BANLkTinoi1SeuuPj5SeTzssyBTvTQu6pMA@mail.gmail.com>
-	<4DB2F406.404@oracle.com>
-Date: Sun, 24 Apr 2011 11:59:40 +0530
-Message-ID: <BANLkTikWa7wZYonWLHMqWkBRHfi7tLiyuA@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 21 (i82975x_edac)
-From: Arvind R <arvino55@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        bluesmoke-devel@lists.sourceforge.net, linux-edac@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <4DB0D58E.4030508@signal11.us>
+Thread-Index: AcwAihquHle5NbAyR4CYpdRlqPJk9QBv7twA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+Date: Sun, 24 Apr 2011 12:07:21 +0530
+Message-ID: <8712165194c49f0b4d8c1bd1fe717b8a@mail.gmail.com>
+Subject: RE: [Regression?] Removed regulator support in ehci-omap
+To: Alan Ott <alan@signal11.us>
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>, Steve Sakoman <sakoman@gmail.com>,
+        Steve Calfee <stevecalfee@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 23, 2011 at 9:15 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On 04/23/11 01:21, Arvind R wrote:
->> On Thu, Apr 21, 2011 at 9:21 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>> On Thu, 21 Apr 2011 13:20:45 +1000 Stephen Rothwell wrote:
->>>
->>>> Changes since 20110420:
->>>
->>>
->>> on i386:
->>>
->>> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for 'unsigned long' type
+> -----Original Message-----
+> From: Alan Ott [mailto:alan@signal11.us]
+> Sent: Friday, April 22, 2011 6:41 AM
+> To: Keshava Munegowda
+> Cc: Dmitry Artamonow; Steve Sakoman; Steve Calfee; Felipe Balbi;
+linux-usb@vger.kernel.org; linux-
+> omap@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [Regression?] Removed regulator support in ehci-omap
+>
+> On 04/12/2011 12:20 PM, Keshava Munegowda wrote:
+> >> Ah, so EHCI/OHCI common code was moved into drivers/mfd... Good.
+> >> But seems regulators support was lost somewhere during transition -
+the
+> >> only mentioning about regulators in omap-usb-host.c is "#include" :
+> >>
+> >> mad@macmini:~/kernel-hack/linux-2.6(master)$ grep -i regulator
+> > drivers/mfd/omap-usb-host.c
+> > Thanks ! I will add some time next week!
+>
+> I have confirmed this on my BeagleBoard-xM. 2.6.38 works, but the
+> 2.6.39-rc4+ head from yesterday did not. It seems that the regulator
+> does not turn the power on for the USB hub which the ethernet is
+> attached to.
+>
+> I connected this issue to bug 33092 in bugzilla[1].
+>
+> Alan.
+>
+> [1] https://bugzilla.kernel.org/show_bug.cgi?id=33092
 
-> I think that the goal should be to get your 4-patch series merged.
->
->> That would still not fix the wrong error-info reported by the driver - this is
->> fixed by the patch-set titled '[RFC PATCH 2.6.37 0/4] i3000_edac : merge
->> i82975x support' dated 2011-02-14 in the linux-edac archives.
->>
->> Please advise on getting the patch into main-stream. The I3000 is a re-labeled
->> i82975x (or vice-versa). Hence the patch-set to merge the drivers. If separate
->> i82975x driver is needed - I can provide the patch. The reported bug is not
->> present in the merge-patched driver.
->
-> Doug, any plans to merge this 4-patch series from Arvind?
->
-> Arvind, was bluesmoke-devel@lists.sourceforge.net copied on this patch series?
-No - thought that the bluesmoke-list had moved to linux-edac.
+I have posted the patches on April 22, 2011.
+If possible I request you to test this.
 
->
-> and was the I3000 driver maintainer copied?  (added)
-> I can't tell this from the marc.info archives.
-Added myself to the driver maintainer in the i3000_edac.c file. The
-patch-set adds support for i82975x in the i3000 driver, which is
-better structured.
-TODO:
-    1. Change Kconfig file - select I3000 for i82975x support
-    2. Delete i82975x_edac.c file
-    3. Update MAINTAINERS file
->
-
-Arvind
+Keshava Munegowda
