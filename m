@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab1DXO5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 10:57:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18529 "EHLO mga03.intel.com"
+	id S1757580Ab1DXPCd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 11:02:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19403 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757366Ab1DXO5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 10:57:47 -0400
+	id S1757429Ab1DXPCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 11:02:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,263,1301900400"; 
-   d="scan'208";a="424619205"
-Subject: [PATCH] perf: Allow set output buffer for tasks in the same thread
- group
+   d="scan'208";a="737696365"
+Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
 From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tim Blechmann <tim@klingt.org>, David Ahern <dsahern@gmail.com>,
+To: David Ahern <dsahern@gmail.com>
+Cc: Tim Blechmann <tim@klingt.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DB42988.7060607@gmail.com>
+References: <inhgjs$54a$1@dough.gmane.org>
+	 <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com>
+	 <1303570271.3363.4.camel@localhost> <201104241347.52486.tim@klingt.org>
+	 <4DB42988.7060607@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Apr 2011 22:57:44 +0800
-Message-Id: <1303657064.2239.25.camel@localhost>
+Date: Sun, 24 Apr 2011 23:02:04 +0800
+Message-Id: <1303657324.2239.26.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -26,41 +30,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kernel only allows an event to redirect its output to other
-events of the same task.
+On Sun, 2011-04-24 at 21:45 +0800, David Ahern wrote:
+> 
+> On 04/24/11 05:47, Tim Blechmann wrote:
+> >>>> I know you've been busy with other stuff the past few weeks, but have
+> >>>> you had a chance to look into this? Basically, perf in 2.6.39 is broken
+> >>>> when trying to profile a process (-p argument to record or top).
+> >>>
+> >>> Let me take a look at this.
+> >>
+> >> Below patch fixes the same problem on my box.
+> >> Could you have a try it?
+> > 
+> > i have done some quick tests with this patch applied on linus/master ... works 
+> > fine for me, thanks a lot!
+> 
+> Works for me as well.
 
-This causes PERF_EVENT_IOC_SET_OUTPUT ioctl fails when an event is
-trying to redirect its output to other events in the same thread group.
+Thanks for test.
 
-This patch fixes the bug reported at,
-https://lkml.org/lkml/2011/4/6/499
+I have send out the format patch.
+http://marc.info/?l=linux-kernel&m=130365710014862&w=2
 
-Tested-by: Tim Blechmann <tim@klingt.org>
-Tested-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- kernel/perf_event.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Lin Ming
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 8e81a98..216a617 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -6379,9 +6379,12 @@ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
- 		goto out;
- 
- 	/*
--	 * If its not a per-cpu buffer, it must be the same task.
-+	 * If its not a per-cpu buffer,
-+	 * it must be the same task or in the same thread group.
- 	 */
--	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
-+	if (output_event->cpu == -1 &&
-+			!same_thread_group(output_event->ctx->task,
-+					event->ctx->task))
- 		goto out;
- 
- set:
-
+> 
+> > 
+> >> >From 89f1ab02cd8da55f8829b2f2d7e700fdae77b3af Mon Sep 17 00:00:00 2001
+> >>
+> >> From: Lin Ming <ming.m.lin@intel.com>
+> >> Date: Sat, 23 Apr 2011 14:54:33 +0000
+> >> Subject: [PATCH] perf: Allow set output event for task in the same thread
+> >> group
+> >>
+> >> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > 
+> > Tested-by: Tim Blechmann <tim@klingt.org>
+> > 
+> > cheers, tim
+> > 
 
 
