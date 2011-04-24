@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab1DXJaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 05:30:30 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52605 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab1DXJa2 convert rfc822-to-8bit (ORCPT
+	id S1756201Ab1DXJdM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 05:33:12 -0400
+Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:53493 "EHLO
+	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755851Ab1DXJdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 05:30:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=lW5sgPOUzucDfrhsjdQfc4B9fWOF5fA3J2qOLr5qVe1rGQGXBzreEJB13y4TKJlAmY
-         YzQoO522oRzH7VxW/QZ2njmicJxJbqc4jPcFzIj+Ml7Ep3M2S9yCJMyHUPKCu69/Onzh
-         cEkt9pLBcIG34p9kkrl4Gzh4Es46ZPWL/SJE4=
+	Sun, 24 Apr 2011 05:33:08 -0400
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 05:33:08 EDT
+Message-ID: <4DB3EC35.7000601@fastmail.fm>
+Date: Sun, 24 Apr 2011 11:24:05 +0200
+From: Anders Eriksson <aeriksson@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <alpine.DEB.2.00.1104241036570.16333@ayla.of.borg>
-References: <alpine.DEB.2.00.1104241036570.16333@ayla.of.borg>
-Date: Sun, 24 Apr 2011 11:30:25 +0200
-Message-ID: <BANLkTin0xsg9+1yRc2NXP=D5cU8bR9q8kQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Roman Zippel has been MIA for several years.
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alex Deucher <alexdeucher@gmail.com>, airlied@redhat.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        xorg-driver-ati@lists.x.org
+Subject: Re: Radeon jittery post 2.6.35
+References: <4D7CCFC3.7030906@fastmail.fm>	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>	<4D7FD2FB.9090505@fastmail.fm> <AANLkTimboMAFkqTUOwP9m2z361TM_EgthQO07T5Y_az1@mail.gmail.com> <4D8118EB.2070209@fastmail.fm> <4D831E18.9020904@fastmail.fm>
+In-Reply-To: <4D831E18.9020904@fastmail.fm>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.252.234.43
+X-Scan-Result: No virus found in message 1QDvYw-0000ER-I0.
+X-Scan-Signature: ch-smtp05.sth.basefarm.net 1QDvYw-0000ER-I0 a7bf6a6ddecaa620ff67442976a4dd09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIA?
+ On 03/18/11 09:55, Anders Eriksson wrote:
+>  On 03/16/11 21:09, Anders Eriksson wrote:
+> >  On 03/15/11 22:46, Alex Deucher wrote:
+> > >  Try booting with radeon.audio=0 on 2.6.38rc, some TVs have problems
+> > > with the hdmi packets we send by default.  disabling audio will treat
+> > > the hdmi like dvi.
+> > >
+> > > Alex
+> > You seem to be on to something there. radeon.audio=0 removes
+> > what appears to be all of the jitter. I say "appear", because during
+> > my many test runs today, I've come across moments where my brain
+> > goes "wasn't what I just noticed on the TV something abnormal?" Both
+> > in fb mode (post KMS), and in X11. It's definetly improved from useless
+> > for family use, to perfectly ok though.
+> >
+> I was too early on this one. Yesterday (.38) , and today (38-rc8),
+> are both jittery in post-KMS fb mode and in X, even though I use
+> radeon.audio=0.
+>
+> A power cycling of the TV stabilizes it though.
+>
+> I'd be more than happy to test out any patches or ideas you might have.
+>
+> -A
 
-Missing In Action?
-Maintainer Is Absent?
-( Miami International Airport? )
+It turns out all the failure patterns I've thought I've seen so far up
+through .38.x are moot.
 
-- Sedat -
+However, now on .39-rc, the KMS'd console is stable, and starting X
+makes it bad again.
 
-On Sun, Apr 24, 2011 at 10:38 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hence make AFFS and HFS orphans, and remove him as an m68k maintainer.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  MAINTAINERS |    9 ++++-----
->  1 files changed, 4 insertions(+), 5 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ec36003..0a84d29 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -404,8 +404,8 @@ S:  Maintained
->  F:     sound/oss/aedsp16.c
->
->  AFFS FILE SYSTEM
-> -M:     Roman Zippel <zippel@linux-m68k.org>
-> -S:     Maintained
-> +L:     linux-fsdevel@vger.kernel.org
-> +S:     Orphan
->  F:     Documentation/filesystems/affs.txt
->  F:     fs/affs/
->
-> @@ -2943,8 +2943,8 @@ F:        drivers/block/cciss*
->  F:     include/linux/cciss_ioctl.h
->
->  HFS FILESYSTEM
-> -M:     Roman Zippel <zippel@linux-m68k.org>
-> -S:     Maintained
-> +L:     linux-fsdevel@vger.kernel.org
-> +S:     Orphan
->  F:     Documentation/filesystems/hfs.txt
->  F:     fs/hfs/
->
-> @@ -3992,7 +3992,6 @@ F:        arch/m32r/
->
->  M68K ARCHITECTURE
->  M:     Geert Uytterhoeven <geert@linux-m68k.org>
-> -M:     Roman Zippel <zippel@linux-m68k.org>
->  L:     linux-m68k@lists.linux-m68k.org
->  W:     http://www.linux-m68k.org/
->  T:     git git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git
-> --
-> 1.7.0.4
->
-> Gr{oetje,eeting}s,
->
->                                                Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                                            -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+It there anything useful I can pull from any logs on the startup of X?
+Either from the X
+server, or the kernel. Last time I looked at the drm log from the kernel
+It was unreadable
+to a mere mortal, but I hope you guys can point me to what debug knobs
+to enable to get a good
+view of the interesting parts (How does one start a minimal X, btw?
+"xinit" gives me an
+undecorated xterm with the jitter. Can one start something more minimal?)
+
+Currently running today's git xorg-server and xf86-video-dri.
+
+-Anders
+ 
+
