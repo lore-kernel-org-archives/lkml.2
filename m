@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab1DXVpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 17:45:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47198 "EHLO ogre.sisk.pl"
+	id S1757913Ab1DXVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 17:45:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47186 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757864Ab1DXVov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 17:44:51 -0400
+	id S1757850Ab1DXVou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 17:44:50 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 9/9] PM: Revert "driver core: platform_bus: allow runtime override of dev_pm_ops"
-Date: Sun, 24 Apr 2011 23:44:22 +0200
+Subject: [PATCH 4/9] PM / Platform: Use generic runtime PM callbacks directly
+Date: Sun, 24 Apr 2011 23:39:33 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
@@ -22,83 +22,64 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104242344.22918.rjw@sisk.pl>
+Message-Id: <201104242339.33422.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@ti.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The platform_bus_set_pm_ops() operation is deprecated in favor of the
-new device power domain infrastructre implemented in commit
-7538e3db6e015e890825fbd9f8659952896ddd5b (PM: add support for device
-power domains)
+Once shmobile platforms have been converted to using power domains
+for overriding the platform bus type's PM callbacks, it isn't
+necessary to use the __weakly defined wrappers around the generinc
+runtime PM callbacks in the platform bus type any more.
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/platform.c         |   35 -----------------------------------
- include/linux/platform_device.h |    3 ---
- 2 files changed, 38 deletions(-)
+ drivers/base/platform.c |   31 +++----------------------------
+ 1 file changed, 3 insertions(+), 28 deletions(-)
 
 Index: linux-2.6/drivers/base/platform.c
 ===================================================================
 --- linux-2.6.orig/drivers/base/platform.c
 +++ linux-2.6/drivers/base/platform.c
-@@ -916,41 +916,6 @@ struct bus_type platform_bus_type = {
+@@ -900,35 +900,10 @@ int platform_pm_restore_noirq(struct dev
+ 
+ #endif /* CONFIG_HIBERNATE_CALLBACKS */
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-
+-int __weak platform_pm_runtime_suspend(struct device *dev)
+-{
+-	return pm_generic_runtime_suspend(dev);
+-};
+-
+-int __weak platform_pm_runtime_resume(struct device *dev)
+-{
+-	return pm_generic_runtime_resume(dev);
+-};
+-
+-int __weak platform_pm_runtime_idle(struct device *dev)
+-{
+-	return pm_generic_runtime_idle(dev);
+-};
+-
+-#else /* !CONFIG_PM_RUNTIME */
+-
+-#define platform_pm_runtime_suspend NULL
+-#define platform_pm_runtime_resume NULL
+-#define platform_pm_runtime_idle NULL
+-
+-#endif /* !CONFIG_PM_RUNTIME */
+-
+ static const struct dev_pm_ops platform_dev_pm_ops = {
+-	.runtime_suspend = platform_pm_runtime_suspend,
+-	.runtime_resume = platform_pm_runtime_resume,
+-	.runtime_idle = platform_pm_runtime_idle,
++	.runtime_suspend = pm_generic_runtime_suspend,
++	.runtime_resume = pm_generic_runtime_resume,
++	.runtime_idle = pm_generic_runtime_idle,
+ 	USE_PLATFORM_PM_SLEEP_OPS
  };
- EXPORT_SYMBOL_GPL(platform_bus_type);
  
--/**
-- * platform_bus_get_pm_ops() - return pointer to busses dev_pm_ops
-- *
-- * This function can be used by platform code to get the current
-- * set of dev_pm_ops functions used by the platform_bus_type.
-- */
--const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
--{
--	return platform_bus_type.pm;
--}
--
--/**
-- * platform_bus_set_pm_ops() - update dev_pm_ops for the platform_bus_type
-- *
-- * @pm: pointer to new dev_pm_ops struct to be used for platform_bus_type
-- *
-- * Platform code can override the dev_pm_ops methods of
-- * platform_bus_type by using this function.  It is expected that
-- * platform code will first do a platform_bus_get_pm_ops(), then
-- * kmemdup it, then customize selected methods and pass a pointer to
-- * the new struct dev_pm_ops to this function.
-- *
-- * Since platform-specific code is customizing methods for *all*
-- * devices (not just platform-specific devices) it is expected that
-- * any custom overrides of these functions will keep existing behavior
-- * and simply extend it.  For example, any customization of the
-- * runtime PM methods should continue to call the pm_generic_*
-- * functions as the default ones do in addition to the
-- * platform-specific behavior.
-- */
--void __init platform_bus_set_pm_ops(const struct dev_pm_ops *pm)
--{
--	platform_bus_type.pm = pm;
--}
--
- int __init platform_bus_init(void)
- {
- 	int error;
-Index: linux-2.6/include/linux/platform_device.h
-===================================================================
---- linux-2.6.orig/include/linux/platform_device.h
-+++ linux-2.6/include/linux/platform_device.h
-@@ -150,9 +150,6 @@ extern struct platform_device *platform_
- 					struct resource *res, unsigned int n_res,
- 					const void *data, size_t size);
- 
--extern const struct dev_pm_ops * platform_bus_get_pm_ops(void);
--extern void platform_bus_set_pm_ops(const struct dev_pm_ops *pm);
--
- /* early platform driver interface */
- struct early_platform_driver {
- 	const char *class_str;
 
