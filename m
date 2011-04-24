@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab1DXPCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 11:02:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19403 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757429Ab1DXPCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 11:02:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,263,1301900400"; 
-   d="scan'208";a="737696365"
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-From: Lin Ming <ming.m.lin@intel.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Tim Blechmann <tim@klingt.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DB42988.7060607@gmail.com>
-References: <inhgjs$54a$1@dough.gmane.org>
-	 <BANLkTikWpnnHAfO2n2rN6ExtQyrsVaiqEQ@mail.gmail.com>
-	 <1303570271.3363.4.camel@localhost> <201104241347.52486.tim@klingt.org>
-	 <4DB42988.7060607@gmail.com>
+	id S1757582Ab1DXPW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 11:22:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53941 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757366Ab1DXPWx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 11:22:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=lD4Uy1IeZjjpdYa4BM9IDKSr9qCMM1ZxQEIlMwtkkRmvRMPvoallRHpRms1d6i7AiQ
+         zy+SH06zGTQ8zYE04dxCTxzYzBmTzixUPPV4Va0jJe80JZYdNeJQ66K3aKt84dgeG1nl
+         Z96DpSY4oxvqfjbxmt7FPEj6YslTA/SifHqAU=
+Subject: [PATCH] Input: qt1070 - Add MODULE_DEVICE_TABLE
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Bo Shen <voice.shen@atmel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Apr 2011 23:02:04 +0800
-Message-Id: <1303657324.2239.26.camel@localhost>
+Date: Sun, 24 Apr 2011 23:22:45 +0800
+Message-ID: <1303658565.8556.1.camel@phoenix>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-24 at 21:45 +0800, David Ahern wrote:
-> 
-> On 04/24/11 05:47, Tim Blechmann wrote:
-> >>>> I know you've been busy with other stuff the past few weeks, but have
-> >>>> you had a chance to look into this? Basically, perf in 2.6.39 is broken
-> >>>> when trying to profile a process (-p argument to record or top).
-> >>>
-> >>> Let me take a look at this.
-> >>
-> >> Below patch fixes the same problem on my box.
-> >> Could you have a try it?
-> > 
-> > i have done some quick tests with this patch applied on linus/master ... works 
-> > fine for me, thanks a lot!
-> 
-> Works for me as well.
+Adding the necessary MODULE_DEVICE_TABLE() information allows the
+driver to be automatically loaded by udev
 
-Thanks for test.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/keyboard/qt1070.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I have send out the format patch.
-http://marc.info/?l=linux-kernel&m=130365710014862&w=2
+diff --git a/drivers/input/keyboard/qt1070.c b/drivers/input/keyboard/qt1070.c
+index fba8404..ca7b891 100644
+--- a/drivers/input/keyboard/qt1070.c
++++ b/drivers/input/keyboard/qt1070.c
+@@ -248,6 +248,7 @@ static const struct i2c_device_id qt1070_id[] = {
+ 	{ "qt1070", 0 },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(i2c, qt1070_id);
+ 
+ static struct i2c_driver qt1070_driver = {
+ 	.driver	= {
+-- 
+1.7.1
 
-Lin Ming
-
-> 
-> > 
-> >> >From 89f1ab02cd8da55f8829b2f2d7e700fdae77b3af Mon Sep 17 00:00:00 2001
-> >>
-> >> From: Lin Ming <ming.m.lin@intel.com>
-> >> Date: Sat, 23 Apr 2011 14:54:33 +0000
-> >> Subject: [PATCH] perf: Allow set output event for task in the same thread
-> >> group
-> >>
-> >> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > 
-> > Tested-by: Tim Blechmann <tim@klingt.org>
-> > 
-> > cheers, tim
-> > 
 
 
