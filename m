@@ -1,221 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab1DXF4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 01:56:16 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36924 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1DXF4P (ORCPT
+	id S1753338Ab1DXGEd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 02:04:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54252 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab1DXGEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 01:56:15 -0400
+	Sun, 24 Apr 2011 02:04:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rASYFDV2rTTinHEgZsPDAUL8JqagmLMEVe6t8QA3YX7tECvh0+/8560w5kv5RgDOPI
-         w4V6XIR2dSrWIJh8+Ux2R0hp/D/3bBjVfFncR1Z1jEPC0/8T4SuJE/ZWygv748H2Rgfz
-         g8ndTfzijNIqsageXe5gKRpE2MyUPcfT7kgJ8=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de, aaro.koskinen@iki.fi, wfp5p@virginia.edu,
-        apatard@mandriva.com, martinze.javier@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 10/10] Staging: xgifb: Fixed styles issues.
-Date: Sun, 24 Apr 2011 13:55:49 +0800
-Message-Id: <1303624549-2761-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pNNaWT6yyd9dB7mB7Q7Apl6EJXDBz2Izh9I4aqUtQhQE/HaIzHijSjmvWe97sRLshw
+         XFqfvEr+raUPmrITfagSVl/De53huS8DTQX/86f8f0tc77ziUvlwA+XPaD9IW5yNjH53
+         rpvz0gdiEW1KlMTeoqZ/tkrVIfXIyC4ny9Xb8=
+MIME-Version: 1.0
+In-Reply-To: <4DB3AF8B.6020105@gmail.com>
+References: <1303317178.2587.30.camel@mulgrave.site> <alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
+ <20110421220351.9180.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1104211500170.5741@router.home> <alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1104211501470.20201@chino.kir.corp.google.com>
+ <4DB3840F.3060503@gmail.com> <BANLkTi=vm-qs48-JySCpv+YHyC+9sO9U0A@mail.gmail.com>
+ <4DB3A09A.70308@gmail.com> <4DB3AF8B.6020105@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sun, 24 Apr 2011 15:04:10 +0900
+Message-ID: <BANLkTinsryqSrnCnEoawJx6UfoH2iJ8dQA@mail.gmail.com>
+Subject: Re: [patch] m68k, mm: set all online nodes in N_NORMAL_MEMORY
+To: Michael Schmitz <schmitzmic@googlemail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, schwab@linux-m68k.org,
+        "tg@mirbsd.de >> Thorsten Glaser" <tg@mirbsd.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the warnings about styles have been removed.
+2011/4/24 Michael Schmitz <schmitzmic@googlemail.com>:
+> Michael Schmitz wrote:
+>>
+>> Besides, your solution would set N_HIGH_MEMORY not N_NORMAL_MEMORY if I
+>> read free_area_init_nodes() right. Does that matter?
+>
+> check_for_regular_memory() does take care of that - so it would be all the
+> same in the end. Whether it's worth it for a handful of nodes at best I'm
+> unsure. I'll leave that for Geert to decide.
 
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/xgifb/XGIfb.h |  142 ++++++++++++++++++++--------------------
- 1 files changed, 71 insertions(+), 71 deletions(-)
+check_for_regular_memory() doesn't. It is CONFIG_HIGHMEM specific.
+The trick is in node_status definition. N_NORMAL_MEMORY and
+N_HIGHMEMORY share the same value. then
+node_set_state(nid, N_HIGH_MEMORY) turn on both normal and
+highmem bitmask.
 
-diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
-index b43a758..45b6015 100644
---- a/drivers/staging/xgifb/XGIfb.h
-+++ b/drivers/staging/xgifb/XGIfb.h
-@@ -1,7 +1,7 @@
- #ifndef _LINUX_XGIFB
- #define _LINUX_XGIFB
--#include <asm/ioctl.h>
--#include <asm/types.h>
-+#include <linux/ioctl.h>
-+#include <linux/types.h>
- 
- #define DISPTYPE_CRT1       0x00000008L
- #define DISPTYPE_CRT2       0x00000004L
-@@ -13,99 +13,99 @@
- #define DISPMODE_MIRROR	    0x00000010L
- #define DISPMODE_DUALVIEW   0x00000040L
- 
--#define HASVB_NONE      	0x00
--#define HASVB_301       	0x01
--#define HASVB_LVDS      	0x02
--#define HASVB_TRUMPION  	0x04
--#define HASVB_LVDS_CHRONTEL	0x10
--#define HASVB_302       	0x20
--#define HASVB_303       	0x40
--#define HASVB_CHRONTEL  	0x80
-+#define HASVB_NONE	    0x00
-+#define HASVB_301	    0x01
-+#define HASVB_LVDS	    0x02
-+#define HASVB_TRUMPION	    0x04
-+#define HASVB_LVDS_CHRONTEL 0x10
-+#define HASVB_302	    0x20
-+#define HASVB_303	    0x40
-+#define HASVB_CHRONTEL	    0x80
- 
- #ifndef XGIFB_ID
--#define XGIFB_ID          0x53495346    /* Identify myself with 'XGIF' */
-+#define XGIFB_ID	0x53495346 /* Identify myself with 'XGIF' */
- #endif
- 
- enum XGI_CHIP_TYPE {
--    XG40 = 32,
--    XG41,
--    XG42,
--    XG45,
--    XG20 = 48,
--    XG21,
--    XG27,
-+	XG40 = 32,
-+	XG41,
-+	XG42,
-+	XG45,
-+	XG20 = 48,
-+	XG21,
-+	XG27,
- };
- 
- enum xgi_tvtype {
- 	TVMODE_NTSC = 0,
- 	TVMODE_PAL,
- 	TVMODE_HIVISION,
--	TVTYPE_PALM,	// vicki@030226
--    	TVTYPE_PALN,	// vicki@030226
--    	TVTYPE_NTSCJ,	// vicki@030226
-+	TVTYPE_PALM,	/* vicki@030226 */
-+	TVTYPE_PALN,	/* vicki@030226 */
-+	TVTYPE_NTSCJ,	/* vicki@030226 */
- 	TVMODE_TOTAL
- };
- 
--enum xgi_tv_plug {	/* vicki@030226 */
--//	TVPLUG_Legacy = 0,
--//	TVPLUG_COMPOSITE,
--//	TVPLUG_SVIDEO,
--//	TVPLUG_SCART,
--//	TVPLUG_TOTAL
--    	TVPLUG_UNKNOWN = 0,
--    	TVPLUG_COMPOSITE = 1,
--    	TVPLUG_SVIDEO = 2,
--    	TVPLUG_COMPOSITE_AND_SVIDEO = 3,
--    	TVPLUG_SCART = 4,
--    	TVPLUG_YPBPR_525i = 5,
--    	TVPLUG_YPBPR_525P = 6,
--    	TVPLUG_YPBPR_750P = 7,
--    	TVPLUG_YPBPR_1080i = 8,
-+enum xgi_tv_plug { /* vicki@030226 */
-+/*	TVPLUG_Legacy = 0, */
-+/*	TVPLUG_COMPOSITE,  */
-+/*	TVPLUG_SVIDEO,	   */
-+/*	TVPLUG_SCART,	   */
-+/*	TVPLUG_TOTAL	   */
-+	TVPLUG_UNKNOWN = 0,
-+	TVPLUG_COMPOSITE = 1,
-+	TVPLUG_SVIDEO = 2,
-+	TVPLUG_COMPOSITE_AND_SVIDEO = 3,
-+	TVPLUG_SCART = 4,
-+	TVPLUG_YPBPR_525i = 5,
-+	TVPLUG_YPBPR_525P = 6,
-+	TVPLUG_YPBPR_750P = 7,
-+	TVPLUG_YPBPR_1080i = 8,
- 	TVPLUG_TOTAL
- };
- 
--struct video_info{
--        int           chip_id;
--        unsigned int  video_size;
--        unsigned long video_base;
--        char  *       video_vbase;
--        unsigned long mmio_base;
-+struct video_info {
-+	int           chip_id;
-+	unsigned int  video_size;
-+	unsigned long video_base;
-+	char	      *video_vbase;
-+	unsigned long mmio_base;
- 	unsigned long mmio_size;
--        char  *       mmio_vbase;
--        unsigned long vga_base;
--        unsigned long mtrr;
--
--        int    video_bpp;
--        int    video_cmap_len;
--        int    video_width;
--        int    video_height;
--        int    video_vwidth;
--        int    video_vheight;
--        int    org_x;
--        int    org_y;
--        int    video_linelength;
--        unsigned int refresh_rate;
--
--        unsigned long disp_state;
--        unsigned char hasVB;
--        unsigned char TV_type;
--        unsigned char TV_plug;
-+	char	      *mmio_vbase;
-+	unsigned long vga_base;
-+	unsigned long mtrr;
-+
-+	int    video_bpp;
-+	int    video_cmap_len;
-+	int    video_width;
-+	int    video_height;
-+	int    video_vwidth;
-+	int    video_vheight;
-+	int    org_x;
-+	int    org_y;
-+	int    video_linelength;
-+	unsigned int refresh_rate;
-+
-+	unsigned long disp_state;
-+	unsigned char hasVB;
-+	unsigned char TV_type;
-+	unsigned char TV_plug;
- 
- 	enum XGI_CHIP_TYPE chip;
--        unsigned char revision_id;
-+	unsigned char revision_id;
- 
--        unsigned short DstColor;
--        unsigned long  XGI310_AccelDepth;
--        unsigned long  CommandReg;
-+	unsigned short DstColor;
-+	unsigned long  XGI310_AccelDepth;
-+	unsigned long  CommandReg;
- 
--        unsigned int   pcibus;
--        unsigned int   pcislot;
--        unsigned int   pcifunc;
-+	unsigned int   pcibus;
-+	unsigned int   pcislot;
-+	unsigned int   pcifunc;
- 
--        unsigned short subsysvendor;
--        unsigned short subsysdevice;
-+	unsigned short subsysvendor;
-+	unsigned short subsysdevice;
- 
--        char reserved[236];
-+	char reserved[236];
- };
- 
- 
--- 
-1.7.1
-
+--------------------------------------------------------------------
+enum node_states {
+        N_POSSIBLE,             /* The node could become online at some point */
+        N_ONLINE,               /* The node is online */
+        N_NORMAL_MEMORY,        /* The node has regular memory */
+#ifdef CONFIG_HIGHMEM
+        N_HIGH_MEMORY,          /* The node has regular or high memory */
+#else
+        N_HIGH_MEMORY = N_NORMAL_MEMORY,
+#endif
+        N_CPU,          /* The node has one or more cpus */
+        NR_NODE_STATES
+};
