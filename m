@@ -1,189 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab1DXFqx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 01:46:53 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54778 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab1DXFqu (ORCPT
+	id S1752885Ab1DXFvK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 01:51:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40281 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab1DXFvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 01:46:50 -0400
+	Sun, 24 Apr 2011 01:51:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=d6VI8YIb34qg6jQZLahNpG3gulIYgbz/r8Dp55OfS+ofbhbXqGDi/fww5bxnG/PBK9
-         pURGqKPERhmXvuTKeSR7adT7yJCt8qnYPdbdJhX9X1VbqMaNdhjUSdNJRlUJESvLZIGc
-         BTsMxOa+weHzZsFMBtVi4uvFWXZqN2Gk/zXwY=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu, aaro.koskinen@iki.fi
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 9/9] Staging: xgifb: Fixed style issues.
-Date: Sun, 24 Apr 2011 13:46:25 +0800
-Message-Id: <1303623985-2657-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Gs6hBk5Ox9izZF18OcD2e4lJ5tVzcikPFpfH08XTOTvRfkQqmNWNgMqkYKmGd57MzX
+         Z4uceJmQRHcjYaAoNVYUW6R/aKWheZL1+rXkC6Ao23VQDJfM2nUiNpmSTKD14XAkrhgx
+         3aj0c1EVau24i9m9vA2NfWsRZ7dhKq0tnWqj0=
+Date: Sun, 24 Apr 2011 14:50:58 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: [PATCH] Check PageActive when evictable page and unevicetable
+ page race happen
+Message-ID: <20110424055058.GA1826@barrios-desktop>
+References: <1303604751-4980-1-git-send-email-minchan.kim@gmail.com>
+ <BANLkTimzg184ZWraBomJ8ex1-B4Ypj6D9Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimzg184ZWraBomJ8ex1-B4Ypj6D9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now checkpatch.pl doesn't complain about vgatypes.h.
+Hi KOSAKI,
 
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/xgifb/vgatypes.h |  113 ++++++++++++++++++-------------------
- 1 files changed, 55 insertions(+), 58 deletions(-)
+On Sun, Apr 24, 2011 at 12:02:57PM +0900, KOSAKI Motohiro wrote:
+> 2011/4/24 Minchan Kim <minchan.kim@gmail.com>:
+> > In putback_lru_page, unevictable page can be changed into evictable
+> > 's one while we move it among lru. So we have checked it again and
+> > rescued it. But we don't check PageActive, again. It could add
+> > active page into inactive list so we can see the BUG in isolate_lru_pages.
+> > (But I didn't see any report because I think it's very subtle)
+> >
+> > It could happen in race that zap_pte_range's mark_page_accessed and
+> > putback_lru_page. It's subtle but could be possible.
+> >
+> > Note:
+> > While I review the code, I found it. So it's not real report.
+> >
+> > Cc: Rik van Riel <riel@redhat.com>
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Hugh Dickins <hughd@google.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > ---
+> >  mm/vmscan.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index b3a569f..c0cd1aa 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -562,7 +562,7 @@ int remove_mapping(struct address_space *mapping, struct page *page)
+> >  void putback_lru_page(struct page *page)
+> >  {
+> >        int lru;
+> > -       int active = !!TestClearPageActive(page);
+> > +       int active;
+> >        int was_unevictable = PageUnevictable(page);
+> >
+> >        VM_BUG_ON(PageLRU(page));
+> > @@ -571,6 +571,7 @@ redo:
+> >        ClearPageUnevictable(page);
+> >
+> >        if (page_evictable(page, NULL)) {
+> > +               active = !!TestClearPageActive(page);
+> >                /*
+> >                 * For evictable pages, we can use the cache.
+> >                 * In event of a race, worst case is we end up with an
+> > @@ -584,6 +585,7 @@ redo:
+> >                 * Put unevictable pages directly on zone's unevictable
+> >                 * list.
+> >                 */
+> > +               ClearPageActive(page);
+> >                lru = LRU_UNEVICTABLE;
+> >                add_page_to_unevictable_list(page);
+> 
+> I think we forgot 'goto redo' case. following patch is better?
+> 
+> ------------------------------------------------
+>         if (page_evictable(page, NULL)) {
+>                 /*
+>                  * For evictable pages, we can use the cache.
+>                  * In event of a race, worst case is we end up with an
+>                  * unevictable page on [in]active list.
+>                  * We know how to handle that.
+>                  */
+>                 lru = active + page_lru_base_type(page);
+> +              if (active)
+> +                   SetPageActive(page);
+>                 lru_cache_add_lru(page, lru);
 
-diff --git a/drivers/staging/xgifb/vgatypes.h b/drivers/staging/xgifb/vgatypes.h
-index d613e84..5aeb3a4 100644
---- a/drivers/staging/xgifb/vgatypes.h
-+++ b/drivers/staging/xgifb/vgatypes.h
-@@ -1,4 +1,3 @@
--
- #ifndef _VGATYPES_
- #define _VGATYPES_
+PageActive is reset by lru_cache_add_lru so it's meaningless.
+BTW, please ignore this patch. :)
  
-@@ -6,79 +5,79 @@
- 
- #ifndef XGI_VB_CHIP_TYPE
- enum XGI_VB_CHIP_TYPE {
--    VB_CHIP_Legacy = 0,
--    VB_CHIP_301,
--    VB_CHIP_301B,
--    VB_CHIP_301LV,
--    VB_CHIP_302,
--    VB_CHIP_302B,
--    VB_CHIP_302LV,
--    VB_CHIP_301C,
--    VB_CHIP_302ELV,
--    VB_CHIP_UNKNOWN, /* other video bridge or no video bridge */
--    MAX_VB_CHIP
-+	VB_CHIP_Legacy = 0,
-+	VB_CHIP_301,
-+	VB_CHIP_301B,
-+	VB_CHIP_301LV,
-+	VB_CHIP_302,
-+	VB_CHIP_302B,
-+	VB_CHIP_302LV,
-+	VB_CHIP_301C,
-+	VB_CHIP_302ELV,
-+	VB_CHIP_UNKNOWN, /* other video bridge or no video bridge */
-+	MAX_VB_CHIP
- };
- #endif
- 
- #ifndef XGI_LCD_TYPE
- enum XGI_LCD_TYPE {
--    LCD_INVALID = 0,
--    LCD_320x480,       /* FSTN, DSTN */
--    LCD_640x480,
--    LCD_640x480_2,     /* FSTN, DSTN */
--    LCD_640x480_3,     /* FSTN, DSTN */
--    LCD_800x600,
--    LCD_848x480,
--    LCD_1024x600,
--    LCD_1024x768,
--    LCD_1152x768,
--    LCD_1152x864,
--    LCD_1280x720,
--    LCD_1280x768,
--    LCD_1280x800,
--    LCD_1280x960,
--    LCD_1280x1024,
--    LCD_1400x1050,
--    LCD_1600x1200,
--    LCD_1680x1050,
--    LCD_1920x1440,
--    LCD_2048x1536,
--    LCD_CUSTOM,
--    LCD_UNKNOWN
-+	LCD_INVALID = 0,
-+	LCD_320x480,       /* FSTN, DSTN */
-+	LCD_640x480,
-+	LCD_640x480_2,     /* FSTN, DSTN */
-+	LCD_640x480_3,     /* FSTN, DSTN */
-+	LCD_800x600,
-+	LCD_848x480,
-+	LCD_1024x600,
-+	LCD_1024x768,
-+	LCD_1152x768,
-+	LCD_1152x864,
-+	LCD_1280x720,
-+	LCD_1280x768,
-+	LCD_1280x800,
-+	LCD_1280x960,
-+	LCD_1280x1024,
-+	LCD_1400x1050,
-+	LCD_1600x1200,
-+	LCD_1680x1050,
-+	LCD_1920x1440,
-+	LCD_2048x1536,
-+	LCD_CUSTOM,
-+	LCD_UNKNOWN
- };
- #endif
- 
--struct XGI_DSReg
--{
--  unsigned char  jIdx;
--  unsigned char  jVal;
-+struct XGI_DSReg {
-+	unsigned char jIdx;
-+	unsigned char jVal;
- };
- 
--struct xgi_hw_device_info
--{
--    unsigned long  ulExternalChip;       /* NO VB or other video bridge*/
--                                 /* if ujVBChipID = VB_CHIP_UNKNOWN, */
-+struct xgi_hw_device_info {
-+	unsigned long ulExternalChip; /* NO VB or other video bridge*/
-+				      /* if ujVBChipID = VB_CHIP_UNKNOWN, */
- 
--    unsigned char *pjVirtualRomBase;    /* ROM image */
-+	unsigned char *pjVirtualRomBase; /* ROM image */
- 
--    unsigned char *pjVideoMemoryAddress;/* base virtual memory address */
--                                 /* of Linear VGA memory */
-+	unsigned char *pjVideoMemoryAddress;/* base virtual memory address */
-+					    /* of Linear VGA memory */
- 
--    unsigned long  ulVideoMemorySize;    /* size, in bytes, of the memory on the board */
-+	unsigned long ulVideoMemorySize; /* size, in bytes, of the
-+					    memory on the board */
- 
--    unsigned char *pjIOAddress;          /* base I/O address of VGA ports (0x3B0) */
-+	unsigned char *pjIOAddress; /* base I/O address of VGA ports (0x3B0) */
- 
--    unsigned char  jChipType;            /* Used to Identify Graphics Chip */
--                                 /* defined in the data structure type  */
--                                 /* "XGI_CHIP_TYPE" */
-+	unsigned char jChipType; /* Used to Identify Graphics Chip */
-+				 /* defined in the data structure type  */
-+				 /* "XGI_CHIP_TYPE" */
- 
--    unsigned char  jChipRevision;        /* Used to Identify Graphics Chip Revision */
-+	unsigned char jChipRevision; /* Used to Identify Graphics
-+					Chip Revision */
- 
--    unsigned char  ujVBChipID;           /* the ID of video bridge */
--                                 /* defined in the data structure type */
--                                 /* "XGI_VB_CHIP_TYPE" */
-+	unsigned char ujVBChipID; /* the ID of video bridge */
-+				  /* defined in the data structure type */
-+				  /* "XGI_VB_CHIP_TYPE" */
- 
--    unsigned long  ulCRT2LCDType;        /* defined in the data structure type */
-+	unsigned long ulCRT2LCDType; /* defined in the data structure type */
- 
- 	unsigned char(*pQueryVGAConfigSpace)(struct xgi_hw_device_info *,
- 					    unsigned long, unsigned long,
-@@ -87,7 +86,5 @@ struct xgi_hw_device_info
- 
- /* Additional IOCTL for communication xgifb <> X driver        */
- /* If changing this, xgifb.h must also be changed (for xgifb) */
--
--
- #endif
- 
+I think LRU status of isolated page cannot be changed.
+Thanks for the review. 
+
+
 -- 
-1.7.1
-
+Kind regards,
+Minchan Kim
