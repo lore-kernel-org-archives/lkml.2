@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab1DXCBe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 22:01:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43703 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757437Ab1DXCBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 22:01:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hLilDHGpPTqg52mB70mU3kYL7X086Mk3oEarNQgkf5Vwtrcin0knjrglJc9CQv8G7O
-         /TaffSNbipf4WLE7tIZbPJuF1PfDHZR+S/GtPzgBJsv9Mg5KJsPRAlr9hOQFFcDn7Kd5
-         3fbxq3fsEq40m52kbiRbny5WojPBnNEbc7eec=
-Date: Sun, 24 Apr 2011 11:01:22 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: [PATCH] Check PageActive when evictable page and unevicetable
- page race happen
-Message-ID: <20110424020122.GA6228@barrios-desktop>
-References: <1303604751-4980-1-git-send-email-minchan.kim@gmail.com>
+	id S1757495Ab1DXCP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 22:15:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16205 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757467Ab1DXCP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 22:15:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,260,1301900400"; 
+   d="scan'208";a="737555268"
+Date: Sat, 23 Apr 2011 19:15:52 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        arun@sharma-home.net, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+Message-ID: <20110424021552.GA3019@alboin.amr.corp.intel.com>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+ <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <20110422165007.GA18401@vps.sharma-home.net>
+ <20110422203022.GA20573@elte.hu>
+ <20110422203222.GA21219@elte.hu>
+ <20110423000347.GC9328@tassilo.jf.intel.com>
+ <1303545012.2298.44.camel@twins>
+ <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303604751-4980-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 24, 2011 at 09:25:51AM +0900, Minchan Kim wrote:
-> In putback_lru_page, unevictable page can be changed into evictable
-> 's one while we move it among lru. So we have checked it again and
-> rescued it. But we don't check PageActive, again. It could add
-> active page into inactive list so we can see the BUG in isolate_lru_pages.
-> (But I didn't see any report because I think it's very subtle)
+> 
+> That is what Andi is referring to. The issue causes bias and thus impacts
+> the quality of the samples. On SNB, there is a new INST_RETIRED:PREC_DIST
+> event. PREC_DIST=precise distribution. It tries to correct for the skid
+> on this event on INST_RETIRED with PEBS (look at Vol3b).
 
-As I look the code further, that's because lru_cache_add_lru always 
-cleans up PageActive regardless of LRU list. 
-If active page goes to inactive list, we shouldn't meet the BUG 
-but it's apparently wrong. 
+Unfortunately even PDIST doesn't completely fix the problem, but
+it only makes it somewhat better. Also it's only statistical,
+so you won't get a guaranteed answer for every sample.
 
--- 
-Kind regards,
-Minchan Kim
+-Andi
