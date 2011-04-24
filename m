@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab1DXPdu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 11:33:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65410 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463Ab1DXPdr (ORCPT
+	id S1757605Ab1DXPfa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 11:35:30 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62486 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757576Ab1DXPf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 11:33:47 -0400
+	Sun, 24 Apr 2011 11:35:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=X6yu600GMwQ/pil4jM9Nb1YSm+IiLx5BGdB6cMzltI3aCv/LOamreOlXd8Yf6pnG4I
-         gWRuCEp+G3r0w1CYeajKEvrAH3S/WXp0+g434cKhpTI2bdtXNPRyyr//kN6S/ympMqFi
-         I1evp4Ni7fxud8t5lfYmjb1ZOlEAZtuKwzUQo=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kHG+5lS3NSpYL+u9Ov3pJwX/IevP7ytAAkKUc89+BRLnTW4xFl121pFRZ+5cFLbXEF
+         z9boKie3DW+JchYL8Bv1CnyWKmhbzKEoMrJmVVQzYmej2vFV8hTsfuXhRkulkTQyrtRM
+         as8NSd9/md4Gwr0JAAi4MFqzkJetYmZ5AeNM8=
+Message-ID: <4DB4433A.5000609@pobox.com>
+Date: Sun, 24 Apr 2011 11:35:22 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
-References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 25 Apr 2011 00:33:26 +0900
-X-Google-Sender-Auth: ShToRBSwY5tWbx34_yl292Y-2P8
-Message-ID: <BANLkTikh-_-dmxRzeCyFaWBcxc6qt8UQHw@mail.gmail.com>
-Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page in mem_read
-To: bookjovi@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Igor Plyatov <plyatov@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, stf_xl@wp.pl
+Subject: Re: [PATCH] ATA: pata_at91.c bugfixes
+References: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
+In-Reply-To: <1303299877-12088-1-git-send-email-plyatov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/18  <bookjovi@gmail.com>:
-> From: Jovi Zhang <bookjovi@gmail.com>
+On 04/20/2011 07:44 AM, Igor Plyatov wrote:
+> * Fix "initial_timing" structure initialisation. The "struct ata_timing" must
+>    contain 10 members, but ".dmack_hold" member was not initialised.
+> * The AT91SAM9 microcontrollers use special coding scheme for SMC_SETUP,
+>    SMC_PULSE, SMC_CYCLE registers.
+>    Old driver operates correctly only with low master clock values, but
+>    with high master clock it incorrectly calculates SMC values and stops
+>    to operate, because SMC can be setup only to admissible ranges in special
+>    format.
+>    New code correctly calculates SMC registers values, adjusts calculated
+>    to admissible ranges, enlarges cycles if required and converts values
+>    into SMC's format.
+> * Old driver calculates CS_SETUP and CS_PULSE cycles incorrectly
+>    because of wrong assumptions.
+>    New code calculates:
+>        CS_SETUP = SETUP/2
+>        CS_PULSE = PULSE + SETUP/2 + HOLD/2
+> * This fixes allows to correctly operate with any master clock frequency.
 >
-> It should be better if put check_mem_permission before __get_free_page
-> in mem_read, to be same as function mem_write.
->
-> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> Signed-off-by: Igor Plyatov<plyatov@gmail.com>
+> ---
+>   drivers/ata/pata_at91.c |  223 ++++++++++++++++++++++++++++++++---------------
+>   1 files changed, 154 insertions(+), 69 deletions(-)
 
-Looks good to me.
-  Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+FYI, the two previous "v4" patches are now applied.
+
+Based on the comments from Stanislaw, this patch would need to be 
+updated anyway.
