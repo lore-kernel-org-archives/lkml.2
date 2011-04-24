@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1DXVps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 17:45:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47207 "EHLO ogre.sisk.pl"
+	id S932165Ab1DXVpp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 17:45:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47198 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757876Ab1DXVov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 17:44:51 -0400
+	id S1757877Ab1DXVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 17:44:53 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 0/9] PM: Rework shmobile and OMAP runtime PM using power domains (v2)
-Date: Sun, 24 Apr 2011 23:30:13 +0200
+Subject: [PATCH 6/9] PM / Runtime: Add subsystem data field to struct dev_pm_info
+Date: Sun, 24 Apr 2011 23:42:14 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
         linux-sh@vger.kernel.org, lethal@linux-sh.org,
         Magnus Damm <magnus.damm@gmail.com>,
         Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl>
-In-Reply-To: <201104170135.19388.rjw@sisk.pl>
+References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl> <201104242330.13607.rjw@sisk.pl>
+In-Reply-To: <201104242330.13607.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104242330.13607.rjw@sisk.pl>
+Message-Id: <201104242342.14492.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Taking the feedback from the last version of the patchset into account
-I reworked patches [7/9] and [8/9] so that multiple clocks can be used for
-runtime PM.  I also fixed a couple of build issues (the patches have been
-built for x86, ARM/shmobile and ARM/OMAP1).
+Some subsystems need to attach PM-related data to struct device and
+they need to use devres for this purpose.  For their convenience
+and to make code more straightforward, add a new field called
+subsys_data to struct dev_pm_info and let subsystems use it for
+attaching PM-related information to devices.
 
-On Sunday, April 17, 2011, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> The following series of patches is my attempt to consolidate the shmobile and
-> OMAP runtime PM code using power domains so that it is not necessary to
-> replace the platform bus type's runtime PM callbacks any more.
-> 
-> Some of the patches have already been posted, some are new and some are
-> from Kevin. :-)
+Convert the ARM shmobile platform to using the new field.
 
-The high-level description of what the patches do hasn't changed, so:
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ arch/arm/mach-shmobile/pm_runtime.c |   34 +++++++++++++++++-----------------
+ include/linux/pm.h                  |    1 +
+ 2 files changed, 18 insertions(+), 17 deletions(-)
 
-[1/9] - Make power domain callbacks take precedence over subsystem ones
-        (this one has been discussed already).
+Index: linux-2.6/include/linux/pm.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -460,6 +460,7 @@ struct dev_pm_info {
+ 	unsigned long		active_jiffies;
+ 	unsigned long		suspended_jiffies;
+ 	unsigned long		accounting_timestamp;
++	void			*subsys_data;  /* Owned by the subsystem. */
+ #endif
+ };
+ 
+Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
++++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+@@ -18,6 +18,7 @@
+ #include <linux/clk.h>
+ #include <linux/sh_clk.h>
+ #include <linux/bitmap.h>
++#include <linux/slab.h>
+ 
+ #ifdef CONFIG_PM_RUNTIME
+ #define BIT_ONCE 0
+@@ -29,22 +30,9 @@ struct pm_runtime_data {
+ 	struct clk *clk;
+ };
+ 
+-static void __devres_release(struct device *dev, void *res)
+-{
+-	struct pm_runtime_data *prd = res;
+-
+-	dev_dbg(dev, "__devres_release()\n");
+-
+-	if (test_bit(BIT_CLK_ENABLED, &prd->flags))
+-		clk_disable(prd->clk);
+-
+-	if (test_bit(BIT_ACTIVE, &prd->flags))
+-		clk_put(prd->clk);
+-}
+-
+ static struct pm_runtime_data *__to_prd(struct device *dev)
+ {
+-	return devres_find(dev, __devres_release, NULL, NULL);
++	return dev ? dev->power.subsys_data : NULL;
+ }
+ 
+ static void platform_pm_runtime_init(struct device *dev,
+@@ -121,14 +109,26 @@ static int platform_bus_notify(struct no
+ 
+ 	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
+ 
+-	if (action == BUS_NOTIFY_BIND_DRIVER) {
+-		prd = devres_alloc(__devres_release, sizeof(*prd), GFP_KERNEL);
++	switch (action) {
++	case BUS_NOTIFY_BIND_DRIVER:
++		prd = kzalloc(sizeof(*prd), GFP_KERNEL);
+ 		if (prd) {
+-			devres_add(dev, prd);
++			dev->power.subsys_data = prd;
+ 			dev->pwr_domain = &default_power_domain;
+ 		} else {
+ 			dev_err(dev, "unable to alloc memory for runtime pm\n");
+ 		}
++		break;
++	case BUS_NOTIFY_UNBOUND_DRIVER:
++		prd = __to_prd(dev);
++		if (prd) {
++			if (test_bit(BIT_CLK_ENABLED, &prd->flags))
++				clk_disable(prd->clk);
++
++			if (test_bit(BIT_ACTIVE, &prd->flags))
++				clk_put(prd->clk);
++		}
++		break;
+ 	}
+ 
+ 	return 0;
 
-[2/9] - Export the platform bus type's default PM callbacks so that they
-        can be used in power domain objects.
-
-[3/9] - Use a default power domain for runtime PM on shmobile (both ARM
-        and SH flavors) instead of replacing the platform bus type's
-        runtime PM callbacks (using __weak).
-
-[4/9] - Use generic runtime PM callbacks directly in the platform bus type.
-
-[5/9] - Move OMAP2 runtime PM implementation to using a power domain object
-        (patch from Kevin rebased on top of [1-4/9]).
-
-[6/9] - Add subsystem data field to struct dev_pm_info.
-
-[7/9] - Introduce generic clock manipulation routines for runtime PM and
-        convert ARM shmobile to using them.
-
-[8/9] - Move OMAP1 runtime PM to the new core infrastructure.
-
-[9/9] - Remove platform_bus_set_pm_ops() (patch from Kevin).
-
-If there are no objections (or reports of breakage), I'd like to push these
-patches through the suspend-2.6 tree in the 2.6.40 merge window.
-
-Thanks,
-Rafael
