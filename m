@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab1DWX1j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Apr 2011 19:27:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51196 "EHLO gate.crashing.org"
+	id S1757328Ab1DXAQj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Apr 2011 20:16:39 -0400
+Received: from csamuel.org ([74.50.50.137]:45116 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab1DWX1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 19:27:36 -0400
-Subject: Re: [PATCH RFC] clk: add support for automatic parent handling
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, kernel@pengutronix.de,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh <linux-sh@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.02.1104211147300.3323@ionos>
-References: <alpine.LFD.2.00.1104192339180.2744@localhost6.localdomain6>
-	 <1303308457-7501-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <alpine.LFD.2.02.1104201704350.3323@ionos>
-	 <20110420185922.GD31131@pengutronix.de>
-	 <alpine.LFD.2.02.1104202113250.3323@ionos>
-	 <4DAFD5AA.9020404@codeaurora.org>
-	 <alpine.LFD.2.02.1104211147300.3323@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Apr 2011 09:26:21 +1000
-Message-ID: <1303601181.2513.132.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755076Ab1DXAQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Apr 2011 20:16:38 -0400
+From: Chris Samuel <chris@csamuel.org>
+To: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: FW: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
+Date: Sun, 24 Apr 2011 10:16:22 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: Yuhong Bao <yuhongbao_386@hotmail.com>, hpa@zytor.com,
+        alan@lxorguk.ukuu.org.uk, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+References: <201104222333.25546.chris@csamuel.org> <SNT125-W501A69BD9948F037646EDFC3940@phx.gbl> <1303566747.12067.10.camel@localhost.localdomain>
+In-Reply-To: <1303566747.12067.10.camel@localhost.localdomain>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
+	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
+	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
+	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart8152719.G48shb3xVh";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104241016.22639.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 12:33 +0200, Thomas Gleixner wrote:
-> 
-> Depends, there is a lot of sane hardware out there (not necessarily in
-> the ARM SoC world). We can do with a pointer if the need arises.
->  
-> > >     optionally a set of common register accessor functions like I did
-> > >     for the generic irq chip.
-> > 
-> > Again, I don't see the point in having this in the common code. May be I'm
-> > missing something?
-> 
-> See my RFC patch of a generic irq chip implementation and how much
-> duplicated five line inline functions they removed.
->  
-> > IMO, a better option instead of the base register and the offsets would be an
-> > option to have a priv_data pointer. I forgot the exact use case, but we
-> > thought that would have been helpful when we tried to port the msm clock
-> > driver in our tree on top of Jeremy's patches.
-> 
-> It works either way, but we should try to comeup with a sensible
-> common base struct for sane hardware. 
+--nextPart8152719.G48shb3xVh
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Doesn't have to be in the base struct tho. I think a better approach is
-to keep the base struct reasonably API-only, and have an
-"implementation" subclass called something like simple_clk for example,
-that carries those few fields common to most MMIO based implementation
-and which can be created with existing "helper" code for the most common
-ones.
+On Sat, 23 Apr 2011 11:52:27 PM Thomas Meyer wrote:
 
-Ben.
+> That should fix your misdetection.
 
+A fuller kernel does proceed further than before, before running
+into issues where both the e100 and aix7xxx drivers complain about
+not being able to find their IRQ's and that this might be due to
+a buggy MP table.
 
+I presume this is unrelated to the initial problem ?
+
+cheers,
+Chris
+=2D-=20
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+
+This email may come with a PGP signature as a file. Do not panic.
+=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+
+--nextPart8152719.G48shb3xVh
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUATbNr1o1yjaOTJg85AQKmywf+P2CebSHEcGsSrBLXWcMIGLOIljdUEgbq
+49NDvLcmuzob9bl/F+V8y7Z15m3M5FDzACJy++5iMzUlM1c2EQQ+cXRsrCQ19LIJ
+hnJm9VdW1VFs1TW7ueyo3KApFsv/v0uTtIxLwZ3bsJf9GQSYyhRIiDytcnPsN48S
+Njv9LcLLhTnALBw0BlL8uLHtFqM7TmNa3YiZN4jqasWKjvGtzjD3Si61Jn4LjPyK
+O5ZfC7aqRrWXc02CgycJRnDGn+Qd8pukVRZk13fucbWY6TZv954l0Q1ptzWna8xp
+Q+fjRenleeXjM1/HStKCcICwgw9/qQqlgbUYmc2BX/H2B57jlABZiQ==
+=9uqZ
+-----END PGP SIGNATURE-----
+
+--nextPart8152719.G48shb3xVh--
