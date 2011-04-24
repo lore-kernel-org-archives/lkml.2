@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752Ab1DXVPw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 17:15:52 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:60320 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757610Ab1DXVPt (ORCPT
+	id S1757764Ab1DXVUH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 17:20:07 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:45448 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756686Ab1DXVUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 17:15:49 -0400
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB492DD.3000600@verizon.net>
-Date: Sun, 24 Apr 2011 17:15:09 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Sun, 24 Apr 2011 17:20:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=aQThKE1fHejPKlW/1myacRBDxy8NNeZLTl/LaOPwSZpjDRfKbDFi88gSXixlKL9yPD
+         Zm1ZuEa85XXBLo1iLmm5Ijd6pI8tpx+/7/8Z1UWAoBb+S+Ji6x0chCBQp7dpG4FX0tlV
+         ZROKtxBRjiTPwNM75V85qkVkzy21cBPgthfFs=
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <gregkh@suse.de>, <bcollins@bluecherry.net>
-Subject: [PATCH] staging: solo6x10: add select SND_PCM to fix build error
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DB491D8.6040600@verizon.net>
+References: <4DB491D8.6040600@verizon.net>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sun, 24 Apr 2011 17:19:43 -0400
+X-Google-Sender-Auth: vOSkPfKvVx6oAl4WNAkN2MWUOZM
+Message-ID: <BANLkTi=j2PgE0PcTF-=dgHMEe_QuSHkxOA@mail.gmail.com>
+Subject: Re: [PATCH] arch: blackfin: use cc-cross-prefix to set CROSS_COMPILE
+To: pefoley2@verizon.net
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a build error when SND_PCM is not set
-by adding a select statment.
+On Sun, Apr 24, 2011 at 17:10, Peter Foley wrote:
+> This patch updates the blackfin Makefile to use cc-cross-prefix
+> to only set CROSS_COMPILE if bfin-uclinux-gcc exists.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- drivers/staging/solo6x10/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/solo6x10/Kconfig b/drivers/staging/solo6x10/Kconfig
-index 2cf77c9..03dcac4 100644
---- a/drivers/staging/solo6x10/Kconfig
-+++ b/drivers/staging/solo6x10/Kconfig
-@@ -2,6 +2,7 @@ config SOLO6X10
- 	tristate "Softlogic 6x10 MPEG codec cards"
- 	depends on PCI && VIDEO_DEV && SND && I2C
- 	select VIDEOBUF_DMA_SG
-+	select SND_PCM
- 	---help---
- 	  This driver supports the Softlogic based MPEG-4 and h.264 codec
- 	  codec cards.
--- 
-1.7.5.rc1
-
+i'm not sure this is useful.  if bfin-uclinux- doesnt exist, it's
+going to use the native gcc, and there is no native gcc for Blackfin
+targets (since it's a nommu arch).  getting a missing bfin-uclinux-gcc
+error is a lot more useful than the native compiler rejecting Blackfin
+insns.
+-mike
