@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab1DXIMN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 04:12:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755263Ab1DXIMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 04:12:10 -0400
-From: Avi Kivity <avi@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: demacro !CONFIG_PARAVIRT cpu accessors
-Date: Sun, 24 Apr 2011 11:11:51 +0300
-Message-Id: <1303632711-21662-1-git-send-email-avi@redhat.com>
+	id S1755865Ab1DXIiI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 04:38:08 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:42636 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755446Ab1DXIiE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 04:38:04 -0400
+Date: Sun, 24 Apr 2011 10:38:00 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Roman Zippel <zippel@linux-m68k.org>
+cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS: Roman Zippel has been MIA for several years.
+Message-ID: <alpine.DEB.2.00.1104241036570.16333@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, we had a build failure on !CONFIG_PARAVIRT due to a callback
-->wbinvd() clashing with a macro wbinvd().  While we worked around the
-issue, avoid it in the future by changing the macro (and a few surrounding
-ones) to an inline function.
+Hence make AFFS and HFS orphans, and remove him as an m68k maintainer.
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/x86/include/asm/system.h |   85 ++++++++++++++++++++++++++++++++++-------
- 1 files changed, 71 insertions(+), 14 deletions(-)
+ MAINTAINERS |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index 12569e6..c2ff2a1 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -303,24 +303,81 @@ static inline void native_wbinvd(void)
- #ifdef CONFIG_PARAVIRT
- #include <asm/paravirt.h>
- #else
--#define read_cr0()	(native_read_cr0())
--#define write_cr0(x)	(native_write_cr0(x))
--#define read_cr2()	(native_read_cr2())
--#define write_cr2(x)	(native_write_cr2(x))
--#define read_cr3()	(native_read_cr3())
--#define write_cr3(x)	(native_write_cr3(x))
--#define read_cr4()	(native_read_cr4())
--#define read_cr4_safe()	(native_read_cr4_safe())
--#define write_cr4(x)	(native_write_cr4(x))
--#define wbinvd()	(native_wbinvd())
-+
-+static inline unsigned long read_cr0(void)
-+{
-+	return native_read_cr0();
-+}
-+
-+static inline void write_cr0(unsigned long x)
-+{
-+	native_write_cr0(x);
-+}
-+
-+static inline unsigned long read_cr2(void)
-+{
-+	return native_read_cr2();
-+}
-+
-+static inline void write_cr2(unsigned long x)
-+{
-+	native_write_cr2(x);
-+}
-+
-+static inline unsigned long read_cr3(void)
-+{
-+	return native_read_cr3();
-+}
-+
-+static inline void write_cr3(unsigned long x)
-+{
-+	native_write_cr3(x);
-+}
-+
-+static inline unsigned long read_cr4(void)
-+{
-+	return native_read_cr4();
-+}
-+
-+static inline unsigned long read_cr4_safe(void)
-+{
-+	return native_read_cr4_safe();
-+}
-+
-+static inline void write_cr4(unsigned long x)
-+{
-+	native_write_cr4(x);
-+}
-+
-+static inline void wbinvd(void)
-+{
-+	native_wbinvd();
-+}
-+
- #ifdef CONFIG_X86_64
--#define read_cr8()	(native_read_cr8())
--#define write_cr8(x)	(native_write_cr8(x))
--#define load_gs_index   native_load_gs_index
-+
-+static inline unsigned long read_cr8(void)
-+{
-+	return native_read_cr8();
-+}
-+
-+static inline void write_cr8(unsigned long x)
-+{
-+	native_write_cr8(x);
-+}
-+
-+static inline void load_gs_index(unsigned selector)
-+{
-+	native_load_gs_index(selector);
-+}
-+
- #endif
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ec36003..0a84d29 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -404,8 +404,8 @@ S:	Maintained
+ F:	sound/oss/aedsp16.c
  
- /* Clear the 'TS' bit */
--#define clts()		(native_clts())
-+static inline void clts(void)
-+{
-+	native_clts();
-+}
+ AFFS FILE SYSTEM
+-M:	Roman Zippel <zippel@linux-m68k.org>
+-S:	Maintained
++L:	linux-fsdevel@vger.kernel.org
++S:	Orphan
+ F:	Documentation/filesystems/affs.txt
+ F:	fs/affs/
  
- #endif/* CONFIG_PARAVIRT */
+@@ -2943,8 +2943,8 @@ F:	drivers/block/cciss*
+ F:	include/linux/cciss_ioctl.h
  
+ HFS FILESYSTEM
+-M:	Roman Zippel <zippel@linux-m68k.org>
+-S:	Maintained
++L:	linux-fsdevel@vger.kernel.org
++S:	Orphan
+ F:	Documentation/filesystems/hfs.txt
+ F:	fs/hfs/
+ 
+@@ -3992,7 +3992,6 @@ F:	arch/m32r/
+ 
+ M68K ARCHITECTURE
+ M:	Geert Uytterhoeven <geert@linux-m68k.org>
+-M:	Roman Zippel <zippel@linux-m68k.org>
+ L:	linux-m68k@lists.linux-m68k.org
+ W:	http://www.linux-m68k.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git
 -- 
-1.7.4.3
+1.7.0.4
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
