@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab1DXFgB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 01:36:01 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50866 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab1DXFf7 (ORCPT
+	id S1752629Ab1DXFhR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 01:37:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34711 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab1DXFhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 01:35:59 -0400
+	Sun, 24 Apr 2011 01:37:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hCGAUqgOPrk05DBoctm6DSSy0sjE3bCziLVRvXZf61y2+Mm/mcHybv5Tooe76v4o+V
-         I4NvL9lJVBPxZeCJF3kF5NGp4mBTx6V9P0IkUbo97cf0CUrLdYv9JsML1xZB6JEgtyhr
-         x3hUa3Uzwtpw4AOkV47xYtPAt3oD1GbTI/ugA=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de, aaro.koskinen@iki.fi, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 8/8] Staging: xgifb: Fixed header file.
-Date: Sun, 24 Apr 2011 13:35:35 +0800
-Message-Id: <1303623335-2577-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=B6jM9QY37toZQTRrIlUsvd93PEefo0aNk29E3ZeuvRCxCR3XTbsHycWN1WXkgmBvp8
+         u30RxlzOLiH87muKpIXKjmpLRxVnLhDQxZ3sXvyUEebyCB25iTyXkoFmbzdwZpFvudE1
+         Ozd66LL+beIuLwIVIJYQ8D82BOCKbD1IR0lBw=
+MIME-Version: 1.0
+In-Reply-To: <1303604751-4980-1-git-send-email-minchan.kim@gmail.com>
+References: <1303604751-4980-1-git-send-email-minchan.kim@gmail.com>
+Date: Sun, 24 Apr 2011 14:37:12 +0900
+Message-ID: <BANLkTinW7+14b-DSK80-3ujdgVjTbZ4KCQ@mail.gmail.com>
+Subject: Re: [PATCH] Check PageActive when evictable page and unevicetable
+ page race happen
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by checkpatch.pl, <linux/io.h> should be used instead of
-<asm/io.h>.
+On Sun, Apr 24, 2011 at 9:25 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> In putback_lru_page, unevictable page can be changed into evictable
+> 's one while we move it among lru. So we have checked it again and
+> rescued it. But we don't check PageActive, again. It could add
+> active page into inactive list so we can see the BUG in isolate_lru_pages.
+> (But I didn't see any report because I think it's very subtle)
+>
+> It could happen in race that zap_pte_range's mark_page_accessed and
+> putback_lru_page. It's subtle but could be possible.
 
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/xgifb/vb_util.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please Ignore this. I was confused.
+The race never happens.
 
-diff --git a/drivers/staging/xgifb/vb_util.c b/drivers/staging/xgifb/vb_util.c
-index a97e44f..ea2b795 100644
---- a/drivers/staging/xgifb/vb_util.c
-+++ b/drivers/staging/xgifb/vb_util.c
-@@ -3,7 +3,7 @@
- #include "vb_struct.h"
- 
- #include "XGIfb.h"
--#include <asm/io.h>
-+#include <linux/io.h>
- #include <linux/types.h>
- 
- #include "vb_util.h"
+
 -- 
-1.7.1
-
+Kind regards,
+Minchan Kim
