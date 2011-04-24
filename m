@@ -1,64 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692Ab1DXUTT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 16:19:19 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:46298 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757624Ab1DXUTR (ORCPT
+	id S1757707Ab1DXUbi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 16:31:38 -0400
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:50674 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757666Ab1DXUbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 16:19:17 -0400
-X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Apr 2011 16:19:17 EDT
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB4832E.6080009@verizon.net>
-Date: Sun, 24 Apr 2011 16:08:14 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Sun, 24 Apr 2011 16:31:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=xqEyS7HOV2WivnGqEQzOf2RARDe61BwpNemK+FA3YJA9xHGoXfYlyedn
+	v5U+DhQwL8FO+sxL/mD0nROtQKS7dVjbY4btWSGpxppKmH84f3h70f86sqx9gJ99
+	7/AIa71L0My6Sh8SHe8DFOpHOBnS9QTNOYWTIriAYKCDN6SOZ0U=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git 1.7.5
+Date: Sun, 24 Apr 2011 13:31:26 -0700
+Message-ID: <7v39l7mlwh.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>
-Subject: [PATCH] kbuild: allow headerdep to work in KBUILD_OUTPUT and add
- targets to PHONY
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 2004B0D2-6EB2-11E0-BA99-E8AB60295C12-77302942!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the headerdep target so it will work when make is executed from KBUILD_OUTPUT.
-It also adds a few targets to PHONY so they are always executed.
+The latest feature release Git 1.7.5 is available at the usual
+places:
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- Makefile |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+  http://www.kernel.org/pub/software/scm/git/
 
-diff --git a/Makefile b/Makefile
-index b967b96..093c9d2 100644
---- a/Makefile
-+++ b/Makefile
-@@ -991,7 +991,8 @@ include/generated/utsrelease.h: include/config/kernel.release FORCE
- 
- PHONY += headerdep
- headerdep:
--	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
-+	$(Q)find $(srctree)/include/ -name '*.h' | xargs --max-args 1 \
-+	$(srctree)/scripts/headerdep.pl -I$(srctree)/include
- 
- # ---------------------------------------------------------------------------
- 
-@@ -1392,6 +1393,8 @@ tags TAGS cscope gtags: FORCE
- # Scripts to check various things for consistency
- # ---------------------------------------------------------------------------
- 
-+PHONY += includecheck versioncheck coccicheck namespacecheck export_report
-+
- includecheck:
- 	find * $(RCS_FIND_IGNORE) \
- 		-name '*.[hcS]' -type f -print | sort \
--- 
-1.7.5.rc1
+  git-1.7.5.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.5.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.5.tar.{gz,bz2}		(preformatted docs)
 
+The RPM binary packages for a few architectures are found in:
+
+  RPMS/$arch/git-*-1.7.5-1.fc13.$arch.rpm	(RPM)
+
+This release has 500+ changes from 70+ contributors; thanks for everybody
+who contributed.
+
+----------------------------------------------------------------
+
+Git v1.7.5 Release Notes
+========================
+
+Updates since v1.7.4
+--------------------
+
+ * Various MinGW portability fixes.
+
+ * Various git-p4 enhancements (in contrib).
+
+ * Various vcs-svn, git-svn and gitk enhancements and fixes.
+
+ * Various git-gui updates (0.14.0).
+
+ * Update to more modern HP-UX port.
+
+ * The codebase is getting prepared for i18n/l10n; no translated
+   strings nor translation mechanism in the code yet, but the strings
+   are being marked for l10n.
+
+ * The bash completion script can now complete symmetric difference
+   for "git diff" command, e.g. "git diff ...bra<TAB>".
+
+ * The default minimum length of abbreviated and unique object names
+   can now be configured by setting the core.abbrev configuration
+   variable.
+
+ * "git apply -v" reports offset lines when the patch does not apply at
+   the exact location recorded in the diff output.
+
+ * "git config" used to be also known as "git repo-config", but the old
+   name is now officially deprecated.
+
+ * "git checkout --detach <commit>" is a more user friendly synonym for
+   "git checkout <commit>^0".
+
+ * "git checkout" performed on detached HEAD gives a warning and
+   advice when the commit being left behind will become unreachable from
+   any branch or tag.
+
+ * "git cherry-pick" and "git revert" can be told to use a custom merge
+   strategy, similar to "git rebase".
+
+ * "git cherry-pick" remembers which commit failed to apply when it is
+   stopped by conflicts, making it unnecessary to use "commit -c $commit"
+   to conclude it.
+
+ * "git cvsimport" bails out immediately when the cvs server cannot be
+   reached, without spewing unnecessary error messages that complain about
+   the server response it never got.
+
+ * "git fetch" vs "git upload-pack" transfer learned 'no-done'
+   protocol extension to save one round-trip after the content
+   negotiation is done. This saves one HTTP RPC, reducing the overall
+   latency for a trivial fetch.
+
+ * "git fetch" can be told to recursively fetch submodules on-demand.
+
+ * "git grep -f <filename>" learned to treat "-" as "read from the
+   standard input stream".
+
+ * "git grep --no-index" did not honor pathspecs correctly, returning
+   paths outside the specified area.
+
+ * "git init" learned the --separate-git-dir option to allow the git
+   directory for a new repository created elsewhere and linked via the
+   gitdir mechanism. This is primarily to help submodule support later
+   to switch between a branch of superproject that has the submodule
+   and another that does not.
+
+ * "git log" type commands now understand globbing pathspecs.  You
+   can say "git log -- '*.txt'" for example.
+
+ * "git log" family of commands learned --cherry and --cherry-mark
+   options that can be used to view two diverged branches while omitting
+   or highlighting equivalent changes that appear on both sides of a
+   symmetric difference (e.g. "log --cherry A...B").
+
+ * A lazy "git merge" that didn't say what to merge used to be an error.
+   When run on a branch that has an upstream defined, however, the command
+   now merges from the configured upstream.
+
+ * "git mergetool" learned how to drive "beyond compare 3" as well.
+
+ * "git rerere forget" without pathspec used to forget all the saved
+   conflicts that relate to the current merge; it now requires you to
+   give it pathspecs.
+
+ * "git rev-list --objects $revs -- $pathspec" now limits the objects listed
+   in its output properly with the pathspec, in preparation for narrow
+   clones.
+
+ * "git push" with no parameters gives better advice messages when
+   "tracking" is used as the push.default semantics or there is no remote
+   configured yet.
+
+ * A possible value to the "push.default" configuration variable,
+   'tracking', gained a synonym that more naturally describes what it
+   does, 'upstream'.
+
+ * "git rerere" learned a new subcommand "remaining" that is similar to
+   "status" and lists the paths that had conflicts which are known to
+   rerere, but excludes the paths that have already been marked as
+   resolved in the index from its output.  "git mergetool" has been
+   updated to use this facility.
+
+Also contains various documentation updates.
+
+
+Fixes since v1.7.4
+------------------
+
+All of the fixes in the v1.7.4.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * "git fetch" from a client that is mostly following the remote
+   needlessly told all of its refs to the server for both sides to
+   compute the set of objects that need to be transferred efficiently,
+   instead of stopping when the server heard enough. In a project with
+   many tags, this turns out to be extremely wasteful, especially over
+   the smart HTTP transport (sp/maint-{upload,fetch}-pack-stop-early~1).
+
+ * "git fetch" run from a repository that uses the same repository as
+   its alternate object store as the repository it is fetching from
+   did not tell the server that it already has access to objects
+   reachable from the refs in their common alternate object store,
+   causing it to fetch unnecessary objects (jc/maint-fetch-alt).
+
+ * "git remote add --mirror" created a configuration that is suitable for
+   doing both a mirror fetch and a mirror push at the same time, which
+   made little sense.  We now warn and require the command line to specify
+   either --mirror=fetch or --mirror=push.
