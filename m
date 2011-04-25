@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab1DYUgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:36:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:34526 "EHLO 1wt.eu"
+	id S932719Ab1DYUgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:36:21 -0400
+Received: from 1wt.eu ([62.212.114.60]:34438 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab1DYUZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932398Ab1DYUZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Apr 2011 16:25:16 -0400
-Message-Id: <20110425200239.858405164@pcw.home.local>
+Message-Id: <20110425200236.384451034@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:10 +0200
+Date: Mon, 25 Apr 2011 22:03:50 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Moritz Muehlenhoff <jmm@debian.org>,
+Cc: greg@kroah.com, benh@kernel.crashing.org, anton@samba.org,
+        Matt Evans <matt@ozlabs.org>,
+        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 158/173] CAN: Use inode instead of kernel address for /proc file
+Subject: [PATCH 078/173] powerpc/kexec: Fix orphaned offline CPUs across kexec
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Matt Evans <matt@ozlabs.org>
 
-commit 9f260e0efa4766e56d0ac14f1aeea6ee5eb8fe83 upstream.
+Commit: e8e5c2155b0035b6e04f29be67f6444bc914005b upstream
 
-Since the socket address is just being used as a unique identifier, its
-inode number is an alternative that does not leak potentially sensitive
-information.
+When CPU hotplug is used, some CPUs may be offline at the time a kexec is
+performed.  The subsequent kernel may expect these CPUs to be already running,
+and will declare them stuck.  On pseries, there's also a soft-offline (cede)
+state that CPUs may be in; this can also cause problems as the kexeced kernel
+may ask RTAS if they're online -- and RTAS would say they are.  The CPU will
+either appear stuck, or will cause a crash as we replace its cede loop beneath
+it.
 
-CC-ing stable because MITRE has assigned CVE-2010-4565 to the issue.
+This patch kicks each present offline CPU awake before the kexec, so that
+none are forever lost to these assumptions in the subsequent kernel.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Moritz Muehlenhoff <jmm@debian.org>
+Now, the behaviour is that all available CPUs that were offlined are now
+online & usable after the kexec.  This mimics the behaviour of a full reboot
+(on which all CPUs will be restarted).
+
+Signed-off-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+cc: Anton Blanchard <anton@samba.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/can/bcm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/machine_kexec_64.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-Index: longterm-2.6.27/net/can/bcm.c
-===================================================================
---- longterm-2.6.27.orig/net/can/bcm.c	2011-01-29 11:22:46.000000000 +0100
-+++ longterm-2.6.27/net/can/bcm.c	2011-04-25 17:20:40.456278152 +0200
-@@ -121,7 +121,7 @@
- 	struct list_head tx_ops;
- 	unsigned long dropped_usr_msgs;
- 	struct proc_dir_entry *bcm_proc_read;
--	char procname [20]; /* pointer printed in ASCII with \0 */
-+	char procname [32]; /* inode number in decimal with \0 */
- };
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -15,6 +15,7 @@
+ #include <linux/thread_info.h>
+ #include <linux/init_task.h>
+ #include <linux/errno.h>
++#include <linux/cpu.h>
  
- static inline struct bcm_sock *bcm_sk(const struct sock *sk)
-@@ -1479,7 +1479,7 @@
+ #include <asm/page.h>
+ #include <asm/current.h>
+@@ -169,10 +170,34 @@ static void kexec_smp_down(void *arg)
+ 	/* NOTREACHED */
+ }
  
- 	if (proc_dir) {
- 		/* unique socket address as filename */
--		sprintf(bo->procname, "%p", sock);
-+		sprintf(bo->procname, "%lu", sock_i_ino(sk));
- 		bo->bcm_proc_read = create_proc_read_entry(bo->procname, 0644,
- 							   proc_dir,
- 							   bcm_read_proc, sk);
++/*
++ * We need to make sure each present CPU is online.  The next kernel will scan
++ * the device tree and assume primary threads are online and query secondary
++ * threads via RTAS to online them if required.  If we don't online primary
++ * threads, they will be stuck.  However, we also online secondary threads as we
++ * may be using 'cede offline'.  In this case RTAS doesn't see the secondary
++ * threads as offline -- and again, these CPUs will be stuck.
++ *
++ * So, we online all CPUs that should be running, including secondary threads.
++ */
++static void wake_offline_cpus(void)
++{
++	int cpu = 0;
++
++	for_each_present_cpu(cpu) {
++		if (!cpu_online(cpu)) {
++			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
++					cpu);
++			cpu_up(cpu);
++		}
++	}
++}
++
+ static void kexec_prepare_cpus(void)
+ {
+ 	int my_cpu, i, notified=-1;
+ 
++	wake_offline_cpus();
+ 	smp_call_function(kexec_smp_down, NULL, /* wait */0);
+ 	my_cpu = get_cpu();
+ 
 
 
