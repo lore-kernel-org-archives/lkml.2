@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1DYWLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 18:11:14 -0400
-Received: from claw.goop.org ([74.207.240.146]:47629 "EHLO claw.goop.org"
+	id S1755767Ab1DYWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 18:13:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34986 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab1DYWLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 18:11:13 -0400
-Message-ID: <4DB5F17C.8040105@goop.org>
-Date: Mon, 25 Apr 2011 15:11:08 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1754607Ab1DYWN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 18:13:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,266,1301900400"; 
+   d="scan'208";a="683803426"
+Date: Mon, 25 Apr 2011 15:12:58 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110425221258.GA21442@tassilo.jf.intel.com>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
+ <20110422063429.GA16643@elte.hu>
+ <20110422080604.GA22611@elte.hu>
+ <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <20110425175444.GC28239@elte.hu>
+ <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
 MIME-Version: 1.0
-To: Anders Kaseorg <andersk@ksplice.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, vdso: SHN_LORESERVE is an inclusive lower bound
-References: <alpine.DEB.2.02.1104251020170.26664@dr-wily.mit.edu>
-In-Reply-To: <alpine.DEB.2.02.1104251020170.26664@dr-wily.mit.edu>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2011 07:28 AM, Anders Kaseorg wrote:
-> Test for >= SHN_LORESERVE instead of > SHN_LORESERVE.
+> The PAPI tool was using the perf_events interface in the 2.6.39-git 
+> kernels to collect offcore response results by properly setting the 
+> config1 register on Nehalem and Westmere machines.
 
-Yep, seems reasonable.  Did this cause a problem, or is it just
-something you noticed?
+I already had some users for this functionality too. Offcore
+events are quite useful for various analysis: basically every time
+you have a memory performance problem -- especially a NUMA
+problem -- they can help you a lot tracking it down.
 
-    J
+They answer questions like "who accesses memory on another node"
 
-> Signed-off-by: Anders Kaseorg <andersk@ksplice.com>
-> ---
->  arch/x86/vdso/vdso32-setup.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-> index 468d591..226bfad 100644
-> --- a/arch/x86/vdso/vdso32-setup.c
-> +++ b/arch/x86/vdso/vdso32-setup.c
-> @@ -88,7 +88,7 @@ static __init void reloc_symtab(Elf32_Ehdr *ehdr,
->  		    sym->st_shndx == SHN_ABS)
->  			continue;  /* skip */
->  
-> -		if (sym->st_shndx > SHN_LORESERVE) {
-> +		if (sym->st_shndx >= SHN_LORESERVE) {
->  			printk(KERN_INFO "VDSO: unexpected st_shndx %x\n",
->  			       sym->st_shndx);
->  			continue;
+As far as I'm concerned b52c55c6a25e4515b5e075a989ff346fc251ed09 
+is a bad feature regression.
+
+> 
+> Now it has been disabled for unclear reasons.
+
+Also unfortunately only partial. Previously you could at least
+write the MSR from user space through /dev/cpu/*/msr, but now the kernel 
+randomly rewrites it if anyone else uses cache events.
+
+Right now I have some frontend scripts which are doing this,
+but it's really quite nasty.
+
+It's very sad we have to go through this.
+
+-Andi
 
