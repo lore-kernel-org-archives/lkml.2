@@ -1,170 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab1DYRiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:38:04 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43492 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758652Ab1DYRiC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:38:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iGKA61Uo1lG1Zu/BPQfwybJoiG036K5JeQcJTtZS3lSG7QeFgUuYPENyr+N4EBkCSC
-         hkau2/gRVLqSnnNP6FS6Mdp5nllZmV98vob5OGvjSNmg52i8UX2auV8l/aFDafdp+8Pv
-         /iAuxNSKQhd6qaGQ7SJdClKdV+XV8D8FS3rUM=
-Date: Mon, 25 Apr 2011 19:37:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "v2.6.33.." <stable@kernel.org>
-Subject: Re: [PATCH 1/5] ptrace: Prepare to fix racy accesses on task
- breakpoints
-Message-ID: <20110425173750.GB5055@nowhere>
-References: <1302284067-7860-1-git-send-email-fweisbec@gmail.com>
- <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
+	id S1758736Ab1DYRiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 13:38:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39086 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758691Ab1DYRiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 13:38:23 -0400
+Date: Mon, 25 Apr 2011 19:37:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arun Sharma <asharma@fb.com>
+Cc: arun@sharma-home.net, Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] perf events: Add stalled cycles generic event -
+ PERF_COUNT_HW_STALLED_CYCLES
+Message-ID: <20110425173751.GA28239@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+ <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <20110422165007.GA18401@vps.sharma-home.net>
+ <20110422203022.GA20573@elte.hu>
+ <20110423201409.GA20072@elte.hu>
+ <20110424061645.GA12013@radium.snc4.facebook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110424061645.GA12013@radium.snc4.facebook.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg.
 
-I realize you weren't in the Cc list, which wasn't definitly not
-intended.
+* Arun Sharma <asharma@fb.com> wrote:
 
-I think you were fine with the change. But to be sure, can I have your ack?
+> On Sat, Apr 23, 2011 at 10:14:09PM +0200, Ingo Molnar wrote:
+> > 
+> > The new PERF_COUNT_HW_STALLED_CYCLES event tries to approximate
+> > cycles the CPU does nothing useful, because it is stalled on a
+> > cache-miss or some other condition.
+> 
+> Conceptually looks fine. I'd prefer a more precise name such as: 
+> PERF_COUNT_EXECUTION_STALLED_CYCLES (to differentiate from frontend or 
+> retirement stalls).
 
-Thanks.
+Ok.
 
-On Fri, Apr 08, 2011 at 07:34:23PM +0200, Frederic Weisbecker wrote:
-> When a task is traced and is in a stopped state, the tracer
-> may execute a ptrace request to examine the tracee state and
-> get its task struct. Right after, the tracee can be killed
-> and thus its breakpoints released.
-> This can happen concurrently when the tracer is in the middle
-> of reading or modifying these breakpoints, leading to dereferencing
-> a freed pointer.
+Your script:
+
+> # ./analyze.py
+> Percent idle: 27%
+>         Retirement Stalls: 82%
+>         Backend Stalls: 0%
+>         Frontend Stalls: 62%
+>         Instruction Starvation: 62%
+>         icache stalls: 0%
 > 
-> Hence, to prepare the fix, create a generic breakpoint reference
-> holding API. When a reference on the breakpoints of a task is
-> held, the breakpoints won't be released until the last reference
-> is dropped. After that, no more ptrace request on the task's
-> breakpoints can be serviced for the tracer.
+> does give me a signal about where to look. The script below is
+> a quick and dirty hack. I haven't really validated it with 
+> many workloads. I'm posting it here anyway hoping that it'd
+> result in better kernel support for these types of analyses.
+
+Is pretty useful IMO.
+
+The frontend/backend characterisation is pretty generic - most modern CPUs 
+share that and have similar events.
+
+So we could try to generalize these and get most of the statistics your script 
+outputs.
+
+> Even if we cover this with various generic PERF_COUNT_*STALL events,
+> we'll still have a need for other events:
 > 
-> Reported-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Prasad <prasad@linux.vnet.ibm.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: v2.6.33.. <stable@kernel.org>
-> ---
->  include/linux/ptrace.h |   13 ++++++++++++-
->  include/linux/sched.h  |    3 +++
->  kernel/exit.c          |    2 +-
->  kernel/ptrace.c        |   17 +++++++++++++++++
->  4 files changed, 33 insertions(+), 2 deletions(-)
+> * Things that give info about instruction mixes.
 > 
-> diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-> index a1147e5..9178d5c 100644
-> --- a/include/linux/ptrace.h
-> +++ b/include/linux/ptrace.h
-> @@ -189,6 +189,10 @@ static inline void ptrace_init_task(struct task_struct *child, bool ptrace)
->  		child->ptrace = current->ptrace;
->  		__ptrace_link(child, current->parent);
->  	}
-> +
-> +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> +	atomic_set(&child->ptrace_bp_refcnt, 1);
-> +#endif
->  }
->  
->  /**
-> @@ -350,6 +354,13 @@ extern int task_current_syscall(struct task_struct *target, long *callno,
->  				unsigned long args[6], unsigned int maxargs,
->  				unsigned long *sp, unsigned long *pc);
->  
-> -#endif
-> +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> +extern int ptrace_get_breakpoints(struct task_struct *tsk);
-> +extern void ptrace_put_breakpoints(struct task_struct *tsk);
-> +#else
-> +static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
-> +#endif /* CONFIG_HAVE_HW_BREAKPOINT */
-> +
-> +#endif /* __KERNEL */
->  
->  #endif
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 83bd2e2..15badfa 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1534,6 +1534,9 @@ struct task_struct {
->  		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
->  	} memcg_batch;
->  #endif
-> +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> +	atomic_t ptrace_bp_refcnt;
-> +#endif
->  };
->  
->  /* Future-safe accessor for struct task_struct's cpus_allowed. */
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 6a488ad..437e327 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -1016,7 +1016,7 @@ NORET_TYPE void do_exit(long code)
->  	/*
->  	 * FIXME: do that only when needed, using sched_exit tracepoint
->  	 */
-> -	flush_ptrace_hw_breakpoint(tsk);
-> +	ptrace_put_breakpoints(tsk);
->  
->  	exit_notify(tsk, group_dead);
->  #ifdef CONFIG_NUMA
-> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-> index 0fc1eed..dc7ab65 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -22,6 +22,7 @@
->  #include <linux/syscalls.h>
->  #include <linux/uaccess.h>
->  #include <linux/regset.h>
-> +#include <linux/hw_breakpoint.h>
->  
->  
->  /*
-> @@ -879,3 +880,19 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
->  	return ret;
->  }
->  #endif	/* CONFIG_COMPAT */
-> +
-> +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> +int ptrace_get_breakpoints(struct task_struct *tsk)
-> +{
-> +	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
-> +		return 0;
-> +
-> +	return -1;
-> +}
-> +
-> +void ptrace_put_breakpoints(struct task_struct *tsk)
-> +{
-> +	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
-> +		flush_ptrace_hw_breakpoint(tsk);
-> +}
-> +#endif /* CONFIG_HAVE_HW_BREAKPOINT */
-> -- 
-> 1.7.3.2
+>   Ratio of {loads, stores, floating point, branches, conditional branches}
+>   to total instructions.
+
+We have this at least partially covered, but yeah, we stopped short of covering 
+all instruction types so complete ratios cannot be built yet.
+
+> * Activity related to micro architecture specific caches
 > 
+>   People using -funroll-loops may have a significant performance opportunity.
+>   But it's hard to spot bottlenecks in the instruction decoder.
+> 
+> * Monitoring traffic on Hypertransport/QPI links
+
+Cross-node accesses ought to be covered by Peter's RFC patch. In terms of 
+isolating cross-CPU cache accesses i suspect we could do that too if it really 
+matters to analysis in practice.
+
+Basically the way to go about it are the testcases you wrote - they demonstrate 
+the utility of a given type of event - and that justifies generalization as 
+well.
+
+> Like you observe, most people will not look at these events, so
+> focusing on getting the common events right makes sense. But I
+> still like access to all events (either via a mapping file or
+> a library such as libpfm4). Hiding them in "perf list" sounds
+> like a reasonable way of keeping complexity out.
+
+Yes. We have access to raw events for relatively obscure (or too CPU dependent) 
+events - but what we do not want to do is to extend that space without adding 
+*any* generic event in essence. If something like offcore or uncore PMU support 
+is useful enough to be in the kernel, then it should also be useful enough to 
+gain generic events.
+
+> PS: branch-misses:pp was spot on for the example above.
+
+heh :-)
+
+Thanks,
+
+	Ingo
