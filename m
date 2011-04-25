@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab1DYNkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 09:40:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19763 "EHLO mga14.intel.com"
+	id S1758127Ab1DYNkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 09:40:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8502 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758152Ab1DYNkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 09:40:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,265,1301900400"; 
-   d="scan'208";a="425033731"
-Subject: Re: [PATCH] perf: Allow set output buffer for tasks in the same
- thread group
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tim Blechmann <tim@klingt.org>, David Ahern <dsahern@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1303664726.20212.1.camel@twins>
-References: <1303657064.2239.25.camel@localhost>
-	 <1303664726.20212.1.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Apr 2011 21:40:38 +0800
-Message-Id: <1303738838.2578.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752139Ab1DYNkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 09:40:16 -0400
+Date: Mon, 25 Apr 2011 09:39:54 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        George Spelvin <linux@horizon.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/4] perf, nmi: Move LVT un-masking into irq handlers
+Message-ID: <20110425133954.GA20887@redhat.com>
+References: <1303398203-2918-1-git-send-email-dzickus@redhat.com>
+ <1303398203-2918-4-git-send-email-dzickus@redhat.com>
+ <20110422082636.GC24011@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422082636.GC24011@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 01:05 +0800, Peter Zijlstra wrote:
-> On Sun, 2011-04-24 at 22:57 +0800, Lin Ming wrote:
-> > Currently, kernel only allows an event to redirect its output to other
-> > events of the same task.
-> > 
-> > This causes PERF_EVENT_IOC_SET_OUTPUT ioctl fails when an event is
-> > trying to redirect its output to other events in the same thread group.
+On Fri, Apr 22, 2011 at 10:26:36AM +0200, Ingo Molnar wrote:
 > 
-> Which is exactly what it should do, you should never be allowed to
-> redirect your events to that of another task, since that other task
-> might be running on another CPU.
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> The buffer code strictly assumes no concurrency, therefore its either
-> one task or one CPU.
+> > --- a/arch/x86/kernel/cpu/perf_event.c
+> > +++ b/arch/x86/kernel/cpu/perf_event.c
+> > @@ -1284,6 +1284,9 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+> >  
+> >  	cpuc = &__get_cpu_var(cpu_hw_events);
+> >  
+> > +	/* chipsets have their own quirks when to unmask */
+> > +	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> > +
+> 
+> What sense does this comment make in this place?
+> 
+> Yes, chipsets have their own quirks - but the generic handler is not one of 
+> them. So a more appropriate comment would be to point out why we want to unmask 
+> there - before PMU handling or after it, etc.
 
-Well, this is not the right fix, then the perf tool code need to be
-fixed.
+Yup.  I rework that.
 
+> 
+> Like the P4 quirk is documented a bit better:
+> 
+> > +        /*
+> > +	 * P4 quirks:
+> > +	 * - An overflown perfctr will assert its interrupt
+> > +	 *   until the OVF flag in its CCCR is cleared.
+> > +	 * - LVTPC is masked on interrupt and must be
+> > +	 *   unmasked by the LVTPC handler.
+> > +	 */
+> > +	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> 
+> (btw., there's whitespace damage above as well.)
+> 
+> Furthermore, the P4 comment should *explain* the quirk coherently, not just 
+> list random facts. What happens, why, where, and why do we unmask the LVTPC in 
+> that spot.
 
+Yeah, I copied that from the old watchdog code.  I'll revise that too and
+repost.
+
+Cheers,
+Don
