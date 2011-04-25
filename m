@@ -1,192 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1DYJce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 05:32:34 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34607 "EHLO
+	id S1758195Ab1DYJe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 05:34:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45602 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab1DYJcc (ORCPT
+	with ESMTP id S1758136Ab1DYJeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 05:32:32 -0400
+	Mon, 25 Apr 2011 05:34:25 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 4/4] blackfin: convert old cpumask API to new one
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        device-driver-devel@blackfin.uclinux.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110425182906.2673.A69D9226@jp.fujitsu.com>
-References: <20110425182906.2673.A69D9226@jp.fujitsu.com>
-Message-Id: <20110425183402.2683.A69D9226@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
+Subject: [PATCH] alpha: replace with new cpumask APIs
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110425183556.2686.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 18:32:30 +0900 (JST)
+Date: Mon, 25 Apr 2011 18:34:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-old cpu_xxx() APIs is planned to removed later. then, converted.
+We plan to remove cpu_xx() old APIs. Thus convert them.
+This patch has no functional change.
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>
-Cc: device-driver-devel@blackfin.uclinux.org
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: linux-alpha@vger.kernel.org
 ---
- arch/blackfin/kernel/nmi.c       |    8 ++++----
- arch/blackfin/kernel/setup.c     |    4 ++--
- arch/blackfin/mach-common/dpmc.c |    7 ++++---
- arch/blackfin/mach-common/smp.c  |   27 ++++++++++++++-------------
- 4 files changed, 24 insertions(+), 22 deletions(-)
+ arch/alpha/kernel/process.c   |    2 +-
+ arch/alpha/kernel/setup.c     |    2 +-
+ arch/alpha/kernel/smp.c       |    7 ++++---
+ arch/alpha/kernel/sys_dp264.c |    2 +-
+ arch/alpha/kernel/sys_titan.c |   13 +++++++------
+ 5 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/arch/blackfin/kernel/nmi.c b/arch/blackfin/kernel/nmi.c
-index 0b5f72f..7af8b70 100644
---- a/arch/blackfin/kernel/nmi.c
-+++ b/arch/blackfin/kernel/nmi.c
-@@ -145,16 +145,16 @@ int check_nmi_wdt_touched(void)
- {
- 	unsigned int this_cpu = smp_processor_id();
- 	unsigned int cpu;
-+	cpumask_t mask;
- 
--	cpumask_t mask = cpu_online_map;
--
-+	cpumask_copy(&mask, cpu_online_mask);
- 	if (!atomic_read(&nmi_touched[this_cpu]))
- 		return 0;
- 
- 	atomic_set(&nmi_touched[this_cpu], 0);
- 
--	cpu_clear(this_cpu, mask);
--	for_each_cpu_mask(cpu, mask) {
-+	cpumask_clear_cpu(this_cpu, &mask);
-+	for_each_cpu(cpu,&mask) {
- 		invalidate_dcache_range((unsigned long)(&nmi_touched[cpu]),
- 				(unsigned long)(&nmi_touched[cpu]));
- 		if (!atomic_read(&nmi_touched[cpu]))
-diff --git a/arch/blackfin/kernel/setup.c b/arch/blackfin/kernel/setup.c
-index 805c613..c00c87b 100644
---- a/arch/blackfin/kernel/setup.c
-+++ b/arch/blackfin/kernel/setup.c
-@@ -1326,7 +1326,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- static void *c_start(struct seq_file *m, loff_t *pos)
- {
- 	if (*pos == 0)
--		*pos = first_cpu(cpu_online_map);
-+		*pos = cpumask_first(cpu_online_mask);
- 	if (*pos >= num_online_cpus())
- 		return NULL;
- 
-@@ -1335,7 +1335,7 @@ static void *c_start(struct seq_file *m, loff_t *pos)
- 
- static void *c_next(struct seq_file *m, void *v, loff_t *pos)
- {
--	*pos = next_cpu(*pos, cpu_online_map);
-+	*pos = cpumask_next(*pos, cpu_online_mask);
- 
- 	return c_start(m, pos);
- }
-diff --git a/arch/blackfin/mach-common/dpmc.c b/arch/blackfin/mach-common/dpmc.c
-index 382099f..6ea2921 100644
---- a/arch/blackfin/mach-common/dpmc.c
-+++ b/arch/blackfin/mach-common/dpmc.c
-@@ -88,10 +88,11 @@ static void bfin_wakeup_cpu(void)
- {
- 	unsigned int cpu;
- 	unsigned int this_cpu = smp_processor_id();
--	cpumask_t mask = cpu_online_map;
-+	cpumask_t mask;
- 
--	cpu_clear(this_cpu, mask);
--	for_each_cpu_mask(cpu, mask)
-+	cpumask_copy(&mask, cpu_online_mask);
-+	cpumask_clear_cpu(this_cpu, &mask);
-+	for_each_cpu(cpu, &mask)
- 		platform_send_ipi_cpu(cpu, IRQ_SUPPLE_0);
- }
- 
-diff --git a/arch/blackfin/mach-common/smp.c b/arch/blackfin/mach-common/smp.c
-index 1fbd94c..f430bba 100644
---- a/arch/blackfin/mach-common/smp.c
-+++ b/arch/blackfin/mach-common/smp.c
-@@ -96,7 +96,7 @@ static void ipi_cpu_stop(unsigned int cpu)
- 	dump_stack();
- 	spin_unlock(&stop_lock);
- 
--	cpu_clear(cpu, cpu_online_map);
-+	set_cpu_online(cpu, false);
- 
- 	local_irq_disable();
- 
-@@ -146,7 +146,7 @@ static void ipi_call_function(unsigned int cpu, struct ipi_message *msg)
- 		 */
- 		resync_core_dcache();
+diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+index 3ec3506..838eac1 100644
+--- a/arch/alpha/kernel/process.c
++++ b/arch/alpha/kernel/process.c
+@@ -121,7 +121,7 @@ common_shutdown_1(void *generic_ptr)
+ 	/* Wait for the secondaries to halt. */
+ 	set_cpu_present(boot_cpuid, false);
+ 	set_cpu_possible(boot_cpuid, false);
+-	while (cpus_weight(cpu_present_map))
++	while (cpumask_weight(cpu_present_mask))
+ 		barrier();
  #endif
--		cpu_clear(cpu, *msg->call_struct.waitmask);
-+		cpumask_clear_cpu(cpu, msg->call_struct.waitmask);
+ 
+diff --git a/arch/alpha/kernel/setup.c b/arch/alpha/kernel/setup.c
+index d2634e4..fc89785 100644
+--- a/arch/alpha/kernel/setup.c
++++ b/arch/alpha/kernel/setup.c
+@@ -1257,7 +1257,7 @@ show_cpuinfo(struct seq_file *f, void *slot)
+ #ifdef CONFIG_SMP
+ 	seq_printf(f, "cpus active\t\t: %u\n"
+ 		      "cpu active mask\t\t: %016lx\n",
+-		       num_online_cpus(), cpus_addr(cpu_possible_map)[0]);
++		       num_online_cpus(), cpumask_bits(cpu_possible_mask)[0]);
+ #endif
+ 
+ 	show_cache_size (f, "L1 Icache", alpha_l1i_cacheshape);
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 5a621c6..d739703 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -451,7 +451,7 @@ setup_smp(void)
  	}
+ 
+ 	printk(KERN_INFO "SMP: %d CPUs probed -- cpu_present_map = %lx\n",
+-	       smp_num_probed, cpu_present_map.bits[0]);
++	       smp_num_probed, cpumask_bits(cpu_present_mask)[0]);
  }
  
-@@ -222,9 +222,10 @@ static inline void smp_send_message(cpumask_t callmap, unsigned long type,
- 	struct ipi_message_queue *msg_queue;
- 	struct ipi_message *msg;
- 	unsigned long flags, next_msg;
--	cpumask_t waitmask = callmap; /* waitmask is shared by all cpus */
-+	cpumask_t waitmask; /* waitmask is shared by all cpus */
+ /*
+@@ -629,8 +629,9 @@ smp_send_reschedule(int cpu)
+ void
+ smp_send_stop(void)
+ {
+-	cpumask_t to_whom = cpu_possible_map;
+-	cpu_clear(smp_processor_id(), to_whom);
++	cpumask_t to_whom;
++	cpumask_copy(&to_whom, cpu_possible_mask);
++	cpumask_clear_cpu(smp_processor_id(), &to_whom);
+ #ifdef DEBUG_IPI_MSG
+ 	if (hard_smp_processor_id() != boot_cpu_id)
+ 		printk(KERN_WARNING "smp_send_stop: Not on boot cpu.\n");
+diff --git a/arch/alpha/kernel/sys_dp264.c b/arch/alpha/kernel/sys_dp264.c
+index 5ac00fd..f885682 100644
+--- a/arch/alpha/kernel/sys_dp264.c
++++ b/arch/alpha/kernel/sys_dp264.c
+@@ -140,7 +140,7 @@ cpu_set_irq_affinity(unsigned int irq, cpumask_t affinity)
  
--	for_each_cpu_mask(cpu, callmap) {
-+	cpumask_copy(&waitmask, &callmap);
-+	for_each_cpu(cpu, &callmap) {
- 		msg_queue = &per_cpu(ipi_msg_queue, cpu);
- 		spin_lock_irqsave(&msg_queue->lock, flags);
- 		if (msg_queue->count < BFIN_IPI_MSGQ_LEN) {
-@@ -246,7 +247,7 @@ static inline void smp_send_message(cpumask_t callmap, unsigned long type,
- 	}
+ 	for (cpu = 0; cpu < 4; cpu++) {
+ 		unsigned long aff = cpu_irq_affinity[cpu];
+-		if (cpu_isset(cpu, affinity))
++		if (cpumask_test_cpu(cpu, &affinity))
+ 			aff |= 1UL << irq;
+ 		else
+ 			aff &= ~(1UL << irq);
+diff --git a/arch/alpha/kernel/sys_titan.c b/arch/alpha/kernel/sys_titan.c
+index fea0e46..6994407 100644
+--- a/arch/alpha/kernel/sys_titan.c
++++ b/arch/alpha/kernel/sys_titan.c
+@@ -65,10 +65,11 @@ titan_update_irq_hw(unsigned long mask)
+ 	register int bcpu = boot_cpuid;
  
- 	if (wait) {
--		while (!cpus_empty(waitmask))
-+		while (!cpumask_empty(&waitmask))
- 			blackfin_dcache_invalidate_range(
- 				(unsigned long)(&waitmask),
- 				(unsigned long)(&waitmask));
-@@ -265,9 +266,9 @@ int smp_call_function(void (*func)(void *info), void *info, int wait)
- 	cpumask_t callmap;
+ #ifdef CONFIG_SMP
+-	cpumask_t cpm = cpu_present_map;
++	cpumask_t cpm;
+ 	volatile unsigned long *dim0, *dim1, *dim2, *dim3;
+ 	unsigned long mask0, mask1, mask2, mask3, dummy;
  
- 	preempt_disable();
--	callmap = cpu_online_map;
--	cpu_clear(smp_processor_id(), callmap);
--	if (!cpus_empty(callmap))
-+	cpumask_copy(&callmap, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &callmap);
-+	if (!cpumask_empty(&callmap))
- 		smp_send_message(callmap, BFIN_IPI_CALL_FUNC, func, info, wait);
++	cpumask_copy(&cpm, cpu_present_mask);
+ 	mask &= ~isa_enable;
+ 	mask0 = mask & titan_cpu_irq_affinity[0];
+ 	mask1 = mask & titan_cpu_irq_affinity[1];
+@@ -84,10 +85,10 @@ titan_update_irq_hw(unsigned long mask)
+ 	dim1 = &cchip->dim1.csr;
+ 	dim2 = &cchip->dim2.csr;
+ 	dim3 = &cchip->dim3.csr;
+-	if (!cpu_isset(0, cpm)) dim0 = &dummy;
+-	if (!cpu_isset(1, cpm)) dim1 = &dummy;
+-	if (!cpu_isset(2, cpm)) dim2 = &dummy;
+-	if (!cpu_isset(3, cpm)) dim3 = &dummy;
++	if (!cpumask_test_cpu(0, &cpm)) dim0 = &dummy;
++	if (!cpumask_test_cpu(1, &cpm)) dim1 = &dummy;
++	if (!cpumask_test_cpu(2, &cpm)) dim2 = &dummy;
++	if (!cpumask_test_cpu(3, &cpm)) dim3 = &dummy;
  
- 	preempt_enable();
-@@ -284,8 +285,8 @@ int smp_call_function_single(int cpuid, void (*func) (void *info), void *info,
+ 	*dim0 = mask0;
+ 	*dim1 = mask1;
+@@ -137,7 +138,7 @@ titan_cpu_set_irq_affinity(unsigned int irq, cpumask_t affinity)
+ 	int cpu;
  
- 	if (cpu_is_offline(cpu))
- 		return 0;
--	cpus_clear(callmap);
--	cpu_set(cpu, callmap);
-+	cpumask_clear(&callmap);
-+	cpumask_set_cpu(cpu, &callmap);
- 
- 	smp_send_message(callmap, BFIN_IPI_CALL_FUNC, func, info, wait);
- 
-@@ -308,9 +309,9 @@ void smp_send_stop(void)
- 	cpumask_t callmap;
- 
- 	preempt_disable();
--	callmap = cpu_online_map;
--	cpu_clear(smp_processor_id(), callmap);
--	if (!cpus_empty(callmap))
-+	cpumask_copy(&callmap, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &callmap);
-+	if (!cpumask_empty(&callmap))
- 		smp_send_message(callmap, BFIN_IPI_CPU_STOP, NULL, NULL, 0);
- 
- 	preempt_enable();
+ 	for (cpu = 0; cpu < 4; cpu++) {
+-		if (cpu_isset(cpu, affinity))
++		if (cpumask_test_cpu(cpu, &affinity))
+ 			titan_cpu_irq_affinity[cpu] |= 1UL << irq;
+ 		else
+ 			titan_cpu_irq_affinity[cpu] &= ~(1UL << irq);
 -- 
 1.7.3.1
 
