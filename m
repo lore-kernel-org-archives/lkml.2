@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab1DYU2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:28:40 -0400
-Received: from 1wt.eu ([62.212.114.60]:34622 "EHLO 1wt.eu"
+	id S932638Ab1DYU2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:28:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:34681 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932524Ab1DYUZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:45 -0400
-Message-Id: <20110425200238.771602719@pcw.home.local>
+	id S932524Ab1DYU2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:28:48 -0400
+Message-Id: <20110425200239.379220122@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:45 +0200
+Date: Mon, 25 Apr 2011 22:04:59 +0200
 From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Patrick McHardy <kaber@trash.net>,
+To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        Greg KH <greg@kroah.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        debian-release@lists.debian.org,
+        "Adam D. Barratt" <adam@adam-barratt.org.uk>,
+        paulmck@linux.vnet.ibm.com, mikey@neuling.org,
+        benh@kernel.crashing.org, anton@samba.org,
+        dann frazier <dannf@dannf.org>, galak@kernel.crashing.org,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 133/173] bridge: netfilter: fix information leak
+Subject: [PATCH 147/173] powerpc/kexec: Add ifdef CONFIG_PPC_STD_MMU_64 to PPC64 code
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,34 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 
-commit d846f71195d57b0bbb143382647c2c6638b04c5a upstream.
+powerpc/kexec: Add ifdef CONFIG_PPC_STD_MMU_64 to PPC64 code
 
-Struct tmp is copied from userspace.  It is not checked whether the "name"
-field is NULL terminated.  This may lead to buffer overflow and passing
-contents of kernel stack as a module name to try_then_request_module() and,
-consequently, to modprobe commandline.  It would be seen by all userspace
-processes.
+This patch introduces PPC64 specific #ifdef bits from the upstream
+commit: b3df895aebe091b1657a42a8c859bd49fc96646b.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Reported-and-tested-by: dann frazier <dannf@dannf.org>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Anton Blanchard <anton@samba.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/bridge/netfilter/ebtables.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/kernel/crash.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -979,6 +979,8 @@ static int do_replace(struct net *net, v
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct ebt_counter))
- 		return -ENOMEM;
+--- a/arch/powerpc/kernel/crash.c
++++ b/arch/powerpc/kernel/crash.c
+@@ -163,6 +163,7 @@ static void crash_kexec_prepare_cpus(int
+ }
  
-+	tmp.name[sizeof(tmp.name) - 1] = 0;
-+
- 	countersize = COUNTER_OFFSET(tmp.nentries) * nr_cpu_ids;
- 	newinfo = vmalloc(sizeof(*newinfo) + countersize);
- 	if (!newinfo)
+ /* wait for all the CPUs to hit real mode but timeout if they don't come in */
++#ifdef CONFIG_PPC_STD_MMU_64
+ static void crash_kexec_wait_realmode(int cpu)
+ {
+ 	unsigned int msecs;
+@@ -187,6 +188,7 @@ static void crash_kexec_wait_realmode(in
+ 	}
+ 	mb();
+ }
++#endif
+ 
+ /*
+  * This function will be called by secondary cpus or by kexec cpu
+@@ -445,7 +447,9 @@ void default_machine_crash_shutdown(stru
+ 	crash_kexec_prepare_cpus(crashing_cpu);
+ 	cpu_set(crashing_cpu, cpus_in_crash);
+ 	crash_kexec_stop_spus();
++#ifdef CONFIG_PPC_STD_MMU_64
+ 	crash_kexec_wait_realmode(crashing_cpu);
++#endif
+ 	if (ppc_md.kexec_cpu_down)
+ 		ppc_md.kexec_cpu_down(1, 0);
+ }
 
 
