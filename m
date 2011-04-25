@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab1DYUxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:53:19 -0400
-Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:36326 "HELO
-	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932086Ab1DYUxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:53:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan>
-From: Roland Dreier <roland@kernel.org>
-Date: Mon, 25 Apr 2011 13:52:52 -0700
-X-Google-Sender-Auth: E6mq6jke9cGgq2w2Xz6aOb-pbHw
-Message-ID: <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com>
-Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932144Ab1DYUYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:22 -0400
+Received: from 1wt.eu ([62.212.114.60]:33962 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756870Ab1DYUYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:15 -0400
+Message-Id: <20110425200235.774417396@pcw.home.local>
+User-Agent: quilt/0.48-1
+Date: Mon, 25 Apr 2011 22:03:36 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Josh Hunt <johunt@akamai.com>,
+        Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 064/173] ext2: Fix link count corruption under heavy link+rename load
+In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 11:35 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
-> I notice periodic kernel crashes when using wireless.
-> Has anyone seen this using the rt2800usb driver?
->
-> When the host is on the LAN (supermicro+intel), there are zero crashes.
-> Since I don't have it in a location where I can use netdump over the
-> LAN/wire, see the picture below for the kernel crash/OOPS on the console:
->
-> http://home.comcast.net/~jpiszcz/20110425/kernel_crash.jpg [1.2m]
+2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
 
-Unfortunately a lot of the crash has scrolled away.  Is there any way
-you can change your console's text mode to, say, 50 lines so more info
-is visible?
+------------------
+
+From: Josh Hunt <johunt@akamai.com>
+
+commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
+
+vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
+i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
+it as reported and analyzed by Josh.
+
+In fact, there is no good reason to mess with i_nlink of the moved file.
+We did it presumably to simulate linking into the new directory and unlinking
+from an old one. But the practical effect of this is disputable because fsck
+can possibly treat file as being properly linked into both directories without
+writing any error which is confusing. So we just stop increment-decrement
+games with i_nlink which also fixes the corruption.
+
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ext2/namei.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+Index: longterm-2.6.27/fs/ext2/namei.c
+===================================================================
+--- longterm-2.6.27.orig/fs/ext2/namei.c	2011-01-23 10:52:28.000000000 +0100
++++ longterm-2.6.27/fs/ext2/namei.c	2011-04-25 15:14:36.125277949 +0200
+@@ -322,7 +322,6 @@
+ 		new_de = ext2_find_entry (new_dir, new_dentry, &new_page);
+ 		if (!new_de)
+ 			goto out_dir;
+-		inode_inc_link_count(old_inode);
+ 		ext2_set_link(new_dir, new_de, new_page, old_inode);
+ 		new_inode->i_ctime = CURRENT_TIME_SEC;
+ 		if (dir_de)
+@@ -334,12 +333,9 @@
+ 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
+ 				goto out_dir;
+ 		}
+-		inode_inc_link_count(old_inode);
+ 		err = ext2_add_link(new_dentry, old_inode);
+-		if (err) {
+-			inode_dec_link_count(old_inode);
++		if (err)
+ 			goto out_dir;
+-		}
+ 		if (dir_de)
+ 			inode_inc_link_count(new_dir);
+ 	}
+@@ -347,12 +343,11 @@
+ 	/*
+ 	 * Like most other Unix systems, set the ctime for inodes on a
+  	 * rename.
+-	 * inode_dec_link_count() will mark the inode dirty.
+ 	 */
+ 	old_inode->i_ctime = CURRENT_TIME_SEC;
++	mark_inode_dirty(old_inode);
+ 
+ 	ext2_delete_entry (old_de, old_page);
+-	inode_dec_link_count(old_inode);
+ 
+ 	if (dir_de) {
+ 		ext2_set_link(old_inode, dir_de, dir_page, new_dir);
+
+
