@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab1DYAf5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 20:35:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43569 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757850Ab1DYAfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 20:35:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=e79GaQ5Gk0ESEAtoB8QzITMy7h8dpGyEzi3SWznHbMG2ntLQPwvjOA+JTYllja3n6n
-         fjWpTcJ2eccH/DFarWg29XPH3EiR7DBp360tL7X2BTLf7JXVJkNVxWB4pmSSMEYZmnf7
-         vokFapqEHE2U+mKCpQUh7SVo0cBGy9EtnLDCc=
-From: Aaron Faanes <dafrito@gmail.com>
-To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Faanes <dafrito@gmail.com>
-Subject: [PATCH 0/3] Documentation/filesystems/inotify.txt edits
-Date: Sun, 24 Apr 2011 19:35:01 -0500
-Message-Id: <1303691704-5726-1-git-send-email-dafrito@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1757955Ab1DYApN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 20:45:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45446 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757856Ab1DYApJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 20:45:09 -0400
+Date: Sun, 24 Apr 2011 17:45:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rp@svcs.cs.pdx.edu,
+        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        ltt-dev@lists.casi.polymtl.ca
+Subject: LPC2011 Scaling Micro Conf
+Message-ID: <20110425004504.GA14037@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some minor proofreading changes in inotify.txt.
+Hello!
 
-Aaron Faanes (3):
-  Documentation: remove some spurious spaces in inotify.txt
-  Documentation: Correct a couple missing words in inotify.txt
-  Documentation: Reword example about inotify's fd-per-instance design
+Given the increasing numbers of CPUs on low-cost servers as well as
+the appearance of SMP hand-held battery-powered devices, Linux Plumbers
+2011 will feature a Scaling track, with topics including the following:
 
- Documentation/filesystems/inotify.txt |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+- What can the kernel do to help applications perform and scale better?
+- What can applications do to help the kernel perform and scale better?
+- Memory footprint:
+  + 100MB here, 100MB there, pretty soon you are talking real memory!
+  + Improving performance by decreasing icache and dcache footprint.
+- Limits to scalability:
+  + Technological limitations, especially hardware.
+  + Complexity/maintainability limitations.
+- Handling of non-CPU computational hardware (GPGPUs, crypto HW, etc.)
+  + Can the kernel make good use of non-CPU computational hardware?
+  + How best to enable user applications to use them?
+- Dealing with the numerous remaining "little kernel locks"
 
--- 
-1.7.4.4
+The intended audience is developers interested in performance and
+scalability throughout the Linux plumbing.
 
+The deadline is April 30th.  Please submit your proposals, whether to
+Scaling or to other microconferences, at:
+
+	http://www.linuxplumbersconf.org/2011/ocw/events/LPC2011MC/proposals
+
+The general track is also open for submissions until April 30th:
+
+	http://www.linuxplumbersconf.org/2011/ocw/events/LPC2011/proposals
+
+Either way, we look forward to seeing your submissions!
+
+							Thanx, Paul
