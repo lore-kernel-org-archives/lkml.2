@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab1DYUYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:24:55 -0400
-Received: from 1wt.eu ([62.212.114.60]:34272 "EHLO 1wt.eu"
+	id S932754Ab1DYUl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:41:56 -0400
+Received: from 1wt.eu ([62.212.114.60]:34344 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932248Ab1DYUYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:43 -0400
-Message-Id: <20110425200236.775342539@pcw.home.local>
+	id S932284Ab1DYUYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:54 -0400
+Message-Id: <20110425200237.599188976@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:59 +0200
+Date: Mon, 25 Apr 2011 22:04:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Aaro Koskinen <aaro.koskinen@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 087/173] RDMA/cma: Fix crash in request handlers
+Subject: [PATCH 106/173] procfs: fix /proc/<pid>/maps heap check
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,131 +25,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Hefty <sean.hefty@intel.com>
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
 
-commit 25ae21a10112875763c18b385624df713a288a05 upstream.
+commit 0db0c01b53a1a421513f91573241aabafb87802a upstream.
 
-Doug Ledford and Red Hat reported a crash when running the rdma_cm on
-a real-time OS.  The crash has the following call trace:
+The current code fails to print the "[heap]" marking if the heap is split
+into multiple mappings.
 
-    cm_process_work
-       cma_req_handler
-          cma_disable_callback
-          rdma_create_id
-             kzalloc
-             init_completion
-          cma_get_net_info
-          cma_save_net_info
-          cma_any_addr
-             cma_zero_addr
-          rdma_translate_ip
-             rdma_copy_addr
-          cma_acquire_dev
-             rdma_addr_get_sgid
-             ib_find_cached_gid
-             cma_attach_to_dev
-          ucma_event_handler
-             kzalloc
-             ib_copy_ah_attr_to_user
-          cma_comp
+Fix the check so that the marking is displayed in all possible cases:
+	1. vma matches exactly the heap
+	2. the heap vma is merged e.g. with bss
+	3. the heap vma is splitted e.g. due to locked pages
 
-[ preempted ]
+Test cases. In all cases, the process should have mapping(s) with
+[heap] marking:
 
-    cma_write
-        copy_from_user
-        ucma_destroy_id
-           copy_from_user
-           _ucma_find_context
-           ucma_put_ctx
-           ucma_free_ctx
-              rdma_destroy_id
-                 cma_exch
-                 cma_cancel_operation
-                 rdma_node_get_transport
+	(1) vma matches exactly the heap
 
-        rt_mutex_slowunlock
-        bad_area_nosemaphore
-        oops_enter
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/types.h>
 
-They were able to reproduce the crash multiple times with the
-following details:
+	int main (void)
+	{
+		if (sbrk(4096) != (void *)-1) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
 
-    Crash seems to always happen on the:
-            mutex_unlock(&conn_id->handler_mutex);
-    as conn_id looks to have been freed during this code path.
+	# ./test1
+	check /proc/553/maps
+	[1] + Stopped                    ./test1
+	# cat /proc/553/maps | head -4
+	00008000-00009000 r-xp 00000000 01:00 3113640    /test1
+	00010000-00011000 rw-p 00000000 01:00 3113640    /test1
+	00011000-00012000 rw-p 00000000 00:00 0          [heap]
+	4006f000-40070000 rw-p 00000000 00:00 0
 
-An examination of the code shows that a race exists in the request
-handlers.  When a new connection request is received, the rdma_cm
-allocates a new connection identifier.  This identifier has a single
-reference count on it.  If a user calls rdma_destroy_id() from another
-thread after receiving a callback, rdma_destroy_id will proceed to
-destroy the id and free the associated memory.  However, the request
-handlers may still be in the process of running.  When control returns
-to the request handlers, they can attempt to access the newly created
-identifiers.
+	(2) the heap vma is merged
 
-Fix this by holding a reference on the newly created rdma_cm_id until
-the request handler is through accessing it.
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/types.h>
 
-Signed-off-by: Sean Hefty <sean.hefty@intel.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+	char foo[4096] = "foo";
+	char bar[4096];
+
+	int main (void)
+	{
+		if (sbrk(4096) != (void *)-1) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
+
+	# ./test2
+	check /proc/556/maps
+	[2] + Stopped                    ./test2
+	# cat /proc/556/maps | head -4
+	00008000-00009000 r-xp 00000000 01:00 3116312    /test2
+	00010000-00012000 rw-p 00000000 01:00 3116312    /test2
+	00012000-00014000 rw-p 00000000 00:00 0          [heap]
+	4004a000-4004b000 rw-p 00000000 00:00 0
+
+	(3) the heap vma is splitted (this fails without the patch)
+
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/types.h>
+
+	int main (void)
+	{
+		if ((sbrk(4096) != (void *)-1) && !mlockall(MCL_FUTURE) &&
+		    (sbrk(4096) != (void *)-1)) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
+
+	# ./test3
+	check /proc/559/maps
+	[1] + Stopped                    ./test3
+	# cat /proc/559/maps|head -4
+	00008000-00009000 r-xp 00000000 01:00 3119108    /test3
+	00010000-00011000 rw-p 00000000 01:00 3119108    /test3
+	00011000-00012000 rw-p 00000000 00:00 0          [heap]
+	00012000-00013000 rw-p 00000000 00:00 0          [heap]
+
+It looks like the bug has been there forever, and since it only results in
+some information missing from a procfile, it does not fulfil the -stable
+"critical issue" criteria.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/cma.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ fs/proc/task_mmu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/core/cma.c
-+++ b/drivers/infiniband/core/cma.c
-@@ -1138,6 +1138,11 @@ static int cma_req_handler(struct ib_cm_
- 	cm_id->context = conn_id;
- 	cm_id->cm_handler = cma_ib_handler;
- 
-+	/*
-+	 * Protect against the user destroying conn_id from another thread
-+	 * until we're done accessing it.
-+	 */
-+	atomic_inc(&conn_id->refcount);
- 	ret = conn_id->id.event_handler(&conn_id->id, &event);
- 	if (!ret) {
- 		/*
-@@ -1150,8 +1155,10 @@ static int cma_req_handler(struct ib_cm_
- 			ib_send_cm_mra(cm_id, CMA_CM_MRA_SETTING, NULL, 0);
- 		mutex_unlock(&lock);
- 		mutex_unlock(&conn_id->handler_mutex);
-+		cma_deref_id(conn_id);
- 		goto out;
- 	}
-+	cma_deref_id(conn_id);
- 
- 	/* Destroy the CM ID by returning a non-zero value. */
- 	conn_id->cm_id.ib = NULL;
-@@ -1353,17 +1360,25 @@ static int iw_conn_req_handler(struct iw
- 	event.param.conn.private_data_len = iw_event->private_data_len;
- 	event.param.conn.initiator_depth = attr.max_qp_init_rd_atom;
- 	event.param.conn.responder_resources = attr.max_qp_rd_atom;
-+
-+	/*
-+	 * Protect against the user destroying conn_id from another thread
-+	 * until we're done accessing it.
-+	 */
-+	atomic_inc(&conn_id->refcount);
- 	ret = conn_id->id.event_handler(&conn_id->id, &event);
- 	if (ret) {
- 		/* User wants to destroy the CM ID */
- 		conn_id->cm_id.iw = NULL;
- 		cma_exch(conn_id, CMA_DESTROYING);
- 		mutex_unlock(&conn_id->handler_mutex);
-+		cma_deref_id(conn_id);
- 		rdma_destroy_id(&conn_id->id);
- 		goto out;
- 	}
- 
- 	mutex_unlock(&conn_id->handler_mutex);
-+	cma_deref_id(conn_id);
- 
- out:
- 	if (dev)
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -244,8 +244,8 @@ static void show_map_vma(struct seq_file
+ 		const char *name = arch_vma_name(vma);
+ 		if (!name) {
+ 			if (mm) {
+-				if (vma->vm_start <= mm->start_brk &&
+-						vma->vm_end >= mm->brk) {
++				if (vma->vm_start <= mm->brk &&
++						vma->vm_end >= mm->start_brk) {
+ 					name = "[heap]";
+ 				} else if (vma->vm_start <= mm->start_stack &&
+ 					   vma->vm_end >= mm->start_stack) {
 
 
