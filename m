@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab1DYUXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:23:41 -0400
-Received: from 1wt.eu ([62.212.114.60]:33790 "EHLO 1wt.eu"
+	id S1756087Ab1DYUXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:23:34 -0400
+Received: from 1wt.eu ([62.212.114.60]:33762 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755936Ab1DYUXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:23:39 -0400
-Message-Id: <20110425200234.165561470@pcw.home.local>
+	id S1754763Ab1DYUXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:23:30 -0400
+Message-Id: <20110425200234.035231279@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:02:59 +0200
+Date: Mon, 25 Apr 2011 22:02:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 027/173] hostap_cs: fix sleeping function called from invalid context
+Subject: [PATCH 024/173] powerpc: Fix some 6xx/7xxx CPU setup functions
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,66 +23,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 4e5518ca53be29c1ec3c00089c97bef36bfed515 upstream.
+commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
 
-pcmcia_request_irq() and pcmcia_enable_device() are intended
-to be called from process context (first function allocate memory
-with GFP_KERNEL, second take a mutex). We can not take spin lock
-and call them.
+Some of those functions try to adjust the CPU features, for example
+to remove NAP support on some revisions. However, they seem to use
+r5 as an index into the CPU table entry, which might have been right
+a long time ago but no longer is. r4 is the right register to use.
 
-It's safe to move spin lock after pcmcia_enable_device() as we
-still hold off IRQ until dev->base_addr is 0 and driver will
-not proceed with interrupts when is not ready.
+This probably caused some off behaviours on some PowerMac variants
+using 750cx or 7455 processor revisions.
 
-Patch resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=643758
-
-Reported-and-tested-by: rbugz@biobind.com
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/wireless/hostap/hostap_cs.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ arch/powerpc/kernel/cpu_setup_6xx.S |   40 ++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
---- a/drivers/net/wireless/hostap/hostap_cs.c
-+++ b/drivers/net/wireless/hostap/hostap_cs.c
-@@ -662,12 +662,6 @@ static int prism2_config(struct pcmcia_d
- 	link->dev_node = &hw_priv->node;
+Index: longterm-2.6.27/arch/powerpc/kernel/cpu_setup_6xx.S
+===================================================================
+--- longterm-2.6.27.orig/arch/powerpc/kernel/cpu_setup_6xx.S	2011-01-23 10:52:08.000000000 +0100
++++ longterm-2.6.27/arch/powerpc/kernel/cpu_setup_6xx.S	2011-04-25 12:34:56.741279086 +0200
+@@ -17,65 +17,65 @@
+ #include <asm/cache.h>
  
- 	/*
--	 * Make sure the IRQ handler cannot proceed until at least
--	 * dev->base_addr is initialized.
--	 */
--	spin_lock_irqsave(&local->irq_init_lock, flags);
--
--	/*
- 	 * Allocate an interrupt line.  Note that this does not assign a
- 	 * handler to the interrupt, unless the 'Handler' member of the
- 	 * irq structure is initialized.
-@@ -690,9 +684,10 @@ static int prism2_config(struct pcmcia_d
- 	CS_CHECK(RequestConfiguration,
- 		 pcmcia_request_configuration(link, &link->conf));
+ _GLOBAL(__setup_cpu_603)
+-	mflr	r4
++	mflr	r5
+ BEGIN_FTR_SECTION
+ 	bl	__init_fpu_registers
+ END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
+ 	bl	setup_common_caches
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_604)
+-	mflr	r4
++	mflr	r5
+ 	bl	setup_common_caches
+ 	bl	setup_604_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750cx)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	bl	setup_750cx
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750fx)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	bl	setup_750fx
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_7400)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_7400_workarounds
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_7410)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_7410_workarounds
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	li	r3,0
+ 	mtspr	SPRN_L2CR2,r3
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_745x)
+-	mflr	r4
++	mflr	r5
+ 	bl	setup_common_caches
+ 	bl	setup_745x_specifics
+-	mtlr	r4
++	mtlr	r5
+ 	blr
  
-+	/* IRQ handler cannot proceed until at dev->base_addr is initialized */
-+	spin_lock_irqsave(&local->irq_init_lock, flags);
- 	dev->irq = link->irq.AssignedIRQ;
- 	dev->base_addr = link->io.BasePort1;
--
- 	spin_unlock_irqrestore(&local->irq_init_lock, flags);
+ /* Enable caches for 603's, 604, 750 & 7400 */
+@@ -189,10 +189,10 @@
+ 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
+ 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
+ 	bnelr
+-	lwz	r6,CPU_SPEC_FEATURES(r5)
++	lwz	r6,CPU_SPEC_FEATURES(r4)
+ 	li	r7,CPU_FTR_CAN_NAP
+ 	andc	r6,r6,r7
+-	stw	r6,CPU_SPEC_FEATURES(r5)
++	stw	r6,CPU_SPEC_FEATURES(r4)
+ 	blr
  
- 	/* Finally, report what we've done */
-@@ -724,7 +719,6 @@ static int prism2_config(struct pcmcia_d
- 	return ret;
+ /* 750fx specific
+@@ -220,12 +220,12 @@
+ 	andis.	r11,r11,L3CR_L3E@h
+ 	beq	1f
+ END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
+-	lwz	r6,CPU_SPEC_FEATURES(r5)
++	lwz	r6,CPU_SPEC_FEATURES(r4)
+ 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
+ 	beq	1f
+ 	li	r7,CPU_FTR_CAN_NAP
+ 	andc	r6,r6,r7
+-	stw	r6,CPU_SPEC_FEATURES(r5)
++	stw	r6,CPU_SPEC_FEATURES(r4)
+ 1:
+ 	mfspr	r11,SPRN_HID0
  
-  cs_failed:
--	spin_unlock_irqrestore(&local->irq_init_lock, flags);
- 	cs_error(link, last_fn, last_ret);
- 
-  failed:
 
 
