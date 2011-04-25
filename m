@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab1DYJlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 05:41:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35163 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab1DYJlM (ORCPT
+	id S1758206Ab1DYJhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 05:37:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43556 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758140Ab1DYJhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 05:41:12 -0400
+	Mon, 25 Apr 2011 05:37:36 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>,
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 2/3] m32r: fix spin_lock_irqsave() misuse
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] cpumask: convert cpumask_of_cpu() with cpumask_of()
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20110425184245.2699.A69D9226@jp.fujitsu.com>
+        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org
+In-Reply-To: <20110425183810.268B.A69D9226@jp.fujitsu.com>
+References: <20110425183810.268B.A69D9226@jp.fujitsu.com>
+Message-Id: <20110425183908.268F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 18:41:10 +0900 (JST)
+Date: Mon, 25 Apr 2011 18:37:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adapt the code to new api fashion. 
+spin_lock_irqsave() require unsigned long. fix it.
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-m32r@ml.linux-m32r.org
 ---
- kernel/kthread.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/tty/serial/m32r_sio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3b34d27..4102518 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -202,7 +202,7 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
- 		return;
- 	}
- 
--	p->cpus_allowed = cpumask_of_cpu(cpu);
-+	cpumask_copy(&p->cpus_allowed, cpumask_of(cpu));
- 	p->rt.nr_cpus_allowed = 1;
- 	p->flags |= PF_THREAD_BOUND;
+diff --git a/drivers/tty/serial/m32r_sio.c b/drivers/tty/serial/m32r_sio.c
+index bea5c21..84db732 100644
+--- a/drivers/tty/serial/m32r_sio.c
++++ b/drivers/tty/serial/m32r_sio.c
+@@ -907,9 +907,10 @@ static int m32r_sio_request_port(struct uart_port *port)
+ 	return ret;
  }
+ 
+-static void m32r_sio_config_port(struct uart_port *port, int flags)
++static void m32r_sio_config_port(struct uart_port *port, int unused)
+ {
+ 	struct uart_sio_port *up = (struct uart_sio_port *)port;
++	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&up->port.lock, flags);
+ 
 -- 
 1.7.3.1
 
