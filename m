@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab1DYLI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 07:08:59 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41691 "EHLO gir.skynet.ie"
+	id S1758421Ab1DYLOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 07:14:12 -0400
+Received: from csamuel.org ([74.50.50.137]:34959 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375Ab1DYLI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 07:08:58 -0400
-Date: Mon, 25 Apr 2011 12:08:47 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
-Message-ID: <20110425110847.GA4969@csn.ul.ie>
-References: <20110414211656.GB1700@cmpxchg.org>
- <20110419093118.GB23041@csn.ul.ie>
- <20110419233905.GA2333@cmpxchg.org>
- <20110420094647.GB1306@csn.ul.ie>
- <20110423020835.GM2333@cmpxchg.org>
+	id S1757375Ab1DYLOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 07:14:11 -0400
+From: Chris Samuel <chris@csamuel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: FW: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
+Date: Mon, 25 Apr 2011 21:13:49 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: Thomas Meyer <thomas@m3y3r.de>, Yuhong Bao <yuhongbao_386@hotmail.com>,
+        hpa@zytor.com, alan@lxorguk.ukuu.org.uk, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+References: <201104222333.25546.chris@csamuel.org> <201104241022.17009.chris@csamuel.org> <BANLkTi=jKhd5foP=Avdv4cGUntbSMSDZrg@mail.gmail.com>
+In-Reply-To: <BANLkTi=jKhd5foP=Avdv4cGUntbSMSDZrg@mail.gmail.com>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
+	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
+	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
+	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110423020835.GM2333@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart2988556.4uPfsocj85";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104252113.54049.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 23, 2011 at 04:08:35AM +0200, Johannes Weiner wrote:
-> On Wed, Apr 20, 2011 at 10:46:47AM +0100, Mel Gorman wrote:
-> > On Wed, Apr 20, 2011 at 01:39:05AM +0200, Johannes Weiner wrote:
-> > > On Tue, Apr 19, 2011 at 10:31:18AM +0100, Mel Gorman wrote:
-> > > > On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
-> > > > > Space in a vmap block that was once allocated is considered dirty and
-> > > > > not made available for allocation again before the whole block is
-> > > > > recycled.
-> > > > > 
-> > > > > The result is that free space within a vmap block is always contiguous
-> > > > > and the allocation bitmap can be replaced by remembering the offset of
-> > > > > free space in the block.
-> > > > > 
-> > > > > The fragmented block purging was never invoked from vb_alloc() either,
-> > > > > as it skips blocks that do not have enough free space for the
-> > > > > allocation in the first place.  According to the above, it is
-> > > > > impossible for a block to have enough free space and still fail the
-> > > > > allocation.  Thus, this dead code is removed.  Partially consumed
-> > > > > blocks will be reclaimed anyway when an attempt is made to allocate a
-> > > > > new vmap block altogether and no free space is found.
-> > > > > 
-> > > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > > Cc: Nick Piggin <npiggin@kernel.dk>
-> > > > > Cc: Mel Gorman <mel@csn.ul.ie>
-> > > > > Cc: Hugh Dickins <hughd@google.com>
-> > > > 
-> > > > I didn't see a problem with the patch per-se but I wonder if your patch
-> > > > is the intended behaviour. It looks like the intention was that dirty
-> > > > blocks could be flushed from the TLB and made available for allocations
-> > > > leading to the possibility of fragmented vmap blocks.
-> > > >
-> > > > It's this check that is skipping over blocks without taking dirty into
-> > > > account.
-> > > > 
-> > > >   		spin_lock(&vb->lock);
-> > > >  		if (vb->free < 1UL << order)
-> > > >  			goto next;
-> > > > 
-> > > > It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
-> > > > but is there any possibility that this is what should be fixed instead?
-> > > 
-> > > I would like to emphasize that the quoted check only made it clear
-> > > that the allocation bitmap is superfluous.  There is no partial
-> > > recycling of a block with live allocations, not even before this
-> > > commit.
-> > 
-> > You're right in that the allocation bitmap does look superfluous. I was
-> > wondering if it was meant to be doing something useful.
-> 
-> Ok, just wanted to make sure we are on the same page.
-> 
-> > > Theoretically, we could end up with all possible vmap blocks being
-> > > pinned by single allocations with most of their area being dirty and
-> > > not reusable.  But I believe this is unlikely to happen.
-> > > 
-> > > Would you be okay with printing out block usage statistics on
-> > > allocation errors for the time being, so we can identify this case if
-> > > problems show up?
-> > 
-> > It'd be interesting but for the purposes of this patch I think it
-> > would be more useful to see the results of some benchmark that is vmap
-> > intensive. Something directory intensive running on XFS should do the
-> > job just to confirm no regression, right? A profile might indicate
-> > how often we end up scanning the full list, finding it dirty and
-> > calling new_vmap_block but even if something odd showed up there,
-> > it would be a new patch.
-> 
-> Ok, I am still a bit confused.  You say 'regression' in the overall
-> flow of vmap block allocation, but my patch does not change that.
-> Which kernel versions do you want to have compared?
-> 
+--nextPart2988556.4uPfsocj85
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-I should have been clearer. I was checking to see if we spend
-much time scanning to find a clean block or allocating new blocks
-and if that overhead could be reduced by flushing the TLB sooner
-(obvious the savings would have to exceed the cost of the TLB flush
-itself). If flushing sooner would help then we want the alloc bitmap
-to hang around.
+Hello Yinghai,
 
-> Profiling the algorithm in general sounds like a good idea and I shall
-> give it a go.
-> 
-> > > And consider this patch an optimization/simplification of a status quo
-> > > that does not appear problematic?  We can still revert it and
-> > > implement live block recycling when it turns out to be necessary.
-> > 
-> > I see no problem with your patch so;
-> > 
-> > Acked-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> Thanks!
-> 
+On Sun, 24 Apr 2011 06:46:03 PM Yinghai Lu wrote:
 
--- 
-Mel Gorman
-SUSE Labs
+> You may need to your .config to have
+> CONFIG_SMP
+> CONFIG_PCI
+> CONFIG_X86_MPPARSE
+> set to use mptable from BIOS.
+
+Thanks for that - I already have all 3 of those set I'm afraid.
+
+All the best,
+Chris
+=2D-=20
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+
+This email may come with a PGP signature as a file. Do not panic.
+=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+
+--nextPart2988556.4uPfsocj85
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUATbVXbo1yjaOTJg85AQIkUwf/d2EQ8/RGHawlbeigWwQUohtNlUXHRum8
+zsWFtKaISYoyWZ8hxGaaC7dfPGAisK4Yq5BTtLqeKRwzoLUA1VbubwF78ZWLK4+A
+pjM4JUMM11sazhykGYz23FKbI8u9qIQUBp7WpitcsvediOY6MQ9wCsAhFuSyMbHO
+x5u46wfIv1zPyAhcxN6kGOk/4ChJiwZnt9abHtzAqeMixlYy07rLxc+NA9YmxFdh
+u+swAT0DtQvqUFUo5zszbj18WUNCE9ZBQXF6vq6FrbLrwGv06iCRrPCdhaEVl87O
+BkwHbA57xJcFsfPpVfnMFWao2xbVfaFNEesQRQItIOM3oLGGkGfZhw==
+=T4yI
+-----END PGP SIGNATURE-----
+
+--nextPart2988556.4uPfsocj85--
