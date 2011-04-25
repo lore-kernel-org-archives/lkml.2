@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab1DYRVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:21:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36904 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758686Ab1DYRVP convert rfc822-to-8bit (ORCPT
+	id S1758688Ab1DYRZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 13:25:31 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:51485 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758551Ab1DYRZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:21:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XJ7yIcBHXiWY+PC7IKaIxFWhqhvLvKYjM5kJPTN+koKk5QKQV/lNAaEEVsH8aaKqsh
-         A6IqmoW23sYzGp1Xb6XO5ykfOqd7AKbZprfO1NfqQWo4/+NkWA4oh97MIyZOhu/CSfsz
-         2n3w0nXMeTgOIwDeGou8NhoAhcCPV/S8xLA+I=
+	Mon, 25 Apr 2011 13:25:29 -0400
+X-Greylist: delayed 756 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Apr 2011 13:25:29 EDT
+Date: Mon, 25 Apr 2011 13:12:15 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+In-Reply-To: <20110422080604.GA22611@elte.hu>
+Message-ID: <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org> <1303407662-15564-2-git-send-email-acme@infradead.org> <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1303315216-14852-1-git-send-email-linus.walleij@stericsson.com>
-References: <1303315216-14852-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 25 Apr 2011 19:21:14 +0200
-Message-ID: <BANLkTi=o-2ML0MxNXa0SsFm8JQ1D+_4Zxw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add a custom configuration mechanism to gpiolib
-From: Stijn Devriendt <highguy@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 6:00 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-> index 32720ba..fa92e50 100644
-> --- a/include/linux/gpio.h
-> +++ b/include/linux/gpio.h
-> @@ -3,6 +3,60 @@
->
->  /* see Documentation/gpio.txt */
->
-> +/*
-> + * Bias modes for GPIOs - if you have more biases, add them here or provide
-> + * custom enumerators for your driver if you find they are not generally
-> + * useful.
-> + *
-> + * GPIO_CONFIG_BIAS_UNKNOWN: this bias mode is not known to us
-> + * GPIO_CONFIG_BIAS_FLOAT: no specific bias, the GPIO will float or state
-> + *     is not controlled by software
-> + * GPIO_CONFIG_BIAS_PULL_UP: the GPIO will be pulled up (usually with high
-> + *     impedance to VDD)
-> + * GPIO_CONFIG_BIAS_PULL_DOWN: the GPIO will be pulled down (usually with high
-> + *     impedance to GROUND)
-> + * GPIO_BIAS_HIGH: the GPIO will be wired high, connected to VDD
-> + * GPIO_BIAS_GROUND: the GPIO will be grounded, connected to GROUND
-> + */
-> +#define GPIO_CONFIG_BIAS_UNKNOWN       0x1000
-> +#define GPIO_CONFIG_BIAS_FLOAT         0x1001
-> +#define GPIO_CONFIG_BIAS_PULL_UP       0x1002
-> +#define GPIO_CONFIG_BIAS_PULL_DOWN     0x1003
-> +#define GPIO_CONFIG_BIAS_HIGH          0x1004
-> +#define GPIO_CONFIG_BIAS_GROUND                0x1005
-> +
-Why contain all values in the config rather than
-// Actual config
-#define GPIO_CONFIG_BIAS 0x1
 
-#define GPIO_BIAS_UNKNOWN 0x0
-#define GPIO_BIAS_FLOAT 0x1
-#define GPIO_BIAS_PULL_UP       0x2
-#define GPIO_BIAS_PULL_DOWN     0x3
-#define GPIO_BIAS_HIGH          0x4
-#define GPIO_BIAS_GROUND                0x5
-#define GPIO_BIAS_ARCH_SPECIFIC 0x100
+sorry for the late reply on this thread, it happened inconveniently over 
+the long weekend.
 
-#define GPIO_CONFIG_DRIVE 0x2
-/// omitted rest
 
-#define GPIO_CONFIG_COMPLEX_SAMPLE 0x3
-struct gpio_complex_sample_config
-{
-  // whatever here
-};
+On Fri, 22 Apr 2011, Ingo Molnar wrote:
 
-// code:
-gpio_config(10, GPIO_CONFIG_BIAS, GPIO_BIAS_FLOAT);
-struct gpio_complex_sample_config config = { ... };
-gpio_config(10, GPIO_CONFIG_COMPLEX_SAMPLE, &config);
+> But this kind of usability is absolutely unacceptable - users should not
+> be expected to type in magic, CPU and model specific incantations to get
+> access to useful hardware functionality.
 
-Other than that I definitely like the heading of this.
+That's why people use libpfm4.  or PAPI.  And they do.
 
-I think a nice end-goal would be to allow a driver/board code to do
-something like
-  pin = of_gpio_request_setup(device_node, index);
-  pin = gpio_request(gpio_platform_data);
-  gpio_request(10, list_of_config_options);
-to obtain a fully setup gpio pin where configuration is passed
-transparently through platform-data, device-tree or built up by
-the driver/board-code.
+Current PAPI snapshots support offcore response on recent git kernels.
+With full names, no hex values, thanks to libpfm4.
 
-Device-tree support can be added on top by having (reusable) generic
-and custom xlate functions (perhaps referring to the generic ones).
-Something similar could probably also be implemented for platform-data.
+All the world is not perf.
 
-Regards,
-Stijn
+> The proper solution is to expose useful offcore functionality via
+> generalized events - that way users do not have to care which specific
+> CPU model they are using, they can use the conceptual event and not some
+> model specific quirky hexa number.
+
+No no no no.
+
+Blocking access to raw events is the wrong idea.  If anything, the whole 
+"generic events" thing in the kernel should be ditched.  Wrong events are 
+used at times (see AMD branch events a few releases back, now Nehalem 
+cache events).  This all belongs in userspace, as was pointed out at the 
+start.  The kernel has no business telling users which perf events are 
+interesting, or limiting them!  What is this, windows?
+
+If you do block access to any raw events, we're going to have to start 
+recommending people ditch perf_events and start patching the kernel with 
+perfctr again.  We already do for P4/netburst users, as Pentium 4 support 
+is currently hosed due to NMI event conflicts.
+
+Also with perfctr it's much easier to get low-latency access to the 
+counters.  See:
+  http://web.eecs.utk.edu/~vweaver1/projects/papi-cost/
+
+Vince
