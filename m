@@ -1,116 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab1DYStA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 14:49:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32626 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758810Ab1DYSs6 convert rfc822-to-8bit (ORCPT
+	id S1758864Ab1DYSw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 14:52:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7176 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758797Ab1DYSw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 14:48:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=T9XWM+Potr28FHEnJTBN/rGhQYp/Fbjh2oAZ3OXNAsxDb7SOLlUENuny1EySp6dKeg
-         6YumbwTHNBn6o1R2GpkA==
+	Mon, 25 Apr 2011 14:52:56 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6327"; a="87535814"
+Message-ID: <4DB5C307.1060507@codeaurora.org>
+Date: Mon, 25 Apr 2011 11:52:55 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1303564561.2298.62.camel@twins>
-References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
-	<20110422092322.GA1948@elte.hu>
-	<BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
-	<20110422105211.GB1948@elte.hu>
-	<20110422165007.GA18401@vps.sharma-home.net>
-	<20110422203022.GA20573@elte.hu>
-	<20110422203222.GA21219@elte.hu>
-	<20110423000347.GC9328@tassilo.jf.intel.com>
-	<1303545012.2298.44.camel@twins>
-	<BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
-	<1303564561.2298.62.camel@twins>
-Date: Mon, 25 Apr 2011 20:48:12 +0200
-Message-ID: <BANLkTin=2spXUKe=X_LBtuzkj80Xjbn-0Q@mail.gmail.com>
-Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
- missing user space support for config1/config2
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        arun@sharma-home.net, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 23, 2011 at 3:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sat, 2011-04-23 at 14:06 +0200, Stephane Eranian wrote:
->> On Sat, Apr 23, 2011 at 9:50 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, 2011-04-22 at 17:03 -0700, Andi Kleen wrote:
->> >> > > Yes, and note that with instructions events we even have skid-less PEBS
->> >> > > profiling so seeing the precise .
->> >> >                                   - location of instructions is possible.
->> >>
->> >> It was better when it was eaten. PEBS does not actually eliminated
->> >> skid unfortunately. The interrupt still occurs later, so the
->> >> instruction location is off.
->> >>
->> >> PEBS merely gives you more information.
->> >
->> > You're so skilled at not actually saying anything useful. Are you
->> > perchance referring to the fact that the IP reported in the PEBS data is
->> > exactly _one_ instruction off? Something that is demonstrated to be
->> > fixable?
->> >
->> > Or are you defining skid differently and not telling us your definition?
->> >
->>
->> PEBS is guaranteed to return an IP that is just after AN instruction that
->> caused the event. However, that instruction is NOT the one at the end
->> of your period. Let's take an example with INST_RETIRED, period=100000.
->> Then, the IP you get is NOT after the 100,000th retired instruction. It's an
->> instruction that is N cycles after that one. There is internal skid due to the
->> way PEBS is implemented.
->>
->> That is what Andi is referring to. The issue causes bias and thus impacts
->> the quality of the samples. On SNB, there is a new INST_RETIRED:PREC_DIST
->> event. PREC_DIST=precise distribution. It tries to correct for the skid
->> on this event on INST_RETIRED with PEBS (look at Vol3b).
+On 4/17/2011 2:37 PM, Linus Walleij wrote:
+> From: Linus Walleij<linus.walleij@linaro.org>
 >
-> Sure, but who cares? So your period isn't exactly what you specified,
-> but the effective period will have an average and a fairly small stdev
-> (assuming the initial period is much larger than the relatively few
-> cycles it takes to arm the PEBS assist), therefore you still get a
-> fairly uniform spread.
+> This adds two functions for struct gpio_chip chips to provide pin
+> bias and drive mode settings for individual pins. Implementers does
+> this a bit differently and usually there are a few possible modes you
+> can select, I'm providing a few common modes for biasing and driving
+> pins.
 >
-> I don't much get the obsession with precision here, its all a statistics
-> game anyway.
->
+> Since we have no previous hacked-up arch-specific drivers for this
+> we can avoid any __override_functions and we just allow this to be
+> properly implemented using gpiolib. Further the function is made
+> non-mandatory, if it is not defined for the chip it will be silently
+> ignored.
+This is a great start for something that the msm tree has been doing 
+internally through its gpiomux architecture.
+Currently, msm has to configure a the pinmux in addition to the drive 
+and the bias, so we would like to make this more powerful to support
+different gpio parameters. This has been mentioned previously - but a 
+way to define a custom config and set and get its parameters seems like
+a more extensible model.
 
-The particular example I am thinking about came from compiler people
-I work with who would like to use PEBS to do statistical basic block profiling.
-They do care about correctness of the profile. Otherwise, it may cause wrong
-attribution of "hotness" of basic blocks and mislead the compiler when it tries
-to reorder blocks on the critical path. Compiler people can validate a
-statistical
-profile because they have a reference profile obtained via instrumentation of
-each basic block.
+> Signed-off-by: Linus Walleij<linus.walleij@linaro.org>
+> ---
+>   drivers/gpio/gpiolib.c     |   43 ++++++++++++++++++++++++++++++++++++++
+>   include/asm-generic/gpio.h |   12 ++++++++++
+>   include/linux/gpio.h       |   49 ++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 104 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 36a2974..f79f4a3 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1573,6 +1573,49 @@ void __gpio_set_value(unsigned gpio, int value)
+>   EXPORT_SYMBOL_GPL(__gpio_set_value);
+>
+>   /**
+> + * gpio_set_bias() - set a gpio's bias
+> + * @gpio: gpio whose bias will be set
+> + * @bias: bias mode to set
+> + * Context: process
+> + *
+> + * This is used to directly or indirectly to implement gpio_set_bias().
+> + * It invokes the associated gpio_chip.set_bias() method. Usually this
+> + * applies to input pins.
+> + */
+> +void gpio_set_bias(unsigned gpio, enum gpio_bias bias)
+> +{
+> +	struct gpio_chip	*chip;
+> +
+> +	chip = gpio_to_chip(gpio);
+> +	/* Implementing this is not mandatory */
+> +	if (chip->set_bias)
+> +		chip->set_bias(chip, gpio - chip->base, bias);
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_set_bias);
+> +
+> +/**
+> + * gpio_set_drive() - set a gpio's drive mode
+> + * @gpio: gpio whose drive mode will be set
+> + * @drive: drive mode to set
+> + * Context: process
+> + *
+> + * This is used to directly or indirectly to implement gpio_set_drive().
+> + * It invokes the associated gpio_chip.set_drive() method. Call this
+> + * before the __gpio_set_output() function to enable special drive modes.
+> + */
+> +void gpio_set_drive(unsigned gpio, enum gpio_drive drive)
+> +{
+> +	struct gpio_chip	*chip;
+> +
+> +	chip = gpio_to_chip(gpio);
+> +	/* Implementing this is not mandatory */
+> +	if (chip->set_drive)
+> +		chip->set_drive(chip, gpio - chip->base, drive);
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_set_drive);
+> +
+> +
+> +/**
+>    * __gpio_cansleep() - report whether gpio value access will sleep
+>    * @gpio: gpio in question
+>    * Context: any
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index ff5c660..b4971b1 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -59,6 +59,8 @@ struct device_node;
+>    *	returns either the value actually sensed, or zero
+>    * @direction_output: configures signal "offset" as output, or returns error
+>    * @set: assigns output value for signal "offset"
+> + * @set_bias: set a certain bias for the GPIO
+> + * @set_drive: set a certain drive mode for the GPIO
+>    * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
+>    *	implementation may not sleep
+>    * @dbg_show: optional routine to show contents in debugfs; default code
+> @@ -109,6 +111,14 @@ struct gpio_chip {
+>   	void			(*set)(struct gpio_chip *chip,
+>   						unsigned offset, int value);
+>
+> +	void			(*set_bias)(struct gpio_chip *chip,
+> +						unsigned offset,
+> +						enum gpio_bias bias);
+> +
+> +	void			(*set_drive)(struct gpio_chip *chip,
+> +						unsigned offset,
+> +						enum gpio_drive drive);
+> +
+>   	int			(*to_irq)(struct gpio_chip *chip,
+>   						unsigned offset);
+>
+> @@ -158,6 +168,8 @@ extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
+>   extern int gpio_get_value_cansleep(unsigned gpio);
+>   extern void gpio_set_value_cansleep(unsigned gpio, int value);
+>
+> +extern void gpio_set_bias(unsigned gpio, enum gpio_bias bias);
+> +extern void gpio_set_drive(unsigned gpio, enum gpio_drive drive);
+With the pinmux architecture a gpio can be multiplexed with different 
+functional modules.
+Another API to select this would make it more powerful. At boot a lot of 
+gpios are configured by the board-file.
+How do you feel about another API that can accepts the gpio config 
+parameters (void *data) and set them all at once?
+This would make it more generic to suit different gpio parameters that 
+an arch might have.
 
-> And while you keep saying the examples are too trivial and Andi keep
-> sprouting vague non-statements, neither of you actually provide anything
-> sensible to the discussion.
 >
-> So stop f*cking whining and start talking sense or stop talking all
-> together.
+>   /* A platform's<asm/gpio.h>  code may want to inline the I/O calls when
+>    * the GPIO is constant and refers to some always-present controller,
+> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+> index 32720ba..6b48c15 100644
+> --- a/include/linux/gpio.h
+> +++ b/include/linux/gpio.h
+> @@ -3,6 +3,43 @@
 >
-> I mean, you were in the room where Intel presented their research on
-> event correlations based on pathological micro-benches. That clearly
-> shows that exact event definitions simply don't matter.
+>   /* see Documentation/gpio.txt */
 >
-Yes, and I don't get the same reading of the presentation. He never mentioned
-generic events. He never even used them, I mean the Intel generic events.
-Instead he used very focused Atom-specific events.
+> +/**
+> + * enum gpio_bias - bias modes for GPIOs
+> + * @GPIO_BIAS_FLOAT: no specific bias, the GPIO will float or state is no
+> + * 	controlled by software
+> + * @GPIO_BIAS_PULL_UP: the GPIO will be pulled up (usually with high impedance
+> + * 	to VDD)
+> + * @GPIO_BIAS_PULL_DOWN: the GPIO will be pulled down (usually with high
+> + * 	impedance to GROUND)
+> + * @GPIO_BIAS_HIGH: the GPIO will be wired high, connected to VDD
+> + * @GPIO_BIAS_GROUND: the GPIO will be grounded, connected to GROUND
+> + */
+> +enum gpio_bias {
+> +	GPIO_BIAS_FLOAT,
+> +	GPIO_BIAS_PULL_UP,
+> +	GPIO_BIAS_PULL_DOWN,
+> +	GPIO_BIAS_HIGH,
+> +	GPIO_BIAS_GROUND,
+> +};
+> +
+> +/**
+> + * enum gpio_drive - drive modes for GPIOs (output)
+> + * @GPIO_DRIVE_PUSH_PULL: the GPIO will be driven actively high and low, this
+> + *	is the most typical case and is typically achieved with two active
+> + *	transistors on the output
+> + * @GPIO_DRIVE_OPEN_DRAIN: the GPIO will be driven with open drain (open
+> + *	collector) which means it is usually wired with other output ports
+> + *	which are then pulled up with an external resistor
+> + * @GPIO_DRIVE_OPEN_SOURCE: the GPIO will be driven with open drain
+> + *	(open emitter) which is the same as open drain mutatis mutandis but
+> + *	pulled to ground
+> + */
+> +enum gpio_drive {
+> +	GPIO_DRIVE_PUSH_PULL,
+> +	GPIO_DRIVE_OPEN_DRAIN,
+> +	GPIO_DRIVE_OPEN_SOURCE,
+> +};
+> +
+>   #ifdef CONFIG_GENERIC_GPIO
+>   #include<asm/gpio.h>
+>
+> @@ -90,6 +127,18 @@ static inline void gpio_set_value(unsigned gpio, int value)
+>   	WARN_ON(1);
+>   }
+>
+> +static inline void gpio_set_bias(unsigned gpio, enum gpio_bias bias)
+> +{
+> +	/* GPIO can never have been requested */
+> +	WARN_ON(1);
+> +}
+> +
+> +static inline void gpio_set_drive(unsigned gpio, enum gpio_drive drive)
+> +{
+> +	/* GPIO can never have been requested */
+> +	WARN_ON(1);
+> +}
+> +
+>   static inline int gpio_cansleep(unsigned gpio)
+>   {
+>   	/* GPIO can never have been requested or set as {in,out}put */
+
+
+Thanks,
+Rohit Vaswani
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
