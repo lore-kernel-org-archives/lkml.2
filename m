@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab1DYNpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 09:45:44 -0400
-Received: from relay.pcl-ipout01.plus.net ([212.159.7.99]:46253 "EHLO
-	relay.pcl-ipout01.plus.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752139Ab1DYNpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 09:45:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUoAMh5tU1UXeb6/2dsb2JhbACCNIJekkkxjSh3sT8ChmKJFw6FaASSPYJWgRQ
-Subject: [PATCH] ds2760_battery: Fix rated capacity of the hx4700 1800mAh battery
-From: "Paul Parsons" <lost.distance@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cbou@mail.ru>, <dwmw2@infradead.org>
-Date: Mon, 25 Apr 2011 13:45:40 +0000
-Content-Type: text/plain
-Mime-Version: 1.0
-X-Mailer: email v2.5.0 (Linux 2.6.38 x86_64 [http://email.cleancode.org])
-Message-Id: <E1QEM6f-0000Db-K0@outmx05.plus.net>
+	id S1758276Ab1DYOAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 10:00:50 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:48545 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754957Ab1DYOAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 10:00:49 -0400
+Date: Mon, 25 Apr 2011 16:00:35 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: =?iso-8859-1?Q?Germ=E1n?= Sanchis <eaglecros@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: yenta cardbus problem
+Message-ID: <20110425140035.GA27159@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	=?iso-8859-1?Q?Germ=E1n?= Sanchis <eaglecros@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <BANLkTinSOZH=9uD_9uXcVnH-1Yw5K-K3yg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinSOZH=9uD_9uXcVnH-1Yw5K-K3yg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix rated capacity of the HP iPAQ hx4700 3.7V 1800mAh (359113-001) battery. For this battery the value of the rated capacity EEPROM register at 0x32 is 7; thus rated_capacities[7] = 1800.
+Hey,
 
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
----
---- clean-2.6.39-rc4/drivers/power/ds2760_battery.c	2011-03-15 01:20:32.000000000 +0000
-+++ linux-2.6.39-rc4/drivers/power/ds2760_battery.c	2011-04-25 13:06:29.344976841 +0100
-@@ -86,7 +86,11 @@ static int rated_capacities[] = {
- 	920,	/* NEC */
- 	1440,	/* Samsung */
- 	1440,	/* BYD */
-+#ifdef CONFIG_MACH_H4700
-+	1800,	/* HP iPAQ hx4700 3.7V 1800mAh (359113-001) */
-+#else
- 	1440,	/* Lishen */
-+#endif
- 	1440,	/* NEC */
- 	2880,	/* Samsung */
- 	2880,	/* BYD */
+On Mon, Apr 25, 2011 at 02:36:15PM +0200, Germán Sanchis wrote:
+> In my old laptop I had a PCMCIA Creative SoundBlaster Audigy2 ZS
+> notebook card in order to get my external speakers working. When I
+> bought a new laptop, I found out that my old PCMCIA card did not fit
+> in any hole any more... damn! So, I decided to buy a PCMCIA to
+> ExpressCard adapter. Specifically, I bought DuelAdapter, but I don't
+> seem to be able to get it working. It does work properly in the Vista
+> installation my laptop has since I bought it, so a hardware problem is
+> out of question. I have been doing quite a lot of googleing, but I am
+> puzzled and don't know what the issue might be. Here a couple of
+> things which I think could be related.
 
+First of all, does passing "override_bios=1" as a module parameter
+to the yenta_socket module help?
+
+> lspci reports:
+> ""
+> ...
+> 05:00.0 PCI bridge: Texas Instruments XIO2000(A)/XIO2200(A) PCI
+> Express-to-PCI Bridge (rev 03)
+> 06:00.0 CardBus bridge: Texas Instruments PCIxx12 Cardbus Controller
+> ""
+> 
+> (no sound card!)
+
+What does "lspci -vvv" report?
+
+> Note that the adapter has a switch, which is intended to be in
+> "position A" for MacOS, and in "position B" for Windows XP (although
+> my Vista system recognised it perfectly in position A). Under linux,
+> lspci reports the above devices with the switch in A position, and in
+> B the devices do not show up.
+
+Could you send us a full "dmesg" with the switch in the A and one with the
+switch in the B position, preferrably with ddebug_query="module yenta_socket +p"
+added as boot parameter?
+
+> In addition, yenta seems not to be very happy with the setup:
+> 
+> ""
+> $ dmesg | grep yenta
+> [   21.098659] yenta_cardbus 0000:05:00.0: No cardbus resource!
+> ""
+
+Was this with or without the "pci=assign-busses" parameter?
+
+Best,
+	Dominik
+ 
