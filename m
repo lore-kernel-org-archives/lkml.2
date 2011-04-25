@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab1DYCcM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 22:32:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45703 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020Ab1DYCcK (ORCPT
+	id S1758058Ab1DYCfj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 22:35:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44666 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758021Ab1DYCfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 22:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=Pr/bNTvJvBUpS/UQ+fsLEJRUjoyeCxpfiDMWS7jJfDIwBtj14fvSTIoC0TQtKktD3w
-         EavnuklD+sWMHNuhPm/kpVBgdRS4OhlrZwQm33A8XKsDwYAhVYNHv/AbBhVqdsmuVFDZ
-         0XIaRoYpUfnP+oh0kXCGvsn4bozdX1AEvyby4=
-Message-ID: <4DB4DD26.3090406@gmail.com>
-Date: Mon, 25 Apr 2011 10:32:06 +0800
-From: yeyouqun <yeyouqun1981@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; zh-CN; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Sun, 24 Apr 2011 22:35:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: Re: [PATCH] trace: Add tracepoints to fs subsystem
+Cc: kosaki.motohiro@jp.fujitsu.com, Steven Rostedt <rostedt@goodmis.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Jiaying Zhang <jiayingz@google.com>
+In-Reply-To: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
+References: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
+Message-Id: <20110425113723.2666.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: question about wait_event
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 25 Apr 2011 11:35:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,I have some doubt about "wait_event". One group processes, say 
-A, they calls "wait_event (wq, 1)", and one single process B calls 
-"wake_up_all", the question is:
+> From: Jiaying Zhang <jiayingz@google.com>
+> 
+> Many fs tracepoints can now be traced via ftrace, however there are a
+> few other tracepoints needed. This patch adds entry and exit tracepoints
+> for a few additional functions, viz.:
+> wait_on_buffer
+> block_write_full_page
+> mpage_readpages
+> file_read
 
-     B only run once, so all the processes in A that hold the lock of 
-"wq" after B process, which will sleep on the "wq" forever, is it true? 
-If true, how to stop it from happening?
+Zero background description?
+
+
+
+
