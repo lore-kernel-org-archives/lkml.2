@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab1DYUly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:41:54 -0400
-Received: from 1wt.eu ([62.212.114.60]:34365 "EHLO 1wt.eu"
+	id S932730Ab1DYUlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:41:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:34368 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299Ab1DYUYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932253Ab1DYUYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Apr 2011 16:24:54 -0400
-Message-Id: <20110425200236.948840860@pcw.home.local>
+Message-Id: <20110425200236.079177121@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:03 +0200
+Date: Mon, 25 Apr 2011 22:03:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kerin Millar <kerframil@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 091/173] USB: serial: ch341: add new id
+Subject: [PATCH 071/173] mm: fix possible cause of a page_mapped BUG
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,39 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: wangyanqing <udknight@gmail.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit d0781383038e983a63843a9a6a067ed781db89c1 upstream.
+commit a3e8cc643d22d2c8ed36b9be7d9c9ca21efcf7f7 upstream.
 
-I picked up a new DAK-780EX(professional digitl reverb/mix system),
-which use CH341T chipset to communication with computer on 3/2011
-and the CH341T's vendor code is 1a86
+Robert Swiecki reported a BUG_ON(page_mapped) from a fuzzer, punching
+a hole with madvise(,, MADV_REMOVE).  That path is under mutex, and
+cannot be explained by lack of serialization in unmap_mapping_range().
 
-Looking up the CH341T's vendor and product id's I see:
+Reviewing the code, I found one place where vm_truncate_count handling
+should have been updated, when I switched at the last minute from one
+way of managing the restart_addr to another: mremap move changes the
+virtual addresses, so it ought to adjust the restart_addr.
 
-1a86  QinHeng Electronics
-  5523  CH341 in serial mode, usb to serial port converter
+But rather than exporting the notion of restart_addr from memory.c, or
+converting to restart_pgoff throughout, simply reset vm_truncate_count
+to 0 to force a rescan if mremap move races with preempted truncation.
 
-CH341T,CH341 are the products of the same company, maybe
-have some common hardware, and I test the ch341.c works
-well with CH341T
+We have no confirmation that this fixes Robert's BUG,
+but it is a fix that's worth making anyway.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kerin Millar <kerframil@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ch341.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/mremap.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -73,6 +73,7 @@ static int debug;
- static struct usb_device_id id_table [] = {
- 	{ USB_DEVICE(0x4348, 0x5523) },
- 	{ USB_DEVICE(0x1a86, 0x7523) },
-+	{ USB_DEVICE(0x1a86, 0x5523) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -92,9 +92,7 @@ static void move_ptes(struct vm_area_str
+ 		 */
+ 		mapping = vma->vm_file->f_mapping;
+ 		spin_lock(&mapping->i_mmap_lock);
+-		if (new_vma->vm_truncate_count &&
+-		    new_vma->vm_truncate_count != vma->vm_truncate_count)
+-			new_vma->vm_truncate_count = 0;
++		new_vma->vm_truncate_count = 0;
+ 	}
+ 
+ 	/*
 
 
