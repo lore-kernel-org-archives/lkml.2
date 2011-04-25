@@ -1,127 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab1DYR3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:29:20 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:49993 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758551Ab1DYR3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:29:18 -0400
-Date: Mon, 25 Apr 2011 10:29:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110425172914.GB2468@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110424202158.45578f31@neptune.home>
- <20110424235928.71af51e0@neptune.home>
- <20110425114429.266A.A69D9226@jp.fujitsu.com>
- <BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com>
- <20110425111705.786ef0c5@neptune.home>
- <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
- <20110425180450.1ede0845@neptune.home>
- <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
- <20110425190032.7904c95d@neptune.home>
+	id S1758710Ab1DYRfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 13:35:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60591 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758666Ab1DYRfX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 13:35:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110425190032.7904c95d@neptune.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110425172644.GA20689@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+ <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+ <20110423175901.GA484@redhat.com> <20110423175922.GB484@redhat.com>
+ <20110425113746.GM17734@mtj.dyndns.org> <20110425172644.GA20689@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 25 Apr 2011 10:34:30 -0700
+Message-ID: <BANLkTinrC1+5CVgnBCxrt895TAnLCKjTRg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] signal: sys_rt_sigtimedwait: simplify the timeout logic
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 07:00:32PM +0200, Bruno Prémont wrote:
-> On Mon, 25 April 2011 Linus Torvalds wrote:
-> > 2011/4/25 Bruno Prémont <bonbons@linux-vserver.org>:
-> > >
-> > > kmemleak reports 86681 new leaks between shortly after boot and -2 state.
-> > > (and 2348 additional ones between -2 and -4).
-> > 
-> > I wouldn't necessarily trust kmemleak with the whole RCU-freeing
-> > thing. In your slubinfo reports, the kmemleak data itself also tends
-> > to overwhelm everything else - none of it looks unreasonable per se.
-> > 
-> > That said, you clearly have a *lot* of filp entries. I wouldn't
-> > consider it unreasonable, though, because depending on load those may
-> > well be fine. Perhaps you really do have some application(s) that hold
-> > thousands of files open. The default file limit is 1024 (I think), but
-> > you can raise it, and some programs do end up opening tens of
-> > thousands of files for filesystem scanning purposes.
-> > 
-> > That said, I would suggest simply trying a saner kernel configuration,
-> > and seeing if that makes a difference:
-> > 
-> > > Yes, it's uni-processor system, so SMP=n.
-> > > TINY_RCU=y, PREEMPT_VOLUNTARY=y (whole /proc/config.gz attached keeping
-> > > compression)
-> > 
-> > I'm not at all certain that TINY_RCU is appropriate for
-> > general-purpose loads. I'd call it more of a "embedded low-performance
-> > option".
-> 
-> Well, TINY_RCU is the only option when doing PREEMPT_VOLUNTARY on
-> SMP=n...
+On Mon, Apr 25, 2011 at 10:26 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> If only I knew what this comment could say except
+>
+>        /* Why do we add (tv_sec || tv_nsec) ?  */
+>
+> I'd better send 4/3 which simply removes this (I hope) unneeded code.
 
-You can either set SMP=y and NR_CPUS=1 or you can handed-edit
-init/Kconfig to remove the dependency on SMP.  Just change the
+It's to guarantee that timeout is at least one tick more than asked
+for, because the rule is that you really have to wait for AT LEAST the
+time asked for. With the "zero timeout" being special, since that is
+"immediate".
 
-	depends on !PREEMPT && SMP
+Imagine that you ask for one timer tick - but that you're in the
+_middle_ of the current one. Waiting for the next timer is going to be
+too short - you'll only get half a timer tick. So we need to ask for
+"ceiling(nanoseconds / nanosecondspertick) + 1" to make sure that we
+really wait _longer_ than asked for.
 
-to:
+So "+ (tv_sec || tv_nsec)" is just the "+1" for the "not zero timeout" case.
 
-	depends on !PREEMPT
-
-This will work fine, especially for experimental purposes.
-
-> > The _real_ RCU implementation ("tree rcu") forces quiescent states
-> > every few jiffies and has logic to handle "I've got tons of RCU
-> > events, I really need to start handling them now". All of which I
-> > think tiny-rcu lacks.
-> 
-> Going to try it out (will take some time to compile), kmemleak disabled.
-> 
-> > So right now I suspect that you have a situation where you just have a
-> > simple load that just ends up never triggering any RCU cleanup, and
-> > the tiny-rcu thing just keeps on gathering events and delays freeing
-> > stuff almost arbitrarily long.
-> 
-> I hope tiny-rcu is not that broken... as it would mean driving any
-> PREEMPT_NONE or PREEMPT_VOLUNTARY system out of memory when compiling
-> packages (and probably also just unpacking larger tarballs or running
-> things like du).
-
-If it is broken, I will fix it.  ;-)
-
-							Thanx, Paul
-
-> And with system doing nothing (except monitoring itself) memory usage
-> goes increasing all the time until it starves (well it seems to keep
-> ~20M free, pushing processes it can to swap). Config is just being
-> make oldconfig from working 2.6.38 kernel (answering default for new
-> options)
-> 
-> Memory usage evolution graph in first message of this thread:
-> http://thread.gmane.org/gmane.linux.kernel.mm/61909/focus=1130480
-> 
-> Attached graph matching numbers of previous mail. (dropping caches was at
-> 17:55, system idle since then)
-> 
-> Bruno
-> 
-> 
-> > So try CONFIG_PREEMPT and CONFIG_TREE_PREEMPT_RCU to see if the
-> > behavior goes away. That would confirm the "it's just tinyrcu being
-> > too dang stupid" hypothesis.
-> > 
-> >                      Linus
-
-
+                     Linus
