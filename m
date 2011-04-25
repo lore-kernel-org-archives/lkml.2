@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab1DYMgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 08:36:17 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50973 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758275Ab1DYMgQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 08:36:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=A4BDgzxYyN4xtHEUU6u28m0Ho/Hhhd52+Y+MlKdUvChIKpQoq5uSbQmgCRwrRcfSZk
-         5PEIWl+oR0XMEzggpEkpzCV9H5hmLU4R2pfO7S+I4FhyKuLWtnstTUEqlBSa+1gK8394
-         dpgwsEtPuqsxbiNHdO/uxGhuYrJGWVJIDBKgE=
+	id S1758617Ab1DYMiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 08:38:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758275Ab1DYMiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 08:38:04 -0400
+Message-ID: <4DB56B11.5090505@redhat.com>
+Date: Mon, 25 Apr 2011 06:37:37 -0600
+From: Eric Blake <eblake@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.9
 MIME-Version: 1.0
-Date: Mon, 25 Apr 2011 14:36:15 +0200
-Message-ID: <BANLkTinSOZH=9uD_9uXcVnH-1Yw5K-K3yg@mail.gmail.com>
-Subject: yenta cardbus problem
-From: =?ISO-8859-1?Q?Germ=E1n_Sanchis?= <eaglecros@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jamie Lokier <jamie@shareable.org>
+CC: Sunil Mushran <sunil.mushran@oracle.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB16B72.1050702@redhat.com> <4DB1AC9D.3010706@oracle.com> <20110424174902.GA20461@shareable.org>
+In-Reply-To: <20110424174902.GA20461@shareable.org>
+X-Enigmail-Version: 1.1.2
+OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig63E171411ED8D35FBBBC4447"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig63E171411ED8D35FBBBC4447
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-In my old laptop I had a PCMCIA Creative SoundBlaster Audigy2 ZS
-notebook card in order to get my external speakers working. When I
-bought a new laptop, I found out that my old PCMCIA card did not fit
-in any hole any more... damn! So, I decided to buy a PCMCIA to
-ExpressCard adapter. Specifically, I bought DuelAdapter, but I don't
-seem to be able to get it working. It does work properly in the Vista
-installation my laptop has since I bought it, so a hardware problem is
-out of question. I have been doing quite a lot of googleing, but I am
-puzzled and don't know what the issue might be. Here a couple of
-things which I think could be related.
+On 04/24/2011 11:49 AM, Jamie Lokier wrote:
+>> My problem with FIND_* is that we are messing with the well understood=
 
-lspci reports:
-""
-...
-05:00.0 PCI bridge: Texas Instruments XIO2000(A)/XIO2200(A) PCI
-Express-to-PCI Bridge (rev 03)
-06:00.0 CardBus bridge: Texas Instruments PCIxx12 Cardbus Controller
-""
+>> semantics of lseek().
+>=20
+> fcntl() looks a better fit for FIND_HOLE/DATA anyway.
 
-(no sound card!)
+With fcntl(), it would have to be something like:
 
-Note that the adapter has a switch, which is intended to be in
-"position A" for MacOS, and in "position B" for Windows XP (although
-my Vista system recognised it perfectly in position A). Under linux,
-lspci reports the above devices with the switch in A position, and in
-B the devices do not show up.
+off_t offset =3D start;
+if (fcntl (fd, F_FIND_HOLE, &offset) !=3D 0)
+    ; // find failed
+// offset is now set to the next location after start
 
-When googling, I read that the "pci=assign-busses" kernel option could
-be the solution, but that didn't help either, and in fact specifying
-such option results in the devices above not being listed by lspci.
-Here more lspci info:
+That is, offset has to be passed as an input _and_ output parameter,
+since we can't use the int return value of fcntl to convey off_t
+information, and since the optional third argument of fcntl has
+traditionally been no wider than a pointer which is not the case for
+off_t on 32-bit platforms.
 
-""
-$ lspci -v | grep subordinate
-        Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
-        Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
-        Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
-        Bus: primary=00, secondary=04, subordinate=09, sec-latency=0
-        Bus: primary=00, secondary=0a, subordinate=0a, sec-latency=32
-        Bus: primary=00, secondary=00, subordinate=00, sec-latency=0
-""
+--=20
+Eric Blake   eblake@redhat.com    +1-801-349-2682
+Libvirt virtualization library http://libvirt.org
 
-In addition, yenta seems not to be very happy with the setup:
 
-""
-$ dmesg | grep yenta
-[   21.098659] yenta_cardbus 0000:05:00.0: No cardbus resource!
-""
+--------------enig63E171411ED8D35FBBBC4447
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-And I have been unable to find anybody reporting such error in
-google... only pages where this error is listed along with the kernel
-code, and a couple of pages which do not seem to be related.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
-I also tried installing the sound card modules by hand via
-/etc/modules and rebooting, but that doesn't help either, although the
-modules get loaded correctly:
+iQEcBAEBCAAGBQJNtWsYAAoJEKeha0olJ0Nqf7gH/0BImPaIc8vsm6I7m1bKRQhN
+0alusFYYi2BUbjnT1vTVZTaS2Sxzn6ZMVzh6VavMlawvB5ZaoT9jlwh7xmvD1nmJ
+eXG51EQOFnaQvC1XnWx3+xukoxSoCPc1+KFSyA4VUOsV2OTKJ1gBlPYbhBlZFfFd
+2pj/FXH9ZQF1aNZmPL13Ob174b8+stkQuTIt46hbedKbYdsYUYeV+Fcx8V99fRBE
+b6Fer9jVYys3RWMZ8sRtSDQEM3tEnS/ip29GeqajRXwjGLzr4yXHyjj19fMHWCNJ
+R18q7alt3o46nYlJtd0++MF9ywLUEz0j19i2AWjfcvxyKUyhZtmzeyTzca89Yiw=
+=hmsN
+-----END PGP SIGNATURE-----
 
-""
-$ lsmod | grep yenta
-yenta_socket           22901  0
-rsrc_nonstatic          9830  1 yenta_socket
-pcmcia_core            38176  2 yenta_socket,rsrc_nonstatic
-
-$ lsmod | grep emu10k
-snd_emu10k1_synth       6036  0
-snd_emux_synth         37367  1 snd_emu10k1_synth
-snd_emu10k1           148561  1 snd_emu10k1_synth
-snd_ac97_codec        125394  1 snd_emu10k1
-snd_pcm                87882  5
-snd_emu10k1,snd_hda_intel,snd_hda_codec,snd_ac97_codec,snd_pcm_oss
-snd_rawmidi            23420  3 snd_seq_virmidi,snd_emu10k1,snd_seq_midi
-snd_util_mem            3818  2 snd_emux_synth,snd_emu10k1
-snd_hwdep               6924  3 snd_emux_synth,snd_emu10k1,snd_hda_codec
-snd_timer              23649  3 snd_emu10k1,snd_pcm,snd_seq
-snd_seq_device          6888  8
-snd_emu10k1_synth,snd_emux_synth,snd_emu10k1,snd_seq_dummy,snd_seq_oss,snd_seq_midi,snd_rawmidi,snd_seq
-snd                    71187  20
-snd_emux_synth,snd_seq_virmidi,snd_hda_codec_idt,snd_emu10k1,snd_hda_intel,snd_hda_codec,snd_ac97_codec,snd_pcm_oss,snd_mixer_oss,snd_seq_oss,snd_pcm,snd_rawmidi,snd_seq,snd_hwdep,snd_timer,snd_seq_device
-snd_page_alloc          8500  3 snd_emu10k1,snd_hda_intel,snd_pcm
-""
-
-I would have thought that, simply, the adapter is not supported, but
-then I also came accross
-the following site:
-http://fr.audiofanzine.com/carte-son-pcmcia/e-mu/1616M/forums/t.280979,emu-1616m-adaptateur-pcmcia-expresscard-linux.html
-
-Although in french, the author reports that he got a similar sound
-card working a PCMCIA-ExpressCard adapter wich reports the same chip
-in lspci (the Texas Instruments XIO2000(A)/XIO2200(A) PCI
-Express-to-PCI Bridge).
-
-I am running Ubuntu 10.10 with a 2.6.35-28-generic kernel, on a x86_64
-machine (an HP dv3000 series laptop).
-
-Any ideas or hints towards where to get any help? ANY help at all is
-appreciated, since I have run out of resources towards solving this
-problem!! And if you need any further info, please do ask me!
-
-Thanks!!
-
-P.S.: I already posted this problem on the ubuntu forums in
-http://ubuntuforums.org/showthread.php?t=1587221
-but got no answer, which is why I am finally posting this here. Please
-excuse me in the case this is not a kernel-related issue, and, since I
-am not subscribed to the kernel-mailing list, please CC me in case of
-an answer.
+--------------enig63E171411ED8D35FBBBC4447--
