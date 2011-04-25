@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab1DYJ2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 05:28:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44163 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab1DYJ2o (ORCPT
+	id S1758179Ab1DYJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 05:29:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39769 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758137Ab1DYJ3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 05:28:44 -0400
+	Mon, 25 Apr 2011 05:29:22 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 1/4] blackfin: remove unused function
+Subject: [PATCH 2/4] blackfin: don't touch cpu_possible_map and cpu_present_map directly
 Cc: kosaki.motohiro@jp.fujitsu.com,
         Michael Hennerich <michael.hennerich@analog.com>,
         device-driver-devel@blackfin.uclinux.org,
@@ -18,67 +18,61 @@ Cc: kosaki.motohiro@jp.fujitsu.com,
         Andrew Morton <akpm@linux-foundation.org>
 In-Reply-To: <20110425182906.2673.A69D9226@jp.fujitsu.com>
 References: <20110425182906.2673.A69D9226@jp.fujitsu.com>
-Message-Id: <20110425183018.2677.A69D9226@jp.fujitsu.com>
+Message-Id: <20110425183054.267B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 18:28:42 +0900 (JST)
+Date: Mon, 25 Apr 2011 18:29:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We plan to remove cpu_possible_map and cpu_present_map later and we
+have proper init_cpu_possible() and init_cpu_present() APIs.
 
-platform_send_ipi() has old call-by-value cpumask_t fashon and
-it's unused.
-
-Then, this patch removes it.
+Therefore this patch rewrites platform_init_cpus and platform_prepare_cpus
+by their APIs.
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Michael Hennerich <michael.hennerich@analog.com>
 Cc: device-driver-devel@blackfin.uclinux.org
 ---
- arch/blackfin/mach-bf561/include/mach/smp.h |    2 --
- arch/blackfin/mach-bf561/smp.c              |   13 -------------
- 2 files changed, 0 insertions(+), 15 deletions(-)
+ arch/blackfin/mach-bf561/smp.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/arch/blackfin/mach-bf561/include/mach/smp.h b/arch/blackfin/mach-bf561/include/mach/smp.h
-index 346c605..36e2ac5 100644
---- a/arch/blackfin/mach-bf561/include/mach/smp.h
-+++ b/arch/blackfin/mach-bf561/include/mach/smp.h
-@@ -21,8 +21,6 @@ void platform_secondary_init(unsigned int cpu);
- 
- void platform_request_ipi(int irq, /*irq_handler_t*/ void *handler);
- 
--void platform_send_ipi(cpumask_t callmap, int irq);
--
- void platform_send_ipi_cpu(unsigned int cpu, int irq);
- 
- void platform_clear_ipi(unsigned int cpu, int irq);
 diff --git a/arch/blackfin/mach-bf561/smp.c b/arch/blackfin/mach-bf561/smp.c
-index 7b07740..630e2c2 100644
+index 630e2c2..2fca469 100644
 --- a/arch/blackfin/mach-bf561/smp.c
 +++ b/arch/blackfin/mach-bf561/smp.c
-@@ -116,19 +116,6 @@ void __init platform_request_ipi(int irq, void *handler)
- 		panic("Cannot request %s for IPI service", name);
+@@ -24,17 +24,23 @@ static DEFINE_SPINLOCK(boot_lock);
+ 
+ void __init platform_init_cpus(void)
+ {
+-	cpu_set(0, cpu_possible_map); /* CoreA */
+-	cpu_set(1, cpu_possible_map); /* CoreB */
++	struct cpumask mask;
++
++	cpumask_set_cpu(0, &mask); /* CoreA */
++	cpumask_set_cpu(1, &mask); /* CoreB */
++	init_cpu_possible(&mask);
  }
  
--void platform_send_ipi(cpumask_t callmap, int irq)
--{
--	unsigned int cpu;
--	int offset = (irq == IRQ_SUPPLE_0) ? 6 : 8;
--
--	for_each_cpu_mask(cpu, callmap) {
--		BUG_ON(cpu >= 2);
--		SSYNC();
--		bfin_write_SICB_SYSCR(bfin_read_SICB_SYSCR() | (1 << (offset + cpu)));
--		SSYNC();
--	}
--}
--
- void platform_send_ipi_cpu(unsigned int cpu, int irq)
+ void __init platform_prepare_cpus(unsigned int max_cpus)
  {
- 	int offset = (irq == IRQ_SUPPLE_0) ? 6 : 8;
++	struct cpumask mask;
++
+ 	bfin_relocate_coreb_l1_mem();
+ 
+ 	/* Both cores ought to be present on a bf561! */
+-	cpu_set(0, cpu_present_map); /* CoreA */
+-	cpu_set(1, cpu_present_map); /* CoreB */
++	cpumask_set_cpu(0, &mask); /* CoreA */
++	cpumask_set_cpu(1, &mask); /* CoreB */
++	init_cpu_present(&mask);
+ }
+ 
+ int __init setup_profiling_timer(unsigned int multiplier) /* not supported */
 -- 
 1.7.3.1
 
