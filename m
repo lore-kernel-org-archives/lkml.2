@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab1DYFvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 01:51:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56098 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1DYFvF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 01:51:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KanLxo/xa+ByvNOMa5rI9363jocixHUM7aQr7WX5KpesgfpHMpNYnPZmP86tfS8UbM
-         ZYJJh9E3IQ5LN8VjWDdLXqW3EIbRZy4eljntkamQeckNE0h1LKkairgpjpA+HQsrKanV
-         vAQ7peEV5JBVHHOIMD3HEWtsIvLKa9ag7y/vg=
+	id S1752625Ab1DYFvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 01:51:33 -0400
+Received: from trent.utfs.org ([194.246.123.103]:35077 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752108Ab1DYFvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 01:51:20 -0400
+Date: Sun, 24 Apr 2011 22:51:17 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110424234655.GC12436@dastard>
+Message-ID: <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4ac1d916ddc0ab9e7e94b81bc77880be.squirrel@xenotime.net>
-References: <20110421132045.5af1b953.sfr@canb.auug.org.au>
-	<20110421085124.4a44d048.randy.dunlap@oracle.com>
-	<BANLkTinoi1SeuuPj5SeTzssyBTvTQu6pMA@mail.gmail.com>
-	<4DB2F406.404@oracle.com>
-	<BANLkTikWa7wZYonWLHMqWkBRHfi7tLiyuA@mail.gmail.com>
-	<4ac1d916ddc0ab9e7e94b81bc77880be.squirrel@xenotime.net>
-Date: Mon, 25 Apr 2011 11:21:03 +0530
-Message-ID: <BANLkTimvjai22mb9KG3CVreBiKPn5gJ+UA@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 21 (i82975x_edac)
-From: Arvind R <arvino55@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        bluesmoke-devel@lists.sourceforge.net, linux-edac@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 7:43 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->
-> On Sat, April 23, 2011 11:29 pm, Arvind R wrote:
->> On Sat, Apr 23, 2011 at 9:15 PM, Randy Dunlap <randy.dunlap@oracle.com>
->> wrote:
->>> On 04/23/11 01:21, Arvind R wrote:
->>>> On Thu, Apr 21, 2011 at 9:21 PM, Randy Dunlap <randy.dunlap@oracle.com>
->>>> wrote:
->>>>> On Thu, 21 Apr 2011 13:20:45 +1000 Stephen Rothwell wrote:
->>>>>
->>>>>> Changes since 20110420:
->>>>>
->>>>>
->>>>> on i386:
->>>>>
->>>>> drivers/edac/i82975x_edac.c:298: warning: integer constant is too
->>>>> large for 'unsigned long' type
->>
->>> I think that the goal should be to get your 4-patch series merged.
->>>
->>>> That would still not fix the wrong error-info reported by the driver -
->>>> this is
->>>> fixed by the patch-set titled '[RFC PATCH 2.6.37 0/4] i3000_edac :
->>>> merge
->>>> i82975x support' dated 2011-02-14 in the linux-edac archives.
->>>>
->>>> Please advise on getting the patch into main-stream. The I3000 is a
->>>> re-labeled
->>>> i82975x (or vice-versa). Hence the patch-set to merge the drivers. If
->>>> separate
->>>> i82975x driver is needed - I can provide the patch. The reported bug is
->>>> not
->>>> present in the merge-patched driver.
->>>
->>> Doug, any plans to merge this 4-patch series from Arvind?
->>>
->>> Arvind, was bluesmoke-devel@lists.sourceforge.net copied on this patch
->>> series?
->> No - thought that the bluesmoke-list had moved to linux-edac.
->>
->
-> If bluesmoke-devel is obsolete, the MAINTAINERS file
-> needs to be updated.
->
->>>
->>> and was the I3000 driver maintainer copied?  (added)
->>> I can't tell this from the marc.info archives.
->> Added myself to the driver maintainer in the i3000_edac.c file. The
->> patch-set adds support for i82975x in the i3000 driver, which is
->> better structured.
->> TODO:
->>     1. Change Kconfig file - select I3000 for i82975x support
->>     2. Delete i82975x_edac.c file
->>     3. Update MAINTAINERS file
->
-> Did the other EDAC-I3000 maintainer respond?
-No, though CC'ed to.
+On Mon, 25 Apr 2011 at 09:46, Dave Chinner wrote:
+> I'd say they are not being reclaimmmed because the VFS hasn't let go
+> of them yet. Can you also dump /proc/sys/fs/{dentry,inode}-state so
+> we can see if the VFS has released the inodes such that they can be
+> reclaimed by XFS?
 
-Arvind
+Will do that.
+
+> BTW, what are your mount options? If it is the problem I suspect it
+> is, then using noatime with stop it from occurring....
+
+# grep xfs /proc/mounts 
+/dev/mapper/wdc1 /mnt/backup xfs rw,nosuid,nodev,noexec,relatime,attr2,delaylog,noquota 0 0
+/dev/mapper/wdc1 /data xfs ro,relatime,attr2,delaylog,noquota 0 0
+
+The "/dev/mapper/wdc1" is a dm-crypt device on a ~1TB external disk 
+(via FireWire). The 2nd line in the output above is a bind-mount from 
+somewhere below "/mnt/backup".
+
+I'm currently trying to reproduce the problem again and see if the 
+{dentry,inode}-state output reveals any more information. After that, I'll 
+try with noatime.
+
+Thanks,
+Christian.
+-- 
+BOFH excuse #115:
+
+your keyboard's space bar is generating spurious keycodes.
