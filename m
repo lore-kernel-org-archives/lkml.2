@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab1DYXkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 19:40:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48549 "EHLO
+	id S1757658Ab1DYXmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 19:42:11 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60189 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab1DYXkA (ORCPT
+	with ESMTP id S1756876Ab1DYXmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 19:40:00 -0400
+	Mon, 25 Apr 2011 19:42:08 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=A0zMU3FQCc++HvFLD5kPzXL37YfdvcwXhe8a181c4TVWEgfqvfzlw3+DBb4Ccfe45
-	iaPPelugVspAu+e8LR+tw==
+	b=WEsDbTuUz+1gYxUTTnuJ6FPz3VguEIFBhjT5avI1/HbFSpem6Wu4UF0b6xlzyjmnn
+	4naJFLOrwD0rX05RoKjiw==
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>
@@ -18,280 +18,479 @@ Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org, x86@kernel.org,
         Jiaying Zhang <jiayingz@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 1/2] trace: Add trap entry/exit tracepoints
-Date: Mon, 25 Apr 2011 16:39:25 -0700
-Message-Id: <1303774765-13032-1-git-send-email-vnagarnaik@google.com>
+Subject: [PATCH] trace: Add special x86 irq entry/exit tracepoints
+Date: Mon, 25 Apr 2011 16:41:47 -0700
+Message-Id: <1303774907-13099-1-git-send-email-vnagarnaik@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
-References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+In-Reply-To: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
+References: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiaying Zhang <jiayingz@google.com>
 
-For debugging and performance monitoring purpose, we often need to trace
-trap entry and exit events. The following patch adds the event
-definition for trap entry/exit and the instrumentation hooks for x86
-platforms. Other platforms should be able to use these events as well
-once they add the corresponding instrumentation.
+Apart from the normal interrupts, we often also need to trace
+architecture special interrupts. The following patch adds the event
+definition and trace instrumentation for some x86 special interrupts. We
+hope the similar approach can also be used to trace special interrupts
+on other architectures. However, the patch only supports x86 at this
+point.
 
-$ echo 1 > debug/tracing/events/trap/enable
-run gdb to genrate some trap events
-$ cat debug/tracing/trace
-          <...>-13619 [003]   917.726602: trap_entry: number=3
-          <...>-13619 [003]   917.726612: trap_exit: number=3
-          <...>-13619 [003]   917.747263: trap_entry: number=1
-          <...>-13619 [003]   917.747272: trap_exit: number=1
-          <...>-13619 [003]   917.747567: trap_entry: number=3
-          <...>-13619 [003]   917.747570: trap_exit: number=3
-          <...>-13619 [003]   917.748101: trap_entry: number=1
-          <...>-13619 [003]   917.748103: trap_exit: number=1
+With this patch, following 'special' interrupts are logged by ftrace
+(when enabled):
 
-$ echo 1 > tracing_enabled; ~/trap pagefault; echo 0 > tracing_enabled
-$ cat trace | grep "trap-" | grep number=14 | head
-       trap-12528 [003]  1159.755792: trap_entry: number=14
-       trap-12528 [003]  1159.755801: trap_entry: number=14
-       trap-12528 [003]  1159.755804: trap_entry: number=14
-       trap-12528 [003]  1159.755807: trap_entry: number=14
-       trap-12528 [003]  1159.755810: trap_entry: number=14
-       trap-12528 [003]  1159.755817: trap_entry: number=14
-       trap-12528 [003]  1159.755819: trap_entry: number=14
-       trap-12528 [003]  1159.755821: trap_entry: number=14
-       trap-12528 [003]  1159.755824: trap_entry: number=14
-       trap-12528 [003]  1159.755826: trap_entry: number=14
-$ cat trace | grep "trap-" | grep number=7 | head
-       trap-12528 [003]  1159.756283: trap_entry: number=7
-       trap-12529 [003]  1159.757427: trap_entry: number=7
-       trap-12530 [003]  1159.758277: trap_entry: number=7
-       trap-12531 [003]  1159.759172: trap_entry: number=7
-       trap-12532 [003]  1159.768643: trap_entry: number=7
-       trap-12533 [003]  1159.778195: trap_entry: number=7
-       trap-15026 [001]  1557.877722: trap_entry: number=7
-       trap-15253 [001]  1621.395067: trap_entry: number=7
+Interrupt as in /proc/interrupts        Name as it appears in ftrace log
+NMI: Non-maskable interrupts           : NMI_VECTOR
+LOC: Local timer interrupts            : LOCAL_TIMER_VECTOR
+SPU: Spurious interrupts               : SPURIOUS_APIC_VECTOR
+PMI: Performance monitoring interrupts : <not added>
+PND: Performance pending work          : LOCAL_PENDING_VECTOR
+RES: Rescheduling interrupts           : RESCHEDULE_VECTOR
+CAL: Function call interrupts          : CALL_FUNCTION_VECTOR or
+                                         CALL_FUNCTION_SINGLE_VECTOR
+TLB: TLB shootdowns                    : INVALIDATE_TLB_VECTOR_START to
+                                         INVALIDATE_TLB_VECTOR_END
+TRM: Thermal event interrupts          : THERMAL_APIC_VECTOR
+THR: Threshold APIC interrupts         : THRESHOLD_APIC_VECTOR
+MCE: Machine check exceptions          : <not added>
+MCP: Machine check polls               : <not added>
+ERR:                                   : ERROR_APIC_VECTOR
+MIS:                                   : <not added>
+PLT: Platform interrupts               : X86_PLATFORM_IPI_VECTOR
+
+Enabled the added tracepoints and verified the output:
+$ echo 1 > debug/tracing/events/irq/special_irq_entry/enable
+$ echo 1 > debug/tracing/events/irq/special_irq_exit/enable
+$ cat debug/tracing/trace | more
+<idle>-0     [000]   263.699530: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [003]   263.699700: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [004]   263.699749: special_irq_entry: irq=237
+name=INVALIDATE_TLB_VECTOR tlb_vector=30
+<...>-9483  [000]   263.700498: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [004]   263.700498: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+<idle>-0     [003]   263.700519: special_irq_entry: irq=239
+name=LOCAL_TIMER_VECTOR tlb_vector=-1
+
+A custom script compares the two:
+$ sh ~/ftrace_test.sh
+tracing...
+  cpu0: overrun: 0
+  cpu1: overrun: 0
+  cpu2: overrun: 0
+  cpu3: overrun: 0
+IRQ ftrace record counts (ignoring numeric  irq=(0|1|4|5|7|9|10|24) )
+      2 irq=242 name=INVALIDATE_TLB_VECTOR_2
+      3 irq=252 name=CALL_FUNCTION_VECTOR
+      6 irq=241 name=INVALIDATE_TLB_VECTOR_1
+      6 irq=2 name=NMI_VECTOR
+     22 irq=240 name=INVALIDATE_TLB_VECTOR_0
+     40 irq=251 name=CALL_FUNCTION_SINGLE_VECTOR
+    587 irq=253 name=RESCHEDULE_VECTOR
+  15013 irq=239 name=LOCAL_TIMER_VECTOR
+/proc/interrupts stats difference
+      6 NMI (Non-maskable interrupts)
+  14945 LOC (Local timer interrupts)
+      6 PMI (Performance monitoring interrupts)
+    578 RES (Rescheduling interrupts)
+     42 CAL (Function call interrupts)
+     30 TLB (TLB shootdowns)
+      4 MCP (Machine check polls)
+
+In above output:
+NMI (Non-maskable interrupts) == NMI_VECTOR (irq 2)
+LOC (Local timer interrupts) == LOCAL_TIMER_VECTOR (irq 239)
+RES (Rescheduling interrupts) == RESCHEDULE_VECTOR (irq=253)
+CAL (Function call interrupts) == CALL_FUNCTION_VECTOR (irq 252) +
+                                  CALL_FUNCTION_SINGLE_VECTOR (irq 251)
+TLB (TLB shootdowns) == INVALIDATE_TLB_VECTOR_0 (irq=240) +
+                        INVALIDATE_TLB_VECTOR_1 (irq=241) +
+                        INVALIDATE_TLB_VECTOR_2 (irq=242)
 
 Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- arch/x86/kernel/ptrace.c    |    4 +++
- arch/x86/kernel/traps.c     |   16 +++++++++++++++
- arch/x86/mm/fault.c         |   13 ++++++++++-
- include/trace/events/trap.h |   44 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 75 insertions(+), 2 deletions(-)
- create mode 100644 include/trace/events/trap.h
+ arch/x86/kernel/apic/apic.c              |    7 +++
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 +
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    3 +
+ arch/x86/kernel/irq.c                    |    4 +-
+ arch/x86/kernel/irq_work.c               |    4 ++
+ arch/x86/kernel/smp.c                    |    7 +++
+ arch/x86/kernel/time.c                   |    6 +++
+ arch/x86/kernel/traps.c                  |    3 +
+ arch/x86/mm/tlb.c                        |    3 +
+ include/trace/events/irq.h               |   68 ++++++++++++++++++++++++++++++
+ 10 files changed, 107 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 45892dc..d788752 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -22,6 +22,8 @@
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index fabf01e..e601c27 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -33,6 +33,7 @@
+ #include <linux/dmi.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
++#include <trace/events/irq.h>
  
-+#include <trace/events/trap.h>
-+
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- #include <asm/system.h>
-@@ -1330,8 +1332,10 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 	struct siginfo info;
+ #include <asm/perf_event.h>
+ #include <asm/x86_init.h>
+@@ -857,7 +858,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 */
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(LOCAL_TIMER_VECTOR);
+ 	local_apic_timer_interrupt();
++	trace_special_irq_exit(LOCAL_TIMER_VECTOR);
+ 	irq_exit();
  
- 	fill_sigtrap_info(tsk, regs, error_code, si_code, &info);
-+	trace_trap_entry(tsk->thread.trap_no);
- 	/* Send us the fake SIGTRAP */
- 	force_sig_info(SIGTRAP, &info, tsk);
-+	trace_trap_exit(tsk->thread.trap_no);
+ 	set_irq_regs(old_regs);
+@@ -1790,6 +1793,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(SPURIOUS_APIC_VECTOR);
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1804,6 +1808,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+ 	pr_info("spurious APIC interrupt on CPU#%d, "
+ 		"should never happen.\n", smp_processor_id());
++	trace_special_irq_exit(SPURIOUS_APIC_VECTOR);
+ 	irq_exit();
  }
  
+@@ -1816,6 +1821,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(ERROR_APIC_VECTOR);
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+@@ -1836,6 +1842,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 	 */
+ 	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
+ 		smp_processor_id(), v , v1);
++	trace_special_irq_exit(ERROR_APIC_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..abdec08 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/system.h>
+@@ -402,8 +403,10 @@ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
+ {
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(THERMAL_APIC_VECTOR);
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
++	trace_special_irq_exit(THERMAL_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index d746df2..1943d9e 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -3,6 +3,7 @@
+  */
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/irq_vectors.h>
+ #include <asm/apic.h>
+@@ -21,8 +22,10 @@ asmlinkage void smp_threshold_interrupt(void)
+ {
+ 	exit_idle();
+ 	irq_enter();
++	trace_special_irq_entry(THRESHOLD_APIC_VECTOR);
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
++	trace_special_irq_exit(THRESHOLD_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 1cb0b9f..6f857c5 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -8,6 +8,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/smp.h>
+ #include <linux/ftrace.h>
++#include <trace/events/irq.h>
+ #include <linux/delay.h>
+ 
+ #include <asm/apic.h>
+@@ -211,12 +212,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 	exit_idle();
+ 
+ 	irq_enter();
+-
++	trace_special_irq_entry(X86_PLATFORM_IPI_VECTOR);
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+ 		x86_platform_ipi_callback();
+ 
++	trace_special_irq_exit(X86_PLATFORM_IPI_VECTOR);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index ca8f703..9ee00ba 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -8,13 +8,17 @@
+ #include <linux/irq_work.h>
+ #include <linux/hardirq.h>
+ #include <asm/apic.h>
++#include <asm/irq_vectors.h>
++#include <trace/events/irq.h>
+ 
+ void smp_irq_work_interrupt(struct pt_regs *regs)
+ {
+ 	irq_enter();
+ 	ack_APIC_irq();
++	trace_special_irq_entry(IRQ_WORK_VECTOR);
+ 	inc_irq_stat(apic_irq_work_irqs);
+ 	irq_work_run();
++	trace_special_irq_exit(IRQ_WORK_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 513deac..51ec1f8 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -201,7 +202,9 @@ static void native_stop_other_cpus(int wait)
+ void smp_reschedule_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
++	trace_special_irq_entry(RESCHEDULE_VECTOR);
+ 	inc_irq_stat(irq_resched_count);
++	trace_special_irq_exit(RESCHEDULE_VECTOR);
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+@@ -211,8 +214,10 @@ void smp_call_function_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_special_irq_entry(CALL_FUNCTION_VECTOR);
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_special_irq_exit(CALL_FUNCTION_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -220,8 +225,10 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_special_irq_entry(CALL_FUNCTION_SINGLE_VECTOR);
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_special_irq_exit(CALL_FUNCTION_SINGLE_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index 25a28a2..687b087 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/time.h>
+ #include <linux/mca.h>
++#include <trace/events/irq.h>
+ 
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+@@ -26,6 +27,8 @@
+ volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
+ #endif
+ 
++static struct irqaction *irq0_action;
++
+ unsigned long profile_pc(struct pt_regs *regs)
+ {
+ 	unsigned long pc = instruction_pointer(regs);
+@@ -59,7 +62,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	/* Keep nmi watchdog up to date */
+ 	inc_irq_stat(irq0_irqs);
+ 
++	trace_irq_handler_entry(0, irq0_action);
+ 	global_clock_event->event_handler(global_clock_event);
++	trace_irq_handler_exit(0, irq0_action, 1);
+ 
+ 	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
+ 	if (MCA_bus)
+@@ -76,6 +81,7 @@ static struct irqaction irq0  = {
+ 
+ void __init setup_default_timer_irq(void)
+ {
++	irq0_action = &irq0;
+ 	setup_irq(0, &irq0);
+ }
  
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 4857ff6..d450349 100644
+index b9b6716..4857ff6 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -33,6 +33,9 @@
+@@ -31,6 +31,7 @@
+ #include <linux/mm.h>
+ #include <linux/smp.h>
  #include <linux/io.h>
- #include <trace/events/irq.h>
++#include <trace/events/irq.h>
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/trap.h>
-+
  #ifdef CONFIG_EISA
  #include <linux/ioport.h>
- #include <linux/eisa.h>
-@@ -123,6 +126,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+@@ -434,12 +435,14 @@ dotraplinkage notrace __kprobes void
+ do_nmi(struct pt_regs *regs, long error_code)
  {
- 	struct task_struct *tsk = current;
+ 	nmi_enter();
++	trace_special_irq_entry(NMI_VECTOR);
  
-+	trace_trap_entry(trapnr);
- #ifdef CONFIG_X86_32
- 	if (regs->flags & X86_VM_MASK) {
+ 	inc_irq_stat(__nmi_count);
+ 
+ 	if (!ignore_nmis)
+ 		default_do_nmi(regs);
+ 
++	trace_special_irq_exit(NMI_VECTOR);
+ 	nmi_exit();
+ }
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..f119306 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -5,6 +5,7 @@
+ #include <linux/smp.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <trace/events/irq.h>
+ #include <linux/cpu.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -141,6 +142,7 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 	sender = ~regs->orig_ax - INVALIDATE_TLB_VECTOR_START;
+ 	f = &flush_state[sender];
+ 
++	trace_special_irq_entry(INVALIDATE_TLB_VECTOR_START + sender);
+ 	if (!cpumask_test_cpu(cpu, to_cpumask(f->flush_cpumask)))
+ 		goto out;
  		/*
-@@ -169,6 +173,7 @@ trap_signal:
- 		force_sig_info(signr, info, tsk);
- 	else
- 		force_sig(signr, tsk);
-+	trace_trap_exit(trapnr);
- 	return;
- 
- kernel_trap:
-@@ -177,6 +182,7 @@ kernel_trap:
- 		tsk->thread.trap_no = trapnr;
- 		die(str, regs, error_code);
- 	}
-+	trace_trap_exit(trapnr);
- 	return;
- 
- #ifdef CONFIG_X86_32
-@@ -184,6 +190,7 @@ vm86_trap:
- 	if (handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 						error_code, trapnr))
- 		goto trap_signal;
-+	trace_trap_exit(trapnr);
- 	return;
- #endif
- }
-@@ -286,7 +293,9 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		printk("\n");
- 	}
- 
-+	trace_trap_entry(tsk->thread.trap_no);
- 	force_sig(SIGSEGV, tsk);
-+	trace_trap_exit(tsk->thread.trap_no);
- 	return;
- 
- #ifdef CONFIG_X86_32
-@@ -683,7 +692,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 		 */
- 		return;		/* Spurious trap, no error */
- 	}
-+	trace_trap_entry(task->thread.trap_no);
- 	force_sig_info(SIGFPE, &info, task);
-+	trace_trap_exit(task->thread.trap_no);
+@@ -167,6 +169,7 @@ out:
+ 	cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+ 	smp_mb__after_clear_bit();
+ 	inc_irq_stat(irq_tlb_count);
++	trace_special_irq_exit(INVALIDATE_TLB_VECTOR_START + sender);
  }
  
- dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
-@@ -704,11 +715,13 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- dotraplinkage void
- do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(15);
- 	conditional_sti(regs);
- #if 0
- 	/* No need to warn about this any longer. */
- 	printk(KERN_INFO "Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
- #endif
-+	trace_trap_exit(15);
- }
+ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index 4b4c7d9..6c0af78 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -139,6 +139,74 @@ DEFINE_EVENT(softirq, softirq_raise,
+ 	TP_ARGS(vec_nr)
+ );
  
- asmlinkage void __attribute__((weak)) smp_thermal_interrupt(void)
-@@ -780,6 +793,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
- dotraplinkage void __kprobes
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(7);
- #ifdef CONFIG_MATH_EMULATION
- 	if (read_cr0() & X86_CR0_EM) {
- 		struct math_emu_info info = { };
-@@ -788,6 +802,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- 
- 		info.regs = regs;
- 		math_emulate(&info);
-+		trace_trap_exit(7);
- 		return;
- 	}
- #endif
-@@ -795,6 +810,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- #ifdef CONFIG_X86_32
- 	conditional_sti(regs);
- #endif
-+	trace_trap_exit(7);
- }
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 20e3f87..55bdd31 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -11,6 +11,7 @@
- #include <linux/kprobes.h>		/* __kprobes, ...		*/
- #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
- #include <linux/perf_event.h>		/* perf_sw_event		*/
-+#include <trace/events/trap.h>		/* trap trace events		*/
- #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
- 
- #include <asm/traps.h>			/* dotraplinkage, ...		*/
-@@ -955,8 +956,8 @@ static int fault_in_kernel_space(unsigned long address)
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-  */
--dotraplinkage void __kprobes
--do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+static __always_inline void
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -1164,3 +1165,11 @@ good_area:
- 
- 	up_read(&mm->mmap_sem);
- }
++#ifdef CONFIG_X86
++#include <asm/irq_vectors.h>
 +
-+dotraplinkage void __kprobes
-+do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	trace_trap_entry(14);
-+	__do_page_fault(regs, error_code);
-+	trace_trap_exit(14);
-+}
-diff --git a/include/trace/events/trap.h b/include/trace/events/trap.h
-new file mode 100644
-index 0000000..cb38eb6
---- /dev/null
-+++ b/include/trace/events/trap.h
-@@ -0,0 +1,44 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM trap
++#define special_irq_name(sirq) { sirq, #sirq }
++#define show_special_irq_name(val)					\
++	__print_symbolic(val,						\
++			 special_irq_name(NMI_VECTOR),			\
++			 special_irq_name(LOCAL_TIMER_VECTOR),		\
++			 special_irq_name(ERROR_APIC_VECTOR),		\
++			 special_irq_name(RESCHEDULE_VECTOR),		\
++			 special_irq_name(CALL_FUNCTION_VECTOR),	\
++			 special_irq_name(CALL_FUNCTION_SINGLE_VECTOR),	\
++			 special_irq_name(THERMAL_APIC_VECTOR),		\
++			 special_irq_name(THRESHOLD_APIC_VECTOR),	\
++			 special_irq_name(REBOOT_VECTOR),		\
++			 special_irq_name(SPURIOUS_APIC_VECTOR),	\
++			 special_irq_name(IRQ_WORK_VECTOR),		\
++			 special_irq_name(X86_PLATFORM_IPI_VECTOR)	\
++			)
 +
-+#if !defined(_TRACE_TRAP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_TRAP_H
++#define IS_INVALIDATE_TLB_VECTOR(__irq) (\
++		__irq >= INVALIDATE_TLB_VECTOR_START && \
++		__irq <= INVALIDATE_TLB_VECTOR_END)
 +
-+#include <linux/tracepoint.h>
++DECLARE_EVENT_CLASS(special_irq,
 +
-+DECLARE_EVENT_CLASS(trap,
++	TP_PROTO(int irq),
 +
-+	TP_PROTO(int id),
-+
-+	TP_ARGS(id),
++	TP_ARGS(irq),
 +
 +	TP_STRUCT__entry(
-+		__field(	int,	id	)
++		__field(	int,	irq	)
 +	),
 +
 +	TP_fast_assign(
-+		__entry->id = id;
++		__entry->irq = irq;
 +	),
 +
-+	TP_printk("number=%d", __entry->id)
++	TP_printk("irq=%d name=%s tlb_vector=%d", __entry->irq,
++		IS_INVALIDATE_TLB_VECTOR(__entry->irq) ?
++		"INVALIDATE_TLB_VECTOR" : show_special_irq_name(__entry->irq),
++		IS_INVALIDATE_TLB_VECTOR(__entry->irq) ?
++		__entry->irq - INVALIDATE_TLB_VECTOR_START : -1)
 +);
 +
-+DEFINE_EVENT(trap, trap_entry,
++/*
++ * special_irq_entry - called before enterring a special interrupt
++ * such as apic timer, spurious interrupt, and etc.
++ */
++DEFINE_EVENT(special_irq, special_irq_entry,
 +
-+	TP_PROTO(int id),
++	TP_PROTO(int irq),
 +
-+	TP_ARGS(id)
++	TP_ARGS(irq)
 +);
 +
-+DEFINE_EVENT(trap, trap_exit,
++/*
++ * special_irq_exit - called immediately after the special interrupt
++ * handler returns
++ */
++DEFINE_EVENT(special_irq, special_irq_exit,
 +
-+	TP_PROTO(int id),
++	TP_PROTO(int irq),
 +
-+	TP_ARGS(id)
++	TP_ARGS(irq)
 +);
++#endif /* CONFIG_X86 */
 +
-+#endif /* _TRACE_TRAP_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
+ #endif /*  _TRACE_IRQ_H */
+ 
+ /* This part must be outside protection */
 -- 
 1.7.3.1
 
