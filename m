@@ -1,39 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab1DYSfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 14:35:47 -0400
-Received: from lucidpixels.com ([75.144.35.66]:35703 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758203Ab1DYSfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 14:35:46 -0400
-Date: Mon, 25 Apr 2011 14:35:45 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: 2.6.38: rt2800usb: driver is crashing the kernel
-In-Reply-To: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1758839Ab1DYSgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 14:36:21 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:52921 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758203Ab1DYSgT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 14:36:19 -0400
+Date: Mon, 25 Apr 2011 20:36:06 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+Message-ID: <20110425203606.4e78246c@neptune.home>
+In-Reply-To: <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
+References: <20110424202158.45578f31@neptune.home>
+	<20110424235928.71af51e0@neptune.home>
+	<20110425114429.266A.A69D9226@jp.fujitsu.com>
+	<BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com>
+	<20110425111705.786ef0c5@neptune.home>
+	<BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
+	<20110425180450.1ede0845@neptune.home>
+	<BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
+	<20110425190032.7904c95d@neptune.home>
+	<BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 25 April 2011 Linus Torvalds wrote:
+> On Mon, Apr 25, 2011 at 10:00 AM, Bruno Prémont wrote:
+> >
+> > I hope tiny-rcu is not that broken... as it would mean driving any
+> > PREEMPT_NONE or PREEMPT_VOLUNTARY system out of memory when compiling
+> > packages (and probably also just unpacking larger tarballs or running
+> > things like du).
+> 
+> I'm sure that TINYRCU can be fixed if it really is the problem.
+> 
+> So I just want to make sure that we know what the root cause of your
+> problem is. It's quite possible that it _is_ a real leak of filp or
+> something, but before possibly wasting time trying to figure that out,
+> let's see if your config is to blame.
 
-I notice periodic kernel crashes when using wireless.
-Has anyone seen this using the rt2800usb driver?
+With changed config (PREEMPT=y, TREE_PREEMPT_RCU=y) I haven't reproduced
+yet.
 
-When the host is on the LAN (supermicro+intel), there are zero crashes.
-Since I don't have it in a location where I can use netdump over the 
-LAN/wire, see the picture below for the kernel crash/OOPS on the console:
+When I was reproducing with TINYRCU things went normally for some time
+until suddenly slabs stopped being freed.
 
-http://home.comcast.net/~jpiszcz/20110425/kernel_crash.jpg [1.2m]
+> > And with system doing nothing (except monitoring itself) memory usage
+> > goes increasing all the time until it starves (well it seems to keep
+> > ~20M free, pushing processes it can to swap). Config is just being
+> > make oldconfig from working 2.6.38 kernel (answering default for new
+> > options)
+> 
+> How sure are you that the system really is idle? Quite frankly, the
+> constant growing doesn't really look idle to me.
 
-Thoughts?
+Except the SIGSTOPed build there is not much left, collectd running in
+background (it polls /proc for process counts, fork rate, memory usage,
+... opening, reading, closing the files -- scanning every 10 seconds),
+slabtop on one terminal.
 
-Justin.
+CPU activity was near-zero with 10%-20% spikes of system use every 10
+minutes and io-wait when all cache had been pushed out.
+
+> > Attached graph matching numbers of previous mail. (dropping caches was at
+> > 17:55, system idle since then)
+> 
+> Nothing at all going on in 'ps' during that time? And what does
+> slabinfo say at that point now that kmemleak isn't dominating
+> everything else?
+
+ps definitely does not show anything special, 30 or so userspace processes.
+Didn't check ls /proc/*/fd though. Will do at next occurrence.
 
 
+Going to test further with various PREEMPT and RCU selections. Will report
+back as I progress (but won't have much time tomorrow).
+
+Bruno
