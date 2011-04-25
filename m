@@ -1,173 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab1DYODY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 10:03:24 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:33649 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab1DYODW (ORCPT
+	id S1758381Ab1DYOEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 10:04:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62873 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756714Ab1DYOEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 10:03:22 -0400
-X-AuditID: b753bd60-a39c8ba00000453f-45-4db57f289711
-X-AuditID: b753bd60-a39c8ba00000453f-45-4db57f289711
-Message-ID: <4DB57F23.9020305@hitachi.com>
-Date: Mon, 25 Apr 2011 23:03:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Mon, 25 Apr 2011 10:04:13 -0400
+Message-ID: <4DB57F62.4020507@web.de>
+Date: Mon, 25 Apr 2011 16:04:18 +0200
+From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Juhani_M=E4kel=E4?= <ext-juhani.3.makela@nokia.com>
-Cc: Hannu Heikkinen <hannuxx@iki.fi>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kprobe: Fixed a leak when a retprobe entry function returns
- non-zero
-References: <4D130452.2010706@nokia.com>	<4D14429A.3090606@hitachi.com> <BANLkTinAXhN4wwTJE7rTRwhpgf1eLS8qYQ@mail.gmail.com> <4DA951FC.6050807@hitachi.com>
-In-Reply-To: <4DA951FC.6050807@hitachi.com>
+To: "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: Linux 2.6.38.4 : regression due to x86 AMD ARAT feature
+References: <20110421213926.GA19721@kroah.com> <4DB3DA0C.1050003@web.de> <20110424182041.GA19984@liondog.tnic>,<4DB47211.90901@dynato-kyma.net> <EE335F95F28A664DB4A21289D2AA053BD1807651@SAUSEXMBP01.amd.com>
+In-Reply-To: <EE335F95F28A664DB4A21289D2AA053BD1807651@SAUSEXMBP01.amd.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+X-Provags-ID: V02:K0:w+Bb/sA8Llq1Dn+5ieshyD6oLRTXk62EMKONMbJHMzi
+ pCE4EE+BiuqmdZ56iyKzQYCpDy91K4V968ZQ8mWPQOwLGrqli3
+ sYt6/WpRvH4VukYr380iCvtPb4hLtcMLnQ/zdPAMRo4Gt9XO8W
+ +gVWS0+o8YfUNkrrQJBL0sML6wOsxqs3R3mv9inEg9SAJnX9LF
+ i/Z4+F5Qca+Bb80faWvLg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juhani,
-
-I'd like to have your signed-off-by for this patch.
-Could you update it against the latest kernel and
-add your signed-off-by?
-
-Thank you,
-
-(2011/04/16 17:23), Masami Hiramatsu wrote:
-> (2011/04/14 23:21), Hannu Heikkinen wrote:
->> Hi,
->>
->> any progress on this Juhani's fix?
-> 
-> I think this basically good for me. Could you revise it as
-> usual style of commit patch on the latest -tip or linus tree?
-> 
-> Thank you,
-> 
->>
->> br,
->> Hannu
->>
->> 2010/12/24 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->>> (2010/12/23 17:12), Juhani Mäkelä wrote:
->>>> Dear Sirs,
->>>>
->>>> Here is a little fix I found necessary to implement in order to perform
->>>> some probing:
->>>>
->>>> ----
->>>> A kretprobe can install an optional entry probe that is called when
->>>> the probed function is entered. If the callback returns non zero,
->>>> the return probe will not be called and the instance is forgotten.
->>>> However, the allocated instance of struct kretprobe_instance was
->>>> not returned in the free_instances list. Fixed this by returning
->>>> the unused instance to the free list if it was not needed.
->>>
->>> Right. That must be a memory-leak path!
->>> Thank you very much for pointing it out :-)
->>>
->>> BTW, it seems that other paths have initialized hlist by
->>> INIT_HLIST_NODE(). However, actually there is no need to
->>> init a node for adding on a hlist again. Just from the viewpoint
->>> of maintaining the code, coding style should have coherence and
->>> it's better to init by INIT_HLIST_NODE().
->>>
->>> (In this function, a node deleted from free_instances hlist is
->>>  always added on a hlist again. So maybe it's enough to use
->>>  hlist_del_init() instead of hlist_del() at least here.)
->>>
->>> Anyway, this should fix the problem, and should be an urgent fix.
->>> Thanks!
->>>
->>>
->>>> ---
->>>>  kernel/kprobes.c |   10 +++++++++-
->>>>  1 files changed, 9 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->>>> index 5240d75..69d0ca9 100644
->>>> --- a/kernel/kprobes.c
->>>> +++ b/kernel/kprobes.c
->>>> @@ -971,8 +971,16 @@ static int __kprobes pre_handler_kretprobe(struct
->>>> kprobe *p,
->>>>               ri->rp = rp;
->>>>               ri->task = current;
->>>>
->>>> -             if (rp->entry_handler && rp->entry_handler(ri, regs))
->>>> +             if (rp->entry_handler && rp->entry_handler(ri, regs)) {
->>>> +                     /*
->>>> +                      * Restore the instance to the free list
->>>> +                      * if it is not needed any more.
->>>> +                      */
->>>> +                     spin_lock_irqsave(&rp->lock, flags);
->>>> +                     hlist_add_head(&ri->hlist, &rp->free_instances);
->>>> +                     spin_unlock_irqrestore(&rp->lock, flags);
->>>>                       return 0;
->>>> +             }
->>>>
->>>>               arch_prepare_kretprobe(ri, regs);
->>>> ----
->>>>
->>>> I'm not at all positive that this is the right fix, but at least in our
->>>> environment it seems to help. Here is some background info:
->>>>
->>>> We have implemented a kernel module that implements capability check
->>>> tracing by adding a kretprobe in the "capable" function. Every time a
->>>> capability check is made, it gathers some data about the process being
->>>> checked, the capability number and the result of the check. If the check
->>>> comes with current->mm == NULL, it's disregarded by the tracer to avoid
->>>> unnecessary overhead, and the entry_handler returns value 1.
->>>>
->>>> Normally this works fine, but this week we noticed that if the module is
->>>> compiled in and activated in an early phase in the boot it doesn't work
->>>> at all. It appeared that our entry_handler was called as many times as
->>>> was set in the maxactive field of the registered probe, and every time
->>>> it returned 1 because current->mm was NULL in all of the calls. Then no
->>>> more callbacks were made. When the probe was de-registered, the nmissed
->>>> counter had a large value (>6000), and after registering it again the
->>>> probing started to work.
->>>>
->>>> This made me suspect a resource leak, and as far as I can see there
->>>> indeed is one in kprobe.c::pre_handler_kretprobe. The fix above solved
->>>> the problem and seems not to have any undesired side effects.
->>>>
->>>> We are using kernel version 2.6.32, but it seems to me that the same
->>>> problem exists in more current kernels judging by a quick look.
->>>>
->>>> Why the problem manifests itself only if the tracing is enabled early in
->>>> the boot I cannot say. Could it be that if the entry_handler returns 0
->>>> at least once before the free list has been exhausted, it resets the
->>>> situation somehow? Or is it that after some point after userspace
->>>> initialization current->mm is never NULL?
->>>>
->>>> The capability tracing module itself is ment for upstream, but I have
->>>> been told its code is not kernel quality (not enough comments) and the
->>>> implementation lacks obvious features so we have not dared to offer it
->>>> yet. It is used for defining profiles for daemon processes currently
->>>> running as root by checking what capabilities they actually need and
->>>> then assigning them only those, in the context of the MSSF security
->>>> framework project:
->>>>
->>>>
->>> http://conference2010.meego.com/session/mobile-simplified-security-framework-overview
->>>>
->>>> In case you are interested I'm happy to make the code and documentation
->>>> available at the forum of your choice.
->>>>
->>>> Yours sincerely,
->>>> Juhani Mäkelä
->>>> Nixu OPEN - https://www.nixuopen.org
-
-
+Thank you very much for caring.
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Best regards,
+Jörg-Volker.
+
+Ostrovsky, Boris wrote, on 04/24/11 21:44:
+> It's an old family fh processor (CPUID 00020F42) that cpu_has_amd_erratum(amd_erratum_400) apparently hasn't picked up. Since all fh processors are affected by this erratum I'll replace "c->x86 >= 0xf" with "c->x86 > 0xf" (and probably fix erratum formula anyway).
+> 
+> -boris
+<snip>
