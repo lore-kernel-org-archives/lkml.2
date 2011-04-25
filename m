@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750903Ab1DYEEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 00:04:09 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26732 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750702Ab1DYEEF (ORCPT
+	id S1750951Ab1DYEVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 00:21:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53773 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1DYEVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 00:04:05 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de>
-Subject: RE: Question: GPIO driver how to get irq_base
-Date: Mon, 25 Apr 2011 13:04:01 +0900
-Message-ID: <614E530848124206BD1A074548078FA8@hacdom.okisemi.com>
+	Mon, 25 Apr 2011 00:21:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110421103009.731B.A69D9226@jp.fujitsu.com>
+References: <1303331695.2796.159.camel@work-vm> <20110421103009.731B.A69D9226@jp.fujitsu.com>
+Message-Id: <20110425132333.266E.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwBn3AolEdMpVQfT0Wr14c0rSODnABXSq2w
-In-Reply-To: <4DB2A6A2.90803@metafoo.de>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 25 Apr 2011 13:21:28 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
-
-On Saturday, April 23, 2011 7:15 PM, Lars-Peter Clausen wrote:
-> It looks as both your driver and IO-APIC have allocated the 
-> same IRQ. You could try to add some debug code to 
-> alloc_irq_and_cfg_at to figure out what is going wrong.
+> > > I'd prefer that we remove /proc/pid/comm entirely or at least prevent 
+> > > writing to it unless CONFIG_EXPERT.
+> > 
+> > Eeeh. That's probably going to be a tough sell, as I think there is
+> > wider interest in what it provides. Its useful for debugging
+> > applications not kernels, so I doubt folks will want to rebuild their
+> > kernel to try to analyze a java issue.
+> > 
+> > So I'm well aware that there is the chance that you catch the race and
+> > read an incomplete/invalid comm (it was discussed at length when the
+> > change went in), but somewhere I've missed how that's causing actual
+> > problems. Other then just being "evil" and having the documented race,
+> > could you clarify what the issue is that your hitting?
 > 
-> - Lars
+> The problem is, there is no documented as well. Okay, I recognized you
+> introduced new locking rule for task->comm. But there is no documented
+> it. Thus, We have no way to review current callsites are correct or not.
+> Can you please do it? And, I have a question. Do you mean now task->comm
+> reader don't need task_lock() even if it is another thread?
+> 
+> _if_ every task->comm reader have to realize it has a chance to read
+> incomplete/invalid comm, task_lock() doesn't makes any help.
 
-Adding debug code like below.
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
-{
-	int res = irq_alloc_desc_at(at, node);
-	struct irq_cfg *cfg;
-printk("%s:1 at=%d node=%d res=%d\n", __func__, at, node, res);
-	if (res < 0) {
-printk("%s:2\n", __func__);
-		if (res != -EEXIST)
-			return NULL;
-printk("%s:3\n", __func__);
-		cfg = get_irq_chip_data(at);
-printk("%s:4\n", __func__);
-		if (cfg)
-			return cfg;
-	}
-
-	cfg = alloc_irq_cfg(at, node);
-printk("%s:5cfg=%p\n", __func__, cfg);
-	if (cfg)
-		set_irq_chip_data(at, cfg);
-	else
-		irq_free_desc(at);
-printk("%s:6cfg=%p\n", __func__, cfg);
-	return cfg;
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-The following is kernel boot log.
-
-alloc_irq_and_cfg_at:1 at=1 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=0 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=3 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=4 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=5 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=6 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=7 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=8 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=9 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=10 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=11 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=12 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=13 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=14 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:1 at=15 node=0 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=4 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=8 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=13 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=1 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=12 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-
-alloc_irq_and_cfg_at:1 at=16 node=-1 res=16
-alloc_irq_and_cfg_at:5cfg=f599c1b0
-alloc_irq_and_cfg_at:6cfg=f599c1b0
-
-alloc_irq_and_cfg_at:1 at=17 node=-1 res=17
-alloc_irq_and_cfg_at:5cfg=f599c1a0
-alloc_irq_and_cfg_at:6cfg=f599c1a0
-
-alloc_irq_and_cfg_at:1 at=19 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
-alloc_irq_and_cfg_at:5cfg=f5957dc0
-alloc_irq_and_cfg_at:6cfg=f5957dc0
-
-alloc_irq_and_cfg_at:1 at=18 node=-1 res=-17
-alloc_irq_and_cfg_at:2
-alloc_irq_and_cfg_at:3
-alloc_irq_and_cfg_at:4
+ping?
 
 
-With Best Regards,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
 
