@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733Ab1DYRvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:51:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45717 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758203Ab1DYRvD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:51:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=STfMlNTeFDSHkFRxIH0G+8aSS9ku6lVfb62inqWwIlZsSXIMKyhdBV0xC1KX4IHPFf
-         dJg6K2HG6qzimorKX18eBTbHkUgNSiVhJBb89parQAYWqDFqAIUeOhBcto+d3LbKR6Gh
-         q8OTSqzVQnsUSac+/ZrLtupjQtUGPpPGURsMk=
+	id S932112Ab1DYRzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 13:55:03 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39740 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758738Ab1DYRzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 13:55:01 -0400
+Date: Mon, 25 Apr 2011 19:54:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110425175444.GC28239@elte.hu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
+ <20110422063429.GA16643@elte.hu>
+ <20110422080604.GA22611@elte.hu>
+ <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
-References: <20110424202158.45578f31@neptune.home>
-	<20110424235928.71af51e0@neptune.home>
-	<20110425114429.266A.A69D9226@jp.fujitsu.com>
-	<BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com>
-	<20110425111705.786ef0c5@neptune.home>
-	<BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
-Date: Mon, 25 Apr 2011 20:51:01 +0300
-X-Google-Sender-Auth: 38WoNBwXtJf6ocLtU9gGVM_j0Ss
-Message-ID: <BANLkTikSEg-+4==08FSTpPsRKOxW-o7ftg@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-From: Pekka Enberg <penberg@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 6:22 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> (Pekka? This is a real _problem_. The whole "confused debugging" is
-> wasting a lot of peoples time. Can we please try to get slabinfo
-> statistics work right for the merged state. Or perhaps decide to just
-> not merge at all?)
 
-I sent proof of concept patches that hopefully fix SLUB statistics for
-merged case. Lets see what Christoph and David think of them and if
-it's a dead end, I'd be inclined to rip out slab merging
-completely....
+* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
 
-                       Pekka
+> [...] The kernel has no business telling users which perf events are 
+> interesting, or limiting them! [...]
+
+The policy is very simple and common-sense: if a given piece of PMU 
+functionality is useful enough to be exposed via a raw interface, then
+it must be useful enough to be generalized as well.
+
+> [...]  What is this, windows?
+
+FYI, this is how the Linux kernel has operated from day 1 on: we support 
+hardware features to abstract useful highlevel functionality out of it.
+I would not expect this to change anytime soon.
+
+Thanks,
+
+	Ingo
