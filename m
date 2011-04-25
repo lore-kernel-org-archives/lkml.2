@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab1DYUZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:25:39 -0400
-Received: from 1wt.eu ([62.212.114.60]:34610 "EHLO 1wt.eu"
+	id S932559Ab1DYUZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:25:55 -0400
+Received: from 1wt.eu ([62.212.114.60]:34627 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab1DYUZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:32 -0400
-Message-Id: <20110425200240.032440592@pcw.home.local>
+	id S932537Ab1DYUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:48 -0400
+Message-Id: <20110425200239.119096077@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:14 +0200
+Date: Mon, 25 Apr 2011 22:04:53 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Luca Risolia <luca.risolia@studio.unibo.it>,
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Patrick McHardy <kaber@trash.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 162/173] [media] video: sn9c102: world-wirtable sysfs files
+Subject: [PATCH 141/173] ipv6: netfilter: ip6_tables: fix infoleak to userspace
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 14ddc3188d50855ae2a419a6aced995e2834e5d4 upstream.
+commit 6a8ab060779779de8aea92ce3337ca348f973f54 upstream.
 
-Don't allow everybody to change video settings.
+Structures ip6t_replace, compat_ip6t_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
+
+The first bug was introduced before the git epoch;  the second was
+introduced in 3bc3fe5e (v2.6.25-rc1);  the third is introduced by
+6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
+CAP_NET_ADMIN.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Luca Risolia <luca.risolia@studio.unibo.it>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv6/netfilter/ip6_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/media/video/sn9c102/sn9c102_core.c
-+++ b/drivers/media/video/sn9c102/sn9c102_core.c
-@@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_
- 		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
- static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
- 		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
--static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
--static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
--static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
-+static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
-+static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
-+static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
- static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -1323,6 +1323,7 @@ do_replace(struct net *net, void __user
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1855,6 +1856,7 @@ compat_do_replace(struct net *net, void
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -2079,6 +2081,7 @@ do_ip6t_get_ctl(struct sock *sk, int cmd
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
+ 
+ 		if (cmd == IP6T_SO_GET_REVISION_TARGET)
+ 			target = 1;
 
 
