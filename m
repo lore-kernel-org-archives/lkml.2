@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab1DYWBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 18:01:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52574 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1DYWBV (ORCPT
+	id S1755330Ab1DYWIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 18:08:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55062 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1DYWIx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 18:01:21 -0400
+	Mon, 25 Apr 2011 18:08:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QD/VQwPvVNRxMR4CiE4S5OyBFxbu9GgEszGOpmH5d11RgfWl33DgU2YXBKaWGkdF3z
-         fCYaDnXyFjyjXYEhbVxxqd7+i7NviAJvaT+8c1+CHDzCjVqSmqg1yje+tdaggw4AqrIb
-         +mXpMi8JiUAmFuThRkBd20l5oe1trIv+opz1c=
-Date: Tue, 26 Apr 2011 01:01:16 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, bookjovi@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, wilsons@start.ca
-Subject: Re: +
- proc-put-check_mem_permission-before-__get_free_page-in-mem_read.patch added
- to -mm tree
-Message-ID: <20110425220116.GA22006@p183>
-References: <201104252011.p3PKBFTD005857@imap1.linux-foundation.org>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=whzFQcj8hYTg3b1ElrKKGLnpj72CiMiCTdVZmtrnezt9MpJHpsqhrs/Fp0MGFXb9pd
+         krcnZwXsHQgNX8OVNwCZK9DPNj5aPIbR5jCtvXXwylu21kRrVm6pVtDMgol3X8tsH1O4
+         Yx1J+efEswgcwIRkecCS8CLOnIsTh56GS1tR8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104252011.p3PKBFTD005857@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110425231016.34b4293e@neptune.home>
+References: <20110424235928.71af51e0@neptune.home> <20110425114429.266A.A69D9226@jp.fujitsu.com>
+ <BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com> <20110425111705.786ef0c5@neptune.home>
+ <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com> <20110425180450.1ede0845@neptune.home>
+ <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home>
+ <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home>
+ <20110425191607.GL2468@linux.vnet.ibm.com> <20110425231016.34b4293e@neptune.home>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 25 Apr 2011 18:08:32 -0400
+Message-ID: <BANLkTinQwJj481vFw4X5K7cOVMWjRqx-xg@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Cc: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 01:11:15PM -0700, akpm@linux-foundation.org wrote:
-> Subject: proc: put check_mem_permission before __get_free_page in mem_read
-> From: Jovi Zhang <bookjovi@gmail.com>
-> 
-> It would be better to put check_mem_permission() before __get_free_page()
-> in mem_read(), to be same as mem_write().
+2011/4/25 Bruno Prémont:
+> With + + TREE_PREMPT_RCU system was stable compiling for over 2 hours,
+> switching to TINY_RCU, filp count started increasing pretty early after beginning
+> compiling.
 
-This can be done even more straightforward if you put task_struct right after
-it isn't needed.
-
-> --- a/fs/proc/base.c~proc-put-check_mem_permission-before-__get_free_page-in-mem_read
-> +++ a/fs/proc/base.c
-> @@ -831,23 +831,21 @@ static ssize_t mem_read(struct file * fi
->  	if (!task)
->  		goto out_no_task;
->  
-> -	ret = -ENOMEM;
-> -	page = (char *)__get_free_page(GFP_TEMPORARY);
-> -	if (!page)
-> -		goto out;
-> -
->  	mm = check_mem_permission(task);
->  	ret = PTR_ERR(mm);
->  	if (IS_ERR(mm))
-> -		goto out_free;
-> +		goto out_task;
->  
->  	ret = -EIO;
-> - 
->  	if (file->private_data != (void*)((long)current->self_exec_id))
-> -		goto out_put;
-> +		goto out_mm;
-> +
-> +	ret = -ENOMEM;
-> +	page = (char *)__get_free_page(GFP_TEMPORARY);
-> +	if (!page)
-> +		goto out_mm;
->  
->  	ret = 0;
-> - 
->  	while (count > 0) {
->  		int this_len, retval;
->  
-> @@ -870,12 +868,10 @@ static ssize_t mem_read(struct file * fi
->  		count -= retval;
->  	}
->  	*ppos = src;
-> -
-> -out_put:
-> -	mmput(mm);
-> -out_free:
->  	free_page((unsigned long) page);
-> -out:
-> +out_mm:
-> +	mmput(mm);
-> +out_task:
->  	put_task_struct(task);
->  out_no_task:
->  	return ret;
+since you can reproduce fairly easily, could you try some of the major
+rc's to see if you could narrow down things ?  see if 2.6.39-rc[123]
+all act the same while 2.6.38 works ?
+-mike
