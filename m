@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab1DYPXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 11:23:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31710 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306Ab1DYPXU (ORCPT
+	id S1754782Ab1DYP2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 11:28:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46719 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab1DYP2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 11:23:20 -0400
-Date: Mon, 25 Apr 2011 08:22:30 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [TRIVIAL PATCH] treewide: Cleanup continuations and remove
- logging message whitespace
-Message-Id: <20110425082230.6d656ed0.randy.dunlap@oracle.com>
-In-Reply-To: <65136ab68431de0cc0c554663cee33fc9d4a9850.1303615717.git.joe@perches.com>
-References: <65136ab68431de0cc0c554663cee33fc9d4a9850.1303615717.git.joe@perches.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DB591BD.0021:SCFMA4539811,ss=1,fgs=0
+	Mon, 25 Apr 2011 11:28:44 -0400
+Date: Mon, 25 Apr 2011 12:28:33 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Tim Blechmann <tim@klingt.org>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: Allow set output buffer for tasks in the same
+ thread group
+Message-ID: <20110425152833.GB32069@ghostprotocols.net>
+References: <1303657064.2239.25.camel@localhost>
+ <1303664726.20212.1.camel@twins>
+ <1303738838.2578.1.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303738838.2578.1.camel@localhost>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Apr 2011 20:38:19 -0700 Joe Perches wrote:
-
-> Using C line continuation inside format strings is error prone.
-> Clean up the unintended whitespace introduced by misuse of \.
-> Neaten correctly used line continations as well for consistency.
+Em Mon, Apr 25, 2011 at 09:40:38PM +0800, Lin Ming escreveu:
+> On Mon, 2011-04-25 at 01:05 +0800, Peter Zijlstra wrote:
+> > On Sun, 2011-04-24 at 22:57 +0800, Lin Ming wrote:
+> > > Currently, kernel only allows an event to redirect its output to other
+> > > events of the same task.
+> > > 
+> > > This causes PERF_EVENT_IOC_SET_OUTPUT ioctl fails when an event is
+> > > trying to redirect its output to other events in the same thread group.
+> > 
+> > Which is exactly what it should do, you should never be allowed to
+> > redirect your events to that of another task, since that other task
+> > might be running on another CPU.
+> > 
+> > The buffer code strictly assumes no concurrency, therefore its either
+> > one task or one CPU.
 > 
-> drivers/scsi/arcmsr/arcmsr_hba.c has these errors as well,
-> but arcmsr needs a lot more work and the driver should likely be
-> moved to staging instead.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Well, this is not the right fix, then the perf tool code need to be
+> fixed.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Yes, I'm working on it.
 
-> ---
->  arch/arm/plat-mxc/cpufreq.c                     |    4 +-
->  drivers/dma/dmatest.c                           |    4 +-
->  drivers/firmware/iscsi_ibft.c                   |    4 +-
->  drivers/gpio/ab8500-gpio.c                      |    7 ++---
->  drivers/media/video/usbvision/usbvision-video.c |    5 ++-
->  drivers/message/fusion/mptbase.c                |   22 ++++++++----------
->  drivers/misc/bh1780gli.c                        |    8 +++---
->  drivers/misc/spear13xx_pcie_gadget.c            |    4 +-
->  drivers/net/atlx/atl1.c                         |    5 ++-
->  drivers/net/wireless/airo.c                     |   27 ++++++++++++-----------
->  drivers/net/wireless/iwlegacy/iwl-4965-calib.c  |    4 +-
->  drivers/net/wireless/iwlwifi/iwl-agn-calib.c    |    4 +-
->  drivers/regulator/max8998.c                     |    4 +-
->  drivers/tty/serial/bfin_sport_uart.c            |    3 +-
->  drivers/tty/serial/mfd.c                        |    4 +-
->  drivers/usb/host/uhci-hcd.c                     |    7 +++--
->  drivers/usb/storage/ene_ub6250.c                |    4 +-
->  17 files changed, 60 insertions(+), 60 deletions(-)
-
-
-Joe,
-Is there a decent fix for this warning in linux-next:
-
-drivers/tty/n_gsm.c:535: warning: zero-length gnu_printf format string
-
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+- Arnaldo
