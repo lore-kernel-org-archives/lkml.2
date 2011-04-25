@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab1DYTqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 15:46:03 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44679 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758152Ab1DYTqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 15:46:01 -0400
-Date: Mon, 25 Apr 2011 21:45:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Dehao Chen <danielcdh@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, arun@sharma-home.net,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
-        Arun Sharma <asharma@fb.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
- missing user space support for config1/config2
-Message-ID: <20110425194542.GA391@elte.hu>
-References: <20110422165007.GA18401@vps.sharma-home.net>
- <20110422203022.GA20573@elte.hu>
- <20110422203222.GA21219@elte.hu>
- <20110423000347.GC9328@tassilo.jf.intel.com>
- <1303545012.2298.44.camel@twins>
- <20110424021907.GB3019@alboin.amr.corp.intel.com>
- <20110425174110.GB28239@elte.hu>
- <BANLkTiks31-pMJe4zCKrppsrA1d6KanJFA@mail.gmail.com>
- <20110425180528.GA30724@elte.hu>
- <BANLkTimUFP68L2CwEwoLDPMwJSO_aK_Qvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimUFP68L2CwEwoLDPMwJSO_aK_Qvg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1758886Ab1DYTvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 15:51:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46896 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758831Ab1DYTvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 15:51:00 -0400
+Subject: Re: [PATCH 0/4] munmap: Flexible mem unmap operation interface for
+ scheduling latency
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Geunsik Lim <leemgs1@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
+References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Apr 2011 21:47:17 +0200
+Message-ID: <1303760837.4865.22.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-04-25 at 19:44 +0900, Geunsik Lim wrote:
+>     Originally, We aim to not hold locks for too long (for scheduling latency reasons).
+>     So zap pages in ZAP_BLOCK_SIZE byte counts.
+>     This means we need to return the ending mmu_gather to the caller.
 
-* Stephane Eranian <eranian@google.com> wrote:
+Please have a look at the mmu_gather rewrite that hit -mm last week,
+that completely does away with ZAP_BLOCK_SIZE and renders these patches
+obsolete.
 
-> > This certainly does not match the results i'm seeing on real applications, 
-> > using "-e instructions:pp" PEBS+LBR profiling. How do you explain that? 
-> > Also, can you demonstrate your claim with a real example?
-> 
-> LBR removes the off-by-1 IP problem, it does not remove the shadow effect, 
-> i.e., that blind spot of N cycles caused by the PEBS arming mechanism.
+Also, -rt doesn't care since it already has preemptible mmu_gather.
 
-I really think you are grasping at straws here - unless you are able to 
-demonstrate clear problems - which you have failed to do so far. The pure act
-of profiling probably disturbs a typical workload statistically more than a
-few cycles skew of the period.
+Furthermore:
 
-I could imagine artifacts with realy short periods and artificially short and 
-dominant hotpaths - but in those cases the skew does not matter much in 
-practice: a short and dominant hotpath is pinpointed very easily ...
+> +L:     linux-rt-users@vger.kernel.org
 
-So i really think it's a non-issue in practice - but you can certainly prove me 
-wrong by demonstrating whatever problems you suspect.
+is complete crap, linux-rt-users is _NOT_ a development list.
 
-Thanks,
-
-	Ingo
