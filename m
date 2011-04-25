@@ -1,61 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab1DYDoG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 23:44:06 -0400
-Received: from mhqmail.moxa.com ([59.124.42.180]:30291 "EHLO
-	mhqmail01.moxa.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758055Ab1DYDoE convert rfc822-to-8bit (ORCPT
+	id S1750903Ab1DYEEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 00:04:09 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26732 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750702Ab1DYEEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 23:44:04 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 25 Apr 2011 00:04:05 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
+References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de>
+Subject: RE: Question: GPIO driver how to get irq_base
+Date: Mon, 25 Apr 2011 13:04:01 +0900
+Message-ID: <614E530848124206BD1A074548078FA8@hacdom.okisemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 2/2] misc: add real function open/read/write/ioctl/close for moxa_serial_io driver
-Date: Mon, 25 Apr 2011 11:44:01 +0800
-Message-ID: <ECB3782BB8F03341905DD923270296115F6735@mhqms01.moxa.com>
-In-Reply-To: <20110425030141.GA23658@suse.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2/2] misc: add real function open/read/write/ioctl/close for moxa_serial_io driver
-Thread-Index: AcwC9YBpgzDZafOpREOD06sf7fPFKAAA66Jw
-From: =?big5?B?SmltbXkgQ2hlbiAos6+lw7lGKQ==?= <jimmy.chen@moxa.com>
-To: "Greg KH" <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
-Cc: "Joe Perches" <joe@perches.com>
-X-OriginalArrivalTime: 25 Apr 2011 03:44:02.0453 (UTC) FILETIME=[049FCC50:01CC02FB]
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcwBn3AolEdMpVQfT0Wr14c0rSODnABXSq2w
+In-Reply-To: <4DB2A6A2.90803@metafoo.de>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
-	I'm not sure what you mean "Can't you do all of this from userspace without any kernel changes needed?". Is there anyway to trigger the I/O control from userspace without driver? V2100 boards connect I/O to uart chip, tuning the I/O will switch the uart chip into different mode. "moxa_serial_io" is not a serial driver; the uart itself is droved by another serial driver such as mxser.c or 8250 driver.
+Hi Lars,
 
------Original Message-----
-From: Greg KH [mailto:gregkh@suse.de] 
-Sent: Monday, April 25, 2011 11:02 AM
-To: Jimmy Chen (陳永達); linux-kernel@vger.kernel.org
-Cc: Joe Perches
-Subject: Re: [PATCH 2/2] misc: add real function open/read/write/ioctl/close for moxa_serial_io driver
-
-On Sun, Apr 24, 2011 at 07:47:23PM -0700, Joe Perches wrote:
-> On Mon, 2011-04-25 at 10:35 +0800, Jimmy Chen (陳永達) wrote:
-> > Add real function and GPL license.
-> > Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
+On Saturday, April 23, 2011 7:15 PM, Lars-Peter Clausen wrote:
+> It looks as both your driver and IO-APIC have allocated the 
+> same IRQ. You could try to add some debug code to 
+> alloc_irq_and_cfg_at to figure out what is going wrong.
 > 
-> A few things.
-> 
-> o Your patches are reversed.
-> o Please run your patches through checkpatch.
-> o I think it better to avoid duplicating all of the GPL
->   and just reference it as you have via MODULE_LICENSE.
-> o You could probably use MODULE_LICENSE("GPL V2")
->   if you want to limit it to V2 only.
+> - Lars
 
-And finally, why does this need to be a kernel driver at all?  Can't you
-do all of this from userspace without any kernel changes needed?
+Adding debug code like below.
 
-thanks,
+/////////////////////////////////////////////////////////////////////////////////////////////////
+static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
+{
+	int res = irq_alloc_desc_at(at, node);
+	struct irq_cfg *cfg;
+printk("%s:1 at=%d node=%d res=%d\n", __func__, at, node, res);
+	if (res < 0) {
+printk("%s:2\n", __func__);
+		if (res != -EEXIST)
+			return NULL;
+printk("%s:3\n", __func__);
+		cfg = get_irq_chip_data(at);
+printk("%s:4\n", __func__);
+		if (cfg)
+			return cfg;
+	}
 
-greg k-h
+	cfg = alloc_irq_cfg(at, node);
+printk("%s:5cfg=%p\n", __func__, cfg);
+	if (cfg)
+		set_irq_chip_data(at, cfg);
+	else
+		irq_free_desc(at);
+printk("%s:6cfg=%p\n", __func__, cfg);
+	return cfg;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+The following is kernel boot log.
+
+alloc_irq_and_cfg_at:1 at=1 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=0 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=3 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=4 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=5 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=6 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=7 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=8 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=9 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=10 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=11 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=12 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=13 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=14 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:1 at=15 node=0 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=4 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=8 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=13 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=1 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=12 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+alloc_irq_and_cfg_at:1 at=16 node=-1 res=16
+alloc_irq_and_cfg_at:5cfg=f599c1b0
+alloc_irq_and_cfg_at:6cfg=f599c1b0
+
+alloc_irq_and_cfg_at:1 at=17 node=-1 res=17
+alloc_irq_and_cfg_at:5cfg=f599c1a0
+alloc_irq_and_cfg_at:6cfg=f599c1a0
+
+alloc_irq_and_cfg_at:1 at=19 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+alloc_irq_and_cfg_at:5cfg=f5957dc0
+alloc_irq_and_cfg_at:6cfg=f5957dc0
+
+alloc_irq_and_cfg_at:1 at=18 node=-1 res=-17
+alloc_irq_and_cfg_at:2
+alloc_irq_and_cfg_at:3
+alloc_irq_and_cfg_at:4
+
+
+With Best Regards,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
