@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab1DYUeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:34:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:34555 "EHLO 1wt.eu"
+	id S932687Ab1DYUeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:34:14 -0400
+Received: from 1wt.eu ([62.212.114.60]:34553 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932426Ab1DYUZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:21 -0400
-Message-Id: <20110425200240.120116261@pcw.home.local>
+	id S932425Ab1DYUZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:20 -0400
+Message-Id: <20110425200238.729174661@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:16 +0200
+Date: Mon, 25 Apr 2011 22:04:44 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, Tony Luck <tony.luck@intel.com>,
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 164/173] [IA64] tioca: Fix assignment from incompatible pointer warnings
+Subject: [PATCH 132/173] Bluetooth: sco: fix information leak to userspace
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,31 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit b4a6b3436531f6c5256e6d60d388c3c28ff1a0e9 upstream.
+commit c4c896e1471aec3b004a693c689f60be3b17ac86 upstream.
 
-The prototype for sn_pci_provider->{dma_map,dma_map_consistent} expects
-an unsigned long instead of a u64.
+struct sco_conninfo has one padding byte in the end.  Local variable
+cinfo of type sco_conninfo is copied to userspace with this uninizialized
+one byte, leading to old stack contents leak.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/sn/pci/tioca_provider.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/sco.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/ia64/sn/pci/tioca_provider.c
-+++ b/arch/ia64/sn/pci/tioca_provider.c
-@@ -517,7 +517,7 @@ tioca_dma_unmap(struct pci_dev *pdev, dm
-  * use the GART mapped mode.
-  */
- static u64
--tioca_dma_map(struct pci_dev *pdev, u64 paddr, size_t byte_count, int dma_flags)
-+tioca_dma_map(struct pci_dev *pdev, unsigned long paddr, size_t byte_count, int dma_flags)
- {
- 	u64 mapaddr;
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -700,6 +700,7 @@ static int sco_sock_getsockopt_old(struc
+ 			break;
+ 		}
+ 
++		memset(&cinfo, 0, sizeof(cinfo));
+ 		cinfo.hci_handle = sco_pi(sk)->conn->hcon->handle;
+ 		memcpy(cinfo.dev_class, sco_pi(sk)->conn->hcon->dev_class, 3);
  
 
 
