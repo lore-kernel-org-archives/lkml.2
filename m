@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab1DYUbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:31:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:34601 "EHLO 1wt.eu"
+	id S932643Ab1DYUbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:31:45 -0400
+Received: from 1wt.eu ([62.212.114.60]:34592 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932458Ab1DYUZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:27 -0400
-Message-Id: <20110425200240.208374056@pcw.home.local>
+	id S932452Ab1DYUZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:25 -0400
+Message-Id: <20110425200239.728303582@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:18 +0200
+Date: Mon, 25 Apr 2011 22:05:07 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Chris Wright <chrisw@sous-sol.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nelson Elhage <nelhage@ksplice.com>, Thomas Graf <tgraf@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Moritz Muehlenhoff <jmm@debian.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 166/173] MAINTAINERS: update STABLE BRANCH info
+Subject: [PATCH 155/173] inet_diag: Make sure we actually run the same bytecode we audited.
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Nelson Elhage <nelhage@ksplice.com>
 
-commit d00ebeac5f24f290636f7a895dafc124b2930a08 upstream.
+commit 22e76c849d505d87c5ecf3d3e6742a65f0ff4860 upstream.
 
-Drop Chris Wright from STABLE maintainers.  He hasn't done STABLE release
-work for quite some time.
+We were using nlmsg_find_attr() to look up the bytecode by attribute when
+auditing, but then just using the first attribute when actually running
+bytecode. So, if we received a message with two attribute elements, where only
+the second had type INET_DIAG_REQ_BYTECODE, we would validate and run different
+bytecode strings.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by consistently using nlmsg_find_attr everywhere.
+
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Signed-off-by: Thomas Graf <tgraf@infradead.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[jmm: Slightly adapted to apply against 2.6.32]
+Cc: Moritz Muehlenhoff <jmm@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- MAINTAINERS |    1 -
- 1 file changed, 1 deletion(-)
 
-Index: longterm-2.6.27/MAINTAINERS
-===================================================================
---- longterm-2.6.27.orig/MAINTAINERS	2011-01-23 10:51:58.000000000 +0100
-+++ longterm-2.6.27/MAINTAINERS	2011-04-25 17:29:31.216280205 +0200
-@@ -3857,8 +3857,6 @@
- STABLE BRANCH:
- P:	Greg Kroah-Hartman
- M:	greg@kroah.com
--P:	Chris Wright
--M:	chrisw@sous-sol.org
- L:	stable@kernel.org
- S:	Maintained
+---
+ net/ipv4/inet_diag.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
+
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -489,9 +489,11 @@ static int inet_csk_diag_dump(struct soc
+ {
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+ 
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+ 		struct inet_diag_entry entry;
+-		struct rtattr *bc = (struct rtattr *)(r + 1);
++		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
++							  sizeof(*r),
++							  INET_DIAG_REQ_BYTECODE);
+ 		struct inet_sock *inet = inet_sk(sk);
+ 
+ 		entry.family = sk->sk_family;
+@@ -511,7 +513,7 @@ static int inet_csk_diag_dump(struct soc
+ 		entry.dport = ntohs(inet->dport);
+ 		entry.userlocks = sk->sk_userlocks;
+ 
+-		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
++		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+ 			return 0;
+ 	}
+ 
+@@ -526,9 +528,11 @@ static int inet_twsk_diag_dump(struct in
+ {
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+ 
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+ 		struct inet_diag_entry entry;
+-		struct rtattr *bc = (struct rtattr *)(r + 1);
++		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
++							  sizeof(*r),
++							  INET_DIAG_REQ_BYTECODE);
+ 
+ 		entry.family = tw->tw_family;
+ #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
+@@ -547,7 +551,7 @@ static int inet_twsk_diag_dump(struct in
+ 		entry.dport = ntohs(tw->tw_dport);
+ 		entry.userlocks = 0;
+ 
+-		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
++		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+ 			return 0;
+ 	}
+ 
+@@ -617,7 +621,7 @@ static int inet_diag_dump_reqs(struct sk
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	struct listen_sock *lopt;
+-	struct rtattr *bc = NULL;
++	const struct nlattr *bc = NULL;
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int j, s_j;
+ 	int reqnum, s_reqnum;
+@@ -637,8 +641,9 @@ static int inet_diag_dump_reqs(struct sk
+ 	if (!lopt || !lopt->qlen)
+ 		goto out;
+ 
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
+-		bc = (struct rtattr *)(r + 1);
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
++		bc = nlmsg_find_attr(cb->nlh, sizeof(*r),
++				     INET_DIAG_REQ_BYTECODE);
+ 		entry.sport = inet->num;
+ 		entry.userlocks = sk->sk_userlocks;
+ 	}
+@@ -671,8 +676,8 @@ static int inet_diag_dump_reqs(struct sk
+ 					&ireq->rmt_addr;
+ 				entry.dport = ntohs(ireq->rmt_port);
+ 
+-				if (!inet_diag_bc_run(RTA_DATA(bc),
+-						    RTA_PAYLOAD(bc), &entry))
++				if (!inet_diag_bc_run(nla_data(bc),
++						      nla_len(bc), &entry))
+ 					continue;
+ 			}
  
 
 
