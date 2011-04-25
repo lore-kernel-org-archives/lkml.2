@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1DYO2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 10:28:55 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36723 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab1DYO2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 10:28:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ksplice.com; s=google;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=JN3VgWtHldlC6LWBbA2MWePL+BQqLY6MtjsKHRlBj08uuievGesZwHPzoEpIf8wUJI
-         AOm2p8MzhEUA1w4A3Adt6jLrQAZyCht7QiNjgNjyOZTwdI0GSzVV+Xnd/qVMI4oS+Fnf
-         kZAbdgFTvrigeEHk5fWHtDJr0r/b1c+o9RMKM=
-Date: Mon, 25 Apr 2011 10:28:50 -0400 (EDT)
-From: Anders Kaseorg <andersk@ksplice.com>
-X-X-Sender: andersk@dr-wily.mit.edu
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, vdso: SHN_LORESERVE is an inclusive lower bound
-Message-ID: <alpine.DEB.2.02.1104251020170.26664@dr-wily.mit.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758495Ab1DYOb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 10:31:26 -0400
+Received: from mout.perfora.net ([74.208.4.194]:59367 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131Ab1DYObZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 10:31:25 -0400
+Date: Mon, 25 Apr 2011 10:31:01 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: bookjovi@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page
+	in mem_read
+Message-ID: <20110425143101.GA8222@fibrous.localdomain>
+References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:q8Lj1PBg5AvYClCTF5wCCouqBJFYGWmh57bK0odRte2
+ VLP6/gI42tmn/Qx0UNNihrurbnMZH4JjnC7UDjx2fPIY+JhtqV
+ mZA8PTPCpkgEmAT1gufimmRCiVXZIH/sTrLpwai5YAZzdW7fz3
+ wgL2QQDcE4vj9RPh0zWR0tgaitBg2MY07FOodcC1Ln9B4NYmWW
+ ncjyZrDPcdtOrEY28zdK9vfa9j9H0255UBz8IJUwQc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Test for >= SHN_LORESERVE instead of > SHN_LORESERVE.
+On Sun, Apr 17, 2011 at 08:20:01PM -0400, bookjovi@gmail.com wrote:
+> From: Jovi Zhang <bookjovi@gmail.com>
+> 
+> It should be better if put check_mem_permission before __get_free_page
+> in mem_read, to be same as function mem_write.
+> 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
-Signed-off-by: Anders Kaseorg <andersk@ksplice.com>
----
- arch/x86/vdso/vdso32-setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+looks good.
 
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 468d591..226bfad 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -88,7 +88,7 @@ static __init void reloc_symtab(Elf32_Ehdr *ehdr,
- 		    sym->st_shndx == SHN_ABS)
- 			continue;  /* skip */
- 
--		if (sym->st_shndx > SHN_LORESERVE) {
-+		if (sym->st_shndx >= SHN_LORESERVE) {
- 			printk(KERN_INFO "VDSO: unexpected st_shndx %x\n",
- 			       sym->st_shndx);
- 			continue;
+	Reviewed-by: Stephen Wilson <wilsons@start.ca>
+
 -- 
-1.7.5.rc3
+steve
 
