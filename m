@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836Ab1DYTkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 15:40:21 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:41694 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731Ab1DYTkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 15:40:19 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-References: <1303135222-17118-2-git-send-email-bp@amd64.org>
-	<20110419171340.GE6640@elte.hu> <20110419173521.GA25374@aftab>
-	<20110419174446.GA13616@elte.hu> <20110420102349.GB1361@aftab>
-Date: Mon, 25 Apr 2011 12:40:11 -0700
-In-Reply-To: <20110420102349.GB1361@aftab> (Borislav Petkov's message of "Wed,
-	20 Apr 2011 12:23:49 +0200")
-Message-ID: <m1hb9mnmqs.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1758853Ab1DYTk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 15:40:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4431 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755733Ab1DYTkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 15:40:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,266,1301900400"; 
+   d="scan'208";a="633901440"
+Date: Mon, 25 Apr 2011 12:40:02 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        arun@sharma-home.net, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, eranian@gmail.com,
+        Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+Message-ID: <20110425194002.GA30576@tassilo.jf.intel.com>
+References: <20110422092322.GA1948@elte.hu>
+ <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+ <20110422105211.GB1948@elte.hu>
+ <20110422165007.GA18401@vps.sharma-home.net>
+ <20110422203022.GA20573@elte.hu>
+ <20110422203222.GA21219@elte.hu>
+ <20110423000347.GC9328@tassilo.jf.intel.com>
+ <1303545012.2298.44.camel@twins>
+ <BANLkTi=pk7J1uqCQvJe+RrTPoi=K1Aa5QQ@mail.gmail.com>
+ <1303564561.2298.62.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX184icBnGOs7afpy06kCQ38CZU9FLteJou8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <1303564561.2298.62.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@amd64.org> writes:
+> Sure, but who cares? So your period isn't exactly what you specified,
+> but the effective period will have an average and a fairly small stdev
+> (assuming the initial period is much larger than the relatively few
+> cycles it takes to arm the PEBS assist), therefore you still get a
+> fairly uniform spread.
 
-> On Tue, Apr 19, 2011 at 01:44:46PM -0400, Ingo Molnar wrote:
->> 
->> * Borislav Petkov <bp@amd64.org> wrote:
->> 
->> > +	if (ret != NOTIFY_STOP)
->> > +		printk_ratelimited(KERN_EMERG HW_ERR
->> > +				   "Run the above through 'mcelog --ascii'\n");
->> 
->> pr_emerg_ratelimited() would allow you to keep that broken line happy?
->
-> Not entirely. I had to do the exit-early-to-save-an-indentation-level
-> trick also :)
->
-> --
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> Date: Wed, 13 Apr 2011 14:32:06 +0200
-> Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
->
-> The default notifier doesn't make a lot of sense to call in the
-> correctable errors case. Drop it and emit the mcelog decoding hint only
-> in the uncorrectable errors case and when no notifier is registered.
-> Also, limit issuing the "mcelog --ascii" message in the rare case when
-> we dump unreported CEs before panicking.
->
-> While at it, remove unused old x86_mce_decode_callback from the
-> header.
+The skid is not uniform and not necessarily random unfortunately, 
+and difficult to correct in a standard way.
 
-Can we please print something if we please log something in the
-case of a correctable error, when we only report it via mcelog?
+> I don't much get the obsession with precision here, its all a statistics
+> game anyway.
 
-I have a stupid recent intel cpu here that hits that case and without
-the default x86_mce_decode_callback I wouldn't have even known that I am
-getting something like 50 correctable errors an hour on one of my
-machines.  In particular I am it hits so often I am seeing:
-"mce_notify_irq: 2 callbacks suppressed".  I need to get those dimms
-replaced soon because in a new product I simply can't imagine that many
-correctable errors.
+If you want to make your code faster it's often important to figure
+out what exactly is slow.
 
-Eric
+One example of this we had recently in the kernel: 
+
+function accesses three global objects. Scalability tanks when the test is 
+run with more CPUs.  Now the hit is near the three memory accesses. Which one
+is the one that is actually bouncing cache lines?
+
+The CPU executes them all in parallel so it's hard to tell. It's
+all in the out of order reordering window.
+
+PEBS (e.g. the memory latency event) can give you some information about
+which memory access is to blame with the right events, but it's not 
+using the RIP.
+
+The generic events won't help with that, because they're still RIP
+based, which is not accurate.
+
+> Similarly all this precision wanking isn't _that_ important, the big
+> fish clearly stand out, its only when you start shaving off the last few
+> cycles that all that really comes in handy, before that its mostly: ooh
+> thinking is hard, lets go shopping.
+
+I wish it was that easy.
+
+In the example above it's about scaling or not scaling, which is
+definitely not the last cycle, but more a life-and-death 
+"is the workload feasible on this machine or not" question.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
