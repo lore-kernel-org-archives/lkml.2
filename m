@@ -1,314 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab1DYXxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 19:53:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8840 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab1DYXxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 19:53:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=x90JNVxF2R/cltNHeCvDq9VGFGKAkuokK2dfGC9eGae5f8n3/p+LVDAhXJdAs4uOw
-	TSUlz2VfNzAiiryK4cUGg==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Jiaying Zhang <jiayingz@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Add tracepoints to fs subsystem
-Date: Mon, 25 Apr 2011 16:53:04 -0700
-Message-Id: <1303775584-13347-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
-References: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
+	id S932438Ab1DYXxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 19:53:35 -0400
+Received: from kroah.org ([198.145.64.141]:51046 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932127Ab1DYXxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 19:53:33 -0400
+Date: Mon, 25 Apr 2011 16:53:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: Re: [PATCH v4] staging: Add ST-Ericsson CG2900 driver
+Message-ID: <20110425235328.GA31473@kroah.com>
+References: <1302173946-25363-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302173946-25363-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiaying Zhang <jiayingz@google.com>
+On Thu, Apr 07, 2011 at 12:59:06PM +0200, Par-Gunnar Hjalmdahl wrote:
+> This patch adds support for the ST-Ericsson CG2900
+> Connectivity Combo controller (Bluetooth, FM, GPS).
+> 
+> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
 
-These few fs tracepoints are useful while debugging latency issues in
-filesystems and were used specifically for debugging various writeback
-subsystem issues. This patch adds entry and exit tracepoints for the
-following functions, viz.:
-wait_on_buffer
-block_write_full_page
-mpage_readpages
-file_read
+To have a patch accepted into the staging tree there are only 2 simple
+requirements:
+	- proper license
+	- code must build
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- fs/buffer.c               |   10 +++
- fs/mpage.c                |    3 +
- include/trace/events/fs.h |  162 +++++++++++++++++++++++++++++++++++++++++++++
- mm/filemap.c              |    4 +-
- 4 files changed, 178 insertions(+), 1 deletions(-)
- create mode 100644 include/trace/events/fs.h
+Somehow the second one fails here, please at least test-build your code
+before sending it out, to do otherwise just wastes people's time and
+makes them grumpy:
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index a08bb8e..1c118f4 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -42,6 +42,9 @@
- #include <linux/mpage.h>
- #include <linux/bit_spinlock.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/fs.h>
-+
- static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
- 
- #define BH_ENTRY(list) list_entry((list), struct buffer_head, b_assoc_buffers)
-@@ -82,7 +85,9 @@ EXPORT_SYMBOL(unlock_buffer);
-  */
- void __wait_on_buffer(struct buffer_head * bh)
- {
-+	trace_fs_buffer_wait_enter(bh);
- 	wait_on_bit(&bh->b_state, BH_Lock, sleep_on_buffer, TASK_UNINTERRUPTIBLE);
-+	trace_fs_buffer_wait_exit(bh);
- }
- EXPORT_SYMBOL(__wait_on_buffer);
- 
-@@ -1647,6 +1652,8 @@ static int __block_write_full_page(struct inode *inode, struct page *page,
- 	head = page_buffers(page);
- 	bh = head;
- 
-+	trace_block_write_full_page_enter(inode, block, last_block);
-+
- 	/*
- 	 * Get all the dirty buffers mapped to disk addresses and
- 	 * handle any aliases from the underlying blockdev's mapping.
-@@ -1736,6 +1743,9 @@ done:
- 		 * here on.
- 		 */
- 	}
-+
-+	trace_block_write_full_page_exit(inode, nr_underway, err);
-+
- 	return err;
- 
- recover:
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 0afc809..1c3b8e1 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -28,6 +28,7 @@
- #include <linux/backing-dev.h>
- #include <linux/pagevec.h>
- 
-+#include <trace/events/fs.h>
- /*
-  * I/O completion handler for multipage BIOs.
-  *
-@@ -373,6 +374,8 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
- 	for (page_idx = 0; page_idx < nr_pages; page_idx++) {
- 		struct page *page = list_entry(pages->prev, struct page, lru);
- 
-+		if (page_idx == 0)
-+			trace_mpage_readpages(page, mapping, nr_pages);
- 		prefetchw(&page->flags);
- 		list_del(&page->lru);
- 		if (!add_to_page_cache_lru(page, mapping,
-diff --git a/include/trace/events/fs.h b/include/trace/events/fs.h
-new file mode 100644
-index 0000000..95f7bc8
---- /dev/null
-+++ b/include/trace/events/fs.h
-@@ -0,0 +1,162 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM fs
-+
-+#if !defined(_TRACE_FS_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_FS_H
-+
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(fs_buffer_wait,
-+
-+	TP_PROTO(struct buffer_head *bh),
-+
-+	TP_ARGS(bh),
-+
-+	TP_STRUCT__entry(
-+		__field(	void *,	bh	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->bh = bh;
-+	),
-+
-+	TP_printk("bh %p", __entry->bh)
-+);
-+
-+DEFINE_EVENT(fs_buffer_wait, fs_buffer_wait_enter,
-+
-+	TP_PROTO(struct buffer_head *bh),
-+
-+	TP_ARGS(bh)
-+);
-+
-+DEFINE_EVENT(fs_buffer_wait, fs_buffer_wait_exit,
-+
-+	TP_PROTO(struct buffer_head *bh),
-+
-+	TP_ARGS(bh)
-+);
-+
-+TRACE_EVENT(block_write_full_page_enter,
-+
-+	TP_PROTO(struct inode *inode, sector_t block, sector_t last_block),
-+
-+	TP_ARGS(inode, block, last_block),
-+
-+	TP_STRUCT__entry(
-+		__field(	dev_t,		dev		)
-+		__field(	unsigned long,	ino		)
-+		__field(	sector_t,	block		)
-+		__field(	sector_t,	last_block	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= inode->i_sb->s_dev;
-+		__entry->ino		= inode->i_ino;
-+		__entry->block		= block;
-+		__entry->last_block	= last_block;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu block %lu last block %lu",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->ino,
-+		  (unsigned long)__entry->block,
-+		  (unsigned long)__entry->last_block)
-+);
-+
-+TRACE_EVENT(block_write_full_page_exit,
-+
-+	TP_PROTO(struct inode *inode, int nr_underway, int err),
-+
-+	TP_ARGS(inode, nr_underway, err),
-+
-+	TP_STRUCT__entry(
-+		__field(	dev_t,		dev		)
-+		__field(	unsigned long,	ino		)
-+		__field(	int,		nr_underway	)
-+		__field(	int,		err		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= inode->i_sb->s_dev;
-+		__entry->ino		= inode->i_ino;
-+		__entry->nr_underway	= nr_underway;
-+		__entry->err		= err;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu nr_underway %d err %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->ino, __entry->nr_underway, __entry->err)
-+);
-+
-+DECLARE_EVENT_CLASS(file_read,
-+	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
-+
-+	TP_ARGS(inode, pos, len),
-+
-+	TP_STRUCT__entry(
-+		__field(	ino_t,	ino			)
-+		__field(	dev_t,	dev			)
-+		__field(	loff_t,	pos			)
-+		__field(	size_t,	len			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->ino	= inode->i_ino;
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->pos	= pos;
-+		__entry->len	= len;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu pos %llu len %lu",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		   __entry->pos,  __entry->len)
-+);
-+
-+DEFINE_EVENT(file_read, file_read_enter,
-+
-+	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
-+
-+	TP_ARGS(inode, pos, len)
-+);
-+
-+DEFINE_EVENT(file_read, file_read_exit,
-+
-+	TP_PROTO(struct inode *inode, loff_t pos, size_t len),
-+
-+	TP_ARGS(inode, pos, len)
-+);
-+
-+TRACE_EVENT(mpage_readpages,
-+	TP_PROTO(struct page *page, struct address_space *mapping,
-+		 unsigned nr_pages),
-+
-+	TP_ARGS(page, mapping, nr_pages),
-+
-+	TP_STRUCT__entry(
-+		__field(	pgoff_t, index			)
-+		__field(	ino_t,	ino			)
-+		__field(	dev_t,	dev			)
-+		__field(	unsigned,	nr_pages	)
-+
-+	),
-+
-+	TP_fast_assign(
-+		__entry->index	= page->index;
-+		__entry->ino	= mapping->host->i_ino;
-+		__entry->dev	= mapping->host->i_sb->s_dev;
-+		__entry->nr_pages	= nr_pages;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu page_index %lu nr_pages %u",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  __entry->index, __entry->nr_pages)
-+);
-+
-+#endif /* _TRACE_FS_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c641edf..94e549c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -42,7 +42,7 @@
- #include <linux/buffer_head.h> /* for try_to_free_buffers */
- 
- #include <asm/mman.h>
--
-+#include <trace/events/fs.h>
- /*
-  * Shared mappings implemented 30.11.1994. It's not fully working yet,
-  * though.
-@@ -1054,6 +1054,7 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
- 	unsigned int prev_offset;
- 	int error;
- 
-+	trace_file_read_enter(inode, *ppos, desc->count);
- 	index = *ppos >> PAGE_CACHE_SHIFT;
- 	prev_index = ra->prev_pos >> PAGE_CACHE_SHIFT;
- 	prev_offset = ra->prev_pos & (PAGE_CACHE_SIZE-1);
-@@ -1254,6 +1255,7 @@ out:
- 	ra->prev_pos <<= PAGE_CACHE_SHIFT;
- 	ra->prev_pos |= prev_offset;
- 
-+	trace_file_read_exit(inode, *ppos, desc->written);
- 	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
- 	file_accessed(filp);
- }
--- 
-1.7.3.1
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CC [M]  drivers/staging/cg2900/mfd/cg2900_chip.o
+drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: (near initialization for ‘cg2900_devs[0].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2941:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2941:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: (near initialization for ‘cg2900_devs[1].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2946:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2946:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: (near initialization for ‘cg2900_devs[2].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2951:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2951:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: (near initialization for ‘cg2900_devs[3].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2956:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2956:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: (near initialization for ‘cg2900_devs[4].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2961:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2961:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: (near initialization for ‘cg2900_devs[5].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2966:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2966:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: (near initialization for ‘cg2900_devs[6].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2971:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2971:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: (near initialization for ‘cg2900_devs[7].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2976:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2976:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: (near initialization for ‘cg2900_devs[8].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2981:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2981:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: (near initialization for ‘cg2900_devs[9].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2986:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2986:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: warning: initialization makes integer from pointer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: initializer element is not computable at load time
+drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: (near initialization for ‘cg2900_devs[10].id’)
+drivers/staging/cg2900/mfd/cg2900_chip.c:2991:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:2991:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3073:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3073:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3074:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3074:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3079:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3079:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3080:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3080:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3085:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3085:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3086:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3086:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3091:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3091:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3092:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3092:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3097:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3097:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3098:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3098:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3103:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3103:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3104:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3104:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3109:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3109:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3110:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3110:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3115:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3115:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3116:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3116:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3121:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3121:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3122:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3122:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3127:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3127:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3128:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3128:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c:3133:3: error: unknown field ‘platform_data’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3133:3: warning: initialization from incompatible pointer type
+drivers/staging/cg2900/mfd/cg2900_chip.c:3134:3: error: unknown field ‘data_size’ specified in initializer
+drivers/staging/cg2900/mfd/cg2900_chip.c:3134:3: warning: initialization makes pointer from integer without a cast
+drivers/staging/cg2900/mfd/cg2900_chip.c: In function ‘set_plat_data’:
+drivers/staging/cg2900/mfd/cg2900_chip.c:3147:41: error: ‘struct mfd_cell’ has no member named ‘platform_data’
+drivers/staging/cg2900/mfd/cg2900_chip.c:3147:37: warning: initialization from incompatible pointer type
+make[4]: *** [drivers/staging/cg2900/mfd/cg2900_chip.o] Error 1
+make[3]: *** [drivers/staging/cg2900/mfd] Error 2
+make[2]: *** [drivers/staging/cg2900] Error 2
+make[1]: *** [drivers/staging] Error 2
+make: *** [drivers] Error 2
 
+
+{sigh}
+
+Please redo this, I obviously can't accept it as-is.
+
+greg k-h
