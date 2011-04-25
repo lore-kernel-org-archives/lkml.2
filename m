@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab1DYUjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:39:32 -0400
-Received: from 1wt.eu ([62.212.114.60]:34425 "EHLO 1wt.eu"
+	id S932513Ab1DYUjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:39:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34410 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932338Ab1DYUZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:00 -0400
-Message-Id: <20110425200238.252706230@pcw.home.local>
+	id S932330Ab1DYUY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:59 -0400
+Message-Id: <20110425200239.251073536@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:33 +0200
+Date: Mon, 25 Apr 2011 22:04:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Julien Tinnes <jln@google.com>, Roland Dreier <roland@purestorage.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 121/173] Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
+Subject: [PATCH 144/173] sound/oss: remove offset from load_patch callbacks
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,50 +23,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a upstream.
+commit b769f49463711205d57286e64cf535ed4daf59e9 upstream.
 
-Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
-from spoofing the signal code") made the check on si_code too strict.
-There are several legitimate places where glibc wants to queue a
-negative si_code different from SI_QUEUE:
+Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
+uninitialized value, and signedness issue
 
- - This was first noticed with glibc's aio implementation, which wants
-   to queue a signal with si_code SI_ASYNCIO; the current kernel
-   causes glibc's tst-aio4 test to fail because rt_sigqueueinfo()
-   fails with EPERM.
+The offset passed to midi_synth_load_patch() can be essentially
+arbitrary.  If it's greater than the header length, this will result in
+a copy_from_user(dst, src, negative_val).  While this will just return
+-EFAULT on x86, on other architectures this may cause memory corruption.
+Additionally, the length field of the sysex_info structure may not be
+initialized prior to its use.  Finally, a signed comparison may result
+in an unintentionally large loop.
 
- - Further examination of the glibc source shows that getaddrinfo_a()
-   wants to use SI_ASYNCNL (which the kernel does not even define).
-   The timer_create() fallback code wants to queue signals with SI_TIMER.
+On suggestion by Takashi Iwai, version two removes the offset argument
+from the load_patch callbacks entirely, which also resolves similar
+issues in opl3.  Compile tested only.
 
-As suggested by Oleg Nesterov <oleg@redhat.com>, loosen the check to
-forbid only the problematic SI_TKILL case.
+v3 adjusts comments and hopefully gets copy offsets right.
 
-Reported-by: Klaus Dittrich <kladit@arcor.de>
-Acked-by: Julien Tinnes <jln@google.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[wt: 2.6.27 has no rt_tgsigqueueinfo()]
 
 ---
- kernel/signal.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/oss/dev_table.h  |    2 +-
+ sound/oss/midi_synth.c |   30 +++++++++++++-----------------
+ sound/oss/midi_synth.h |    2 +-
+ sound/oss/opl3.c       |    8 ++------
+ sound/oss/sequencer.c  |    2 +-
+ 5 files changed, 18 insertions(+), 26 deletions(-)
 
-Index: longterm-2.6.27/kernel/signal.c
-===================================================================
---- longterm-2.6.27.orig/kernel/signal.c	2011-04-25 16:06:27.000000000 +0200
-+++ longterm-2.6.27/kernel/signal.c	2011-04-25 16:40:37.072279504 +0200
-@@ -2296,7 +2296,7 @@
- 	/* Not even root can pretend to send signals from the kernel.
- 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+--- a/sound/oss/dev_table.h
++++ b/sound/oss/dev_table.h
+@@ -271,7 +271,7 @@ struct synth_operations
+ 	void (*reset) (int dev);
+ 	void (*hw_control) (int dev, unsigned char *event);
+ 	int (*load_patch) (int dev, int format, const char __user *addr,
+-	     int offs, int count, int pmgr_flag);
++	     int count, int pmgr_flag);
+ 	void (*aftertouch) (int dev, int voice, int pressure);
+ 	void (*controller) (int dev, int voice, int ctrl_num, int value);
+ 	void (*panning) (int dev, int voice, int value);
+--- a/sound/oss/midi_synth.c
++++ b/sound/oss/midi_synth.c
+@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
+ 
+ int
+ midi_synth_load_patch(int dev, int format, const char __user *addr,
+-		      int offs, int count, int pmgr_flag)
++		      int count, int pmgr_flag)
+ {
+ 	int             orig_dev = synth_devs[dev]->midi_dev;
+ 
+@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int forma
+ 	if (!prefix_cmd(orig_dev, 0xf0))
+ 		return 0;
+ 
++	/* Invalid patch format */
+ 	if (format != SYSEX_PATCH)
+-	{
+-/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
+ 		  return -EINVAL;
+-	}
++
++	/* Patch header too short */
+ 	if (count < hdr_size)
+-	{
+-/*		printk("MIDI Error: Patch header too short\n");*/
+ 		return -EINVAL;
+-	}
++
+ 	count -= hdr_size;
+ 
+ 	/*
+-	 * Copy the header from user space but ignore the first bytes which have
+-	 * been transferred already.
++	 * Copy the header from user space
  	 */
--	if (info.si_code != SI_QUEUE) {
-+	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
- 		/* We used to allow any < 0 si_code */
- 		WARN_ON_ONCE(info.si_code < 0);
- 		return -EPERM;
+ 
+-	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
++	if (copy_from_user(&sysex, addr, hdr_size))
+ 		return -EFAULT;
+- 
+- 	if (count < sysex.len)
+-	{
+-/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
++
++	/* Sysex record too short */
++	if ((unsigned)count < (unsigned)sysex.len)
+ 		sysex.len = count;
+-	}
+-  	left = sysex.len;
+-  	src_offs = 0;
++
++	left = sysex.len;
++	src_offs = 0;
+ 
+ 	for (i = 0; i < left && !signal_pending(current); i++)
+ 	{
+--- a/sound/oss/midi_synth.h
++++ b/sound/oss/midi_synth.h
+@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
+ void midi_synth_close (int dev);
+ void midi_synth_hw_control (int dev, unsigned char *event);
+ int midi_synth_load_patch (int dev, int format, const char __user * addr,
+-		 int offs, int count, int pmgr_flag);
++		 int count, int pmgr_flag);
+ void midi_synth_panning (int dev, int channel, int pressure);
+ void midi_synth_aftertouch (int dev, int channel, int pressure);
+ void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
+--- a/sound/oss/opl3.c
++++ b/sound/oss/opl3.c
+@@ -819,7 +819,7 @@ static void opl3_hw_control(int dev, uns
+ }
+ 
+ static int opl3_load_patch(int dev, int format, const char __user *addr,
+-		int offs, int count, int pmgr_flag)
++		int count, int pmgr_flag)
+ {
+ 	struct sbi_instrument ins;
+ 
+@@ -829,11 +829,7 @@ static int opl3_load_patch(int dev, int
+ 		return -EINVAL;
+ 	}
+ 
+-	/*
+-	 * What the fuck is going on here?  We leave junk in the beginning
+-	 * of ins and then check the field pretty close to that beginning?
+-	 */
+-	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
++	if (copy_from_user(&ins, addr, sizeof(ins)))
+ 		return -EFAULT;
+ 
+ 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
+--- a/sound/oss/sequencer.c
++++ b/sound/oss/sequencer.c
+@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file
+ 				return -ENXIO;
+ 
+ 			fmt = (*(short *) &event_rec[0]) & 0xffff;
+-			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
++			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
+ 			if (err < 0)
+ 				return err;
+ 
 
 
