@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1DYP2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 11:28:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46719 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab1DYP2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 11:28:44 -0400
-Date: Mon, 25 Apr 2011 12:28:33 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Tim Blechmann <tim@klingt.org>, David Ahern <dsahern@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Allow set output buffer for tasks in the same
- thread group
-Message-ID: <20110425152833.GB32069@ghostprotocols.net>
-References: <1303657064.2239.25.camel@localhost>
- <1303664726.20212.1.camel@twins>
- <1303738838.2578.1.camel@localhost>
+	id S1756576Ab1DYPaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 11:30:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34898 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750712Ab1DYPaF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 11:30:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303738838.2578.1.camel@localhost>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110425111705.786ef0c5@neptune.home>
+References: <20110424202158.45578f31@neptune.home> <20110424235928.71af51e0@neptune.home>
+ <20110425114429.266A.A69D9226@jp.fujitsu.com> <BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com>
+ <20110425111705.786ef0c5@neptune.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 25 Apr 2011 08:22:38 -0700
+Message-ID: <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Apr 25, 2011 at 09:40:38PM +0800, Lin Ming escreveu:
-> On Mon, 2011-04-25 at 01:05 +0800, Peter Zijlstra wrote:
-> > On Sun, 2011-04-24 at 22:57 +0800, Lin Ming wrote:
-> > > Currently, kernel only allows an event to redirect its output to other
-> > > events of the same task.
-> > > 
-> > > This causes PERF_EVENT_IOC_SET_OUTPUT ioctl fails when an event is
-> > > trying to redirect its output to other events in the same thread group.
-> > 
-> > Which is exactly what it should do, you should never be allowed to
-> > redirect your events to that of another task, since that other task
-> > might be running on another CPU.
-> > 
-> > The buffer code strictly assumes no concurrency, therefore its either
-> > one task or one CPU.
-> 
-> Well, this is not the right fix, then the perf tool code need to be
-> fixed.
+On Mon, Apr 25, 2011 at 2:17 AM, Bruno Prémont
+<bonbons@linux-vserver.org> wrote:
+>
+> Here it seems to happened when I run 2 intensive tasks in parallel, e.g.
+> (re)emerging gimp and running revdep-rebuild -pi in another terminal.
+> This produces a fork rate of about 100-300 per second.
+>
+> Suddenly kmalloc-128 slabs stop being freed and things degrade.
 
-Yes, I'm working on it.
+So everything seems to imply some kind of filesystem/vfs thing, but
+let's try to gather a bit more information about exactly what it is.
 
-- Arnaldo
+Some of it also points to RCU freeing, but that "kmalloc-128" doesn't
+really match my expectations. According to your slabinfo, it's not the
+dentries.
+
+One thing I'd ask you to do is to boot with the "slub_nomerge" kernel
+command  line switch. The SLUB "merge slab caches" thing may save some
+memory, but it has been a disaster from every other standpoint - every
+time there's a memory leak, it ends up making it very confusing to try
+to figure things out.
+
+For example, your traces seem to imply that the kmalloc-128 allocation
+is actually the "filp" cache, but it has gotten merged with the
+kmalloc-128 cache, so slabinfo doesn't actually show the right user.
+
+(Pekka? This is a real _problem_. The whole "confused debugging" is
+wasting a lot of peoples time. Can we please try to get slabinfo
+statistics work right for the merged state. Or perhaps decide to just
+not merge at all?)
+
+As to why it has started to happen now: with the whole RCU lookup
+thing, many more filesystem objects are RCU-free'd (dentries have been
+for a long time, but now we have inodes and filp's too), and that may
+end up delaying allocations sufficiently that you end up seeing
+something that used to be borderline become a major problem.
+
+Also, what's your kernel config, in particular wrt RCU? The RCU
+freeing _should_ be self-limiting (if I recall correctly) and not let
+infinite amounts of RCU work (ie pending freeing) accumulate, but
+maybe something is broken. Do you have a UP kernel with TINY_RCU, for
+example? Or maybe I'm just confused, and there's never any RCU
+throttling at all. Paul?
+
+                               Linus
