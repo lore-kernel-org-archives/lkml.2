@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab1DYUZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:25:34 -0400
-Received: from 1wt.eu ([62.212.114.60]:34481 "EHLO 1wt.eu"
+	id S932509Ab1DYUZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:25:36 -0400
+Received: from 1wt.eu ([62.212.114.60]:34570 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab1DYUZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:19 -0400
-Message-Id: <20110425200237.295225873@pcw.home.local>
+	id S932435Ab1DYUZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:22 -0400
+Message-Id: <20110425200240.425545895@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:11 +0200
+Date: Mon, 25 Apr 2011 22:05:23 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 099/173] powerpc/kdump: Fix race in kdump shutdown
+Cc: Kees Cook <kees.cook@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 171/173] net: ax25: fix information leak to userland harder
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,81 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit 60adec6226bbcf061d4c2d10944fced209d1847d upstream.
+commit 5b919f833d9d60588d026ad82d17f17e8872c7a9 upstream.
 
-When we are crashing, the crashing/primary CPU IPIs the secondaries to
-turn off IRQs, go into real mode and wait in kexec_wait.  While this
-is happening, the primary tears down all the MMU maps.  Unfortunately
-the primary doesn't check to make sure the secondaries have entered
-real mode before doing this.
+Commit fe10ae53384e48c51996941b7720ee16995cbcb7 adds a memset() to clear
+the structure being sent back to userspace, but accidentally used the
+wrong size.
 
-On PHYP machines, the secondaries can take a long time shutting down
-the IRQ controller as RTAS calls are need.  These RTAS calls need to
-be serialised which resilts in the secondaries contending in
-lock_rtas() and hence taking a long time to shut down.
-
-We've hit this on large POWER7 machines, where some secondaries are
-still waiting in lock_rtas(), when the primary tears down the HPTEs.
-
-This patch makes sure all secondaries are in real mode before the
-primary tears down the MMU.  It uses the new kexec_state entry in the
-paca.  It times out if the secondaries don't reach real mode after
-10sec.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-cc: Anton Blanchard <anton@samba.org>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/crash.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ net/ax25/af_ax25.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -162,6 +162,32 @@ static void crash_kexec_prepare_cpus(int
- 	/* Leave the IPI callback set */
- }
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1391,7 +1391,7 @@ static int ax25_getname(struct socket *s
+ 	ax25_cb *ax25;
+ 	int err = 0;
  
-+/* wait for all the CPUs to hit real mode but timeout if they don't come in */
-+static void crash_kexec_wait_realmode(int cpu)
-+{
-+	unsigned int msecs;
-+	int i;
-+
-+	msecs = 10000;
-+	for (i=0; i < NR_CPUS && msecs > 0; i++) {
-+		if (i == cpu)
-+			continue;
-+
-+		while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
-+			barrier();
-+			if (!cpu_possible(i)) {
-+				break;
-+			}
-+			if (!cpu_online(i)) {
-+				break;
-+			}
-+			msecs--;
-+			mdelay(1);
-+		}
-+	}
-+	mb();
-+}
-+
- /*
-  * This function will be called by secondary cpus or by kexec cpu
-  * if soft-reset is activated to stop some CPUs.
-@@ -419,6 +445,7 @@ void default_machine_crash_shutdown(stru
- 	crash_kexec_prepare_cpus(crashing_cpu);
- 	cpu_set(crashing_cpu, cpus_in_crash);
- 	crash_kexec_stop_spus();
-+	crash_kexec_wait_realmode(crashing_cpu);
- 	if (ppc_md.kexec_cpu_down)
- 		ppc_md.kexec_cpu_down(1, 0);
- }
+-	memset(fsa, 0, sizeof(fsa));
++	memset(fsa, 0, sizeof(*fsa));
+ 	lock_sock(sk);
+ 	ax25 = ax25_sk(sk);
+ 
 
 
