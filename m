@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab1DYVCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 17:02:33 -0400
-Received: from 1wt.eu ([62.212.114.60]:33703 "EHLO 1wt.eu"
+	id S1756576Ab1DYVDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 17:03:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:33660 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755061Ab1DYUXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:23:08 -0400
-Message-Id: <20110425200233.171946848@pcw.home.local>
+	id S1752590Ab1DYUWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:22:46 -0400
+Message-Id: <20110425200233.344032143@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:02:36 +0200
+Date: Mon, 25 Apr 2011 22:02:40 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
+Cc: =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 004/173] USB: usb-storage: unusual_devs entry for CamSport Evo
+Subject: [PATCH 008/173] USB: io_edgeport: fix the reported firmware major and minor
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,39 +23,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 12f68c480c7155a66bd2a76ab2fef28dd5f93fa2 upstream.
+commit 271c1150b4f8e1685e5a8cbf76e329ec894481da upstream.
 
-This patch (as1438) adds an unusual_devs entry for the MagicPixel
-FW_Omega2 chip, used in the CamSport Evo camera.  The firmware
-incorrectly reports a vendor-specific bDeviceClass.
+The major and minor number saved in the product_info structure
+were copied from the address instead of the data, causing an
+inconsistency in the reported versions during firmware loading:
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: <ttkspam@free.fr>
+ usb 4-1: firmware: requesting edgeport/down.fw
+ /usr/src/linux/drivers/usb/serial/io_edgeport.c: downloading firmware version (930) 1.16.4
+ [..]
+ /usr/src/linux/drivers/usb/serial/io_edgeport.c: edge_startup - time 3 4328191260
+ /usr/src/linux/drivers/usb/serial/io_edgeport.c:   FirmwareMajorVersion  0.0.4
+
+This can cause some confusion whether firmware loaded successfully
+or not.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/serial/io_edgeport.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1043,6 +1043,15 @@ UNUSUAL_DEV(  0x084d, 0x0011, 0x0110, 0x
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_BULK32),
+--- a/drivers/usb/serial/io_edgeport.c
++++ b/drivers/usb/serial/io_edgeport.c
+@@ -2935,8 +2935,8 @@ static void load_application_firmware(st
  
-+/* Reported by <ttkspam@free.fr>
-+ * The device reports a vendor-specific device class, requiring an
-+ * explicit vendor/product match.
-+ */
-+UNUSUAL_DEV(  0x0851, 0x1542, 0x0002, 0x0002,
-+		"MagicPixel",
-+		"FW_Omega2",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL, 0),
-+
- /* Andrew Lunn <andrew@lunn.ch>
-  * PanDigital Digital Picture Frame. Does not like ALLOW_MEDIUM_REMOVAL
-  * on LUN 4.
+ 	dbg("%s %d.%d.%d", fw_info, rec->data[0], rec->data[1], build);
+ 
+-	edge_serial->product_info.FirmwareMajorVersion = fw->data[0];
+-	edge_serial->product_info.FirmwareMinorVersion = fw->data[1];
++	edge_serial->product_info.FirmwareMajorVersion = rec->data[0];
++	edge_serial->product_info.FirmwareMinorVersion = rec->data[1];
+ 	edge_serial->product_info.FirmwareBuildNumber = cpu_to_le16(build);
+ 
+ 	for (rec = ihex_next_binrec(rec); rec;
 
 
