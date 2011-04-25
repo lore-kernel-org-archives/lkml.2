@@ -1,104 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab1DYU1X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:27:23 -0400
-Received: from 1wt.eu ([62.212.114.60]:34658 "EHLO 1wt.eu"
+	id S932608Ab1DYU12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:27:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18680 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab1DYU1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:27:20 -0400
-Message-Id: <20110425200235.687771444@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:34 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Jochen Friedrich <jochen@scram.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 062/173] mfd: Fix NULL pointer due to non-initialized ucb1x00-ts absinfo
-In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
+	id S932562Ab1DYU1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:27:25 -0400
+From: Eric Paris <eparis@redhat.com>
+To: andi@firstfloor.org
+Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        npiggin@kernel.dk, shaohua.li@intel.com, sds@tycho.nsa.gov,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, Eric Paris <eparis@redhat.com>
+Subject: [PATCH] SELINUX: Make selinux cache VFS RCU walks safe
+Date: Mon, 25 Apr 2011 16:26:29 -0400
+Message-Id: <1303763189-26748-1-git-send-email-eparis@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+Now that the security modules can decide whether they support the
+dcache RCU walk or not it's possible to make selinux a bit more
+RCU friendly.  The SELinux AVC and security server access decision
+code is RCU safe.  A specific piece of the LSM audit code may not
+be RCU safe.
 
-------------------
+This patch makes the VFS RCU walk retry if it would hit the non RCU
+safe chunk of code.  It will normally just work under RCU.  This is
+done simply by passing the VFS RCU state as a flag down into the
+avc_audit() code and returning ECHILD there if it would have an issue.
 
-From: Jochen Friedrich <jochen@scram.de>
-
-commit 9063f1f15eec35e5fd608879cef8be5728f2d12a upstream.
-
-Call input_set_abs_params instead of manually setting absbit only.
-This fixes this oops:
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000024
-Internal error: Oops: 41b67017 [#1]
-CPU: 0    Not tainted  (2.6.37 #4)
-pc : [<c016d1fc>]    lr : [<00000000>]    psr: 20000093
-sp : c19e5f30  ip : c19e5e6c  fp : c19e5f58
-r10: 00000000  r9 : c19e4000  r8 : 00000003
-r7 : 000001e4  r6 : 00000001  r5 : c1854400  r4 : 00000003
-r3 : 00000018  r2 : 00000018  r1 : 00000018  r0 : c185447c
-Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: c1b6717f  Table: c1b6717f  DAC: 00000017
-Stack: (0xc19e5f30 to 0xc19e6000)
-5f20:                                     00000003 00000003 c1854400 00000013
-5f40: 00000001 000001e4 000001c5 c19e5f80 c19e5f5c c016d5e8 c016cf5c 000001e4
-5f60: c1854400 c18b5860 00000000 00000171 000001e4 c19e5fc4 c19e5f84 c01559a4
-5f80: c016d584 c18b5868 00000000 c1bb5c40 c0035afc c18b5868 c18b5868 c1a55d54
-5fa0: c18b5860 c0155750 00000013 00000000 00000000 00000000 c19e5ff4 c19e5fc8
-5fc0: c0050174 c015575c 00000000 c18b5860 00000000 c19e5fd4 c19e5fd4 c1a55d54
-5fe0: c00500f0 c003b464 00000000 c19e5ff8 c003b464 c00500fc 04000400 04000400
-Backtrace:
-Function entered at [<c016cf50>] from [<c016d5e8>]
-Function entered at [<c016d578>] from [<c01559a4>]
- r8:000001e4 r7:00000171 r6:00000000 r5:c18b5860 r4:c1854400
-Function entered at [<c0155750>] from [<c0050174>]
-Function entered at [<c00500f0>] from [<c003b464>]
- r6:c003b464 r5:c00500f0 r4:c1a55d54
-Code: e59520fc e1a03286 e0433186 e0822003 (e592000c)
-
->>PC;  c016d1fc <input_handle_event+2ac/5a0>   <=====
-
-Trace; c016cf50 <input_handle_event+0/5a0>
-Trace; c016d5e8 <input_event+70/88>
-Trace; c016d578 <input_event+0/88>
-Trace; c01559a4 <ucb1x00_thread+254/2dc>
-Trace; c0155750 <ucb1x00_thread+0/2dc>
-Trace; c0050174 <kthread+84/8c>
-Trace; c00500f0 <kthread+0/8c>
-Trace; c003b464 <do_exit+0/624>
-
-Signed-off-by: Jochen Friedrich <jochen@scram.de>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Based-on-patch-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
- drivers/mfd/ucb1x00-ts.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ security/selinux/avc.c         |   36 +++++++++++++++++++++++++++++-------
+ security/selinux/hooks.c       |   26 +++++++++++++-------------
+ security/selinux/include/avc.h |   18 +++++++++++++-----
+ 3 files changed, 55 insertions(+), 25 deletions(-)
 
---- a/drivers/mfd/ucb1x00-ts.c
-+++ b/drivers/mfd/ucb1x00-ts.c
-@@ -385,12 +385,18 @@ static int ucb1x00_ts_add(struct ucb1x00
- 	idev->close      = ucb1x00_ts_close;
- 
- 	__set_bit(EV_ABS, idev->evbit);
--	__set_bit(ABS_X, idev->absbit);
--	__set_bit(ABS_Y, idev->absbit);
--	__set_bit(ABS_PRESSURE, idev->absbit);
- 
- 	input_set_drvdata(idev, ts);
- 
-+	ucb1x00_adc_enable(ts->ucb);
-+	ts->x_res = ucb1x00_ts_read_xres(ts);
-+	ts->y_res = ucb1x00_ts_read_yres(ts);
-+	ucb1x00_adc_disable(ts->ucb);
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index 9da6420..1d027e2 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -471,6 +471,7 @@ static void avc_audit_post_callback(struct audit_buffer *ab, void *a)
+  * @avd: access vector decisions
+  * @result: result from avc_has_perm_noaudit
+  * @a:  auxiliary audit data
++ * @flags: VFS walk flags
+  *
+  * Audit the granting or denial of permissions in accordance
+  * with the policy.  This function is typically called by
+@@ -481,9 +482,10 @@ static void avc_audit_post_callback(struct audit_buffer *ab, void *a)
+  * be performed under a lock, to allow the lock to be released
+  * before calling the auditing code.
+  */
+-void avc_audit(u32 ssid, u32 tsid,
++int avc_audit(u32 ssid, u32 tsid,
+ 	       u16 tclass, u32 requested,
+-	       struct av_decision *avd, int result, struct common_audit_data *a)
++	       struct av_decision *avd, int result, struct common_audit_data *a,
++	       unsigned flags)
+ {
+ 	struct common_audit_data stack_data;
+ 	u32 denied, audited;
+@@ -515,11 +517,24 @@ void avc_audit(u32 ssid, u32 tsid,
+ 	else
+ 		audited = requested & avd->auditallow;
+ 	if (!audited)
+-		return;
++		return 0;
 +
-+	input_set_abs_params(idev, ABS_X, 0, ts->x_res, 0, 0);
-+	input_set_abs_params(idev, ABS_Y, 0, ts->y_res, 0, 0);
-+	input_set_abs_params(idev, ABS_PRESSURE, 0, 0, 0, 0);
+ 	if (!a) {
+ 		a = &stack_data;
+ 		COMMON_AUDIT_DATA_INIT(a, NONE);
+ 	}
 +
- 	err = input_register_device(idev);
- 	if (err)
- 		goto fail;
-
++	/*
++	 * When in a RCU walk do the audit on the RCU retry.  This is because
++	 * the collection of the dname in an inode audit message is not RCU
++	 * safe.  Note this may drop some audits when the situation changes
++	 * during retry. However this is logically just as if the operation
++	 * happened a little later.
++	 */
++	if ((a->type == LSM_AUDIT_DATA_FS) &&
++	    (flags & IPERM_FLAG_RCU))
++		return -ECHILD;
++
+ 	a->selinux_audit_data.tclass = tclass;
+ 	a->selinux_audit_data.requested = requested;
+ 	a->selinux_audit_data.ssid = ssid;
+@@ -529,6 +544,7 @@ void avc_audit(u32 ssid, u32 tsid,
+ 	a->lsm_pre_audit = avc_audit_pre_callback;
+ 	a->lsm_post_audit = avc_audit_post_callback;
+ 	common_lsm_audit(a);
++	return 0;
+ }
+ 
+ /**
+@@ -793,6 +809,7 @@ int avc_has_perm_noaudit(u32 ssid, u32 tsid,
+  * @tclass: target security class
+  * @requested: requested permissions, interpreted based on @tclass
+  * @auditdata: auxiliary audit data
++ * @flags: VFS walk flags
+  *
+  * Check the AVC to determine whether the @requested permissions are granted
+  * for the SID pair (@ssid, @tsid), interpreting the permissions
+@@ -802,14 +819,19 @@ int avc_has_perm_noaudit(u32 ssid, u32 tsid,
+  * permissions are granted, -%EACCES if any permissions are denied, or
+  * another -errno upon other errors.
+  */
+-int avc_has_perm(u32 ssid, u32 tsid, u16 tclass,
+-		 u32 requested, struct common_audit_data *auditdata)
++int avc_has_perm_flags(u32 ssid, u32 tsid, u16 tclass,
++		       u32 requested, struct common_audit_data *auditdata,
++		       unsigned flags)
+ {
+ 	struct av_decision avd;
+-	int rc;
++	int rc, rc2;
+ 
+ 	rc = avc_has_perm_noaudit(ssid, tsid, tclass, requested, 0, &avd);
+-	avc_audit(ssid, tsid, tclass, requested, &avd, rc, auditdata);
++
++	rc2 = avc_audit(ssid, tsid, tclass, requested, &avd, rc, auditdata,
++			flags);
++	if (rc2)
++		return rc2;
+ 	return rc;
+ }
+ 
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 9a220be..ed5f29a 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -1447,8 +1447,11 @@ static int task_has_capability(struct task_struct *tsk,
+ 	}
+ 
+ 	rc = avc_has_perm_noaudit(sid, sid, sclass, av, 0, &avd);
+-	if (audit == SECURITY_CAP_AUDIT)
+-		avc_audit(sid, sid, sclass, av, &avd, rc, &ad);
++	if (audit == SECURITY_CAP_AUDIT) {
++		int rc2 = avc_audit(sid, sid, sclass, av, &avd, rc, &ad, 0);
++		if (rc2)
++			return rc2;
++	}
+ 	return rc;
+ }
+ 
+@@ -1468,7 +1471,8 @@ static int task_has_system(struct task_struct *tsk,
+ static int inode_has_perm(const struct cred *cred,
+ 			  struct inode *inode,
+ 			  u32 perms,
+-			  struct common_audit_data *adp)
++			  struct common_audit_data *adp,
++			  unsigned flags)
+ {
+ 	struct inode_security_struct *isec;
+ 	struct common_audit_data ad;
+@@ -1488,7 +1492,7 @@ static int inode_has_perm(const struct cred *cred,
+ 		ad.u.fs.inode = inode;
+ 	}
+ 
+-	return avc_has_perm(sid, isec->sid, isec->sclass, perms, adp);
++	return avc_has_perm_flags(sid, isec->sid, isec->sclass, perms, adp, flags);
+ }
+ 
+ /* Same as inode_has_perm, but pass explicit audit data containing
+@@ -1505,7 +1509,7 @@ static inline int dentry_has_perm(const struct cred *cred,
+ 	COMMON_AUDIT_DATA_INIT(&ad, FS);
+ 	ad.u.fs.path.mnt = mnt;
+ 	ad.u.fs.path.dentry = dentry;
+-	return inode_has_perm(cred, inode, av, &ad);
++	return inode_has_perm(cred, inode, av, &ad, 0);
+ }
+ 
+ /* Check whether a task can use an open file descriptor to
+@@ -1541,7 +1545,7 @@ static int file_has_perm(const struct cred *cred,
+ 	/* av is zero if only checking access to the descriptor. */
+ 	rc = 0;
+ 	if (av)
+-		rc = inode_has_perm(cred, inode, av, &ad);
++		rc = inode_has_perm(cred, inode, av, &ad, 0);
+ 
+ out:
+ 	return rc;
+@@ -2103,7 +2107,7 @@ static inline void flush_unauthorized_files(const struct cred *cred,
+ 			file = file_priv->file;
+ 			inode = file->f_path.dentry->d_inode;
+ 			if (inode_has_perm(cred, inode,
+-					   FILE__READ | FILE__WRITE, NULL)) {
++					   FILE__READ | FILE__WRITE, NULL, 0)) {
+ 				drop_tty = 1;
+ 			}
+ 		}
+@@ -2649,10 +2653,6 @@ static int selinux_inode_permission(struct inode *inode, int mask, unsigned flag
+ 	if (!mask)
+ 		return 0;
+ 
+-	/* May be droppable after audit */
+-	if (flags & IPERM_FLAG_RCU)
+-		return -ECHILD;
+-
+ 	COMMON_AUDIT_DATA_INIT(&ad, FS);
+ 	ad.u.fs.inode = inode;
+ 
+@@ -2661,7 +2661,7 @@ static int selinux_inode_permission(struct inode *inode, int mask, unsigned flag
+ 
+ 	perms = file_mask_to_av(inode->i_mode, mask);
+ 
+-	return inode_has_perm(cred, inode, perms, &ad);
++	return inode_has_perm(cred, inode, perms, &ad, flags);
+ }
+ 
+ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
+@@ -3208,7 +3208,7 @@ static int selinux_dentry_open(struct file *file, const struct cred *cred)
+ 	 * new inode label or new policy.
+ 	 * This check is not redundant - do not remove.
+ 	 */
+-	return inode_has_perm(cred, inode, open_file_to_av(file), NULL);
++	return inode_has_perm(cred, inode, open_file_to_av(file), NULL, 0);
+ }
+ 
+ /* task security operations */
+diff --git a/security/selinux/include/avc.h b/security/selinux/include/avc.h
+index 5615081..e77b2ac 100644
+--- a/security/selinux/include/avc.h
++++ b/security/selinux/include/avc.h
+@@ -54,11 +54,11 @@ struct avc_cache_stats {
+ 
+ void __init avc_init(void);
+ 
+-void avc_audit(u32 ssid, u32 tsid,
++int avc_audit(u32 ssid, u32 tsid,
+ 	       u16 tclass, u32 requested,
+ 	       struct av_decision *avd,
+ 	       int result,
+-	       struct common_audit_data *a);
++	      struct common_audit_data *a, unsigned flags);
+ 
+ #define AVC_STRICT 1 /* Ignore permissive mode. */
+ int avc_has_perm_noaudit(u32 ssid, u32 tsid,
+@@ -66,9 +66,17 @@ int avc_has_perm_noaudit(u32 ssid, u32 tsid,
+ 			 unsigned flags,
+ 			 struct av_decision *avd);
+ 
+-int avc_has_perm(u32 ssid, u32 tsid,
+-		 u16 tclass, u32 requested,
+-		 struct common_audit_data *auditdata);
++int avc_has_perm_flags(u32 ssid, u32 tsid,
++		       u16 tclass, u32 requested,
++		       struct common_audit_data *auditdata,
++		       unsigned);
++
++static inline int avc_has_perm(u32 ssid, u32 tsid,
++			       u16 tclass, u32 requested,
++			       struct common_audit_data *auditdata)
++{
++	return avc_has_perm_flags(ssid, tsid, tclass, requested, auditdata, 0);
++}
+ 
+ u32 avc_policy_seqno(void);
+ 
+-- 
+1.7.1
 
