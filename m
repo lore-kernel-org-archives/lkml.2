@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab1DYUYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:24:41 -0400
-Received: from 1wt.eu ([62.212.114.60]:34208 "EHLO 1wt.eu"
+	id S1756860Ab1DYUYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:33915 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756876Ab1DYUYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:35 -0400
-Message-Id: <20110425200237.210068643@pcw.home.local>
+	id S1756552Ab1DYUYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:08 -0400
+Message-Id: <20110425200235.342580584@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:09 +0200
+Date: Mon, 25 Apr 2011 22:03:26 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Tilman Schmidt <tilman@imap.cc>, "David S. Miller" <davem@davemloft.net>,
+Cc: Matthew Garrett <mjg@redhat.com>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 097/173] isdn: avoid calling tty_ldisc_flush() in atomic context
+Subject: [PATCH 054/173] acer-wmi: Fix capitalisation of GUID
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,41 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit bc10f96757bd6ab3721510df8defa8f21c32f974 upstream.
+commit bbb706079abe955a9e3f208f541de97d99449236 upstream.
 
-Remove the call to tty_ldisc_flush() from the RESULT_NO_CARRIER
-branch of isdn_tty_modem_result(), as already proposed in commit
-00409bb045887ec5e7b9e351bc080c38ab6bfd33.
-This avoids a "sleeping function called from invalid context" BUG
-when the hardware driver calls the statcallb() callback with
-command==ISDN_STAT_DHUP in atomic context, which in turn calls
-isdn_tty_modem_result(RESULT_NO_CARRIER, ~), and from there,
-tty_ldisc_flush() which may sleep.
+6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3 needs to be
+6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3 to match the hardware alias.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/i4l/isdn_tty.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/platform/x86/acer-wmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -2635,12 +2635,6 @@ isdn_tty_modem_result(int code, modem_in
- 		if ((info->flags & ISDN_ASYNC_CLOSING) || (!info->tty)) {
- 			return;
- 		}
--#ifdef CONFIG_ISDN_AUDIO
--		if ( !info->vonline )
--			tty_ldisc_flush(info->tty);
--#else
--		tty_ldisc_flush(info->tty);
--#endif
- 		if ((info->flags & ISDN_ASYNC_CHECK_CD) &&
- 		    (!((info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
- 		       (info->flags & ISDN_ASYNC_CALLOUT_NOHUP)))) {
+--- a/drivers/misc/acer-wmi.c
++++ b/drivers/misc/acer-wmi.c
+@@ -90,7 +90,7 @@ struct acer_quirks {
+  */
+ #define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
+ #define AMW0_GUID2		"431F16ED-0C2B-444C-B267-27DEB140CF9C"
+-#define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
++#define WMID_GUID1		"6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3"
+ #define WMID_GUID2		"95764E09-FB56-4e83-B31A-37761F60994A"
+ 
+ MODULE_ALIAS("wmi:67C3371D-95A3-4C37-BB61-DD47B491DAAB");
 
 
