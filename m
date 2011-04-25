@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1DYUXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:23:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:33735 "EHLO 1wt.eu"
+	id S1756616Ab1DYUXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:23:55 -0400
+Received: from 1wt.eu ([62.212.114.60]:33835 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763Ab1DYUXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:23:21 -0400
-Message-Id: <20110425200233.733236421@pcw.home.local>
+	id S1756465Ab1DYUXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:23:52 -0400
+Message-Id: <20110425200234.079044068@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:02:49 +0200
+Date: Mon, 25 Apr 2011 22:02:57 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 017/173] NFS: Fix "kernel BUG at fs/aio.c:554!"
+Cc: Kyle McMartin <kyle@parisc-linux.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 025/173] parisc: pass through \t to early (iodc) console
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,103 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Kyle McMartin <kyle@mcmartin.ca>
 
-commit 839f7ad6932d95f4d5ae7267b95c574714ff3d5b upstream.
+commit d9b68e5e88248bb24fd4e455588bea1d56108fd6 upstream.
 
-Nick Piggin reports:
+The firmware handles '\t' internally, so stop trying to emulate it
+(which, incidentally, had a bug in it.)
 
-> I'm getting use after frees in aio code in NFS
->
-> [ 2703.396766] Call Trace:
-> [ 2703.396858]  [<ffffffff8100b057>] ? native_sched_clock+0x27/0x80
-> [ 2703.396959]  [<ffffffff8108509e>] ? put_lock_stats+0xe/0x40
-> [ 2703.397058]  [<ffffffff81088348>] ? lock_release_holdtime+0xa8/0x140
-> [ 2703.397159]  [<ffffffff8108a2a5>] lock_acquire+0x95/0x1b0
-> [ 2703.397260]  [<ffffffff811627db>] ? aio_put_req+0x2b/0x60
-> [ 2703.397361]  [<ffffffff81039701>] ? get_parent_ip+0x11/0x50
-> [ 2703.397464]  [<ffffffff81612a31>] _raw_spin_lock_irq+0x41/0x80
-> [ 2703.397564]  [<ffffffff811627db>] ? aio_put_req+0x2b/0x60
-> [ 2703.397662]  [<ffffffff811627db>] aio_put_req+0x2b/0x60
-> [ 2703.397761]  [<ffffffff811647fe>] do_io_submit+0x2be/0x7c0
-> [ 2703.397895]  [<ffffffff81164d0b>] sys_io_submit+0xb/0x10
-> [ 2703.397995]  [<ffffffff8100307b>] system_call_fastpath+0x16/0x1b
->
-> Adding some tracing, it is due to nfs completing the request then
-> returning something other than -EIOCBQUEUED, so aio.c
-> also completes the request.
+Fixes a really weird hang at bootup in rcu_bootup_announce, which,
+as far as I can tell, is the first printk in the core kernel to use
+a tab as the first character.
 
-To address this, prevent the NFS direct I/O engine from completing
-async iocbs when the forward path returns an error without starting
-any I/O.
+Cc: stable@kernel.org
+Signed-off-by: Kyle McMartin <kyle@parisc-linux.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-This fix appears to survive ^C during both "xfstest no. 208" and "fsx
--Z."
-
-It's likely this bug has existed for a very long while, as we are seeing
-very similar symptoms in OEL 5.  Copying stable.
-
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfs/direct.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
-
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -401,15 +401,18 @@ static ssize_t nfs_direct_read_schedule_
- 		pos += vec->iov_len;
+diff --git a/arch/parisc/kernel/firmware.c b/arch/parisc/kernel/firmware.c
+index 4c247e0..df971fa 100644
+--- a/arch/parisc/kernel/firmware.c
++++ b/arch/parisc/kernel/firmware.c
+@@ -1123,7 +1123,6 @@ static char __attribute__((aligned(64))) iodc_dbuf[4096];
+  */
+ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ {
+-	static int posx;        /* for simple TAB-Simulation... */
+ 	unsigned int i;
+ 	unsigned long flags;
+ 
+@@ -1133,19 +1132,12 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ 			iodc_dbuf[i+0] = '\r';
+ 			iodc_dbuf[i+1] = '\n';
+ 			i += 2;
+-			posx = 0;
+ 			goto print;
+-		case '\t':
+-			while (posx & 7) {
+-				iodc_dbuf[i] = ' ';
+-				i++, posx++;
+-			}
+-			break;
+ 		case '\b':	/* BS */
+-			posx -= 2;
++			i--; /* overwrite last */
+ 		default:
+ 			iodc_dbuf[i] = str[i];
+-			i++, posx++;
++			i++;
+ 			break;
+ 		}
  	}
- 
-+	/*
-+	 * If no bytes were started, return the error, and let the
-+	 * generic layer handle the completion.
-+	 */
-+	if (requested_bytes == 0) {
-+		nfs_direct_req_release(dreq);
-+		return result < 0 ? result : -EIO;
-+	}
-+
- 	if (put_dreq(dreq))
- 		nfs_direct_complete(dreq);
--
--	if (requested_bytes != 0)
--		return 0;
--
--	if (result < 0)
--		return result;
--	return -EIO;
-+	return 0;
- }
- 
- static ssize_t nfs_direct_read(struct kiocb *iocb, const struct iovec *iov,
-@@ -829,15 +832,18 @@ static ssize_t nfs_direct_write_schedule
- 		pos += vec->iov_len;
- 	}
- 
-+	/*
-+	 * If no bytes were started, return the error, and let the
-+	 * generic layer handle the completion.
-+	 */
-+	if (requested_bytes == 0) {
-+		nfs_direct_req_release(dreq);
-+		return result < 0 ? result : -EIO;
-+	}
-+
- 	if (put_dreq(dreq))
- 		nfs_direct_write_complete(dreq, dreq->inode);
--
--	if (requested_bytes != 0)
--		return 0;
--
--	if (result < 0)
--		return result;
--	return -EIO;
-+	return 0;
- }
- 
- static ssize_t nfs_direct_write(struct kiocb *iocb, const struct iovec *iov,
 
 
