@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab1DYR51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:57:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757722Ab1DYR50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:57:26 -0400
-Date: Mon, 25 Apr 2011 19:56:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] signal: sys_rt_sigtimedwait: simplify the timeout
-	logic
-Message-ID: <20110425175605.GA22289@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com> <20110423175922.GB484@redhat.com> <20110425113746.GM17734@mtj.dyndns.org> <20110425172644.GA20689@redhat.com> <BANLkTinrC1+5CVgnBCxrt895TAnLCKjTRg@mail.gmail.com>
+	id S1758782Ab1DYSAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 14:00:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53521 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757722Ab1DYSAL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 14:00:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=iHIhGFYnxGvLPcZlWUvsLMbNScY3Zxoa3llGFsHlzK1ewJXxGQBpG7KmY5Oy1emDFt
+         YXgY8wZeRx3L1SEnfXhcjpjccOxgD6Nyr7wbKOj8/1vatncjtRDAxz8F4/fMWJX2rxxK
+         C2cj/viFBsLClJG94ir8HVXV4l8keusbJT4+w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinrC1+5CVgnBCxrt895TAnLCKjTRg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110425174110.GB28239@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+	<20110422092322.GA1948@elte.hu>
+	<BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+	<20110422105211.GB1948@elte.hu>
+	<20110422165007.GA18401@vps.sharma-home.net>
+	<20110422203022.GA20573@elte.hu>
+	<20110422203222.GA21219@elte.hu>
+	<20110423000347.GC9328@tassilo.jf.intel.com>
+	<1303545012.2298.44.camel@twins>
+	<20110424021907.GB3019@alboin.amr.corp.intel.com>
+	<20110425174110.GB28239@elte.hu>
+Date: Tue, 26 Apr 2011 02:00:10 +0800
+Message-ID: <BANLkTinNzALr0m1gq=Brk4oLq3A=3Py1yQ@mail.gmail.com>
+Subject: Re: [generalized cache events] Re: [PATCH 1/1] perf tools: Add
+ missing user space support for config1/config2
+From: Dehao Chen <danielcdh@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Linus Torvalds wrote:
+On Tue, Apr 26, 2011 at 1:41 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> On Mon, Apr 25, 2011 at 10:26 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > If only I knew what this comment could say except
-> >
-> >        /* Why do we add (tv_sec || tv_nsec) ?  */
-> >
-> > I'd better send 4/3 which simply removes this (I hope) unneeded code.
+> * Andi Kleen <ak@linux.intel.com> wrote:
 >
-> It's to guarantee that timeout is at least one tick more than asked
-> for, because the rule is that you really have to wait for AT LEAST the
-> time asked for.
+> > > You're so skilled at not actually saying anything useful. Are you
+> > > perchance referring to the fact that the IP reported in the PEBS data is
+> > > exactly _one_ instruction off? Something that is demonstrated to be
+> > > fixable?
+> >
+> > It's one instruction off the instruction that was retired when the PEBS
+> > interrupt was ready, but not one instruction off the instruction that caused
+> > the event. There's still skid in triggering the interrupt.
+>
+> Peter answered this in the other mail:
+>
+>  |
+>  | Sure, but who cares? So your period isn't exactly what you specified, but
+>  | the effective period will have an average and a fairly small stdev (assuming
+>  | the initial period is much larger than the relatively few cycles it takes to
+>  | arm the PEBS assist), therefore you still get a fairly uniform spread.
+>  |
+>
+> ... and the resulting low level of noise in the average period length is what
+> matters. The instruction itself will still be one of the hotspot instructions,
+> statistically.
 
-Aah, thanks. This makes sense. I'll add the comment.
+Not true. This skid will lead to some aggregation and shadow effects
+on some certain instructions. To make things worse, these effects are
+deterministic and cannot be removed by either sampling for multiple
+times or by averaging among instructions within a basic block. As a
+result, some actual "hot spot" are not sampled at all. You can simply
+try to collect a basic block level CPI, and you'll get a very
+misleading profile.
 
-> So "+ (tv_sec || tv_nsec)" is just the "+1" for the "not zero timeout" case.
+Dehao
 
-So, we have
-
-	timeout = timespec_to_jiffies(ts) + (tv_sec || tv_nsec);
-	...
-
-	if (timeout)
-		timeout = schedule_timeout_interruptible(timeout);
-
-Perhaps it makes sense to turn this code into
-
-	timeout = timespec_to_jiffies(ts);
-
-	if (timeout)
-		// make sure we sleep at least the time we asked for
-		timeout = schedule_timeout_interruptible(timeout + 1);
-
-Assuming that timespec_to_jiffies() always returns nonzero if ts is
-"not zero timeout". I think it does.
-
-Oleg.
-
+>
+> Thanks,
+>
+>        Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
