@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1DYI6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 04:58:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54589 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758125Ab1DYI6b (ORCPT
+	id S1758147Ab1DYJJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 05:09:04 -0400
+Received: from nm11-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.141]:44551 "HELO
+	nm11-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758131Ab1DYJJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 04:58:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OOXcyPPyPgGOGRcsM0PZ3yUbaYg5bk9DncEUSc9N51BIdkFmrXluF31Wqi4R16/bZA
-         UsIl5VkbD8TSXGlgZMTkNJ3TbcNmarZDq5lttIB2stYj8wjLxo/ee0rnh4TqWcmA2825
-         SYXtZXTX4KV603ibbCRjvx212J7KnsJgCURNo=
-Date: Mon, 25 Apr 2011 10:58:27 +0200
-From: Tejun Heo <htejun@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-Subject: Re: [PATCH 1/2]block: optimize non-queueable flush request drive
-Message-ID: <20110425085827.GB17734@mtj.dyndns.org>
-References: <1303202686.3981.216.camel@sli10-conroe>
- <20110422233204.GB1576@mtj.dyndns.org>
- <20110425013328.GA17315@sli10-conroe.sh.intel.com>
+	Mon, 25 Apr 2011 05:09:02 -0400
+X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Apr 2011 05:09:02 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 418458.10121.bm@omp1053.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=KFaKkoWF5oMMP6u0NiVEwhi1HcK/LSI6jYc9QC7ucEguAatd6+AN8m4Rs1+1evY2T9/TZ8ymIV9x+hNoINopFQnjXQjqM/tkHVxyIS3eZqexiDXLxFxgriDpIwSUe18wPKOxlxuSkdEjv2DcIsC78IyZExIyggz3hryM7ffZNZY=;
+Message-ID: <951969.99629.qm@web31806.mail.mud.yahoo.com>
+X-YMail-OSG: D4xKCzUVM1lV.68T5bXwjzTDeCD6NOdFUfujDx8dcb85Gi9
+ QLLySXsN3U0rQH.b1MZ13J_Hbo1XyUJvaeQZBijJGwUdT3J.zGQcL08vYyv9
+ LFZmRacpkuyJCfc8MdyPGn202Sz_ZYCUZ6sSra6VORM.Bfel2j.iC.TiXPrg
+ AScXhVqlcdAAVOFvwOt8b4JP7XLGYx2qi9.VPrhCZXRyz8hB8AbrqPA10See
+ 7Gjc8FS5huFqLn544vj1jFWI9sA.MlFt2C75XyfP87szOeMpdxKVWpoOLNek
+ eUDXNrTRuZ9y01f.bkJ7.9yG2FlQYXSov9xPMl_4PeIHctIt5lLb8Whkc7J6
+ QQ7wdsCv5uyiUWAVDxBCtiBX9zpkh9q7_.23abHR8zF36Q9czu.VcVgFA1FE
+ Ntl_WnqcyWoxpUQ--
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.111.303096
+Date: Mon, 25 Apr 2011 02:03:41 -0700 (PDT)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: UASP (UAS) for Linux: Updates
+To: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110425013328.GA17315@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The USB Attached SCSI Protocol driver (UAS, UASP) which can be found here:
+https://github.com/ltuikov/linux-2.6 off of master, saw the following update:
 
-(cc'ing Darrick)
+commit 1cc384f0b3a9422237ff218e3be10a4a4c15f9b4
+Author: Luben Tuikov <ltuikov@yahoo.com>
+Date:   Fri Apr 22 19:25:07 2011 -0700
 
-On Mon, Apr 25, 2011 at 09:33:28AM +0800, Shaohua Li wrote:
-> Say in one operation of fs, we issue write r1 and r2, after they finishes,
-> we issue flush f1. In another operation, we issue write r3 and r4, after
-> they finishes, we issue flush f2.
-> operation 1: r1 r2  f1
-> operation 2:  r3 r4  f2
-> At the time f1 finishes and f2 is in queue, we can make sure two things:
-> 1. r3 and r4 is already finished, otherwise f2 will not be queued.
-> 2. r3 and r4 should be finished before f1. We can only deliver one request
-> out for non-queueable request, so either f1 is dispatched after r3 and r4
-> are finished or before r3 and r4 are finished. Because of item1, f1 is
-> dispatched after r3 and r4 are finished.
-> From the two items, when f1 is finished, we can let f2 finished, because
-> f1 should flush disk cache out for all requests from r1 to r4.
+    [USB] UASP: Driver generated tags on per I_T nexus
+    
+    In UAS, a single tag space exists per I_T nexus,
+    that is, tags are unique on per I_T nexus. Also,
+    tags are shared between COMMAND IUs and TASK
+    MANAGEMENT IUs. The technical reason for these
+    requirements can be deduced by reading the USB 3.0
+    and UAS specs.
+    
+    This commit implements an infrastructure for
+    driver generated tags on per I_T nexus.
+    
+    A few of the reasons to do this in the driver
+    instead of using the tags generated by the block
+    layer are:
+    
+    * Tags exists per I_T nexus. Linux generates I_T_L
+      nexus tags. Although some provision is made for
+      "host" based tags in Linux, it doesn't scale for
+      the reasons described in the following
+      bullet-points, and for the reason that if in the
+      future multiple UAS interfaces of the same USB
+      device are mapped as separate target ports into
+      the same "SCSI host (template)", then the tag
+      space breaks, as it must not be shared between
+      ports. The solution provided by this commit
+      solves the general case by providing I_T tags.
+    
+    * Linux doesn't provide for a driver to ask for
+      tags to use for Task Management Functions, which
+      are generated by the driver. In Linux tags come
+      in already assigned to commands which the driver
+      should send out to the transport. Generating
+      tags in the driver assures that we can generate
+      (unique, non-duplicate with commands) tags for
+      TMFs too.
+    
+    * When doing error recovery, after an ABORT TASK
+      TMF, Linux generates a TEST UNIT READY with a
+      tag number the same as the task which was
+      aborted (the Task To Be Managed, TTBM) by the
+      preceding ABORT TASK TMF. Clearly an abuse of a
+      tag number.
+    
+    * Tags should form an increasing sequence wrapping
+      when the highest numbered tag has been used.
+    
+    Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
 
-What I was saying is that request completion is decoupled from driver
-fetching requests from block layer and that the order of completion
-doesn't necessarily follow the order of execution.  IOW, nothing
-guarantees that FLUSH completion code would run before the low level
-driver fetches the next command and _completes_ it, in which case your
-code would happily mark flush complete after write without actually
-doing it.
+Original posting of the UASP driver can be found here:
+http://marc.info/?l=linux-usb&m=129165511732388&w=2
 
-And, in general, I feel uncomfortable with this type of approach, it's
-extremely fragile and difficult to understand and verify, and doesn't
-match at all with the rest of the code.  If you think you can exploit
-certain ordering constraint, reflect it into the overall design.
-Don't stuff the magic into five line out-of-place code.
+    Luben
 
-> If flush is queueable, I'm not sure if we can do the
-> optimization. For example, we dispatch 32 requests in the
-> meantime. and the last request is flush, can the hardware guarantee
-> the cache for the first 31 requests are flushed out?  On the other
-> hand, my optimization works even there are write requests in between
-> the back-to-back flush.
-
-Eh, wasn't your optimization only applicable if flush is not
-queueable?  IIUC, what your optimization achieves is merging
-back-to-back flushes and you're achieving that in a _very_ non-obvious
-round-about way.  Do it in straight-forward way even if that costs
-more lines of code.
-
-Darrick, do you see flush performance regression between rc1 and rc2?
-You're testing on higher end, so maybe it's still okay for you?
-
-Thanks.
-
--- 
-tejun
