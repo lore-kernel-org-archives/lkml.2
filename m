@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab1DYCm2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 22:42:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33523 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758043Ab1DYCm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 22:42:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20110424235928.71af51e0@neptune.home>
-References: <20110424202158.45578f31@neptune.home> <20110424235928.71af51e0@neptune.home>
-Message-Id: <20110425114429.266A.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	id S1758071Ab1DYCr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 22:47:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:4939 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758041Ab1DYCrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Apr 2011 22:47:25 -0400
+Subject: RE: [PATCH 2/2] misc: add real function
+ open/read/write/ioctl/close for moxa_serial_io driver
+From: Joe Perches <joe@perches.com>
+To: Jimmy Chen =?UTF-8?Q?=28=E9=99=B3=E6=B0=B8=E9=81=94=29?= 
+	<jimmy.chen@moxa.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+In-Reply-To: <ECB3782BB8F03341905DD923270296115D5AC2@mhqms01.moxa.com>
+References: <ECB3782BB8F03341905DD923270296115D5AC2@mhqms01.moxa.com>
 Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 24 Apr 2011 19:47:23 -0700
+Message-ID: <1303699643.1745.7.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 11:42:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, 24 April 2011 Bruno Prémont <bonbons@linux-vserver.org> wrote:
-> > On an older system I've been running Gentoo's revdep-rebuild to check
-> > for system linking/*.la consistency and after doing most of the work the
-> > system starved more or less, just complaining about stuck tasks now and
-> > then.
-> > Memory usage graph as seen from userspace showed sudden quick increase of
-> > memory usage though only a very few MB were swapped out (c.f. attached RRD
-> > graph).
-> 
-> Seems I've hit it once again (though detected before system was fully
-> stalled by trying to reclaim memory without success).
-> 
-> This time it was during simple compiling...
-> Gathered info below:
-> 
-> /proc/meminfo:
-> MemTotal:         480660 kB
-> MemFree:           64948 kB
-> Buffers:           10304 kB
-> Cached:             6924 kB
-> SwapCached:         4220 kB
-> Active:            11100 kB
-> Inactive:          15732 kB
-> Active(anon):       4732 kB
-> Inactive(anon):     4876 kB
-> Active(file):       6368 kB
-> Inactive(file):    10856 kB
-> Unevictable:          32 kB
-> Mlocked:              32 kB
-> SwapTotal:        524284 kB
-> SwapFree:         456432 kB
-> Dirty:                80 kB
-> Writeback:             0 kB
-> AnonPages:          6268 kB
-> Mapped:             2604 kB
-> Shmem:                 4 kB
-> Slab:             250632 kB
-> SReclaimable:      51144 kB
-> SUnreclaim:       199488 kB   <--- look big as well...
-> KernelStack:      131032 kB   <--- what???
+On Mon, 2011-04-25 at 10:35 +0800, Jimmy Chen (陳永達) wrote:
+> Add real function and GPL license.
+> Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
 
-KernelStack is used 8K bytes per thread. then, your system should have
-16000 threads. but your ps only showed about 80 processes.
-Hmm... stack leak?
+A few things.
 
-
-> PageTables:          920 kB
-> NFS_Unstable:          0 kB
-> Bounce:                0 kB
-> WritebackTmp:          0 kB
-> CommitLimit:      764612 kB
-> Committed_AS:     132632 kB
-> VmallocTotal:     548548 kB
-> VmallocUsed:       18500 kB
-> VmallocChunk:     525952 kB
-> AnonHugePages:         0 kB
-> DirectMap4k:       32704 kB
-> DirectMap4M:      458752 kB
-> 
+o Your patches are reversed.
+o Please run your patches through checkpatch.
+o I think it better to avoid duplicating all of the GPL
+  and just reference it as you have via MODULE_LICENSE.
+o You could probably use MODULE_LICENSE("GPL V2")
+  if you want to limit it to V2 only.
 
 
