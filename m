@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab1DYUom (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:44:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:34320 "EHLO 1wt.eu"
+	id S932788Ab1DYUol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:44:41 -0400
+Received: from 1wt.eu ([62.212.114.60]:34318 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932261Ab1DYUYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932260Ab1DYUYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Apr 2011 16:24:48 -0400
-Message-Id: <20110425200237.687004763@pcw.home.local>
+Message-Id: <20110425200238.339271381@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:20 +0200
+Date: Mon, 25 Apr 2011 22:04:35 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Henry Nestler <henry.nestler@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 108/173] fbcon: Bugfix soft cursor detection in Tile Blitting
+Subject: [PATCH 123/173] irda: validate peer name and attribute lengths
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,37 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henry Nestler <henry.nestler@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
+commit d370af0ef7951188daeb15bae75db7ba57c67846 upstream.
 
-Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
-(Tile Blitting Operation in framebuffer console).
+Length fields provided by a peer for names and attributes may be longer
+than the destination array sizes.  Validate lengths to prevent stack
+buffer overflows.
 
-The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
-and every second mode value as "software cursor". This hides the cursor
-for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
-should hide the cursor.
-See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
-
-Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/console/tileblit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/irda/iriap.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/video/console/tileblit.c
-+++ b/drivers/video/console/tileblit.c
-@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *
- 			int softback_lines, int fg, int bg)
- {
- 	struct fb_tilecursor cursor;
--	int use_sw = (vc->vc_cursor_type & 0x01);
-+	int use_sw = (vc->vc_cursor_type & 0x10);
+--- a/net/irda/iriap.c
++++ b/net/irda/iriap.c
+@@ -655,10 +655,16 @@ static void iriap_getvaluebyclass_indica
+ 	n = 1;
  
- 	cursor.sx = vc->vc_x;
- 	cursor.sy = vc->vc_y;
+ 	name_len = fp[n++];
++
++	IRDA_ASSERT(name_len < IAS_MAX_CLASSNAME + 1, return;);
++
+ 	memcpy(name, fp+n, name_len); n+=name_len;
+ 	name[name_len] = '\0';
+ 
+ 	attr_len = fp[n++];
++
++	IRDA_ASSERT(attr_len < IAS_MAX_ATTRIBNAME + 1, return;);
++
+ 	memcpy(attr, fp+n, attr_len); n+=attr_len;
+ 	attr[attr_len] = '\0';
+ 
 
 
