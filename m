@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab1DYUnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:43:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34332 "EHLO 1wt.eu"
+	id S932758Ab1DYUoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:44:07 -0400
+Received: from 1wt.eu ([62.212.114.60]:34329 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932278Ab1DYUYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:50 -0400
-Message-Id: <20110425200237.513372128@pcw.home.local>
+	id S932272Ab1DYUYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:49 -0400
+Message-Id: <20110425200237.944385199@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:16 +0200
+Date: Mon, 25 Apr 2011 22:04:26 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Julien Tinnes <jln@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 104/173] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
+Subject: [PATCH 114/173] myri10ge: fix rmmod crash
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julien Tinnes <jln@google.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
+commit cda6587c21a887254c8ed4b58da8fcc4040ab557 upstream.
 
-Userland should be able to trust the pid and uid of the sender of a
-signal if the si_code is SI_TKILL.
+Rmmod myri10ge crash at free_netdev() -> netif_napi_del(), because napi
+structures are already deallocated. To fix call netif_napi_del() before
+kfree() at myri10ge_free_slices().
 
-Unfortunately, the kernel has historically allowed sigqueueinfo() to
-send any si_code at all (as long as it was negative - to distinguish it
-from kernel-generated signals like SIGILL etc), so it could spoof a
-SI_TKILL with incorrect siginfo values.
-
-Happily, it looks like glibc has always set si_code to the appropriate
-SI_QUEUE, so there are probably no actual user code that ever uses
-anything but the appropriate SI_QUEUE flag.
-
-So just tighten the check for si_code (we used to allow any negative
-value), and add a (one-time) warning in case there are binaries out
-there that might depend on using other si_code values.
-
-Signed-off-by: Julien Tinnes <jln@google.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[wt: 2.6.27 does not have do_rt_tgsigqueueinfo()]
 
 ---
- kernel/signal.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/net/myri10ge/myri10ge.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: longterm-2.6.27/kernel/signal.c
-===================================================================
---- longterm-2.6.27.orig/kernel/signal.c	2011-01-23 10:52:37.000000000 +0100
-+++ longterm-2.6.27/kernel/signal.c	2011-04-25 16:06:27.491278774 +0200
-@@ -2294,9 +2294,13 @@
- 		return -EFAULT;
- 
- 	/* Not even root can pretend to send signals from the kernel.
--	   Nor can they impersonate a kill(), which adds source info.  */
--	if (info.si_code >= 0)
-+	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-+	 */
-+	if (info.si_code != SI_QUEUE) {
-+		/* We used to allow any < 0 si_code */
-+		WARN_ON_ONCE(info.si_code < 0);
- 		return -EPERM;
-+	}
- 	info.si_signo = sig;
- 
- 	/* POSIX.1b doesn't mention process groups.  */
+--- a/drivers/net/myri10ge/myri10ge.c
++++ b/drivers/net/myri10ge/myri10ge.c
+@@ -3640,6 +3640,7 @@ static void myri10ge_free_slices(struct
+ 			dma_free_coherent(&pdev->dev, bytes,
+ 					  ss->fw_stats, ss->fw_stats_bus);
+ 			ss->fw_stats = NULL;
++			netif_napi_del(&ss->napi);
+ 		}
+ 	}
+ 	kfree(mgp->ss);
 
 
