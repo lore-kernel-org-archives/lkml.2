@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab1DYUbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:31:45 -0400
-Received: from 1wt.eu ([62.212.114.60]:34592 "EHLO 1wt.eu"
+	id S932542Ab1DYUbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:31:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34596 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932452Ab1DYUZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:25 -0400
-Message-Id: <20110425200239.728303582@pcw.home.local>
+	id S932455Ab1DYUZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:26 -0400
+Message-Id: <20110425200240.468187050@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:07 +0200
+Date: Mon, 25 Apr 2011 22:05:24 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Nelson Elhage <nelhage@ksplice.com>, Thomas Graf <tgraf@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Moritz Muehlenhoff <jmm@debian.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 155/173] inet_diag: Make sure we actually run the same bytecode we audited.
+Cc: "Steven J. Magnani" <steve@digidescorp.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 172/173] net: Fix oops from tcp_collapse() when using splice()
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,109 +23,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nelson Elhage <nelhage@ksplice.com>
+From: Steven J. Magnani <steve@digidescorp.com>
 
-commit 22e76c849d505d87c5ecf3d3e6742a65f0ff4860 upstream.
+commit baff42ab1494528907bf4d5870359e31711746ae upstream.
 
-We were using nlmsg_find_attr() to look up the bytecode by attribute when
-auditing, but then just using the first attribute when actually running
-bytecode. So, if we received a message with two attribute elements, where only
-the second had type INET_DIAG_REQ_BYTECODE, we would validate and run different
-bytecode strings.
+tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
+This can cause a panic in tcp_collapse() if it is called as a result
+of the recv_actor dropping the socket lock.
 
-Fix this by consistently using nlmsg_find_attr everywhere.
+A userspace program that splices data from a socket to either another
+socket or to a file can trigger this bug.
 
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Signed-off-by: Thomas Graf <tgraf@infradead.org>
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[jmm: Slightly adapted to apply against 2.6.32]
-Cc: Moritz Muehlenhoff <jmm@debian.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
----
- net/ipv4/inet_diag.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
-
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -489,9 +489,11 @@ static int inet_csk_diag_dump(struct soc
- {
- 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
- 
--	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
-+	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
- 		struct inet_diag_entry entry;
--		struct rtattr *bc = (struct rtattr *)(r + 1);
-+		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
-+							  sizeof(*r),
-+							  INET_DIAG_REQ_BYTECODE);
- 		struct inet_sock *inet = inet_sk(sk);
- 
- 		entry.family = sk->sk_family;
-@@ -511,7 +513,7 @@ static int inet_csk_diag_dump(struct soc
- 		entry.dport = ntohs(inet->dport);
- 		entry.userlocks = sk->sk_userlocks;
- 
--		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
-+		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
- 			return 0;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 6afb6d8..2c75f89 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1368,6 +1368,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 		sk_eat_skb(sk, skb, 0);
+ 		if (!desc->count)
+ 			break;
++		tp->copied_seq = seq;
  	}
- 
-@@ -526,9 +528,11 @@ static int inet_twsk_diag_dump(struct in
- {
- 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
- 
--	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
-+	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
- 		struct inet_diag_entry entry;
--		struct rtattr *bc = (struct rtattr *)(r + 1);
-+		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
-+							  sizeof(*r),
-+							  INET_DIAG_REQ_BYTECODE);
- 
- 		entry.family = tw->tw_family;
- #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
-@@ -547,7 +551,7 @@ static int inet_twsk_diag_dump(struct in
- 		entry.dport = ntohs(tw->tw_dport);
- 		entry.userlocks = 0;
- 
--		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
-+		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
- 			return 0;
- 	}
- 
-@@ -617,7 +621,7 @@ static int inet_diag_dump_reqs(struct sk
- 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
- 	struct inet_connection_sock *icsk = inet_csk(sk);
- 	struct listen_sock *lopt;
--	struct rtattr *bc = NULL;
-+	const struct nlattr *bc = NULL;
- 	struct inet_sock *inet = inet_sk(sk);
- 	int j, s_j;
- 	int reqnum, s_reqnum;
-@@ -637,8 +641,9 @@ static int inet_diag_dump_reqs(struct sk
- 	if (!lopt || !lopt->qlen)
- 		goto out;
- 
--	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
--		bc = (struct rtattr *)(r + 1);
-+	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
-+		bc = nlmsg_find_attr(cb->nlh, sizeof(*r),
-+				     INET_DIAG_REQ_BYTECODE);
- 		entry.sport = inet->num;
- 		entry.userlocks = sk->sk_userlocks;
- 	}
-@@ -671,8 +676,8 @@ static int inet_diag_dump_reqs(struct sk
- 					&ireq->rmt_addr;
- 				entry.dport = ntohs(ireq->rmt_port);
- 
--				if (!inet_diag_bc_run(RTA_DATA(bc),
--						    RTA_PAYLOAD(bc), &entry))
-+				if (!inet_diag_bc_run(nla_data(bc),
-+						      nla_len(bc), &entry))
- 					continue;
- 			}
+ 	tp->copied_seq = seq;
  
 
 
