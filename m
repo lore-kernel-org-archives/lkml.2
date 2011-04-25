@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab1DYDMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 23:12:09 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54801 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758041Ab1DYDMG (ORCPT
+	id S1758092Ab1DYDYB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 23:24:01 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57660 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758045Ab1DYDYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 23:12:06 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-In-Reply-To: Your message of "Thu, 21 Apr 2011 15:42:33 EDT."
-             <1303414954-3315-1-git-send-email-josef@redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1303701080_5888P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Sun, 24 Apr 2011 23:24:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jayw0J8KFb06OCCv+/FF/tdOH+ZUmplXlm2/6xwKq1FwUBF5rEWvnKk3A5EqHf7bVV
+         4GVD9cvH5CftV42XniYg1qwX8U4Pot2KxQW7JD7f5uCI9smVwiaolgBeLDEgf3mVMt9y
+         F+DrNAaZAEB0etf6O+0UoYLzz9vFH7YOb5Cw8=
+Message-ID: <4DB4E94C.2060505@lwfinger.net>
+Date: Sun, 24 Apr 2011 22:23:56 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
+Subject: Re: r8712u cannot set essid
+References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Sun, 24 Apr 2011 23:11:20 -0400
-Message-ID: <125854.1303701080@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DB4E65C.000D,ss=1,fgs=0,
-	ip=71.62.120.129,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1303701080_5888P
-Content-Type: text/plain; charset=us-ascii
+On 04/24/2011 09:16 PM, Jeff Chua wrote:
+> I'm having problem trying to set essid on the "Realtek RTL8188S WLAN
+> Adapter" with the r8172u module on 2.6.39-rc4. There's no error. Just
+> can't set.
+>
+>
+> # dmesg ...
+> r8712u: module is from the staging directory, the quality is unknown,
+> you have been warned.
+> r8712u: DriverVersion: v7_0.20100831
+> r8712u: register rtl8712_netdev_ops to netdev_ops
+> r8712u: USB_SPEED_HIGH with 4 endpoints
+> r8712u: Boot from EFUSE: Autoload OK
+> r8712u: CustomerID = 0x0000
+> r8712u: MAC Address from efuse = 90:61:0c:01:8f:b0
+> usbcore: registered new interface driver r8712u
+> r8712u: Loading firmware from "rtlwifi/rtl8712u.bin"
+> r8712u: 1 RCR=0x153f00e
+> r8712u: 2 RCR=0x553f00e
+>
+> # iwconfig wlan1 essid "tryanything"
+> # iwconfig wlan1
+> wlan1     IEEE 802.11b  ESSID:""  Nickname:"rtl_wifi"
+>            Mode:Ad-Hoc  Cell: Not-Associated   Bit Rate:0 kb/s
+>            Sensitivity:0/0
+>            Retry:off   RTS thr:off   Fragment thr:off
+>            Encryption key:off
+>            Power Management:off
+>            Link Quality:0  Signal level:0  Noise level:0
+>            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>            Tx excessive retries:0  Invalid misc:0   Missed beacon:0
 
-On Thu, 21 Apr 2011 15:42:33 EDT, Josef Bacik said:
+The code requires the interface to be up before the essid can be set. If you do 
+it with the iwconfig command, you will see an error message.
 
-> -SEEK_HOLE: this moves the file pos to the nearest hole in the file from the
-> given position. 
+I'm not sure if this is a reasonable requirement before allowing the essid to be 
+set. Any thoughts?
 
-Do we want the semantic to be "the nearest" hole?  Or did we really want "the
-next" hole?  Loops like a bullet loaded in the chamber and pointed at the
-programmer's foot if they aren't allowing for the fact that this can go
-*backwards* in the file if the closest hole is towards the beginning.  Good way
-to end up in an infinite loop or other messy...
-
-Consider the obvious implementation of "skip over a hole" - lseek(SEEK_HOLE),
-lseek(SEEK_DATA).  and start reading data because we've skipped over the hole.
-Wrong - the second seek may have gone backwards if the data was only 4K away
-but the hole was 64K in size...
-
-
---==_Exmh_1303701080_5888P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNtOZYcC3lWbTT17ARAkB2AKDk0fzyUs+QaUFRVh6wDYDvs5yiXgCg+9LO
-gbr1xY/QAHlMo7lFrxDHxUw=
-=/6Mr
------END PGP SIGNATURE-----
-
---==_Exmh_1303701080_5888P--
-
+Larry
