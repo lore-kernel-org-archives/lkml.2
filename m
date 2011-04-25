@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab1DYFg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 01:36:29 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:53308 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1DYFg1 (ORCPT
+	id S1751886Ab1DYFvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 01:51:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56098 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab1DYFvF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 01:36:27 -0400
+	Mon, 25 Apr 2011 01:51:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=LJxzP1EIVxYuxvLFhDHSIwHZ1iyGNKpOBVftEHuDGuXboqwKDef949OuG7pXmNmrFB
-         zrxjutcbNuFKEIzbqK2RjXMHBWl6/ZRgcmtngEf8mD3Zs09CiBiNanQcMaU1wnbNIyjk
-         FMUDLz8NzEmrA4j0ZYF/hcAudhHeZyvYk7zMU=
-Message-ID: <4DB50854.8090700@gmail.com>
-Date: Mon, 25 Apr 2011 15:36:20 +1000
-From: Graeme Russ <graeme.russ@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KanLxo/xa+ByvNOMa5rI9363jocixHUM7aQr7WX5KpesgfpHMpNYnPZmP86tfS8UbM
+         ZYJJh9E3IQ5LN8VjWDdLXqW3EIbRZy4eljntkamQeckNE0h1LKkairgpjpA+HQsrKanV
+         vAQ7peEV5JBVHHOIMD3HEWtsIvLKa9ag7y/vg=
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: U-Boot Users <u-boot@lists.denx.de>
-Subject: Expanding checkpatch for non-linux (specifically U-Boot) use
+In-Reply-To: <4ac1d916ddc0ab9e7e94b81bc77880be.squirrel@xenotime.net>
+References: <20110421132045.5af1b953.sfr@canb.auug.org.au>
+	<20110421085124.4a44d048.randy.dunlap@oracle.com>
+	<BANLkTinoi1SeuuPj5SeTzssyBTvTQu6pMA@mail.gmail.com>
+	<4DB2F406.404@oracle.com>
+	<BANLkTikWa7wZYonWLHMqWkBRHfi7tLiyuA@mail.gmail.com>
+	<4ac1d916ddc0ab9e7e94b81bc77880be.squirrel@xenotime.net>
+Date: Mon, 25 Apr 2011 11:21:03 +0530
+Message-ID: <BANLkTimvjai22mb9KG3CVreBiKPn5gJ+UA@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 21 (i82975x_edac)
+From: Arvind R <arvino55@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        bluesmoke-devel@lists.sourceforge.net, linux-edac@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Apr 25, 2011 at 7:43 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>
+> On Sat, April 23, 2011 11:29 pm, Arvind R wrote:
+>> On Sat, Apr 23, 2011 at 9:15 PM, Randy Dunlap <randy.dunlap@oracle.com>
+>> wrote:
+>>> On 04/23/11 01:21, Arvind R wrote:
+>>>> On Thu, Apr 21, 2011 at 9:21 PM, Randy Dunlap <randy.dunlap@oracle.com>
+>>>> wrote:
+>>>>> On Thu, 21 Apr 2011 13:20:45 +1000 Stephen Rothwell wrote:
+>>>>>
+>>>>>> Changes since 20110420:
+>>>>>
+>>>>>
+>>>>> on i386:
+>>>>>
+>>>>> drivers/edac/i82975x_edac.c:298: warning: integer constant is too
+>>>>> large for 'unsigned long' type
+>>
+>>> I think that the goal should be to get your 4-patch series merged.
+>>>
+>>>> That would still not fix the wrong error-info reported by the driver -
+>>>> this is
+>>>> fixed by the patch-set titled '[RFC PATCH 2.6.37 0/4] i3000_edac :
+>>>> merge
+>>>> i82975x support' dated 2011-02-14 in the linux-edac archives.
+>>>>
+>>>> Please advise on getting the patch into main-stream. The I3000 is a
+>>>> re-labeled
+>>>> i82975x (or vice-versa). Hence the patch-set to merge the drivers. If
+>>>> separate
+>>>> i82975x driver is needed - I can provide the patch. The reported bug is
+>>>> not
+>>>> present in the merge-patched driver.
+>>>
+>>> Doug, any plans to merge this 4-patch series from Arvind?
+>>>
+>>> Arvind, was bluesmoke-devel@lists.sourceforge.net copied on this patch
+>>> series?
+>> No - thought that the bluesmoke-list had moved to linux-edac.
+>>
+>
+> If bluesmoke-devel is obsolete, the MAINTAINERS file
+> needs to be updated.
+>
+>>>
+>>> and was the I3000 driver maintainer copied?  (added)
+>>> I can't tell this from the marc.info archives.
+>> Added myself to the driver maintainer in the i3000_edac.c file. The
+>> patch-set adds support for i82975x in the i3000 driver, which is
+>> better structured.
+>> TODO:
+>>     1. Change Kconfig file - select I3000 for i82975x support
+>>     2. Delete i82975x_edac.c file
+>>     3. Update MAINTAINERS file
+>
+> Did the other EDAC-I3000 maintainer respond?
+No, though CC'ed to.
 
-There has been a bit of discussion lately on the U-Boot mailing list
-regarding the use of checkpatch for U-Boot patches (see
-http://lists.denx.de/pipermail/u-boot/2011-April/090954.html)
-
-U-Boot uses the Linux coding style and checkpatch is therefore a very good
-tool for us to use to check style compliance. However, checkpatch has a few
-Linux specific checks which throw up false warnings for U-Boot patches like:
-
-WARNING: consider using kstrto* in preference to simple_strto*
-WARNING: Use #include <linux/$file> instead of <asm/$file>
-
-Also, checkpatch seems to be checking not only patched lines, but context
-lines as well. There is a policy for U-Boot patches to not intermix
-whitespace / code cleanup changes and functional changes in in the same
-patch. So to achieve zero warnings and errors, the submitter is forced to
-create an additional code-cleanup patch in addition to the functionality
-patch. The code cleanup can end up being significantly larger than the
-functionality change which discourages casual submitters.
-
-So I have a pretty simple question to ask of LKML - Will checkpatch patches
-to create a 'U-Boot' command-line option to explicitly filter out Linux
-specific warnings and errors ever be accepted into checkpatch, or will we
-be required to create and maintain a U-Boot specific version?
-
-P.S. If you could please keep the U-Boot mailing list Cc'd, that would be
-appreciated
-
-Regards,
-
-Graeme
-
-
-
-
-
+Arvind
