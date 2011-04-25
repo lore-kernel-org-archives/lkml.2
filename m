@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923Ab1DYUut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:50:49 -0400
-Received: from 1wt.eu ([62.212.114.60]:34102 "EHLO 1wt.eu"
+	id S932911Ab1DYUus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:50:48 -0400
+Received: from 1wt.eu ([62.212.114.60]:34110 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932198Ab1DYUYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932199Ab1DYUYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Apr 2011 16:24:30 -0400
-Message-Id: <20110425200235.429104924@pcw.home.local>
+Message-Id: <20110425200236.602853032@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:28 +0200
+Date: Mon, 25 Apr 2011 22:03:55 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Matthew Garrett <mjg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 056/173] platform: x86: tc1100-wmi: world-writable sysfs wireless and jogdial files
+Cc: Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [PATCH 083/173] ahci: AHCI and RAID mode SATA patch for Intel Cougar Point DeviceIDs
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,30 +22,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 8a6a142c1286797978e4db266d22875a5f424897 upstream.
+commit 5623cab83ea61e0420f2064216d83eab067a24c6 upstream.
 
-Don't allow everybody to change WMI settings.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/platform/x86/tc1100-wmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/misc/tc1100-wmi.c
-+++ b/drivers/misc/tc1100-wmi.c
-@@ -177,7 +177,7 @@ set_bool_##value(struct device *dev, str
- 			return -EINVAL; \
- 	return count; \
- } \
--static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
-+static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, \
- 	show_bool_##value, set_bool_##value);
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 705bd8b..89d66fa 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -589,6 +589,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x3b2b), board_ahci }, /* PCH RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x3b2c), board_ahci }, /* PCH RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x3b2f), board_ahci }, /* PCH AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1c02), board_ahci }, /* CPT AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1c03), board_ahci }, /* CPT AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1c04), board_ahci }, /* CPT RAID */
++	{ PCI_VDEVICE(INTEL, 0x1c05), board_ahci }, /* CPT RAID */
++	{ PCI_VDEVICE(INTEL, 0x1c06), board_ahci }, /* CPT RAID */
++	{ PCI_VDEVICE(INTEL, 0x1c07), board_ahci }, /* CPT RAID */
  
- show_set_bool(wireless, TC1100_INSTANCE_WIRELESS);
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
