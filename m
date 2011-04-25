@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab1DYT5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 15:57:52 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:49983 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757343Ab1DYT5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 15:57:51 -0400
-Date: Mon, 25 Apr 2011 21:58:11 +0200
-From: Tino Keitel <tino.keitel@tikei.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] PM / Wakeup: Fix initialization of wakeup-related device
- sysfs files
-Message-ID: <20110425195811.GA3407@mac.home>
-Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Greg Kroah-Hartman <gregkh@suse.de>
-References: <201104212357.43052.rjw@sisk.pl>
+	id S1751614Ab1DYUDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:03:18 -0400
+Received: from mxhub.agesci.org ([77.242.33.5]:56190 "EHLO mxhub.agesci.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab1DYUDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:03:16 -0400
+Date: Mon, 25 Apr 2011 21:27:25 +0200 (CEST)
+From: Mrs Patricia Lee <editoria@agesci.it>
+Reply-To: Mrs Patricia Lee <monygram123@hotmail.com>
+Message-ID: <898302952.52555.1303759645396.JavaMail.root@postino.agesci.it>
+Subject: MONEY TRANSFER REFERENCE:6509-7832
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104212357.43052.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [120.141.190.120]
+X-Mailer: Zimbra 6.0.2_GA_1912.RHEL5_64 (zclient/6.0.2_GA_1912.RHEL5_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+MONEY GRAM CUSTOMER CARE
+21st Floor, Jalan Kampar, Plaza Permata,
+50400, Kuala Lumpur, Wilayah Persekutuan
+ 
+The G-20 Group in relationship with HSBC London has concluded that
+our working partner (Money Gram Malaysia) has helped us to send your
+first instalmental payment of US$5,000 as instructed by the Group of
+Twenty (G-20) in conjuction with the Malaysia government and will keep
+sending you $5000 twice a week until the payment of (US$820,000 ) is
+completed  and here is the information
+ 
 
-the patch works fine on top of current git
-(8f7544682c488dfc4117b37ed10435bb2d3d8d73). Wakeup using the keyboard
-works.
-
-Regards,
-Tino
+MONEY TRANSFER REFERENCE:6509-7832
+ 
+SENDER'S NAME: kelly Pedersen
+AMOUNT: US$5000
+ 
+To track your funds, You are to forward the requested informations
+below to our money gram agent (Mr Ron Edwards)
+ 
+Your Name __________________________
+Phone number _______________________
+ 
+Contact Mr Ron Edwards for the funds clearance certificate necessary for
+the realise of your funds
+ 
+E-mail: monygram123@hotmail.com
+Best Regards,
+Mrs Patricia Lee
+Money Gram Malaysia.
+ 
