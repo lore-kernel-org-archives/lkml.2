@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab1DYUcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:32:06 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:58756 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932462Ab1DYUcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:32:02 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjDUQEjn+/g==
-X-RZG-CLASS-ID: mo00
-Date: Mon, 25 Apr 2011 22:31:58 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 112/173] Input: xen-kbdfront - advertise either absolute
- or relative coordinates
-Message-ID: <20110425203158.GA8427@aepfle.de>
-References: <46075c3a3ef08be6d70339617d6afc98@local>
- <20110425200237.859884245@pcw.home.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110425200237.859884245@pcw.home.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932665Ab1DYUc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:32:28 -0400
+Received: from 1wt.eu ([62.212.114.60]:34585 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932445Ab1DYUZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:25 -0400
+Message-Id: <20110425200238.685310786@pcw.home.local>
+User-Agent: quilt/0.48-1
+Date: Mon, 25 Apr 2011 22:04:43 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 131/173] mm: avoid wrapping vm_pgoff in mremap()
+In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, Willy Tarreau wrote:
+2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
 
-> 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+------------------
 
-These two hunks have to be removed from the patch.
-If the guest is suspended/resumed the guest has to renegotiate with the
-new qemu-dm process and set the request-abs-pointer property again.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-Olaf
+commit 982134ba62618c2d69fbbbd166d0a11ee3b7e3d8 upstream.
 
-> @@ -267,7 +281,7 @@
->  				   enum xenbus_state backend_state)
->  {
->  	struct xenkbd_info *info = dev->dev.driver_data;
-> -	int ret, val;
-> +	int val;
->  
->  	switch (backend_state) {
->  	case XenbusStateInitialising:
-> @@ -278,17 +292,6 @@
->  
->  	case XenbusStateInitWait:
->  InitWait:
-> -		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
-> -				   "feature-abs-pointer", "%d", &val);
-> -		if (ret < 0)
-> -			val = 0;
-> -		if (val) {
-> -			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
-> -					    "request-abs-pointer", "1");
-> -			if (ret)
-> -				printk(KERN_WARNING
-> -				       "xenkbd: can't request abs-pointer");
-> -		}
->  		xenbus_switch_state(dev, XenbusStateConnected);
->  		break;
->  
-> 
-> 
+The normal mmap paths all avoid creating a mapping where the pgoff
+inside the mapping could wrap around due to overflow.  However, an
+expanding mremap() can take such a non-wrapping mapping and make it
+bigger and cause a wrapping condition.
+
+Noticed by Robert Swiecki when running a system call fuzzer, where it
+caused a BUG_ON() due to terminally confusing the vma_prio_tree code.  A
+vma dumping patch by Hugh then pinpointed the crazy wrapped case.
+
+Reported-and-tested-by: Robert Swiecki <robert@swiecki.net>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[wt: 2.6.27 has this code in do_mremap()]
+
+---
+ mm/mremap.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+Index: longterm-2.6.27/mm/mremap.c
+===================================================================
+--- longterm-2.6.27.orig/mm/mremap.c	2011-04-25 15:24:54.000000000 +0200
++++ longterm-2.6.27/mm/mremap.c	2011-04-25 17:01:30.075279051 +0200
+@@ -333,10 +333,21 @@
+ 	/* We can't remap across vm area boundaries */
+ 	if (old_len > vma->vm_end - addr)
+ 		goto out;
+-	if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP)) {
+-		if (new_len > old_len)
++
++	/* Need to be careful about a growing mapping */
++	if (new_len > old_len) {
++		unsigned long pgoff;
++
++		if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP))
++			goto out;
++		pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
++		pgoff += vma->vm_pgoff;
++		if (pgoff + (new_len >> PAGE_SHIFT) < pgoff) {
++			ret = -EINVAL;
+ 			goto out;
++		}
+ 	}
++
+ 	if (vma->vm_flags & VM_LOCKED) {
+ 		unsigned long locked, lock_limit;
+ 		locked = mm->locked_vm << PAGE_SHIFT;
+
+
