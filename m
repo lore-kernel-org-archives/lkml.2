@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758655Ab1DYOyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 10:54:43 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:8044 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab1DYOym convert rfc822-to-8bit (ORCPT
+	id S1758624Ab1DYPCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 11:02:52 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:55764 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758438Ab1DYPCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 10:54:42 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Tejun Heo <htejun@gmail.com>, Mark Lord <kernel@teksavvy.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Date: Mon, 25 Apr 2011 15:54:38 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: AcwBUhgT91IanwLOQTar5zO7v1oShAB5QzNAAAdFBHA=
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
- <4D9CD275.9000002@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
- <4D9FACC9.7020200@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
- <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com>
- <20110423005610.GC1576@mtj.dyndns.org> 
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Apr 2011 11:02:50 -0400
+Date: Mon, 25 Apr 2011 11:02:27 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Eric Blake <eblake@redhat.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Coreutils <coreutils@gnu.org>
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+Message-ID: <20110425150227.GA10653@elliptictech.com>
+References: <1303414954-3315-1-git-send-email-josef@redhat.com>
+ <loom.20110422T001650-760@post.gmane.org>
+ <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com>
+ <20110422045054.GB17795@infradead.org>
+ <20110422112852.GB1627@x4.trippels.de>
+ <4DB17D5B.2090303@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB17D5B.2090303@redhat.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun wrote:
+Hi Eric,
 
-> Yeap, devices behind SATA-PATA bridge were still affected by the transfer
-> mode so libata tries to slow them down too along with link speed when
-> limiting speed due to errors.  Shouldn't affect native SATA devices.
+On 2011-04-22 07:06 -0600, Eric Blake wrote:
+> I've created a request to standardize SEEK_HOLE and SEEK_DATA in the
+> next revision of POSIX; comments are welcome to make sure that everyone
+> is happy with wording:
+> http://austingroupbugs.net/view.php?id=415
 
-Thanks.
+Reading through your proposal, I think there is one thing that could be
+clarified: the meaning of "the last hole" in the file.  Consider the
+following two file layouts -- in the "diagrams", a bar (|) indicates a
+boundary between holes and non-hole data, and a double bar (||)
+indicates end-of-file.
 
-I wrote:
+* File A (sparse file created by lseek/write beyond end-of-file):
 
-> 00040055
-> 00040015
-> __ata_port_freeze: ata4 port frozen
-> ata_port_schedule_eh: port EH scheduled
-> ata_eh_thaw_port: ata4 port thawed
-> ata_std_postreset: ENTER
-> ata4: SATA link down (SStatus 0 SControl 310)
-> ata_std_postreset: EXIT
-> ata_eh_revalidate_and_attach: ENTER
-> ata_eh_revalidate_and_attach: EXIT rc=-5
-> ata4.00: disabled
-> ata_eh_revalidate_and_attach: ENTER
-> ata_eh_recover: EXIT, rc=0
-> ata4: EH complete
-> ata_scsi_error: EXIT
-> ata_scsi_hotplug: ENTER
-> ata4.00: detaching (SCSI 3:0:0:0)
-> ata_scsi_hotplug: EXIT
+    data | hole 0 | data || hole 1 (virtual)
 
-Okay, so the ata_eh_thaw_port has raced (and won) against whatever was in the
-process of masking off the irq (the __ata_port_freeze?), which then completes
-leaving libata/sata_mv thinking the port is thawed while no further irqs get
-generated.
+* File B (sparse file created by truncate beyond end-of-file):
 
-Could ata_port_freeze or __ata_port_freeze (which don't claim the ap's lock)
-have been invoked and then slept while ata_eh_thaw_port runs?
+    data | hole 0 || hole 1 (virtual)
 
+Excluding the error description, the term "the last hole" is used in
+two places in your proposal:
 
-Bruce.
+  * (for SEEK_HOLE): if offset falls within "the last hole", then the
+    file offset may be set to the file size instead.
 
+  * (for SEEK_DATA): it shall be an error ... if offset falls within the
+    last hole.
 
-Latest News at: http://www.indigovision.com/index.php/en/news.html
+I imagine that both of these conditions are intended to address the
+case where the offset falls within hole 0 in File B, that is, when
+there is no non-hole data beyond the specified offset but the offset
+is nevertheless less than the file size.  However, this looks (to me)
+like the penultimate hole in the file, not the last hole.  Furthermore,
+these conditions are presumably *not* intended to apply to the
+penultimate hole in File A, which has data after it.
+
+I think my confusion can be avoided by talking about the last non-hole
+data byte in the file (which is unambigious), instead of by talking
+about the last hole.  For instance, the SEEK_HOLE/SEEK_DATA descriptions
+could be written as follows:
+
+  If whence is SEEK_HOLE, the file offset shall be set to the smallest
+  location of a byte within a hole and not less than offset, except that
+  if offset falls beyond the last byte not within a hole, then the file
+  offset may be set to the file size instead.  It shall be an error if
+  offset is greater or equal to the size of the file.
+
+  If whence is SEEK_DATA, the file offset shall be set to the smallest
+  location of a byte not within a hole and not less than offset.  It shall
+  be an error if no such byte exists.
+
+plus a corresponding update to the ENXIO description:
+
+  ... or the whence argument is SEEK_DATA and the offset falls beyond
+  the last byte not within a hole.
+
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
