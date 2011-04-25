@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab1DYKo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 06:44:58 -0400
+	id S1758364Ab1DYKpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 06:45:05 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:51918 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758327Ab1DYKoz (ORCPT
+	with ESMTP id S1758328Ab1DYKo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 06:44:55 -0400
+	Mon, 25 Apr 2011 06:44:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=N9ALbjQF1O/r7wahY3pWcBRMh+k+wFHBaU292kgQLwM+vcLXKkB77vqg7YkCaPnZzi
-         yy2vknQnkIX3Sn8Q6xFXRZDevmqInM9gKUM5zH+OT0C7o9V1uRyRtWqs/rz0d4Oq3C2O
-         bRtpPPtUteJ4+tx/tycafD+tOfIAxpcCvy9kk=
+        b=Qw2VIt0NQhu4WilR5YhxuiKLISzOeqoXf6OojxAgWnm8tX05RDUtkiL1NA10lHVxEX
+         P/i6BTerYNlS035T4awtwYn6vLB0AMiNM+8g0O6EJUPr5rpNGSlvakqvB+EIjJ/qZixu
+         iSztlX5WpjqIhbtE/pf07FtQjB8tm0tPV6dFE=
 From: Geunsik Lim <leemgs1@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -21,9 +21,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Darren Hart <dvhart@linux.intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [PATCH 1/4] munmap: mem unmap operation size handling
-Date: Mon, 25 Apr 2011 19:44:29 +0900
-Message-Id: <1303728272-11408-2-git-send-email-leemgs1@gmail.com>
+Subject: [PATCH 2/4] munmap: sysctl extension for tunable parameter
+Date: Mon, 25 Apr 2011 19:44:30 +0900
+Message-Id: <1303728272-11408-3-git-send-email-leemgs1@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
 References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
@@ -33,132 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geunsik Lim <geunsik.lim@samsung.com>
 
-The specification of H/W(cpu, memory, i/o bandwidth, etc) is different
-according to their SOC. We can earn a suitable performance(or latency)
-after adjust memory unmap size by selecting an optimal value to consider
-specified system environment in real world.
+Support sysctl interface(tunalbe parameter) to find a suitable munmap
+operation unit at runtime favoringly
 
-In other words, We can get real-fast or real-time using the Linux kernel
-tunable parameter choosingly for flexible memory unmap operation unit.
+* sysctl: An interface for examining and dynamically changing munmap opearon
+          size parameters in Linux. In Linux, the sysctl is implemented as
+	  a wrapper around file system routines that access contents of files
+	  in the /proc
 
 Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
 Acked-by: Hyunjin Choi <hj89.choi@samsung.com>
 ---
- include/linux/munmap_unit_size.h |   24 ++++++++++++++++
- mm/Makefile                      |    4 ++-
- mm/munmap_unit_size.c            |   57 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 84 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/munmap_unit_size.h
- create mode 100644 mm/munmap_unit_size.c
+ kernel/sysctl.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/munmap_unit_size.h b/include/linux/munmap_unit_size.h
-new file mode 100644
-index 0000000..c4f1fd4
---- /dev/null
-+++ b/include/linux/munmap_unit_size.h
-@@ -0,0 +1,24 @@
-+/*
-+ *	This program is free software; you can redistribute it and/or modify
-+ *	it under the terms of the GNU General Public License as published by
-+ *	the Free Software Foundation; either version 2 of the License, or
-+ *	(at your option) any later version.
-+ *
-+ *	Due to this file being licensed under the GPL there is controversy over
-+ *	whether this permits you to write a module that #includes this file
-+ *	without placing your module under the GPL.  Please consult a lawyer for
-+ *	advice before doing this.
-+ *
-+ */
-+
-+#ifdef CONFIG_MMU
-+extern unsigned long munmap_unit_size;
-+extern unsigned long sysctl_munmap_unit_size;
-+#else
-+#define sysctl_munmap_unit_size	0UL
-+#endif
-+
-+#ifdef CONFIG_MMU
-+extern int munmap_unit_size_handler(struct ctl_table *table, int write,
-+				 void __user *buffer, size_t *lenp, loff_t *ppos);
-+#endif
-diff --git a/mm/Makefile b/mm/Makefile
-index 42a8326..4b55b6c 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -5,7 +5,9 @@
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
--			   vmalloc.o pagewalk.o pgtable-generic.o
-+			   vmalloc.o pagewalk.o pgtable-generic.o  \
-+			   munmap_unit_size.o
-+
- 
- obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
- 			   maccess.o page_alloc.o page-writeback.o \
-diff --git a/mm/munmap_unit_size.c b/mm/munmap_unit_size.c
-new file mode 100644
-index 0000000..1cdae1d
---- /dev/null
-+++ b/mm/munmap_unit_size.c
-@@ -0,0 +1,57 @@
-+/*
-+ * Memory Unmap Operation Unit Interface
-+ * (C) Geunsik Lim, April 2011
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/mm.h>
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c0bb324..9b85041 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -56,6 +56,7 @@
+ #include <linux/kprobes.h>
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
 +#include <linux/munmap_unit_size.h>
-+#include <linux/sysctl.h>
-+
-+/* amount of vm to unmap from userspace access by both Non-preemption mode
-+ * and Preemption mode
-+ */
-+unsigned long munmap_unit_size;
-+
-+/*
-+ * Memory unmap operation unit of vm to release allocated memory size from
-+ * userspace using  mmap system call
-+ */
-+#if !defined(CONFIG_PREEMPT_VOLUNTARY) && !defined(CONFIG_PREEMPT)
-+unsigned long sysctl_munmap_unit_size = CONFIG_PREEMPT_NO_MUNMAP_RANGE;
-+#else
-+unsigned long sysctl_munmap_unit_size = CONFIG_PREEMPT_OK_MUNMAP_RANGE;
+ 
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -1278,6 +1279,15 @@ static struct ctl_table vm_table[] = {
+ 		.proc_handler	= mmap_min_addr_handler,
+ 	},
+ #endif
++#ifdef CONFIG_MMU
++	{
++		.procname	= "munmap_unit_size",
++		.data		= &sysctl_munmap_unit_size,
++		.maxlen		= sizeof(unsigned long),
++		.mode		= 0644,
++		.proc_handler	= munmap_unit_size_handler,
++	},
 +#endif
-+
-+/*
-+ * Update munmap_unit_size that changed with /proc/sys/vm/munmap_unit_size
-+ * tunable value.
-+ */
-+static void update_munmap_unit_size(void)
-+{
-+	munmap_unit_size = sysctl_munmap_unit_size;
-+}
-+
-+/*
-+ * sysctl handler which just sets sysctl_munmap_unit_size = the new value
-+ * and then calls update_munmap_unit_size()
-+ */
-+int munmap_unit_size_handler(struct ctl_table *table, int write,
-+			  void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	int ret;
-+
-+	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
-+
-+	update_munmap_unit_size();
-+
-+	return ret;
-+}
-+
-+static int __init init_munmap_unit_size(void)
-+{
-+	update_munmap_unit_size();
-+
-+	return 0;
-+}
-+pure_initcall(init_munmap_unit_size);
+ #ifdef CONFIG_NUMA
+ 	{
+ 		.procname	= "numa_zonelist_order",
 -- 
 1.7.3.4
 
