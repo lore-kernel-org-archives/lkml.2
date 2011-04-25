@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab1DYPCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 11:02:52 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:55764 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758438Ab1DYPCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 11:02:50 -0400
-Date: Mon, 25 Apr 2011 11:02:27 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Eric Blake <eblake@redhat.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Coreutils <coreutils@gnu.org>
-Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
-Message-ID: <20110425150227.GA10653@elliptictech.com>
-References: <1303414954-3315-1-git-send-email-josef@redhat.com>
- <loom.20110422T001650-760@post.gmane.org>
- <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com>
- <20110422045054.GB17795@infradead.org>
- <20110422112852.GB1627@x4.trippels.de>
- <4DB17D5B.2090303@redhat.com>
+	id S1755622Ab1DYPWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 11:22:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39433 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337Ab1DYPWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 11:22:10 -0400
+Date: Mon, 25 Apr 2011 17:20:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/7] signal: retarget_shared_pending: consider
+	shared/unblocked signals only
+Message-ID: <20110425152040.GA14934@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <20110418134501.GC15951@redhat.com> <20110425105229.GE17734@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DB17D5B.2090303@redhat.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110425105229.GE17734@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 04/25, Tejun Heo wrote:
+>
+> On Mon, Apr 18, 2011 at 03:45:01PM +0200, Oleg Nesterov wrote:
+> > -static void retarget_shared_pending(struct task_struct *tsk)
+> > +static void retarget_shared_pending(struct task_struct *tsk, sigset_t *set)
+>
+> Hmm... @set?  Maybe a name which refelcts its purpose, say @target or
+> @consider would be better?  Also, it would be really great to have
+> docbook function comment describing the parameter.
 
-On 2011-04-22 07:06 -0600, Eric Blake wrote:
-> I've created a request to standardize SEEK_HOLE and SEEK_DATA in the
-> next revision of POSIX; comments are welcome to make sure that everyone
-> is happy with wording:
-> http://austingroupbugs.net/view.php?id=415
+OK... May be @which ? but I agree with any naming.
 
-Reading through your proposal, I think there is one thing that could be
-clarified: the meaning of "the last hole" in the file.  Consider the
-following two file layouts -- in the "diagrams", a bar (|) indicates a
-boundary between holes and non-hole data, and a double bar (||)
-indicates end-of-file.
 
-* File A (sparse file created by lseek/write beyond end-of-file):
+This series is already in -mm, I'd like to avoid another resend. So I'll
+send another patch which addresses your comments on top of this series.
 
-    data | hole 0 | data || hole 1 (virtual)
+OK?
 
-* File B (sparse file created by truncate beyond end-of-file):
+>  Acked-by: Tejun Heo <tj@kernel.org>
 
-    data | hole 0 || hole 1 (virtual)
+Thanks!
 
-Excluding the error description, the term "the last hole" is used in
-two places in your proposal:
+Oleg.
 
-  * (for SEEK_HOLE): if offset falls within "the last hole", then the
-    file offset may be set to the file size instead.
-
-  * (for SEEK_DATA): it shall be an error ... if offset falls within the
-    last hole.
-
-I imagine that both of these conditions are intended to address the
-case where the offset falls within hole 0 in File B, that is, when
-there is no non-hole data beyond the specified offset but the offset
-is nevertheless less than the file size.  However, this looks (to me)
-like the penultimate hole in the file, not the last hole.  Furthermore,
-these conditions are presumably *not* intended to apply to the
-penultimate hole in File A, which has data after it.
-
-I think my confusion can be avoided by talking about the last non-hole
-data byte in the file (which is unambigious), instead of by talking
-about the last hole.  For instance, the SEEK_HOLE/SEEK_DATA descriptions
-could be written as follows:
-
-  If whence is SEEK_HOLE, the file offset shall be set to the smallest
-  location of a byte within a hole and not less than offset, except that
-  if offset falls beyond the last byte not within a hole, then the file
-  offset may be set to the file size instead.  It shall be an error if
-  offset is greater or equal to the size of the file.
-
-  If whence is SEEK_DATA, the file offset shall be set to the smallest
-  location of a byte not within a hole and not less than offset.  It shall
-  be an error if no such byte exists.
-
-plus a corresponding update to the ENXIO description:
-
-  ... or the whence argument is SEEK_DATA and the offset falls beyond
-  the last byte not within a hole.
-
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
