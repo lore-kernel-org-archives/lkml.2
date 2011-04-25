@@ -1,58 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab1DYICt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 04:02:49 -0400
-Received: from trent.utfs.org ([194.246.123.103]:38919 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab1DYICq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 04:02:46 -0400
-Date: Mon, 25 Apr 2011 01:02:33 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110424234655.GC12436@dastard>
-Message-ID: <alpine.DEB.2.01.1104250053590.18728@trent.utfs.org>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1757351Ab1DYIHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 04:07:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54817 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab1DYIHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 04:07:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=yEorih6QJ6W02Xh2J5G6HBvTr5ZMaxNBu9Id8w/fj+sCO6ZNFZSwmF8kwi5N/0W75+
+         RpWV19WewfvvrVVWaXGIaIpKZPgTM8bP9MpEJQde+MFdobQ2vBW2JgEuuRJGxH7rvCoW
+         wIURiW+cOYP/S9FyjvNcrfGwHZZbdd5UaUrmE=
+Subject: Re: Oops in 2.6.39 include/net/dst.h: dst_metrics_write_ptr()
+ running l2tp over ipsec
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Held Bernhard <berny156@gmx.de>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+In-Reply-To: <4DB4A619.9080600@gmx.de>
+References: <4DB4A619.9080600@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Apr 2011 10:07:32 +0200
+Message-ID: <1303718852.2747.103.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011 at 09:46, Dave Chinner wrote:
-> BTW, what are your mount options? If it is the problem I suspect it
-> is, then using noatime with stop it from occurring....
+From: Held Bernhard <berny156@gmx.de>
 
-When mounted with noatime, running du(1) accross the XFS volume still 
-triggered the OOM killer, but the backtrace looked somewhat different 
-this time:
+Le lundi 25 avril 2011 à 00:37 +0200, Held Bernhard a écrit :
+> Hi,
+> 
+> I'm starting l2tp over ipsec (racoon, openl2tp) in a little script to 
+> establish a VPN to my company. 2.6.38.x runs fine, but since 2.6.39-rc1 
+> (exactly commit 62fa8a "net: Implement read-only protection and COW'ing 
+> of metrics.") the kernel throws an oops. openl2tp is killed; after a 2nd 
+> start of openl2tp the VPN is established and my PC continues to run 
+> normally. The oops is 100% reproducible.
 
- date invoked oom-killer: gfp_mask=0x84d0, order=0, oom_adj=0, oom_score_adj=0
- Call Trace:
- [ecda5c70] [c0009ce4] show_stack+0x70/0x1bc (unreliable)
- [ecda5cb0] [c008f508] T.528+0x74/0x1cc
- [ecda5d00] [c008f734] T.526+0xd4/0x2a0
- [ecda5d40] [c008fb7c] out_of_memory+0x27c/0x360
- [ecda5d90] [c0093b3c] __alloc_pages_nodemask+0x6f8/0x708
- [ecda5e30] [c0017e9c] pte_alloc_one+0x30/0x90
- [ecda5e40] [c00a9464] __pte_alloc+0x2c/0x100
- [ecda5e60] [c00a95a8] handle_mm_fault+0x70/0x110
- [ecda5e90] [c0016d78] do_page_fault+0x358/0x504
- [ecda5f40] [c0012938] handle_page_fault+0xc/0x80
- --- Exception: 401 at 0xffdd5e0
-     LR = 0xffd8a04
+...
 
-Full dmesg & slabinfo & more on: 
+> Please tell me if you need more information!
+> 
+> Thanks,
+> Bernhard
+> -
 
-http://nerdbynature.de/bits/2.6.39-rc4/oom/
+Thanks for your report and patch.
 
-(slabinfo-5.txt.bz2, messages-5.txt)
+Maybe following patch is the way to fix this, please test it.
 
-Christian.
--- 
-BOFH excuse #176:
 
-vapors from evaporating sticky-note adhesives
+[PATCH] net: provide cow_metrics() methods to blackhole dst_ops
+
+Since commit 62fa8a846d7d (net: Implement read-only protection and COW'ing 
+of metrics.) the kernel throws an oops.
+
+[  101.620985] BUG: unable to handle kernel NULL pointer dereference at 
+           (null)
+[  101.621050] IP: [<          (null)>]           (null)
+[  101.621084] PGD 6e53c067 PUD 3dd6a067 PMD 0
+[  101.621122] Oops: 0010 [#1] SMP
+[  101.621153] last sysfs file: /sys/devices/virtual/ppp/ppp/uevent
+[  101.621192] CPU 2
+[  101.621206] Modules linked in: l2tp_ppp pppox ppp_generic slhc 
+l2tp_netlink l2tp_core deflate zlib_deflate twofish_x86_64 
+twofish_common des_generic cbc ecb sha1_generic hmac af_key 
+iptable_filter snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device loop 
+snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec 
+snd_pcm snd_timer snd i2c_i801 iTCO_wdt psmouse soundcore snd_page_alloc 
+evdev uhci_hcd ehci_hcd thermal
+[  101.621552]
+[  101.621567] Pid: 5129, comm: openl2tpd Not tainted 2.6.39-rc4-Quad #3 
+Gigabyte Technology Co., Ltd. G33-DS3R/G33-DS3R
+[  101.621637] RIP: 0010:[<0000000000000000>]  [<          (null)>]   (null)
+[  101.621684] RSP: 0018:ffff88003ddeba60  EFLAGS: 00010202
+[  101.621716] RAX: ffff88003ddb5600 RBX: ffff88003ddb5600 RCX: 
+0000000000000020
+[  101.621758] RDX: ffffffff81a69a00 RSI: ffffffff81b7ee61 RDI: 
+ffff88003ddb5600
+[  101.621800] RBP: ffff8800537cd900 R08: 0000000000000000 R09: 
+ffff88003ddb5600
+[  101.621840] R10: 0000000000000005 R11: 0000000000014b38 R12: 
+ffff88003ddb5600
+[  101.621881] R13: ffffffff81b7e480 R14: ffffffff81b7e8b8 R15: 
+ffff88003ddebad8
+[  101.621924] FS:  00007f06e4182700(0000) GS:ffff88007fd00000(0000) 
+knlGS:0000000000000000
+[  101.621971] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  101.622005] CR2: 0000000000000000 CR3: 0000000045274000 CR4: 
+00000000000006e0
+[  101.622046] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[  101.622087] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
+0000000000000400
+[  101.622129] Process openl2tpd (pid: 5129, threadinfo 
+ffff88003ddea000, task ffff88003de9a280)
+[  101.622177] Stack:
+[  101.622191]  ffffffff81447efa ffff88007d3ded80 ffff88003de9a280 
+ffff88007d3ded80
+[  101.622245]  0000000000000001 ffff88003ddebbb8 ffffffff8148d5a7 
+0000000000000212
+[  101.622299]  ffff88003dcea000 ffff88003dcea188 ffffffff00000001 
+ffffffff81b7e480
+[  101.622353] Call Trace:
+[  101.622374]  [<ffffffff81447efa>] ? ipv4_blackhole_route+0x1ba/0x210
+[  101.622415]  [<ffffffff8148d5a7>] ? xfrm_lookup+0x417/0x510
+[  101.622450]  [<ffffffff8127672a>] ? extract_buf+0x9a/0x140
+[  101.622485]  [<ffffffff8144c6a0>] ? __ip_flush_pending_frames+0x70/0x70
+[  101.622526]  [<ffffffff8146fbbf>] ? udp_sendmsg+0x62f/0x810
+[  101.622562]  [<ffffffff813f98a6>] ? sock_sendmsg+0x116/0x130
+[  101.622599]  [<ffffffff8109df58>] ? find_get_page+0x18/0x90
+[  101.622633]  [<ffffffff8109fd6a>] ? filemap_fault+0x12a/0x4b0
+[  101.622668]  [<ffffffff813fb5c4>] ? move_addr_to_kernel+0x64/0x90
+[  101.622706]  [<ffffffff81405d5a>] ? verify_iovec+0x7a/0xf0
+[  101.622739]  [<ffffffff813fc772>] ? sys_sendmsg+0x292/0x420
+[  101.622774]  [<ffffffff810b994a>] ? handle_pte_fault+0x8a/0x7c0
+[  101.622810]  [<ffffffff810b76fe>] ? __pte_alloc+0xae/0x130
+[  101.622844]  [<ffffffff810ba2f8>] ? handle_mm_fault+0x138/0x380
+[  101.622880]  [<ffffffff81024af9>] ? do_page_fault+0x189/0x410
+[  101.622915]  [<ffffffff813fbe03>] ? sys_getsockname+0xf3/0x110
+[  101.622952]  [<ffffffff81450c4d>] ? ip_setsockopt+0x4d/0xa0
+[  101.622986]  [<ffffffff813f9932>] ? sockfd_lookup_light+0x22/0x90
+[  101.623024]  [<ffffffff814b61fb>] ? system_call_fastpath+0x16/0x1b
+[  101.623060] Code:  Bad RIP value.
+[  101.623090] RIP  [<          (null)>]           (null)
+[  101.623125]  RSP <ffff88003ddeba60>
+[  101.623146] CR2: 0000000000000000
+[  101.650871] ---[ end trace ca3856a7d8e8dad4 ]---
+[  101.651011] __sk_free: optmem leakage (160 bytes) detected.
+
+The oops happens in dst_metrics_write_ptr()
+include/net/dst.h:124: return dst->ops->cow_metrics(dst, p);
+
+dst->ops->cow_metrics is NULL and causes the oops.
+
+Provide cow_metrics() methods, like we did in commit 214f45c91bb
+(net: provide default_advmss() methods to blackhole dst_ops)
+
+Signed-off-by: Held Bernhard <berny156@gmx.de>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/ipv4/route.c |    7 +++++++
+ net/ipv6/route.c |    7 +++++++
+ 2 files changed, 14 insertions(+)
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index c1acf69..99e6e4b 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2690,6 +2690,12 @@ static void ipv4_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
+ {
+ }
+ 
++static u32 *ipv4_rt_blackhole_cow_metrics(struct dst_entry *dst,
++					  unsigned long old)
++{
++	return NULL;
++}
++
+ static struct dst_ops ipv4_dst_blackhole_ops = {
+ 	.family			=	AF_INET,
+ 	.protocol		=	cpu_to_be16(ETH_P_IP),
+@@ -2698,6 +2704,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
+ 	.default_mtu		=	ipv4_blackhole_default_mtu,
+ 	.default_advmss		=	ipv4_default_advmss,
+ 	.update_pmtu		=	ipv4_rt_blackhole_update_pmtu,
++	.cow_metrics		=	ipv4_rt_blackhole_cow_metrics,
+ };
+ 
+ struct dst_entry *ipv4_blackhole_route(struct net *net, struct dst_entry *dst_orig)
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 843406f..93b10e6 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -153,6 +153,12 @@ static void ip6_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
+ {
+ }
+ 
++static u32 *ip6_rt_blackhole_cow_metrics(struct dst_entry *dst,
++					 unsigned long old)
++{
++	return NULL;
++}
++
+ static struct dst_ops ip6_dst_blackhole_ops = {
+ 	.family			=	AF_INET6,
+ 	.protocol		=	cpu_to_be16(ETH_P_IPV6),
+@@ -161,6 +167,7 @@ static struct dst_ops ip6_dst_blackhole_ops = {
+ 	.default_mtu		=	ip6_blackhole_default_mtu,
+ 	.default_advmss		=	ip6_default_advmss,
+ 	.update_pmtu		=	ip6_rt_blackhole_update_pmtu,
++	.cow_metrics		=	ip6_rt_blackhole_cow_metrics,
+ };
+ 
+ static const u32 ip6_template_metrics[RTAX_MAX] = {
+
+
