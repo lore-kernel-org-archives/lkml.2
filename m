@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab1DYUfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:35:23 -0400
-Received: from 1wt.eu ([62.212.114.60]:34541 "EHLO 1wt.eu"
+	id S932648Ab1DYUfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:35:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34531 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932420Ab1DYUZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:19 -0400
-Message-Id: <20110425200239.553074929@pcw.home.local>
+	id S932414Ab1DYUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:18 -0400
+Message-Id: <20110425200239.684847903@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:03 +0200
+Date: Mon, 25 Apr 2011 22:05:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
 Cc: Vasiliy Kulikov <segooon@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Moritz Muehlenhoff <jmm@debian.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 151/173] net: packet: fix information leak to userland
+Subject: [PATCH 154/173] net: tipc: fix information leak to userland
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: Kulikov Vasiliy <segooon@gmail.com>
 
-commit 67286640f638f5ad41a946b9a3dc75327950248f upstream.
+commit 88f8a5e3e7defccd3925cabb1ee4d3994e5cdb52 upstream.
 
-packet_getname_spkt() doesn't initialize all members of sa_data field of
-sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
-to userland.  It leads to leaking of contents of kernel stack memory.
-We have to fully fill sa_data with strncpy() instead of strlcpy().
-
-The same with packet_getname(): it doesn't initialize sll_pkttype field of
-sockaddr_ll.  Set it to zero.
+Structure sockaddr_tipc is copied to userland with padding bytes after
+"id" field in union field "name" unitialized.  It leads to leaking of
+contents of kernel stack memory.  We have to initialize them to zero.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Cc: Moritz Muehlenhoff <jmm@debian.org>
-[jmm: Backported to 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/packet/af_packet.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/tipc/socket.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1526,7 +1526,7 @@ static int packet_getname_spkt(struct so
- 	uaddr->sa_family = AF_PACKET;
- 	dev = dev_get_by_index(sock_net(sk), pkt_sk(sk)->ifindex);
- 	if (dev) {
--		strlcpy(uaddr->sa_data, dev->name, 15);
-+		strncpy(uaddr->sa_data, dev->name, 14);
- 		dev_put(dev);
- 	} else
- 		memset(uaddr->sa_data, 0, 14);
-@@ -1549,6 +1549,7 @@ static int packet_getname(struct socket
- 	sll->sll_family = AF_PACKET;
- 	sll->sll_ifindex = po->ifindex;
- 	sll->sll_protocol = po->num;
-+	sll->sll_pkttype = 0;
- 	dev = dev_get_by_index(sock_net(sk), po->ifindex);
- 	if (dev) {
- 		sll->sll_hatype = dev->type;
+--- a/net/tipc/socket.c
++++ b/net/tipc/socket.c
+@@ -393,6 +393,7 @@ static int get_name(struct socket *sock,
+ 	struct sockaddr_tipc *addr = (struct sockaddr_tipc *)uaddr;
+ 	struct tipc_sock *tsock = tipc_sk(sock->sk);
+ 
++	memset(addr, 0, sizeof(*addr));
+ 	if (peer) {
+ 		if ((sock->state != SS_CONNECTED) &&
+ 			((peer != 2) || (sock->state != SS_DISCONNECTING)))
 
 
