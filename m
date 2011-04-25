@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab1DYUhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:37:24 -0400
-Received: from 1wt.eu ([62.212.114.60]:34500 "EHLO 1wt.eu"
+	id S932473Ab1DYUhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:37:21 -0400
+Received: from 1wt.eu ([62.212.114.60]:34501 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932377Ab1DYUZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:11 -0400
-Message-Id: <20110425200237.642780335@pcw.home.local>
+	id S932380Ab1DYUZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:12 -0400
+Message-Id: <20110425200239.771785194@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:19 +0200
+Date: Mon, 25 Apr 2011 22:05:08 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Kees Cook <kees.cook@canonical.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Moritz Muehlenhoff <jmm@debian.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 107/173] proc: protect mm start_code/end_code in /proc/pid/stat
+Subject: [PATCH 156/173] econet: Fix crash in aun_incoming().
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +24,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <kees.cook@canonical.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 5883f57ca0008ffc93e09cbb9847a1928e50c6f3 upstream.
+commit 4e085e76cbe558b79b54cbab772f61185879bc64 upstream.
 
-While mm->start_stack was protected from cross-uid viewing (commit
-f83ce3e6b02d5 ("proc: avoid information leaks to non-privileged
-processes")), the start_code and end_code values were not.  This would
-allow the text location of a PIE binary to leak, defeating ASLR.
+Unconditional use of skb->dev won't work here,
+try to fetch the econet device via skb_dst()->dev
+instead.
 
-Note that the value "1" is used instead of "0" for a protected value since
-"ps", "killall", and likely other readers of /proc/pid/stat, take
-start_code of "0" to mean a kernel thread and will misbehave.  Thanks to
-Brad Spengler for pointing this out.
+Suggested by Eric Dumazet.
 
-Addresses CVE-2011-0726
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Nelson Elhage <nelhage@ksplice.com>
+Tested-by: Nelson Elhage <nelhage@ksplice.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Moritz Muehlenhoff <jmm@debian.org>
+[jmm: Slightly adapted for 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/array.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/econet/af_econet.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -473,8 +473,8 @@ static int do_task_stat(struct seq_file
- 		vsize,
- 		mm ? get_mm_rss(mm) : 0,
- 		rsslim,
--		mm ? mm->start_code : 0,
--		mm ? mm->end_code : 0,
-+		mm ? (permitted ? mm->start_code : 1) : 0,
-+		mm ? (permitted ? mm->end_code : 1) : 0,
- 		(permitted && mm) ? mm->start_stack : 0,
- 		esp,
- 		eip,
+Index: longterm-2.6.27/net/econet/af_econet.c
+===================================================================
+--- longterm-2.6.27.orig/net/econet/af_econet.c	2011-04-25 18:51:48.591279239 +0200
++++ longterm-2.6.27/net/econet/af_econet.c	2011-04-25 18:59:35.943279187 +0200
+@@ -845,9 +845,13 @@
+ {
+ 	struct iphdr *ip = ip_hdr(skb);
+ 	unsigned char stn = ntohl(ip->saddr) & 0xff;
++	struct dst_entry *dst = skb->dst;
++	struct ec_device *edev = NULL;
+ 	struct sock *sk;
+ 	struct sk_buff *newskb;
+-	struct ec_device *edev = skb->dev->ec_ptr;
++
++	if (dst)
++		edev = dst->dev->ec_ptr;
+ 
+ 	if (! edev)
+ 		goto bad;
 
 
