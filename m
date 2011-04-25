@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab1DYUYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:24:30 -0400
-Received: from 1wt.eu ([62.212.114.60]:34087 "EHLO 1wt.eu"
+	id S932933Ab1DYUuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:50:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:34131 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185Ab1DYUY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:27 -0400
-Message-Id: <20110425200235.861135871@pcw.home.local>
+	id S932203Ab1DYUYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:30 -0400
+Message-Id: <20110425200236.687989729@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:38 +0200
+Date: Mon, 25 Apr 2011 22:03:57 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, maximilian attems <max@stro.at>,
+Cc: Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 066/173] virtio: set pci bus master enable bit
+Subject: [PATCH 085/173] ahci: AHCI mode SATA patch for Intel DH89xxCC DeviceIDs
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,35 +23,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit bc505f373979692d51a86d40925f77a8b09d17b9 upstream.
+commit a4a461a6df6c0481d5a3d61660ed97f5b539cf16 upstream.
 
-As all virtio devices perform DMA, we
-must enable bus mastering for them to be
-spec compliant.
+This patch adds the AHCI-mode SATA DeviceID for the Intel DH89xxCC PCH.
 
-This patch fixes hotplug of virtio devices
-with Linux guests and qemu 0.11-0.12.
-
-Tested-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/virtio/virtio_pci.c |    1 +
+ drivers/ata/ahci.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -647,6 +647,7 @@ static int __devinit virtio_pci_probe(st
- 		goto out_req_regions;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -579,6 +579,7 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x1d02), board_ahci }, /* PBG AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0x1d04), board_ahci }, /* PBG RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
++	{ PCI_VDEVICE(INTEL, 0x2323), board_ahci }, /* DH89xxCC AHCI */
  
- 	pci_set_drvdata(pci_dev, vp_dev);
-+	pci_set_master(pci_dev);
- 
- 	/* we use the subsystem vendor/device id as the virtio vendor/device
- 	 * id.  this allows us to use the same PCI vendor/device id for all
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
