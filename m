@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab1DYQWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 12:22:49 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34675 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948Ab1DYQWr (ORCPT
+	id S1758441Ab1DYQY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 12:24:27 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39040 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab1DYQY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 12:22:47 -0400
+	Mon, 25 Apr 2011 12:24:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=LoGj+GZK6fVCLqpTWU1E9X79nWua/iOYSTRy/axngCwapEryIH1mApQ+ogdEUc7uAQ
-         lKEu7i4/dwuegDnHptI4C0LSNGQPPG4jYPqJHYVb8bMJx6ZsMUBv6cQ2SutOpKliyZpS
-         abWLqo9Yev31UhQCIzFff7/JonHC0RSutl3jQ=
-Date: Mon, 25 Apr 2011 18:22:42 +0200
-From: Tejun Heo <htejun@gmail.com>
-To: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Message-ID: <20110425162242.GB30828@mtj.dyndns.org>
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
- <4D9CD275.9000002@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
- <4D9FACC9.7020200@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
- <4DA45CA7.9040102@teksavvy.com>
- <4DA467FB.6020905@teksavvy.com>
- <20110423005610.GC1576@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
+        b=ZTd4BAo/UBud9CuJWBYItrTxF4wYJ+dxGmwCjBkMBxY+K7L19sOyXbR+Yaqq6gCtLz
+         KzDzJM546LAKhk8qyciqc6HHkDNYnpqNQzwW7AyPoUslAejm/M93ax3tgdEMBoSkA4ms
+         ZLcXyh/x5Q0W0X0GwegPVdjkmvwNTdjVscFGM=
+Date: Mon, 25 Apr 2011 18:17:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "v2 . 6 . 33 . ." <stable@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 0/5] hw_breakpoints: Fix racy ptrace breakpoint
+ acccesses
+Message-ID: <20110425161716.GA5055@nowhere>
+References: <1302284067-7860-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
+In-Reply-To: <1302284067-7860-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-I haven't followed the trace but,
-
-> > __ata_port_freeze: ata4 port frozen
-> > ata_port_schedule_eh: port EH scheduled
-> > ata_eh_thaw_port: ata4 port thawed
-> > ata_std_postreset: ENTER
-> > ata4: SATA link down (SStatus 0 SControl 310)
-> > ata_std_postreset: EXIT
-> > ata_eh_revalidate_and_attach: ENTER
-> > ata_eh_revalidate_and_attach: EXIT rc=-5
-> > ata4.00: disabled
-> > ata_eh_revalidate_and_attach: ENTER
-> > ata_eh_recover: EXIT, rc=0
-> > ata4: EH complete
-> > ata_scsi_error: EXIT
-> > ata_scsi_hotplug: ENTER
-> > ata4.00: detaching (SCSI 3:0:0:0)
-> > ata_scsi_hotplug: EXIT
+On Fri, Apr 08, 2011 at 07:34:22PM +0200, Frederic Weisbecker wrote:
+> I should have fixed that a few month ago but got sidetracked.
+> Please have a look at this. x86 and powerpc already had support
+> for breakpoints before so it fixes a regression there (cf stable tag)
+> For the others it only a fix.
 > 
-> Okay, so the ata_eh_thaw_port has raced (and won) against whatever was in the
-> process of masking off the irq (the __ata_port_freeze?), which then completes
-> leaving libata/sata_mv thinking the port is thawed while no further irqs get
-> generated.
+> Other archs than x86 have been only compile tested.
 > 
-> Could ata_port_freeze or __ata_port_freeze (which don't claim the ap's lock)
-> have been invoked and then slept while ata_eh_thaw_port runs?
+> Thanks.
+> 
+> Frederic Weisbecker (5):
+>   ptrace: Prepare to fix racy accesses on task breakpoints
+>   x86, hw_breakpoints: Fix racy access to ptrace breakpoints
+>   powerpc, hw_breakpoints: Fix racy access to ptrace breakpoints
+>   arm, hw_breakpoints: Fix racy access to ptrace breakpoints
+>   sh, hw_breakpoints: Fix racy access to ptrace breakpoints
 
-ata4 is reporting link down and the device is detached and port
-disabled afterwards.  Doesn't seem to have much to do with
-freezing/thawing?
+Thanks a lot guys for your acks. I'm reposting with these
+and pushing for Ingo.
 
--- 
-tejun
+> 
+>  arch/arm/kernel/ptrace.c     |    8 ++++++++
+>  arch/powerpc/kernel/ptrace.c |    3 +++
+>  arch/sh/kernel/ptrace_32.c   |    4 ++++
+>  arch/x86/kernel/ptrace.c     |   36 ++++++++++++++++++++++++++----------
+>  include/linux/ptrace.h       |   13 ++++++++++++-
+>  include/linux/sched.h        |    3 +++
+>  kernel/exit.c                |    2 +-
+>  kernel/ptrace.c              |   17 +++++++++++++++++
+>  8 files changed, 74 insertions(+), 12 deletions(-)
+> 
+> -- 
+> 1.7.3.2
+> 
