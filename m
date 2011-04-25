@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab1DYUzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:55:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:33918 "EHLO 1wt.eu"
+	id S1757112Ab1DYUzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:55:51 -0400
+Received: from 1wt.eu ([62.212.114.60]:33878 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756788Ab1DYUYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:09 -0400
-Message-Id: <20110425200234.557148317@pcw.home.local>
+	id S1756672Ab1DYUYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:02 -0400
+Message-Id: <20110425200234.992555460@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:08 +0200
+Date: Mon, 25 Apr 2011 22:03:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Moritz Muehlenhoff <jmm@debian.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 036/173] Fix pktcdvd ioctl dev_minor range check
+Subject: [PATCH 046/173] tcp: Increase TCP_MAXSEG socket option minimum.
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,40 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 252a52aa4fa22a668f019e55b3aac3ff71ec1c29 upstream.
+commit 7a1abd08d52fdeddb3e9a5a33f2f15cc6a5674d2 upstream.
 
-The PKT_CTRL_CMD_STATUS device ioctl retrieves a pointer to a
-pktcdvd_device from the global pkt_devs array.  The index into this
-array is provided directly by the user and is a signed integer, so the
-comparison to ensure that it falls within the bounds of this array will
-fail when provided with a negative index.
+As noted by Steve Chen, since commit
+f5fff5dc8a7a3f395b0525c02ba92c95d42b7390 ("tcp: advertise MSS
+requested by user") we can end up with a situation where
+tcp_select_initial_window() does a divide by a zero (or
+even negative) mss value.
 
-This can be used to read arbitrary kernel memory or cause a crash due to
-an invalid pointer dereference.  This can be exploited by users with
-permission to open /dev/pktcdvd/control (on many distributions, this is
-readable by group "cdrom").
+The problem is that sometimes we effectively subtract
+TCPOLEN_TSTAMP_ALIGNED and/or TCPOLEN_MD5SIG_ALIGNED from the mss.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-[ Rather than add a cast, just make the function take the right type -Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by increasing the minimum from 8 to 64.
+
+Reported-by: Steve Chen <schen@mvista.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Moritz Muehlenhoff <jmm@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/pktcdvd.c |    2 +-
+ net/ipv4/tcp.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2408,7 +2408,7 @@ static void pkt_release_dev(struct pktcd
- 	pkt_shrink_pktlist(pd);
- }
- 
--static struct pktcdvd_device *pkt_find_dev_from_minor(int dev_minor)
-+static struct pktcdvd_device *pkt_find_dev_from_minor(unsigned int dev_minor)
- {
- 	if (dev_minor >= MAX_WRITERS)
- 		return NULL;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2117,7 +2117,7 @@ static int do_tcp_setsockopt(struct sock
+ 		/* Values greater than interface MTU won't take effect. However
+ 		 * at the point when this call is done we typically don't yet
+ 		 * know which interface is going to be used */
+-		if (val < 8 || val > MAX_TCP_WINDOW) {
++		if (val < 64 || val > MAX_TCP_WINDOW) {
+ 			err = -EINVAL;
+ 			break;
+ 		}
 
 
