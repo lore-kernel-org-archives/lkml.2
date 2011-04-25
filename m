@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab1DYUrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:47:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:34236 "EHLO 1wt.eu"
+	id S932187Ab1DYUYi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:38 -0400
+Received: from 1wt.eu ([62.212.114.60]:34193 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756986Ab1DYUYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:39 -0400
-Message-Id: <20110425200234.944227421@pcw.home.local>
+	id S932236Ab1DYUYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:35 -0400
+Message-Id: <20110425200237.035232353@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:17 +0200
+Date: Mon, 25 Apr 2011 22:04:05 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Li Zefan <lizf@cn.fujitsu.com>, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
-        maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 045/173] sunrpc/cache: fix module refcnt leak in a failure path
+Cc: Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 093/173] PCI: do not create quirk I/O regions below PCIBIOS_MIN_IO for ICH
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit a5990ea1254cd186b38744507aeec3136a0c1c95 upstream.
+commit 87e3dc3855430bd254370afc79f2ed92250f5b7c upstream.
 
-Don't forget to release the module refcnt if seq_open() returns failure.
+Some broken BIOSes on ICH4 chipset report an ACPI region which is in
+conflict with legacy IDE ports when ACPI is disabled. Even though the
+regions overlap, IDE ports are working correctly (we cannot find out
+the decoding rules on chipsets).
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
-Cc: maximilian attems <max@stro.at>
+So the only problem is the reported region itself, if we don't reserve
+the region in the quirk everything works as expected.
+
+This patch avoids reserving any quirk regions below PCIBIOS_MIN_IO
+which is 0x1000. Some regions might be (and are by a fast google
+query) below this border, but the only difference is that they won't
+be reserved anymore. They should still work though the same as before.
+
+The conflicts look like (1f.0 is bridge, 1f.1 is IDE ctrl):
+pci 0000:00:1f.1: address space collision: [io 0x0170-0x0177] conflicts with 0000:00:1f.0 [io  0x0100-0x017f]
+
+At 0x0100 a 128 bytes long ACPI region is reported in the quirk for
+ICH4. ata_piix then fails to find disks because the IDE legacy ports
+are zeroed:
+ata_piix 0000:00:1f.1: device not available (can't reserve [io 0x0000-0x0007])
+
+References: https://bugzilla.novell.com/show_bug.cgi?id=558740
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/cache.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1234,8 +1234,10 @@ static int content_open(struct inode *in
- 	if (!cd || !try_module_get(cd->owner))
- 		return -EACCES;
- 	han = __seq_open_private(file, &cache_content_op, sizeof(*han));
--	if (han == NULL)
-+	if (han == NULL) {
-+		module_put(cd->owner);
- 		return -ENOMEM;
-+	}
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -527,18 +527,30 @@ static void __devinit quirk_ich4_lpc_acp
+ 	u32 region;
+ 	u8 enable;
  
- 	han->cd = cd;
- 	return 0;
++	/*
++	 * The check for PCIBIOS_MIN_IO is to ensure we won't create a conflict
++	 * with low legacy (and fixed) ports. We don't know the decoding
++	 * priority and can't tell whether the legacy device or the one created
++	 * here is really at that address.  This happens on boards with broken
++	 * BIOSes.
++	*/
++
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH4_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH4 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH4 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH4 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH4 GPIO");
+ 	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+@@ -560,15 +572,19 @@ static void __devinit ich6_lpc_acpi_gpio
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH6_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH6 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH6 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH6 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH6 GPIO");
+ 	}
+ }
+ 
 
 
