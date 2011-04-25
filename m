@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab1DYUlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:41:10 -0400
-Received: from 1wt.eu ([62.212.114.60]:34324 "EHLO 1wt.eu"
+	id S932319Ab1DYUYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:55 -0400
+Received: from 1wt.eu ([62.212.114.60]:34272 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab1DYUY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:56 -0400
-Message-Id: <20110425200236.122428633@pcw.home.local>
+	id S932248Ab1DYUYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:43 -0400
+Message-Id: <20110425200236.775342539@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:44 +0200
+Date: Mon, 25 Apr 2011 22:03:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>,
+Cc: Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
+        Roland Dreier <roland@purestorage.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 072/173] powerpc/kdump: CPUs assume the context of the oopsing CPU
+Subject: [PATCH 087/173] RDMA/cma: Fix crash in request handlers
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +24,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Sean Hefty <sean.hefty@intel.com>
 
-commit 0644079410065567e3bb31fcb8e6441f2b7685a9 upstream.
+commit 25ae21a10112875763c18b385624df713a288a05 upstream.
 
-We wrap the crash_shutdown_handles[] calls with longjmp/setjmp, so if any
-of them fault we can recover. The problem is we add a hook to the debugger
-fault handler hook which calls longjmp unconditionally.
+Doug Ledford and Red Hat reported a crash when running the rdma_cm on
+a real-time OS.  The crash has the following call trace:
 
-This first part of kdump is run before we marshall the other CPUs, so there
-is a very good chance some CPU on the box is going to page fault. And when
-it does it hits the longjmp code and assumes the context of the oopsing CPU.
-The machine gets very confused when it has 10 CPUs all with the same stack,
-all thinking they have the same CPU id. I get even more confused trying
-to debug it.
+    cm_process_work
+       cma_req_handler
+          cma_disable_callback
+          rdma_create_id
+             kzalloc
+             init_completion
+          cma_get_net_info
+          cma_save_net_info
+          cma_any_addr
+             cma_zero_addr
+          rdma_translate_ip
+             rdma_copy_addr
+          cma_acquire_dev
+             rdma_addr_get_sgid
+             ib_find_cached_gid
+             cma_attach_to_dev
+          ucma_event_handler
+             kzalloc
+             ib_copy_ah_attr_to_user
+          cma_comp
 
-The patch below adds crash_shutdown_cpu and uses it to specify which cpu is
-in the protected region. Since it can only be -1 or the oopsing CPU, we don't
-need to use memory barriers since it is only valid on the local CPU - no other
-CPU will ever see a value that matches it's local CPU id.
+[ preempted ]
 
-Eventually we should switch the order and marshall all CPUs before doing the
-crash_shutdown_handles[] calls, but that is a bigger fix.
+    cma_write
+        copy_from_user
+        ucma_destroy_id
+           copy_from_user
+           _ucma_find_context
+           ucma_put_ctx
+           ucma_free_ctx
+              rdma_destroy_id
+                 cma_exch
+                 cma_cancel_operation
+                 rdma_node_get_transport
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+        rt_mutex_slowunlock
+        bad_area_nosemaphore
+        oops_enter
+
+They were able to reproduce the crash multiple times with the
+following details:
+
+    Crash seems to always happen on the:
+            mutex_unlock(&conn_id->handler_mutex);
+    as conn_id looks to have been freed during this code path.
+
+An examination of the code shows that a race exists in the request
+handlers.  When a new connection request is received, the rdma_cm
+allocates a new connection identifier.  This identifier has a single
+reference count on it.  If a user calls rdma_destroy_id() from another
+thread after receiving a callback, rdma_destroy_id will proceed to
+destroy the id and free the associated memory.  However, the request
+handlers may still be in the process of running.  When control returns
+to the request handlers, they can attempt to access the newly created
+identifiers.
+
+Fix this by holding a reference on the newly created rdma_cm_id until
+the request handler is through accessing it.
+
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/crash.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/infiniband/core/cma.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -347,10 +347,12 @@ int crash_shutdown_unregister(crash_shut
- EXPORT_SYMBOL(crash_shutdown_unregister);
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -1138,6 +1138,11 @@ static int cma_req_handler(struct ib_cm_
+ 	cm_id->context = conn_id;
+ 	cm_id->cm_handler = cma_ib_handler;
  
- static unsigned long crash_shutdown_buf[JMP_BUF_LEN];
-+static int crash_shutdown_cpu = -1;
- 
- static int handle_fault(struct pt_regs *regs)
- {
--	longjmp(crash_shutdown_buf, 1);
-+	if (crash_shutdown_cpu == smp_processor_id())
-+		longjmp(crash_shutdown_buf, 1);
- 	return 0;
- }
- 
-@@ -388,6 +390,7 @@ void default_machine_crash_shutdown(stru
- 	 */
- 	old_handler = __debugger_fault_handler;
- 	__debugger_fault_handler = handle_fault;
-+	crash_shutdown_cpu = smp_processor_id();
- 	for (i = 0; crash_shutdown_handles[i]; i++) {
- 		if (setjmp(crash_shutdown_buf) == 0) {
- 			/*
-@@ -401,6 +404,7 @@ void default_machine_crash_shutdown(stru
- 			asm volatile("sync; isync");
- 		}
++	/*
++	 * Protect against the user destroying conn_id from another thread
++	 * until we're done accessing it.
++	 */
++	atomic_inc(&conn_id->refcount);
+ 	ret = conn_id->id.event_handler(&conn_id->id, &event);
+ 	if (!ret) {
+ 		/*
+@@ -1150,8 +1155,10 @@ static int cma_req_handler(struct ib_cm_
+ 			ib_send_cm_mra(cm_id, CMA_CM_MRA_SETTING, NULL, 0);
+ 		mutex_unlock(&lock);
+ 		mutex_unlock(&conn_id->handler_mutex);
++		cma_deref_id(conn_id);
+ 		goto out;
  	}
-+	crash_shutdown_cpu = -1;
- 	__debugger_fault_handler = old_handler;
++	cma_deref_id(conn_id);
  
- 	/*
+ 	/* Destroy the CM ID by returning a non-zero value. */
+ 	conn_id->cm_id.ib = NULL;
+@@ -1353,17 +1360,25 @@ static int iw_conn_req_handler(struct iw
+ 	event.param.conn.private_data_len = iw_event->private_data_len;
+ 	event.param.conn.initiator_depth = attr.max_qp_init_rd_atom;
+ 	event.param.conn.responder_resources = attr.max_qp_rd_atom;
++
++	/*
++	 * Protect against the user destroying conn_id from another thread
++	 * until we're done accessing it.
++	 */
++	atomic_inc(&conn_id->refcount);
+ 	ret = conn_id->id.event_handler(&conn_id->id, &event);
+ 	if (ret) {
+ 		/* User wants to destroy the CM ID */
+ 		conn_id->cm_id.iw = NULL;
+ 		cma_exch(conn_id, CMA_DESTROYING);
+ 		mutex_unlock(&conn_id->handler_mutex);
++		cma_deref_id(conn_id);
+ 		rdma_destroy_id(&conn_id->id);
+ 		goto out;
+ 	}
+ 
+ 	mutex_unlock(&conn_id->handler_mutex);
++	cma_deref_id(conn_id);
+ 
+ out:
+ 	if (dev)
 
 
