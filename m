@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab1DYV3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 17:29:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:34809 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755903Ab1DYV3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 17:29:20 -0400
-Date: Mon, 25 Apr 2011 23:29:10 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>, stable@kernel.org,
-        stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 039/173] OHCI: work around for nVidia shutdown problem
-Message-ID: <20110425212910.GC7646@1wt.eu>
-References: <20110425200234.685881927@pcw.home.local> <Pine.LNX.4.44L0.1104251722470.1741-100000@iolanthe.rowland.org>
+	id S932512Ab1DYVeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 17:34:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32812 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932378Ab1DYVeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 17:34:18 -0400
+Date: Mon, 25 Apr 2011 14:33:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH 5/6] s390: use asm-generic/bitops/le.h
+Message-Id: <20110425143319.f4c6e036.akpm@linux-foundation.org>
+In-Reply-To: <1303638677-11211-6-git-send-email-akinobu.mita@gmail.com>
+References: <1303638677-11211-1-git-send-email-akinobu.mita@gmail.com>
+	<1303638677-11211-6-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104251722470.1741-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 05:24:34PM -0400, Alan Stern wrote:
-(...)
-> Some people have reported that more recent Nvidia systems work
-> correctly without this patch and have problems when the patch is
-> applied.  For now, I suggest omitting this patch.
+On Sun, 24 Apr 2011 18:51:16 +0900
+Akinobu Mita <akinobu.mita@gmail.com> wrote:
 
-Done, thank you Alan !
+> The previous style change enables to use asm-generic/bitops/le.h
+> on s390.
 
-Willy
+What kernel version is this patchset against?
 
+>  }
+>  #define find_next_bit_le find_next_bit_le
+>  
+> +#include <asm-generic/bitops/le.h>
+> +
+>  #include <asm-generic/bitops/ext2-atomic-test.h>
+>  
+
+Mainline arch/s390/include/asm/bitops.h doesn't have this inclusion.
+
+Please recheck, redo and resend.
