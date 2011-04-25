@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab1DYU3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:29:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:34619 "EHLO 1wt.eu"
+	id S932594Ab1DYU1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:27:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:34663 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286Ab1DYUZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:44 -0400
-Message-Id: <20110425200239.032676354@pcw.home.local>
+	id S932542Ab1DYU1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:27:40 -0400
+Message-Id: <20110425200236.471595358@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:51 +0200
+Date: Mon, 25 Apr 2011 22:03:52 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Patrick McHardy <kaber@trash.net>,
+Cc: Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 139/173] netfilter: arp_tables: fix infoleak to userspace
+Subject: [PATCH 080/173] libata: no special completion processing for EH commands
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,55 +23,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 42eab94fff18cb1091d3501cd284d6bd6cc9c143 upstream.
+commit f08dc1ac6b15c681f4643d8da1700e06c3855608 upstream.
 
-Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
-copied from userspace.  Fields of these structs that are
-zero-terminated strings are not checked.  When they are used as argument
-to a format string containing "%s" in request_module(), some sensitive
-information is leaked to userspace via argument of spawned modprobe
-process.
+ata_qc_complete() contains special handling for certain commands.  For
+example, it schedules EH for device revalidation after certain
+configurations are changed.  These shouldn't be applied to EH
+commands but they were.
 
-The first bug was introduced before the git epoch;  the second is
-introduced by 6b7d31fc (v2.6.15-rc1);  the third is introduced by
-6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
-CAP_NET_ADMIN.
+In most cases, it doesn't cause an actual problem because EH doesn't
+issue any command which would trigger special handling; however, ACPI
+can issue such commands via _GTF which can cause weird interactions.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Restructure ata_qc_complete() such that EH commands are always passed
+on to __ata_qc_complete().
+
+stable: Please apply to -stable only after 2.6.38 is released.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Kyle McMartin <kyle@mcmartin.ca>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/netfilter/arp_tables.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/ata/libata-core.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1086,6 +1086,7 @@ static int do_replace(struct net *net, v
- 	/* overflow check */
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5016,9 +5016,6 @@ static void ata_verify_xfer(struct ata_q
+ {
+ 	struct ata_device *dev = qc->dev;
  
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -1508,6 +1509,7 @@ static int compat_do_replace(struct net
- 		return -ENOMEM;
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
+-	if (ata_tag_internal(qc->tag))
+-		return;
+-
+ 	if (ata_is_nodata(qc->tf.protocol))
+ 		return;
  
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -1763,6 +1765,7 @@ static int do_arpt_get_ctl(struct sock *
- 			ret = -EFAULT;
- 			break;
+@@ -5062,14 +5059,23 @@ void ata_qc_complete(struct ata_queued_c
+ 		if (unlikely(qc->err_mask))
+ 			qc->flags |= ATA_QCFLAG_FAILED;
+ 
+-		if (unlikely(qc->flags & ATA_QCFLAG_FAILED)) {
+-			/* always fill result TF for failed qc */
++		/*
++		 * Finish internal commands without any further processing
++		 * and always with the result TF filled.
++		 */
++		if (unlikely(ata_tag_internal(qc->tag))) {
+ 			fill_result_tf(qc);
++			__ata_qc_complete(qc);
++			return;
++		}
+ 
+-			if (!ata_tag_internal(qc->tag))
+-				ata_qc_schedule_eh(qc);
+-			else
+-				__ata_qc_complete(qc);
++		/*
++		 * Non-internal qc has failed.  Fill the result TF and
++		 * summon EH.
++		 */
++		if (unlikely(qc->flags & ATA_QCFLAG_FAILED)) {
++			fill_result_tf(qc);
++			ata_qc_schedule_eh(qc);
+ 			return;
  		}
-+		rev.name[sizeof(rev.name)-1] = 0;
  
- 		try_then_request_module(xt_find_revision(NFPROTO_ARP, rev.name,
- 							 rev.revision, 1, &ret),
 
 
