@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab1DYUgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:36:15 -0400
-Received: from 1wt.eu ([62.212.114.60]:34523 "EHLO 1wt.eu"
+	id S932396Ab1DYUZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:25:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:34487 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab1DYUZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:16 -0400
-Message-Id: <20110425200237.382067423@pcw.home.local>
+	id S932359Ab1DYUZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:09 -0400
+Message-Id: <20110425200235.472060344@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:13 +0200
+Date: Mon, 25 Apr 2011 22:03:29 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jan Beulich <jbeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <kees.cook@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 101/173] x86, binutils, xen: Fix another wrong size directive
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 057/173] genirq: Disable the SHIRQ_DEBUG call in request_threaded_irq for now
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,75 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander van Heukelum <heukelum@fastmail.fm>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 371c394af27ab7d1e58a66bc19d9f1f3ac1f67b4 upstream.
+commit 6d83f94db95cfe65d2a6359cccdf61cf087c2598 upstream.
 
-The latest binutils (2.21.0.20110302/Ubuntu) breaks the build
-yet another time, under CONFIG_XEN=y due to a .size directive that
-refers to a slightly differently named (hence, to the now very
-strict and unforgiving assembler, non-existent) symbol.
+With CONFIG_SHIRQ_DEBUG=y we call a newly installed interrupt handler
+in request_threaded_irq().
 
-[ mingo:
+The original implementation (commit a304e1b8) called the handler
+_BEFORE_ it was installed, but that caused problems with handlers
+calling disable_irq_nosync(). See commit 377bf1e4.
 
-   This unnecessary build breakage caused by new binutils
-   version 2.21 gets escallated back several kernel releases spanning
-   several years of Linux history, affecting over 130,000 upstream
-   kernel commits (!), on CONFIG_XEN=y 64-bit kernels (i.e. essentially
-   affecting all major Linux distro kernel configs).
+It's braindead in the first place to call disable_irq_nosync in shared
+handlers, but ....
 
-   Git annotate tells us that this slight debug symbol code mismatch
-   bug has been introduced in 2008 in commit 3d75e1b8:
+Moving this call after we installed the handler looks innocent, but it
+is very subtle broken on SMP.
 
-     3d75e1b8        (Jeremy Fitzhardinge    2008-07-08 15:06:49 -0700 1231) ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+Interrupt handlers rely on the fact, that the irq core prevents
+reentrancy.
 
-   The 'bug' is just a slight assymetry in ENTRY()/END()
-   debug-symbols sequences, with lots of assembly code between the
-   ENTRY() and the END():
+Now this debug call violates that promise because we run the handler
+w/o the IRQ_INPROGRESS protection - which we cannot apply here because
+that would result in a possibly forever masked interrupt line.
 
-     ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-       ...
-     END(do_hypervisor_callback)
+A concurrent real hardware interrupt on a different CPU results in
+handler reentrancy and can lead to complete wreckage, which was
+unfortunately observed in reality and took a fricking long time to
+debug.
 
-   Human reviewers almost never catch such small mismatches, and binutils
-   never even warned about it either.
+Leave the code here for now. We want this debug feature, but that's
+not easy to fix. We really should get rid of those
+disable_irq_nosync() abusers and remove that function completely.
 
-   This new binutils version thus breaks the Xen build on all upstream kernels
-   since v2.6.27, out of the blue.
-
-   This makes a straightforward Git bisection of all 64-bit Xen-enabled kernels
-   impossible on such binutils, for a bisection window of over hundred
-   thousand historic commits. (!)
-
-   This is a major fail on the side of binutils and binutils needs to turn
-   this show-stopper build failure into a warning ASAP. ]
-
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <kees.cook@canonical.com>
-LKML-Reference: <1299877178-26063-1-git-send-email-heukelum@fastmail.fm>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/entry_64.S |    2 +-
+ kernel/irq/manage.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1303,7 +1303,7 @@ ENTRY(xen_do_hypervisor_callback)   # do
- 	decl PER_CPU_VAR(irq_count)
- 	jmp  error_exit
- 	CFI_ENDPROC
--END(do_hypervisor_callback)
-+END(xen_do_hypervisor_callback)
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1079,7 +1079,7 @@ int request_threaded_irq(unsigned int ir
+ 	if (retval)
+ 		kfree(action);
  
- /*
-  * Hypervisor uses this for application faults while it executes.
+-#ifdef CONFIG_DEBUG_SHIRQ
++#ifdef CONFIG_DEBUG_SHIRQ_FIXME
+ 	if (irqflags & IRQF_SHARED) {
+ 		/*
+ 		 * It's a shared IRQ -- the driver ought to be prepared for it
 
 
