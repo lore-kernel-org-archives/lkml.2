@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab1DYUYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:24:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:33962 "EHLO 1wt.eu"
+	id S932896Ab1DYUxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:53:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34007 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756870Ab1DYUYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:15 -0400
-Message-Id: <20110425200235.774417396@pcw.home.local>
+	id S1756305Ab1DYUYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:19 -0400
+Message-Id: <20110425200236.560500623@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:36 +0200
+Date: Mon, 25 Apr 2011 22:03:54 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Josh Hunt <johunt@akamai.com>,
-        Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 064/173] ext2: Fix link count corruption under heavy link+rename load
+Cc: Jaroslav Kysela <jkysela@redhat.com>, David Milburn <dmilburn@redhat.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [PATCH 082/173] ahci: add device IDs for Ibex Peak ahci controllers
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,69 +23,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Hunt <johunt@akamai.com>
+From: David Milburn <dmilburn@redhat.com>
 
-commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
+commit c1f57d9b9846e7366c328f916d1a82d03ba4312c upstream.
 
-vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
-i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
-it as reported and analyzed by Josh.
+Add device IDS for Ibex Peak SATA AHCI Controllers
 
-In fact, there is no good reason to mess with i_nlink of the moved file.
-We did it presumably to simulate linking into the new directory and unlinking
-from an old one. But the practical effect of this is disputable because fsck
-can possibly treat file as being properly linked into both directories without
-writing any error which is confusing. So we just stop increment-decrement
-games with i_nlink which also fixes the corruption.
+Signed-off-by: Jaroslav Kysela <jkysela@redhat.com>
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ext2/namei.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
-
-Index: longterm-2.6.27/fs/ext2/namei.c
-===================================================================
---- longterm-2.6.27.orig/fs/ext2/namei.c	2011-01-23 10:52:28.000000000 +0100
-+++ longterm-2.6.27/fs/ext2/namei.c	2011-04-25 15:14:36.125277949 +0200
-@@ -322,7 +322,6 @@
- 		new_de = ext2_find_entry (new_dir, new_dentry, &new_page);
- 		if (!new_de)
- 			goto out_dir;
--		inode_inc_link_count(old_inode);
- 		ext2_set_link(new_dir, new_de, new_page, old_inode);
- 		new_inode->i_ctime = CURRENT_TIME_SEC;
- 		if (dir_de)
-@@ -334,12 +333,9 @@
- 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
- 				goto out_dir;
- 		}
--		inode_inc_link_count(old_inode);
- 		err = ext2_add_link(new_dentry, old_inode);
--		if (err) {
--			inode_dec_link_count(old_inode);
-+		if (err)
- 			goto out_dir;
--		}
- 		if (dir_de)
- 			inode_inc_link_count(new_dir);
- 	}
-@@ -347,12 +343,11 @@
- 	/*
- 	 * Like most other Unix systems, set the ctime for inodes on a
-  	 * rename.
--	 * inode_dec_link_count() will mark the inode dirty.
- 	 */
- 	old_inode->i_ctime = CURRENT_TIME_SEC;
-+	mark_inode_dirty(old_inode);
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 336eb1e..958c1fa 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -515,10 +515,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x3a05), board_ahci }, /* ICH10 */
+ 	{ PCI_VDEVICE(INTEL, 0x3a22), board_ahci }, /* ICH10 */
+ 	{ PCI_VDEVICE(INTEL, 0x3a25), board_ahci }, /* ICH10 */
++	{ PCI_VDEVICE(INTEL, 0x3b22), board_ahci }, /* PCH AHCI */
++	{ PCI_VDEVICE(INTEL, 0x3b23), board_ahci }, /* PCH AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0x3b24), board_ahci }, /* PCH RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x3b25), board_ahci }, /* PCH RAID */
++	{ PCI_VDEVICE(INTEL, 0x3b29), board_ahci }, /* PCH AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0x3b2b), board_ahci }, /* PCH RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x3b2c), board_ahci }, /* PCH RAID */
++	{ PCI_VDEVICE(INTEL, 0x3b2f), board_ahci }, /* PCH AHCI */
  
- 	ext2_delete_entry (old_de, old_page);
--	inode_dec_link_count(old_inode);
- 
- 	if (dir_de) {
- 		ext2_set_link(old_inode, dir_de, dir_page, new_dir);
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
