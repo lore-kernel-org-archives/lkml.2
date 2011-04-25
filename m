@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab1DYQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 12:28:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40737 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab1DYQ2C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 12:28:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xKFs5tBxZxATl70wermRVn5/7q/WnU+moOmuQjmfQ6ToLiDJpzfTW0qUgLjf6JiIJt
-         Ohq0QhZ7SfwZgBIsCR5WwbODyq8tdGl8OMi6fPoQ1TwO8CWdirCYTCZMI2wTQ9XmyU34
-         2bo85bQg6wBP40UlnIDaVENX/wDKknsLbYF0A=
-Date: Mon, 25 Apr 2011 18:27:58 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] signal: do_sigtimedwait() needs
- retarget_shared_pending()
-Message-ID: <20110425162758.GD30828@mtj.dyndns.org>
-References: <20110418134421.GA15951@redhat.com>
- <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
- <20110418173224.GA27918@redhat.com>
- <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
- <20110423175901.GA484@redhat.com>
- <20110423180000.GD484@redhat.com>
- <20110425115253.GP17734@mtj.dyndns.org>
- <20110425160115.GC14934@redhat.com>
+	id S1758608Ab1DYQb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 12:31:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52113 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752526Ab1DYQb6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 12:31:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110425160115.GC14934@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110425180450.1ede0845@neptune.home>
+References: <20110424202158.45578f31@neptune.home> <20110424235928.71af51e0@neptune.home>
+ <20110425114429.266A.A69D9226@jp.fujitsu.com> <BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com>
+ <20110425111705.786ef0c5@neptune.home> <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
+ <20110425180450.1ede0845@neptune.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 25 Apr 2011 09:31:03 -0700
+Message-ID: <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2011/4/25 Bruno Prémont <bonbons@linux-vserver.org>:
+>
+> kmemleak reports 86681 new leaks between shortly after boot and -2 state.
+> (and 2348 additional ones between -2 and -4).
 
-On Mon, Apr 25, 2011 at 06:01:15PM +0200, Oleg Nesterov wrote:
-> > Maybe it would be a good idea to introduce a new helper which checks /
-> > enforces that the operation indeed is only unblocking?
-> 
-> I hope nobody will change ->blocked directly, except this function
-> and force_sig_info(). And daemonize/allow_signal/disallow_signal, but
-> there are special and probably we can already kill this deprecated
-> block/unblock code and forbid kernel_thread(CLONE_SIGHAND) + daemonize().
-> In fact I think daemonize() should go away.
-> 
-> So, I don't really think we need another helper to unblock something.
+I wouldn't necessarily trust kmemleak with the whole RCU-freeing
+thing. In your slubinfo reports, the kmemleak data itself also tends
+to overwhelm everything else - none of it looks unreasonable per se.
 
-Oh I see.  I thought there would be quite a number of places
-unblocking directly.  If that's not the case, it's fine with me.
+That said, you clearly have a *lot* of filp entries. I wouldn't
+consider it unreasonable, though, because depending on load those may
+well be fine. Perhaps you really do have some application(s) that hold
+thousands of files open. The default file limit is 1024 (I think), but
+you can raise it, and some programs do end up opening tens of
+thousands of files for filesystem scanning purposes.
 
-> > Also, it can
-> > be a pure preference but I think _locked suffix is better / more
-> > common for APIs which expect the caller to be responsible for locking.
-> 
-> Again, I can rename... Cough, but in this case please simply suggest
-> another name. set_tsk_blocked_locked?
+That said, I would suggest simply trying a saner kernel configuration,
+and seeing if that makes a difference:
 
-Oooh, blocked_locked, didn't see that one coming.  Maybe
-set_tsk_sigmask() and set_tsk_sigmask_locked()?  I prefer sigmask to
-blocked anyway, so...
+> Yes, it's uni-processor system, so SMP=n.
+> TINY_RCU=y, PREEMPT_VOLUNTARY=y (whole /proc/config.gz attached keeping
+> compression)
 
-Thanks.
+I'm not at all certain that TINY_RCU is appropriate for
+general-purpose loads. I'd call it more of a "embedded low-performance
+option".
 
--- 
-tejun
+The _real_ RCU implementation ("tree rcu") forces quiescent states
+every few jiffies and has logic to handle "I've got tons of RCU
+events, I really need to start handling them now". All of which I
+think tiny-rcu lacks.
+
+So right now I suspect that you have a situation where you just have a
+simple load that just ends up never triggering any RCU cleanup, and
+the tiny-rcu thing just keeps on gathering events and delays freeing
+stuff almost arbitrarily long.
+
+So try CONFIG_PREEMPT and CONFIG_TREE_PREEMPT_RCU to see if the
+behavior goes away. That would confirm the "it's just tinyrcu being
+too dang stupid" hypothesis.
+
+                     Linus
