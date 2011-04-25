@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab1DYUnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:43:32 -0400
-Received: from 1wt.eu ([62.212.114.60]:34343 "EHLO 1wt.eu"
+	id S932300Ab1DYUYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:51 -0400
+Received: from 1wt.eu ([62.212.114.60]:34282 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932280Ab1DYUYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:52 -0400
-Message-Id: <20110425200237.859884245@pcw.home.local>
+	id S932253Ab1DYUYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:44 -0400
+Message-Id: <20110425200237.338334544@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:24 +0200
+Date: Mon, 25 Apr 2011 22:04:12 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Olaf Hering <olaf@aepfle.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 112/173] Input: xen-kbdfront - advertise either absolute or relative coordinates
+Cc: Milton Miller <miltonm@bga.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 100/173] powerpc: rtas_flash needs to use rtas_data_buf
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,128 +25,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Milton Miller <miltonm@us.ibm.com>
 
-commit 8c3c283e6bf463ab498d6e7823aff6c4762314b6 upstream.
+commit bd2b64a12bf55bec0d1b949e3dca3f8863409646 upstream.
 
-A virtualized display device is usually viewed with the vncviewer
-application, either by 'xm vnc domU' or with vncviewer localhost:port.
-vncviewer and the RFB protocol provides absolute coordinates to the
-virtual display. These coordinates are either passed through to a PV
-guest or converted to relative coordinates for a HVM guest.
+When trying to flash a machine via the update_flash command, Anton received the
+following error:
 
-A PV guest receives these coordinates and passes them to the kernels
-evdev driver. There it can be picked up by applications such as the
-xorg-input drivers. Using absolute coordinates avoids issues such as
-guest mouse pointer not tracking host mouse pointer due to wrong mouse
-acceleration settings in the guests X display.
+    Restarting system.
+    FLASH: kernel bug...flash list header addr above 4GB
 
-Advertise either absolute or relative coordinates to the input system
-and the evdev driver, depending on what dom0 provides. The xorg-input
-driver prefers relative coordinates even if a devices provides both.
+The code in question has a comment that the flash list should be in
+the kernel data and therefore under 4GB:
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+        /* NOTE: the "first" block list is a global var with no data
+         * blocks in the kernel data segment.  We do this because
+         * we want to ensure this block_list addr is under 4GB.
+         */
+
+Unfortunately the Kconfig option is marked tristate which means the variable
+may not be in the kernel data and could be above 4GB.
+
+Instead of relying on the data segment being below 4GB, use the static
+data buffer allocated by the kernel for use by rtas.  Since we don't
+use the header struct directly anymore, convert it to a simple pointer.
+
+Reported-By: Anton Blanchard <anton@samba.org>
+Signed-Off-By: Milton Miller <miltonm@bga.com>
+Tested-By: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/xen-kbdfront.c |   45 ++++++++++++++++++++++---------------------
- 1 file changed, 24 insertions(+), 21 deletions(-)
+ arch/powerpc/kernel/rtas_flash.c |   39 +++++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 18 deletions(-)
 
-Index: longterm-2.6.27/drivers/input/xen-kbdfront.c
-===================================================================
---- longterm-2.6.27.orig/drivers/input/xen-kbdfront.c	2011-01-23 10:52:17.000000000 +0100
-+++ longterm-2.6.27/drivers/input/xen-kbdfront.c	2011-04-25 16:32:54.339278957 +0200
-@@ -105,7 +105,7 @@
- static int __devinit xenkbd_probe(struct xenbus_device *dev,
- 				  const struct xenbus_device_id *id)
- {
--	int ret, i;
-+	int ret, i, abs;
- 	struct xenkbd_info *info;
- 	struct input_dev *kbd, *ptr;
+--- a/arch/powerpc/kernel/rtas_flash.c
++++ b/arch/powerpc/kernel/rtas_flash.c
+@@ -93,12 +93,8 @@ struct flash_block_list {
+ 	struct flash_block_list *next;
+ 	struct flash_block blocks[FLASH_BLOCKS_PER_NODE];
+ };
+-struct flash_block_list_header { /* just the header of flash_block_list */
+-	unsigned long num_blocks;
+-	struct flash_block_list *next;
+-};
  
-@@ -123,6 +123,11 @@
- 	if (!info->page)
- 		goto error_nomem;
+-static struct flash_block_list_header rtas_firmware_flash_list = {0, NULL};
++static struct flash_block_list *rtas_firmware_flash_list;
  
-+	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-abs-pointer", "%d", &abs) < 0)
-+		abs = 0;
-+	if (abs)
-+		xenbus_printf(XBT_NIL, dev->nodename, "request-abs-pointer", "1");
-+
- 	/* keyboard */
- 	kbd = input_allocate_device();
- 	if (!kbd)
-@@ -132,11 +137,12 @@
- 	kbd->id.bustype = BUS_PCI;
- 	kbd->id.vendor = 0x5853;
- 	kbd->id.product = 0xffff;
--	kbd->evbit[0] = BIT(EV_KEY);
-+
-+	__set_bit(EV_KEY, kbd->evbit);
- 	for (i = KEY_ESC; i < KEY_UNKNOWN; i++)
--		set_bit(i, kbd->keybit);
-+		__set_bit(i, kbd->keybit);
- 	for (i = KEY_OK; i < KEY_MAX; i++)
--		set_bit(i, kbd->keybit);
-+		__set_bit(i, kbd->keybit);
+ /* Use slab cache to guarantee 4k alignment */
+ static struct kmem_cache *flash_block_cache = NULL;
+@@ -107,13 +103,14 @@ static struct kmem_cache *flash_block_ca
  
- 	ret = input_register_device(kbd);
- 	if (ret) {
-@@ -155,12 +161,20 @@
- 	ptr->id.bustype = BUS_PCI;
- 	ptr->id.vendor = 0x5853;
- 	ptr->id.product = 0xfffe;
--	ptr->evbit[0] = BIT(EV_KEY) | BIT(EV_REL) | BIT(EV_ABS);
-+
-+	if (abs) {
-+		__set_bit(EV_ABS, ptr->evbit);
-+		input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
-+		input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
-+	} else {
-+		input_set_capability(ptr, EV_REL, REL_X);
-+		input_set_capability(ptr, EV_REL, REL_Y);
-+	}
-+	input_set_capability(ptr, EV_REL, REL_WHEEL);
-+
-+	__set_bit(EV_KEY, ptr->evbit);
- 	for (i = BTN_LEFT; i <= BTN_TASK; i++)
--		set_bit(i, ptr->keybit);
--	ptr->relbit[0] = BIT(REL_X) | BIT(REL_Y) | BIT(REL_WHEEL);
--	input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
--	input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
-+		__set_bit(i, ptr->keybit);
+ /* Local copy of the flash block list.
+  * We only allow one open of the flash proc file and create this
+- * list as we go.  This list will be put in the
+- * rtas_firmware_flash_list var once it is fully read.
++ * list as we go.  The rtas_firmware_flash_list varable will be
++ * set once the data is fully read.
+  *
+  * For convenience as we build the list we use virtual addrs,
+  * we do not fill in the version number, and the length field
+  * is treated as the number of entries currently in the block
+- * (i.e. not a byte count).  This is all fixed on release.
++ * (i.e. not a byte count).  This is all fixed when calling
++ * the flash routine.
+  */
  
- 	ret = input_register_device(ptr);
- 	if (ret) {
-@@ -267,7 +281,7 @@
- 				   enum xenbus_state backend_state)
- {
- 	struct xenkbd_info *info = dev->dev.driver_data;
--	int ret, val;
-+	int val;
+ /* Status int must be first member of struct */
+@@ -200,16 +197,16 @@ static int rtas_flash_release(struct ino
+ 	if (uf->flist) {    
+ 		/* File was opened in write mode for a new flash attempt */
+ 		/* Clear saved list */
+-		if (rtas_firmware_flash_list.next) {
+-			free_flash_list(rtas_firmware_flash_list.next);
+-			rtas_firmware_flash_list.next = NULL;
++		if (rtas_firmware_flash_list) {
++			free_flash_list(rtas_firmware_flash_list);
++			rtas_firmware_flash_list = NULL;
+ 		}
  
- 	switch (backend_state) {
- 	case XenbusStateInitialising:
-@@ -278,17 +292,6 @@
+ 		if (uf->status != FLASH_AUTH)  
+ 			uf->status = flash_list_valid(uf->flist);
  
- 	case XenbusStateInitWait:
- InitWait:
--		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
--				   "feature-abs-pointer", "%d", &val);
--		if (ret < 0)
--			val = 0;
--		if (val) {
--			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
--					    "request-abs-pointer", "1");
--			if (ret)
--				printk(KERN_WARNING
--				       "xenkbd: can't request abs-pointer");
--		}
- 		xenbus_switch_state(dev, XenbusStateConnected);
+ 		if (uf->status == FLASH_IMG_READY) 
+-			rtas_firmware_flash_list.next = uf->flist;
++			rtas_firmware_flash_list = uf->flist;
+ 		else
+ 			free_flash_list(uf->flist);
+ 
+@@ -592,7 +589,7 @@ static void rtas_flash_firmware(int rebo
+ 	unsigned long rtas_block_list;
+ 	int i, status, update_token;
+ 
+-	if (rtas_firmware_flash_list.next == NULL)
++	if (rtas_firmware_flash_list == NULL)
+ 		return;		/* nothing to do */
+ 
+ 	if (reboot_type != SYS_RESTART) {
+@@ -609,20 +606,25 @@ static void rtas_flash_firmware(int rebo
+ 		return;
+ 	}
+ 
+-	/* NOTE: the "first" block list is a global var with no data
+-	 * blocks in the kernel data segment.  We do this because
+-	 * we want to ensure this block_list addr is under 4GB.
++	/*
++	 * NOTE: the "first" block must be under 4GB, so we create
++	 * an entry with no data blocks in the reserved buffer in
++	 * the kernel data segment.
+ 	 */
+-	rtas_firmware_flash_list.num_blocks = 0;
+-	flist = (struct flash_block_list *)&rtas_firmware_flash_list;
++	spin_lock(&rtas_data_buf_lock);
++	flist = (struct flash_block_list *)&rtas_data_buf[0];
++	flist->num_blocks = 0;
++	flist->next = rtas_firmware_flash_list;
+ 	rtas_block_list = virt_to_abs(flist);
+ 	if (rtas_block_list >= 4UL*1024*1024*1024) {
+ 		printk(KERN_ALERT "FLASH: kernel bug...flash list header addr above 4GB\n");
++		spin_unlock(&rtas_data_buf_lock);
+ 		return;
+ 	}
+ 
+ 	printk(KERN_ALERT "FLASH: preparing saved firmware image for flash\n");
+ 	/* Update the block_list in place. */
++	rtas_firmware_flash_list = NULL; /* too hard to backout on error */
+ 	image_size = 0;
+ 	for (f = flist; f; f = next) {
+ 		/* Translate data addrs to absolute */
+@@ -663,6 +665,7 @@ static void rtas_flash_firmware(int rebo
+ 		printk(KERN_ALERT "FLASH: unknown flash return code %d\n", status);
  		break;
+ 	}
++	spin_unlock(&rtas_data_buf_lock);
+ }
  
+ static void remove_flash_pde(struct proc_dir_entry *dp)
 
 
