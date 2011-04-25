@@ -1,471 +1,1315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab1DYUEW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:04:22 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:34775 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab1DYUEV (ORCPT
+	id S1752027Ab1DYUIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:08:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44908 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750954Ab1DYUIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:04:21 -0400
-X-Auth-Info: 4eQgg75BgPl6aVL8of8iPelye5KRb7mzvbZ826/5IEY=
-Message-ID: <4DB5D452.9050500@grandegger.com>
-Date: Mon, 25 Apr 2011 22:06:42 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<1303474267-6344-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A3B7.7060300@pengutronix.de>
-In-Reply-To: <4DB1A3B7.7060300@pengutronix.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Apr 2011 16:08:38 -0400
+Date: Mon, 25 Apr 2011 13:07:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Barnes, Clifton A." <cabarnes@indesign-llc.com>
+Cc: "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH] w1: Add Maxim/Dallas DS2780 Stand-Alone Fuel Gauge IC
+ support.
+Message-Id: <20110425130757.b4c81a5c.akpm@linux-foundation.org>
+In-Reply-To: <A8DC7EA93EFCBD4498E3857AFE65E5F13A3D90EB@IND07.indesign.net>
+References: <A8DC7EA93EFCBD4498E3857AFE65E5F13A3D90EB@IND07.indesign.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 20 Apr 2011 19:57:05 +0000
+"Barnes, Clifton A." <cabarnes@indesign-llc.com> wrote:
 
-On 04/22/2011 05:50 PM, Marc Kleine-Budde wrote:
-> On 04/22/2011 02:11 PM, Subhasish Ghosh wrote:
->> This patch adds support for the CAN device emulated on PRUSS.
+> Add support for the Maxim/Dallas DS2780 Stand-Alone Fuel Gauge IC.
 > 
-> After commenting the code inline, some remarks:
-> - Your tx path looks broken, see commits inline
-> - Please setup a proper struct to describe your register layout, make
->   use of arrays for rx and tx
-> - don't use u32, s32 for not hardware related variables like return
->   codes and loop counter.
-> - the routines that load and save the can data bytes from/into your
->   mailbox look way to complicated. Please write down the layout so that
->   we can think of a elegant way to do it
-> - a lot of functions unconditionally return 0, make them void if no
->   error can happen
-> - think about using managed devices, that would simplify the probe and
->   release function
-
-I agree with Marc's comments and would like to add:
-
-- Use just *one* value per sysfs file
-
-A few more comments inline...
-
->> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
->> ---
->>  drivers/net/can/Kconfig     |    7 +
->>  drivers/net/can/Makefile    |    1 +
->>  drivers/net/can/pruss_can.c | 1074 +++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 1082 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/net/can/pruss_can.c
->>
->> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
->> index 5dec456..4682a4f 100644
->> --- a/drivers/net/can/Kconfig
->> +++ b/drivers/net/can/Kconfig
->> @@ -111,6 +111,13 @@ config PCH_CAN
->>  	  embedded processor.
->>  	  This driver can access CAN bus.
->>  
->> +config CAN_TI_DA8XX_PRU
->> +	depends on CAN_DEV && ARCH_DAVINCI && ARCH_DAVINCI_DA850
->> +	tristate "PRU based CAN emulation for DA8XX"
->> +	---help---
->> +	Enable this to emulate a CAN controller on the PRU of DA8XX.
->> +	If not sure, mark N
+> Another patch from Haojian Zhuang for this part was recently submitted,
+> but I believe that this implementation is more consistent with other
+> fuel gauge drivers since it uses the power supply interface.
 > 
-> Please indent the help text with 1 tab and 2 spaces
-> 
->> +
->>  source "drivers/net/can/mscan/Kconfig"
->>  
->>  source "drivers/net/can/sja1000/Kconfig"
->> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
->> index 53c82a7..d0b7cbd 100644
->> --- a/drivers/net/can/Makefile
->> +++ b/drivers/net/can/Makefile
->> @@ -15,6 +15,7 @@ obj-$(CONFIG_CAN_SJA1000)	+= sja1000/
->>  obj-$(CONFIG_CAN_MSCAN)		+= mscan/
->>  obj-$(CONFIG_CAN_AT91)		+= at91_can.o
->>  obj-$(CONFIG_CAN_TI_HECC)	+= ti_hecc.o
->> +obj-$(CONFIG_CAN_TI_DA8XX_PRU)	+= pruss_can.o
->>  obj-$(CONFIG_CAN_MCP251X)	+= mcp251x.o
->>  obj-$(CONFIG_CAN_BFIN)		+= bfin_can.o
->>  obj-$(CONFIG_CAN_JANZ_ICAN3)	+= janz-ican3.o
->> diff --git a/drivers/net/can/pruss_can.c b/drivers/net/can/pruss_can.c
->> new file mode 100644
->> index 0000000..7702509
->> --- /dev/null
->> +++ b/drivers/net/can/pruss_can.c
-...
-> is this array const?
->> +static u32 pruss_intc_init[19][3] = {
->> +	{PRUSS_INTC_POLARITY0,		PRU_INTC_REGMAP_MASK,	0xFFFFFFFF},
->> +	{PRUSS_INTC_POLARITY1,		PRU_INTC_REGMAP_MASK,	0xFFFFFFFF},
->> +	{PRUSS_INTC_TYPE0,		PRU_INTC_REGMAP_MASK,	0x1C000000},
->> +	{PRUSS_INTC_TYPE1,		PRU_INTC_REGMAP_MASK,	0},
->> +	{PRUSS_INTC_GLBLEN,		0,			1},
->> +	{PRUSS_INTC_HOSTMAP0,		PRU_INTC_REGMAP_MASK,	0x03020100},
->> +	{PRUSS_INTC_HOSTMAP1,		PRU_INTC_REGMAP_MASK,	0x07060504},
->> +	{PRUSS_INTC_HOSTMAP2,		PRU_INTC_REGMAP_MASK,	0x0000908},
->> +	{PRUSS_INTC_CHANMAP0,		PRU_INTC_REGMAP_MASK,	0},
->> +	{PRUSS_INTC_CHANMAP8,		PRU_INTC_REGMAP_MASK,	0x00020200},
->> +	{PRUSS_INTC_STATIDXCLR,		0,			32},
->> +	{PRUSS_INTC_STATIDXCLR,		0,			19},
->> +	{PRUSS_INTC_ENIDXSET,		0,			19},
->> +	{PRUSS_INTC_STATIDXCLR,		0,			18},
->> +	{PRUSS_INTC_ENIDXSET,		0,			18},
->> +	{PRUSS_INTC_STATIDXCLR,		0,			34},
->> +	{PRUSS_INTC_ENIDXSET,		0,			34},
->> +	{PRUSS_INTC_ENIDXSET,		0,			32},
->> +	{PRUSS_INTC_HOSTINTEN,		0,			5}
-> 
-> please add ","
 
-Also a struct to describe each entry would improve readability.
-Then you could also use ARRAY_SIZE.
-
->> +};
-...
->> +static int pru_can_set_bittiming(struct net_device *ndev)
->> +{
->> +	struct can_emu_priv *priv = netdev_priv(ndev);
->> +	struct can_bittiming *bt = &priv->can.bittiming;
->> +	u32 value;
->> +
->> +	value = priv->can.clock.freq / bt->bitrate;
->> +	pruss_writel(priv->dev, PRUSS_CAN_TIMING_VAL_TX, value);
->> +	pruss_writel(priv->dev, PRUSS_CAN_BIT_TIMING_VAL_RX, value);
->> +
->> +	value = (bt->phase_seg2 + bt->phase_seg1 +
->> +			bt->prop_seg + 1) * bt->brp;
->> +	value = (value >> 1) - PRUSS_CAN_TIMER_SETUP_DELAY;
->> +	value = (value << 16) | value;
->> +	pruss_writel(priv->dev, PRUSS_CAN_TIMING_VAL_RX, value);
->> +
->> +	value = (PRUSS_CAN_GPIO_SETUP_DELAY *
->> +		(priv->clk_freq_pru / 1000000) / 1000) /
->> +		PRUSS_CAN_DELAY_LOOP_LENGTH;
-
-This calculation looks delicate. 64-bit math would be safer.
-
->> +
->> +	pruss_writel(priv->dev, PRUSS_CAN_TIMING_SETUP, value);
->> +	return 0;
->> +}
-...
->> +static int pru_can_err(struct net_device *ndev, int int_status,
->> +			     int err_status)
->> +{
->> +	struct can_emu_priv *priv = netdev_priv(ndev);
->> +	struct net_device_stats *stats = &ndev->stats;
->> +	struct can_frame *cf;
->> +	struct sk_buff *skb;
->> +	u32 tx_err_cnt, rx_err_cnt;
->> +
->> +	skb = alloc_can_err_skb(ndev, &cf);
->> +	if (!skb) {
->> +		if (printk_ratelimit())
->> +			dev_err(priv->dev,
->> +				"alloc_can_err_skb() failed\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	if (err_status & PRUSS_CAN_GSR_BIT_EPM) {	/* error passive int */
->> +		priv->can.state = CAN_STATE_ERROR_PASSIVE;
->> +		++priv->can.can_stats.error_passive;
->> +		cf->can_id |= CAN_ERR_CRTL;
->> +		tx_err_cnt = pru_can_get_error_cnt(priv->dev,
->> +						PRUSS_CAN_TX_PRU_1);
->> +		rx_err_cnt = pru_can_get_error_cnt(priv->dev,
->> +						PRUSS_CAN_RX_PRU_0);
->> +		if (tx_err_cnt > PRUSS_CAN_ERROR_ACTIVE - 1)
->> +			cf->data[1] |= CAN_ERR_CRTL_TX_PASSIVE;
->> +		if (rx_err_cnt > PRUSS_CAN_ERROR_ACTIVE - 1)
->> +			cf->data[1] |= CAN_ERR_CRTL_RX_PASSIVE;
->> +
->> +		dev_dbg(priv->ndev->dev.parent, "Error passive interrupt\n");
->> +	}
->> +
->> +	if (err_status & PRUSS_CAN_GSR_BIT_BFM) {
->> +		priv->can.state = CAN_STATE_BUS_OFF;
->> +		cf->can_id |= CAN_ERR_BUSOFF;
->> +		/*
->> +		 *      Disable all interrupts in bus-off to avoid int hog
->> +		 *      this should be handled by the pru
->> +		 */
->> +		pru_can_mask_ints(priv->dev, PRUSS_CAN_TX_PRU_1, false);
->> +		pru_can_mask_ints(priv->dev, PRUSS_CAN_RX_PRU_0, false);
->> +		can_bus_off(ndev);
->> +		dev_dbg(priv->ndev->dev.parent, "Bus off mode\n");
->> +	}
->> +
->> +	netif_rx(skb);
-
-You should use netif_receive_skb(skb) here as well.
-
->> +	stats->rx_packets++;
->> +	stats->rx_bytes += cf->can_dlc;
->> +	return 0;
->> +}
->> +
->> +static int pru_can_rx_poll(struct napi_struct *napi, int quota)
->> +{
->> +	struct net_device *ndev = napi->dev;
->> +	struct can_emu_priv *priv = netdev_priv(ndev);
->> +	u32 bit_set, mbxno = 0;
->> +	u32 num_pkts = 0;
->> +
->> +	if (!netif_running(ndev))
->> +		return 0;
->> +
->> +	do {
->> +		/* rx int sys_evt -> 33 */
->> +		pru_can_clr_intc_status(priv->dev, PRUSS_CAN_RX_PRU_0);
->> +		if (pru_can_intr_stat_get(priv->dev, &priv->can_rx_cntx))
->> +			return num_pkts;
->> +
->> +		if (PRUSS_CAN_ISR_BIT_RRI & priv->can_rx_cntx.intr_stat) {
->> +			mbxno = PRUSS_CAN_RTR_BUFF_NUM;
->> +			pru_can_rx(ndev, mbxno);
->> +			num_pkts++;
->> +		} else {
->> +			/* Extract the mboxno from the status */
->> +			bit_set = fls(priv->can_rx_cntx.intr_stat & 0xFF);
->> +			if (bit_set) {
->> +				num_pkts++;
->> +				mbxno = bit_set - 1;
->> +				if (PRUSS_CAN_ISR_BIT_ESI & priv->can_rx_cntx.
->> +				    intr_stat) {
-
-				if (PRUSS_CAN_ISR_BIT_ESI &
-				    priv->can_rx_cntx.intr_stat) {
-
-Is more readable.
+Let's Cc him so that he knows about this patch and has a chance to
+comment upon it and test it (please).
 
 
->> +					pru_can_gbl_stat_get(priv->dev,
->> +						&priv->can_rx_cntx);
->> +						pru_can_err(ndev,
->> +					priv->can_rx_cntx.intr_stat,
->> +					priv->can_rx_cntx.gbl_stat);
 
-Please fix bogous indention.
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 52a462f..dc8c531 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -68,6 +68,13 @@ config BATTERY_DS2760
+        help
+          Say Y here to enable support for batteries with ds2760 chip.
 
->> +				} else
->> +					pru_can_rx(ndev, mbxno);
->> +			} else
->> +				break;
->> +		}
->> +	} while (((PRUSS_CAN_TX_INT_STAT & pru_can_get_intc_status(priv->dev))
->> +						&& (num_pkts < quota)));
->> +
->> +	/* Enable packet interrupt if all pkts are handled */
->> +	if (!(PRUSS_CAN_TX_INT_STAT & pru_can_get_intc_status(priv->dev))) {
->> +		napi_complete(napi);
->> +		/* Re-enable RX mailbox interrupts */
->> +		pru_can_mask_ints(priv->dev, PRUSS_CAN_RX_PRU_0, true);
->> +	}
->> +	return num_pkts;
->> +}
-...
->> +/* Shows all the mailbox IDs */
->> +static ssize_t pru_sysfs_mbx_id_show(struct device *dev,
->> +		struct device_attribute *attr, char *buf)
->> +{
->> +	struct can_emu_priv *priv = netdev_priv(to_net_dev(dev));
->> +
->> +	return snprintf(buf, PAGE_SIZE, "<mbx_no:mbx_id>\n"
->> +					"0:0x%X 1:0x%X 2:0x%X 3:0x%X "
->> +					"4:0x%X 5:0x%X 6:0x%X 7:0x%X\n",
->> +					priv->mbx_id[0], priv->mbx_id[1],
->> +					priv->mbx_id[2], priv->mbx_id[3],
->> +					priv->mbx_id[4], priv->mbx_id[5],
->> +					priv->mbx_id[6], priv->mbx_id[7]);
->> +}
++config BATTERY_DS2780
++       tristate "DS2780 battery driver"
++       select W1
++       select W1_SLAVE_DS2780
++       help
++         Say Y here to enable support for batteries with ds2780 chip.
++
+ config BATTERY_DS2782
+        tristate "DS2782/DS2786 standalone gas-gauge"
+        depends on I2C
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 8385bfa..8224990 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_WM8350_POWER)    += wm8350_power.o
+ obj-$(CONFIG_TEST_POWER)       += test_power.o
 
-As mentioned above, just one value per sysfs file, please...
+ obj-$(CONFIG_BATTERY_DS2760)   += ds2760_battery.o
++obj-$(CONFIG_BATTERY_DS2780)   += ds2780_battery.o
+ obj-$(CONFIG_BATTERY_DS2782)   += ds2782_battery.o
+ obj-$(CONFIG_BATTERY_PMU)      += pmu_battery.o
+ obj-$(CONFIG_BATTERY_OLPC)     += olpc_battery.o
+diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
+new file mode 100644
+index 0000000..92e6142
+--- /dev/null
++++ b/drivers/power/ds2780_battery.c
+@@ -0,0 +1,797 @@
++/*
++ * 1-wire client/driver for the Maxim/Dallas DS2780 Stand-Alone Fuel Gauge IC
++ *
++ * Copyright _ 2010 Indesign, LLC
++ *
++ * Author: Clifton Barnes <cabarnes@indesign-llc.com>
++ *
++ * Based on ds2760_battery and ds2782_battery drivers
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/param.h>
++#include <linux/pm.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/idr.h>
++
++#include "../w1/w1.h"
++#include "../w1/slaves/w1_ds2780.h"
++
++#define to_ds2780_device_info(x) container_of(x, struct ds2780_device_info, bat)
++#define to_power_supply(x)  (struct power_supply*) dev_get_drvdata(x)
++
++/* Current unit measurement in uA for a 1 milli-ohm sense resistor */
++#define DS2780_CURRENT_UNITS   1563
++/* Charge unit measurement in uAh for a 1 milli-ohm sense resistor */
++#define DS2780_CHARGE_UNITS            6250
++/* Number of bytes in user EEPROM space */
++#define DS2780_USER_EEPROM_SIZE                (DS2780_EEPROM_BLOCK0_END - DS2780_EEPROM_BLOCK0_START + 1)
++/* Number of bytes in parameter EEPROM space */
++#define DS2780_PARAM_EEPROM_SIZE       (DS2780_EEPROM_BLOCK1_END - DS2780_EEPROM_BLOCK1_START + 1)
++
++struct ds2780_device_info {
++       struct device *dev;
++       struct power_supply bat;
++       struct device *w1_dev;
++};
++
++enum current_types {
++       CURRENT_NOW,
++       CURRENT_AVG,
++};
++
++static const char model[] = "DS2780";
++static const char manufacturer[] = "Maxim/Dallas";
++
++/* Set sense resistor value in mhos */
++static int ds2780_set_sense_register(struct ds2780_device_info *dev_info, u8 conductance)
++{
++       int ret;
++
++       ret = w1_ds2780_write(dev_info->w1_dev, &conductance, DS2780_RSNSP_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_store_eeprom(dev_info->w1_dev, DS2780_RSNSP_REG);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_recall_eeprom(dev_info->w1_dev, DS2780_RSNSP_REG);
++       if (ret < 0)
++               return ret;
++
++       return 0;
++}
++
++/* Get RSGAIN value from 0 to 1.999 in steps of 0.001 */
++static int ds2780_get_rsgain_register(struct ds2780_device_info *dev_info, u16 *rsgain)
++{
++       int ret;
++       char bytes[2];
++
++       ret = w1_ds2780_read(dev_info->w1_dev, bytes, DS2780_RSGAIN_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, bytes + 1, DS2780_RSGAIN_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       *rsgain = (bytes[0] << 8) | bytes[1];
++       return 0;
++}
++
++/* Set RSGAIN value from 0 to 1.999 in steps of 0.001 */
++static int ds2780_set_rsgain_register(struct ds2780_device_info *dev_info, u16 rsgain)
++{
++       int ret;
++       char bytes[] = {rsgain >> 8, rsgain & 0xFF};
++
++       ret = w1_ds2780_write(dev_info->w1_dev, bytes, DS2780_RSGAIN_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_write(dev_info->w1_dev, bytes + 1, DS2780_RSGAIN_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_store_eeprom(dev_info->w1_dev, DS2780_RSGAIN_MSB_REG);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_recall_eeprom(dev_info->w1_dev, DS2780_RSGAIN_MSB_REG);
++       if (ret < 0)
++               return ret;
++
++       return 0;
++}
++
++static int ds2780_get_voltage(struct ds2780_device_info *dev_info, int *voltage_uV)
++{
++       char raw[2];
++       s16 voltage_raw;
++       int ret;
++
++       /* The voltage value is located in 10 bits across the voltage MSB and LSB registers in two's compliment form
++          Sign bit of the voltage value is in bit 7 of the voltage MSB register
++          Bits 9 - 3 of the voltage value are in bits 6 - 0 of the voltage MSB register
++          Bits 2 - 0 of the voltage value are in bits 7 - 5 of the voltage LSB register
++       */
++       ret = w1_ds2780_read(dev_info->w1_dev, raw, DS2780_VOLT_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, raw + 1, DS2780_VOLT_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       voltage_raw = (raw[0] << 3) | (raw[1] >> 5);
++       /* DS2780 reports voltage in units of 4.88mV, but the battery class
++        * reports in units of uV, so convert by multiplying by 4880. */
++       *voltage_uV = voltage_raw * 4880;
++       return 0;
++}
++
++static int ds2780_get_temperature(struct ds2780_device_info *dev_info, int *temperature)
++{
++       char raw[2];
++       s16 temperature_raw;
++       int ret;
++
++       /* The temperature value is located in 10 bits across the temperature MSB and LSB registers in two's compliment form
++          Sign bit of the temperature value is in bit 7 of the temperature MSB register
++          Bits 9 - 3 of the temperature value are in bits 6 - 0 of the temperature MSB register
++          Bits 2 - 0 of the temperature value are in bits 7 - 5 of the temperature LSB register
++       */
++       ret = w1_ds2780_read(dev_info->w1_dev, raw, DS2780_TEMP_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, raw + 1, DS2780_TEMP_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       temperature_raw = (((signed char)raw[0] << 3)) | (raw[1] >> 5);
++       /* DS2780 reports temperature in signed units of 0.125 _C, but the
++        * battery class reports in units of 1/10 _C, so we convert by
++        * multiplying by .125 * 10 = 1.25. */
++       *temperature = temperature_raw + (temperature_raw / 4);
++       return 0;
++}
++
++static int ds2780_get_current(struct ds2780_device_info *dev_info, enum current_types type, int *current_uA)
++{
++       int ret;
++       char raw[2];
++       s16 current_raw;
++       int sense_res;
++       u8 sense_res_raw;
++       u8 reg_msb;
++       u8 reg_lsb;
++
++       /*
++        * The units of measurement for current are dependent on the value of
++        * the sense resistor.
++        */
++       ret = w1_ds2780_read(dev_info->w1_dev, &sense_res_raw, DS2780_RSNSP_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       if (sense_res_raw == 0) {
++               dev_err(dev_info->dev, "sense resistor value is 0\n");
++               return -ENXIO;
++       }
++       sense_res = 1000 / sense_res_raw;
++
++       if (type == CURRENT_NOW) {
++               reg_msb = DS2780_CURRENT_MSB_REG;
++               reg_lsb = DS2780_CURRENT_LSB_REG;
++       }
++       else if (type == CURRENT_AVG) {
++               reg_msb = DS2780_IAVG_MSB_REG;
++               reg_lsb = DS2780_IAVG_LSB_REG;
++       }
++       else {
++               return -EINVAL;
++       }
++
++       /* The current value is located in 16 bits across the current MSB and LSB registers in two's compliment form
++          Sign bit of the current value is in bit 7 of the current MSB register
++          Bits 14 - 8 of the current value are in bits 6 - 0 of the current MSB register
++          Bits 7 - 0 of the current value are in bits 7 - 0 of the current LSB register
++       */
++       ret = w1_ds2780_read(dev_info->w1_dev, raw, reg_msb, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, raw + 1, reg_lsb, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       current_raw = ((signed char)raw[0] << 8) | raw[1];
++       *current_uA = current_raw * (DS2780_CURRENT_UNITS / sense_res);
++       return 0;
++}
++
++static int ds2780_get_accumulated_current(struct ds2780_device_info *dev_info, int *accumulated_current)
++{
++       char raw[2];
++       s16 current_raw;
++       int sense_res;
++       u8 sense_res_raw;
++       int ret;
++
++       /*
++        * The units of measurement for accumulated current are dependent on the value of
++        * the sense resistor.
++        */
++       ret = w1_ds2780_read(dev_info->w1_dev, &sense_res_raw, DS2780_RSNSP_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       if (sense_res_raw == 0) {
++               dev_err(dev_info->dev, "sense resistor value is 0\n");
++               return -ENXIO;
++       }
++       sense_res = 1000 / sense_res_raw;
++
++       /* The ACR value is located in 16 bits across the ACR MSB and LSB registers
++          Bits 15 - 8 of the ACR value are in bits 7 - 0 of the ACR MSB register
++          Bits 7 - 0 of the ACR value are in bits 7 - 0 of the ACR LSB register
++       */
++       ret = w1_ds2780_read(dev_info->w1_dev, raw, DS2780_ACR_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, raw + 1, DS2780_ACR_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       current_raw = (raw[0] << 8) | raw[1];
++       *accumulated_current = current_raw * (DS2780_CHARGE_UNITS / sense_res);
++       return 0;
++}
++
++static int ds2780_get_capacity(struct ds2780_device_info *dev_info, int *capacity)
++{
++       int ret;
++       u8 raw;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, &raw, DS2780_RARC_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       *capacity = raw;
++       return raw;
++}
++
++static int ds2780_get_status(struct ds2780_device_info *dev_info, int *status)
++{
++       int ret;
++       int current_uA;
++       int capacity;
++
++       ret = ds2780_get_current(dev_info, CURRENT_NOW, &current_uA);
++       if (ret < 0)
++               return ret;
++
++       ret = ds2780_get_capacity(dev_info, &capacity);
++       if (ret < 0)
++               return ret;
++
++       if (capacity == 100)
++               *status = POWER_SUPPLY_STATUS_FULL;
++       else if (current_uA == 0)
++               *status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++       else if (current_uA < 0)
++               *status = POWER_SUPPLY_STATUS_DISCHARGING;
++       else
++               *status = POWER_SUPPLY_STATUS_CHARGING;
++
++       return 0;
++}
++
++static int ds2780_get_charge_now(struct ds2780_device_info *dev_info, int *charge_now)
++{
++       char raw[2];
++       u16 charge_raw;
++       int ret;
++
++       /* The RAAC value is located in 16 bits across the RAAC MSB and LSB registers
++          Bits 15 - 8 of the RAAC value are in bits 7 - 0 of the RAAC MSB register
++          Bits 7 - 0 of the RAAC value are in bits 7 - 0 of the RAAC LSB register
++       */
++       ret = w1_ds2780_read(dev_info->w1_dev, raw, DS2780_RAAC_MSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, raw + 1, DS2780_RAAC_LSB_REG, sizeof(char));
++       if (ret < 0)
++               return ret;
++
++       charge_raw = (raw[0] << 8) | raw[1];
++       *charge_now = charge_raw * 1600;
++
++       return 0;
++
++}
++
++static int ds2780_get_control_register(struct ds2780_device_info *dev_info, u8 *control_reg)
++{
++       u8 reg;
++       int ret;
++
++       ret = w1_ds2780_read(dev_info->w1_dev, &reg, DS2780_CONTROL_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       *control_reg = reg;
++       return 0;
++}
++
++static int ds2780_set_control_register(struct ds2780_device_info *dev_info, u8 control_reg)
++{
++       int ret;
++
++       ret = w1_ds2780_write(dev_info->w1_dev, &control_reg, DS2780_CONTROL_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_store_eeprom(dev_info->w1_dev, DS2780_CONTROL_REG);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_recall_eeprom(dev_info->w1_dev, DS2780_CONTROL_REG);
++       if (ret < 0)
++               return ret;
++
++       return 0;
++}
++
++static int ds2780_battery_get_property(struct power_supply *psy,
++                                          enum power_supply_property psp,
++                                          union power_supply_propval *val)
++{
++       int ret = 0;
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       switch (psp) {
++       case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++               ret = ds2780_get_voltage(dev_info, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_TEMP:
++               ret = ds2780_get_temperature(dev_info, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_MODEL_NAME:
++               val->strval = model;
++               break;
++
++       case POWER_SUPPLY_PROP_MANUFACTURER:
++               val->strval = manufacturer;
++               break;
++
++       case POWER_SUPPLY_PROP_CURRENT_NOW:
++               ret = ds2780_get_current(dev_info, CURRENT_NOW, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_CURRENT_AVG:
++               ret = ds2780_get_current(dev_info, CURRENT_AVG, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_STATUS:
++               ret = ds2780_get_status(dev_info, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_CAPACITY:
++               ret = ds2780_get_capacity(dev_info, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_CHARGE_COUNTER:
++               ret = ds2780_get_accumulated_current(dev_info, &val->intval);
++               break;
++
++       case POWER_SUPPLY_PROP_CHARGE_NOW:
++               ret = ds2780_get_charge_now(dev_info, &val->intval);
++               break;
++
++       default:
++               ret = -EINVAL;
++       }
++
++       return ret;
++}
++
++static enum power_supply_property ds2780_battery_props[] = {
++       POWER_SUPPLY_PROP_STATUS,
++       POWER_SUPPLY_PROP_VOLTAGE_NOW,
++       POWER_SUPPLY_PROP_TEMP,
++       POWER_SUPPLY_PROP_MODEL_NAME,
++       POWER_SUPPLY_PROP_MANUFACTURER,
++       POWER_SUPPLY_PROP_CURRENT_NOW,
++       POWER_SUPPLY_PROP_CURRENT_AVG,
++       POWER_SUPPLY_PROP_CAPACITY,
++       POWER_SUPPLY_PROP_CHARGE_COUNTER,
++       POWER_SUPPLY_PROP_CHARGE_NOW,
++};
++
++static ssize_t ds2780_get_pmod_enabled(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       u8 control_reg;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       /* Get power mode */
++       ret = ds2780_get_control_register(dev_info, &control_reg);
++       if (ret < 0)
++               return ret;
++
++       if (control_reg & DS2780_CONTROL_REG_PMOD)
++               ret = sprintf(buf, "1\n");
++       else
++               ret = sprintf(buf, "0\n");
++
++       return ret;
++}
++
++static ssize_t ds2780_set_pmod_enabled(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       u8 control_reg;
++       char *endp;
++       u8 new_setting;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       /* Set power mode */
++       ret = ds2780_get_control_register(dev_info, &control_reg);
++       if (ret < 0)
++               return ret;
++
++       new_setting = (u8)simple_strtoul(buf, &endp, 10);
++       if ((new_setting != 0) && (new_setting != 1)) {
++               dev_err(dev_info->dev, "Invalid pmod setting (0 or 1)\n");
++               return -EINVAL;
++       }
++
++       if (new_setting)
++               control_reg |= DS2780_CONTROL_REG_PMOD;
++       else
++               control_reg &= ~DS2780_CONTROL_REG_PMOD;
++
++       ret = ds2780_set_control_register(dev_info, control_reg);
++       if (ret < 0)
++               return ret;
++
++       return count;
++
++}
++
++static ssize_t ds2780_get_sense_resistor_value(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       u8 sense_resistor;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       ret = w1_ds2780_read(dev_info->w1_dev, &sense_resistor, DS2780_RSNSP_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       ret = sprintf(buf, "%i\n", sense_resistor);
++       return ret;
++}
++
++static ssize_t ds2780_set_sense_resistor_value(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       char *endp;
++       u8 new_setting;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       new_setting = (u8)simple_strtoul(buf, &endp, 10);
++       ret = ds2780_set_sense_register(dev_info, new_setting);
++       if (ret < 0)
++               return ret;
++
++       return count;
++}
++
++static ssize_t ds2780_get_rsgain_setting(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       u16 rsgain;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       ret = ds2780_get_rsgain_register(dev_info, &rsgain);
++       if (ret < 0)
++               return ret;
++
++       ret = sprintf(buf, "%d\n", rsgain);
++       return ret;
++}
++
++static ssize_t ds2780_set_rsgain_setting(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       char *endp;
++       u16 new_setting;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       new_setting = (u16)simple_strtoul(buf, &endp, 10);
++       /* Gain can only be from 0 to 1.999 in steps of .001 */
++       if (new_setting > 1999) {
++               dev_err(dev_info->dev, "Invalid rsgain setting (0 - 1999)\n");
++               return -EINVAL;
++       }
++
++       ret = ds2780_set_rsgain_register(dev_info, new_setting);
++       if (ret < 0)
++               return ret;
++
++       return count;
++}
++
++static ssize_t ds2780_get_user_eeprom(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       ret = w1_ds2780_read(dev_info->w1_dev, buf, DS2780_EEPROM_BLOCK0_START, DS2780_USER_EEPROM_SIZE);
++       if (ret < 0)
++               return ret;
++
++       return DS2780_USER_EEPROM_SIZE;
++}
++
++static ssize_t ds2780_set_user_eeprom(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       /* Only write as much as there is user EEPROM to not overwrite parameter EEPROM */
++       if (count > DS2780_USER_EEPROM_SIZE)
++               count = DS2780_USER_EEPROM_SIZE;
++
++       ret = w1_ds2780_write(dev_info->w1_dev, (char*)buf, DS2780_EEPROM_BLOCK0_START, count);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_store_eeprom(dev_info->w1_dev, DS2780_EEPROM_BLOCK0_START);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_recall_eeprom(dev_info->w1_dev, DS2780_EEPROM_BLOCK0_START);
++       if (ret < 0)
++               return ret;
++
++       return count;
++}
++
++static ssize_t ds2780_get_param_eeprom(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       ret = w1_ds2780_read(dev_info->w1_dev, buf, DS2780_EEPROM_BLOCK1_START, DS2780_PARAM_EEPROM_SIZE);
++       if (ret < 0)
++               return ret;
++
++       return DS2780_PARAM_EEPROM_SIZE;
++}
++
++static ssize_t ds2780_set_param_eeprom(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       /* Only write as much as there is parameter EEPROM */
++       if (count > DS2780_PARAM_EEPROM_SIZE)
++               count = DS2780_PARAM_EEPROM_SIZE;
++
++       ret = w1_ds2780_write(dev_info->w1_dev, (char*)buf, DS2780_EEPROM_BLOCK1_START, count);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_store_eeprom(dev_info->w1_dev, DS2780_EEPROM_BLOCK1_START);
++       if (ret < 0)
++               return ret;
++
++       ret = w1_ds2780_recall_eeprom(dev_info->w1_dev, DS2780_EEPROM_BLOCK1_START);
++       if (ret < 0)
++               return ret;
++
++       return count;
++}
++
++static ssize_t ds2780_get_pio_pin(struct device *dev,
++                                        struct device_attribute *attr, char *buf)
++{
++       int ret;
++       u8 sfr;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       ret = w1_ds2780_read(dev_info->w1_dev, &sfr, DS2780_SFR_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       ret = sprintf(buf, "%d\n", sfr & DS2780_SFR_REG_PIOSC);
++       return ret;
++}
++
++static ssize_t ds2780_set_pio_pin(struct device *dev,
++                                        struct device_attribute *attr, const char *buf, size_t count)
++{
++       int ret;
++       u8 new_setting;
++       char *endp;
++       struct power_supply *psy = to_power_supply(dev);
++       struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
++
++       new_setting = (u8)simple_strtoul(buf, &endp, 10);
++       if ((new_setting != 0) && (new_setting != 1)) {
++               dev_err(dev_info->dev, "Invalid pio_pin setting (0 or 1)\n");
++               return -EINVAL;
++       }
++
++       ret = w1_ds2780_write(dev_info->w1_dev, &new_setting, DS2780_SFR_REG, sizeof(u8));
++       if (ret < 0)
++               return ret;
++
++       return count;
++}
++
++
++static DEVICE_ATTR(pmod_enabled, 0644, ds2780_get_pmod_enabled, ds2780_set_pmod_enabled);
++static DEVICE_ATTR(sense_resistor_value, 0644, ds2780_get_sense_resistor_value, ds2780_set_sense_resistor_value);
++static DEVICE_ATTR(rsgain_setting, 0644, ds2780_get_rsgain_setting, ds2780_set_rsgain_setting);
++static DEVICE_ATTR(user_eeprom, 0644, ds2780_get_user_eeprom, ds2780_set_user_eeprom);
++static DEVICE_ATTR(param_eeprom, 0644, ds2780_get_param_eeprom, ds2780_set_param_eeprom);
++static DEVICE_ATTR(pio_pin, 0644, ds2780_get_pio_pin, ds2780_set_pio_pin);
++
++
++static struct attribute *ds2780_attributes[] = {
++       &dev_attr_pmod_enabled.attr,
++       &dev_attr_sense_resistor_value.attr,
++       &dev_attr_rsgain_setting.attr,
++       &dev_attr_user_eeprom.attr,
++       &dev_attr_param_eeprom.attr,
++       &dev_attr_pio_pin.attr,
++       NULL
++};
++
++static const struct attribute_group ds2780_attr_group = {
++       .attrs = ds2780_attributes,
++};
++
++static int ds2780_battery_probe(struct platform_device *pdev)
++{
++       int ret = 0;
++       struct ds2780_device_info *dev_info;
++
++       dev_info = kzalloc(sizeof(*dev_info), GFP_KERNEL);
++       if (!dev_info) {
++               ret = -ENOMEM;
++               goto dev_info_alloc_failed;
++       }
++
++       platform_set_drvdata(pdev, dev_info);
++
++       dev_info->dev                   = &pdev->dev;
++       dev_info->w1_dev                = pdev->dev.parent;
++       dev_info->bat.name              = dev_name(&pdev->dev);
++       dev_info->bat.type              = POWER_SUPPLY_TYPE_BATTERY;
++       dev_info->bat.properties        = ds2780_battery_props;
++       dev_info->bat.num_properties    = ARRAY_SIZE(ds2780_battery_props);
++       dev_info->bat.get_property      = ds2780_battery_get_property;
++
++       ret = power_supply_register(&pdev->dev, &dev_info->bat);
++       if (ret) {
++               dev_err(dev_info->dev, "failed to register battery\n");
++               goto batt_failed;
++       }
++
++       ret = sysfs_create_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
++       if (ret) {
++               printk(KERN_INFO "ds2780: failed to create sysfs group\n");
++               goto fail_sysfs;
++       }
++
++       return 0;
++
++fail_sysfs:
++       power_supply_unregister(&dev_info->bat);
++batt_failed:
++       kfree(dev_info);
++dev_info_alloc_failed:
++       return ret;
++}
++
++static int ds2780_battery_remove(struct platform_device *pdev)
++{
++       struct ds2780_device_info *dev_info = platform_get_drvdata(pdev);
++
++       /* remove attributes */
++       sysfs_remove_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
++
++       power_supply_unregister(&dev_info->bat);
++
++       kfree(dev_info);
++       return 0;
++}
++
++#ifdef CONFIG_PM
++
++static int ds2780_battery_suspend(struct platform_device *pdev,
++                                 pm_message_t state)
++{
++       return 0;
++}
++
++static int ds2780_battery_resume(struct platform_device *pdev)
++{
++       return 0;
++}
++
++#else
++
++#define ds2780_battery_suspend NULL
++#define ds2780_battery_resume NULL
++
++#endif /* CONFIG_PM */
++
++MODULE_ALIAS("platform:ds2780-battery");
++
++static struct platform_driver ds2780_battery_driver = {
++       .driver = {
++               .name = "ds2780-battery",
++       },
++       .probe    = ds2780_battery_probe,
++       .remove   = ds2780_battery_remove,
++       .suspend  = ds2780_battery_suspend,
++       .resume   = ds2780_battery_resume,
++};
++
++static int __init ds2780_battery_init(void)
++{
++       return platform_driver_register(&ds2780_battery_driver);
++}
++
++static void __exit ds2780_battery_exit(void)
++{
++       platform_driver_unregister(&ds2780_battery_driver);
++}
++
++module_init(ds2780_battery_init);
++module_exit(ds2780_battery_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Clifton Barnes <cabarnes@indesign-llc.com>");
++MODULE_DESCRIPTION("Maxim/Dallas DS2780 Stand-Alone Fuel Gauage IC driver");
+diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
+index f0c9096..d9fa263 100644
+--- a/drivers/w1/slaves/Kconfig
++++ b/drivers/w1/slaves/Kconfig
+@@ -61,6 +61,19 @@ config W1_SLAVE_DS2760
 
->> +/*
->> + * Sets Mailbox IDs
->> + * This should be programmed as mbx_num:mbx_id (in hex)
->> + * eg: $ echo 0:0x123 > /sys/class/net/can0/mbx_id
->> + */
+          If you are unsure, say N.
 
-... which would also avoid string parsing.
++config W1_SLAVE_DS2780
++       tristate "Dallas 2780 battery monitor chip"
++       depends on W1
++       help
++         If you enable this you will have the DS2780 battery monitor
++         chip support.
++
++         The battery monitor chip is used in many batteries/devices
++         as the one who is responsible for charging/discharging/monitoring
++         Li+ batteries.
++
++         If you are unsure, say N.
++
+ config W1_SLAVE_BQ27000
+        tristate "BQ27000 slave support"
+        depends on W1
+diff --git a/drivers/w1/slaves/Makefile b/drivers/w1/slaves/Makefile
+index 3c76350..00c9134 100644
+--- a/drivers/w1/slaves/Makefile
++++ b/drivers/w1/slaves/Makefile
+@@ -8,4 +8,5 @@ obj-$(CONFIG_W1_SLAVE_DS2423)   += w1_ds2423.o
+ obj-$(CONFIG_W1_SLAVE_DS2431)  += w1_ds2431.o
+ obj-$(CONFIG_W1_SLAVE_DS2433)  += w1_ds2433.o
+ obj-$(CONFIG_W1_SLAVE_DS2760)  += w1_ds2760.o
++obj-$(CONFIG_W1_SLAVE_DS2780)  += w1_ds2780.o
+ obj-$(CONFIG_W1_SLAVE_BQ27000) += w1_bq27000.o
+diff --git a/drivers/w1/slaves/w1_ds2780.c b/drivers/w1/slaves/w1_ds2780.c
+new file mode 100644
+index 0000000..f9c90f1
+--- /dev/null
++++ b/drivers/w1/slaves/w1_ds2780.c
+@@ -0,0 +1,241 @@
++/*
++ * 1-Wire implementation for the ds2780 chip
++ *
++ * Copyright _ 2010 Indesign, LLC
++ *
++ * Author: Clifton Barnes <cabarnes@indesign-llc.com>
++ *
++ * Based on w1-ds2760 driver
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/types.h>
++#include <linux/platform_device.h>
++#include <linux/mutex.h>
++#include <linux/idr.h>
++
++#include "../w1.h"
++#include "../w1_int.h"
++#include "../w1_family.h"
++#include "w1_ds2780.h"
++
++static int w1_ds2780_io(struct device *dev, char *buf, int addr, size_t count,
++                       int io)
++{
++       struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
++
++       if (!dev)
++               return -ENODEV;
++
++       mutex_lock(&sl->master->mutex);
++
++       if (addr > DS2780_DATA_SIZE || addr < 0) {
++               count = 0;
++               goto out;
++       }
++       if (addr + count > DS2780_DATA_SIZE)
++               count = DS2780_DATA_SIZE - addr;
++
++       if (!w1_reset_select_slave(sl)) {
++               if (!io) {
++                       w1_write_8(sl->master, W1_DS2780_READ_DATA);
++                       w1_write_8(sl->master, addr);
++                       count = w1_read_block(sl->master, buf, count);
++               } else {
++                       w1_write_8(sl->master, W1_DS2780_WRITE_DATA);
++                       w1_write_8(sl->master, addr);
++                       w1_write_block(sl->master, buf, count);
++                       /* XXX w1_write_block returns void, not n_written */
++               }
++       }
++
++out:
++       mutex_unlock(&sl->master->mutex);
++
++       return count;
++}
++
++int w1_ds2780_read(struct device *dev, char *buf, int addr, size_t count)
++{
++       return w1_ds2780_io(dev, buf, addr, count, 0);
++}
++
++int w1_ds2780_write(struct device *dev, char *buf, int addr, size_t count)
++{
++       return w1_ds2780_io(dev, buf, addr, count, 1);
++}
++
++static int w1_ds2780_eeprom_cmd(struct device *dev, int addr, int cmd)
++{
++       struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
++
++       if (!dev)
++               return -EINVAL;
++
++       mutex_lock(&sl->master->mutex);
++
++       if (w1_reset_select_slave(sl) == 0) {
++               w1_write_8(sl->master, cmd);
++               w1_write_8(sl->master, addr);
++       }
++
++       mutex_unlock(&sl->master->mutex);
++       return 0;
++}
++
++int w1_ds2780_store_eeprom(struct device *dev, int addr)
++{
++       return w1_ds2780_eeprom_cmd(dev, addr, W1_DS2780_COPY_DATA);
++}
++
++int w1_ds2780_recall_eeprom(struct device *dev, int addr)
++{
++       return w1_ds2780_eeprom_cmd(dev, addr, W1_DS2780_RECALL_DATA);
++}
++
++static ssize_t w1_ds2780_read_bin(struct kobject *kobj,
++                                 struct bin_attribute *bin_attr,
++                                 char *buf, loff_t off, size_t count)
++{
++       struct device *dev = container_of(kobj, struct device, kobj);
++       return w1_ds2780_read(dev, buf, off, count);
++}
++
++static struct bin_attribute w1_ds2780_bin_attr = {
++       .attr = {
++               .name = "w1_slave",
++               .mode = S_IRUGO,
++       },
++       .size = DS2780_DATA_SIZE,
++       .read = w1_ds2780_read_bin,
++};
++
++static DEFINE_IDR(bat_idr);
++static DEFINE_MUTEX(bat_idr_lock);
++
++static int new_bat_id(void)
++{
++       int ret;
++
++       while (1) {
++               int id;
++
++               ret = idr_pre_get(&bat_idr, GFP_KERNEL);
++               if (ret == 0)
++                       return -ENOMEM;
++
++               mutex_lock(&bat_idr_lock);
++               ret = idr_get_new(&bat_idr, NULL, &id);
++               mutex_unlock(&bat_idr_lock);
++
++               if (ret == 0) {
++                       ret = id & MAX_ID_MASK;
++                       break;
++               } else if (ret == -EAGAIN) {
++                       continue;
++               } else {
++                       break;
++               }
++       }
++
++       return ret;
++}
++
++static void release_bat_id(int id)
++{
++       mutex_lock(&bat_idr_lock);
++       idr_remove(&bat_idr, id);
++       mutex_unlock(&bat_idr_lock);
++}
++
++static int w1_ds2780_add_slave(struct w1_slave *sl)
++{
++       int ret;
++       int id;
++       struct platform_device *pdev;
++
++       id = new_bat_id();
++       if (id < 0) {
++               ret = id;
++               goto noid;
++       }
++
++       pdev = platform_device_alloc("ds2780-battery", id);
++       if (!pdev) {
++               ret = -ENOMEM;
++               goto pdev_alloc_failed;
++       }
++       pdev->dev.parent = &sl->dev;
++
++       ret = platform_device_add(pdev);
++       if (ret)
++               goto pdev_add_failed;
++
++       ret = sysfs_create_bin_file(&sl->dev.kobj, &w1_ds2780_bin_attr);
++       if (ret)
++               goto bin_attr_failed;
++
++       dev_set_drvdata(&sl->dev, pdev);
++
++       goto success;
++
++bin_attr_failed:
++pdev_add_failed:
++       platform_device_unregister(pdev);
++pdev_alloc_failed:
++       release_bat_id(id);
++noid:
++success:
++       return ret;
++}
++
++static void w1_ds2780_remove_slave(struct w1_slave *sl)
++{
++       struct platform_device *pdev = dev_get_drvdata(&sl->dev);
++       int id = pdev->id;
++
++       platform_device_unregister(pdev);
++       release_bat_id(id);
++       sysfs_remove_bin_file(&sl->dev.kobj, &w1_ds2780_bin_attr);
++}
++
++static struct w1_family_ops w1_ds2780_fops = {
++       .add_slave    = w1_ds2780_add_slave,
++       .remove_slave = w1_ds2780_remove_slave,
++};
++
++static struct w1_family w1_ds2780_family = {
++       .fid = W1_FAMILY_DS2780,
++       .fops = &w1_ds2780_fops,
++};
++
++static int __init w1_ds2780_init(void)
++{
++       idr_init(&bat_idr);
++       return w1_register_family(&w1_ds2780_family);
++}
++
++static void __exit w1_ds2780_exit(void)
++{
++       w1_unregister_family(&w1_ds2780_family);
++       idr_destroy(&bat_idr);
++}
++
++EXPORT_SYMBOL(w1_ds2780_read);
++EXPORT_SYMBOL(w1_ds2780_write);
++EXPORT_SYMBOL(w1_ds2780_store_eeprom);
++EXPORT_SYMBOL(w1_ds2780_recall_eeprom);
++
++module_init(w1_ds2780_init);
++module_exit(w1_ds2780_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Clifton Barnes <cabarnes@indesign-llc.com>");
++MODULE_DESCRIPTION("1-wire Driver for Maxim/Dallas DS2780 Stand-Alone Fuel Gauage IC");
+diff --git a/drivers/w1/slaves/w1_ds2780.h b/drivers/w1/slaves/w1_ds2780.h
+new file mode 100644
+index 0000000..b77f6fc
+--- /dev/null
++++ b/drivers/w1/slaves/w1_ds2780.h
+@@ -0,0 +1,132 @@
++/*
++ * 1-Wire implementation for the ds2780 chip
++ *
++ * Copyright _ 2010 Indesign, LLC
++ *
++ * Author: Clifton Barnes <cabarnes@indesign-llc.com>
++ *
++ * Based on w1-ds2760 driver
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __w1_ds2780_h__
++#define __w1_ds2780_h__
++
++/* Function commands */
++#define W1_DS2780_READ_DATA            0x69
++#define W1_DS2780_WRITE_DATA           0x6C
++#define W1_DS2780_COPY_DATA            0x48
++#define W1_DS2780_RECALL_DATA          0xB8
++#define W1_DS2780_LOCK                 0x6A
++
++/* Register map */
++/* Register 0x00 Reserved */
++#define DS2780_STATUS_REG              0x01
++#define DS2780_RAAC_MSB_REG            0x02
++#define DS2780_RAAC_LSB_REG            0x03
++#define DS2780_RSAC_MSB_REG            0x04
++#define DS2780_RSAC_LSB_REG            0x05
++#define DS2780_RARC_REG                0x06
++#define DS2780_RSRC_REG                0x07
++#define DS2780_IAVG_MSB_REG            0x08
++#define DS2780_IAVG_LSB_REG            0x09
++#define DS2780_TEMP_MSB_REG            0x0A
++#define DS2780_TEMP_LSB_REG            0x0B
++#define DS2780_VOLT_MSB_REG            0x0C
++#define DS2780_VOLT_LSB_REG            0x0D
++#define DS2780_CURRENT_MSB_REG         0x0E
++#define DS2780_CURRENT_LSB_REG         0x0F
++#define DS2780_ACR_MSB_REG             0x10
++#define DS2780_ACR_LSB_REG             0x11
++#define DS2780_ACRL_MSB_REG            0x12
++#define DS2780_ACRL_LSB_REG            0x13
++#define DS2780_AS_REG                  0x14
++#define DS2780_SFR_REG                 0x15
++#define DS2780_FULL_MSB_REG            0x16
++#define DS2780_FULL_LSB_REG            0x17
++#define DS2780_AE_MSB_REG              0x18
++#define DS2780_AE_LSB_REG              0x19
++#define DS2780_SE_MSB_REG              0x1A
++#define DS2780_SE_LSB_REG              0x1B
++/* Register 0x1C - 0x1E Reserved */
++#define DS2780_EEPROM_REG              0x1F
++#define DS2780_EEPROM_BLOCK0_START     0x20
++/* Register 0x20 - 0x2F User EEPROM */
++#define DS2780_EEPROM_BLOCK0_END       0x2F
++/* Register 0x30 - 0x5F Reserved */
++#define DS2780_EEPROM_BLOCK1_START     0x60
++#define DS2780_CONTROL_REG             0x60
++#define DS2780_AB_REG                  0x61
++#define DS2780_AC_MSB_REG              0x62
++#define DS2780_AC_LSB_REG              0x63
++#define DS2780_VCHG_REG                0x64
++#define DS2780_IMIN_REG                0x65
++#define DS2780_VAE_REG                 0x66
++#define DS2780_IAE_REG                 0x67
++#define DS2780_AE_40_REG               0x68
++#define DS2780_RSNSP_REG               0x69
++#define DS2780_FULL_40_MSB_REG         0x6A
++#define DS2780_FULL_40_LSB_REG         0x6B
++#define DS2780_FULL_3040_SLOPE_REG     0x6C
++#define DS2780_FULL_2030_SLOPE_REG     0x6D
++#define DS2780_FULL_1020_SLOPE_REG     0x6E
++#define DS2780_FULL_0010_SLOPE_REG     0x6F
++#define DS2780_AE_3040_SLOPE_REG       0x70
++#define DS2780_AE_2030_SLOPE_REG       0x71
++#define DS2780_AE_1020_SLOPE_REG       0x72
++#define DS2780_AE_0010_SLOPE_REG       0x73
++#define DS2780_SE_3040_SLOPE_REG       0x74
++#define DS2780_SE_2030_SLOPE_REG       0x75
++#define DS2780_SE_1020_SLOPE_REG       0x76
++#define DS2780_SE_0010_SLOPE_REG       0x77
++#define DS2780_RSGAIN_MSB_REG          0x78
++#define DS2780_RSGAIN_LSB_REG          0x79
++#define DS2780_RSTC_REG                0x7A
++#define DS2780_FRSGAIN_MSB_REG         0x7B
++#define DS2780_FRSGAIN_LSB_REG         0x7C
++#define DS2780_EEPROM_BLOCK1_END       0x7C
++/* Register 0x7D - 0xFF Reserved */
++
++/* Number of valid register addresses */
++#define DS2780_DATA_SIZE               0x80
++
++/* Status register bits */
++#define DS2780_STATUS_REG_CHGTF        (1 << 7)
++#define DS2780_STATUS_REG_AEF          (1 << 6)
++#define DS2780_STATUS_REG_SEF          (1 << 5)
++#define DS2780_STATUS_REG_LEARNF       (1 << 4)
++/* Bit 3 Reserved */
++#define DS2780_STATUS_REG_UVF          (1 << 2)
++#define DS2780_STATUS_REG_PORF         (1 << 1)
++/* Bit 0 Reserved */
++
++/* Control register bits */
++/* Bit 7 Reserved */
++#define DS2780_CONTROL_REG_UVEN        (1 << 6)
++#define DS2780_CONTROL_REG_PMOD        (1 << 5)
++#define DS2780_CONTROL_REG_RNAOP       (1 << 4)
++/* Bit 0 - 3 Reserved */
++
++/* Special feature register bits */
++/* Bit 1 - 7 Reserved */
++#define DS2780_SFR_REG_PIOSC           (1 << 0)
++
++/* EEPROM register bits */
++#define DS2780_EEPROM_REG_EEC          (1 << 7)
++#define DS2780_EEPROM_REG_LOCK         (1 << 6)
++/* Bit 2 - 6 Reserved */
++#define DS2780_EEPROM_REG_BL1          (1 << 1)
++#define DS2780_EEPROM_REG_BL0          (1 << 0)
++
++extern int w1_ds2780_read(struct device *dev, char *buf, int addr,
++                       size_t count);
++extern int w1_ds2780_write(struct device *dev, char *buf, int addr,
++                       size_t count);
++extern int w1_ds2780_store_eeprom(struct device *dev, int addr);
++extern int w1_ds2780_recall_eeprom(struct device *dev, int addr);
++
++#endif /* !__w1_ds2780_h__ */
+diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
+index f3b636d..e76125c 100644
+--- a/drivers/w1/w1_family.h
++++ b/drivers/w1/w1_family.h
+@@ -36,6 +36,7 @@
+ #define W1_THERM_DS18B20       0x28
+ #define W1_EEPROM_DS2431       0x2D
+ #define W1_FAMILY_DS2760       0x30
++#define W1_FAMILY_DS2780       0x32
 
->> +static int __devinit pru_can_probe(struct platform_device *pdev)
->> +{
->> +	struct net_device *ndev = NULL;
->> +	const struct da850_evm_pruss_can_data *pdata;
->> +	struct can_emu_priv *priv = NULL;
->> +	struct device *dev = &pdev->dev;
->> +	struct clk *clk_pruss;
->> +	const struct firmware *fw_rx;
->> +	const struct firmware *fw_tx;
->> +	u32 err;
-> use int
->> +
->> +	pdata = dev->platform_data;
->> +	if (!pdata) {
->> +		dev_err(&pdev->dev, "platform data not found\n");
->> +		return -EINVAL;
->> +	}
->> +	(pdata->setup)();
-> 
-> no need fot the ( )
-> 
->> +
->> +	ndev = alloc_candev(sizeof(struct can_emu_priv), PRUSS_CAN_MB_MAX + 1);
->> +	if (!ndev) {
->> +		dev_err(&pdev->dev, "alloc_candev failed\n");
->> +		err = -ENOMEM;
->> +		goto probe_exit;
->> +	}
->> +
->> +	ndev->sysfs_groups[0] = &pru_sysfs_attr_group;
->> +
->> +	priv = netdev_priv(ndev);
->> +
->> +	priv->trx_irq = platform_get_irq(to_platform_device(dev->parent), 0);
->> +	if (!priv->trx_irq) {
->> +		dev_err(&pdev->dev, "unable to get pru "
->> +						"interrupt resources!\n");
->> +		err = -ENODEV;
->> +		goto probe_exit;
->> +	}
->> +
->> +	priv->ndev = ndev;
->> +	priv->dev = dev;
->> +
->> +	priv->can.bittiming_const = &pru_can_bittiming_const;
->> +	priv->can.do_set_bittiming = pru_can_set_bittiming;
->> +	priv->can.do_set_mode = pru_can_set_mode;
->> +	priv->can.do_get_state = pru_can_get_state;
+ #define MAXNAMELEN             32
 
-Please remove that callback. It's not needed as state changes are
-handled properly.
+--
+1.7.3.4
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
->> +	priv->can_tx_cntx.pruno = PRUSS_CAN_TX_PRU_1;
->> +	priv->can_rx_cntx.pruno = PRUSS_CAN_RX_PRU_0;
->> +
->> +	/* we support local echo, no arp */
->> +	ndev->flags |= (IFF_ECHO | IFF_NOARP);
-> 
-> no need to se NOARP
-> 
->> +
->> +	/* pdev->dev->device_private->driver_data = ndev */
->> +	platform_set_drvdata(pdev, ndev);
->> +	SET_NETDEV_DEV(ndev, &pdev->dev);
->> +	ndev->netdev_ops = &pru_can_netdev_ops;
->> +
->> +	priv->clk_timer = clk_get(&pdev->dev, "pll1_sysclk2");
->> +	if (IS_ERR(priv->clk_timer)) {
->> +		dev_err(&pdev->dev, "no timer clock available\n");
->> +		err = PTR_ERR(priv->clk_timer);
->> +		priv->clk_timer = NULL;
->> +		goto probe_exit_candev;
->> +	}
->> +
->> +	priv->can.clock.freq = clk_get_rate(priv->clk_timer);
->> +
->> +	clk_pruss = clk_get(NULL, "pruss");
->> +	if (IS_ERR(clk_pruss)) {
->> +		dev_err(&pdev->dev, "no clock available: pruss\n");
->> +		err = -ENODEV;
->> +		goto probe_exit_clk;
->> +	}
->> +	priv->clk_freq_pru = clk_get_rate(clk_pruss);
->> +	clk_put(clk_pruss);
-> 
-> why do you put the clock here?
->> +
->> +	err = register_candev(ndev);
->> +	if (err) {
->> +		dev_err(&pdev->dev, "register_candev() failed\n");
->> +		err = -ENODEV;
->> +		goto probe_exit_clk;
->> +	}
->> +
->> +	err = request_firmware(&fw_tx, "PRU_CAN_Emulation_Tx.bin",
->> +			&pdev->dev);
->> +	if (err) {
->> +		dev_err(&pdev->dev, "can't load firmware\n");
->> +		err = -ENODEV;
->> +		goto probe_exit_clk;
->> +	}
->> +
->> +	dev_info(&pdev->dev, "fw_tx size %d. downloading...\n", fw_tx->size);
->> +
->> +	err = request_firmware(&fw_rx, "PRU_CAN_Emulation_Rx.bin",
->> +			&pdev->dev);
->> +	if (err) {
->> +		dev_err(&pdev->dev, "can't load firmware\n");
->> +		err = -ENODEV;
->> +		goto probe_release_fw;
->> +	}
->> +	dev_info(&pdev->dev, "fw_rx size %d. downloading...\n", fw_rx->size);
->> +
->> +	/* init the pru */
->> +	pru_can_emu_init(priv->dev, priv->can.clock.freq);
->> +	udelay(200);
->> +
->> +	netif_napi_add(ndev, &priv->napi, pru_can_rx_poll,
->> +					PRUSS_DEF_NAPI_WEIGHT);
-> 
-> personally I'd wait to add the interface to napi until the firmware is
-> loaded.
-> 
->> +
->> +	pruss_enable(priv->dev, PRUSS_CAN_RX_PRU_0);
->> +	pruss_enable(priv->dev, PRUSS_CAN_TX_PRU_1);
->> +
->> +	/* download firmware into pru */
->> +	err = pruss_load(priv->dev, PRUSS_CAN_RX_PRU_0,
->> +		(u32 *)fw_rx->data, (fw_rx->size / 4));
->> +	if (err) {
->> +		dev_err(&pdev->dev, "firmware download error\n");
->> +		err = -ENODEV;
->> +		goto probe_release_fw_1;
->> +	}
->> +	release_firmware(fw_rx);
->> +	err = pruss_load(priv->dev, PRUSS_CAN_TX_PRU_1,
->> +		(u32 *)fw_tx->data, (fw_tx->size / 4));
->> +	if (err) {
->> +		dev_err(&pdev->dev, "firmware download error\n");
->> +		err = -ENODEV;
->> +		goto probe_release_fw_1;
->> +	}
->> +	release_firmware(fw_tx);
->> +
->> +	pruss_run(priv->dev, PRUSS_CAN_RX_PRU_0);
->> +	pruss_run(priv->dev, PRUSS_CAN_TX_PRU_1);
->> +
->> +	dev_info(&pdev->dev,
->> +		 "%s device registered (trx_irq = %d,  clk = %d)\n",
->> +		 PRUSS_CAN_DRV_NAME, priv->trx_irq, priv->can.clock.freq);
->> +
->> +	return 0;
->> +
->> +probe_release_fw_1:
->> +	release_firmware(fw_rx);
->> +probe_release_fw:
->> +	release_firmware(fw_tx);
->> +probe_exit_clk:
->> +	clk_put(priv->clk_timer);
->> +probe_exit_candev:
->> +	if (NULL != ndev)
->> +		free_candev(ndev);
->> +probe_exit:
->> +	return err;
->> +}
-
-Thanks,
-
-Wolfgang.
