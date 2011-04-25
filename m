@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1DYU4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:56:31 -0400
-Received: from 1wt.eu ([62.212.114.60]:33865 "EHLO 1wt.eu"
+	id S1756670Ab1DYUX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:23:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:33855 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533Ab1DYUX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:23:59 -0400
-Message-Id: <20110425200235.602626966@pcw.home.local>
+	id S1756534Ab1DYUXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:23:55 -0400
+Message-Id: <20110425200234.858723976@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:32 +0200
+Date: Mon, 25 Apr 2011 22:03:15 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 060/173] md: correctly handle probe of an mdp device.
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 043/173] dm raid1: fail writes if errors are not handled and log fails
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,44 +23,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 8f5f02c460b7ca74ce55ce126ce0c1e58a3f923d upstream.
+commit 5528d17de1cf1462f285c40ccaf8e0d0e4c64dc0 upstream.
 
-'mdp' devices are md devices with preallocated device numbers
-for partitions. As such it is possible to mknod and open a partition
-before opening the whole device.
+If the mirror log fails when the handle_errors option was not selected
+and there is no remaining valid mirror leg, writes return success even
+though they weren't actually written to any device.  This patch
+completes them with EIO instead.
 
-this causes  md_probe() to be called with a device number of a
-partition, which in-turn calls mddev_find with such a number.
+This code path is taken:
+do_writes:
+	bio_list_merge(&ms->failures, &sync);
+do_failures:
+	if (!get_valid_mirror(ms)) (false)
+	else if (errors_handled(ms)) (false)
+	else bio_endio(bio, 0);
 
-However mddev_find expects the number of a 'whole device' and
-does the wrong thing with partition numbers.
+The logic in do_failures is based on presuming that the write was already
+tried: if it succeeded at least on one leg (without handle_errors) it
+is reported as success.
 
-So add code to mddev_find to remove the 'partition' part of
-a device number and just work with the 'whole device'.
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=555197
 
-This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=28652
-
-Reported-by: hkmaly@bigfoot.com
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/dm-raid1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -305,6 +305,9 @@ static mddev_t * mddev_find(dev_t unit)
- {
- 	mddev_t *mddev, *new = NULL;
- 
-+	if (unit && MAJOR(unit) != MD_MAJOR)
-+		unit &= ~((1<<MdpMinorShift)-1);
-+
-  retry:
- 	spin_lock(&all_mddevs_lock);
- 
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -659,7 +659,7 @@ static void do_writes(struct mirror_set
+ 	/*
+ 	 * Dispatch io.
+ 	 */
+-	if (unlikely(ms->log_failure)) {
++	if (unlikely(ms->log_failure) && errors_handled(ms)) {
+ 		spin_lock_irq(&ms->lock);
+ 		bio_list_merge(&ms->failures, &sync);
+ 		spin_unlock_irq(&ms->lock);
 
 
