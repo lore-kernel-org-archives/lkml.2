@@ -1,114 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751046Ab1DYEcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 00:32:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57243 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1DYEcK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 00:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hDgVM/6wt5+s0VtwFMJm5Xh6kuWXcJ7xu6c0X5PUM4yOMfglHST/tYgvtFQIdCVv5F
-         2wzume3PKQlMxV7SaMFO5yCNXLvQSqJmlo4qEBMuWr6I8RsckBZ+XtOq7M46zxNB+iyO
-         ox5+CKS0ScVtcFXowsFp4sRfCEhSTfAIWbock=
-MIME-Version: 1.0
-In-Reply-To: <4DB4E94C.2060505@lwfinger.net>
-References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
-	<4DB4E94C.2060505@lwfinger.net>
-Date: Mon, 25 Apr 2011 12:32:09 +0800
-Message-ID: <BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
-Subject: Re: r8712u cannot set essid
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751186Ab1DYFAx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 01:00:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:4944 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801Ab1DYFAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 01:00:51 -0400
+From: Joe Perches <joe@perches.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM: SVM: Make dump_vmcb static, reduce text
+Date: Sun, 24 Apr 2011 22:00:50 -0700
+Message-Id: <78024a3a74353a4d73be69b4e4f42da942b8fe15.1303707337.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.5.rc3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 11:23 AM, Larry Finger
-<Larry.Finger@lwfinger.net> wrote:
-> On 04/24/2011 09:16 PM, Jeff Chua wrote:
-> The code requires the interface to be up before the essid can be set. If you
-> do it with the iwconfig command, you will see an error message.
+dump_vmcb isn't used outside this module, make it static.
+Shrink text and object by ~1% by standardizing formats.
 
-I did that. Setting ssid works fine with iwlagn on the same system.
+$ size arch/x86/kvm/svm.o*
+   text	   data	    bss	    dec	    hex	filename
+  52910	    580	  10072	  63562	   f84a	arch/x86/kvm/svm.o.new
+  53563	    580	  10072	  64215	   fad7	arch/x86/kvm/svm.o.old
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ arch/x86/kvm/svm.c |  176 ++++++++++++++++++++++++++++------------------------
+ 1 files changed, 94 insertions(+), 82 deletions(-)
 
-# modprobe r8712u
-r8712u: module is from the staging directory, the quality is unknown,
-you have been warned.
-r8712u: DriverVersion: v7_0.20100831
-r8712u: register rtl8712_netdev_ops to netdev_ops
-r8712u: USB_SPEED_HIGH with 4 endpoints
-r8712u: Boot from EFUSE: Autoload OK
-r8712u: CustomerID = 0x0000
-r8712u: MAC Address from efuse = 90:61:0c:01:8f:b0
-usbcore: registered new interface driver r8712u
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index a6bf2ad..1b9f67e 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3188,97 +3188,109 @@ static int (*svm_exit_handlers[])(struct vcpu_svm *svm) = {
+ 	[SVM_EXIT_NPF]				= pf_interception,
+ };
+ 
+-void dump_vmcb(struct kvm_vcpu *vcpu)
++static void dump_vmcb(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	struct vmcb_control_area *control = &svm->vmcb->control;
+ 	struct vmcb_save_area *save = &svm->vmcb->save;
+ 
+ 	pr_err("VMCB Control Area:\n");
+-	pr_err("cr_read:            %04x\n", control->intercept_cr & 0xffff);
+-	pr_err("cr_write:           %04x\n", control->intercept_cr >> 16);
+-	pr_err("dr_read:            %04x\n", control->intercept_dr & 0xffff);
+-	pr_err("dr_write:           %04x\n", control->intercept_dr >> 16);
+-	pr_err("exceptions:         %08x\n", control->intercept_exceptions);
+-	pr_err("intercepts:         %016llx\n", control->intercept);
+-	pr_err("pause filter count: %d\n", control->pause_filter_count);
+-	pr_err("iopm_base_pa:       %016llx\n", control->iopm_base_pa);
+-	pr_err("msrpm_base_pa:      %016llx\n", control->msrpm_base_pa);
+-	pr_err("tsc_offset:         %016llx\n", control->tsc_offset);
+-	pr_err("asid:               %d\n", control->asid);
+-	pr_err("tlb_ctl:            %d\n", control->tlb_ctl);
+-	pr_err("int_ctl:            %08x\n", control->int_ctl);
+-	pr_err("int_vector:         %08x\n", control->int_vector);
+-	pr_err("int_state:          %08x\n", control->int_state);
+-	pr_err("exit_code:          %08x\n", control->exit_code);
+-	pr_err("exit_info1:         %016llx\n", control->exit_info_1);
+-	pr_err("exit_info2:         %016llx\n", control->exit_info_2);
+-	pr_err("exit_int_info:      %08x\n", control->exit_int_info);
+-	pr_err("exit_int_info_err:  %08x\n", control->exit_int_info_err);
+-	pr_err("nested_ctl:         %lld\n", control->nested_ctl);
+-	pr_err("nested_cr3:         %016llx\n", control->nested_cr3);
+-	pr_err("event_inj:          %08x\n", control->event_inj);
+-	pr_err("event_inj_err:      %08x\n", control->event_inj_err);
+-	pr_err("lbr_ctl:            %lld\n", control->lbr_ctl);
+-	pr_err("next_rip:           %016llx\n", control->next_rip);
++	pr_err("%-20s%04x\n", "cr_read:", control->intercept_cr & 0xffff);
++	pr_err("%-20s%04x\n", "cr_write:", control->intercept_cr >> 16);
++	pr_err("%-20s%04x\n", "dr_read:", control->intercept_dr & 0xffff);
++	pr_err("%-20s%04x\n", "dr_write:", control->intercept_dr >> 16);
++	pr_err("%-20s%08x\n", "exceptions:", control->intercept_exceptions);
++	pr_err("%-20s%016llx\n", "intercepts:", control->intercept);
++	pr_err("%-20s%d\n", "pause filter count:", control->pause_filter_count);
++	pr_err("%-20s%016llx\n", "iopm_base_pa:", control->iopm_base_pa);
++	pr_err("%-20s%016llx\n", "msrpm_base_pa:", control->msrpm_base_pa);
++	pr_err("%-20s%016llx\n", "tsc_offset:", control->tsc_offset);
++	pr_err("%-20s%d\n", "asid:", control->asid);
++	pr_err("%-20s%d\n", "tlb_ctl:", control->tlb_ctl);
++	pr_err("%-20s%08x\n", "int_ctl:", control->int_ctl);
++	pr_err("%-20s%08x\n", "int_vector:", control->int_vector);
++	pr_err("%-20s%08x\n", "int_state:", control->int_state);
++	pr_err("%-20s%08x\n", "exit_code:", control->exit_code);
++	pr_err("%-20s%016llx\n", "exit_info1:", control->exit_info_1);
++	pr_err("%-20s%016llx\n", "exit_info2:", control->exit_info_2);
++	pr_err("%-20s%08x\n", "exit_int_info:", control->exit_int_info);
++	pr_err("%-20s%08x\n", "exit_int_info_err:", control->exit_int_info_err);
++	pr_err("%-20s%lld\n", "nested_ctl:", control->nested_ctl);
++	pr_err("%-20s%016llx\n", "nested_cr3:", control->nested_cr3);
++	pr_err("%-20s%08x\n", "event_inj:", control->event_inj);
++	pr_err("%-20s%08x\n", "event_inj_err:", control->event_inj_err);
++	pr_err("%-20s%lld\n", "lbr_ctl:", control->lbr_ctl);
++	pr_err("%-20s%016llx\n", "next_rip:", control->next_rip);
+ 	pr_err("VMCB State Save Area:\n");
+-	pr_err("es:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->es.selector, save->es.attrib,
+-		save->es.limit, save->es.base);
+-	pr_err("cs:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->cs.selector, save->cs.attrib,
+-		save->cs.limit, save->cs.base);
+-	pr_err("ss:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->ss.selector, save->ss.attrib,
+-		save->ss.limit, save->ss.base);
+-	pr_err("ds:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->ds.selector, save->ds.attrib,
+-		save->ds.limit, save->ds.base);
+-	pr_err("fs:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->fs.selector, save->fs.attrib,
+-		save->fs.limit, save->fs.base);
+-	pr_err("gs:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->gs.selector, save->gs.attrib,
+-		save->gs.limit, save->gs.base);
+-	pr_err("gdtr: s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->gdtr.selector, save->gdtr.attrib,
+-		save->gdtr.limit, save->gdtr.base);
+-	pr_err("ldtr: s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->ldtr.selector, save->ldtr.attrib,
+-		save->ldtr.limit, save->ldtr.base);
+-	pr_err("idtr: s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->idtr.selector, save->idtr.attrib,
+-		save->idtr.limit, save->idtr.base);
+-	pr_err("tr:   s: %04x a: %04x l: %08x b: %016llx\n",
+-		save->tr.selector, save->tr.attrib,
+-		save->tr.limit, save->tr.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "es:",
++	       save->es.selector, save->es.attrib,
++	       save->es.limit, save->es.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "cs:",
++	       save->cs.selector, save->cs.attrib,
++	       save->cs.limit, save->cs.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "ss:",
++	       save->ss.selector, save->ss.attrib,
++	       save->ss.limit, save->ss.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "ds:",
++	       save->ds.selector, save->ds.attrib,
++	       save->ds.limit, save->ds.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "fs:",
++	       save->fs.selector, save->fs.attrib,
++	       save->fs.limit, save->fs.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "gs:",
++	       save->gs.selector, save->gs.attrib,
++	       save->gs.limit, save->gs.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "gdtr:",
++	       save->gdtr.selector, save->gdtr.attrib,
++	       save->gdtr.limit, save->gdtr.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "ldtr:",
++	       save->ldtr.selector, save->ldtr.attrib,
++	       save->ldtr.limit, save->ldtr.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "idtr:",
++	       save->idtr.selector, save->idtr.attrib,
++	       save->idtr.limit, save->idtr.base);
++	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
++	       "tr:",
++	       save->tr.selector, save->tr.attrib,
++	       save->tr.limit, save->tr.base);
+ 	pr_err("cpl:            %d                efer:         %016llx\n",
+ 		save->cpl, save->efer);
+-	pr_err("cr0:            %016llx cr2:          %016llx\n",
+-		save->cr0, save->cr2);
+-	pr_err("cr3:            %016llx cr4:          %016llx\n",
+-		save->cr3, save->cr4);
+-	pr_err("dr6:            %016llx dr7:          %016llx\n",
+-		save->dr6, save->dr7);
+-	pr_err("rip:            %016llx rflags:       %016llx\n",
+-		save->rip, save->rflags);
+-	pr_err("rsp:            %016llx rax:          %016llx\n",
+-		save->rsp, save->rax);
+-	pr_err("star:           %016llx lstar:        %016llx\n",
+-		save->star, save->lstar);
+-	pr_err("cstar:          %016llx sfmask:       %016llx\n",
+-		save->cstar, save->sfmask);
+-	pr_err("kernel_gs_base: %016llx sysenter_cs:  %016llx\n",
+-		save->kernel_gs_base, save->sysenter_cs);
+-	pr_err("sysenter_esp:   %016llx sysenter_eip: %016llx\n",
+-		save->sysenter_esp, save->sysenter_eip);
+-	pr_err("gpat:           %016llx dbgctl:       %016llx\n",
+-		save->g_pat, save->dbgctl);
+-	pr_err("br_from:        %016llx br_to:        %016llx\n",
+-		save->br_from, save->br_to);
+-	pr_err("excp_from:      %016llx excp_to:      %016llx\n",
+-		save->last_excp_from, save->last_excp_to);
+-
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "cr0:", save->cr0, "cr2:", save->cr2);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "cr3:", save->cr3, "cr4:", save->cr4);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "dr6:", save->dr6, "dr7:", save->dr7);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "rip:", save->rip, "rflags:", save->rflags);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "rsp:", save->rsp, "rax:", save->rax);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "star:", save->star, "lstar:", save->lstar);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "cstar:", save->cstar, "sfmask:", save->sfmask);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "kernel_gs_base:", save->kernel_gs_base,
++	       "sysenter_cs:", save->sysenter_cs);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "sysenter_esp:", save->sysenter_esp,
++	       "sysenter_eip:", save->sysenter_eip);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "gpat:", save->g_pat, "dbgctl:", save->dbgctl);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "br_from:", save->br_from, "br_to:", save->br_to);
++	pr_err("%-15s %016llx %-13s %016llx\n",
++	       "excp_from:", save->last_excp_from,
++	       "excp_to:", save->last_excp_to);
+ }
+ 
+ static void svm_get_exit_info(struct kvm_vcpu *vcpu, u64 *info1, u64 *info2)
+-- 
+1.7.5.rc3.dirty
 
-
-# ifconfig wlan0 up
-r8712u: Loading firmware from "rtlwifi/rtl8712u.bin"
-r8712u: 1 RCR=0x153f00e
-r8712u: 2 RCR=0x553f00e
-
-# iwconfig wlan0 essid "123"
-# iwconfig wlan0
-wlan0     unassociated  Nickname:"rtl_wifi"
-          Mode:Auto  Access Point: Not-Associated   Sensitivity:0/0
-          Retry:off   RTS thr:off   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-          Link Quality:0  Signal level:0  Noise level:0
-          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
-
-
-
-
-> I'm not sure if this is a reasonable requirement before allowing the essid
-> to be set. Any thoughts?
-
-As long as it works, I don't mind. But it's not working. I've tried
-all sorts of combination of "ifconfig up/down" + "iwconfig essid" but
-still not working.
-
-
-Here's more info if it helps.
-
-# cat /proc/bus/usb/devices
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=07b8 ProdID=8188 Rev= 2.00
-S:  Manufacturer=Manufacturer Realtek
-S:  Product=RTL8188S WLAN Adapter
-S:  SerialNumber=00e04c000001
-C:* #Ifs= 1 Cfg#= 1 Atr=80 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 4 Cls=ff(vend.) Sub=ff Prot=ff Driver=r8712u
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=06(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=0d(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-# grep /usr/src/linux/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
-
-I also tried this ...
-
-# modprobe rtl8192cu
-# ifconfig wlan1 up     # hangs here!
-
-usbcore: registered new interface driver rtl8192cu
-rtl8192cu:_rtl92cu_init_power_on():<0-0> Failed to polling
-REG_APS_FSMCO[APFM_ONMAC] done!
-rtl8192cu:_rtl92cu_init_mac():<0-0> Failed to init power on!
-rtl8192cu:rtl92cu_hw_init():<0-0> init mac failed!
-
-
-The device is really nice and small, and would really like to make it work.
-
-Thanks,
-Jeff
