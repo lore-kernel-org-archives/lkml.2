@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab1DYUdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:33:45 -0400
-Received: from 1wt.eu ([62.212.114.60]:34568 "EHLO 1wt.eu"
+	id S932595Ab1DYUdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:33:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34571 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932432Ab1DYUZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:21 -0400
-Message-Id: <20110425200240.251979898@pcw.home.local>
+	id S932436Ab1DYUZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:22 -0400
+Message-Id: <20110425200240.388881569@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:19 +0200
+Date: Mon, 25 Apr 2011 22:05:22 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 167/173] UBIFS: fix oops when R/O file-system is fsynced
+Subject: [PATCH 170/173] USB: EHCI: unlink unused QHs when the controller is stopped
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,49 +23,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 78530bf7f2559b317c04991b52217c1608d5a58d upstream.
+commit 94ae4976e253757e9b03a44d27d41b20f1829d80 upstream.
 
-This patch fixes severe UBIFS bug: UBIFS oopses when we 'fsync()' an
-file on R/O-mounter file-system. We (the UBIFS authors) incorrectly
-thought that VFS would not propagate 'fsync()' down to the file-system
-if it is read-only, but this is not the case.
+This patch (as1458) fixes a problem affecting ultra-reliable systems:
+When hardware failover of an EHCI controller occurs, the data
+structures do not get released correctly.  This is because the routine
+responsible for removing unused QHs from the async schedule assumes
+the controller is running properly (the frame counter is used in
+determining how long the QH has been idle) -- but when a failover
+causes the controller to be electronically disconnected from the PCI
+bus, obviously it stops running.
 
-It is easy to exploit this bug using the following simple perl script:
+The solution is simple: Allow scan_async() to remove a QH from the
+async schedule if it has been idle for long enough _or_ if the
+controller is stopped.
 
-use strict;
-use File::Sync qw(fsync sync);
-
-die "File path is not specified" if not defined $ARGV[0];
-my $path = $ARGV[0];
-
-open FILE, "<", "$path" or die "Cannot open $path: $!";
-fsync(\*FILE) or die "cannot fsync $path: $!";
-close FILE or die "Cannot close $path: $!";
-
-Thanks to Reuben Dowle <Reuben.Dowle@navico.com> for reporting about this
-issue.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reported-by: Reuben Dowle <Reuben.Dowle@navico.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-Tested-by: Dan Duval <dan.duval@stratus.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/file.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/ehci-q.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1311,6 +1311,9 @@ int ubifs_fsync(struct file *file, struc
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1224,24 +1224,27 @@ static void start_unlink_async (struct e
  
- 	dbg_gen("syncing inode %lu", inode->i_ino);
+ static void scan_async (struct ehci_hcd *ehci)
+ {
++	bool			stopped;
+ 	struct ehci_qh		*qh;
+ 	enum ehci_timer_action	action = TIMER_IO_WATCHDOG;
  
-+	if (inode->i_sb->s_flags & MS_RDONLY)
-+		return 0;
-+
- 	/*
- 	 * VFS has already synchronized dirty pages for this inode. Synchronize
- 	 * the inode unless this is a 'datasync()' call.
+ 	ehci->stamp = ehci_readl(ehci, &ehci->regs->frame_index);
+ 	timer_action_done (ehci, TIMER_ASYNC_SHRINK);
+ rescan:
++	stopped = !HC_IS_RUNNING(ehci_to_hcd(ehci)->state);
+ 	qh = ehci->async->qh_next.qh;
+ 	if (likely (qh != NULL)) {
+ 		do {
+ 			/* clean any finished work for this qh */
+-			if (!list_empty (&qh->qtd_list)
+-					&& qh->stamp != ehci->stamp) {
++			if (!list_empty(&qh->qtd_list) && (stopped ||
++					qh->stamp != ehci->stamp)) {
+ 				int temp;
+ 
+ 				/* unlinks could happen here; completion
+ 				 * reporting drops the lock.  rescan using
+ 				 * the latest schedule, but don't rescan
+-				 * qhs we already finished (no looping).
++				 * qhs we already finished (no looping)
++				 * unless the controller is stopped.
+ 				 */
+ 				qh = qh_get (qh);
+ 				qh->stamp = ehci->stamp;
+@@ -1262,9 +1265,9 @@ rescan:
+ 			 */
+ 			if (list_empty(&qh->qtd_list)
+ 					&& qh->qh_state == QH_STATE_LINKED) {
+-				if (!ehci->reclaim
+-					&& ((ehci->stamp - qh->stamp) & 0x1fff)
+-						>= (EHCI_SHRINK_FRAMES * 8))
++				if (!ehci->reclaim && (stopped ||
++					((ehci->stamp - qh->stamp) & 0x1fff)
++						>= EHCI_SHRINK_FRAMES * 8))
+ 					start_unlink_async(ehci, qh);
+ 				else
+ 					action = TIMER_ASYNC_SHRINK;
 
 
