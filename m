@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab1DYVtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 17:49:39 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:56597 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab1DYVth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 17:49:37 -0400
-Date: Mon, 25 Apr 2011 14:49:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110425214933.GO2468@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110425111705.786ef0c5@neptune.home>
- <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
- <20110425180450.1ede0845@neptune.home>
- <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
- <20110425190032.7904c95d@neptune.home>
- <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
- <20110425203606.4e78246c@neptune.home>
- <20110425191607.GL2468@linux.vnet.ibm.com>
- <20110425231016.34b4293e@neptune.home>
- <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
+	id S1756465Ab1DYWAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 18:00:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35862 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab1DYWAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 18:00:20 -0400
+From: Carlos Corbacho <carlos@strangeworlds.co.uk>
+To: Willy Tarreau <w@1wt.eu>
+Subject: Re: [PATCH 054/173] acer-wmi: Fix capitalisation of GUID
+Date: Mon, 25 Apr 2011 23:00:13 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38.3cc; KDE/4.5.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        Matthew Garrett <mjg@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+References: <20110425200235.342580584@pcw.home.local>
+In-Reply-To: <20110425200235.342580584@pcw.home.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104252300.14068.carlos@strangeworlds.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 02:30:02PM -0700, Linus Torvalds wrote:
-> 2011/4/25 Bruno Prémont <bonbons@linux-vserver.org>:
-> >
-> > Between 1-slabinfo and 2-slabinfo some values increased (a lot) while a few
-> > ones did decrease. Don't know which ones are RCU-affected and which ones are
-> > not.
+On Monday 25 Apr 2011 21:03:26 Willy Tarreau wrote:
+> 2.6.27.59-stable review patch.  If anyone has any objections, please let us
+> know.
+
+Nack - this caused https://bugzilla.kernel.org/show_bug.cgi?id=32862
+
+Either don't apply this patch, or you'll need to also apply the subsequent fix 
+up at the same time (I don't know if that's gone upstream yet?).
+
+-Carlos
+
 > 
-> It really sounds as if the tiny-rcu kthread somehow just stops
-> handling callbacks. The ones that keep increasing do seem to be all
-> rcu-free'd (but I didn't really check).
+> ------------------
 > 
-> The thing is shown as running:
+> From: Matthew Garrett <mjg@redhat.com>
 > 
-> root         6  0.0  0.0      0     0 ?        R    22:14   0:00  \_
-> [rcu_kthread]
+> commit bbb706079abe955a9e3f208f541de97d99449236 upstream.
 > 
-> but nothing seems to happen and the CPU time hasn't increased at all.
+> 6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3 needs to be
+> 6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3 to match the hardware alias.
 > 
-> I dunno. Makes no  sense to me, but yeah, I'm definitely blaming
-> tiny-rcu. Paul, any ideas?
-
-So the only ways I know for something to be runnable but not run on
-a uniprocessor are:
-
-1.	The CPU is continually busy with higher-priority work.
-	This doesn't make sense in this case because the system
-	is idle much of the time.
-
-2.	The system is hibernating.  This doesn't make sense, otherwise
-	"ps" wouldn't run either.
-
-Any others ideas on how the heck a process can get into this state?
-(I have thus far been completely unable to reproduce it.)
-
-The process in question has a loop in rcu_kthread() in kernel/rcutiny.c.
-This loop contains a wait_event_interruptible(), waits for a global flag
-to become non-zero.
-
-It is awakened by invoke_rcu_kthread() in that same file, which
-simply sets the flag to 1 and does a wake_up(), all with hardirqs
-disabled.
-
-Hmmm...  One "hail mary" patch below.  What it does is make rcu_kthread
-run at normal priority rather than at real-time priority.  This is
-not for inclusion -- it breaks RCU priority boosting.  But well worth
-trying.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 0c343b9..4551824 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -314,11 +314,15 @@ EXPORT_SYMBOL_GPL(rcu_barrier_sched);
-  */
- static int __init rcu_spawn_kthreads(void)
- {
-+#if 0
- 	struct sched_param sp;
-+#endif
- 
- 	rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
-+#if 0
- 	sp.sched_priority = RCU_BOOST_PRIO;
- 	sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
-+#endif
- 	return 0;
- }
- early_initcall(rcu_spawn_kthreads);
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/platform/x86/acer-wmi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/drivers/misc/acer-wmi.c
+> +++ b/drivers/misc/acer-wmi.c
+> @@ -90,7 +90,7 @@ struct acer_quirks {
+>   */
+>  #define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
+>  #define AMW0_GUID2		"431F16ED-0C2B-444C-B267-27DEB140CF9C"
+> -#define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
+> +#define WMID_GUID1		"6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3"
+>  #define WMID_GUID2		"95764E09-FB56-4e83-B31A-37761F60994A"
+> 
+>  MODULE_ALIAS("wmi:67C3371D-95A3-4C37-BB61-DD47B491DAAB");
