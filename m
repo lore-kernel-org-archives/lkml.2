@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab1DYUrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:47:10 -0400
-Received: from 1wt.eu ([62.212.114.60]:34240 "EHLO 1wt.eu"
+	id S932820Ab1DYUrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:47:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:34250 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756993Ab1DYUYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:39 -0400
-Message-Id: <20110425200234.427595139@pcw.home.local>
+	id S1757025Ab1DYUYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:40 -0400
+Message-Id: <20110425200236.428096148@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:05 +0200
+Date: Mon, 25 Apr 2011 22:03:51 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Konstantin Khorenko <khorenko@openvz.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 033/173] NFSD: memory corruption due to writing beyond the stat array
+Subject: [PATCH 079/173] hwmon/f71882fg: Set platform drvdata to NULL later
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,39 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khorenko <khorenko@parallels.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 3aa6e0aa8ab3e64bbfba092c64d42fd1d006b124 upstream.
+commit d9ebaa45472c92704f4814682eec21455edcfa1f upstream.
 
-If nfsd fails to find an exported via NFS file in the readahead cache, it
-should increment corresponding nfsdstats counter (ra_depth[10]), but due to a
-bug it may instead write to ra_depth[11], corrupting the following field.
+This avoids a possible race leading to trying to dereference NULL.
 
-In a kernel with NFSDv4 compiled in the corruption takes the form of an
-increment of a counter of the number of NFSv4 operation 0's received; since
-there is no operation 0, this is harmless.
-
-In a kernel with NFSDv4 disabled it corrupts whatever happens to be in the
-memory beyond nfsdstats.
-
-Signed-off-by: Konstantin Khorenko <khorenko@openvz.org>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/vfs.c |    2 +-
+ drivers/hwmon/f71882fg.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -823,7 +823,7 @@ nfsd_get_raparms(dev_t dev, ino_t ino)
- 		if (ra->p_count == 0)
- 			frap = rap;
- 	}
--	depth = nfsdstats.ra_size*11/10;
-+	depth = nfsdstats.ra_size;
- 	if (!frap) {	
- 		spin_unlock(&rab->pb_lock);
- 		return NULL;
+Index: longterm-2.6.27/drivers/hwmon/f71882fg.c
+===================================================================
+--- longterm-2.6.27.orig/drivers/hwmon/f71882fg.c	2011-01-23 10:52:16.000000000 +0100
++++ longterm-2.6.27/drivers/hwmon/f71882fg.c	2011-04-25 15:34:40.461278503 +0200
+@@ -808,7 +808,6 @@
+ 	int i;
+ 	struct f71882fg_data *data = platform_get_drvdata(pdev);
+ 
+-	platform_set_drvdata(pdev, NULL);
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(f71882fg_dev_attr); i++)
+@@ -821,6 +820,7 @@
+ 	for (i = 0; i < ARRAY_SIZE(f71882fg_fan_attr); i++)
+ 		device_remove_file(&pdev->dev, &f71882fg_fan_attr[i].dev_attr);
+ 
++	platform_set_drvdata(pdev, NULL);
+ 	kfree(data);
+ 
+ 	return 0;
 
 
