@@ -1,260 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1DYU7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:59:45 -0400
-Received: from 1wt.eu ([62.212.114.60]:33799 "EHLO 1wt.eu"
+	id S1757854Ab1DYU7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:59:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50497 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab1DYUXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:23:42 -0400
-Message-Id: <20110425200234.600141316@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:09 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 037/173] filter: make sure filters dont read uninitialized memory
-In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
+	id S1757734Ab1DYU7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:59:50 -0400
+Date: Mon, 25 Apr 2011 13:33:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tino Keitel <tino.keitel@tikei.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] PM / Wakeup: Fix initialization of wakeup-related device
+ sysfs files
+Message-ID: <20110425203339.GA21375@suse.de>
+References: <201104212357.43052.rjw@sisk.pl>
+ <20110425195811.GA3407@mac.home>
+ <201104252210.16719.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104252210.16719.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+On Mon, Apr 25, 2011 at 10:10:16PM +0200, Rafael J. Wysocki wrote:
+> On Monday, April 25, 2011, Tino Keitel wrote:
+> > Hi,
+> > 
+> > the patch works fine on top of current git
+> > (8f7544682c488dfc4117b37ed10435bb2d3d8d73). Wakeup using the keyboard
+> > works.
+> 
+> Great, thanks for testing.
+> 
+> Greg, are you fine with https://lkml.org/lkml/2011/4/21/404 ?
 
-------------------
-
-From: David S. Miller <davem@davemloft.net>
-
-commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream.
-
-There is a possibility malicious users can get limited information about
-uninitialized stack mem array. Even if sk_run_filter() result is bound
-to packet length (0 .. 65535), we could imagine this can be used by
-hostile user.
-
-Initializing mem[] array, like Dan Rosenberg suggested in his patch is
-expensive since most filters dont even use this array.
-
-Its hard to make the filter validation in sk_chk_filter(), because of
-the jumps. This might be done later.
-
-In this patch, I use a bitmap (a single long var) so that only filters
-using mem[] loads/stores pay the price of added security checks.
-
-For other filters, additional cost is a single instruction.
-
-[ Since we access fentry->k a lot now, cache it in a local variable
-  and mark filter entry pointer as const. -DaveM ]
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[Backported by dann frazier <dannf@debian.org>]
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/core/filter.c |   64 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 35 insertions(+), 29 deletions(-)
-
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -111,39 +111,41 @@ EXPORT_SYMBOL(sk_filter);
-  */
- unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
- {
--	struct sock_filter *fentry;	/* We walk down these */
- 	void *ptr;
- 	u32 A = 0;			/* Accumulator */
- 	u32 X = 0;			/* Index Register */
- 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
-+	unsigned long memvalid = 0;
- 	u32 tmp;
- 	int k;
- 	int pc;
- 
-+	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
- 	/*
- 	 * Process array of filter instructions.
- 	 */
- 	for (pc = 0; pc < flen; pc++) {
--		fentry = &filter[pc];
-+		const struct sock_filter *fentry = &filter[pc];
-+		u32 f_k = fentry->k;
- 
- 		switch (fentry->code) {
- 		case BPF_ALU|BPF_ADD|BPF_X:
- 			A += X;
- 			continue;
- 		case BPF_ALU|BPF_ADD|BPF_K:
--			A += fentry->k;
-+			A += f_k;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_X:
- 			A -= X;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_K:
--			A -= fentry->k;
-+			A -= f_k;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_X:
- 			A *= X;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_K:
--			A *= fentry->k;
-+			A *= f_k;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_X:
- 			if (X == 0)
-@@ -151,49 +153,49 @@ unsigned int sk_run_filter(struct sk_buf
- 			A /= X;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_K:
--			A /= fentry->k;
-+			A /= f_k;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_X:
- 			A &= X;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_K:
--			A &= fentry->k;
-+			A &= f_k;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_X:
- 			A |= X;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_K:
--			A |= fentry->k;
-+			A |= f_k;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_X:
- 			A <<= X;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_K:
--			A <<= fentry->k;
-+			A <<= f_k;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_X:
- 			A >>= X;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_K:
--			A >>= fentry->k;
-+			A >>= f_k;
- 			continue;
- 		case BPF_ALU|BPF_NEG:
- 			A = -A;
- 			continue;
- 		case BPF_JMP|BPF_JA:
--			pc += fentry->k;
-+			pc += f_k;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_K:
--			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A > f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGE|BPF_K:
--			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A >= f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JEQ|BPF_K:
--			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A == f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JSET|BPF_K:
--			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A & f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_X:
- 			pc += (A > X) ? fentry->jt : fentry->jf;
-@@ -208,7 +210,7 @@ unsigned int sk_run_filter(struct sk_buf
- 			pc += (A & X) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_w:
- 			ptr = load_pointer(skb, k, 4, &tmp);
- 			if (ptr != NULL) {
-@@ -217,7 +219,7 @@ load_w:
- 			}
- 			break;
- 		case BPF_LD|BPF_H|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_h:
- 			ptr = load_pointer(skb, k, 2, &tmp);
- 			if (ptr != NULL) {
-@@ -226,7 +228,7 @@ load_h:
- 			}
- 			break;
- 		case BPF_LD|BPF_B|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_b:
- 			ptr = load_pointer(skb, k, 1, &tmp);
- 			if (ptr != NULL) {
-@@ -241,32 +243,34 @@ load_b:
- 			X = skb->len;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_w;
- 		case BPF_LD|BPF_H|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_h;
- 		case BPF_LD|BPF_B|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_b;
- 		case BPF_LDX|BPF_B|BPF_MSH:
--			ptr = load_pointer(skb, fentry->k, 1, &tmp);
-+			ptr = load_pointer(skb, f_k, 1, &tmp);
- 			if (ptr != NULL) {
- 				X = (*(u8 *)ptr & 0xf) << 2;
- 				continue;
- 			}
- 			return 0;
- 		case BPF_LD|BPF_IMM:
--			A = fentry->k;
-+			A = f_k;
- 			continue;
- 		case BPF_LDX|BPF_IMM:
--			X = fentry->k;
-+			X = f_k;
- 			continue;
- 		case BPF_LD|BPF_MEM:
--			A = mem[fentry->k];
-+			A = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_LDX|BPF_MEM:
--			X = mem[fentry->k];
-+			X = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_MISC|BPF_TAX:
- 			X = A;
-@@ -275,14 +279,16 @@ load_b:
- 			A = X;
- 			continue;
- 		case BPF_RET|BPF_K:
--			return fentry->k;
-+			return f_k;
- 		case BPF_RET|BPF_A:
- 			return A;
- 		case BPF_ST:
--			mem[fentry->k] = A;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = A;
- 			continue;
- 		case BPF_STX:
--			mem[fentry->k] = X;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = X;
- 			continue;
- 		default:
- 			WARN_ON(1);
+Yes, very much so, sorry for not giving my ack before:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 
+thanks,
+
+greg k-h
