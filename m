@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750951Ab1DYEVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 00:21:32 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53773 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1DYEVb (ORCPT
+	id S1751046Ab1DYEcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 00:32:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57243 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1DYEcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 00:21:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110421103009.731B.A69D9226@jp.fujitsu.com>
-References: <1303331695.2796.159.camel@work-vm> <20110421103009.731B.A69D9226@jp.fujitsu.com>
-Message-Id: <20110425132333.266E.A69D9226@jp.fujitsu.com>
+	Mon, 25 Apr 2011 00:32:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hDgVM/6wt5+s0VtwFMJm5Xh6kuWXcJ7xu6c0X5PUM4yOMfglHST/tYgvtFQIdCVv5F
+         2wzume3PKQlMxV7SaMFO5yCNXLvQSqJmlo4qEBMuWr6I8RsckBZ+XtOq7M46zxNB+iyO
+         ox5+CKS0ScVtcFXowsFp4sRfCEhSTfAIWbock=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 13:21:28 +0900 (JST)
+In-Reply-To: <4DB4E94C.2060505@lwfinger.net>
+References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
+	<4DB4E94C.2060505@lwfinger.net>
+Date: Mon, 25 Apr 2011 12:32:09 +0800
+Message-ID: <BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
+Subject: Re: r8712u cannot set essid
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > I'd prefer that we remove /proc/pid/comm entirely or at least prevent 
-> > > writing to it unless CONFIG_EXPERT.
-> > 
-> > Eeeh. That's probably going to be a tough sell, as I think there is
-> > wider interest in what it provides. Its useful for debugging
-> > applications not kernels, so I doubt folks will want to rebuild their
-> > kernel to try to analyze a java issue.
-> > 
-> > So I'm well aware that there is the chance that you catch the race and
-> > read an incomplete/invalid comm (it was discussed at length when the
-> > change went in), but somewhere I've missed how that's causing actual
-> > problems. Other then just being "evil" and having the documented race,
-> > could you clarify what the issue is that your hitting?
-> 
-> The problem is, there is no documented as well. Okay, I recognized you
-> introduced new locking rule for task->comm. But there is no documented
-> it. Thus, We have no way to review current callsites are correct or not.
-> Can you please do it? And, I have a question. Do you mean now task->comm
-> reader don't need task_lock() even if it is another thread?
-> 
-> _if_ every task->comm reader have to realize it has a chance to read
-> incomplete/invalid comm, task_lock() doesn't makes any help.
+On Mon, Apr 25, 2011 at 11:23 AM, Larry Finger
+<Larry.Finger@lwfinger.net> wrote:
+> On 04/24/2011 09:16 PM, Jeff Chua wrote:
+> The code requires the interface to be up before the essid can be set. If you
+> do it with the iwconfig command, you will see an error message.
 
-ping?
+I did that. Setting ssid works fine with iwlagn on the same system.
 
 
+# modprobe r8712u
+r8712u: module is from the staging directory, the quality is unknown,
+you have been warned.
+r8712u: DriverVersion: v7_0.20100831
+r8712u: register rtl8712_netdev_ops to netdev_ops
+r8712u: USB_SPEED_HIGH with 4 endpoints
+r8712u: Boot from EFUSE: Autoload OK
+r8712u: CustomerID = 0x0000
+r8712u: MAC Address from efuse = 90:61:0c:01:8f:b0
+usbcore: registered new interface driver r8712u
 
+
+# ifconfig wlan0 up
+r8712u: Loading firmware from "rtlwifi/rtl8712u.bin"
+r8712u: 1 RCR=0x153f00e
+r8712u: 2 RCR=0x553f00e
+
+# iwconfig wlan0 essid "123"
+# iwconfig wlan0
+wlan0     unassociated  Nickname:"rtl_wifi"
+          Mode:Auto  Access Point: Not-Associated   Sensitivity:0/0
+          Retry:off   RTS thr:off   Fragment thr:off
+          Encryption key:off
+          Power Management:off
+          Link Quality:0  Signal level:0  Noise level:0
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+
+
+
+
+> I'm not sure if this is a reasonable requirement before allowing the essid
+> to be set. Any thoughts?
+
+As long as it works, I don't mind. But it's not working. I've tried
+all sorts of combination of "ifconfig up/down" + "iwconfig essid" but
+still not working.
+
+
+Here's more info if it helps.
+
+# cat /proc/bus/usb/devices
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=07b8 ProdID=8188 Rev= 2.00
+S:  Manufacturer=Manufacturer Realtek
+S:  Product=RTL8188S WLAN Adapter
+S:  SerialNumber=00e04c000001
+C:* #Ifs= 1 Cfg#= 1 Atr=80 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 4 Cls=ff(vend.) Sub=ff Prot=ff Driver=r8712u
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=06(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=0d(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+
+# grep /usr/src/linux/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
+
+I also tried this ...
+
+# modprobe rtl8192cu
+# ifconfig wlan1 up     # hangs here!
+
+usbcore: registered new interface driver rtl8192cu
+rtl8192cu:_rtl92cu_init_power_on():<0-0> Failed to polling
+REG_APS_FSMCO[APFM_ONMAC] done!
+rtl8192cu:_rtl92cu_init_mac():<0-0> Failed to init power on!
+rtl8192cu:rtl92cu_hw_init():<0-0> init mac failed!
+
+
+The device is really nice and small, and would really like to make it work.
+
+Thanks,
+Jeff
