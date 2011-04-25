@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870Ab1DYUsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:48:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:34197 "EHLO 1wt.eu"
+	id S1752809Ab1DYUYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:33 -0400
+Received: from 1wt.eu ([62.212.114.60]:34091 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756748Ab1DYUYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:35 -0400
-Message-Id: <20110425200236.644896263@pcw.home.local>
+	id S932187Ab1DYUY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:27 -0400
+Message-Id: <20110425200235.298507662@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:56 +0200
+Date: Mon, 25 Apr 2011 22:03:25 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Matthew Garrett <mjg@redhat.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 084/173] ahci: AHCI and RAID mode SATA patch for Intel Patsburg DeviceIDs
+Subject: [PATCH 053/173] platform: x86: asus_acpi: world-writable procfs files
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,32 +23,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 992b3fb9b5391bc4de5b42bb810dc6dd583a6c4a upstream.
+commit 8040835760adf0ef66876c063d47f79f015fb55d upstream.
 
-This patch adds the Intel Patsburg (PCH) SATA AHCI and RAID Controller
-DeviceIDs.
+Don't allow everybody to change ACPI settings.  The comment says that it
+is done deliberatelly, however, the comment before disp_proc_write()
+says that at least one of these setting is experimental.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/platform/x86/asus_acpi.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -576,6 +576,9 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x1c05), board_ahci }, /* CPT RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1c06), board_ahci }, /* CPT RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1c07), board_ahci }, /* CPT RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1d02), board_ahci }, /* PBG AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1d04), board_ahci }, /* PBG RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
+--- a/drivers/acpi/asus_acpi.c
++++ b/drivers/acpi/asus_acpi.c
+@@ -1001,14 +1001,8 @@ static int asus_hotk_add_fs(struct acpi_
+ 	struct proc_dir_entry *proc;
+ 	mode_t mode;
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-	/*
+-	 * If parameter uid or gid is not changed, keep the default setting for
+-	 * our proc entries (-rw-rw-rw-) else, it means we care about security,
+-	 * and then set to -rw-rw----
+-	 */
+-
+ 	if ((asus_uid == 0) && (asus_gid == 0)) {
+-		mode = S_IFREG | S_IRUGO | S_IWUGO;
++		mode = S_IFREG | S_IRUGO | S_IWUSR | S_IWGRP;
+ 	} else {
+ 		mode = S_IFREG | S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP;
+ 		printk(KERN_WARNING "  asus_uid and asus_gid parameters are "
 
 
