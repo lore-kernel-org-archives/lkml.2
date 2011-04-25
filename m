@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab1DYXvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 19:51:51 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:42880 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757270Ab1DYXvu (ORCPT
+	id S932322Ab1DYXwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 19:52:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8194 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab1DYXwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 19:51:50 -0400
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB608EE.1060502@verizon.net>
-Date: Mon, 25 Apr 2011 19:51:10 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Mon, 25 Apr 2011 19:52:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=ro4rtZGYgLB+Epg66Ex6OgLjfW6fS9JN70z7ru9ZiPu3gkgh40R7TAzmqThaqXPvFU
+         kXZlr3oo1Bfv6uvqiOAA==
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>
-Subject: [PATCH] kbuild: fix sed error in export_report.pl
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1303745985.18763.14.camel@gandalf.stny.rr.com>
+References: <1303513209-26436-1-git-send-email-vnagarnaik@google.com>
+ <20110425113723.2666.A69D9226@jp.fujitsu.com> <1303745985.18763.14.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Mon, 25 Apr 2011 16:52:05 -0700
+Message-ID: <BANLkTimochpX5Tzvj0Yz6Lb+3-tcFuZXqQ@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add tracepoints to fs subsystem
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a sed error in export_report.pl by escaping a $.
+On Mon, Apr 25, 2011 at 8:39 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-04-25 at 11:35 +0900, KOSAKI Motohiro wrote:
+>> > From: Jiaying Zhang <jiayingz@google.com>
+>> >
+>> > Many fs tracepoints can now be traced via ftrace, however there are a
+>> > few other tracepoints needed. This patch adds entry and exit tracepoints
+>> > for a few additional functions, viz.:
+>> > wait_on_buffer
+>> > block_write_full_page
+>> > mpage_readpages
+>> > file_read
+>>
+>> Zero background description?
+>>
+>
+> Good point.
+>
+> Could you please describe how this is useful, and how one can benefit
+> from these tracepoints.
+>
+I am sending a new patch with a better description and using the template for
+declaring events.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- scripts/export_report.pl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> -- Steve
+>
+>
+>
+>
 
-diff --git a/scripts/export_report.pl b/scripts/export_report.pl
-index 04dce7c..91fa5a2 100644
---- a/scripts/export_report.pl
-+++ b/scripts/export_report.pl
-@@ -50,7 +50,7 @@ sub usage {
-  sub collectcfiles {
-     my @file
--	= `cat .tmp_versions/*.mod | grep '.*\.ko\$' | sed s/\.ko$/.mod.c/`;
-+	= `cat .tmp_versions/*.mod | grep '.*\.ko\$' | sed s/\.ko\$/.mod.c/`;
-     chomp @file;
-     return @file;
- }
--- 
-1.7.5.rc1
-
+Thanks
+Vaibhav Nagarnaik
