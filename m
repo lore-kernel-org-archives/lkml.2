@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab1DYUY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:24:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:34255 "EHLO 1wt.eu"
+	id S932697Ab1DYUkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:40:00 -0400
+Received: from 1wt.eu ([62.212.114.60]:34404 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239Ab1DYUYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:41 -0400
-Message-Id: <20110425200237.425356020@pcw.home.local>
+	id S932324Ab1DYUY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:58 -0400
+Message-Id: <20110425200235.558608258@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:14 +0200
+Date: Mon, 25 Apr 2011 22:03:31 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Roland Dreier <roland@purestorage.com>,
+Cc: Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
+        Richard Russon <ldm@flatcap.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 102/173] aio: wake all waiters when destroying ctx
+Subject: [PATCH 059/173] ldm: corrupted partition table can cause kernel oops
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
+commit 294f6cf48666825d23c9372ef37631232746e40d upstream.
 
-The test program below will hang because io_getevents() uses
-add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
-wakes up one of the threads.  Fix this by using wake_up_all() in the aio
-code paths where we want to make sure no one gets stuck.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+a bug that causes a kernel oops on certain corrupted LDM partitions.  A
+kernel subsystem seems to crash, because, after the oops, the kernel no
+longer recognizes newly connected storage devices.
 
-	// t.c -- compile with gcc -lpthread -laio t.c
+The patch changes ldm_parse_vmdb() to Validate the value of vblk_size.
 
-	#include <libaio.h>
-	#include <pthread.h>
-	#include <stdio.h>
-	#include <unistd.h>
-
-	static const int nthr = 2;
-
-	void *getev(void *ctx)
-	{
-		struct io_event ev;
-		io_getevents(ctx, 1, 1, &ev, NULL);
-		printf("io_getevents returned\n");
-		return NULL;
-	}
-
-	int main(int argc, char *argv[])
-	{
-		io_context_t ctx = 0;
-		pthread_t thread[nthr];
-		int i;
-
-		io_setup(1024, &ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_create(&thread[i], NULL, getev, ctx);
-
-		sleep(1);
-
-		io_destroy(ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_join(thread[i], NULL);
-
-		return 0;
-	}
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Acked-by: Richard Russon <ldm@flatcap.org>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/aio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/partitions/ldm.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -497,7 +497,7 @@ static inline void really_put_req(struct
- 	ctx->reqs_active--;
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -251,6 +251,11 @@ static bool ldm_parse_vmdb (const u8 *da
+ 	}
  
- 	if (unlikely(!ctx->reqs_active && ctx->dead))
--		wake_up(&ctx->wait);
-+		wake_up_all(&ctx->wait);
- }
- 
- static void aio_fput_routine(struct work_struct *data)
-@@ -1219,7 +1219,7 @@ static void io_destroy(struct kioctx *io
- 	 * by other CPUs at this point.  Right now, we rely on the
- 	 * locking done by the above calls to ensure this consistency.
- 	 */
--	wake_up(&ioctx->wait);
-+	wake_up_all(&ioctx->wait);
- 	put_ioctx(ioctx);	/* once for the lookup */
- }
+ 	vm->vblk_size     = get_unaligned_be32(data + 0x08);
++	if (vm->vblk_size == 0) {
++		ldm_error ("Illegal VBLK size");
++		return false;
++	}
++
+ 	vm->vblk_offset   = get_unaligned_be32(data + 0x0C);
+ 	vm->last_vblk_seq = get_unaligned_be32(data + 0x04);
  
 
 
