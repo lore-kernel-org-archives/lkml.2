@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab1DYCQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Apr 2011 22:16:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39174 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011Ab1DYCQK (ORCPT
+	id S1758053Ab1DYCac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Apr 2011 22:30:32 -0400
+Received: from mhqmail.moxa.com ([59.124.42.180]:14582 "EHLO
+	mhqmail01.moxa.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758041Ab1DYCaP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Apr 2011 22:16:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=K1LW8wx6303nvj/PlZuArGGCIrw8LKBMt3EejV2T/pw18IdAd3mSRUkX7jiAMiZdRD
-         n36tsVZVNCLot0iaw6YEGDa/1C2eFGsmrAf0GwvTfBz6kYx2ps9JjJd6a+SIyehKBkKn
-         bzYjyc4ZJ20mzcBJ2iD/O/UGPN7OUZCzlzB9U=
+	Sun, 24 Apr 2011 22:30:15 -0400
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Date: Mon, 25 Apr 2011 10:16:09 +0800
-Message-ID: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
-Subject: r8712u cannot set essid
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com,
-        Larry.Finger@lwfinger.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="big5"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 1/2] misc: add option in menu to support MOXA V2100 serial io driver
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Date: Mon, 25 Apr 2011 10:28:07 +0800
+Message-ID: <ECB3782BB8F03341905DD923270296115D5ABC@mhqms01.moxa.com>
+In-Reply-To: <ECB3782BB8F03341905DD923270296115D5A18@mhqms01.moxa.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/2] misc: add option in menu to support MOXA V2100 serial io driver
+Thread-Index: AcwA0y++eDmjYMfeS5uFGN/WQ83uQQAAETrgAAA4trAAABnAcACGpmwQ
+From: =?big5?B?SmltbXkgQ2hlbiAos6+lw7lGKQ==?= <jimmy.chen@moxa.com>
+To: =?big5?B?SmltbXkgQ2hlbiAos6+lw7lGKQ==?= <jimmy.chen@moxa.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: <gregkh@suse.de>
+X-OriginalArrivalTime: 25 Apr 2011 02:28:07.0824 (UTC) FILETIME=[69DA9100:01CC02F0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm having problem trying to set essid on the "Realtek RTL8188S WLAN
-Adapter" with the r8172u module on 2.6.39-rc4. There's no error. Just
-can't set.
+From: Jimmy Chen <jimmy.chen@moxa.com>
 
+Add selection and help in menu to support moxa_serial_io driver.
 
-# dmesg ...
-r8712u: module is from the staging directory, the quality is unknown,
-you have been warned.
-r8712u: DriverVersion: v7_0.20100831
-r8712u: register rtl8712_netdev_ops to netdev_ops
-r8712u: USB_SPEED_HIGH with 4 endpoints
-r8712u: Boot from EFUSE: Autoload OK
-r8712u: CustomerID = 0x0000
-r8712u: MAC Address from efuse = 90:61:0c:01:8f:b0
-usbcore: registered new interface driver r8712u
-r8712u: Loading firmware from "rtlwifi/rtl8712u.bin"
-r8712u: 1 RCR=0x153f00e
-r8712u: 2 RCR=0x553f00e
+Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
+---
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 45cc6f8..4e007c6 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -144,17 +144,6 @@ config PHANTOM
+          If you choose to build module, its name will be phantom. If unsure,
+          say N here.
 
-# iwconfig wlan1 essid "tryanything"
-# iwconfig wlan1
-wlan1     IEEE 802.11b  ESSID:""  Nickname:"rtl_wifi"
-          Mode:Ad-Hoc  Cell: Not-Associated   Bit Rate:0 kb/s
-          Sensitivity:0/0
-          Retry:off   RTS thr:off   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-          Link Quality:0  Signal level:0  Noise level:0
-          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
-
-
-
-Thanks,
-Jeff
+-config MOXA_SERIAL_IO
+-       tristate "V2100-LX Serial IO"
+-       depends on X86
+-       help
+-         Say Y here if you want to build a driver for MOXA serial io device.
+-
+-         This driver is only for V2100-LX platform.
+-
+-         If you choose to build module, its name will be mxsio. If unsure,
+-         say N here.
+-
+ config SGI_IOC4
+        tristate "SGI IOC4 Base IO support"
+        depends on PCI
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 781fe3b..f546860 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -15,7 +15,6 @@ obj-$(CONFIG_LKDTM)           += lkdtm.o
+ obj-$(CONFIG_TIFM_CORE)        += tifm_core.o
+ obj-$(CONFIG_TIFM_7XX1)        += tifm_7xx1.o
+ obj-$(CONFIG_PHANTOM)          += phantom.o
+-obj-$(CONFIG_MOXA_SERIAL_IO)   += moxa_serial_io.o
+ obj-$(CONFIG_SENSORS_BH1780)   += bh1780gli.o
+ obj-$(CONFIG_SENSORS_BH1770)   += bh1770glc.o
+ obj-$(CONFIG_SENSORS_APDS990X) += apds990x.o
+diff --git a/drivers/misc/moxa_serial_io.c b/drivers/misc/moxa_serial_io.c
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/drivers/misc/moxa_serial_io.h b/drivers/misc/moxa_serial_io.h
+deleted file mode 100644
+index e69de29..0000000
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
