@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab1DYN32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 09:29:28 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:56154 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab1DYN30 (ORCPT
+	id S1758264Ab1DYNbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 09:31:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40345 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab1DYNby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 09:29:26 -0400
+	Mon, 25 Apr 2011 09:31:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:date:message-id:subject;
-        b=ObpTfcZikW0q/udWxs67qPSZXVdxSp2+DboYkwKL8VrfcD/lrqp/0FEVkimPy0hRkW
-         wkOtJghYr8SK23lcSsur+Tbwcp3Vzcy82flo3k90aWGByEKAdIi8A0O0Q9Gh7JQAjXxH
-         btrBiakBySzRxoMw0EJEThd2nAzQ8guysLjko=
+        b=ZAExWkjb+TTO3HnaTxSAFalacoHzwI5WJsmxQAYvTo5y7/Xv4LfQuuTfCQazcUGPPN
+         ZOPwShnTqeNiojysE9qJVR9ACYraz1XgSlCJVOL9pBT0IMblHi+JXnMuw7nMRn8aJWk7
+         f5KK7pj71STSFgU2KqHpspZpZBFCd34ItVYkw=
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: johnstul@us.ibm.com, Magnus Damm <magnus.damm@gmail.com>,
-        lethal@linux-sh.org, simon@horms.net, linux-sh@vger.kernel.org
-Date: Mon, 25 Apr 2011 22:36:10 +0900
-Message-Id: <20110425133610.4213.81763.sendpatchset@t400s>
-Subject: [PATCH] clocksource: sh_cmt: Runtime PM support
+        lethal@linux-sh.org, linux-sh@vger.kernel.org
+Date: Mon, 25 Apr 2011 22:38:37 +0900
+Message-Id: <20110425133837.4242.80952.sendpatchset@t400s>
+Subject: [PATCH] clocksource: sh_tmu: __clocksource_updatefreq_hz() update
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-Add Runtime PM support to the CMT driver.
+This patch updates the clocksource part of the TMU driver
+to make use of the __clocksource_updatefreq_hz() function.
 
-The hardware device is enabled as long as the clocksource
-or the clockevent portion of the driver is used.
+Without this patch the old code uses clocksource_register()
+together with a hack that assumes a never changing clock rate
+(see clk_enable(), clk_get_rate() and clk_disable()).
+
+The patch uses clocksource_register_hz() with 1 Hz as initial
+value, then lets the ->enable() callback update the value
+with __clocksource_updatefreq_hz() once the struct clk has
+been enabled and the frequency is stable.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- Tested on the sh7372 Mackerel board with CMT10.
+ Thanks to John Stultz for the framework changes and the
+ initial implementation.
 
- drivers/clocksource/sh_cmt.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ Tested on the sh7372 Mackerel board with TMU00 and TMU01.
 
---- 0008/drivers/clocksource/sh_cmt.c
-+++ work/drivers/clocksource/sh_cmt.c	2011-04-25 15:01:53.000000000 +0900
-@@ -24,6 +24,7 @@
- #include <linux/ioport.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/pm_runtime.h>
- #include <linux/irq.h>
- #include <linux/err.h>
- #include <linux/clocksource.h>
-@@ -152,10 +153,12 @@ static int sh_cmt_enable(struct sh_cmt_p
+ drivers/clocksource/sh_tmu.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
+
+--- 0001/drivers/clocksource/sh_tmu.c
++++ work/drivers/clocksource/sh_tmu.c	2011-04-25 15:07:41.000000000 +0900
+@@ -199,8 +199,12 @@ static cycle_t sh_tmu_clocksource_read(s
+ static int sh_tmu_clocksource_enable(struct clocksource *cs)
  {
- 	int ret;
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
++	int ret;
  
--	/* enable clock */
-+	/* wake up device and enable clock */
-+	pm_runtime_get_sync(&p->pdev->dev);
- 	ret = clk_enable(p->clk);
- 	if (ret) {
- 		dev_err(&p->pdev->dev, "cannot enable clock\n");
-+		pm_runtime_put_sync(&p->pdev->dev);
- 		return ret;
- 	}
- 
-@@ -187,8 +190,9 @@ static void sh_cmt_disable(struct sh_cmt
- 	/* disable interrupts in CMT block */
- 	sh_cmt_write(p, CMCSR, 0);
- 
--	/* stop clock */
-+	/* stop clock and mark device as idle */
- 	clk_disable(p->clk);
-+	pm_runtime_put_sync(&p->pdev->dev);
+-	return sh_tmu_enable(p);
++	ret = sh_tmu_enable(p);
++	if (!ret)
++		__clocksource_updatefreq_hz(cs, p->rate);
++	return ret;
  }
  
- /* private flags */
-@@ -660,6 +664,7 @@ static int __devinit sh_cmt_probe(struct
+ static void sh_tmu_clocksource_disable(struct clocksource *cs)
+@@ -221,17 +225,10 @@ static int sh_tmu_register_clocksource(s
+ 	cs->mask = CLOCKSOURCE_MASK(32);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
  
- 	if (p) {
- 		dev_info(&pdev->dev, "kept as earlytimer\n");
-+		pm_runtime_enable(&pdev->dev);
- 		return 0;
- 	}
- 
-@@ -674,6 +679,9 @@ static int __devinit sh_cmt_probe(struct
- 		kfree(p);
- 		platform_set_drvdata(pdev, NULL);
- 	}
+-	/* clk_get_rate() needs an enabled clock */
+-	clk_enable(p->clk);
+-	/* channel will be configured at parent clock / 4 */
+-	p->rate = clk_get_rate(p->clk) / 4;
+-	clk_disable(p->clk);
+-	/* TODO: calculate good shift from rate and counter bit width */
+-	cs->shift = 10;
+-	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
+-
+ 	dev_info(&p->pdev->dev, "used as clock source\n");
+-	clocksource_register(cs);
 +
-+	if (!is_early_platform_device(pdev))
-+		pm_runtime_enable(&pdev->dev);
- 	return ret;
++	/* Register with dummy 1 Hz value, gets updated in ->enable() */
++	clocksource_register_hz(cs, 1);
+ 	return 0;
  }
  
