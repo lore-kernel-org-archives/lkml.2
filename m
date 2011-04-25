@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758453Ab1DYOF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 10:05:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52829 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab1DYOF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 10:05:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ab/sKUU1MOZpPLRQrZSJVof7259hE12dA3+IdbFWHyiFQ8qPpDAu8sxiQ+SVUfeb41
-         hrBsWMlMvNP2H6tO4qeVSV092n8qGLjw6IYwMvD6n2XDuuYKYUfB1z3Ib8vFC0/j+KNu
-         il6cUWWLbuuQXgMzygYf5d4oRnuftSZrPfYTM=
-Message-ID: <4DB57FA3.204@gmail.com>
-Date: Mon, 25 Apr 2011 18:05:23 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1758350Ab1DYOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 10:11:25 -0400
+Received: from core.signal11.us ([64.251.29.136]:59907 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756714Ab1DYOLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 10:11:23 -0400
+Message-ID: <4DB58108.4040708@signal11.us>
+Date: Mon, 25 Apr 2011 10:11:20 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
-References: <1303398203-2918-1-git-send-email-dzickus@redhat.com> <1303398203-2918-5-git-send-email-dzickus@redhat.com> <20110422081838.GA24011@elte.hu> <BANLkTimh80LorfC8O-HOPAAWK9BLYNjcXA@mail.gmail.com> <1303462476.2035.215.camel@laptop> <BANLkTi=Eoa9jpiLmFTgcNrY334ZAfz6P=w@mail.gmail.com> <1303465546.2035.224.camel@laptop> <4DB19B80.5000900@gmail.com> <20110425134126.GB20887@redhat.com>
-In-Reply-To: <20110425134126.GB20887@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>, Steve Sakoman <sakoman@gmail.com>,
+        Steve Calfee <stevecalfee@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Regression?] Removed regulator support in ehci-omap
+References: <20110411093214.GA18215@rainbow> <4DA3350E.2060400@gmail.com> <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com> <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com> <20110412040420.GB25239@rainbow> <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com> <4DB0D58E.4030508@signal11.us> <8712165194c49f0b4d8c1bd1fe717b8a@mail.gmail.com>
+In-Reply-To: <8712165194c49f0b4d8c1bd1fe717b8a@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDDDECD471EEA27955D04B07F"
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Mon Apr 25 10:11:22 2011
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4db5810a32731168316194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2011 05:41 PM, Don Zickus wrote:
-> On Fri, Apr 22, 2011 at 07:15:12PM +0400, Cyrill Gorcunov wrote:
->> On 04/22/2011 01:45 PM, Peter Zijlstra wrote:
->> ...
->>>
->>> Right, so the idea is that one event (concept) has two (or more)
->>> representations in the config space. And when scheduling the events we
->>> find we have a conflict, we simply try the alternative encoding(s).
->>>
->> ...
->>
->>   Yeah, Peter, I think it's quite possible to use alternative encoding for p4 as well,
->> not sure tho if some "generalized" approach for all perf would be applied to p4 but
->> we can make event "aliases" being per-pmu eventually.
->>
->>   So Ingo, drop this patch then ;)
-> 
-> Eek, when can you have an alternate patch for this Cyril?  I just want to
-> make sure this can still eventually find its way into 2.6.40.
-> 
-> Cheers,
-> Don
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDDDECD471EEA27955D04B07F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-  I need kinda aliases for events (or alternative scheme as PeterZ mentions),
-Don I'll try to make something tomorrow, ok? With aliases we would not need
-to even modify sources outside of p4 pmu which is good i think. I've some spare
-bits in low hw:config bits so this aliases could go there as a start.
+On 04/24/2011 02:37 AM, Keshava Munegowda wrote:
+>> -----Original Message-----
+>> From: Alan Ott [mailto:alan@signal11.us]
+>> Sent: Friday, April 22, 2011 6:41 AM
+>> To: Keshava Munegowda
+>> Cc: Dmitry Artamonow; Steve Sakoman; Steve Calfee; Felipe Balbi;
+> linux-usb@vger.kernel.org; linux-
+>> omap@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [Regression?] Removed regulator support in ehci-omap
+>>
+>> On 04/12/2011 12:20 PM, Keshava Munegowda wrote:
+>>>> Ah, so EHCI/OHCI common code was moved into drivers/mfd... Good.
+>>>> But seems regulators support was lost somewhere during transition -
+> the
+>>>> only mentioning about regulators in omap-usb-host.c is "#include" :
+>>>>
+>>>> mad@macmini:~/kernel-hack/linux-2.6(master)$ grep -i regulator
+>>> drivers/mfd/omap-usb-host.c
+>>> Thanks ! I will add some time next week!
+>> I have confirmed this on my BeagleBoard-xM. 2.6.38 works, but the
+>> 2.6.39-rc4+ head from yesterday did not. It seems that the regulator
+>> does not turn the power on for the USB hub which the ethernet is
+>> attached to.
+>>
+>> I connected this issue to bug 33092 in bugzilla[1].
+>>
+>> Alan.
+>>
+>> [1] https://bugzilla.kernel.org/show_bug.cgi?id=3D33092
+> I have posted the patches on April 22, 2011.
+> If possible I request you to test this.
 
--- 
-    Cyrill
+Hi Keshava,
+
+If you mean this patch[1], then I tested it against the head and it
+didn't fix my problem. I couldn't convince myself that your patch was
+supposed to be the whole fix to my problem (since it wasn't mentioned on
+this thread) so I didn't reply with my findings. Sorry about that.
+
+Thanks for taking a look,
+
+Alan.
+
+[1] http://www.spinics.net/lists/linux-usb/msg45618.html
+
+
+
+--------------enigDDDECD471EEA27955D04B07F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQEcBAEBAgAGBQJNtYEIAAoJEFZEOVT5235iExUH/RWT54gH4d1TcMXxjSzqW4JJ
+K7h0WzKymyZPGSLPKGYWJN+xfM4HdFl/L1HLdP8pRFTL9gj6ZBE/BgsQxCU8wpxE
+/XvL3IMPl+dA6W5ZLsFVYeTllp/4rXBCPZNSB0AQ7BTxiRqSRJxmZZ0Av2oNweIA
+ANzEHBJqfhKbz+HkFpihgl12+BU7kRaVCZ2Y65k5VgyK0EhyaVDmbPR2l6xuRtAf
+I8raPpEavoJiAEqD8pz1TJAIpOw0r20fqXgIlD4+ljWw581b9KNvqHbQVhkZwWRx
+H50Cvct7VPY+S39Nnttn4WPxV32j7McswMiGz0RGyMZ6b62es1lgZKhNarpCRCg=
+=N0RY
+-----END PGP SIGNATURE-----
+
+--------------enigDDDECD471EEA27955D04B07F--
+
+
