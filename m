@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1DYUWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:22:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:33635 "EHLO 1wt.eu"
+	id S1754157Ab1DYUWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:22:46 -0400
+Received: from 1wt.eu ([62.212.114.60]:33654 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532Ab1DYUWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:22:40 -0400
-Message-Id: <20110425200233.214503521@pcw.home.local>
+	id S1753710Ab1DYUWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:22:44 -0400
+Message-Id: <20110425200233.430897047@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:02:37 +0200
+Date: Mon, 25 Apr 2011 22:02:42 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Alex He <alex.he@amd.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 005/173] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
+Cc: Nick Holloway <Nick.Holloway@pyrites.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 010/173] USB: Storage: Add unusual_devs entry for VTech Kidizoom
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,77 +23,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Nick Holloway <Nick.Holloway@pyrites.org.uk>
 
-commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
+commit c25f6b1591b158f7ae3b9132367d0fa6d632e70e upstream.
 
-AMD Hudson also needs the same ASPM quirk as SB800
+This device suffers from the off-by-one error when reporting the capacity,
+so add entry with US_FL_FIX_CAPACITY.
 
-Signed-off-by: Alex He <alex.he@amd.com>
+Signed-off-by: Nick Holloway <Nick.Holloway@pyrites.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,28 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
- 	return 0;
- }
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1410,6 +1410,13 @@ UNUSUAL_DEV(  0x0fca, 0x0006, 0x0001, 0x
+ 		US_FL_IGNORE_DEVICE ),
+ #endif
  
--static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
- {
- 	struct pci_dev *amd_smbus_dev;
- 	u8 rev = 0;
- 
- 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
--	if (!amd_smbus_dev)
--		return 0;
--
--	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
--	if (rev < 0x40) {
--		pci_dev_put(amd_smbus_dev);
--		amd_smbus_dev = NULL;
--		return 0;
-+	if (amd_smbus_dev) {
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x40) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
-+	} else {
-+		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
-+		if (!amd_smbus_dev)
-+			return 0;
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x11 || rev > 0x18) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
- 	}
- 
- 	if (!amd_nb_dev)
- 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
--	if (!amd_nb_dev)
--		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
- 
--	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
- 
- 	pci_dev_put(amd_smbus_dev);
- 	amd_smbus_dev = NULL;
-@@ -128,7 +135,7 @@ static int ehci_pci_setup(struct usb_hcd
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 
--	if (ehci_quirk_amd_SB800(ehci))
-+	if (ehci_quirk_amd_hudson(ehci))
- 		ehci->amd_l1_fix = 1;
- 
- 	retval = ehci_halt(ehci);
++/* Submitted by Nick Holloway */
++UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0100,
++		"VTech",
++		"Kidizoom",
++		US_SC_DEVICE, US_PR_DEVICE, NULL,
++		US_FL_FIX_CAPACITY ),
++
+ /* Reported by Michael Stattmann <michael@stattmann.com> */
+ UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
+ 		"Sony Ericsson",
 
 
