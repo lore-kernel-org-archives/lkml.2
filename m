@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab1DYUZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:25:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:34514 "EHLO 1wt.eu"
+	id S932474Ab1DYUfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:35:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:34541 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932392Ab1DYUZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:14 -0400
-Message-Id: <20110425200239.989268371@pcw.home.local>
+	id S932420Ab1DYUZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:19 -0400
+Message-Id: <20110425200239.553074929@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:13 +0200
+Date: Mon, 25 Apr 2011 22:05:03 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Alex Elder <aelder@sgi.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 161/173] xfs: zero proper structure size for geometry calls
+Cc: Vasiliy Kulikov <segooon@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Moritz Muehlenhoff <jmm@debian.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 151/173] net: packet: fix information leak to userland
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,70 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <aelder@sgi.com>
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-commit af24ee9ea8d532e16883251a6684dfa1be8eec29 upstream.
+commit 67286640f638f5ad41a946b9a3dc75327950248f upstream.
 
-Commit 493f3358cb289ccf716c5a14fa5bb52ab75943e5 added this call to
-xfs_fs_geometry() in order to avoid passing kernel stack data back
-to user space:
+packet_getname_spkt() doesn't initialize all members of sa_data field of
+sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
+to userland.  It leads to leaking of contents of kernel stack memory.
+We have to fully fill sa_data with strncpy() instead of strlcpy().
 
-+       memset(geo, 0, sizeof(*geo));
+The same with packet_getname(): it doesn't initialize sll_pkttype field of
+sockaddr_ll.  Set it to zero.
 
-Unfortunately, one of the callers of that function passes the
-address of a smaller data type, cast to fit the type that
-xfs_fs_geometry() requires.  As a result, this can happen:
-
-Kernel panic - not syncing: stack-protector: Kernel stack is corrupted
-in: f87aca93
-
-Pid: 262, comm: xfs_fsr Not tainted 2.6.38-rc6-493f3358cb2+ #1
-Call Trace:
-
-[<c12991ac>] ? panic+0x50/0x150
-[<c102ed71>] ? __stack_chk_fail+0x10/0x18
-[<f87aca93>] ? xfs_ioc_fsgeometry_v1+0x56/0x5d [xfs]
-
-Fix this by fixing that one caller to pass the right type and then
-copy out the subset it is interested in.
-
-Note: This patch is an alternative to one originally proposed by
-Eric Sandeen.
-
-Reported-by: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Tested-by: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Moritz Muehlenhoff <jmm@debian.org>
+[jmm: Backported to 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_ioctl.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/packet/af_packet.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/linux-2.6/xfs_ioctl.c
-+++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-@@ -697,14 +697,19 @@ xfs_ioc_fsgeometry_v1(
- 	xfs_mount_t		*mp,
- 	void			__user *arg)
- {
--	xfs_fsop_geom_v1_t	fsgeo;
-+	xfs_fsop_geom_t         fsgeo;
- 	int			error;
- 
--	error = xfs_fs_geometry(mp, (xfs_fsop_geom_t *)&fsgeo, 3);
-+	error = xfs_fs_geometry(mp, &fsgeo, 3);
- 	if (error)
- 		return -error;
- 
--	if (copy_to_user(arg, &fsgeo, sizeof(fsgeo)))
-+	/*
-+	 * Caller should have passed an argument of type
-+	 * xfs_fsop_geom_v1_t.  This is a proper subset of the
-+	 * xfs_fsop_geom_t that xfs_fs_geometry() fills in.
-+	 */
-+	if (copy_to_user(arg, &fsgeo, sizeof(xfs_fsop_geom_v1_t)))
- 		return -XFS_ERROR(EFAULT);
- 	return 0;
- }
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1526,7 +1526,7 @@ static int packet_getname_spkt(struct so
+ 	uaddr->sa_family = AF_PACKET;
+ 	dev = dev_get_by_index(sock_net(sk), pkt_sk(sk)->ifindex);
+ 	if (dev) {
+-		strlcpy(uaddr->sa_data, dev->name, 15);
++		strncpy(uaddr->sa_data, dev->name, 14);
+ 		dev_put(dev);
+ 	} else
+ 		memset(uaddr->sa_data, 0, 14);
+@@ -1549,6 +1549,7 @@ static int packet_getname(struct socket
+ 	sll->sll_family = AF_PACKET;
+ 	sll->sll_ifindex = po->ifindex;
+ 	sll->sll_protocol = po->num;
++	sll->sll_pkttype = 0;
+ 	dev = dev_get_by_index(sock_net(sk), po->ifindex);
+ 	if (dev) {
+ 		sll->sll_hatype = dev->type;
 
 
