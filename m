@@ -1,28 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab1DYUuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:50:05 -0400
-Received: from 1wt.eu ([62.212.114.60]:34140 "EHLO 1wt.eu"
+	id S932221Ab1DYUYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:30 -0400
+Received: from 1wt.eu ([62.212.114.60]:34087 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab1DYUYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:31 -0400
-Message-Id: <20110425200233.776513369@pcw.home.local>
+	id S932185Ab1DYUY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:27 -0400
+Message-Id: <20110425200235.861135871@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:02:50 +0200
+Date: Mon, 25 Apr 2011 22:03:38 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Thomas Taranowski <tom@baringforge.com>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, maximilian attems <max@stro.at>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 018/173] rapidio: fix hang on RapidIO doorbell queue full condition
+Subject: [PATCH 066/173] virtio: set pci bus master enable bit
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,44 +23,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Taranowski <tom@baringforge.com>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit 12a4dc43911785f51a596f771ae0701b18d436f1 upstream.
+commit bc505f373979692d51a86d40925f77a8b09d17b9 upstream.
 
-In fsl_rio_dbell_handler() the code currently simply acknowledges the QFI
-queue full interrupt, but does nothing to resolve the queue full
-condition.  Instead, it jumps to the end of the isr.  When a queue full
-condition occurs, the isr is then re-entered immediately and continually,
-forever.
+As all virtio devices perform DMA, we
+must enable bus mastering for them to be
+spec compliant.
 
-The fix is to just fall through and read out current doorbell entries.
+This patch fixes hotplug of virtio devices
+with Linux guests and qemu 0.11-0.12.
 
-Signed-off-by: Thomas Taranowski <tom@baringforge.com>
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Micha Nelissen <micha@neli.hopto.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/sysdev/fsl_rio.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/virtio/virtio_pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/sysdev/fsl_rio.c
-+++ b/arch/powerpc/sysdev/fsl_rio.c
-@@ -832,7 +832,6 @@ fsl_rio_dbell_handler(int irq, void *dev
- 	if (dsr & DOORBELL_DSR_QFI) {
- 		pr_info("RIO: doorbell queue full\n");
- 		out_be32(&priv->msg_regs->dsr, DOORBELL_DSR_QFI);
--		goto out;
- 	}
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -647,6 +647,7 @@ static int __devinit virtio_pci_probe(st
+ 		goto out_req_regions;
  
- 	/* XXX Need to check/dispatch until queue empty */
+ 	pci_set_drvdata(pci_dev, vp_dev);
++	pci_set_master(pci_dev);
+ 
+ 	/* we use the subsystem vendor/device id as the virtio vendor/device
+ 	 * id.  this allows us to use the same PCI vendor/device id for all
 
 
