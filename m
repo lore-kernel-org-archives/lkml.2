@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab1DYWPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 18:15:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61191 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab1DYWPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 18:15:12 -0400
-MIME-Version: 1.0
-Date: Tue, 26 Apr 2011 00:15:11 +0200
-Message-ID: <BANLkTinzMvy04Oh7M4AQmK-OVma6ADb50w@mail.gmail.com>
-Subject: [GIT PULL] u300 and ux500 regression fixes for .39 series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: torvalds@osdl.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757063Ab1DYWos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 18:44:48 -0400
+Received: from 1wt.eu ([62.212.114.60]:34830 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751924Ab1DYWor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 18:44:47 -0400
+Date: Tue, 26 Apr 2011 00:44:33 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, stable-review@kernel.org,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [stable] [PATCH 054/173] acer-wmi: Fix capitalisation of GUID
+Message-ID: <20110425224433.GB13048@1wt.eu>
+References: <20110425200235.342580584@pcw.home.local> <201104252300.14068.carlos@strangeworlds.co.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104252300.14068.carlos@strangeworlds.co.uk>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Apr 25, 2011 at 11:00:13PM +0100, Carlos Corbacho wrote:
+> On Monday 25 Apr 2011 21:03:26 Willy Tarreau wrote:
+> > 2.6.27.59-stable review patch.  If anyone has any objections, please let us
+> > know.
+> 
+> Nack - this caused https://bugzilla.kernel.org/show_bug.cgi?id=32862
+> 
+> Either don't apply this patch, or you'll need to also apply the subsequent fix 
+> up at the same time (I don't know if that's gone upstream yet?).
 
-These are two fixes that makes u300 and ux500 boot on the
-2.6.39 series. They have been sent to the appropriate mailing
-lists but haven't got any comments for a week or so. Please
-pull them in.
+Fine, I've removed it.
 
-The following changes since commit f0e615c3cb72b42191b558c130409335812621d8:
+Thank you Carlos!
+Willy
 
-  Linux 2.6.39-rc4 (2011-04-18 21:26:00 -0700)
-
-are available in the git repository and branch at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
-for-torvalds
-
-Linus Walleij (2):
-      mach-ux500: fix i2c0 device setup regression
-      rtc: fix coh901331 startup crash
-
- arch/arm/mach-ux500/board-mop500.c |   19 ++++++++++---------
- drivers/rtc/rtc-coh901331.c        |    4 ++--
- 2 files changed, 12 insertions(+), 11 deletions(-)
