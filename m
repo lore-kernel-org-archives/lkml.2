@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab1DYUwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:52:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:34092 "EHLO 1wt.eu"
+	id S932952Ab1DYUwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:52:46 -0400
+Received: from 1wt.eu ([62.212.114.60]:34045 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932190Ab1DYUY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:28 -0400
-Message-Id: <20110425200235.385744103@pcw.home.local>
+	id S932102Ab1DYUYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:23 -0400
+Message-Id: <20110425200235.947712840@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:27 +0200
+Date: Mon, 25 Apr 2011 22:03:40 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Matthew Garrett <mjg@redhat.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 055/173] platform: x86: acer-wmi: world-writable sysfs threeg file
+Subject: [PATCH 068/173] r8169: disable ASPM
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,42 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b80b168f918bba4b847e884492415546b340e19d upstream.
+commit ba04c7c93bbcb48ce880cf75b6e9dffcd79d4c7b upstream.
 
-Don't allow everybody to write to hardware registers.
+For some time is known that ASPM is causing troubles on r8169, i.e. make
+device randomly stop working without any errors in dmesg.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Currently Tomi Leppikangas reports that system with r8169 device hangs
+with MCE errors when ASPM is enabled:
+https://bugzilla.redhat.com/show_bug.cgi?id=642861#c4
+
+Lets disable ASPM for r8169 devices at all, to avoid problems with
+r8169 PCIe devices at least for some users.
+
+Reported-by: Tomi Leppikangas <tomi.leppikangas@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[wt: also fixed permission on interface]
 
 ---
- drivers/platform/x86/acer-wmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/r8169.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Index: longterm-2.6.27/drivers/misc/acer-wmi.c
-===================================================================
---- longterm-2.6.27.orig/drivers/misc/acer-wmi.c	2011-04-25 14:48:12.000000000 +0200
-+++ longterm-2.6.27/drivers/misc/acer-wmi.c	2011-04-25 14:57:17.405278940 +0200
-@@ -957,7 +957,7 @@
- 			return -EINVAL; \
- 	return count; \
- } \
--static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
-+static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, \
- 	show_bool_##value, set_bool_##value);
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -23,6 +23,7 @@
+ #include <linux/tcp.h>
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
++#include <linux/pci-aspm.h>
  
- show_set_bool(wireless, ACER_CAP_WIRELESS);
-@@ -982,7 +982,7 @@
- 	}
- }
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -3030,6 +3031,11 @@ rtl8169_init_one(struct pci_dev *pdev, c
+ 	mii->reg_num_mask = 0x1f;
+ 	mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
  
--static DEVICE_ATTR(interface, S_IWUGO | S_IRUGO | S_IWUSR,
-+static DEVICE_ATTR(interface, S_IRUGO | S_IWUSR,
- 	show_interface, NULL);
- 
- /*
++	/* disable ASPM completely as that cause random device stop working
++	 * problems as well as full system hangs for some PCIe devices users */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++				     PCIE_LINK_STATE_CLKPM);
++
+ 	/* enable device (incl. PCI PM wakeup and hotplug setup) */
+ 	rc = pci_enable_device(pdev);
+ 	if (rc < 0) {
 
 
