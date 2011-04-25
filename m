@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab1DYUVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:21:23 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49849 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab1DYUVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:21:20 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Akihiro MAEDA <sola.1980.a@gmail.com>,
-        Masashi YOKOTA <yokota@pylone.jp>
-Subject: [PATCH 0/3][RFC] Virtual Battery Driver
-Date: Mon, 25 Apr 2011 13:20:26 -0700
-Message-Id: <1303762829-18000-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	id S1753455Ab1DYUWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:22:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:33635 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752532Ab1DYUWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:22:40 -0400
+Message-Id: <20110425200233.214503521@pcw.home.local>
+User-Agent: quilt/0.48-1
+Date: Mon, 25 Apr 2011 22:02:37 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
+Cc: Alex He <alex.he@amd.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 005/173] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
+In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For awhile now, there has been an out of tree virtual
-battery driver that was created by Masashi YOKOTA
-<yokota@pylone.jp> that folks have been using to test
-battery UI functionality on boards that don't actually
-have battery hardware.
+2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
 
-More recently the power supply test driver (test_power.c)
-has been merged.
+------------------
 
-Both drivers provide somwhat similar functionality,
-although the virtual battery driver allows settings
-such as health and charge state to be manipulated at
-runtime via module params.
+From: Alex He <alex.he@amd.com>
 
-So while I'm not proposing to merge this patch set as 
-is, I wanted to send it out for comment to see if there
-would be some interest or objections for merging some of
-the functionality from the virtual battery driver into
-the test_power driver?
+commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
 
-Thoughts?
+AMD Hudson also needs the same ASPM quirk as SB800
 
-thanks
--john
+Signed-off-by: Alex He <alex.he@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
+---
+ drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
-CC: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Akihiro MAEDA <sola.1980.a@gmail.com>
-CC: Masashi YOKOTA <yokota@pylone.jp>
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -41,28 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
+ 	return 0;
+ }
+ 
+-static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
++static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
+ {
+ 	struct pci_dev *amd_smbus_dev;
+ 	u8 rev = 0;
+ 
+ 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
+-	if (!amd_smbus_dev)
+-		return 0;
+-
+-	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
+-	if (rev < 0x40) {
+-		pci_dev_put(amd_smbus_dev);
+-		amd_smbus_dev = NULL;
+-		return 0;
++	if (amd_smbus_dev) {
++		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
++		if (rev < 0x40) {
++			pci_dev_put(amd_smbus_dev);
++			amd_smbus_dev = NULL;
++			return 0;
++		}
++	} else {
++		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
++		if (!amd_smbus_dev)
++			return 0;
++		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
++		if (rev < 0x11 || rev > 0x18) {
++			pci_dev_put(amd_smbus_dev);
++			amd_smbus_dev = NULL;
++			return 0;
++		}
+ 	}
+ 
+ 	if (!amd_nb_dev)
+ 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
+-	if (!amd_nb_dev)
+-		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
+ 
+-	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
++	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
+ 
+ 	pci_dev_put(amd_smbus_dev);
+ 	amd_smbus_dev = NULL;
+@@ -128,7 +135,7 @@ static int ehci_pci_setup(struct usb_hcd
+ 	/* cache this readonly data; minimize chip reads */
+ 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+ 
+-	if (ehci_quirk_amd_SB800(ehci))
++	if (ehci_quirk_amd_hudson(ehci))
+ 		ehci->amd_l1_fix = 1;
+ 
+ 	retval = ehci_halt(ehci);
 
-Akihiro MAEDA (1):
-  power: virtual battery driver tweaks
-
-John Stultz (1):
-  power: Fixup stack usage in vritual battery driver
-
-Masashi YOKOTA (1):
-  power: Add virtual battery driver
-
- drivers/power/Kconfig           |    5 +
- drivers/power/Makefile          |    1 +
- drivers/power/virtual_battery.c |  400 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 406 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/virtual_battery.c
-
--- 
-1.7.3.2.146.gca209
 
