@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab1DYVhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 17:37:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49377 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751121Ab1DYVhW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 17:37:22 -0400
+	id S1756189Ab1DYVqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 17:46:48 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:59190 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1DYVqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 17:46:47 -0400
+Date: Mon, 25 Apr 2011 17:46:22 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+In-Reply-To: <20110425175444.GC28239@elte.hu>
+Message-ID: <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org> <1303407662-15564-2-git-send-email-acme@infradead.org> <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu> <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <20110425175444.GC28239@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110425231016.34b4293e@neptune.home>
-References: <20110424235928.71af51e0@neptune.home> <20110425114429.266A.A69D9226@jp.fujitsu.com>
- <BANLkTinVQtLbmBknBZeY=7w7AOyQk61Pew@mail.gmail.com> <20110425111705.786ef0c5@neptune.home>
- <BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com> <20110425180450.1ede0845@neptune.home>
- <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home>
- <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home>
- <20110425191607.GL2468@linux.vnet.ibm.com> <20110425231016.34b4293e@neptune.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Apr 2011 14:30:02 -0700
-Message-ID: <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/25 Bruno Prémont <bonbons@linux-vserver.org>:
->
-> Between 1-slabinfo and 2-slabinfo some values increased (a lot) while a few
-> ones did decrease. Don't know which ones are RCU-affected and which ones are
-> not.
+On Mon, 25 Apr 2011, Ingo Molnar wrote:
 
-It really sounds as if the tiny-rcu kthread somehow just stops
-handling callbacks. The ones that keep increasing do seem to be all
-rcu-free'd (but I didn't really check).
+> 
+> * Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+> 
+> > [...] The kernel has no business telling users which perf events are 
+> > interesting, or limiting them! [...]
+> 
+> The policy is very simple and common-sense: if a given piece of PMU 
+> functionality is useful enough to be exposed via a raw interface, then
+> it must be useful enough to be generalized as well.
 
-The thing is shown as running:
+what does that even mean?  How do you "generalize" a functionality like 
+writing a value to an auxiliary MSR register?
 
-root         6  0.0  0.0      0     0 ?        R    22:14   0:00  \_
-[rcu_kthread]
+The PAPI tool was using the perf_events interface in the 2.6.39-git 
+kernels to collect offcore response results by properly setting the 
+config1 register on Nehalem and Westmere machines.
 
-but nothing seems to happen and the CPU time hasn't increased at all.
+Now it has been disabled for unclear reasons.
 
-I dunno. Makes no  sense to me, but yeah, I'm definitely blaming
-tiny-rcu. Paul, any ideas?
+Could you at least have some sort of relevant errno value set in this 
+case?  It's a real pain in userspace code to try to sort out the 
+perf_event return values to find out if a feature is supported,
+unsupported (lack of hardware), unsupported (not implemented yet),
+unsupported (disabled due to whim of kernel developer), unsupported
+(because you have some sort of configuration conflict).
 
-                          Linus
+> > [...]  What is this, windows?
+> 
+> FYI, this is how the Linux kernel has operated from day 1 on: we support 
+> hardware features to abstract useful highlevel functionality out of it.
+> I would not expect this to change anytime soon.
+
+I started using Linux because it actually let me use my hardware without 
+interfering with what I was trying to do.  Not because it disabled access 
+to the hardware due to some perceived lack of generalization in an extra 
+unncessary software translation layer.
+
+Vince
+vweaver1@eecs.utk.edu
