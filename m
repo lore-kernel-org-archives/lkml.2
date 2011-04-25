@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab1DYWAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 18:00:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35862 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1DYWAU (ORCPT
+	id S1756634Ab1DYWBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 18:01:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52574 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab1DYWBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 18:00:20 -0400
-From: Carlos Corbacho <carlos@strangeworlds.co.uk>
-To: Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 054/173] acer-wmi: Fix capitalisation of GUID
-Date: Mon, 25 Apr 2011 23:00:13 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38.3cc; KDE/4.5.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <20110425200235.342580584@pcw.home.local>
-In-Reply-To: <20110425200235.342580584@pcw.home.local>
+	Mon, 25 Apr 2011 18:01:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QD/VQwPvVNRxMR4CiE4S5OyBFxbu9GgEszGOpmH5d11RgfWl33DgU2YXBKaWGkdF3z
+         fCYaDnXyFjyjXYEhbVxxqd7+i7NviAJvaT+8c1+CHDzCjVqSmqg1yje+tdaggw4AqrIb
+         +mXpMi8JiUAmFuThRkBd20l5oe1trIv+opz1c=
+Date: Tue, 26 Apr 2011 01:01:16 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, bookjovi@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, wilsons@start.ca
+Subject: Re: +
+ proc-put-check_mem_permission-before-__get_free_page-in-mem_read.patch added
+ to -mm tree
+Message-ID: <20110425220116.GA22006@p183>
+References: <201104252011.p3PKBFTD005857@imap1.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104252300.14068.carlos@strangeworlds.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104252011.p3PKBFTD005857@imap1.linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 Apr 2011 21:03:26 Willy Tarreau wrote:
-> 2.6.27.59-stable review patch.  If anyone has any objections, please let us
-> know.
+On Mon, Apr 25, 2011 at 01:11:15PM -0700, akpm@linux-foundation.org wrote:
+> Subject: proc: put check_mem_permission before __get_free_page in mem_read
+> From: Jovi Zhang <bookjovi@gmail.com>
+> 
+> It would be better to put check_mem_permission() before __get_free_page()
+> in mem_read(), to be same as mem_write().
 
-Nack - this caused https://bugzilla.kernel.org/show_bug.cgi?id=32862
+This can be done even more straightforward if you put task_struct right after
+it isn't needed.
 
-Either don't apply this patch, or you'll need to also apply the subsequent fix 
-up at the same time (I don't know if that's gone upstream yet?).
-
--Carlos
-
-> 
-> ------------------
-> 
-> From: Matthew Garrett <mjg@redhat.com>
-> 
-> commit bbb706079abe955a9e3f208f541de97d99449236 upstream.
-> 
-> 6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3 needs to be
-> 6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3 to match the hardware alias.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  drivers/platform/x86/acer-wmi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/drivers/misc/acer-wmi.c
-> +++ b/drivers/misc/acer-wmi.c
-> @@ -90,7 +90,7 @@ struct acer_quirks {
->   */
->  #define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
->  #define AMW0_GUID2		"431F16ED-0C2B-444C-B267-27DEB140CF9C"
-> -#define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
-> +#define WMID_GUID1		"6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3"
->  #define WMID_GUID2		"95764E09-FB56-4e83-B31A-37761F60994A"
-> 
->  MODULE_ALIAS("wmi:67C3371D-95A3-4C37-BB61-DD47B491DAAB");
+> --- a/fs/proc/base.c~proc-put-check_mem_permission-before-__get_free_page-in-mem_read
+> +++ a/fs/proc/base.c
+> @@ -831,23 +831,21 @@ static ssize_t mem_read(struct file * fi
+>  	if (!task)
+>  		goto out_no_task;
+>  
+> -	ret = -ENOMEM;
+> -	page = (char *)__get_free_page(GFP_TEMPORARY);
+> -	if (!page)
+> -		goto out;
+> -
+>  	mm = check_mem_permission(task);
+>  	ret = PTR_ERR(mm);
+>  	if (IS_ERR(mm))
+> -		goto out_free;
+> +		goto out_task;
+>  
+>  	ret = -EIO;
+> - 
+>  	if (file->private_data != (void*)((long)current->self_exec_id))
+> -		goto out_put;
+> +		goto out_mm;
+> +
+> +	ret = -ENOMEM;
+> +	page = (char *)__get_free_page(GFP_TEMPORARY);
+> +	if (!page)
+> +		goto out_mm;
+>  
+>  	ret = 0;
+> - 
+>  	while (count > 0) {
+>  		int this_len, retval;
+>  
+> @@ -870,12 +868,10 @@ static ssize_t mem_read(struct file * fi
+>  		count -= retval;
+>  	}
+>  	*ppos = src;
+> -
+> -out_put:
+> -	mmput(mm);
+> -out_free:
+>  	free_page((unsigned long) page);
+> -out:
+> +out_mm:
+> +	mmput(mm);
+> +out_task:
+>  	put_task_struct(task);
+>  out_no_task:
+>  	return ret;
