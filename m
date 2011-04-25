@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758421Ab1DYLOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 07:14:12 -0400
-Received: from csamuel.org ([74.50.50.137]:34959 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375Ab1DYLOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 07:14:11 -0400
-From: Chris Samuel <chris@csamuel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: FW: 2.6.38.3 and 2.6.39-rc4 hangs after "Booting the kernel" on quad Pentium Pro system
-Date: Mon, 25 Apr 2011 21:13:49 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: Thomas Meyer <thomas@m3y3r.de>, Yuhong Bao <yuhongbao_386@hotmail.com>,
-        hpa@zytor.com, alan@lxorguk.ukuu.org.uk, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-References: <201104222333.25546.chris@csamuel.org> <201104241022.17009.chris@csamuel.org> <BANLkTi=jKhd5foP=Avdv4cGUntbSMSDZrg@mail.gmail.com>
-In-Reply-To: <BANLkTi=jKhd5foP=Avdv4cGUntbSMSDZrg@mail.gmail.com>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
-	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
-	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
-	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
+	id S1758490Ab1DYLOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 07:14:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42089 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758475Ab1DYLOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 07:14:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vx05mdYrlap48F4pJM3o/XUA0y6NI0fNDvgaP+wcO8fLREPAbu9IJlOc/IslZ5P1eV
+         5h+6anpQ/rhYmSlgFEugDQ4RWrIguZHN/rBoMAEou7d/Su+I5Dhx/A2K7Yo5uezgvu6F
+         O4U/XVv4c/n4OwSUszpV5G1m7xKcNdPCY3C9g=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2988556.4uPfsocj85";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104252113.54049.chris@csamuel.org>
+In-Reply-To: <BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
+References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
+	<4DB4E94C.2060505@lwfinger.net>
+	<BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
+Date: Mon, 25 Apr 2011 19:14:15 +0800
+Message-ID: <BANLkTimLVPHdpcGqnZP-LNVT7Jp=XZ+gvw@mail.gmail.com>
+Subject: Re: r8712u cannot set essid
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2988556.4uPfsocj85
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 25, 2011 at 12:32 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
 
-Hello Yinghai,
+Larry,
 
-On Sun, 24 Apr 2011 06:46:03 PM Yinghai Lu wrote:
+Saw this post from you about putting the r8712u into "ap mode" below ...
 
-> You may need to your .config to have
-> CONFIG_SMP
-> CONFIG_PCI
-> CONFIG_X86_MPPARSE
-> set to use mptable from BIOS.
+Larry Finger | 27 Jan 15:39
+> Re: unable to put RTL8192SU in master mode
+> Master mode with r8712u has not been tested. The driver I started with has a
+> configuration parameter that enables "AP mode". I kept that in, but I do not
+> know if it works.
 
-Thanks for that - I already have all 3 of those set I'm afraid.
+Here's what I tried, but not sure if this is the correct way to put
+into AP mode ...
 
-All the best,
-Chris
-=2D-=20
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+# modprobe r8712u network_mode=4
 
-This email may come with a PGP signature as a file. Do not panic.
-=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+Then, I ran ...
 
---nextPart2988556.4uPfsocj85
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+# wpa_supplicant -d -D hostap -i wlan0 -c /etc/wpa42.conf
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+wpa_driver_hostap_set_wpa: enabled=1
+...
+wpa_driver_hostap_set_key: alg=none key_idx=0 set_tx=0 seq_len=0 key_len=0
+ioctl[PRISM2_IOCTL_HOSTAPD]: Operation not supported
+Failed to set encryption.
+wpa_driver_hostap_set_key: alg=none key_idx=1 set_tx=0 seq_len=0 key_len=0
+ioctl[PRISM2_IOCTL_HOSTAPD]: Operation not supported
+Failed to set encryption.
+wpa_driver_hostap_set_key: alg=none key_idx=2 set_tx=0 seq_len=0 key_len=0
+ioctl[PRISM2_IOCTL_HOSTAPD]: Operation not supported
+Failed to set encryption.
+wpa_driver_hostap_set_key: alg=none key_idx=3 set_tx=0 seq_len=0 key_len=0
+ioctl[PRISM2_IOCTL_HOSTAPD]: Operation not supported
+Failed to set encryption.
+...
+wlan0: AP mode support not included in the build
 
-iQEVAwUATbVXbo1yjaOTJg85AQIkUwf/d2EQ8/RGHawlbeigWwQUohtNlUXHRum8
-zsWFtKaISYoyWZ8hxGaaC7dfPGAisK4Yq5BTtLqeKRwzoLUA1VbubwF78ZWLK4+A
-pjM4JUMM11sazhykGYz23FKbI8u9qIQUBp7WpitcsvediOY6MQ9wCsAhFuSyMbHO
-x5u46wfIv1zPyAhcxN6kGOk/4ChJiwZnt9abHtzAqeMixlYy07rLxc+NA9YmxFdh
-u+swAT0DtQvqUFUo5zszbj18WUNCE9ZBQXF6vq6FrbLrwGv06iCRrPCdhaEVl87O
-BkwHbA57xJcFsfPpVfnMFWao2xbVfaFNEesQRQItIOM3oLGGkGfZhw==
-=T4yI
------END PGP SIGNATURE-----
 
---nextPart2988556.4uPfsocj85--
+Is wpa_supplicant saying the r8172u is not in AP mode?
+
+Regarding setting essid I posted earlier, it seems the ssid can be set
+when wlan0 is "associated" to an AP. But, not set if not associated.
+With IBSS mode, there's no association to begin with, so the SSID
+can't be set. Make sense?
+
+
+Jeff
