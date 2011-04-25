@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab1DYUjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:39:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:34410 "EHLO 1wt.eu"
+	id S932334Ab1DYUY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:24:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:34255 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330Ab1DYUY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:59 -0400
-Message-Id: <20110425200239.251073536@pcw.home.local>
+	id S932239Ab1DYUYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:41 -0400
+Message-Id: <20110425200237.425356020@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:56 +0200
+Date: Mon, 25 Apr 2011 22:04:14 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 144/173] sound/oss: remove offset from load_patch callbacks
+Subject: [PATCH 102/173] aio: wake all waiters when destroying ctx
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,152 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit b769f49463711205d57286e64cf535ed4daf59e9 upstream.
+commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
 
-Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
-uninitialized value, and signedness issue
+The test program below will hang because io_getevents() uses
+add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
+wakes up one of the threads.  Fix this by using wake_up_all() in the aio
+code paths where we want to make sure no one gets stuck.
 
-The offset passed to midi_synth_load_patch() can be essentially
-arbitrary.  If it's greater than the header length, this will result in
-a copy_from_user(dst, src, negative_val).  While this will just return
--EFAULT on x86, on other architectures this may cause memory corruption.
-Additionally, the length field of the sysex_info structure may not be
-initialized prior to its use.  Finally, a signed comparison may result
-in an unintentionally large loop.
+	// t.c -- compile with gcc -lpthread -laio t.c
 
-On suggestion by Takashi Iwai, version two removes the offset argument
-from the load_patch callbacks entirely, which also resolves similar
-issues in opl3.  Compile tested only.
+	#include <libaio.h>
+	#include <pthread.h>
+	#include <stdio.h>
+	#include <unistd.h>
 
-v3 adjusts comments and hopefully gets copy offsets right.
+	static const int nthr = 2;
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+	void *getev(void *ctx)
+	{
+		struct io_event ev;
+		io_getevents(ctx, 1, 1, &ev, NULL);
+		printf("io_getevents returned\n");
+		return NULL;
+	}
+
+	int main(int argc, char *argv[])
+	{
+		io_context_t ctx = 0;
+		pthread_t thread[nthr];
+		int i;
+
+		io_setup(1024, &ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_create(&thread[i], NULL, getev, ctx);
+
+		sleep(1);
+
+		io_destroy(ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_join(thread[i], NULL);
+
+		return 0;
+	}
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/oss/dev_table.h  |    2 +-
- sound/oss/midi_synth.c |   30 +++++++++++++-----------------
- sound/oss/midi_synth.h |    2 +-
- sound/oss/opl3.c       |    8 ++------
- sound/oss/sequencer.c  |    2 +-
- 5 files changed, 18 insertions(+), 26 deletions(-)
+ fs/aio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/oss/dev_table.h
-+++ b/sound/oss/dev_table.h
-@@ -271,7 +271,7 @@ struct synth_operations
- 	void (*reset) (int dev);
- 	void (*hw_control) (int dev, unsigned char *event);
- 	int (*load_patch) (int dev, int format, const char __user *addr,
--	     int offs, int count, int pmgr_flag);
-+	     int count, int pmgr_flag);
- 	void (*aftertouch) (int dev, int voice, int pressure);
- 	void (*controller) (int dev, int voice, int ctrl_num, int value);
- 	void (*panning) (int dev, int voice, int value);
---- a/sound/oss/midi_synth.c
-+++ b/sound/oss/midi_synth.c
-@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -497,7 +497,7 @@ static inline void really_put_req(struct
+ 	ctx->reqs_active--;
  
- int
- midi_synth_load_patch(int dev, int format, const char __user *addr,
--		      int offs, int count, int pmgr_flag)
-+		      int count, int pmgr_flag)
- {
- 	int             orig_dev = synth_devs[dev]->midi_dev;
- 
-@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int forma
- 	if (!prefix_cmd(orig_dev, 0xf0))
- 		return 0;
- 
-+	/* Invalid patch format */
- 	if (format != SYSEX_PATCH)
--	{
--/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
- 		  return -EINVAL;
--	}
-+
-+	/* Patch header too short */
- 	if (count < hdr_size)
--	{
--/*		printk("MIDI Error: Patch header too short\n");*/
- 		return -EINVAL;
--	}
-+
- 	count -= hdr_size;
- 
- 	/*
--	 * Copy the header from user space but ignore the first bytes which have
--	 * been transferred already.
-+	 * Copy the header from user space
- 	 */
- 
--	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
-+	if (copy_from_user(&sysex, addr, hdr_size))
- 		return -EFAULT;
-- 
-- 	if (count < sysex.len)
--	{
--/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
-+
-+	/* Sysex record too short */
-+	if ((unsigned)count < (unsigned)sysex.len)
- 		sysex.len = count;
--	}
--  	left = sysex.len;
--  	src_offs = 0;
-+
-+	left = sysex.len;
-+	src_offs = 0;
- 
- 	for (i = 0; i < left && !signal_pending(current); i++)
- 	{
---- a/sound/oss/midi_synth.h
-+++ b/sound/oss/midi_synth.h
-@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
- void midi_synth_close (int dev);
- void midi_synth_hw_control (int dev, unsigned char *event);
- int midi_synth_load_patch (int dev, int format, const char __user * addr,
--		 int offs, int count, int pmgr_flag);
-+		 int count, int pmgr_flag);
- void midi_synth_panning (int dev, int channel, int pressure);
- void midi_synth_aftertouch (int dev, int channel, int pressure);
- void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
---- a/sound/oss/opl3.c
-+++ b/sound/oss/opl3.c
-@@ -819,7 +819,7 @@ static void opl3_hw_control(int dev, uns
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+-		wake_up(&ctx->wait);
++		wake_up_all(&ctx->wait);
  }
  
- static int opl3_load_patch(int dev, int format, const char __user *addr,
--		int offs, int count, int pmgr_flag)
-+		int count, int pmgr_flag)
- {
- 	struct sbi_instrument ins;
- 
-@@ -829,11 +829,7 @@ static int opl3_load_patch(int dev, int
- 		return -EINVAL;
- 	}
- 
--	/*
--	 * What the fuck is going on here?  We leave junk in the beginning
--	 * of ins and then check the field pretty close to that beginning?
--	 */
--	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
-+	if (copy_from_user(&ins, addr, sizeof(ins)))
- 		return -EFAULT;
- 
- 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
---- a/sound/oss/sequencer.c
-+++ b/sound/oss/sequencer.c
-@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file
- 				return -ENXIO;
- 
- 			fmt = (*(short *) &event_rec[0]) & 0xffff;
--			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
-+			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
- 			if (err < 0)
- 				return err;
+ static void aio_fput_routine(struct work_struct *data)
+@@ -1219,7 +1219,7 @@ static void io_destroy(struct kioctx *io
+ 	 * by other CPUs at this point.  Right now, we rely on the
+ 	 * locking done by the above calls to ensure this consistency.
+ 	 */
+-	wake_up(&ioctx->wait);
++	wake_up_all(&ioctx->wait);
+ 	put_ioctx(ioctx);	/* once for the lookup */
+ }
  
 
 
