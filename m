@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab1DYUog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:44:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:34328 "EHLO 1wt.eu"
+	id S932457Ab1DYUpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:45:52 -0400
+Received: from 1wt.eu ([62.212.114.60]:34315 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270Ab1DYUYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:48 -0400
-Message-Id: <20110425200238.642368233@pcw.home.local>
+	id S932259Ab1DYUYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:47 -0400
+Message-Id: <20110425200238.165592363@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:42 +0200
+Date: Mon, 25 Apr 2011 22:04:31 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 130/173] quota: Dont write quota info in dquot_commit()
+Cc: Somasundaram Krishnasamy <Somasundaram.Krishnasamy@lsi.com>,
+        Babu Moger <babu.moger@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 119/173] [SCSI] ses: Avoid kernel panic when lun 0 is not mapped
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,58 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Krishnasamy, Somasundaram <Somasundaram.Krishnasamy@lsi.com>
 
-commit b03f24567ce7caf2420b8be4c6eb74c191d59a91 upstream.
+commit d1e12de804f9d8ad114786ca7c2ce593cba79891 upstream.
 
-There's no reason to write quota info in dquot_commit(). The writing is a
-relict from the old days when we didn't have dquot_acquire() and
-dquot_release() and thus dquot_commit() could have created / removed quota
-structures from the file. These days dquot_commit() only updates usage counters
-/ limits in quota structure and thus there's no need to write quota info.
+During device discovery, scsi mid layer sends INQUIRY command to LUN
+0. If the LUN 0 is not mapped to host, it creates a temporary
+scsi_device with LUN id 0 and sends REPORT_LUNS command to it. After
+the REPORT_LUNS succeeds, it walks through the LUN table and adds each
+LUN found to sysfs. At the end of REPORT_LUNS lun table scan, it will
+delete the temporary scsi_device of LUN 0.
 
-This also fixes an issue with journaling filesystem which didn't reserve
-enough space in the transaction for write of quota info (it could have been
-dirty at the time of dquot_commit() because of a race with other operation
-changing it).
+When scsi devices are added to sysfs, it calls add_dev function of all
+the registered class interfaces. If ses driver has been registered,
+ses_intf_add() of ses module will be called. This function calls
+scsi_device_enclosure() to check the inquiry data for EncServ
+bit. Since inquiry was not allocated for temporary LUN 0 scsi_device,
+it will cause NULL pointer exception.
 
-Reported-and-tested-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+To fix the problem, sdev->inquiry is checked for NULL before reading it.
+
+Signed-off-by: Somasundaram Krishnasamy <Somasundaram.Krishnasamy@lsi.com>
+Signed-off-by: Babu Moger <babu.moger@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/quota/dquot.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ include/scsi/scsi_device.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: longterm-2.6.27/fs/dquot.c
-===================================================================
---- longterm-2.6.27.orig/fs/dquot.c	2011-04-25 18:46:08.692278358 +0200
-+++ longterm-2.6.27/fs/dquot.c	2011-04-25 19:00:34.756279725 +0200
-@@ -365,7 +365,7 @@
-  */
- int dquot_commit(struct dquot *dquot)
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -446,7 +446,7 @@ static inline int scsi_device_qas(struct
+ }
+ static inline int scsi_device_enclosure(struct scsi_device *sdev)
  {
--	int ret = 0, ret2 = 0;
-+	int ret = 0;
- 	struct quota_info *dqopt = sb_dqopt(dquot->dq_sb);
+-	return sdev->inquiry[6] & (1<<6);
++	return sdev->inquiry ? (sdev->inquiry[6] & (1<<6)) : 1;
+ }
  
- 	mutex_lock(&dqopt->dqio_mutex);
-@@ -377,13 +377,10 @@
- 	spin_unlock(&dq_list_lock);
- 	/* Inactive dquot can be only if there was error during read/init
- 	 * => we have better not writing it */
--	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-+	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
- 		ret = dqopt->ops[dquot->dq_type]->commit_dqblk(dquot);
--		if (info_dirty(&dqopt->info[dquot->dq_type]))
--			ret2 = dqopt->ops[dquot->dq_type]->write_file_info(dquot->dq_sb, dquot->dq_type);
--		if (ret >= 0)
--			ret = ret2;
--	}
-+	else
-+		ret = -EIO;
- out_sem:
- 	mutex_unlock(&dqopt->dqio_mutex);
- 	return ret;
+ static inline int scsi_device_protection(struct scsi_device *sdev)
 
 
