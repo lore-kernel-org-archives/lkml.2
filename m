@@ -1,42 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab1DYRqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 13:46:15 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51402 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758695Ab1DYRqO (ORCPT
+	id S1758760Ab1DYRqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 13:46:53 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:43595 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758695Ab1DYRqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 13:46:14 -0400
-Date: Mon, 25 Apr 2011 13:46:08 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/4] fs: Convert inode slab creation to use consistent
- parameters
-Message-ID: <20110425174608.GA9779@infradead.org>
-References: <1289201305-14866-1-git-send-email-david@fromorbit.com>
- <1289201305-14866-3-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289201305-14866-3-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 25 Apr 2011 13:46:52 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [RFC/PATCH 1/2] slub: Break out alloc_kmem_cache_cpus() from kmem_cache_open()
+Date: Mon, 25 Apr 2011 20:46:47 +0300
+Message-Id: <1303753608-19248-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 06:28:23PM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> The inode slab creation functions in different filesystem don't all set up the
-> slab caches correctly. Add a new flag SLAB_INODES that sets all the necessary
-> flags for an inode slab cache and convert all the callers to use it. THis makes
-> it easy to change the behaviour of all the inode slab caches in one go.
+In preparation for sharing per-CPU structures between merged caches, break out
+alloc_kmem_cache_cpus() from kmem_cache_open() function.
 
-Any chance you could rediff this one ontop of current mainline and
-resend it?
+Cc: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ mm/slub.c |   37 +++++++++++++++++++++----------------
+ 1 files changed, 21 insertions(+), 16 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 94d2a33..cb61024 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2638,11 +2638,7 @@ static int kmem_cache_open(struct kmem_cache *s,
+ #endif
+ 	if (!init_kmem_cache_nodes(s))
+ 		goto error;
+-
+-	if (alloc_kmem_cache_cpus(s))
+-		return 1;
+-
+-	free_kmem_cache_nodes(s);
++	return 1;
+ error:
+ 	if (flags & SLAB_PANIC)
+ 		panic("Cannot create slab %s size=%lu realsize=%u "
+@@ -2818,6 +2814,9 @@ static struct kmem_cache *__init create_kmalloc_cache(const char *name,
+ 								flags, NULL))
+ 		goto panic;
+ 
++	if (!alloc_kmem_cache_cpus(s))
++		goto panic;
++
+ 	list_add(&s->list, &slab_caches);
+ 	return s;
+ 
+@@ -3239,6 +3238,8 @@ void __init kmem_cache_init(void)
+ 		sizeof(struct kmem_cache_node),
+ 		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+ 
++	alloc_kmem_cache_cpus(kmem_cache_node);
++
+ 	hotplug_memory_notifier(slab_memory_callback, SLAB_CALLBACK_PRI);
+ 
+ 	/* Able to allocate the per node structures */
+@@ -3247,6 +3248,8 @@ void __init kmem_cache_init(void)
+ 	temp_kmem_cache = kmem_cache;
+ 	kmem_cache_open(kmem_cache, "kmem_cache", kmem_size,
+ 		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
++	alloc_kmem_cache_cpus(kmem_cache);
++
+ 	kmem_cache = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
+ 	memcpy(kmem_cache, temp_kmem_cache, kmem_size);
+ 
+@@ -3469,18 +3472,20 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 
+ 	s = kmalloc(kmem_size, GFP_KERNEL);
+ 	if (s) {
+-		if (kmem_cache_open(s, n,
+-				size, align, flags, ctor)) {
+-			list_add(&s->list, &slab_caches);
+-			if (sysfs_slab_add(s)) {
+-				list_del(&s->list);
+-				kfree(n);
+-				kfree(s);
+-				goto err;
+-			}
+-			up_write(&slub_lock);
+-			return s;
++		if (!kmem_cache_open(s, n, size, align, flags, ctor))
++			goto err_free;
++
++		if (!alloc_kmem_cache_cpus(s))
++			goto err_free;	
++
++		list_add(&s->list, &slab_caches);
++		if (sysfs_slab_add(s)) {
++			list_del(&s->list);
++			goto err_free;
+ 		}
++		up_write(&slub_lock);
++		return s;
++err_free:
+ 		kfree(n);
+ 		kfree(s);
+ 	}
+-- 
+1.7.0.4
 
