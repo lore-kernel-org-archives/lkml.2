@@ -1,196 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1DYPqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 11:46:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35633 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab1DYPqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 11:46:15 -0400
-Date: Mon, 25 Apr 2011 08:45:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Geunsik Lim <leemgs1@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [PATCH 3/4] munmap: kbuild menu for munmap interface
-Message-Id: <20110425084508.dda5ec8f.randy.dunlap@oracle.com>
-In-Reply-To: <1303728272-11408-4-git-send-email-leemgs1@gmail.com>
-References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
-	<1303728272-11408-4-git-send-email-leemgs1@gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DB59712.0086:SCFMA922111,ss=1,fgs=0
+	id S1756464Ab1DYPtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 11:49:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab1DYPtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 11:49:08 -0400
+Message-ID: <4DB597E3.7090600@redhat.com>
+Date: Mon, 25 Apr 2011 09:48:51 -0600
+From: Eric Blake <eblake@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Nick Bowler <nbowler@elliptictech.com>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@toxicpanda.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Coreutils <coreutils@gnu.org>
+Subject: Re: [PATCH 1/2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1303414954-3315-1-git-send-email-josef@redhat.com> <loom.20110422T001650-760@post.gmane.org> <BANLkTiknb+hzFAjpwESwMcqMVtkFc0HFQQ@mail.gmail.com> <20110422045054.GB17795@infradead.org> <20110422112852.GB1627@x4.trippels.de> <4DB17D5B.2090303@redhat.com> <20110425150227.GA10653@elliptictech.com>
+In-Reply-To: <20110425150227.GA10653@elliptictech.com>
+X-Enigmail-Version: 1.1.2
+OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig8B7BBB404659570B8A8ECBF7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011 19:44:31 +0900 Geunsik Lim wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig8B7BBB404659570B8A8ECBF7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> From: Geunsik Lim <geunsik.lim@samsung.com>
-> 
-> Support kbuild menu to select memory unmap operation size
-> at build time.
-> 
-> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-> Acked-by: Hyunjin Choi <hj89.choi@samsung.com>
-> ---
->  init/Kconfig |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  mm/memory.c  |   21 +++++++++++-----
->  2 files changed, 84 insertions(+), 7 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 56240e7..0983961 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -557,6 +557,76 @@ config LOG_BUF_SHIFT
->  		     13 =>  8 KB
->  		     12 =>  4 KB
->  
-> +config PREEMPT_OK_MUNMAP_RANGE
-> +	int "Memory unmap unit on preemption mode (8 => 32KB)"
-> +	depends on !PREEMPT_NONE
-> +	range 8 2048
-> +	default 8
-> +	help
-> +	  unmap_vmas(=unmap a range of memory covered by a list of vma) is treading
+On 04/25/2011 09:02 AM, Nick Bowler wrote:
 
-	  unmap_vmas (= unmap a range ...
+Hi Nick,
+> * File A (sparse file created by lseek/write beyond end-of-file):
+>=20
+>     data | hole 0 | data || hole 1 (virtual)
+>=20
+> * File B (sparse file created by truncate beyond end-of-file):
+>=20
+>     data | hole 0 || hole 1 (virtual)
+>=20
+> Excluding the error description, the term "the last hole" is used in
+> two places in your proposal:
+>=20
+>   * (for SEEK_HOLE): if offset falls within "the last hole", then the
+>     file offset may be set to the file size instead.
+>=20
+>   * (for SEEK_DATA): it shall be an error ... if offset falls within th=
+e
+>     last hole.
+>=20
+> I imagine that both of these conditions are intended to address the
+> case where the offset falls within hole 0 in File B, that is, when
+> there is no non-hole data beyond the specified offset but the offset
+> is nevertheless less than the file size.
 
-> +	  a delicate and uncomfortable line between hi-performance and low-latency.
+Correct.
 
-	                                            high performane and low latency.
+>  However, this looks (to me)
+> like the penultimate hole in the file, not the last hole.  Furthermore,=
 
-> +	  We've chosen to improve performance at the expense of latency.
+> these conditions are presumably *not* intended to apply to the
+> penultimate hole in File A, which has data after it.
 
-	  This option improves performance at the expense of latency.
+Good catch.
 
-> +
-> +	  So although there may be no need to resched right now,
+>=20
+> I think my confusion can be avoided by talking about the last non-hole
+> data byte in the file (which is unambigious), instead of by talking
+> about the last hole.  For instance, the SEEK_HOLE/SEEK_DATA description=
+s
+> could be written as follows:
+>=20
+>   If whence is SEEK_HOLE, the file offset shall be set to the smallest
+>   location of a byte within a hole and not less than offset, except tha=
+t
+>   if offset falls beyond the last byte not within a hole, then the file=
 
-	                                      reschedule
+>   offset may be set to the file size instead.  It shall be an error if
+>   offset is greater or equal to the size of the file.
+>=20
+>   If whence is SEEK_DATA, the file offset shall be set to the smallest
+>   location of a byte not within a hole and not less than offset.  It sh=
+all
+>   be an error if no such byte exists.
+>=20
+> plus a corresponding update to the ENXIO description:
+>=20
+>   ... or the whence argument is SEEK_DATA and the offset falls beyond
+>   the last byte not within a hole.
 
-> +	  if we keep on gathering more and more without flushing,
+I've added your improved wording as a comment at
+http://austingroupbugs.net/view.php?id=3D415
 
-	                gathering more and more <what> ?
-
-> +	  we'll be very unresponsive when a resched is needed later on.
-
-	                                    reschedule
-
-> +
-> +	  Consider the best suitable result between high performance and low latency
-> +	  on preemption mode.
-> +	  Select optimal munmap size to return memory space that is allocated by mmap system call.
-> +
-> +	  For example, For recording mass files, if we try to unmap memory that we allocated
-
-	               for
-
-> +	  with 100MB for recording in embedded devices, we have to wait for more than 3seconds to
-
-	                                                                              3 seconds
-
-(but try not to put text over 80 columns, please)
-
-> +	  change mode from play mode to recording mode. This results from the unit of memory
-> +	  unmapped size when we are recording mass files like camcorder particularly.
-> +
-> +          This value can be changed after boot using the
-> +          /proc/sys/vm/munmap_unit_size tunable.
-
-Indent above with tab + 2 spaces.
-
-> +
-> +	  Examples:
-> +                  2048 => 8,388,608bytes : for straight-line efficiency
-> +                  1024 => 4,194,304bytes
-> +                   512 => 2,097,152bytes
-> +                   256 => 1,048,576bytes
-> +                   128 =>   524,288bytes
-> +                    64 =>   262,144bytes
-> +                    32 =>   131,072bytes
-> +                    16 =>    65,536bytes
-> +                     8 =>    32,768bytes : for low-latency (*default)
-
-All of above would be better with added space before "bytes", as, e.g.:
-	                8 =>    32,768 bytes
-
-> +
-> +config PREEMPT_NO_MUNMAP_RANGE
-> +	int "Memory unmap unit on non-preemption mode (1024 => 4MB)"
-> +	depends on PREEMPT_NONE
-> +	range 8 2048
-> +	default 1024
-> +	help
-> +
-> +	  unmap_vmas(=unmap a range of memory covered by a list of vma) is treading
-
-	  unmap_vmas (= unmap
-
-> +	  a delicate and uncomfortable line between hi-performance and low-latency.
-
-	                                            high performance and low latency.
-
-> +	  We've chosen to improve performance at the expense of latency.
-
-	  This option improves performance at the expense of latency.
-
-> +
-> +	  So although there may be no need to resched right now,
-
-	                                      reschedule
-
-> +	  if we keep on gathering more and more without flushing,
-
-	                          more and more what?
-
-> +	  we'll be very unresponsive when a resched is needed later on.
-
-	                                    reschedule
-
-> +
-> +	  Consider the best suitable result between high performance and low latency
-> +	  on preemption mode.
-
-but this option is for non-preempt mode... so should that text above be modified?
-
-> +	  Select optimal munmap size to return memory space that is allocated by mmap system call.
-> +
-> +          This value can be changed after boot using the
-> +          /proc/sys/vm/munmap_unit_size tunable.
-
-Indent above with tab + 2 spaces.
-
-> +
-> +	  Examples:
-> +                  2048 => 8,388,608bytes : for straight-line efficiency
-> +                  1024 => 4,194,304bytes (*default)
-> +                   512 => 2,097,152bytes
-> +                   256 => 1,048,576bytes
-> +                   128 =>   524,288bytes
-> +                    64 =>   262,144bytes
-> +                    32 =>   131,072bytes
-> +                    16 =>    65,536bytes
-> +                     8 =>    32,768bytes : for low-latency
-
-		Use space before "bytes" in table above, please.
-
-> +
->  #
->  # Architectures with an unreliable sched_clock() should select this:
->  #
+--=20
+Eric Blake   eblake@redhat.com    +1-801-349-2682
+Libvirt virtualization library http://libvirt.org
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+--------------enig8B7BBB404659570B8A8ECBF7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iQEcBAEBCAAGBQJNtZfjAAoJEKeha0olJ0NqQWgIAIRdXY+1Os6dnyI7OfkncGmz
+/4+2wNGUBmXtEdOn52oCOfe3gp0zP6s6SbIWAz80P72pcTMzxDIjFjc3kmHRY+64
+LHFxRS3pIDRDfLmqyI7w1H89qfbRi8Gem9jAoF6BPeuhcfu0MQ27+9K4byXxrhTU
+lzFEGTHHUH6QC4mS+qS9YIgPUZKnipOIFRJPDDzeJKFuElDpGvUFF7TyyR9eGKXb
+bh0sZSXMfhyd5oVp08pk6OBJBfMRF1Z3ysArWOng5QoJ7cttYcjc7u+D98Bi5GXS
+ijofbM6/qDFt/W2NJ+W22U/7TIvKz9EkiAir3MGFYcXqWN/eGmOECf2p2biQhOs=
+=qasl
+-----END PGP SIGNATURE-----
+
+--------------enig8B7BBB404659570B8A8ECBF7--
