@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab1DYUqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:46:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34290 "EHLO 1wt.eu"
+	id S932832Ab1DYUrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:47:10 -0400
+Received: from 1wt.eu ([62.212.114.60]:34240 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256Ab1DYUYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:24:45 -0400
-Message-Id: <20110425200237.468864851@pcw.home.local>
+	id S1756993Ab1DYUYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:24:39 -0400
+Message-Id: <20110425200234.427595139@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:04:15 +0200
+Date: Mon, 25 Apr 2011 22:03:05 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Konstantin Khorenko <khorenko@openvz.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 103/173] shmem: let shared anonymous be nonlinear again
+Subject: [PATCH 033/173] NFSD: memory corruption due to writing beyond the stat array
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,34 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Konstantin Khorenko <khorenko@parallels.com>
 
-commit bee4c36a5cf5c9f63ce1d7372aa62045fbd16d47 upstream.
+commit 3aa6e0aa8ab3e64bbfba092c64d42fd1d006b124 upstream.
 
-Up to 2.6.22, you could use remap_file_pages(2) on a tmpfs file or a
-shared mapping of /dev/zero or a shared anonymous mapping.  In 2.6.23 we
-disabled it by default, but set VM_CAN_NONLINEAR to enable it on safe
-mappings.  We made sure to set it in shmem_mmap() for tmpfs files, but
-missed it in shmem_zero_setup() for the others.  Fix that at last.
+If nfsd fails to find an exported via NFS file in the readahead cache, it
+should increment corresponding nfsdstats counter (ra_depth[10]), but due to a
+bug it may instead write to ra_depth[11], corrupting the following field.
 
-Reported-by: Kenny Simpson <theonetruekenny@yahoo.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In a kernel with NFSDv4 compiled in the corruption takes the form of an
+increment of a counter of the number of NFSv4 operation 0's received; since
+there is no operation 0, this is harmless.
+
+In a kernel with NFSDv4 disabled it corrupts whatever happens to be in the
+memory beyond nfsdstats.
+
+Signed-off-by: Konstantin Khorenko <khorenko@openvz.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/shmem.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/vfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2691,5 +2691,6 @@ int shmem_zero_setup(struct vm_area_stru
- 		fput(vma->vm_file);
- 	vma->vm_file = file;
- 	vma->vm_ops = &shmem_vm_ops;
-+	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -823,7 +823,7 @@ nfsd_get_raparms(dev_t dev, ino_t ino)
+ 		if (ra->p_count == 0)
+ 			frap = rap;
+ 	}
+-	depth = nfsdstats.ra_size*11/10;
++	depth = nfsdstats.ra_size;
+ 	if (!frap) {	
+ 		spin_unlock(&rab->pb_lock);
+ 		return NULL;
 
 
