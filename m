@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab1DYJiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 05:38:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45718 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758140Ab1DYJiJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 05:38:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 3/3] m32r: remove redundant declaration
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org
-In-Reply-To: <20110425183810.268B.A69D9226@jp.fujitsu.com>
-References: <20110425183810.268B.A69D9226@jp.fujitsu.com>
-Message-Id: <20110425183943.2693.A69D9226@jp.fujitsu.com>
+	id S1758224Ab1DYJu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 05:50:26 -0400
+Received: from trent.utfs.org ([194.246.123.103]:57440 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758143Ab1DYJuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 05:50:25 -0400
+Date: Mon, 25 Apr 2011 02:50:12 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <alpine.DEB.2.01.1104250053590.18728@trent.utfs.org>
+Message-ID: <alpine.DEB.2.01.1104250246520.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104250053590.18728@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 25 Apr 2011 18:38:07 +0900 (JST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They has no meanings.
+On Mon, 25 Apr 2011 at 01:02, Christian Kujau wrote:
+> On Mon, 25 Apr 2011 at 09:46, Dave Chinner wrote:
+> > BTW, what are your mount options? If it is the problem I suspect it
+> > is, then using noatime with stop it from occurring....
+> 
+> When mounted with noatime, running du(1) accross the XFS volume still 
+> triggered the OOM killer, but the backtrace looked somewhat different 
+> this time:
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: linux-m32r@ml.linux-m32r.org
----
- arch/m32r/kernel/smp.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+Tried again with noatime, this time no OOM message got logged to the disk 
+(but may have been logged to the console early on). As it's reproducible, 
+I started du(1) across the XFS volume and after a while my SSH connection 
+to the box was lost. That's all I got this time:
 
-diff --git a/arch/m32r/kernel/smp.c b/arch/m32r/kernel/smp.c
-index f758100..092d40a 100644
---- a/arch/m32r/kernel/smp.c
-+++ b/arch/m32r/kernel/smp.c
-@@ -30,6 +30,7 @@
- #include <asm/io.h>
- #include <asm/mmu_context.h>
- #include <asm/m32r.h>
-+#include <asm/tlbflush.h>
- 
- /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
- /* Data structures and variables                                             */
-@@ -61,27 +62,17 @@ extern spinlock_t ipi_lock[];
- /* Function Prototypes                                                       */
- /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
- 
--void smp_send_reschedule(int);
- void smp_reschedule_interrupt(void);
--
--void smp_flush_cache_all(void);
- void smp_flush_cache_all_interrupt(void);
- 
--void smp_flush_tlb_all(void);
- static void flush_tlb_all_ipi(void *);
--
--void smp_flush_tlb_mm(struct mm_struct *);
--void smp_flush_tlb_range(struct vm_area_struct *, unsigned long, \
--	unsigned long);
--void smp_flush_tlb_page(struct vm_area_struct *, unsigned long);
- static void flush_tlb_others(cpumask_t, struct mm_struct *,
- 	struct vm_area_struct *, unsigned long);
-+
- void smp_invalidate_interrupt(void);
- 
--void smp_send_stop(void);
- static void stop_this_cpu(void *);
- 
--void smp_send_timer(void);
- void smp_ipi_timer_interrupt(struct pt_regs *);
- void smp_local_timer_interrupt(void);
- 
+  http://nerdbynature.de/bits/2.6.39-rc4/oom/oom-6.JPG
+  http://nerdbynature.de/bits/2.6.39-rc4/oom/slabinfo-6.txt.bz2
+
+Christian.
 -- 
-1.7.3.1
+BOFH excuse #272:
 
-
-
+Netscape has crashed
