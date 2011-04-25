@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697Ab1DYUkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:40:00 -0400
-Received: from 1wt.eu ([62.212.114.60]:34404 "EHLO 1wt.eu"
+	id S932663Ab1DYUj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:39:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:34406 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932324Ab1DYUY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932326Ab1DYUY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Apr 2011 16:24:58 -0400
-Message-Id: <20110425200235.558608258@pcw.home.local>
+Message-Id: <20110425200238.902101275@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:03:31 +0200
+Date: Mon, 25 Apr 2011 22:04:48 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
-        Richard Russon <ldm@flatcap.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>, jlbec <jlbec@evilplan.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 059/173] ldm: corrupted partition table can cause kernel oops
+Subject: [PATCH 136/173] Treat writes as new when holes span across page boundaries
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +23,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Goldwyn Rodrigues <rgoldwyn@gmail.com>
 
-commit 294f6cf48666825d23c9372ef37631232746e40d upstream.
+commit 272b62c1f0f6f742046e45b50b6fec98860208a0 upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-a bug that causes a kernel oops on certain corrupted LDM partitions.  A
-kernel subsystem seems to crash, because, after the oops, the kernel no
-longer recognizes newly connected storage devices.
+When a hole spans across page boundaries, the next write forces
+a read of the block. This could end up reading existing garbage
+data from the disk in ocfs2_map_page_blocks. This leads to
+non-zero holes. In order to avoid this, mark the writes as new
+when the holes span across page boundaries.
 
-The patch changes ldm_parse_vmdb() to Validate the value of vblk_size.
-
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Acked-by: Richard Russon <ldm@flatcap.org>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Goldwyn Rodrigues <rgoldwyn@suse.de>
+Signed-off-by: jlbec <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/ldm.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/ocfs2/aops.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -251,6 +251,11 @@ static bool ldm_parse_vmdb (const u8 *da
- 	}
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1091,6 +1091,12 @@ static int ocfs2_prepare_page_for_write(
+ 	ocfs2_figure_cluster_boundaries(OCFS2_SB(inode->i_sb), cpos,
+ 					&cluster_start, &cluster_end);
  
- 	vm->vblk_size     = get_unaligned_be32(data + 0x08);
-+	if (vm->vblk_size == 0) {
-+		ldm_error ("Illegal VBLK size");
-+		return false;
-+	}
++	/* treat the write as new if the a hole/lseek spanned across
++	 * the page boundary.
++	 */
++	new = new | ((i_size_read(inode) <= page_offset(page)) &&
++			(page_offset(page) <= user_pos));
 +
- 	vm->vblk_offset   = get_unaligned_be32(data + 0x0C);
- 	vm->last_vblk_seq = get_unaligned_be32(data + 0x04);
- 
+ 	if (page == wc->w_target_page) {
+ 		map_from = user_pos & (PAGE_CACHE_SIZE - 1);
+ 		map_to = map_from + user_len;
 
 
