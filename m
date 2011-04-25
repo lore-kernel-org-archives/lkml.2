@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab1DYUa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:30:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:34604 "EHLO 1wt.eu"
+	id S932540Ab1DYUcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:32:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:34589 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932463Ab1DYUZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:28 -0400
-Message-Id: <20110425200240.164070671@pcw.home.local>
+	id S932450Ab1DYUZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:25:25 -0400
+Message-Id: <20110425200239.902703276@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:17 +0200
+Date: Mon, 25 Apr 2011 22:05:11 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Bob Liu <lliubbo@gmail.com>, Hugh Dickins <hughd@google.com>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Moritz Muehlenhoff <jmm@debian.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 165/173] ramfs: fix memleak on no-mmu arch
+Subject: [PATCH 159/173] exec: make argv/envp memory visible to oom-killer
 In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +25,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Liu <lliubbo@gmail.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit b836aec53e2bce71de1d5415313380688c851477 upstream.
+commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
 
-On no-mmu arch, there is a memleak during shmem test.  The cause of this
-memleak is ramfs_nommu_expand_for_mapping() added page refcount to 2
-which makes iput() can't free that pages.
+Brad Spengler published a local memory-allocation DoS that
+evades the OOM-killer (though not the virtual memory RLIMIT):
+http://www.grsecurity.net/~spender/64bit_dos.c
 
-The simple test file is like this:
+execve()->copy_strings() can allocate a lot of memory, but
+this is not visible to oom-killer, nobody can see the nascent
+bprm->mm and take it into account.
 
-  int main(void)
-  {
-	int i;
-	key_t k = ftok("/etc", 42);
+With this patch get_arg_page() increments current's MM_ANONPAGES
+counter every time we allocate the new page for argv/envp. When
+do_execve() succeds or fails, we change this counter back.
 
-	for ( i=0; i<100; ++i) {
-		int id = shmget(k, 10000, 0644|IPC_CREAT);
-		if (id == -1) {
-			printf("shmget error\n");
-		}
-		if(shmctl(id, IPC_RMID, NULL ) == -1) {
-			printf("shm  rm error\n");
-			return -1;
-		}
-	}
-	printf("run ok...\n");
-	return 0;
-  }
+Technically this is not 100% correct, we can't know if the new
+page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+I don't think this really matters and everything becomes correct
+once exec changes ->mm or fails.
 
-And the result:
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        17912        42408            0            0
-  -/+ buffers:              17912        42408
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        19096        41224            0            0
-  -/+ buffers:              19096        41224
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        20296        40024            0            0
-  -/+ buffers:              20296        40024
-  ...
-
-After this patch the test result is:(no memleak anymore)
-
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-  root:/> shmem
-  run ok...
-  root:/> free
-               total         used         free       shared      buffers
-  Mem:         60320        16668        43652            0            0
-  -/+ buffers:              16668        43652
-
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Moritz Muehlenhoff <jmm@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ramfs/file-nommu.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/exec.c               |   28 ++++++++++++++++++++++++++--
+ include/linux/binfmts.h |    1 +
+ 2 files changed, 27 insertions(+), 2 deletions(-)
 
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -111,6 +111,7 @@ int ramfs_nommu_expand_for_mapping(struc
- 		SetPageDirty(page);
+Index: longterm-2.6.27/fs/exec.c
+===================================================================
+--- longterm-2.6.27.orig/fs/exec.c	2011-02-09 22:45:33.000000000 +0100
++++ longterm-2.6.27/fs/exec.c	2011-04-25 17:22:50.655279537 +0200
+@@ -168,6 +168,21 @@
  
- 		unlock_page(page);
-+		put_page(page);
- 	}
+ #ifdef CONFIG_MMU
  
- 	return 0;
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = (long)(pages - bprm->vma_pages);
++
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages = pages;
++
++	down_write(&mm->mmap_sem);
++	mm->total_vm += diff;
++	up_write(&mm->mmap_sem);
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -190,6 +205,8 @@
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
+ 
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -291,6 +308,10 @@
+ 
+ #else
+ 
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -995,6 +1016,7 @@
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1378,8 +1400,10 @@
+ 		security_bprm_free(bprm);
+ 
+ out_mm:
+-	if (bprm->mm)
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
+ 		mmput (bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+Index: longterm-2.6.27/include/linux/binfmts.h
+===================================================================
+--- longterm-2.6.27.orig/include/linux/binfmts.h	2011-01-23 10:52:34.000000000 +0100
++++ longterm-2.6.27/include/linux/binfmts.h	2011-04-25 17:22:24.856278432 +0200
+@@ -28,6 +28,7 @@
+ 	char buf[BINPRM_BUF_SIZE];
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *vma;
++	unsigned long vma_pages;
+ #else
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
 
 
