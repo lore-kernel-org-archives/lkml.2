@@ -1,58 +1,2260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458Ab1DYLFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 07:05:42 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34125 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758314Ab1DYLFl (ORCPT
+	id S1758468Ab1DYLHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 07:07:13 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:45040 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758334Ab1DYLHK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 07:05:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rvWBCnASuvbIY9uyhA4QYwkM0kUaG0TQGhd9UWpWeJQr5V2v0x8ak5zSNzR0K38/SU
-         FjTC6r8UMg6nlT5CF2bz+SACisym27X86H+G9z2TBM5it2VPSczGDr+TwDo2u6fkkuDL
-         tdE9d+YnpKRI6bKsNb1mc0nPiznhnBwDMYZ4s=
-Date: Mon, 25 Apr 2011 13:05:36 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/7] signal: sigprocmask: narrow the scope of
- ->siglock
-Message-ID: <20110425110536.GG17734@mtj.dyndns.org>
-References: <20110418134421.GA15951@redhat.com>
- <20110418134538.GE15951@redhat.com>
+	Mon, 25 Apr 2011 07:07:10 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>, Mark Lord <kernel@teksavvy.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Date: Mon, 25 Apr 2011 12:07:04 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: AcwBUhgT91IanwLOQTar5zO7v1oShAB5QzNA
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C7755494A@gretna.indigovision.com>
+References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
+ <4D9CD275.9000002@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
+ <4D9FACC9.7020200@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
+ <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com>
+ <20110423005610.GC1576@mtj.dyndns.org>
+In-Reply-To: <20110423005610.GC1576@mtj.dyndns.org>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110418134538.GE15951@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 03:45:38PM +0200, Oleg Nesterov wrote:
-> No functional changes, preparation to simplify the review of the next change.
-> 
-> 1. We can read current->block lockless, nobody else can ever change this mask.
+Hi Mark, Tejun,
 
-                 current->blocked
+> Sorry about delay.  -EWASTRAVELING
 
-> 
-> 2. Calculate the resulting sigset_t outside of ->siglock into the temporary
->    variable, then take ->siglock and change ->blocked.
-> 
-> Also, kill the stale comment about BKL.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+:-)
 
-Acked-by: Tejun Heo <tj@kernel.org>
+After further investigation it looks like there might be more than one thing
+going on here. I have managed to lock up ports by unplugging and reinserting
+just the sata data cable (thereby avoiding any potential issues with the
+hotplug backplane/power.) Dumping the registers after such a lockup shows
+clearly that the irq for the locked port is disabled.
 
-Thanks.
+I had previously reported that port lockups happened such that the irq for
+every port was enabled. I suspect that this is due to the hotplug backplane
+on the pre-production unit that I am testing with. Our production units have
+proper surge protection on the backplanes, but the early pre-production
+versions did not, and I think this is what causes this other mode of port
+lockup. Of course, there may be something else going on here but for the
+time being I have concentrated on investigating the lockups caused by removing
+and reinserting just the sata data cable. The presence of a separate problem
+may invalidate other investigations and assertions I had previously made.
 
--- 
-tejun
+I have been able to reproduce this port lockup both with and without the
+additional spinlock in mv_set_main_irq_mask. If I add more than very
+rudimentary tracing in mv_write_main_irq_mask, then the race is avoided
+(as you had indicated, Mark.) I am able to reproduce the lockup with minimal
+tracing in mv_write_main_irq_mask and with libata tracing enabled; I have
+attached the patch and the tracing leading up to port lockup below (this
+is with the additional spinlock in mv_set_main_irq_mask.)  Apologies for the
+length...
+
+Please note the warning generated by ata_sff_hsm_move on the line:
+
+  WARN_ON_ONCE((qc->flags & ATA_QCFLAG_ACTIVE) == 0);
+
+I have been looking at code paths in libata into sata_mv, but I'm afraid I am
+not au fait with the libata architecture yet.
+
+Tejun, what does it mean to limit a sata link to UDMA/100? I thought that this
+was only for ata devices, and sata devices have the choice of 1.5Gbps, 3Gbps,
+or 6 Gbps. Is that a false assumption? Is it related to early sata devices that
+were still somewhat based on parallel ata designs?
+
+I shall be out-of-office from Wednesday for the best part of the next three
+weeks, but I shall endeavour to get back to you if you have any queries during
+that time.
+
+Kind Regards,
+
+Bruce.
+
+
+Bruce Stenning,
+IndigoVision,
+b <dot> stenning <at> indigovision <dot> com
+
+
+@@ -1022,20 +1027,33 @@
+        if (mask & (ALL_PORTS_COAL_DONE | PORTS_4_7_COAL_DONE))
+                mask &= ~DONE_IRQ_4_7;
+        writelfl(mask, hpriv->main_irq_mask_addr);
++#if 1
++       printk("%08x\n", mask);
++#endif
+ }
+
+
+[ra_145_82]$ insmod sata_mv.ko
+sata_mv 0000:00:04.0: version 1.28
+ata_host_alloc: ENTER
+ata_port_alloc: ENTER
+ata_port_alloc: ENTER
+ata_port_alloc: ENTER
+ata_port_alloc: ENTER
+PCI: enabling device 0000:00:04.0 (0140 -> 0143)
+mv_port_init: EDMA cfg=0x0000291f EDMA IRQ err cause/mask=0x00000000/0xfc1e9fff
+mv_port_init: EDMA cfg=0x0000291f EDMA IRQ err cause/mask=0x00000000/0xfc1e9fff
+mv_port_init: EDMA cfg=0x0000291f EDMA IRQ err cause/mask=0x00000000/0xfc1e9fff
+mv_port_init: EDMA cfg=0x0000291f EDMA IRQ err cause/mask=0x00000000/0xfc1e9fff
+mv_init_host: HC0: HC config=0x000100ff HC IRQ cause (before clear)=0x00000000
+00040000
+mv_dump_pci_cfg: 00: 604111ab 02b00143 01000009 00000008
+mv_dump_pci_cfg: 10: 80000004 00000000 00001001 00000000
+mv_dump_pci_cfg: 20: 00000000 00000000 00000000 11ab11ab
+mv_dump_pci_cfg: 30: 00000000 00000040 00000000 0000011a
+mv_dump_pci_cfg: 40: 00025001 00000000 00000000 00000000
+mv_dump_pci_cfg: 50: 00806005 00000000 00000000 00000000
+mv_dump_pci_cfg: 60: 00300007 0183fff8
+sata_mv 0000:00:04.0: Gen-II 32 slots 4 ports SCSI mode IRQ via INTx
+__ata_port_freeze: ata4294967295 port frozen
+__ata_port_freeze: ata4294967295 port frozen
+__ata_port_freeze: ata4294967295 port frozen
+__ata_port_freeze: ata4294967295 port frozen
+scsi0 : sata_mv
+scsi1 : sata_mv
+scsi2 : sata_mv
+scsi3 : sata_mv
+ata1: FORCE: PHY spd limit set to 1.5Gbps
+ata1: SATA max UDMA/133 mmio m1048576@0x80000000 port 0x80022000 irq 26
+ata2: FORCE: PHY spd limit set to 1.5Gbps
+ata2: SATA max UDMA/133 mmio m1048576@0x80000000 port 0x80024000 irq 26
+ata3: FORCE: PHY spd limit set to 1.5Gbps
+ata3: SATA max UDMA/133 mmio m1048576@0x80000000 port 0x80026000 irq 26
+ata4: FORCE: PHY spd limit set to 1.5Gbps
+ata4: SATA max UDMA/133 mmio m1048576@0x80000000 port 0x80028000 irq 26
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_recover: ENTER
+__ata_port_freeze: ata1 port frozen
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata1: bus reset via SRST
+ata1: link is slow to respond, please be patient (ready=0)
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040001
+ata_eh_thaw_port: ata1 port thawed
+ata_std_postreset: ENTER
+ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata1: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata1: cmd 0xEC
+ata_sff_hsm_move: ata1: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata1: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata1: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata1: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata1: cmd 0x27
+ata_sff_hsm_move: ata1: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata1: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0407  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x007f  93==0x0000
+ata1.00: ATA-8: ST31000525SV, CV11, max UDMA/133
+ata1.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata_dev_set_xfermode: set features - xfer mode
+ata1: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x46 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata1: cmd 0xEF
+ata_sff_hsm_move: ata1: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata1: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata1: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata1: cmd 0xEC
+ata_sff_hsm_move: ata1: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata1: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata1: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata1: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata1: cmd 0x27
+ata_sff_hsm_move: ata1: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata1: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x46
+ata1.00: configured for UDMA/133
+ata_eh_recover: EXIT, rc=0
+ata_scsi_error: EXIT
+ata_scsi_dump_cdb: CDB (1:0,0,0) 12 00 00 00 24 00 00 00 00
+ata_scsiop_inq_std: ENTER
+ata_scsi_dump_cdb: CDB (1:0,0,0) 12 00 00 00 60 00 00 00 00
+ata_scsiop_inq_std: ENTER
+scsi 0:0:0:0: Direct-Access     ATA      ST31000525SV     CV11 PQ: 0 ANSI: 5
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_recover: ENTER
+__ata_port_freeze: ata2 port frozen
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata2: bus reset via SRST
+ata2: link is slow to respond, please be patient (ready=0)
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040005
+ata_eh_thaw_port: ata2 port thawed
+ata_std_postreset: ENTER
+ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata2: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata2: cmd 0xEC
+ata_sff_hsm_move: ata2: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata2: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata2: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata2: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata2: cmd 0x27
+ata_sff_hsm_move: ata2: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata2: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0407  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x007f  93==0x0000
+ata2.00: ATA-8: ST31000525SV, CV11, max UDMA/133
+ata2.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata_dev_set_xfermode: set features - xfer mode
+ata2: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x46 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata2: cmd 0xEF
+ata_sff_hsm_move: ata2: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata2: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata2: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata2: cmd 0xEC
+ata_sff_hsm_move: ata2: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata2: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata2: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata2: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata2: cmd 0x27
+ata_sff_hsm_move: ata2: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata2: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x46
+ata2.00: configured for UDMA/133
+ata_eh_recover: EXIT, rc=0
+ata_scsi_error: EXIT
+ata_scsi_dump_cdb: CDB (2:0,0,0) 12 00 00 00 24 00 00 00 00
+ata_scsiop_inq_std: ENTER
+ata_scsi_dump_cdb: CDB (2:0,0,0) 12 00 00 00 60 00 00 00 00
+ata_scsiop_inq_std: ENTER
+scsi 1:0:0:0: Direct-Access     ATA      ST31000525SV     CV11 PQ: 0 ANSI: 5
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_recover: ENTER
+__ata_port_freeze: ata3 port frozen
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata3: bus reset via SRST
+ata3: link is slow to respond, please be patient (ready=0)
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040015
+ata_eh_thaw_port: ata3 port thawed
+ata_std_postreset: ENTER
+ata3: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata3: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata3: cmd 0xEC
+ata_sff_hsm_move: ata3: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata3: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata3: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata3: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata3: cmd 0x27
+ata_sff_hsm_move: ata3: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata3: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0407  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x007f  93==0x0000
+ata3.00: ATA-8: ST31000525SV, CV11, max UDMA/133
+ata3.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata_dev_set_xfermode: set features - xfer mode
+ata3: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x46 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata3: cmd 0xEF
+ata_sff_hsm_move: ata3: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata3: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata3: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata3: cmd 0xEC
+ata_sff_hsm_move: ata3: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata3: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata3: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata3: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata3: cmd 0x27
+ata_sff_hsm_move: ata3: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata3: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x46
+ata3.00: configured for UDMA/133
+ata_eh_recover: EXIT, rc=0
+ata_scsi_error: EXIT
+ata_scsi_dump_cdb: CDB (3:0,0,0) 12 00 00 00 24 00 00 00 00
+ata_scsiop_inq_std: ENTER
+ata_scsi_dump_cdb: CDB (3:0,0,0) 12 00 00 00 60 00 00 00 00
+ata_scsiop_inq_std: ENTER
+scsi 2:0:0:0: Direct-Access     ATA      ST31000525SV     CV11 PQ: 0 ANSI: 5
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata4: link is slow to respond, please be patient (ready=0)
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0407  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x007f  93==0x0000
+ata4.00: ATA-8: ST31000525SV, CV11, max UDMA/133
+ata4.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x46 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x46
+ata4.00: configured for UDMA/133
+ata_eh_recover: EXIT, rc=0
+ata_scsi_error: EXIT
+ata_scsi_dump_cdb: CDB (4:0,0,0) 12 00 00 00 24 00 00 00 00
+ata_scsiop_inq_std: ENTER
+ata_scsi_dump_cdb: CDB (4:0,0,0) 12 00 00 00 60 00 00 00 00
+ata_scsiop_inq_std: ENTER
+scsi 3:0:0:0: Direct-Access     ATA      ST31000525SV     CV11 PQ: 0 ANSI: 5
+[ra_145_82]$
+[ra_145_82]$
+[ra_145_82]$
+[ra_145_82]$
+[ra_145_82]$
+[ra_145_82]$ 00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x46 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x46
+ata4.00: configured for UDMA/133
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata4.00: limiting speed to UDMA/100:PIO4
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x407f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x45 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x207f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x45
+ata4.00: configured for UDMA/100
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata4.00: limiting speed to UDMA/33:PIO4
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_sff_flush_pio_task: ENTER
+ata4.00: failed to IDENTIFY (I/O error, err_mask=0x100)
+ata4.00: revalidation failed (errno=-5)
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x207f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: hob: feat 0x0 nsect 0x0, lba 0x0 0x0 0x0
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xE0
+ata_sff_exec_command: ata4: cmd 0x27
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_sff_flush_pio_task: ENTER
+ata4.00: failed to read native max address (err_mask=0x1)
+ata4.00: HPA support seems broken, skipping HPA handling
+ata4.00: revalidation failed (errno=-5)
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_sff_flush_pio_task: ENTER
+------------[ cut here ]------------
+WARNING: at drivers/ata/libata-sff.c:1053 0xc01702b0()
+Modules linked in: sata_mv
+Backtrace:
+Function entered at [<c003466c>] from [<c0034784>]
+ r7:00000000 r6:c01702b0 r5:c0222698 r4:0000041d
+Function entered at [<c003476c>] from [<c004052c>]
+Function entered at [<c00404dc>] from [<c0040568>]
+ r8:df91930c r7:df918060 r6:df91930c r5:c02820cb r4:00000001
+Function entered at [<c0040544>] from [<c01702b0>]
+Function entered at [<c0170244>] from [<c0170d98>]
+Function entered at [<c0170bf4>] from [<c0052200>]
+ r8:00000009 r7:df918060 r6:c024e320 r5:dfa2fd60 r4:decf6000
+Function entered at [<c0051ff4>] from [<c0052530>]
+Function entered at [<c0052364>] from [<c0056a2c>]
+Function entered at [<c00569a8>] from [<c0042a28>]
+ r6:c0042a28 r5:c00569a8 r4:df82df10
+---[ end trace 2776da609f64b4f9 ]---
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x7F)
+ata_sff_hsm_move: ata4: protocol 2 task_state 4 (dev_stat 0x7F)
+ata4.00: failed to IDENTIFY (I/O error, err_mask=0x2)
+ata4.00: revalidation failed (errno=-5)
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=1
+ata4.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+ata4.00: revalidation failed (errno=-5)
+ata4.00: limiting speed to UDMA/33:PIO3
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_xfermode: set features - xfer mode
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x3 nsect 0x42 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEF
+ata_sff_hsm_move: ata4: protocol 1 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dev_set_xfermode: EXIT, err_mask=0
+ata4: ata_dev_select: ENTER, device 0, wait 1
+ata_sff_tf_load: feat 0x0 nsect 0x0 lba 0x0 0x0 0x0
+ata_sff_tf_load: device 0xA0
+ata_sff_exec_command: ata4: cmd 0xEC
+ata_sff_hsm_move: ata4: protocol 2 task_state 2 (dev_stat 0x58)
+ata_pio_sector: data read
+ata_sff_hsm_move: ata4: protocol 2 task_state 3 (dev_stat 0x50)
+ata_sff_hsm_move: ata4: dev 0 command complete, drv_stat 0x50
+ata_sff_flush_pio_task: ENTER
+ata_dump_id: 49==0x2f00  53==0x0007  63==0x0007  64==0x0003  75==0x001f
+ata_dump_id: 80==0x01f0  81==0x0029  82==0x346b  83==0x7d61  84==0x4133
+ata_dump_id: 88==0x047f  93==0x0000
+ata_dev_set_mode: xfer_shift=12, xfer_mode=0x42
+ata4.00: configured for UDMA/33
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_scsi_error: ENTER
+ata_sff_flush_pio_task: ENTER
+ata_eh_link_autopsy: ENTER
+ata_eh_link_autopsy: EXIT
+ata4: exception Emask 0x10 SAct 0x0 SErr 0x180000 action 0x6 frozen
+ata4: edma_err_cause=00000020 pp_flags=00000000, SError=00180000
+ata4: SError: { 10B8B Dispar }
+ata_eh_recover: ENTER
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+00040055
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+__ata_port_freeze: ata4 port frozen
+ata4: hard resetting link
+sata_link_hardreset: ENTER
+sata_link_hardreset: EXIT, rc=0
+ata_sff_softreset: ENTER
+ata_sff_softreset: about to softreset, devmask=1
+ata_bus_softreset: ata4: bus reset via SRST
+ata_dev_classify: found ATA device by sig
+ata_sff_softreset: EXIT, classes[0]=1 [1]=0
+00040055
+00040015
+__ata_port_freeze: ata4 port frozen
+ata_port_schedule_eh: port EH scheduled
+ata_eh_thaw_port: ata4 port thawed
+ata_std_postreset: ENTER
+ata4: SATA link down (SStatus 0 SControl 310)
+ata_std_postreset: EXIT
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_revalidate_and_attach: EXIT rc=-5
+ata4.00: disabled
+ata_eh_revalidate_and_attach: ENTER
+ata_eh_recover: EXIT, rc=0
+ata4: EH complete
+ata_scsi_error: EXIT
+ata_scsi_hotplug: ENTER
+ata4.00: detaching (SCSI 3:0:0:0)
+ata_scsi_hotplug: EXIT
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
