@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab1DYUbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 16:31:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:34596 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab1DYUZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 16:25:26 -0400
-Message-Id: <20110425200240.468187050@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Mon, 25 Apr 2011 22:05:24 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: "Steven J. Magnani" <steve@digidescorp.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 172/173] net: Fix oops from tcp_collapse() when using splice()
-In-Reply-To: <46075c3a3ef08be6d70339617d6afc98@local>
+	id S932525Ab1DYUcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 16:32:06 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:58756 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932462Ab1DYUcC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 16:32:02 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjDUQEjn+/g==
+X-RZG-CLASS-ID: mo00
+Date: Mon, 25 Apr 2011 22:31:58 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 112/173] Input: xen-kbdfront - advertise either absolute
+ or relative coordinates
+Message-ID: <20110425203158.GA8427@aepfle.de>
+References: <46075c3a3ef08be6d70339617d6afc98@local>
+ <20110425200237.859884245@pcw.home.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110425200237.859884245@pcw.home.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+On Mon, Apr 25, Willy Tarreau wrote:
 
-------------------
+> 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
 
-From: Steven J. Magnani <steve@digidescorp.com>
+These two hunks have to be removed from the patch.
+If the guest is suspended/resumed the guest has to renegotiate with the
+new qemu-dm process and set the request-abs-pointer property again.
 
-commit baff42ab1494528907bf4d5870359e31711746ae upstream.
+Olaf
 
-tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
-This can cause a panic in tcp_collapse() if it is called as a result
-of the recv_actor dropping the socket lock.
-
-A userspace program that splices data from a socket to either another
-socket or to a file can trigger this bug.
-
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 6afb6d8..2c75f89 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1368,6 +1368,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
- 		sk_eat_skb(sk, skb, 0);
- 		if (!desc->count)
- 			break;
-+		tp->copied_seq = seq;
- 	}
- 	tp->copied_seq = seq;
- 
-
-
+> @@ -267,7 +281,7 @@
+>  				   enum xenbus_state backend_state)
+>  {
+>  	struct xenkbd_info *info = dev->dev.driver_data;
+> -	int ret, val;
+> +	int val;
+>  
+>  	switch (backend_state) {
+>  	case XenbusStateInitialising:
+> @@ -278,17 +292,6 @@
+>  
+>  	case XenbusStateInitWait:
+>  InitWait:
+> -		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
+> -				   "feature-abs-pointer", "%d", &val);
+> -		if (ret < 0)
+> -			val = 0;
+> -		if (val) {
+> -			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
+> -					    "request-abs-pointer", "1");
+> -			if (ret)
+> -				printk(KERN_WARNING
+> -				       "xenkbd: can't request abs-pointer");
+> -		}
+>  		xenbus_switch_state(dev, XenbusStateConnected);
+>  		break;
+>  
+> 
+> 
