@@ -1,434 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758910Ab1DZVli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:41:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41140 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758492Ab1DZVNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="914748333"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110426212.641772347@firstfloor.org>
-In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: mel@csn.ul.ie, ak@linux.intel.com, cl@linux.com, nico@chdir.org,
-        rientjes@google.com, kyle@mcmartin.ca, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tim.gardner@canonical.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [1/106] mm: page allocator: adjust the per-cpu counter threshold when memory is low
-Message-Id: <20110426211238.BB8C83E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:38 -0700 (PDT)
+	id S1758522Ab1DZVn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:43:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56740 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758438Ab1DZVnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:43:25 -0400
+Date: Tue, 26 Apr 2011 14:42:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] split inode_wb_list_lock into
+ bdi_writeback.list_lock
+Message-Id: <20110426144209.06317674.akpm@linux-foundation.org>
+In-Reply-To: <20110426144218.GA14862@localhost>
+References: <20110426144218.GA14862@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Tue, 26 Apr 2011 22:42:19 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-------------------
-Upstream commit 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97
+> @@ -55,13 +55,16 @@ EXPORT_SYMBOL(I_BDEV);
+>  static void bdev_inode_switch_bdi(struct inode *inode,
+>  			struct backing_dev_info *dst)
+>  {
+> -	spin_lock(&inode_wb_list_lock);
+> +	struct backing_dev_info *old = inode->i_data.backing_dev_info;
+> +
+> +	bdi_lock_two(&old->wb, &dst->wb);
+>  	spin_lock(&inode->i_lock);
+>  	inode->i_data.backing_dev_info = dst;
+>  	if (inode->i_state & I_DIRTY)
+>  		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
+>  	spin_unlock(&inode->i_lock);
+> -	spin_unlock(&inode_wb_list_lock);
+> +	spin_unlock(&old->wb.list_lock);
+> +	spin_unlock(&dst->wb.list_lock);
+>  }
 
-Commit aa45484 ("calculate a better estimate of NR_FREE_PAGES when memory
-is low") noted that watermarks were based on the vmstat NR_FREE_PAGES.  To
-avoid synchronization overhead, these counters are maintained on a per-cpu
-basis and drained both periodically and when a threshold is above a
-threshold.  On large CPU systems, the difference between the estimate and
-real value of NR_FREE_PAGES can be very high.  The system can get into a
-case where pages are allocated far below the min watermark potentially
-causing livelock issues.  The commit solved the problem by taking a better
-reading of NR_FREE_PAGES when memory was low.
-
-Unfortately, as reported by Shaohua Li this accurate reading can consume a
-large amount of CPU time on systems with many sockets due to cache line
-bouncing.  This patch takes a different approach.  For large machines
-where counter drift might be unsafe and while kswapd is awake, the per-cpu
-thresholds for the target pgdat are reduced to limit the level of drift to
-what should be a safe level.  This incurs a performance penalty in heavy
-memory pressure by a factor that depends on the workload and the machine
-but the machine should function correctly without accidentally exhausting
-all memory on a node.  There is an additional cost when kswapd wakes and
-sleeps but the event is not expected to be frequent - in Shaohua's test
-case, there was one recorded sleep and wake event at least.
-
-To ensure that kswapd wakes up, a safe version of zone_watermark_ok() is
-introduced that takes a more accurate reading of NR_FREE_PAGES when called
-from wakeup_kswapd, when deciding whether it is really safe to go back to
-sleep in sleeping_prematurely() and when deciding if a zone is really
-balanced or not in balance_pgdat().  We are still using an expensive
-function but limiting how often it is called.
-
-When the test case is reproduced, the time spent in the watermark
-functions is reduced.  The following report is on the percentage of time
-spent cumulatively spent in the functions zone_nr_free_pages(),
-zone_watermark_ok(), __zone_watermark_ok(), zone_watermark_ok_safe(),
-zone_page_state_snapshot(), zone_page_state().
-
-vanilla                      11.6615%
-disable-threshold            0.2584%
-
-David said:
-
-: We had to pull aa454840 "mm: page allocator: calculate a better estimate
-: of NR_FREE_PAGES when memory is low and kswapd is awake" from 2.6.36
-: internally because tests showed that it would cause the machine to stall
-: as the result of heavy kswapd activity.  I merged it back with this fix as
-: it is pending in the -mm tree and it solves the issue we were seeing, so I
-: definitely think this should be pushed to -stable (and I would seriously
-: consider it for 2.6.37 inclusion even at this late date).
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reported-by: Shaohua Li <shaohua.li@intel.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Tested-by: Nicolas Bareil <nico@chdir.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: <stable@kernel.org>		[2.6.37.1, 2.6.36.x]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-backported from 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97
-BugLink: http://bugs.launchpad.net/bugs/719446
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/mmzone.h |   10 ++-----
- include/linux/vmstat.h |    5 +++
- mm/mmzone.c            |   21 ---------------
- mm/page_alloc.c        |   35 +++++++++++++++++++------
- mm/vmscan.c            |   25 ++++++++++--------
- mm/vmstat.c            |   68 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 6 files changed, 116 insertions(+), 48 deletions(-)
-
-Index: linux-2.6.35.y/include/linux/mmzone.h
-===================================================================
---- linux-2.6.35.y.orig/include/linux/mmzone.h
-+++ linux-2.6.35.y/include/linux/mmzone.h
-@@ -463,12 +463,6 @@ static inline int zone_is_oom_locked(con
- 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
- }
- 
--#ifdef CONFIG_SMP
--unsigned long zone_nr_free_pages(struct zone *zone);
--#else
--#define zone_nr_free_pages(zone) zone_page_state(zone, NR_FREE_PAGES)
--#endif /* CONFIG_SMP */
--
- /*
-  * The "priority" of VM scanning is how much of the queues we will scan in one
-  * go. A value of 12 for DEF_PRIORITY implies that we will scan 1/4096th of the
-@@ -668,7 +662,9 @@ void get_zone_counts(unsigned long *acti
- 			unsigned long *free);
- void build_all_zonelists(void *data);
- void wakeup_kswapd(struct zone *zone, int order);
--int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+		int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
- 		int classzone_idx, int alloc_flags);
- enum memmap_context {
- 	MEMMAP_EARLY,
-Index: linux-2.6.35.y/include/linux/vmstat.h
-===================================================================
---- linux-2.6.35.y.orig/include/linux/vmstat.h
-+++ linux-2.6.35.y/include/linux/vmstat.h
-@@ -254,6 +254,8 @@ extern void dec_zone_state(struct zone *
- extern void __dec_zone_state(struct zone *, enum zone_stat_item);
- 
- void refresh_cpu_vm_stats(int);
-+void reduce_pgdat_percpu_threshold(pg_data_t *pgdat);
-+void restore_pgdat_percpu_threshold(pg_data_t *pgdat);
- #else /* CONFIG_SMP */
- 
- /*
-@@ -298,6 +300,9 @@ static inline void __dec_zone_page_state
- #define dec_zone_page_state __dec_zone_page_state
- #define mod_zone_page_state __mod_zone_page_state
- 
-+static inline void reduce_pgdat_percpu_threshold(pg_data_t *pgdat) { }
-+static inline void restore_pgdat_percpu_threshold(pg_data_t *pgdat) { }
-+
- static inline void refresh_cpu_vm_stats(int cpu) { }
- #endif
- 
-Index: linux-2.6.35.y/mm/mmzone.c
-===================================================================
---- linux-2.6.35.y.orig/mm/mmzone.c
-+++ linux-2.6.35.y/mm/mmzone.c
-@@ -87,24 +87,3 @@ int memmap_valid_within(unsigned long pf
- 	return 1;
- }
- #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
--
--#ifdef CONFIG_SMP
--/* Called when a more accurate view of NR_FREE_PAGES is needed */
--unsigned long zone_nr_free_pages(struct zone *zone)
--{
--	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
--
--	/*
--	 * While kswapd is awake, it is considered the zone is under some
--	 * memory pressure. Under pressure, there is a risk that
--	 * per-cpu-counter-drift will allow the min watermark to be breached
--	 * potentially causing a live-lock. While kswapd is awake and
--	 * free pages are low, get a better estimate for free pages
--	 */
--	if (nr_free_pages < zone->percpu_drift_mark &&
--			!waitqueue_active(&zone->zone_pgdat->kswapd_wait))
--		return zone_page_state_snapshot(zone, NR_FREE_PAGES);
--
--	return nr_free_pages;
--}
--#endif /* CONFIG_SMP */
-Index: linux-2.6.35.y/mm/page_alloc.c
-===================================================================
---- linux-2.6.35.y.orig/mm/page_alloc.c
-+++ linux-2.6.35.y/mm/page_alloc.c
-@@ -1459,24 +1459,24 @@ static inline int should_fail_alloc_page
- #endif /* CONFIG_FAIL_PAGE_ALLOC */
- 
- /*
-- * Return 1 if free pages are above 'mark'. This takes into account the order
-+ * Return true if free pages are above 'mark'. This takes into account the order
-  * of the allocation.
-  */
--int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags)
-+static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+		      int classzone_idx, int alloc_flags, long free_pages)
- {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
--	long free_pages = zone_nr_free_pages(z) - (1 << order) + 1;
- 	int o;
- 
-+	free_pages -= (1 << order) + 1;
- 	if (alloc_flags & ALLOC_HIGH)
- 		min -= min / 2;
- 	if (alloc_flags & ALLOC_HARDER)
- 		min -= min / 4;
- 
- 	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
--		return 0;
-+		return false;
- 	for (o = 0; o < order; o++) {
- 		/* At the next order, this order's pages become unavailable */
- 		free_pages -= z->free_area[o].nr_free << o;
-@@ -1485,9 +1485,28 @@ int zone_watermark_ok(struct zone *z, in
- 		min >>= 1;
- 
- 		if (free_pages <= min)
--			return 0;
-+			return false;
- 	}
--	return 1;
-+	return true;
-+}
-+
-+bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+		      int classzone_idx, int alloc_flags)
-+{
-+	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
-+					zone_page_state(z, NR_FREE_PAGES));
-+}
-+
-+bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
-+		      int classzone_idx, int alloc_flags)
-+{
-+	long free_pages = zone_page_state(z, NR_FREE_PAGES);
-+
-+	if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
-+		free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
-+
-+	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
-+								free_pages);
- }
- 
- #ifdef CONFIG_NUMA
-@@ -2430,7 +2449,7 @@ void show_free_areas(void)
- 			" all_unreclaimable? %s"
- 			"\n",
- 			zone->name,
--			K(zone_nr_free_pages(zone)),
-+			K(zone_page_state(zone, NR_FREE_PAGES)),
- 			K(min_wmark_pages(zone)),
- 			K(low_wmark_pages(zone)),
- 			K(high_wmark_pages(zone)),
-Index: linux-2.6.35.y/mm/vmscan.c
-===================================================================
---- linux-2.6.35.y.orig/mm/vmscan.c
-+++ linux-2.6.35.y/mm/vmscan.c
-@@ -2007,7 +2007,7 @@ static int sleeping_prematurely(pg_data_
- 		if (zone->all_unreclaimable)
- 			continue;
- 
--		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
-+		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
- 								0, 0))
- 			return 1;
- 	}
-@@ -2104,7 +2104,7 @@ loop_again:
- 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
- 							&sc, priority, 0);
- 
--			if (!zone_watermark_ok(zone, order,
-+			if (!zone_watermark_ok_safe(zone, order,
- 					high_wmark_pages(zone), 0, 0)) {
- 				end_zone = i;
- 				break;
-@@ -2155,7 +2155,7 @@ loop_again:
- 			 * We put equal pressure on every zone, unless one
- 			 * zone has way too many pages free already.
- 			 */
--			if (!zone_watermark_ok(zone, order,
-+			if (!zone_watermark_ok_safe(zone, order,
- 					8*high_wmark_pages(zone), end_zone, 0))
- 				shrink_zone(priority, zone, &sc);
- 			reclaim_state->reclaimed_slab = 0;
-@@ -2176,7 +2176,7 @@ loop_again:
- 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
- 				sc.may_writepage = 1;
- 
--			if (!zone_watermark_ok(zone, order,
-+			if (!zone_watermark_ok_safe(zone, order,
- 					high_wmark_pages(zone), end_zone, 0)) {
- 				all_zones_ok = 0;
- 				/*
-@@ -2184,7 +2184,7 @@ loop_again:
- 				 * means that we have a GFP_ATOMIC allocation
- 				 * failure risk. Hurry up!
- 				 */
--				if (!zone_watermark_ok(zone, order,
-+				if (!zone_watermark_ok_safe(zone, order,
- 					    min_wmark_pages(zone), end_zone, 0))
- 					has_under_min_watermark_zone = 1;
- 			}
-@@ -2326,9 +2326,11 @@ static int kswapd(void *p)
- 				 * premature sleep. If not, then go fully
- 				 * to sleep until explicitly woken up
- 				 */
--				if (!sleeping_prematurely(pgdat, order, remaining))
-+				if (!sleeping_prematurely(pgdat, order, remaining)) {
-+					restore_pgdat_percpu_threshold(pgdat);
- 					schedule();
--				else {
-+					reduce_pgdat_percpu_threshold(pgdat);
-+				} else {
- 					if (remaining)
- 						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
- 					else
-@@ -2364,15 +2366,16 @@ void wakeup_kswapd(struct zone *zone, in
- 	if (!populated_zone(zone))
- 		return;
- 
--	pgdat = zone->zone_pgdat;
--	if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
-+	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 		return;
-+	pgdat = zone->zone_pgdat;
- 	if (pgdat->kswapd_max_order < order)
- 		pgdat->kswapd_max_order = order;
--	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
--		return;
- 	if (!waitqueue_active(&pgdat->kswapd_wait))
- 		return;
-+	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-+		return;
-+
- 	wake_up_interruptible(&pgdat->kswapd_wait);
- }
- 
-Index: linux-2.6.35.y/mm/vmstat.c
-===================================================================
---- linux-2.6.35.y.orig/mm/vmstat.c
-+++ linux-2.6.35.y/mm/vmstat.c
-@@ -81,6 +81,30 @@ EXPORT_SYMBOL(vm_stat);
- 
- #ifdef CONFIG_SMP
- 
-+static int calculate_pressure_threshold(struct zone *zone)
-+{
-+	int threshold;
-+	int watermark_distance;
-+
-+	/*
-+	 * As vmstats are not up to date, there is drift between the estimated
-+	 * and real values. For high thresholds and a high number of CPUs, it
-+	 * is possible for the min watermark to be breached while the estimated
-+	 * value looks fine. The pressure threshold is a reduced value such
-+	 * that even the maximum amount of drift will not accidentally breach
-+	 * the min watermark
-+	 */
-+	watermark_distance = low_wmark_pages(zone) - min_wmark_pages(zone);
-+	threshold = max(1, (int)(watermark_distance / num_online_cpus()));
-+
-+	/*
-+	 * Maximum threshold is 125
-+	 */
-+	threshold = min(125, threshold);
-+
-+	return threshold;
-+}
-+
- static int calculate_threshold(struct zone *zone)
- {
- 	int threshold;
-@@ -159,6 +183,48 @@ static void refresh_zone_stat_thresholds
- 	}
- }
- 
-+void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-+{
-+	struct zone *zone;
-+	int cpu;
-+	int threshold;
-+	int i;
-+
-+	get_online_cpus();
-+	for (i = 0; i < pgdat->nr_zones; i++) {
-+		zone = &pgdat->node_zones[i];
-+		if (!zone->percpu_drift_mark)
-+			continue;
-+
-+		threshold = calculate_pressure_threshold(zone);
-+		for_each_online_cpu(cpu)
-+			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-+							= threshold;
-+	}
-+	put_online_cpus();
-+}
-+
-+void restore_pgdat_percpu_threshold(pg_data_t *pgdat)
-+{
-+	struct zone *zone;
-+	int cpu;
-+	int threshold;
-+	int i;
-+
-+	get_online_cpus();
-+	for (i = 0; i < pgdat->nr_zones; i++) {
-+		zone = &pgdat->node_zones[i];
-+		if (!zone->percpu_drift_mark)
-+			continue;
-+
-+		threshold = calculate_threshold(zone);
-+		for_each_online_cpu(cpu)
-+			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-+							= threshold;
-+	}
-+	put_online_cpus();
-+}
-+
- /*
-  * For use when we know that interrupts are disabled.
-  */
-@@ -826,7 +892,7 @@ static void zoneinfo_show_print(struct s
- 		   "\n        scanned  %lu"
- 		   "\n        spanned  %lu"
- 		   "\n        present  %lu",
--		   zone_nr_free_pages(zone),
-+		   zone_page_state(zone, NR_FREE_PAGES),
- 		   min_wmark_pages(zone),
- 		   low_wmark_pages(zone),
- 		   high_wmark_pages(zone),
+Has this patch been well tested under lockdep?
