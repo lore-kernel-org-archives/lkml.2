@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab1DZK6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:58:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40889 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab1DZK6R convert rfc822-to-8bit (ORCPT
+	id S1754577Ab1DZK6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:58:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63198 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab1DZK6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:58:17 -0400
-Subject: Re: [PATCH 02/18] perf: Add persistent event facilities
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-In-Reply-To: <1303576100-425-3-git-send-email-bp@amd64.org>
-References: <1303576100-425-1-git-send-email-bp@amd64.org>
-	 <1303576100-425-3-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Apr 2011 12:57:50 +0200
-Message-ID: <1303815470.20212.260.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 26 Apr 2011 06:58:54 -0400
+Message-ID: <4DB6A509.2010009@mvista.com>
+Date: Tue, 26 Apr 2011 14:57:13 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: davinci-linux-open-source@linux.davincidsp.com,
+        Kevin Hilman <khilman@ti.com>, sachi@mistralsolutions.com,
+        Russell King <linux@arm.linux.org.uk>, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 11/11] da850: pruss CAN board specific additions.
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-12-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1303474109-6212-12-git-send-email-subhasish@mistralsolutions.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-23 at 18:28 +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Add a barebones implementation for registering persistent events with
-> perf. For that, we don't destroy the buffers when they're unmapped and
-> we map them read-only so that multiple agents can access them.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Hello.
+
+On 22-04-2011 16:08, Subhasish Ghosh wrote:
+
+> This patch adds the pruss CAN pinmux and registers the device
+> with the pruss mfd driver.
+
+> Signed-off-by: Subhasish Ghosh<subhasish@mistralsolutions.com>
 > ---
->  include/linux/perf_event.h |   22 ++++++++++++++++-
->  kernel/events/Makefile     |    2 +-
->  kernel/events/core.c       |   30 ++++++++++++++++++----
->  kernel/events/persistent.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 102 insertions(+), 8 deletions(-)
->  create mode 100644 kernel/events/persistent.c
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index ee9f1e7..37bfae1 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -216,8 +216,9 @@ struct perf_event_attr {
->                                 precise_ip     :  2, /* skid constraint       */
->                                 mmap_data      :  1, /* non-exec mmap data    */
->                                 sample_id_all  :  1, /* sample_type all events */
-> +                               persistent     :  1, /* event always on */
+>   arch/arm/mach-davinci/board-da850-evm.c |   46 +++++++++++++++++++++++++++++++
+>   1 files changed, 46 insertions(+), 0 deletions(-)
 
-But how will you find it again?
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> index e7fdf31..e1ff18c 100644
+> --- a/arch/arm/mach-davinci/board-da850-evm.c
+> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+[...]
+> @@ -1117,6 +1118,43 @@ static __init int da850_evm_init_cpufreq(void)
+>   static __init int da850_evm_init_cpufreq(void) { return 0; }
+>   #endif
+>
+> +static const short da850_evm_pruss_can_pins[] = {
+> +	DA850_PRUSS_PRU0_R31_0, DA850_PRUSS_PRU1_R30_15,
+> +	DA850_PRUSS_PRU1_R31_18, DA850_GPIO2_0,
+> +	-1
+> +};
+> +
+> +static int __init da850_evm_pruss_can_setup(void)
+> +{
+> +	int ret, val = 0;
+> +	void __iomem *cfg_chip3_reg;
+> +
+> +	ret = davinci_cfg_reg_list(da850_evm_pruss_can_pins);
+> +	if (ret)
+> +		pr_warning("%s: da850_evm_pruss_can_pins mux setup "
+> +					"failed:%d\n", __func__, ret);
 
-Persistent yells filesystem to me, and while we didn't use relayfs for
-various reasons, I think we do need something like it at the current
-stage.
+    Yet you continue to initialize... you should stop here I think.
 
+> +	/* value = 0 to enable the CAN transceiver */
+> +	ret = gpio_request_one(DA850_PRUSS_CAN_TRX_PIN,
+> +			GPIOF_OUT_INIT_LOW, "pruss_can_en");
+> +	if (ret) {
+> +		pr_warning("Cannot setup GPIO %d\n", DA850_PRUSS_CAN_TRX_PIN);
+> +		gpio_free(DA850_PRUSS_CAN_TRX_PIN);
 
+    Doesn't gpio_request_one() handle freeing GPIO on error?
+
+WBR, Sergei
