@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab1DZVWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:22:41 -0400
+	id S932635Ab1DZVWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:22:54 -0400
 Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932446Ab1DZVOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:52 -0400
+	id S932143Ab1DZVOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="634483759"
+   d="scan'208";a="634483751"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: chunkeey@googlemail.com, lrodriguez@atheros.com, linville@tuxdriver.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+To: nbd@openwrt.org, ak@linux.intel.com, stable@kernel.org,
+        linville@tuxdriver.com, linux-kernel@vger.kernel.org,
         stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [82/106] ath: add missing regdomain pair 0x5c mapping
-Message-Id: <20110426211404.0C8933E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:04 -0700 (PDT)
+Subject: [PATCH] [81/106] ath9k: fix a chip wakeup related crash in ath9k_start
+Message-Id: <20110426211403.01A533E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:14:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,42 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit bd39a274fb7b43374c797bafdb7f506598f36f77 upstream.
+[ upstream commit f62d816fc4324afbb7cf90110c70b6a14139b225 ]
 
-Joe Culler reported a problem with his AR9170 device:
+When the chip is still asleep when ath9k_start is called,
+ath9k_hw_configpcipowersave can trigger a data bus error.
 
-> ath: EEPROM regdomain: 0x5c
-> ath: EEPROM indicates we should expect a direct regpair map
-> ath: invalid regulatory domain/country code 0x5c
-> ath: Invalid EEPROM contents
-
-It turned out that the regdomain 'APL7_FCCA' was not mapped yet.
-According to Luis R. Rodriguez [Atheros' engineer] APL7 maps to
-FCC_CTL and FCCA maps to FCC_CTL as well, so the attached patch
-should be correct.
-
-Reported-by: Joe Culler <joe.culler@gmail.com>
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: stable@kernel.org
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
----
- drivers/net/wireless/ath/regd_common.h |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-2.6.35.y/drivers/net/wireless/ath/regd_common.h
+Index: linux-2.6.35.y/drivers/net/wireless/ath/ath9k/main.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/ath/regd_common.h
-+++ linux-2.6.35.y/drivers/net/wireless/ath/regd_common.h
-@@ -195,6 +195,7 @@ static struct reg_dmn_pair_mapping regDo
- 	{APL9_WORLD, CTL_ETSI, CTL_ETSI},
+--- linux-2.6.35.y.orig/drivers/net/wireless/ath/ath9k/main.c
++++ linux-2.6.35.y/drivers/net/wireless/ath/ath9k/main.c
+@@ -1124,6 +1124,8 @@ static int ath9k_start(struct ieee80211_
+ 		  "Starting driver with initial channel: %d MHz\n",
+ 		  curchan->center_freq);
  
- 	{APL3_FCCA, CTL_FCC, CTL_FCC},
-+	{APL7_FCCA, CTL_FCC, CTL_FCC},
- 	{APL1_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_APLD, CTL_FCC, NO_CTL},
++	ath9k_ps_wakeup(sc);
++
+ 	mutex_lock(&sc->mutex);
+ 
+ 	if (ath9k_wiphy_started(sc)) {
+@@ -1238,6 +1240,8 @@ static int ath9k_start(struct ieee80211_
+ mutex_unlock:
+ 	mutex_unlock(&sc->mutex);
+ 
++	ath9k_ps_restore(sc);
++
+ 	return r;
+ }
+ 
