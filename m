@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab1DZO3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:29:08 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:54383 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab1DZO3G (ORCPT
+	id S1756731Ab1DZOaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:30:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52481 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464Ab1DZOaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:29:06 -0400
-Date: Tue, 26 Apr 2011 16:25:35 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Daniel Kiper <dkiper@net-space.pl>, konrad.wilk@oracle.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
-Message-ID: <20110426142535.GA27417@router-fw-old.local.net-space.pl>
-References: <20110422212545.GA22846@router-fw-old.local.net-space.pl> <20110422223331.GB5124@const.famille.thibault.fr>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422223331.GB5124@const.famille.thibault.fr>
-User-Agent: Mutt/1.3.28i
+	Tue, 26 Apr 2011 10:30:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: KyongHo Cho <pullip.cho@samsung.com>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Date: Tue, 26 Apr 2011 16:29:51 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Zach Pfeffer <zach.pfeffer@linaro.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Ilho Lee <ilho215.lee@samsung.com>, sanghyun75.lee@samsung.com
+References: <201104212129.17013.arnd@arndb.de> <BANLkTim5umALqafjA2e88UCLzMp9LQu3_Q@mail.gmail.com> <BANLkTimz8zprEw7H_i8g2qj8RyyougiBBw@mail.gmail.com>
+In-Reply-To: <BANLkTimz8zprEw7H_i8g2qj8RyyougiBBw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104261629.51765.arnd@arndb.de>
+X-Provags-ID: V02:K0:puaLHh/UejS+A79OzcNRWLztlL7u0BJQbn3F9WyiFkJ
+ xEJFyuPcAJiuXVD6eCJZGbO9e5zNLLYPN+v9BXE1Opm3VNLY4h
+ S3+2TW3V8nZX40Z0kpjlpjMsI/LKuWvHpGsJrp+RdRuHcDLN6W
+ lbLMseb5AB+gR2jV72f33KvRaVmdcjVJ6XH1O8/xkfCXwGzUmu
+ TzGGJJ4SLVMJJ0KMb15Jw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 23, 2011 at 12:33:32AM +0200, Samuel Thibault wrote:
-> Hello,
->
-> Daniel Kiper, le Fri 22 Apr 2011 23:25:45 +0200, a ?crit :
-> > If pfn of newly allocated page is less than currently requested pfn
-> > then relevant earlier allocated mfn is overwritten which leads to
-> > domain crash later.
->
-> Oops, good catch! And unfortunately it happens seldomly... I guess it
-> may be the culprit for a fair number of other issues.
+On Friday 22 April 2011, KyongHo Cho wrote:
+> IOMMU api does not provide virtual memory management.
+> DMA api is not flexible for all our use-cases.
 
-I discovered that issue on domU i386. It does not affect x86_64
-in my environment. However, as you stated above that issue in some
-circumstances could lead to mysterious system crashes or data
-corruptions.
+We can fix either problem by changing the existing interfaces,
+which is much more maintainable in the long run than adding
+a third one.
 
-> > +	if (new_pfn < i)
-> > +		for (new_pfn = i; new_pfn < dom->total_pages; ++new_pfn)
-> > +			if (dom->p2m_host[new_pfn] == new_mfn)
-> > +				break;
->
-> Instead of looking for the page, which takes a linear time for each page
-> and thus potentially quadratic time, we should probably rather record
-> which PFN the MFNs < allocated have been moved to?
-
-I am going to post new time optimized version
-of that patch today or tommorow.
-
-Daniel
+	Arnd
