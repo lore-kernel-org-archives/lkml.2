@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab1DZV0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:26:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
+	id S932748Ab1DZV1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:27:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60554 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932351Ab1DZVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:38 -0400
+	id S932329Ab1DZVOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831878"
+   d="scan'208";a="684327311"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: simon@swine.de, gregkh@suse.de, ak@linux.intel.com,
+To: drosenberg@vsecurity.com, socketcan@hartkopp.net, davem@davemloft.net,
+        ak@linux.intel.com, jmm@debian.org, gregkh@suse.de,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [67/106] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
-Message-Id: <20110426211348.4B26D3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:48 -0700 (PDT)
+Subject: [PATCH] [50/106] CAN: Use inode instead of kernel address for /proc file
+Message-Id: <20110426211330.5BB5B3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,48 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Christian Simon <simon@swine.de>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
+commit 9f260e0efa4766e56d0ac14f1aeea6ee5eb8fe83 upstream.
 
-I added new ProdutIds for two devices from CTI GmbH Leipzig.
+Since the socket address is just being used as a unique identifier, its
+inode number is an alternative that does not leak potentially sensitive
+information.
 
-Signed-off-by: Christian Simon <simon@swine.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+CC-ing stable because MITRE has assigned CVE-2010-4565 to the issue.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Moritz Muehlenhoff <jmm@debian.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
- 2 files changed, 11 insertions(+)
+ net/can/bcm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
+Index: linux-2.6.35.y/net/can/bcm.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio.c
-+++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
-@@ -150,6 +150,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
-  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
-  */
- static struct usb_device_id id_table_combined [] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
-Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
-===================================================================
---- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio_ids.h
-+++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1140,3 +1140,12 @@
- #define QIHARDWARE_VID			0x20B7
- #define MILKYMISTONE_JTAGSERIAL_PID	0x0713
+--- linux-2.6.35.y.orig/net/can/bcm.c
++++ linux-2.6.35.y/net/can/bcm.c
+@@ -125,7 +125,7 @@ struct bcm_sock {
+ 	struct list_head tx_ops;
+ 	unsigned long dropped_usr_msgs;
+ 	struct proc_dir_entry *bcm_proc_read;
+-	char procname [20]; /* pointer printed in ASCII with \0 */
++	char procname [32]; /* inode number in decimal with \0 */
+ };
  
-+/*
-+ * CTI GmbH RS485 Converter http://www.cti-lean.com/
-+ */
-+/* USB-485-Mini*/
-+#define FTDI_CTI_MINI_PID	0xF608
-+/* USB-Nano-485*/
-+#define FTDI_CTI_NANO_PID	0xF60B
-+
-+
+ static inline struct bcm_sock *bcm_sk(const struct sock *sk)
+@@ -1521,7 +1521,7 @@ static int bcm_connect(struct socket *so
+ 
+ 	if (proc_dir) {
+ 		/* unique socket address as filename */
+-		sprintf(bo->procname, "%p", sock);
++		sprintf(bo->procname, "%lu", sock_i_ino(sk));
+ 		bo->bcm_proc_read = proc_create_data(bo->procname, 0644,
+ 						     proc_dir,
+ 						     &bcm_proc_fops, sk);
