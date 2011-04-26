@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab1DZVVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:21:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1330 "EHLO mga01.intel.com"
+	id S932455Ab1DZVOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:14:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60586 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932487Ab1DZVO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:58 -0400
+	id S932334Ab1DZVOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="914748879"
+   d="scan'208";a="684327417"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: alex.williamson@redhat.com, ddutile@redhat.com, David.Woodhouse@intel.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [87/106] intel-iommu: Fix get_domain_for_dev() error path
-Message-Id: <20110426211409.43AE13E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:09 -0700 (PDT)
+To: Artem.Bityutskiy@nokia.com, ak@linux.intel.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [62/106] UBIFS: fix oops when R/O file-system is fsync'ed
+Message-Id: <20110426211343.01AB53E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,36 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit 2fe9723df8e45fd247782adea244a5e653c30bf4 upstream.
+commit 78530bf7f2559b317c04991b52217c1608d5a58d upstream.
 
-If we run out of domain_ids and fail iommu_attach_domain(), we
-fall into domain_exit() without having setup enough of the
-domain structure for this to do anything useful.  In fact, it
-typically runs off into the weeds walking the bogus domain->devices
-list.  Just free the domain.
+This patch fixes severe UBIFS bug: UBIFS oopses when we 'fsync()' an
+file on R/O-mounter file-system. We (the UBIFS authors) incorrectly
+thought that VFS would not propagate 'fsync()' down to the file-system
+if it is read-only, but this is not the case.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+It is easy to exploit this bug using the following simple perl script:
+
+use strict;
+use File::Sync qw(fsync sync);
+
+die "File path is not specified" if not defined $ARGV[0];
+my $path = $ARGV[0];
+
+open FILE, "<", "$path" or die "Cannot open $path: $!";
+fsync(\*FILE) or die "cannot fsync $path: $!";
+close FILE or die "Cannot close $path: $!";
+
+Thanks to Reuben Dowle <Reuben.Dowle@navico.com> for reporting about this
+issue.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reported-by: Reuben Dowle <Reuben.Dowle@navico.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/file.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Index: linux-2.6.35.y/drivers/pci/intel-iommu.c
+Index: linux-2.6.35.y/fs/ubifs/file.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/pci/intel-iommu.c
-+++ linux-2.6.35.y/drivers/pci/intel-iommu.c
-@@ -1835,7 +1835,7 @@ static struct dmar_domain *get_domain_fo
+--- linux-2.6.35.y.orig/fs/ubifs/file.c
++++ linux-2.6.35.y/fs/ubifs/file.c
+@@ -1315,6 +1315,9 @@ int ubifs_fsync(struct file *file, int d
  
- 	ret = iommu_attach_domain(domain, iommu);
- 	if (ret) {
--		domain_exit(domain);
-+		free_domain_mem(domain);
- 		goto error;
- 	}
+ 	dbg_gen("syncing inode %lu", inode->i_ino);
  
++	if (inode->i_sb->s_flags & MS_RDONLY)
++		return 0;
++
+ 	/*
+ 	 * VFS has already synchronized dirty pages for this inode. Synchronize
+ 	 * the inode unless this is a 'datasync()' call.
