@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1DZUHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:07:08 -0400
-Received: from mail.perches.com ([173.55.12.10]:1027 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab1DZUHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:07:06 -0400
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thiago Farina <tfransosi@gmail.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1303847902.18763.38.camel@gandalf.stny.rr.com>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	 <20110426190531.GA4556@p183>
-	 <1303845468.18763.32.camel@gandalf.stny.rr.com>
-	 <20110426192029.GA4686@p183>
-	 <BANLkTinxvyxSK9f+kkQugNkQEBf1O65bLQ@mail.gmail.com>
-	 <1303846642.18763.37.camel@gandalf.stny.rr.com>
-	 <1303847110.24299.50.camel@Joe-Laptop>
-	 <BANLkTimf44AgMAViHrSEz78ifHUYb8ji6g@mail.gmail.com>
-	 <1303847902.18763.38.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 13:06:53 -0700
-Message-ID: <1303848413.24299.57.camel@Joe-Laptop>
+	id S1756214Ab1DZUHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:07:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51196 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753389Ab1DZUHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 16:07:32 -0400
+Date: Tue, 26 Apr 2011 13:07:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: Re: (resend) [PATCH] vmscan,memcg: memcg aware swap token
+Message-Id: <20110426130724.f2ae18e3.akpm@linux-foundation.org>
+In-Reply-To: <20110426170146.F396.A69D9226@jp.fujitsu.com>
+References: <20110426170146.F396.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 15:58 -0400, Steven Rostedt wrote:
-> On Tue, 2011-04-26 at 16:47 -0300, Thiago Farina wrote:
-> > > $ grep -rP --include=*.[ch] "\bstrcmp.*==\s*0\b" * | wc -l
-> > > 1143
-> > > $ grep -rP --include=*.[ch] "\!\s*strcmp\s*\(" *  | wc -l
-> > > 1663
-> > > Can you count how many misuses of strcmp have been
-> > > corrected?
-> > > Do you plan to convert the existing 2800?
-> > I'd work on this without any problem.
-> Nothing a perl script can't do either.
+On Tue, 26 Apr 2011 16:59:19 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-That's not a real problem.
+> @@ -75,3 +76,19 @@ void __put_swap_token(struct mm_struct *mm)
+>  		swap_token_mm = NULL;
+>  	spin_unlock(&swap_token_lock);
+>  }
+> +
+> +int has_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg)
+> +{
+> +	if (memcg) {
+> +		struct mem_cgroup *swap_token_memcg;
+> +
+> +		/*
+> +		 * memcgroup reclaim can disable swap token only if token task
+> +		 * is in the same cgroup.
+> +		 */
+> +		swap_token_memcg = try_get_mem_cgroup_from_mm(swap_token_mm);
+> +		return ((mm == swap_token_mm) && (memcg == swap_token_memcg));
+> +	} else
+> +		return (mm == swap_token_mm);
+> +}
 
-my $match_balanced_parentheses = qr/(\((?:[^\(\)]++|(?-1))*\))/;
-s/\bstrcmp\s*${match_balanced_parentheses}\s*==\s*0\b/streq$1/g;
-s/\!\s*strcmp\s*\(/streq\(/g;
+Seems to be missing a css_put()?
 
-And the other strcmp uses too?
+Either I'm mistaken or that's a bug.  Perhaps neither of these would
+have happened if we'd bothered to document
+try_get_mem_cgroup_from_mm().
 
