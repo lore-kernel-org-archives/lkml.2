@@ -1,47 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab1DZFhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 01:37:19 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:43088 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752531Ab1DZFhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 01:37:14 -0400
-Message-ID: <4DB659E7.1000505@st.com>
-Date: Tue, 26 Apr 2011 11:06:39 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753338Ab1DZFhM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 01:37:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43018 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752531Ab1DZFhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 01:37:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
+   d="scan'208";a="914407333"
+Date: Tue, 26 Apr 2011 13:37:06 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110426053706.GA17262@localhost>
+References: <20110420012120.GK23985@dastard>
+ <20110420025321.GA14398@localhost>
+ <20110421004547.GD1814@dastard>
+ <20110421020617.GB12191@localhost>
+ <20110421030152.GG1814@dastard>
+ <20110421035954.GA15461@localhost>
+ <20110421041010.GA18710@localhost>
+ <20110421160405.GB4476@quack.suse.cz>
+ <20110422022459.GA6199@localhost>
+ <20110422211255.GB2977@quack.suse.cz>
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: Re: [PATCH V2 0/7] dmaengine/dw_dmac updates
-References: <cover.1303194835.git.viresh.kumar@st.com> <1303789619.896.4.camel@vkoul-udesk3>
-In-Reply-To: <1303789619.896.4.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422211255.GB2977@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2011 09:16 AM, Koul, Vinod wrote:
-> The patch series fails to apply in my next. Can you please rebase to my
-> tree and resend again
+On Sat, Apr 23, 2011 at 05:12:55AM +0800, Jan Kara wrote:
+> On Fri 22-04-11 10:24:59, Wu Fengguang wrote:
+> > > 2) The intention of both bdi_flush_io() and balance_dirty_pages() is to
+> > > write .nr_to_write pages. So they should either do queue_io()
+> > > unconditionally (I kind of like that for simplicity) or they should requeue
+> > > once if they have not written enough - otherwise it could happen that they
+> > > are called just at the moment when b_io contains a single inode with a few
+> > > dirty pages and they end up doing almost nothing.
+> > 
+> > It makes much more sense to keep the policy consistent. When the
+> > flusher and the throttled tasks are both actively manipulating the
+> > shared lists but in different ways, how are we going to analyze the
+> > resulted mixture behavior?
+> > 
+> > Note that bdi_flush_io() and balance_dirty_pages() both have outer
+> > loops to retry writeout, so smallish b_io is not a problem at all.
+>   Well, it changes how balance_dirty_pages() behaves in some corner cases
+> (I'm not that much concerned about bdi_flush_io() because that is a last
+> resort thing anyway). But I see your point in consistency as well.
 > 
-> FWIW: my tree is at git://git.infradead.org/users/vkoul/slave-dma.git
+> > > 3) I guess your patch does not compile because queue_io() is static ;).
+> > 
+> > Yeah, good spot~ :) Here is the updated patch. I feel like moving
+> > bdi_flush_io() to fs-writeback.c rather than exporting the low level
+> > queue_io() (and enable others to conveniently change the queue policy!).
+> > 
+> > balance_dirty_pages() cannot be moved.. so I plan to submit it after
+> > any IO-less merges. It's a cleanup patch after all.
+> Can't we just have a wrapper in fs/fs-writeback.c that will do:
+>      spin_lock(&bdi->wb.list_lock);
+>      if (list_empty(&bdi->wb.b_io))
+>              queue_io(&bdi->wb, &wbc);
+>      writeback_inodes_wb(&bdi->wb, &wbc);
+>      spin_unlock(&bdi->wb.list_lock);
+> 
+> And call it wherever we need? We can then also unexport
+> writeback_inodes_wb() which is not really a function someone would want to
+> call externally after your changes.
 
-Ya Sure. Will resend them.
-But when i tried to apply them on your next, they applied without any issues.
+OK, this avoids the need to move bdi_flush_io(). Here is the updated
+patch, do you see any more problems?
 
-I used
+Thanks,
+Fengguang
+---
+Subject: writeback: elevate queue_io() into wb_writeback()
+Date: Thu Apr 21 12:06:32 CST 2011
 
-$git am -3 *.patch
+Code refactor for more logical code layout.
+No behavior change.
 
--- 
-viresh
+- remove the mis-named __writeback_inodes_sb()
+
+- wb_writeback()/writeback_inodes_wb() will decide when to queue_io()
+  before calling __writeback_inodes_wb()
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-04-26 13:20:17.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-04-26 13:30:19.000000000 +0800
+@@ -570,17 +570,13 @@ static int writeback_sb_inodes(struct su
+ 	return 1;
+ }
+ 
+-void writeback_inodes_wb(struct bdi_writeback *wb,
+-		struct writeback_control *wbc)
++static void __writeback_inodes_wb(struct bdi_writeback *wb,
++				  struct writeback_control *wbc)
+ {
+ 	int ret = 0;
+ 
+ 	if (!wbc->wb_start)
+ 		wbc->wb_start = jiffies; /* livelock avoidance */
+-	spin_lock(&wb->list_lock);
+-
+-	if (list_empty(&wb->b_io))
+-		queue_io(wb, wbc);
+ 
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = wb_inode(wb->b_io.prev);
+@@ -596,19 +592,16 @@ void writeback_inodes_wb(struct bdi_writ
+ 		if (ret)
+ 			break;
+ 	}
+-	spin_unlock(&wb->list_lock);
+ 	/* Leave any unwritten inodes on b_io */
+ }
+ 
+-static void __writeback_inodes_sb(struct super_block *sb,
+-		struct bdi_writeback *wb, struct writeback_control *wbc)
++void writeback_inodes_wb(struct bdi_writeback *wb,
++		struct writeback_control *wbc)
+ {
+-	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+-
+ 	spin_lock(&wb->list_lock);
+ 	if (list_empty(&wb->b_io))
+ 		queue_io(wb, wbc);
+-	writeback_sb_inodes(sb, wb, wbc, true);
++	__writeback_inodes_wb(wb, wbc);
+ 	spin_unlock(&wb->list_lock);
+ }
+ 
+@@ -674,7 +667,7 @@ static long wb_writeback(struct bdi_writ
+ 	 * The intended call sequence for WB_SYNC_ALL writeback is:
+ 	 *
+ 	 *      wb_writeback()
+-	 *          __writeback_inodes_sb()     <== called only once
++	 *          writeback_sb_inodes()       <== called only once
+ 	 *              write_cache_pages()     <== called once for each inode
+ 	 *                   (quickly) tag currently dirty pages
+ 	 *                   (maybe slowly) sync all tagged pages
+@@ -722,10 +715,14 @@ static long wb_writeback(struct bdi_writ
+ 
+ retry:
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
++		spin_lock(&wb->list_lock);
++		if (list_empty(&wb->b_io))
++			queue_io(wb, &wbc);
+ 		if (work->sb)
+-			__writeback_inodes_sb(work->sb, wb, &wbc);
++			writeback_sb_inodes(work->sb, wb, &wbc, true);
+ 		else
+-			writeback_inodes_wb(wb, &wbc);
++			__writeback_inodes_wb(wb, &wbc);
++		spin_unlock(&wb->list_lock);
+ 		trace_wbc_writeback_written(&wbc, wb->bdi);
+ 
+ 		work->nr_pages -= write_chunk - wbc.nr_to_write;
