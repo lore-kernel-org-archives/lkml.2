@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab1DZBsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 21:48:37 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61186 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932783Ab1DZBsg (ORCPT
+	id S932914Ab1DZBtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 21:49:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42156 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932783Ab1DZBtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 21:48:36 -0400
-Date: Mon, 25 Apr 2011 18:47:41 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: anish singh <anish198519851985@gmail.com>, Simon Glass <sjg@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [PATCH v4] ARM: Use generic BUG() handler
-Message-ID: <20110426014741.GB28721@quad.lixom.net>
-References: <1302822031-6752-1-git-send-email-sjg@chromium.org>
- <4DA7A914.5020804@codeaurora.org>
- <BANLkTikcY-xzjd0W77UfWWoO8ibjKNXQGg@mail.gmail.com>
- <BANLkTin_TpzdQS96SPKUNye6vb2b55Qc4A@mail.gmail.com>
- <143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
+	Mon, 25 Apr 2011 21:49:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH 0/4] blackfin: convet cpumask apis
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        device-driver-devel@blackfin.uclinux.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <BANLkTi=WJytLPuKmiMYEHsVq4o=ESSY8MQ@mail.gmail.com>
+References: <BANLkTinNhM5GwOKdS4hX==Wk71bTe-t4-w@mail.gmail.com> <BANLkTi=WJytLPuKmiMYEHsVq4o=ESSY8MQ@mail.gmail.com>
+Message-Id: <20110426105045.F359.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 26 Apr 2011 10:49:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 11:01:59AM -0700, Stephen Boyd wrote:
-
-> It's here:
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6885/1
+> On Mon, Apr 25, 2011 at 14:11, Mike Frysinger wrote:
+> > On Mon, Apr 25, 2011 at 05:27, KOSAKI Motohiro wrote:
+> >> Rusty Russle introduced a lot of cpumask related APIs. and He gone even
+> >> though the work is unfinished. This patch series is sequel of his work.
+> >>
+> >> No functional change. only api change.
+> >>
+> >> note: I've confirmed only cross-compile build. so, I hope blackfin
+> >> developers see the code.
+> >
+> > fyi, device-driver-devel@b.u.o is for general device drivers while
+> > uclinux-dist-devel@b.u.o is for Blackfin arch work
 > 
-> I imagine it will be added when/if Russell picks it up. Sadly it
-> increases the LOC in ARM so Simon might need to really
-> sell it to get it merged.
+> oh, and i guess you typo-ed the list name since it's
+> "device-drivers-devel" ;).  probably better to resend the series and
+> not cc Michael (since he doesnt watch over Blackfin anymore).
 
-It's core code though, and the concern today is not with ARM core code
-as much as with the various platforms that are growing seemingly without
-upper bounds.
+I'm sorry. Will do.
 
 
--Olof
+
