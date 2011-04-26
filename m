@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1DZKHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:07:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47201 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab1DZKHN (ORCPT
+	id S1753630Ab1DZKHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:07:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39436 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab1DZKHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:07:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=tq8nmTWTthkCPTqCMwQAYkTX4j7Fs4waW7GWhsPOAY78RrX86Y7X751ZJVB2JNqnxa
-         Lp67F1h5aFKFxwAk6jFvL5mX4pOmFxB9gAz8RONL1Xjf0flI0ip4Qg8xvlXV2Flt/78t
-         eSHZ3gyPImQAtEPMkvU/Lfh/9FgBnNoupuXLc=
-Message-ID: <4DB6994B.3060204@suse.cz>
-Date: Tue, 26 Apr 2011 12:07:07 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0a2) Gecko/20110420 Thunderbird/3.3a4pre
-MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 090/173] USB: serial/kobil_sct, fix potential tty NULL
- dereference
-References: <20110425200236.905912775@pcw.home.local>
-In-Reply-To: <20110425200236.905912775@pcw.home.local>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Apr 2011 06:07:18 -0400
+Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
+ related?)
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110424164331.GN2628@linux.vnet.ibm.com>
+References: <20110422005046.GQ2235@linux.vnet.ibm.com>
+	 <BANLkTi=W=s876U===LVfp59Nnfui8d-1RQ@mail.gmail.com>
+	 <20110422150222.GA2300@linux.vnet.ibm.com>
+	 <BANLkTind84Gf8JA9Fa4QL2GbaF8nMNhDzw@mail.gmail.com>
+	 <20110423210539.GI2628@linux.vnet.ibm.com>
+	 <BANLkTimXW2=PYOXkKjnLuH+eN2TjZBqAxw@mail.gmail.com>
+	 <BANLkTi=ntjm-5D=OD1oFogpNjmJSJiZygQ@mail.gmail.com>
+	 <BANLkTim9H1k4c7xSZZJ09WXs8WCeCQQJJg@mail.gmail.com>
+	 <20110424062728.GM2628@linux.vnet.ibm.com>
+	 <BANLkTinTd10K6Ho6FhuynROT7yDLHNLojw@mail.gmail.com>
+	 <20110424164331.GN2628@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Apr 2011 12:06:57 +0200
+Message-ID: <1303812417.20212.239.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2011 10:04 PM, Willy Tarreau wrote:
-> 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Jiri Slaby<jslaby@suse.cz>
->
-> commit 6960f40a954619857e7095a6179eef896f297077 upstream.
->
-> Make sure that we check the return value of tty_port_tty_get.
-> Sometimes it may return NULL and we later dereference that.
->
-> The only place here is in kobil_read_int_callback, so fix it.
->
-> Signed-off-by: Jiri Slaby<jslaby@suse.cz>
-> Cc: Alan Cox<alan@linux.intel.com>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
->
-> ---
->   drivers/usb/serial/kobil_sct.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- a/drivers/usb/serial/kobil_sct.c
-> +++ b/drivers/usb/serial/kobil_sct.c
-> @@ -372,7 +372,7 @@ static void kobil_read_int_callback(stru
->   	}
->
->   	tty = port->port.tty;
-> -	if (urb->actual_length) {
-> +	if (tty&&  urb->actual_length) {
+On Sun, 2011-04-24 at 09:43 -0700, Paul E. McKenney wrote:
+> 
+> Peter, any thoughts on what I might have done wrong to get the scheduler
+> into a state where it was ignoring a runnable realtime task? 
 
-Ok, but this doesn't fix the bug (the URB should be killed or something 
-similar in that kernel), it only makes the window smaller.
-
-regards,
--- 
-js
-suse labs
+Not really, the only thing I can think of is something like poking at
+task->state while its sleeping. One you set it to TASK_RUNNING wakeups
+will be ignored since its already running ;-)
