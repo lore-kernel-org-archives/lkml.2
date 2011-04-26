@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab1DZOWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:22:13 -0400
-Received: from mercurio.unical.it ([160.97.7.11]:44881 "EHLO
-	mercurio.unical.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab1DZOWM (ORCPT
+	id S1756494Ab1DZOWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:22:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36849 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756106Ab1DZOWN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:22:12 -0400
-X-Greylist: delayed 3882 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 10:22:11 EDT
-Message-ID: <20110426145955.15347aj4wqzexo0s@webmail.unical.it>
-Date: Tue, 26 Apr 2011 14:59:55 +0200
-From: Ishii <yoshikoishii00@yahoo.co.jp>
-Reply-to: yoshikoishii00@yahoo.com.hk
-To: undisclosed-recipients:;
-Subject: Vital Information Reply..
+	Tue, 26 Apr 2011 10:22:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.4.26.124821
-X-PMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- FORGED_FROM_YAHOO 0.1, FROM_NAME_ONE_WORD 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_600_699 0, BODY_SIZE_7000_LESS 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_CONTACT 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __FRAUD_WEBMAIL_REPLYTO 0, __FROM_YAHOO 0, __HAS_MSGID 0, __INT_PROD_LOC 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __TO_MALFORMED_3 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
+In-Reply-To: <4DB6C89F.10903@csr.com>
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+	<1302116833-24540-2-git-send-email-per.forlin@linaro.org>
+	<4DA81F42.3070208@csr.com>
+	<BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
+	<4DB6C89F.10903@csr.com>
+Date: Tue, 26 Apr 2011 16:22:12 +0200
+Message-ID: <BANLkTinVL7NJpgGF0KZAdmqgyu2pXyKFkA@mail.gmail.com>
+Subject: Re: [PATCH v2 01/12] mmc: add none blocking mmc request function
+From: Per Forlin <per.forlin@linaro.org>
+To: David Vrabel <david.vrabel@csr.com>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 April 2011 15:29, David Vrabel <david.vrabel@csr.com> wrote:
+> On 20/04/11 08:17, Per Forlin wrote:
+>>
+>>> Using a MMC request queue has other benefits -- it allows multiple users
+>>> without having to claim/release the host.  This would be useful for
+>>> (especially multi-function) SDIO.
+>>
+>> You mean claim and release would be done only within the mmc core. The
+>> timed saved here would equal the time it takes to release and claim
+>> the host.
+>> Claim and release can also be used for power management to indicate if
+>> any client is using the host, if not the power can be switched off.
+>
+> Isn't there a separate runtime power management API that different from
+> claim/release?
+>
+I misunderstood. I thought you meant that the claim() and release()
+were not needed if having an internal request queue in core.c.
+Please discard my comment.
 
+>> I just want to make sure I understand the multi-function SDIO case, I
+>> haven't done any work with SDIO.
+>> Can the SDIO functions compete over the same claim_host at the same time?
+>> Example: if function 1 claims the host, function 2 and function 3 also
+>> want to claim the host but have to wait for function 1 to release the
+>> host.
+>
+> This is the case.   Each function driver has to claim exclusive access
+> to the host.
+>
+>> What is the extra benefit of having the internal request queue for
+>> multi function SDIO?
+>
+> It reduces the delays between commands if multiple drivers are sending
+> commands.  I estimated performance improvements with 2-3% from just
+> removing the need to claim/release in one particular SDIO function
+> driver.  Performance improvements for multi-function cards would be a
+> bit more (5% perhaps?).
+>
+Your estimates are promising.
 
--- 
-Hello,
+> The more important benefit is the simplification of the API.
+I agree. I will make a prototype for this. I don't think I will be
+able to find time for this until middle of May. I let know you when I
+have patches.
 
-I am Mrs. Yoshiko Ishii, the CEO Mistui Ishii Real Estate and majority share
-holder of Fujitsu Electronic Company here in Japan, I am seeking your
-assistance in helping me receive a large amount of money and in giving
-a clear research and feasibility study on areas I could invest on.
-
-Kindly indicate your interest by sending your reply to my private email
-address which is as follows: yoshii104@hotmail.com
-
-
-Regards.
-
-Mrs. Yoshiko Ishii.
-
-http://news.bbc.co.uk/2/hi/asia-pacific/7289581.stm
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
+>
+> David
+Thanks,
+Per
