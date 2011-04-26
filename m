@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab1DZGw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 02:52:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61251 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886Ab1DZGwy convert rfc822-to-8bit (ORCPT
+	id S1757531Ab1DZHIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:08:21 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34226 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab1DZHIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 02:52:54 -0400
+	Tue, 26 Apr 2011 03:08:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FKX/EEBjnIznol2QVTnncVcVgd5uVAsZbX7YVrjb9E5MBikBdmOmWdqZrdwYIg498j
-         WmyJR3Gq3qxxiCZCuMwS48S9PoPHs5M2OZLbEZqPm8eIGkwJymz9LvakXiUlMg7IRh2i
-         3DJhpMGP5euGt3krjvuWtZn9lWbTwYJFjPtXo=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=XwLjQ+9zOgZ8memm1z5SDJ9m02XDBx0I4v3yQyw6PtLof9I4/yTqMYY7at02JaymVN
+         Eca8/7mIE/Y7+afQxL2sKsfoIDSbaxZZAmEMqtmUHmHr9oG7f+TCD4cnjzCxd4NUHm94
+         D3ptx+59K/Ecc2Ss9nhKrrSHiOSLGDq7I+kZ0=
+Date: Tue, 26 Apr 2011 15:07:56 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, akpm@linux-foundation.org, joe@perches.com,
+        randy.dunlap@oracle.com
+Subject: Re: [PATCH]Remove a warning
+Message-ID: <20110426070754.GB4154@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com,
+	akpm@linux-foundation.org, joe@perches.com, randy.dunlap@oracle.com
+References: <20110426043835.GA4154@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4DB4832E.6080009@verizon.net>
-References: <4DB4832E.6080009@verizon.net>
-Date: Tue, 26 Apr 2011 02:52:54 -0400
-Message-ID: <BANLkTikbo2tqcvAZ5_druZR+fYhBozakew@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: allow headerdep to work in KBUILD_OUTPUT and add
- targets to PHONY
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: pefoley2@verizon.net
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426043835.GA4154@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sun, Apr 24, 2011 at 4:08 PM, Peter Foley <pefoley2@verizon.net> wrote:
-> This patch fixes the headerdep target so it will work when make is executed from KBUILD_OUTPUT.
-> It also adds a few targets to PHONY so they are always executed.
->
-one change, one patch, please.
-
-Why do you want that much consistency check to be always ran ?
-Especially `coccicheck', which rely on a non-common program being
-available.
-
-Thanks,
- - Arnaud
-
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+On Tue, Apr 26, 2011 at 12:38:37PM +0800, Harry Wei wrote:
+> Hi us,
+>    When i was compiling kernel, a warning happened to me.
+> The warning said like following.
+> 
+> drivers/staging/wlan-ng/cfg80211.c:709: warning: initialization from 
+> incompatible pointer type
+See http://s1202.photobucket.com/albums/bb364/harrywei/?action=view&current=patched2.png
+for more details.
+> 
+> So i patched like this.
+> 
+> From: Harry Wei <harryxiyou@gmail.com>
+> 
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 > ---
->  Makefile |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index b967b96..093c9d2 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -991,7 +991,8 @@ include/generated/utsrelease.h: include/config/kernel.release FORCE
->
->  PHONY += headerdep
->  headerdep:
-> -       $(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
-> +       $(Q)find $(srctree)/include/ -name '*.h' | xargs --max-args 1 \
-> +       $(srctree)/scripts/headerdep.pl -I$(srctree)/include
->
->  # ---------------------------------------------------------------------------
->
-> @@ -1392,6 +1393,8 @@ tags TAGS cscope gtags: FORCE
->  # Scripts to check various things for consistency
->  # ---------------------------------------------------------------------------
->
-> +PHONY += includecheck versioncheck coccicheck namespacecheck export_report
-> +
->  includecheck:
->        find * $(RCS_FIND_IGNORE) \
->                -name '*.[hcS]' -type f -print | sort \
-> --
-> 1.7.5.rc1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+>  drivers/staging/wlan-ng/cfg80211.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+> index 6a71f52..7637839 100644
+> --- a/drivers/staging/wlan-ng/cfg80211.c
+> +++ b/drivers/staging/wlan-ng/cfg80211.c
+> @@ -273,7 +273,7 @@ exit:
+>  }
+>  
+>  int prism2_set_default_key(struct wiphy *wiphy, struct net_device *dev,
+> -			   u8 key_index)
+> +			   u8 key_index, bool unicast, bool multicast)
+>  {
+>  	wlandevice_t *wlandev = dev->ml_priv;
+>  
+> -- 
+> 1.7.0.4
+> 
+> 
+> 
