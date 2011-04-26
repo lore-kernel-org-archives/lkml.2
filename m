@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1DZKWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:22:04 -0400
-Received: from lucidpixels.com ([75.144.35.66]:51247 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab1DZKWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:22:02 -0400
-Date: Tue, 26 Apr 2011 06:22:01 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Roland Dreier <roland@kernel.org>
-cc: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
-In-Reply-To: <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1104260619420.8361@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan> <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753822Ab1DZKYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:24:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57952 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab1DZKYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 06:24:50 -0400
+Message-ID: <4DB69D6B.9060106@linutronix.de>
+Date: Tue, 26 Apr 2011 12:24:43 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Tanya Brokhman <tlinder@codeaurora.org>
+CC: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Felipe Balbi'" <balbi@ti.com>, gregkh@suse.de,
+        linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: merge the two dummy_hcds into one
+References: <20110414114605.GA17871@linutronix.de> <Pine.LNX.4.44L0.1104141141480.2487-100000@iolanthe.rowland.org> <003501cc03d9$d3989300$7ac9b900$@org>
+In-Reply-To: <003501cc03d9$d3989300$7ac9b900$@org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 25 Apr 2011, Roland Dreier wrote:
-
-> On Mon, Apr 25, 2011 at 11:35 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->> I notice periodic kernel crashes when using wireless.
->> Has anyone seen this using the rt2800usb driver?
+Tanya Brokhman wrote:
+>> This will means creating only one host-side platform device, and then
+>> creating two usb_hcd structures below it.  Tanya's design should be
+>> based on Sarah's work.
 >>
->> When the host is on the LAN (supermicro+intel), there are zero crashes.
->> Since I don't have it in a location where I can use netdump over the
->> LAN/wire, see the picture below for the kernel crash/OOPS on the console:
->>
->> http://home.comcast.net/~jpiszcz/20110425/kernel_crash.jpg [1.2m]
->
-> Unfortunately a lot of the crash has scrolled away.  Is there any way
-> you can change your console's text mode to, say, 50 lines so more info
-> is visible?
->
+> 
+> Hi Alan
 
-Hi,
+Hi Tanya,
 
-It crashed again:
-http://home.comcast.net/~jpiszcz/20110426/rt2800usb-crash2.jpg [1.1m]
+> Thank you for your inputs. I'm not familiar with Sarah's work you mentioned.
+> I'll have to look into that. Could you please point me to where I can find
+> this code? Has it been merged into linux-next yet or just posted on the
+> mailing list?
 
-Please let me know if this is enough output as I cannot increase the
-resolution anymore on this monitor..  Also if you have any patches you would
-like me to try, let me know as this seems to happen quite often, thanks!
+Please take a look at xhci_pci_probe() where usb_create_shared_hcd() is
+used. It was introduced by
 
-Justin.
+commit f6ff0ac878eb420011fa2448851dd48c3a7e7b31
+Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Date:   Thu Dec 16 11:21:10 2010 -0800
 
+     xhci: Register second xHCI roothub.
 
+in v2.6.39-rc1.
+
+Sebastian
