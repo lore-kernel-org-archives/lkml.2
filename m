@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab1DZUbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:31:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50611 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab1DZUbr (ORCPT
+	id S1756904Ab1DZUcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:32:12 -0400
+Received: from eastrmfepi207.cox.net ([68.230.241.211]:34151 "EHLO
+	eastrmfepi207.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab1DZUcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:31:47 -0400
-Date: Tue, 26 Apr 2011 21:31:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "armando.visconti@st.com" <armando.visconti@st.com>,
-        "shiraz.hashim@st.com" <shiraz.hashim@st.com>,
-        "amit.goel@st.com" <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>
-Subject: Re: [PATCH 2/6] dmaengine/dw_dmac: Enable resubmission from
-	callback routine.
-Message-ID: <20110426203136.GB17290@n2100.arm.linux.org.uk>
-References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com> <cf350c267897bd4eaf5a027c659771eee117ac74.1303123511.git.viresh.kumar@st.com> <438BB0150E931F4B9CE701519A44630108519E1BE6@bgsmsx502.gar.corp.intel.com>
+	Tue, 26 Apr 2011 16:32:11 -0400
+X-Greylist: delayed 768 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 16:32:11 EDT
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020205.4DB728C9.0137,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=ULz780d5T88z7hstjrf3OHMsvJJmmk+pR+z3leaZ+oY=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=wcNfJGG9mz4A:10 a=IkcTkHD0fZMA:10
+ a=+SWPRVnFO5vhD5/DS0yR1w==:17 a=3drmje_yWp55rT2pLBkA:9 a=QEXdDO2ut3YA:10
+ a=SlikvqeIjracK_Yt:21 a=OZ4Hh4o99sBvUOrq:21 a=+SWPRVnFO5vhD5/DS0yR1w==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110426161921.HYLOG.246094.imail@eastrmwml35>
+Date: Tue, 26 Apr 2011 16:19:21 -0400
+From: Chev/Tex <gyffcd@cox.net>
+Reply-To: pwm@qatar.io
+Subject: Your Email ID Won!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <438BB0150E931F4B9CE701519A44630108519E1BE6@bgsmsx502.gar.corp.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 11:42:24AM +0530, Koul, Vinod wrote:
-> On 04/18/2011 04:20 PM, viresh kumar wrote:
-> > 
-> > Resubmission of new transfer must be allowed from callbacks. For this release
-> > lock before calling callback routine and enable them again.
-> Why would you like to do that?
-> 
-> IMO it's not a good thing as you are essentially doing it in your tasklet...
-> Make sure the submit() is done by client before this and you use it to start
-> next transaction in you tasklet and let client know in callback txn is
-> finished.
+Attention,
 
-No.  Submission is explicitly permitted (by Dan) in slave DMA callbacks.
+Your email won in the on-going Chevron/Texaco Award held today, we the promo board are pleased to inform you that the sum of  ($750,000.00 usd) has been approved for you.  Your verification number is:(CHH-4068TP945-MY).
+
+
+Kindly Provide Below :
+
+1)Complete Names,(2)Complete Address,(3)Gender,
+4)Type of Work,(5) Country of residence (6)Mobile No,(7)Age
+
+
+Congratulations once again !!!
+
+Yours Sincerely,
+Mrs Sandra Garry.
+Promo Announcer.
+
