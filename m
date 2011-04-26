@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab1DZAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:10:09 -0400
-Received: from ns.selena.net.ua ([193.151.240.2]:46625 "EHLO selena.net.ua"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932167Ab1DZAKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:10:08 -0400
-From: "Mr. William Remy" <selena@selena.net.ua>
-To: undisclosed-recipients:;
-Reply-To: remy.rmy3@gmail.com
-Subject: Hoping To Hear From You Soon
-Date: Tue, 26 Apr 2011 01:44:14 +0100
-Message-Id: <20110425230754.M49509@selena.net.ua>
-X-Mailer: Open WebMail 2.33 20030425
-X-OriginatingIP: 41.85.161.17 (selena@selena.net.ua)
+	id S932487Ab1DZAM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:12:58 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:48515 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932167Ab1DZAM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 20:12:57 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DB60DE1.8060402@verizon.net>
+Date: Mon, 25 Apr 2011 20:12:17 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=big5
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>
+Subject: [PATCH] kbuild: scripts/kconfig/Makefile cleanup and fixes
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch:
+Changes the update-po-config target to work when make is run from KBUILD_OUTDIR.
+Adds a check to only build kxgettext when needed.
+Changes the qconf and gconf targets to change hostprogs-y when they are being built
+	like nconfig and menuconfig instead of defining *-objs.
+Cleans up the clean-files definitions.
 
-Greetings,
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
+---
+ scripts/kconfig/Makefile |   35 +++++++++++++++++++++--------------
+ 1 files changed, 21 insertions(+), 14 deletions(-)
 
-I am Mr. William Remy I work as the Foreign Operations Manager with one of the 
-international bank (B.O.A) here in REPUBLIC OF BENIN. Although the world is 
-very small place and hard place to meet people because you don't know who to 
-trust or believe, but as I have developed the trust in you after my fasting 
-and praying, i made up my mind to confide this confidential business 
-suggestion to you.
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 368ae30..c4206ce 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -77,14 +77,15 @@ localyesconfig: $(obj)/streamline_config.pl $(obj)/conf
+ # The symlink is used to repair a deficiency in arch/um
+ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ 	$(Q)echo "  GEN config"
+-	$(Q)xgettext --default-domain=linux              \
+-	    --add-comments --keyword=_ --keyword=N_      \
+-	    --from-code=UTF-8                            \
+-	    --files-from=scripts/kconfig/POTFILES.in     \
++	$(Q)xgettext --default-domain=linux                         \
++	    --add-comments --keyword=_ --keyword=N_                 \
++	    --from-code=UTF-8                                       \
++	    --files-from=$(srctree)/scripts/kconfig/POTFILES.in     \
++	    --directory=$(srctree) --directory=$(objtree)           \
+ 	    --output $(obj)/config.pot
+ 	$(Q)sed -i s/CHARSET/UTF-8/ $(obj)/config.pot
+-	$(Q)ln -fs Kconfig.i386 arch/um/Kconfig.arch
+-	$(Q)(for i in `ls arch/*/Kconfig`;               \
++	$(Q)ln -fs Kconfig.x86 $(srctree)/arch/um/Kconfig
++	$(Q)(for i in `ls $(srctree)/arch/*/Kconfig`;    \
+ 	    do                                           \
+ 		echo "  GEN $$i";                        \
+ 		$(obj)/kxgettext $$i                     \
+@@ -92,7 +93,7 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ 	    done )
+ 	$(Q)msguniq --sort-by-file --to-code=UTF-8 $(obj)/config.pot \
+ 	    --output $(obj)/linux.pot
+-	$(Q)rm -f arch/um/Kconfig.arch
++	$(Q)rm -f $(srctree)/arch/um/Kconfig
+ 	$(Q)rm -f $(obj)/config.pot
 
-Be rest assure that everything will be handled confidentially.
+ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+@@ -167,9 +168,12 @@ lxdialog += lxdialog/textbox.o lxdialog/yesno.o
+lxdialog/menubox.o
+ conf-objs	:= conf.o  zconf.tab.o
+ mconf-objs     := mconf.o zconf.tab.o $(lxdialog)
+ nconf-objs     := nconf.o zconf.tab.o nconf.gui.o
++qconf-cxxobjs	:= qconf.o
++qconf-objs	:= kconfig_load.o zconf.tab.o
++gconf-objs	:= gconf.o kconfig_load.o zconf.tab.o
+ kxgettext-objs	:= kxgettext.o zconf.tab.o
 
-It has been 7 years ago, that most of the greedy African Politicians used our 
-bank to Launder money overseas through the help of their Political advisers.
+-hostprogs-y := conf qconf gconf kxgettext
++hostprogs-y := conf
 
-Most of the funds which they transferred out of the shores of Africa was gold 
-and oil money that was supposed to have been 
-used to develop the continent.
+ ifeq ($(MAKECMDGOALS),nconfig)
+ 	hostprogs-y += nconf
+@@ -186,18 +190,20 @@ ifeq ($(MAKECMDGOALS),gconfig)
+ 	gconf-target := 1
+ endif
 
-The Political advisers always inflated the amounts before transfer to foreign 
-accounts so I also used the opportunity to divert part of the funds hence I am 
-aware that there is no official trace of how much was transferred as all the 
-accounts used for such transfers were being closed after transfer.
++ifeq ($(MAKECMDGOALS),update-po-config)
++	hostprogs-y += kxgettext
++endif
 
-I acted as the Account Officer to most of the politicians and when i 
-discovered that they were using me to succeed in their 
-greedy act, I also cleaned some of their banking records from the Bank files 
-and no body cares to ask me because the money was too much for them to 
-control.
+ ifeq ($(qconf-target),1)
+-qconf-cxxobjs	:= qconf.o
+-qconf-objs	:= kconfig_load.o zconf.tab.o
++	hostprogs-y += qconf
+ endif
 
-As am sending this message to you, I was able to divert Fifty Five Million Six 
-Hundred and Seventy thousand United State Dollars ($55.670M) to an escrow 
-account belonging to no one in the bank.
+ ifeq ($(gconf-target),1)
+-gconf-objs	:= gconf.o kconfig_load.o zconf.tab.o
++	hostprogs-y += gconf
+ endif
 
-Now the bank is very anxious to know who is the real beneficiary of the funds 
-because they have made a lot of profits with the funds. It has been more than 
-five years now and most of the politicians are no longer using our bank to 
-transfer funds overseas, majority of them don't have the power again, because 
-their tenure has expired. The $55.670 Million Dollars has been lying in the 
-bank as unclaimed fund.
+-clean-files	:= lkc_defs.h qconf.moc .tmp_qtcheck \
+-		   .tmp_gtkcheck zconf.tab.c lex.zconf.c zconf.hash.c gconf.glade.h
++clean-files	:= lkc_defs.h qconf.moc .tmp_qtcheck .tmp_gtkcheck
++clean-files     += zconf.tab.c lex.zconf.c zconf.hash.c gconf.glade.h
+ clean-files     += mconf qconf gconf nconf
+ clean-files     += config.pot linux.pot
 
-I will soon retire from the bank and without wasting time i will like the fund 
-to be release into your account, so that i will come to your country for the 
-sharing of the fund, The money will be shared 70% for me and 30% for you 
-.There's no one that is going to ask you any question about the funds because 
-everything is well secured by me.
+@@ -325,7 +331,8 @@ $(obj)/lkc_defs.h: $(src)/lkc_proto.h
 
-If you are interested in this transaction, do reply me through my e-mail 
-remy.rmy3@gmail.com , but if you are not interested please do me a favor by 
-deleting my message from your box ok.
+ # Extract gconf menu items for I18N support
+ $(obj)/gconf.glade.h: $(obj)/gconf.glade
+-	intltool-extract --type=gettext/glade $(obj)/gconf.glade
++	$(Q)intltool-extract --type=gettext/glade --srcdir $(srctree) \
++	$(src)/gconf.glade
 
-Hoping to hear from you soon.
+ ###
+ # The following requires flex/bison/gperf
+-- 
+1.7.5.rc1
 
-Thanks,
-
-Mr. William Remy
