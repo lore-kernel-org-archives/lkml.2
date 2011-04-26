@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab1DZHeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:34:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36500 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757513Ab1DZHeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:34:18 -0400
-Date: Tue, 26 Apr 2011 08:34:10 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Arve Hj?nnev?g <arve@android.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Check if any page in a pageblock is reserved before
- marking it MIGRATE_RESERVE
-Message-ID: <20110426073410.GA4658@suse.de>
-References: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
+	id S1758026Ab1DZHg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:36:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46840 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757513Ab1DZHgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:36:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type;
+        b=GVhC/VIZzG5vTDwypTv27y9r0s4n55mFak6LH6SJ5lQOZUInd0NchfJ0gjZiMMhbj6
+         YMssAC46SSh/GOzi/EtTqqMHXRioBOoKrGiNEXSgUNNbOHEWrRmrxDJaN9a07Ollskox
+         fx+QBM5r5AFA+TdnhALwNhdpg745iMdzzgV3o=
+Message-ID: <4DB67614.7030008@gmail.com>
+Date: Tue, 26 Apr 2011 09:36:52 +0200
+From: Vladimir Pantelic <vladoman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0pre) Gecko/20110408 Firefox/4.0pre SeaMonkey/2.1b3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kernel development list <linux-kernel@vger.kernel.org>
+CC: linux-omap@vger.kernel.org, "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: [PATCH] omap v4l2: fix wrong resizer calculation
+Content-Type: multipart/mixed;
+ boundary="------------080600080401030005060605"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 06:34:03PM -0700, John Stultz wrote:
-> From: Arve Hjønnevåg <arve@android.com>
-> 
-> This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-> though it only had a few free pages. This in turn caused no contiguous memory
-> to be reserved and frequent kswapd wakeups that emptied the caches to get more
-> contiguous memory.
-> 
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Mel Gorman <mgorman@suse.de>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> [This patch was submitted and acked a little over a year ago
-> (see: http://lkml.org/lkml/2010/4/6/172 ), but never seemingly
-> made it upstream. Resending for comments. -jstultz]
-> 
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+This is a multi-part message in MIME format.
+--------------080600080401030005060605
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Whoops, should have spotted it slipped through. FWIW, I'm still happy
-with my Ack being stuck onto it.
 
-Thanks.
+--------------080600080401030005060605
+Content-Type: text/x-diff;
+ name="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
 
+>From 47473f26bda2ef2e3a5e8f0203fde0c74c412c36 Mon Sep 17 00:00:00 2001
+From: Vladimir Pantelic <vladoman@gmail.com>
+Date: Tue, 26 Apr 2011 09:28:11 +0200
+Subject: [PATCH] omap v4l2: fix wrong resizer calculation
+
+in omap_vout_new_crop(), "crop" is the output parameter and
+therefore new_crop/try_crop should be used to calculate the
+resizer values
+
+Signed-off-by: Vladimir Pantelic <vladoman@gmail.com>
+---
+ drivers/media/video/omap/omap_voutlib.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_voutlib.c b/drivers/media/video/omap/omap_voutlib.c
+index 2aa6a76..8ae7481 100644
+--- a/drivers/media/video/omap/omap_voutlib.c
++++ b/drivers/media/video/omap/omap_voutlib.c
+@@ -193,7 +193,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 		return -EINVAL;
+ 
+ 	if (cpu_is_omap24xx()) {
+-		if (crop->height != win->w.height) {
++		if (try_crop.height != win->w.height) {
+ 			/* If we're resizing vertically, we can't support a
+ 			 * crop width wider than 768 pixels.
+ 			 */
+@@ -202,7 +202,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 		}
+ 	}
+ 	/* vertical resizing */
+-	vresize = (1024 * crop->height) / win->w.height;
++	vresize = (1024 * try_crop.height) / win->w.height;
+ 	if (cpu_is_omap24xx() && (vresize > 2048))
+ 		vresize = 2048;
+ 	else if (cpu_is_omap34xx() && (vresize > 4096))
+@@ -221,7 +221,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 			try_crop.height = 2;
+ 	}
+ 	/* horizontal resizing */
+-	hresize = (1024 * crop->width) / win->w.width;
++	hresize = (1024 * try_crop.width) / win->w.width;
+ 	if (cpu_is_omap24xx() && (hresize > 2048))
+ 		hresize = 2048;
+ 	else if (cpu_is_omap34xx() && (hresize > 4096))
 -- 
-Mel Gorman
-SUSE Labs
+1.6.0.2
+
+
+--------------080600080401030005060605--
