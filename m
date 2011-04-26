@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1DZVO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:14:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46509 "EHLO mga09.intel.com"
+	id S932415Ab1DZVOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:14:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60554 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239Ab1DZVOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:21 -0400
+	id S932332Ab1DZVOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831812"
+   d="scan'208";a="684327375"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: aelder@sgi.com, ak@linux.intel.com, sandeen@redhat.com,
-        jeffrey.hundstad@mnsu.edu, gregkh@suse.de,
+To: jeffm@suse.com, tony.luck@intel.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [52/106] xfs: zero proper structure size for geometry calls
-Message-Id: <20110426211332.74DBD3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:32 -0700 (PDT)
+Subject: [PATCH] [58/106] tioca: Fix assignment from incompatible pointer warnings
+Message-Id: <20110426211338.C116F3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,71 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alex Elder <aelder@sgi.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit af24ee9ea8d532e16883251a6684dfa1be8eec29 upstream.
+commit b4a6b3436531f6c5256e6d60d388c3c28ff1a0e9 upstream.
 
-Commit 493f3358cb289ccf716c5a14fa5bb52ab75943e5 added this call to
-xfs_fs_geometry() in order to avoid passing kernel stack data back
-to user space:
+The prototype for sn_pci_provider->{dma_map,dma_map_consistent} expects
+an unsigned long instead of a u64.
 
-+       memset(geo, 0, sizeof(*geo));
-
-Unfortunately, one of the callers of that function passes the
-address of a smaller data type, cast to fit the type that
-xfs_fs_geometry() requires.  As a result, this can happen:
-
-Kernel panic - not syncing: stack-protector: Kernel stack is corrupted
-in: f87aca93
-
-Pid: 262, comm: xfs_fsr Not tainted 2.6.38-rc6-493f3358cb2+ #1
-Call Trace:
-
-[<c12991ac>] ? panic+0x50/0x150
-[<c102ed71>] ? __stack_chk_fail+0x10/0x18
-[<f87aca93>] ? xfs_ioc_fsgeometry_v1+0x56/0x5d [xfs]
-
-Fix this by fixing that one caller to pass the right type and then
-copy out the subset it is interested in.
-
-Note: This patch is an alternative to one originally proposed by
-Eric Sandeen.
-
-Reported-by: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Tested-by: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/xfs/linux-2.6/xfs_ioctl.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ arch/ia64/sn/pci/tioca_provider.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/fs/xfs/linux-2.6/xfs_ioctl.c
+Index: linux-2.6.35.y/arch/ia64/sn/pci/tioca_provider.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/xfs/linux-2.6/xfs_ioctl.c
-+++ linux-2.6.35.y/fs/xfs/linux-2.6/xfs_ioctl.c
-@@ -703,14 +703,19 @@ xfs_ioc_fsgeometry_v1(
- 	xfs_mount_t		*mp,
- 	void			__user *arg)
+--- linux-2.6.35.y.orig/arch/ia64/sn/pci/tioca_provider.c
++++ linux-2.6.35.y/arch/ia64/sn/pci/tioca_provider.c
+@@ -509,7 +509,7 @@ tioca_dma_unmap(struct pci_dev *pdev, dm
+  * use the GART mapped mode.
+  */
+ static u64
+-tioca_dma_map(struct pci_dev *pdev, u64 paddr, size_t byte_count, int dma_flags)
++tioca_dma_map(struct pci_dev *pdev, unsigned long paddr, size_t byte_count, int dma_flags)
  {
--	xfs_fsop_geom_v1_t	fsgeo;
-+	xfs_fsop_geom_t         fsgeo;
- 	int			error;
+ 	u64 mapaddr;
  
--	error = xfs_fs_geometry(mp, (xfs_fsop_geom_t *)&fsgeo, 3);
-+	error = xfs_fs_geometry(mp, &fsgeo, 3);
- 	if (error)
- 		return -error;
- 
--	if (copy_to_user(arg, &fsgeo, sizeof(fsgeo)))
-+	/*
-+	 * Caller should have passed an argument of type
-+	 * xfs_fsop_geom_v1_t.  This is a proper subset of the
-+	 * xfs_fsop_geom_t that xfs_fs_geometry() fills in.
-+	 */
-+	if (copy_to_user(arg, &fsgeo, sizeof(xfs_fsop_geom_v1_t)))
- 		return -XFS_ERROR(EFAULT);
- 	return 0;
- }
