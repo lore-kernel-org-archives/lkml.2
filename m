@@ -1,236 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1DZMu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:50:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62851 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1DZMu0 convert rfc822-to-8bit (ORCPT
+	id S1755281Ab1DZMy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:54:56 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:48139 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755112Ab1DZMyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:50:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=givVzzB98LP2LMk9ArP7Xufz4GDU/RtffFACsfCAgXbXWv7Y5tFZ8JgjoEDo90NYrO
-         Low6Em20smgbOoy/h4zhQO5hSqQVV6xDtjmR7XefRcDRHkrlxu2hlzADlBMcvyBE/Sc8
-         sw/SKl8MbcYSOt12C053OZHrM+esquUP41aOA=
+	Tue, 26 Apr 2011 08:54:55 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABTAtk1R8BPE/2dsb2JhbAClR3jESQ6FaAScYw
+Date: Tue, 26 Apr 2011 14:54:53 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [GIT PULL REQUEST] watchdog - v2.6.39-rc4
+Message-ID: <20110426125452.GD17580@infomag.iguana.be>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110426124256.GI4308@linux.vnet.ibm.com>
-References: <BANLkTind84Gf8JA9Fa4QL2GbaF8nMNhDzw@mail.gmail.com>
-	<20110423210539.GI2628@linux.vnet.ibm.com>
-	<BANLkTimXW2=PYOXkKjnLuH+eN2TjZBqAxw@mail.gmail.com>
-	<BANLkTi=ntjm-5D=OD1oFogpNjmJSJiZygQ@mail.gmail.com>
-	<BANLkTim9H1k4c7xSZZJ09WXs8WCeCQQJJg@mail.gmail.com>
-	<20110424062728.GM2628@linux.vnet.ibm.com>
-	<BANLkTinTd10K6Ho6FhuynROT7yDLHNLojw@mail.gmail.com>
-	<20110424164331.GN2628@linux.vnet.ibm.com>
-	<20110426050612.GA7651@linux.vnet.ibm.com>
-	<BANLkTi=uvTkKi2Py5v818PKCDYKoLcDCSw@mail.gmail.com>
-	<20110426124256.GI4308@linux.vnet.ibm.com>
-Date: Tue, 26 Apr 2011 14:50:25 +0200
-Message-ID: <BANLkTiko8dcYQtTo2P80nk503vxNabaLPw@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ related?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, peterz@infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 2:42 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Apr 26, 2011 at 01:45:31PM +0200, Sedat Dilek wrote:
->> On Tue, Apr 26, 2011 at 7:06 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Sun, Apr 24, 2011 at 09:43:31AM -0700, Paul E. McKenney wrote:
->> >> On Sun, Apr 24, 2011 at 11:36:44AM +0200, Sedat Dilek wrote:
->> >> > On Sun, Apr 24, 2011 at 8:27 AM, Paul E. McKenney
->> >> > <paulmck@linux.vnet.ibm.com> wrote:
->> >>
->> >> [ . . . ]
->> >>
->> >> > > OK, this looks unrelated, but just in case, could you please try it
->> >> > > again with the following patch?  (Not mainlinable, debug only.)
->> >> > >
->> >> > > Also, it does look like you are still seeing a grace-period hang.
->> >> > > Could you please send the output of the script?  Same one as last time.
->> >> > >
->> >> > >                                                        Thanx, Paul
->> >> > >
->> >> > > ------------------------------------------------------------------------
->> >> > >
->> >> > >  debugobjects.c |    8 +++++---
->> >> > >  1 file changed, 5 insertions(+), 3 deletions(-)
->> >> > >
->> >> > > diff --git a/lib/debugobjects.c b/lib/debugobjects.c
->> >> > > index 9d86e45..10a7c7a 100644
->> >> > > --- a/lib/debugobjects.c
->> >> > > +++ b/lib/debugobjects.c
->> >> > > @@ -289,10 +289,12 @@ static void debug_object_is_on_stack(void *addr, int onstack)
->> >> > >                return;
->> >> > >
->> >> > >        limit++;
->> >> > > -       if (is_on_stack)
->> >> > > +       if (is_on_stack) {
->> >> > > +               struct rcu_head *p = (struct rcu_head *)addr;
->> >> > >                printk(KERN_WARNING
->> >> > > -                      "ODEBUG: object is on stack, but not annotated\n");
->> >> > > -       else
->> >> > > +                      "ODEBUG: object is on stack, but not annotated: %p\n",
->> >> > > +                      p->func);
->> >> > > +       } else
->> >> > >                printk(KERN_WARNING
->> >> > >                       "ODEBUG: object is not on stack, but annotated\n");
->> >> > >        WARN_ON(1);
->> >> > >
->> >> >
->> >> > Somehow your attached patch was not applicable.
->> >> > As the changes were a few lines I applied it by myself.
->> >> > Attached are log, dmesg and patches (orig + mine)
->> >>
->> >> Hmmm...  Does 0xc10231a1 correspond to a function in your build?  If so,
->> >> could you please let me know which one?
->> >>
->> >> OK, so according to "ps" the per-CPU kthread is runnable, but it appears
->> >> to never run.  You only have one CPU, so it cannot be waiting due to
->> >> running on the wrong CPU.  The only other loop is in wait_event(), and
->> >> that code looks good -- besides, if wait_event() was broken, we would
->> >> be seeing breakage everywhere.
->> >>
->> >> Peter, any thoughts on what I might have done wrong to get the scheduler
->> >> into a state where it was ignoring a runnable realtime task?
->> >
->> > Hello, Sedat,
->> >
->> > Here is a diagnostic patch to apply on top of sedat.2011.04.23a from
->> > the -rcu git tree.  Could you please try it out, let me know what
->> > happens, and run the last collectdebugfs.sh during the test?
->> >
->> >                                                        Thanx, Paul
->> >
->> > ------------------------------------------------------------------------
->> >
->> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->> > index 6cf6e47..65ae701 100644
->> > --- a/kernel/rcutree.c
->> > +++ b/kernel/rcutree.c
->> > @@ -1524,9 +1524,9 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
->> >                return;
->> >        if (to_rt) {
->> >                policy = SCHED_NORMAL;
->> > -               sp.sched_priority = RCU_KTHREAD_PRIO;
->> > +               sp.sched_priority = 0;
->> >        } else {
->> > -               policy = SCHED_FIFO;
->> > +               policy = SCHED_NORMAL;
->> >                sp.sched_priority = 0;
->> >        }
->> >        sched_setscheduler_nocheck(t, policy, &sp);
->> > @@ -1566,8 +1566,8 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
->> >        sp.sched_priority = 0;
->> >        sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
->> >        schedule();
->> > -       sp.sched_priority = RCU_KTHREAD_PRIO;
->> > -       sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
->> > +       sp.sched_priority = 0;
->> > +       sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
->> >        del_timer(&yield_timer);
->> >  }
->> >
->> > @@ -1671,8 +1671,8 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
->> >        WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
->> >        per_cpu(rcu_cpu_kthread_task, cpu) = t;
->> >        wake_up_process(t);
->> > -       sp.sched_priority = RCU_KTHREAD_PRIO;
->> > -       sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->> > +       sp.sched_priority = 0;
->> > +       sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
->> >        return 0;
->> >  }
->> >
->> > @@ -1713,8 +1713,8 @@ static int rcu_node_kthread(void *arg)
->> >                                continue;
->> >                        }
->> >                        per_cpu(rcu_cpu_has_work, cpu) = 1;
->> > -                       sp.sched_priority = RCU_KTHREAD_PRIO;
->> > -                       sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->> > +                       sp.sched_priority = 0;
->> > +                       sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
->> >                        preempt_enable();
->> >                }
->> >        }
->> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
->> > index a21413d..baee185 100644
->> > --- a/kernel/rcutree_plugin.h
->> > +++ b/kernel/rcutree_plugin.h
->> > @@ -1307,8 +1307,8 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
->> >        rnp->boost_kthread_task = t;
->> >        raw_spin_unlock_irqrestore(&rnp->lock, flags);
->> >        wake_up_process(t);
->> > -       sp.sched_priority = RCU_KTHREAD_PRIO;
->> > -       sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->> > +       sp.sched_priority = 0;
->> > +       sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
->> >        return 0;
->> >  }
->> >
->> >
->>
->> Hi Paul,
->>
->> I have tested with your patch and kept the kernel-config file from
->> previous tests (don't get confused by the new name).
->> Hope this helps you.
->>
->> I have some questions to k-c options espcially X86_UP and
->> CONFIG_RCU_FANOUT=32 options.
->> To what extent can they influence our RCU issue?
->> The below options were not set for this round of testing, but I would
->> like to have a feedback.
->> Thanks in advance.
->>
->> Would these settings be more optimal for a UP-machine?
->>
->> # CONFIG_SMP is not set
->> # CONFIG_M486 is not set
->> CONFIG_M686=y
->> CONFIG_NR_CPUS=1
->
-> These should be fine.
->
->> CONFIG_X86_UP_APIC=y
->> CONFIG_X86_UP_IOAPIC=y
->
-> These I don't know about.
->
->> CONFIG_HIGHMEM4G=y
->
-> This one seems good for allowing the system to go as long as possible.
->
->> Is CONFIG_RCU_FANOUT=32 OK?
->
-> On a UP system, this one doesn't matter.
->
->> With reverting commit 687d7a960aea46e016182c7ce346d62c4dbd0366 ("rcu:
->> restrict TREE_RCU to SMP builds with !PREEMPT").
->
-> Thank you for trying this one out!
->
-> I don't see any sign of a grace-period hang.  Did your test complete
-> correctly?
->
->                                                        Thanx, Paul
->
+Hi Linus,
 
-Thanks for the comments.
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-I let run the script very long (approx. one hour) and did parallelly
-my daily work.
-Then booted into a known as working kernel.
-Did I miss something, should I stress more?
+This will update the following files:
 
-- Sedat -
+ drivers/watchdog/iTCO_wdt.c |   97 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 97 insertions(+)
+
+with these Changes:
+
+Author: Seth Heasley <seth.heasley@intel.com>
+Date:   Wed Apr 20 10:56:20 2011 -0700
+
+    watchdog: iTCO_wdt: TCO Watchdog patch for Intel Panther Point PCH
+    
+    This patch adds the TCO Watchdog DeviceIDs for the Intel Panther Point PCH.
+    
+    Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+index 35a0d12..5fd020d 100644
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -35,6 +35,7 @@
+  *	document number 324645-001, 324646-001: Cougar Point (CPT)
+  *	document number TBD                   : Patsburg (PBG)
+  *	document number TBD                   : DH89xxCC
++ *	document number TBD                   : Panther Point
+  */
+ 
+ /*
+@@ -153,6 +154,38 @@ enum iTCO_chipsets {
+ 	TCO_PBG1,	/* Patsburg */
+ 	TCO_PBG2,	/* Patsburg */
+ 	TCO_DH89XXCC,	/* DH89xxCC */
++	TCO_PPT0,	/* Panther Point */
++	TCO_PPT1,	/* Panther Point */
++	TCO_PPT2,	/* Panther Point */
++	TCO_PPT3,	/* Panther Point */
++	TCO_PPT4,	/* Panther Point */
++	TCO_PPT5,	/* Panther Point */
++	TCO_PPT6,	/* Panther Point */
++	TCO_PPT7,	/* Panther Point */
++	TCO_PPT8,	/* Panther Point */
++	TCO_PPT9,	/* Panther Point */
++	TCO_PPT10,	/* Panther Point */
++	TCO_PPT11,	/* Panther Point */
++	TCO_PPT12,	/* Panther Point */
++	TCO_PPT13,	/* Panther Point */
++	TCO_PPT14,	/* Panther Point */
++	TCO_PPT15,	/* Panther Point */
++	TCO_PPT16,	/* Panther Point */
++	TCO_PPT17,	/* Panther Point */
++	TCO_PPT18,	/* Panther Point */
++	TCO_PPT19,	/* Panther Point */
++	TCO_PPT20,	/* Panther Point */
++	TCO_PPT21,	/* Panther Point */
++	TCO_PPT22,	/* Panther Point */
++	TCO_PPT23,	/* Panther Point */
++	TCO_PPT24,	/* Panther Point */
++	TCO_PPT25,	/* Panther Point */
++	TCO_PPT26,	/* Panther Point */
++	TCO_PPT27,	/* Panther Point */
++	TCO_PPT28,	/* Panther Point */
++	TCO_PPT29,	/* Panther Point */
++	TCO_PPT30,	/* Panther Point */
++	TCO_PPT31,	/* Panther Point */
+ };
+ 
+ static struct {
+@@ -244,6 +277,38 @@ static struct {
+ 	{"Patsburg", 2},
+ 	{"Patsburg", 2},
+ 	{"DH89xxCC", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
++	{"Panther Point", 2},
+ 	{NULL, 0}
+ };
+ 
+@@ -363,6 +428,38 @@ static DEFINE_PCI_DEVICE_TABLE(iTCO_wdt_pci_tbl) = {
+ 	{ ITCO_PCI_DEVICE(0x1d40,				TCO_PBG1)},
+ 	{ ITCO_PCI_DEVICE(0x1d41,				TCO_PBG2)},
+ 	{ ITCO_PCI_DEVICE(0x2310,				TCO_DH89XXCC)},
++	{ ITCO_PCI_DEVICE(0x1e40,				TCO_PPT0)},
++	{ ITCO_PCI_DEVICE(0x1e41,				TCO_PPT1)},
++	{ ITCO_PCI_DEVICE(0x1e42,				TCO_PPT2)},
++	{ ITCO_PCI_DEVICE(0x1e43,				TCO_PPT3)},
++	{ ITCO_PCI_DEVICE(0x1e44,				TCO_PPT4)},
++	{ ITCO_PCI_DEVICE(0x1e45,				TCO_PPT5)},
++	{ ITCO_PCI_DEVICE(0x1e46,				TCO_PPT6)},
++	{ ITCO_PCI_DEVICE(0x1e47,				TCO_PPT7)},
++	{ ITCO_PCI_DEVICE(0x1e48,				TCO_PPT8)},
++	{ ITCO_PCI_DEVICE(0x1e49,				TCO_PPT9)},
++	{ ITCO_PCI_DEVICE(0x1e4a,				TCO_PPT10)},
++	{ ITCO_PCI_DEVICE(0x1e4b,				TCO_PPT11)},
++	{ ITCO_PCI_DEVICE(0x1e4c,				TCO_PPT12)},
++	{ ITCO_PCI_DEVICE(0x1e4d,				TCO_PPT13)},
++	{ ITCO_PCI_DEVICE(0x1e4e,				TCO_PPT14)},
++	{ ITCO_PCI_DEVICE(0x1e4f,				TCO_PPT15)},
++	{ ITCO_PCI_DEVICE(0x1e50,				TCO_PPT16)},
++	{ ITCO_PCI_DEVICE(0x1e51,				TCO_PPT17)},
++	{ ITCO_PCI_DEVICE(0x1e52,				TCO_PPT18)},
++	{ ITCO_PCI_DEVICE(0x1e53,				TCO_PPT19)},
++	{ ITCO_PCI_DEVICE(0x1e54,				TCO_PPT20)},
++	{ ITCO_PCI_DEVICE(0x1e55,				TCO_PPT21)},
++	{ ITCO_PCI_DEVICE(0x1e56,				TCO_PPT22)},
++	{ ITCO_PCI_DEVICE(0x1e57,				TCO_PPT23)},
++	{ ITCO_PCI_DEVICE(0x1e58,				TCO_PPT24)},
++	{ ITCO_PCI_DEVICE(0x1e59,				TCO_PPT25)},
++	{ ITCO_PCI_DEVICE(0x1e5a,				TCO_PPT26)},
++	{ ITCO_PCI_DEVICE(0x1e5b,				TCO_PPT27)},
++	{ ITCO_PCI_DEVICE(0x1e5c,				TCO_PPT28)},
++	{ ITCO_PCI_DEVICE(0x1e5d,				TCO_PPT29)},
++	{ ITCO_PCI_DEVICE(0x1e5e,				TCO_PPT30)},
++	{ ITCO_PCI_DEVICE(0x1e5f,				TCO_PPT31)},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
