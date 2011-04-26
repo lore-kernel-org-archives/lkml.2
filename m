@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab1DZXVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:21:41 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:55185 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752694Ab1DZXVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:21:40 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 19:21:40 EDT
-Date: Tue, 26 Apr 2011 23:15:58 +0000 (UTC)
-From: johnlinn@comcast.net
-To: alan@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        michal.simek@petalogix.com, joe@perches.com, grant.likely@secretlab.ca,
-        greg@kroah.com
-Message-ID: <549692800.1907368.1303859758362.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <381805170.1906645.1303859011392.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-Subject: Re: [PATCH V3] tty/serial: add support for Xilinx PS UART
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754976Ab1DZXWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:22:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34515 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752694Ab1DZXWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:22:13 -0400
+Date: Wed, 27 Apr 2011 09:22:03 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 09/13] netvm: Set PF_MEMALLOC as appropriate during SKB
+ processing
+Message-ID: <20110427092203.659fbc25@notabene.brown>
+In-Reply-To: <20110426141048.GG4658@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-10-git-send-email-mgorman@suse.de>
+	<20110426222157.33a461f8@notabene.brown>
+	<20110426141048.GG4658@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [149.199.62.254]
-X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
-> Sent: Tuesday, April 26, 2011 1:58 PM
-> To: John Linn
-> Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org;
-> michal.simek@petalogix.com; joe@perches.com;
-> grant.likely@secretlab.ca;
-> greg@kroah.com
-> Subject: Re: [PATCH V3] tty/serial: add support for Xilinx PS UART
+On Tue, 26 Apr 2011 15:10:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+
+> On Tue, Apr 26, 2011 at 10:21:57PM +1000, NeilBrown wrote:
+> > On Tue, 26 Apr 2011 08:36:50 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > diff --git a/net/core/dev.c b/net/core/dev.c
+> > > index 3871bf6..2d79a20 100644
+> > > --- a/net/core/dev.c
+> > > +++ b/net/core/dev.c
+> > > @@ -3095,6 +3095,27 @@ static void vlan_on_bond_hook(struct sk_buff *skb)
+> > >  	}
+> > >  }
+> > >  
+> > > +/*
+> > > + * Limit which protocols can use the PFMEMALLOC reserves to those that are
+> > > + * expected to be used for communication with swap.
+> > > + */
+> > > +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
+> > > +{
+> > > +	if (skb_pfmemalloc(skb))
+> > > +		switch (skb->protocol) {
+> > > +		case __constant_htons(ETH_P_ARP):
+> > > +		case __constant_htons(ETH_P_IP):
+> > > +		case __constant_htons(ETH_P_IPV6):
+> > > +		case __constant_htons(ETH_P_8021Q):
+> > > +			break;
+> > > +
+> > > +		default:
+> > > +			return false;
+> > > +		}
+> > > +
+> > > +	return true;
+> > > +}
+> > 
+> > This sort of thing really bugs me :-)
+> > Neither the comment nor the function name actually describe what the function
+> > is doing.  The function is checking *2* things.
+> >    is_pfmemalloc_skb_or_pfmemalloc_protocol()
+> > might be a more correct name, but is too verbose.
+> > 
+> > I would prefer the skb_pfmemalloc test were removed from here and ....
+> > 
+> > > +	if (!skb_pfmemalloc_protocol(skb))
+> > > +		goto drop;
+> > > +
+> > 
+> > ...added here so this becomes:
+> > 
+> >       if (!skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
+> >                 goto drop;
+> > 
+> > which actually makes sense.
+> > 
 > 
-> O
-> > +	if (percent_err >= 3)
-> > +		dev_err(port->dev, "Error too large, baud rate not
-> set\n");
+> Moving the check is neater but that check should be
 > 
-> So in this cause baud isn't the one the user asked. Also the user can
-> make it spew errors by continually generating wrong rates.
+> 	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
 > 
-> If the error is large go for the nearest you can and return it. The
-> core
-> tty code will do all the rest including reporting to the user they
-> didn't
-> get their wishes.
+> ? It's only if the skb was allocated from emergency reserves that we
+> need to consider dropping it to make way for other packets to be
+> received.
 > 
 
-Hi Alan,
+Correct.  I got my Boolean algebra all confused. Sorry 'bout that.
 
-Thanks for the input. I wrestled with this some before doing the 1st patchset.  
-
-Prior to this, we were not checking for this error, but instead we were finding
-the values with the least amount of error and then going with them.
-
-I thought I was improving but now as I look at it further, that seems like it 
-was better and I should have stuck to that method.
-
-Thoughts?
-
-> > +	else {
-> > +		/* Set the values for the new baud rate */
-> > +		xuartps_writel(brgr_val, XUARTPS_BAUDGEN_OFFSET);
-> > +		xuartps_writel(brdiv_val, XUARTPS_BAUDDIV_OFFSET);
-> 
-> and in this it may not be exact.
-> 
-> I suspect this routine needs to return the actual baud rate (or maybe
-> baudrate/error code)
-> 
-> 
-> > +	/* Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz
-> clk */
-> > +	baud = uart_get_baud_rate(port, termios, old, 0, 10000000);
-> > +	xuartps_set_baud_rate(port, baud);
-> > +	if (tty_termios_baud_rate(termios))
-> > +		tty_termios_encode_baud_rate(termios, baud, baud);
-> 
-> and this should do something like
-> 
-> 	baud = xuartps_set_baud_rate(port baud);
-> 
-> > +
-> > +	/*
-> > +	 * Update the per-port timeout.
-> > +	 */
-> > +	uart_update_timeout(port, termios->c_cflag, baud);
-> 
-> [which would also fix this timeout!]
-
-Maybe you were meaning that if the baud rate was not really set because of the
-error this timeout would be wrong also, and if so that makes sense.
-
-Otherwise, I didn't undestand why the timeout was broken.
-
-Thanks,
-John
-
-> 
-> Otherwise looks ready to merge
-> 
-> 
+NeilBrown
