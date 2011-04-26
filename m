@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab1DZRvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 13:51:40 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36408 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab1DZRvj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 13:51:39 -0400
-Subject: Re: [PATCH] mm: Check if any page in a pageblock is reserved
- before marking it MIGRATE_RESERVE
-From: John Stultz <john.stultz@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        Arve Hj?nnev?g <arve@android.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110426185114.F3A4.A69D9226@jp.fujitsu.com>
-References: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
-	 <20110426073410.GA4658@suse.de>
-	 <20110426185114.F3A4.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 10:51:20 -0700
-Message-ID: <1303840280.2816.71.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1757907Ab1DZSEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:04:46 -0400
+Received: from smtpout06.highway.telekom.at ([195.3.96.89]:20319 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755168Ab1DZSEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 14:04:45 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: i915 completely unusable in 2.6.38.x
+Date: Tue, 26 Apr 2011 20:04:42 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
+References: <4DB53B79.4070704@kernelpanic.ru> <20110425210323.GA23418@kroah.com> <201104260959.53084@rk-nord.at>
+In-Reply-To: <201104260959.53084@rk-nord.at>
+Cc: Greg KH <greg@kroah.com>, dri-devel@lists.freedesktop.org
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104262004.42776@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 18:49 +0900, KOSAKI Motohiro wrote:
-> > On Thu, Apr 21, 2011 at 06:34:03PM -0700, John Stultz wrote:
-> > > From: Arve Hjønnevåg <arve@android.com>
-> > > 
-> > > This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-> > > though it only had a few free pages. This in turn caused no contiguous memory
-> > > to be reserved and frequent kswapd wakeups that emptied the caches to get more
-> > > contiguous memory.
-> > > 
-> > > CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> > > CC: Mel Gorman <mgorman@suse.de>
-> > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > > Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> > > Acked-by: Mel Gorman <mel@csn.ul.ie>
-> > > 
-> > > [This patch was submitted and acked a little over a year ago
-> > > (see: http://lkml.org/lkml/2010/4/6/172 ), but never seemingly
-> > > made it upstream. Resending for comments. -jstultz]
-> > > 
-> > > Signed-off-by: John Stultz <john.stultz@linaro.org>
-> > 
-> > Whoops, should have spotted it slipped through. FWIW, I'm still happy
-> > with my Ack being stuck onto it.
-> 
-> Hehe, No.
-> 
-> You acked another patch at last year and John taked up old one. Sigh.
-> Look,  correct one has pfn_valid_within(). 
-> 	http://lkml.org/lkml/2010/4/6/172
+* Melchior FRANZ -- Tuesday 26 April 2011:
+> [https://bugzilla.kernel.org/show_bug.cgi?id=31522]
 
-Oh yikes! Many thanks for noticing that detail! Indeed, I started with
-the patch in the Android tree, and didn't notice the difference in the
-discussion I linked to. My apologies.
+I've replied to this error message, but here again for this audience:
+The commit that broke all 2.6.38.* releases for my machine is this:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ba3820ade317ee36e496b9b40d2ec3987dd4aef0
+(Takashi Iwai: "drm/i915: Revive combination mode for backlight
+control").
 
-> And, Minchan suggested to add more explanation to the description. Then, I think
-> following is desiable one.
-
-Thanks so much again!
--john
+In 'is_backlight_combination_mode()' INTEL_INFO(dev)->gen
+equals 4, and the function returns 0x40000000 in "combination mode".
+In 'intel_panel_get_backlight()' this happens:
 
 
+  val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK; // val = 0x0b4a
+  if (IS_PINEVIEW(dev))                                     // false
+          val >>= 1;
+
+  if (is_backlight_combination_mode(dev)){
+          u8 lbpc;
+
+          val &= ~1;                                        // val = 0x0b4a
+          pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc); // lbpc = 0
+          val *= lbpc;                                      // val = 0
+  }
+
+
+The backlight remains off and does also not react to the "brighter" key
+event.
+
+Reverting the patch fixes my system, obviously.
+
+m.
