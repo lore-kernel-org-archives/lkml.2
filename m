@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab1DZT5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:57:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35298 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754905Ab1DZT5R (ORCPT
+	id S1757393Ab1DZT6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:58:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53120 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab1DZT6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:57:17 -0400
-Date: Tue, 26 Apr 2011 20:58:09 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: John Linn <john.linn@xilinx.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <michal.simek@petalogix.com>, <joe@perches.com>,
-        <grant.likely@secretlab.ca>, <greg@kroah.com>
-Subject: Re: [PATCH V3] tty/serial: add support for Xilinx PS UART
-Message-ID: <20110426205809.39a96279@lxorguk.ukuu.org.uk>
-In-Reply-To: <b33c1d76-c704-4b84-965b-97bc7e14f390@VA3EHSMHS030.ehs.local>
-References: <b33c1d76-c704-4b84-965b-97bc7e14f390@VA3EHSMHS030.ehs.local>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 26 Apr 2011 15:58:24 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=i38SgkEfDKkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=NWhexi8C0UxiBOYb7IoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimf44AgMAViHrSEz78ifHUYb8ji6g@mail.gmail.com>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
+	 <20110426190531.GA4556@p183>
+	 <1303845468.18763.32.camel@gandalf.stny.rr.com>
+	 <20110426192029.GA4686@p183>
+	 <BANLkTinxvyxSK9f+kkQugNkQEBf1O65bLQ@mail.gmail.com>
+	 <1303846642.18763.37.camel@gandalf.stny.rr.com>
+	 <1303847110.24299.50.camel@Joe-Laptop>
+	 <BANLkTimf44AgMAViHrSEz78ifHUYb8ji6g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Apr 2011 15:58:22 -0400
+Message-ID: <1303847902.18763.38.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O
-> +	if (percent_err >= 3)
-> +		dev_err(port->dev, "Error too large, baud rate not set\n");
+On Tue, 2011-04-26 at 16:47 -0300, Thiago Farina wrote:
 
-So in this cause baud isn't the one the user asked. Also the user can
-make it spew errors by continually generating wrong rates.
+> > $ grep -rP --include=*.[ch] "\bstrcmp.*==\s*0\b" * | wc -l
+> > 1143
+> > $ grep -rP --include=*.[ch] "\!\s*strcmp\s*\(" *  | wc -l
+> > 1663
+> >
+> > Can you count how many misuses of strcmp have been
+> > corrected?
+> 
+> > Do you plan to convert the existing 2800?
+> 
+> I'd work on this without any problem.
 
-If the error is large go for the nearest you can and return it. The core
-tty code will do all the rest including reporting to the user they didn't
-get their wishes.
+Nothing a perl script can't do either.
 
-> +	else {
-> +		/* Set the values for the new baud rate */
-> +		xuartps_writel(brgr_val, XUARTPS_BAUDGEN_OFFSET);
-> +		xuartps_writel(brdiv_val, XUARTPS_BAUDDIV_OFFSET);
-
-and in this it may not be exact.
-
-I suspect this routine needs to return the actual baud rate (or maybe
-baudrate/error code)
+-- Steve
 
 
-> +	/* Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk */
-> +	baud = uart_get_baud_rate(port, termios, old, 0, 10000000);
-> +	xuartps_set_baud_rate(port, baud);
-> +	if (tty_termios_baud_rate(termios))
-> +		tty_termios_encode_baud_rate(termios, baud, baud);
-
-and this should do something like
-
-	baud = xuartps_set_baud_rate(port baud);
-
-> +
-> +	/*
-> +	 * Update the per-port timeout.
-> +	 */
-> +	uart_update_timeout(port, termios->c_cflag, baud);
-
-[which would also fix this timeout!]
-
-Otherwise looks ready to merge
