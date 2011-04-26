@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab1DZPhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 11:37:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41129 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab1DZPhl (ORCPT
+	id S1753231Ab1DZPj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 11:39:27 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37163 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751438Ab1DZPj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 11:37:41 -0400
-Date: Tue, 26 Apr 2011 17:37:37 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        linux-arm-msm@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Thomas Glexiner <tglx@linutronix.de>,
-        Andres Salomon <dilinger@queued.net>, dwalker@fifo99.com,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PM8921 MFD V5 0/6] pm8921 core and subdevices
-Message-ID: <20110426153737.GZ31131@pengutronix.de>
-References: <1302039657-19395-1-git-send-email-adharmap@codeaurora.org>
- <20110426150746.GF3175@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110426150746.GF3175@sortiz-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 26 Apr 2011 11:39:26 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=LuYjlYS6EiOKMw69QemCwuSrbSJMwH/HjgPeng8ntHvDsSHCkhwfm7uMVe34x+mwPCwziOFdkDx9JI+EmT8MhXvIcaIShsV2JJlrz6EJyQIvrags6szHyOP6EQztDbYo;
+Date: Tue, 26 Apr 2011 08:39:22 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110426083922.344bd8d6@jbarnes-desktop>
+In-Reply-To: <201104261626.20152.arnd@arndb.de>
+References: <201104212129.17013.arnd@arndb.de>
+	<20110421130930.4be9e9e1@jbarnes-desktop>
+	<201104261626.20152.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Tue, 26 Apr 2011 16:26:19 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
+> I don't thing that this argument has anything to do with what the
+> underlying API should be, right? I can see this built on top of either
+> the dma-mapping headers with extensions to map potentially uncached
+> pages, and with the iommu API. Neither way would however save us from
+> implementing the three items listed above.
 
-On Tue, Apr 26, 2011 at 05:07:47PM +0200, Samuel Ortiz wrote:
-> > - mfd_cell does not have platfrom_data anymore - use mfd data instead.
-> I'm currently moving that away from the mfd_cell structure, in my for-next
-> branch. mfd_cell now has a platform_data pointer back, and you should use
-> mfd_get_cell() if you really need to reach the mfd_cell pointer (which you
-> apparently don't). 
-> Could you please generate patchs 3 and 4 against this branch ?
-I just saw commit
+Or simply extending the DMA mapping API to allow for allocations
+without mapping.  I was just worried you had a more traditional driver
+model in mind (e.g. coherent alloc on the ring buffer, single mappings
+for data buffers, all mapped in the kernel driver at allocation time).
 
-	5828fdb (mfd: Use mfd cell platform_data for mc13xxx cells platform bits)
+The DMA API does have some advantages, in that arches already support
+it, there's some infrastructure for handling per-bus mapping, etc., so
+building on top of it is probably a good idea.
 
-in next. It has a Cc: for me, but I didn't got it by mail.
+> It's certainly a good point to note that we should have a way to
+> allocate pages for a device without mapping them into any address
+> space right away. My feeling is still that the dma mapping API is
+> the right place for this, because it is the only part of the kernel
+> that has knowledge about whether a device needs uncached memory for
+> coherent access, under what constraints it can map noncontiguous
+> memory into its own address space, and what its addressing capabilities
+> are (dma mask).
 
-Did you send a mail and it didn't reach me? Or maybe you just forgot to
-send the mail out?
-
-Anyhow, Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de> for
-5828fdb, but I wonder if it's worth to add a new member to struct
-platform_device for that to work.
-
-Best regards
-Uwe
+Right.  Sometimes a device or platform can handle either cached or
+uncached though, and we need userspace to decide on the best type for
+performance reasons.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jesse Barnes, Intel Open Source Technology Center
