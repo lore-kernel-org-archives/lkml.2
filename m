@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab1DZVNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:13:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9586 "EHLO mga09.intel.com"
+	id S1758704Ab1DZVNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:13:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30103 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758625Ab1DZVNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:42 -0400
+	id S1758647Ab1DZVNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831568"
+   d="scan'208";a="634483457"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: lizf@cn.fujitsu.com, ak@linux.intel.com, philipp.andreas@gmail.com,
-        chris.mason@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [15/106] Btrfs: Fix uninitialized root flags for subvolumes
-Message-Id: <20110426211253.870653E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:53 -0700 (PDT)
+To: Artem.Bityutskiy@nokia.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [17/106] UBIFS: do not read flash unnecessarily
+Message-Id: <20110426211255.A021B3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:12:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,123 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit 08fe4db170b4193603d9d31f40ebaf652d07ac9c upstream.
+commit 8b229c76765816796eec7ccd428f03bd8de8b525 upstream.
 
-root_item->flags and root_item->byte_limit are not initialized when
-a subvolume is created. This bug is not revealed until we added
-readonly snapshot support - now you mount a btrfs filesystem and you
-may find the subvolumes in it are readonly.
+This fix makes the 'dbg_check_old_index()' function return
+immediately if debugging is disabled, instead of executing
+incorrect 'goto out' which causes UBIFS to:
 
-To work around this problem, we steal a bit from root_item->inode_item->flags,
-and use it to indicate if those fields have been properly initialized.
-When we read a tree root from disk, we check if the bit is set, and if
-not we'll set the flag and initialize the two fields of the root item.
+1. Allocate memory
+2. Read the flash
 
-Reported-by: Andreas Philipp <philipp.andreas@gmail.com>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Tested-by: Andreas Philipp <philipp.andreas@gmail.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+On every commit. OK, we do not commit that often, but it is
+still silly to do unneeded I/O anyway.
+
+Credits to coverity for spotting this silly issue.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/btrfs/ctree.h       |    4 ++++
- fs/btrfs/disk-io.c     |    4 +++-
- fs/btrfs/ioctl.c       |    4 ++++
- fs/btrfs/root-tree.c   |   18 ++++++++++++++++++
- fs/btrfs/transaction.c |    1 +
- 5 files changed, 30 insertions(+), 1 deletion(-)
+ fs/ubifs/commit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/fs/btrfs/ctree.h
+Index: linux-2.6.35.y/fs/ubifs/commit.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/btrfs/ctree.h
-+++ linux-2.6.35.y/fs/btrfs/ctree.h
-@@ -1212,6 +1212,8 @@ struct btrfs_root {
- #define BTRFS_INODE_NOATIME		(1 << 9)
- #define BTRFS_INODE_DIRSYNC		(1 << 10)
+--- linux-2.6.35.y.orig/fs/ubifs/commit.c
++++ linux-2.6.35.y/fs/ubifs/commit.c
+@@ -519,7 +519,7 @@ int dbg_check_old_index(struct ubifs_inf
+ 	size_t sz;
  
-+#define BTRFS_INODE_ROOT_ITEM_INIT	(1 << 31)
-+
- /* some macros to generate set/get funcs for the struct fields.  This
-  * assumes there is a lefoo_to_cpu for every type, so lets make a simple
-  * one for u8:
-@@ -2239,6 +2241,8 @@ int btrfs_find_dead_roots(struct btrfs_r
- int btrfs_find_orphan_roots(struct btrfs_root *tree_root);
- int btrfs_set_root_node(struct btrfs_root_item *item,
- 			struct extent_buffer *node);
-+void btrfs_check_and_init_root_item(struct btrfs_root_item *item);
-+
- /* dir-item.c */
- int btrfs_insert_dir_item(struct btrfs_trans_handle *trans,
- 			  struct btrfs_root *root, const char *name,
-Index: linux-2.6.35.y/fs/btrfs/disk-io.c
-===================================================================
---- linux-2.6.35.y.orig/fs/btrfs/disk-io.c
-+++ linux-2.6.35.y/fs/btrfs/disk-io.c
-@@ -1127,8 +1127,10 @@ struct btrfs_root *btrfs_read_fs_root_no
- 	root->commit_root = btrfs_root_node(root);
- 	BUG_ON(!root->node);
- out:
--	if (location->objectid != BTRFS_TREE_LOG_OBJECTID)
-+	if (location->objectid != BTRFS_TREE_LOG_OBJECTID) {
- 		root->ref_cows = 1;
-+		btrfs_check_and_init_root_item(&root->root_item);
-+	}
+ 	if (!(ubifs_chk_flags & UBIFS_CHK_OLD_IDX))
+-		goto out;
++		return 0;
  
- 	return root;
- }
-Index: linux-2.6.35.y/fs/btrfs/ioctl.c
-===================================================================
---- linux-2.6.35.y.orig/fs/btrfs/ioctl.c
-+++ linux-2.6.35.y/fs/btrfs/ioctl.c
-@@ -282,6 +282,10 @@ static noinline int create_subvol(struct
- 	inode_item->nbytes = cpu_to_le64(root->leafsize);
- 	inode_item->mode = cpu_to_le32(S_IFDIR | 0755);
+ 	INIT_LIST_HEAD(&list);
  
-+	root_item.flags = 0;
-+	root_item.byte_limit = 0;
-+	inode_item->flags = cpu_to_le64(BTRFS_INODE_ROOT_ITEM_INIT);
-+
- 	btrfs_set_root_bytenr(&root_item, leaf->start);
- 	btrfs_set_root_generation(&root_item, trans->transid);
- 	btrfs_set_root_level(&root_item, 0);
-Index: linux-2.6.35.y/fs/btrfs/root-tree.c
-===================================================================
---- linux-2.6.35.y.orig/fs/btrfs/root-tree.c
-+++ linux-2.6.35.y/fs/btrfs/root-tree.c
-@@ -473,3 +473,21 @@ again:
- 	btrfs_free_path(path);
- 	return 0;
- }
-+
-+/*
-+ * Old btrfs forgets to init root_item->flags and root_item->byte_limit
-+ * for subvolumes. To work around this problem, we steal a bit from
-+ * root_item->inode_item->flags, and use it to indicate if those fields
-+ * have been properly initialized.
-+ */
-+void btrfs_check_and_init_root_item(struct btrfs_root_item *root_item)
-+{
-+	u64 inode_flags = le64_to_cpu(root_item->inode.flags);
-+
-+	if (!(inode_flags & BTRFS_INODE_ROOT_ITEM_INIT)) {
-+		inode_flags |= BTRFS_INODE_ROOT_ITEM_INIT;
-+		root_item->inode.flags = cpu_to_le64(inode_flags);
-+		root_item->flags = 0;
-+		root_item->byte_limit = 0;
-+	}
-+}
-Index: linux-2.6.35.y/fs/btrfs/transaction.c
-===================================================================
---- linux-2.6.35.y.orig/fs/btrfs/transaction.c
-+++ linux-2.6.35.y/fs/btrfs/transaction.c
-@@ -895,6 +895,7 @@ static noinline int create_pending_snaps
- 	record_root_in_trans(trans, root);
- 	btrfs_set_root_last_snapshot(&root->root_item, trans->transid);
- 	memcpy(new_root_item, &root->root_item, sizeof(*new_root_item));
-+	btrfs_check_and_init_root_item(new_root_item);
- 
- 	old = btrfs_lock_root_node(root);
- 	btrfs_cow_block(trans, root, old, NULL, 0, &old);
