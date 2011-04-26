@@ -1,159 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1DZQCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:02:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62676 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab1DZQCq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:02:46 -0400
-MIME-Version: 1.0
-Message-ID: <e721b63e-5854-468b-bacb-3c7a75ee4321@default>
-Date: Tue, 26 Apr 2011 09:00:44 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+	id S1753672Ab1DZQDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:03:47 -0400
+Received: from mout.perfora.net ([74.208.4.194]:54228 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab1DZQDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 12:03:46 -0400
+Date: Tue, 26 Apr 2011 12:03:00 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>, bookjovi@gmail.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
-        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
-        jeremy@goop.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
-        avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
-Subject: RE: [PATCH V8 4/8] mm/fs: add hooks to support cleancache
-References: <83ef8b69-f041-43e6-a5a9-880ff3da26f2@default>
- <871v135xvj.fsf@devron.myhome.or.jp>
- <040a7fa3-14dd-4960-a296-cfdd061e015f@default
- BANLkTikDQ_PuYPJEZRX_24uUi1DYWbvpzQ@mail.gmail.com>
-In-Reply-To: <BANLkTikDQ_PuYPJEZRX_24uUi1DYWbvpzQ@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6555.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DB6EC51.00AB:SCFMA922111,ss=1,fgs=0
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page
+	in mem_read
+Message-ID: <20110426160300.GA14478@fibrous.localdomain>
+References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com> <alpine.LSU.2.00.1104252048190.6978@sister.anvils> <20110426141449.F37C.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426141449.F37C.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:+lub/nYaYwwdgPOYhrtwRbC5HEQaB/gVJ8zHyVf4ZCm
+ /Oft5Mz5V3n6BOiJquMVDZU+uywZPAHEIunqAAOvdKRWWD2ygU
+ I4a97TIYovo4imuPdN62dh5oSZP8+QCHMsrrHV3PlHoBQRSv9R
+ fzSTmzg3J9hWGq6i7NIkMGz3YQYO3/DcjNts2orISFbs65RTuz
+ 4DlVTFpwaeEaQvOT7fDWwckrPQEEUZSKaPgHxBhx6g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan.kim@gmail.com]
-> On Sat, Apr 16, 2011 at 3:53 AM, Dan Magenheimer
-> <dan.magenheimer@oracle.com> wrote:
-> >> From: OGAWA Hirofumi [mailto:hirofumi@mail.parknet.co.jp]
-> >>
-> >> Andrew Morton <akpm@linux-foundation.org> writes:
-> >>
-> > Andrew, I wonder if you would be so kind as to read the following
-> > and make a "ruling".  If you determine a preferable set of names,
-> > I will abide by your decision and repost (if necessary).
-> >
-> > The problem is this: The English language has a limited number
-> > of words that can be used to represent data motion and mapping
-> > and most/all of them are already used in the kernel, often,
-> > to quote Andrew, "in confusing ways."  Complicating this, I
-> > think the semantics of the cleancache operations are different
-> > from the semantics of any other kernel operation... intentionally
-> > so, because the value of cleancache is a direct result of those
-> > differing semantics.  And the cleancache semantics
-> > are fairly complex (again intentionally) so a single function
-> > name can't possibly describe the semantics.
-> >
-> > The cleancache operations are:
-> > - put (page)
-> > - get (page)
-> > - flush page
-> > - flush inode
-> > - init fs
-> > - flush fs
-> >
-> > I think these names are reasonable representations of the
-> > semantics of the operations performed... but I'm not a kernel
-> > expert so there is certainly room for disagreement.  Though I
-> > absolutely recognize the importance of a "name", I am primarily
-> > interested in merging the semantics of the operations and
-> > would happily accept any name that kernel developers could
-> > agree on.  However, I fear that there will be NO name that
-> > will satisfy all, so would prefer to keep the existing names.
-> > If some renaming is eventually agreed upon, this could be done
-> > post-merge.
-> >
-> > Here's a brief description of the semantics:
-> >     :
-> >  <semantics for other operations elided>
-> >     :
-> > The cleancache operation currently known as "get" has the
-> > following semantics:  Derive the filesystem-determined handle
-> > from this struct page.  If cleancache contains a page matching
-> > that handle, recreate the page of data from cleancache and
-> > place the results in the pageframe referred to by the
-> > struct page.  Then delete in cleancache any record of the
-> > handle and any data associated with it, so that a
-> > subsequent "get" will no longer find a match for the handle;
-> > any space used for the data can also be freed.
-> >     :
-> >  <semantics for other operations elided>
-> >     :
+On Tue, Apr 26, 2011 at 02:12:46PM +0900, KOSAKI Motohiro wrote:
+> From 74f827ce74e1c4f846905e940edfa5f639b5a2ce Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 26 Apr 2011 13:57:02 +0900
+> Subject: [PATCH] [PATCH] proc: put check_mem_permission after __get_free_page in mem_write
 > 
-> At least, I didn't confused your semantics except just flush. That's
-> why I suggested only flush but after seeing your explaining, there is
-> another thing I want to change. The get/put is common semantic of
-> reference counting in kernel but in POV your semantics, it makes sense
-> to me but get has a exclusive semantic so I want to represent it with
-> API name. Maybe cleancache_get_page_exclusive.
+> It should be better if put check_mem_permission after __get_free_page
+> in mem_write, to be same as function mem_read.
 > 
-> The summary is that I don't want to change all API name. Just two
-> thing.
-> (I am not sure you and others agree on me. It's just suggestion).
+> Hugh Dickins explained the reason.
 > 
-> 1. cleancache_flush_page -> cleancache_[invalidate|remove]_page
-> 2. cleancache_get_page -> cleancache_get_page_exclusive
+>     check_mem_permission gets a reference to the mm.  If we __get_free_page
+>     after check_mem_permission, imagine what happens if the system is out
+>     of memory, and the mm we're looking at is selected for killing by the
+>     OOM killer: while we wait in __get_free_page for more memory, no memory
+>     is freed from the selected mm because it cannot reach exit_mmap while
+>     we hold that reference.
 > 
+> 
+> Reported-by: Jovi Zhang <bookjovi@gmail.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Stephen Wilson <wilsons@start.ca>
 
-Hi Minchan --
 
-Thanks for continuing to be interested in this and sorry for my
-delayed response.
+I completely missed the oom case as well.  This certainly appears to be
+the best solution.
 
-Actually, your comment about "get_page_exclusive" points out an
-incompleteness in my description of the semantics for
-cleancache_get_page.
+	Reviewed-by: Stephen Wilson <wilsons@start.ca>
 
-First, I forgot to list cleancache_init_shared_fs, which is
-the equivalent of cleancache_init_fs but used for clustered
-filesystems.  (Support is included in the patch for ocfs2 but
-I haven't played with it in quite some time and my focus has
-been on the other filesystems, so it slipped my mind :-}
+-- 
+steve
 
-The cleancache_get_page operation has a slightly different semantics
-depending on which of the init_fs calls was used.  However, the
-location of the cleancache_get_page hook is the same regardless
-of the fs, so the name of the operation must represent both
-semantics.  In the case of init_fs (non-shared), the behavior
-of cleancache_get_page is that the get is "destructive"; the page
-is removed from cleancache on a successful get.  In the case of
-a init_shared_fs, however, the get is "non-destructive"; the
-page is NOT removed from cleancache.  When cleancache contains
-pages from multiple kernels (e.g. Xen guests or different machines
-in a RAMster cluster), this semantic difference can make a big
-performance difference for a clustered filesystem.  Since zcache
-only contains pages for a single kernel, the difference is moot.
-
-Because of this, I am hesitant to add "exclusive" to the
-end of the name of the operation.
-
-> BTW, Nice description.
-> Please include it in documentation if we can't reach the conclusion.
-> It will help others to understand semantic of cleancache.
-
-Thanks!  Nearly all of the description already exists in various
-places in the patch but I agree that it would be good if I add
-a new section to the Documentation file with the exact semantics.
-
-Dan
