@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab1DZVX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:23:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1301 "EHLO mga01.intel.com"
+	id S932657Ab1DZVXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:23:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1DZVOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:49 -0400
+	id S932429Ab1DZVOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="914748830"
+   d="scan'208";a="738831923"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: kees.cook@canonical.com, davem@davemloft.net, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [79/106] net: ax25: fix information leak to userland harder
-Message-Id: <20110426211400.E0BF13E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:00 -0700 (PDT)
+To: hans.rosenfeld@amd.com, ak@linux.intel.com, hpa@zytor.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [78/106] x86, cpu: Fix regression in AMD errata checking code
+Message-Id: <20110426211359.D21C83E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,34 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Kees Cook <kees.cook@canonical.com>
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 
-commit 5b919f833d9d60588d026ad82d17f17e8872c7a9 upstream.
+commit 07a7795ca2e6e66d00b184efb46bd0e23d90d3fe upstream.
 
-Commit fe10ae53384e48c51996941b7720ee16995cbcb7 adds a memset() to clear
-the structure being sent back to userspace, but accidentally used the
-wrong size.
+A bug in the family-model-stepping matching code caused the presence of
+errata to go undetected when OSVW was not used. This causes hangs on
+some K8 systems because the E400 workaround is not enabled.
 
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+LKML-Reference: <1282141190-930137-1-git-send-email-hans.rosenfeld@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ax25/af_ax25.c |    2 +-
+ arch/x86/kernel/cpu/amd.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/net/ax25/af_ax25.c
+Index: linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
 ===================================================================
---- linux-2.6.35.y.orig/net/ax25/af_ax25.c
-+++ linux-2.6.35.y/net/ax25/af_ax25.c
-@@ -1392,7 +1392,7 @@ static int ax25_getname(struct socket *s
- 	ax25_cb *ax25;
- 	int err = 0;
+--- linux-2.6.35.y.orig/arch/x86/kernel/cpu/amd.c
++++ linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
+@@ -687,7 +687,7 @@ bool cpu_has_amd_erratum(const int *erra
+ 	}
  
--	memset(fsa, 0, sizeof(fsa));
-+	memset(fsa, 0, sizeof(*fsa));
- 	lock_sock(sk);
- 	ax25 = ax25_sk(sk);
- 
+ 	/* OSVW unavailable or ID unknown, match family-model-stepping range */
+-	ms = (cpu->x86_model << 8) | cpu->x86_mask;
++	ms = (cpu->x86_model << 4) | cpu->x86_mask;
+ 	while ((range = *erratum++))
+ 		if ((cpu->x86 == AMD_MODEL_RANGE_FAMILY(range)) &&
+ 		    (ms >= AMD_MODEL_RANGE_START(range)) &&
