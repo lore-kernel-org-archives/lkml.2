@@ -1,298 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab1DZIqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 04:46:35 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:51913 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1DZIqe (ORCPT
+	id S1752307Ab1DZIrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 04:47:23 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:43484 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1DZIrV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 04:46:34 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Tue, 26 Apr 2011 14:16:04 +0530
-Subject: [PATCHv1 -next] BACKLIGHT: Backlight module for DA9052 PMIC driver
-Thread-Topic: [PATCHv1 -next] BACKLIGHT: Backlight module for DA9052 PMIC
- driver
-Thread-Index: AcwD7mDYwBMJFs/MT0aXyAWt00/+ug==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B89AF61@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Apr 2011 04:47:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vOwyhfefNXDT46A09nI+FXimlgJRL1gADj9gomuAJqBQ2QHFz912qPeJftv4+l50et
+         Ga4QG6ePc2uU2WG0GNPlgPIXmGz+80sO44tcdu6DKlRlqNNY/UGOP6CWw6EDRQ0Oe57c
+         MSTrK8JwyeMQFSKPGDwwjJ7sDdJjf8u0rwP1o=
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+In-Reply-To: <20110426162438.F393.A69D9226@jp.fujitsu.com>
+References: <20110426154037.F38B.A69D9226@jp.fujitsu.com>
+	<BANLkTikXR-A-za7dd6FDqc6B0fLhi4LbJg@mail.gmail.com>
+	<20110426162438.F393.A69D9226@jp.fujitsu.com>
+Date: Tue, 26 Apr 2011 16:47:19 +0800
+Message-ID: <BANLkTinosxKZ9WnAHsfbaOgNx2q1+CxFRw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] virtio_balloon: disable oom killer when fill balloon
+From: Dave Young <hidave.darkstar@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3Q8kiwL016421
 
-Hi Richard,
+On Tue, Apr 26, 2011 at 3:22 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Tue, Apr 26, 2011 at 2:38 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >> When memory pressure is high, virtio ballooning will probably cause oom killing.
+>> >> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
+>> >> will make memory becoming low then memory alloc of other processes will trigger
+>> >> oom killing. It is not desired behaviour.
+>> >>
+>> >> Here disable oom killer in fill_balloon to address this issue.
+>> >>
+>> >> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+>> >> ---
+>> >> ¬†drivers/virtio/virtio_balloon.c | ¬† ¬†3 +++
+>> >> ¬†1 file changed, 3 insertions(+)
+>> >>
+>> >> --- linux-2.6.orig/drivers/virtio/virtio_balloon.c ¬† ¬†2010-10-13 10:14:38.000000000 +0800
+>> >> +++ linux-2.6/drivers/virtio/virtio_balloon.c 2011-04-26 11:38:43.979785141 +0800
+>> >> @@ -25,6 +25,7 @@
+>> >> ¬†#include <linux/freezer.h>
+>> >> ¬†#include <linux/delay.h>
+>> >> ¬†#include <linux/slab.h>
+>> >> +#include <linux/oom.h>
+>> >>
+>> >> ¬†struct virtio_balloon
+>> >> ¬†{
+>> >> @@ -102,6 +103,7 @@ static void fill_balloon(struct virtio_b
+>> >> ¬† ¬† ¬† /* We can only do one array worth at a time. */
+>> >> ¬† ¬† ¬† num = min(num, ARRAY_SIZE(vb->pfns));
+>> >>
+>> >> + ¬† ¬† oom_killer_disable();
+>> >
+>> > I think this patch need proper comment at least. My first impression
+>> > is, "Hm, __GFP_NORETRY should prevent oom, why is this necessary?".
+>> > So, this actually prevent _another_ thread call out_of_memory().
+>>
+>> Thanks, will fix.
+>>
+>> > Also, Here doesn't have any exclusion against hibernation (ie another
+>> > oom_killer_disable() callsite). It should be described why lock is
+>> > unnecessary.
+>>
+>> Good catch, but lock should better be handled in oom_killer_disable
+>> function itself,
+>> What do you think?
+>>
+>> For oom killer multi user there's more problem, if process A disable
+>> oom killer then Process B enable oom killer, it is not A want to see,
+>> Any thoughts?
+>
+> If baloon and hibernation don't have any implicit exclusion, you are
+> right.
 
-Backlight Driver for Dialog Semiconductor DA9052 PMICs.
+For this case, hibernation will freeze balloon thread before call
+oom_killer_disable, so there's no problem.
 
-Changes made since last submission:
-. read and write moved to MFD
+If we consider future users of oom_killer_disabled, we will
+have to deal with it.
 
-Signed-off-by: Dajun Chen <dchen@diasemi.com>
----
-diff -Naur linux-next-20110421.orig/drivers/video/backlight/da9052_bl.c linux-next-20110421/drivers/video/backlight/da9052_bl.c
---- linux-next-20110421.orig/drivers/video/backlight/da9052_bl.c	1970-01-01 05:00:00.000000000 +0500
-+++ linux-next-20110421/drivers/video/backlight/da9052_bl.c	2011-04-26 10:41:20.000000000 +0500
-@@ -0,0 +1,215 @@
-+/*
-+ * Backlight Driver for Dialog DA9052 PMICs
-+ *
-+ * Copyright(c) 2009 Dialog Semiconductor Ltd.
-+ *
-+ * Author: Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/fb.h>
-+#include <linux/backlight.h>
-+#include <linux/delay.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+#define DA9052_MAX_BRIGHTNESS		0xFF
-+
-+enum {
-+	DA9052_WLEDS_OFF,
-+	DA9052_WLEDS_ON,
-+	};
-+
-+u8 wled_bank[] = {
-+			DA9052_LED1_CONF_REG,
-+			DA9052_LED2_CONF_REG,
-+			DA9052_LED3_CONF_REG,
-+		};
-+
-+struct da9052_bl {
-+	struct da9052 *da9052;
-+	uint brightness;
-+	uint state;
-+	uint led_reg;
-+	};
-+
-+static int da9052_adjust_wled_brightness(struct da9052_bl *wleds)
-+{
-+	u8 boost_en, i_sink;
-+	int ret = 0;
-+
-+	boost_en = 0x3F;
-+	i_sink	 = 0xFF;
-+	if (wleds->state == DA9052_WLEDS_OFF) {
-+		boost_en = 0x00;
-+		i_sink	 = 0x00;
-+	}
-+
-+	ret = da9052_reg_write(wleds->da9052, DA9052_BOOST_REG, boost_en);
-+	if (ret < 0) {
-+		dev_err(wleds->da9052->dev,
-+			"Failed to write boost reg, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = da9052_reg_write(wleds->da9052, DA9052_LED_CONT_REG, i_sink);
-+	if (ret < 0) {
-+		dev_err(wleds->da9052->dev,
-+			"Failed to write led cont reg, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = da9052_reg_write(wleds->da9052, wled_bank[wleds->led_reg],
-+							0x0);
-+	if (ret < 0) {
-+		dev_err(wleds->da9052->dev,
-+			"Failed to write led conf reg, %d", ret);
-+		return ret;
-+	}
-+
-+	if (wleds->brightness) {
-+		msleep(10);
-+		ret = da9052_reg_write(wleds->da9052,
-+		wled_bank[wleds->led_reg], wleds->brightness);
-+		if (ret < 0)
-+			dev_err(wleds->da9052->dev,
-+				"Failed to write led conf reg, %d", ret);
-+	}
-+
-+	return ret;
-+
-+}
-+
-+static int da9052_backlight_update_status(struct backlight_device *bl)
-+{
-+	int brightness = bl->props.brightness;
-+	struct da9052_bl *wleds = bl_get_data(bl);
-+
-+	wleds->brightness = brightness;
-+	wleds->state = DA9052_WLEDS_ON;
-+
-+	return da9052_adjust_wled_brightness(wleds);
-+}
-+
-+static int da9052_backlight_get_brightness(struct backlight_device *bl)
-+{
-+	struct da9052_bl *wleds = bl_get_data(bl);
-+	return wleds->brightness;
-+}
-+
-+struct backlight_ops da9052_backlight_ops = {
-+	.update_status	= da9052_backlight_update_status,
-+	.get_brightness	= da9052_backlight_get_brightness,
-+};
-+
-+static int da9052_backlight_probe(struct platform_device *pdev)
-+{
-+	struct backlight_device *bl;
-+	struct backlight_properties props;
-+	int ret = 0;
-+	static int led_reg_num;
-+	struct da9052_bl *wleds;
-+
-+
-+	wleds = kzalloc(sizeof(struct da9052_bl), GFP_KERNEL);
-+
-+	if (!wleds)
-+		return -ENOMEM;
-+
-+	wleds->da9052	= dev_get_drvdata(pdev->dev.parent);
-+	wleds->brightness = 0;
-+	wleds->led_reg = led_reg_num++;
-+	wleds->state = DA9052_WLEDS_OFF;
-+
-+	bl = backlight_device_register(pdev->name, wleds->da9052->dev,
-+			wleds, &da9052_backlight_ops, &props);
-+
-+	if (IS_ERR(bl)) {
-+		dev_err(&pdev->dev, "Failed to register backlight\n");
-+		return PTR_ERR(bl);
-+	}
-+
-+	bl->props.max_brightness = DA9052_MAX_BRIGHTNESS;
-+	bl->props.brightness = 0;
-+	platform_set_drvdata(pdev, bl);
-+
-+	ret = da9052_adjust_wled_brightness(wleds);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int da9052_backlight_remove(struct platform_device *pdev)
-+{
-+	struct backlight_device *bl = platform_get_drvdata(pdev);
-+	struct da9052_bl *wleds = bl_get_data(bl);
-+
-+	wleds->brightness = 0;
-+	wleds->state = DA9052_WLEDS_OFF;
-+
-+	da9052_adjust_wled_brightness(wleds);
-+	backlight_device_unregister(bl);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_wled1_driver = {
-+	.driver.name	= "da9052-WLED1",
-+	.driver.owner	= THIS_MODULE,
-+	.probe			= da9052_backlight_probe,
-+	.remove			= da9052_backlight_remove,
-+};
-+
-+static struct platform_driver da9052_wled2_driver = {
-+	.driver.name	= "da9052-WLED2",
-+	.driver.owner	= THIS_MODULE,
-+	.probe			= da9052_backlight_probe,
-+	.remove			= da9052_backlight_remove,
-+};
-+static struct platform_driver da9052_wled3_driver = {
-+	.driver.name	= "da9052-WLED3",
-+	.driver.owner	= THIS_MODULE,
-+	.probe			= da9052_backlight_probe,
-+	.remove			= da9052_backlight_remove,
-+};
-+
-+static int __init da9052_backlight_init(void)
-+{
-+	s32 ret;
-+	ret = platform_driver_register(&da9052_wled1_driver);
-+	if (ret)
-+		return ret;
-+	ret = platform_driver_register(&da9052_wled2_driver);
-+	if (ret)
-+		return ret;
-+
-+	ret = platform_driver_register(&da9052_wled3_driver);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+module_init(da9052_backlight_init);
-+
-+static void __exit da9052_backlight_exit(void)
-+{
-+	platform_driver_unregister(&da9052_wled1_driver);
-+	platform_driver_unregister(&da9052_wled2_driver);
-+	platform_driver_unregister(&da9052_wled3_driver);
-+}
-+module_exit(da9052_backlight_exit);
-+
-+MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("Backlight driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9052-backlight");
-+
-+
-diff -Naur linux-next-20110421.orig/drivers/video/backlight/Kconfig linux-next-20110421/drivers/video/backlight/Kconfig
---- linux-next-20110421.orig/drivers/video/backlight/Kconfig	2011-04-26 09:33:59.000000000 +0500
-+++ linux-next-20110421/drivers/video/backlight/Kconfig	2011-04-26 10:47:08.000000000 +0500
-@@ -237,6 +237,12 @@
- 	  If you have a LCD backlight connected to the WLED output of DA9030
- 	  or DA9034 WLED output, say Y here to enable this driver.
-
-+config BACKLIGHT_DA9052
-+	tristate "Dialog DA9052 WLED"
-+	depends on PMIC_DA9052
-+	help
-+	  Enable the DA9052 Backlight Driver
-+
- config BACKLIGHT_MAX8925
- 	tristate "Backlight driver for MAX8925"
- 	depends on MFD_MAX8925
-diff -Naur linux-next-20110421.orig/drivers/video/backlight/Makefile linux-next-20110421/drivers/video/backlight/Makefile
---- linux-next-20110421.orig/drivers/video/backlight/Makefile	2011-04-26 09:33:59.000000000 +0500
-+++ linux-next-20110421/drivers/video/backlight/Makefile	2011-04-26 10:45:49.000000000 +0500
-@@ -26,6 +26,7 @@
- obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH) += cr_bllcd.o
- obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
- obj-$(CONFIG_BACKLIGHT_DA903X)	+= da903x_bl.o
-+obj-$(CONFIG_BACKLIGHT_DA9052)	+= da9052_bl.o
- obj-$(CONFIG_BACKLIGHT_MAX8925)	+= max8925_bl.o
- obj-$(CONFIG_BACKLIGHT_APPLE)	+= apple_bl.o
- obj-$(CONFIG_BACKLIGHT_TOSA)		+= tosa_bl.o
-
-Regards,
-Ashish
+>
+> Sorry, I don't virtio internal. please don't ask me.
+>
+>
+>
+>
 
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+-- 
+Regards
+dave
