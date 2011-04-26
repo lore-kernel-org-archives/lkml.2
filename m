@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab1DZVUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:20:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1640 "EHLO mga14.intel.com"
+	id S932613Ab1DZVUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:20:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22884 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932512Ab1DZVPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:15:01 -0400
+	id S932504Ab1DZVPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:15:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="425951489"
+   d="scan'208";a="738831961"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: u.kleine-koenig@pengutronix.de, Arwed.Springer@de.trumpf.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [90/106] serial/imx: read cts state only after acking cts change irq
-Message-Id: <20110426211412.676AE3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:12 -0700 (PDT)
+To: Trond.Myklebust@netapp.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [89/106] NFS: nfs_wcc_update_inode() should set nfsi->attr_gencount
+Message-Id: <20110426211411.58C7A3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:14:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,44 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 5680e94148a86e8c31fdc5cb0ea0d5c6810c05b0 upstream.
+commit 27dc1cd3ad9300f81e1219e5fc305d91d85353f8 upstream.
 
-If cts changes between reading the level at the cts input (USR1_RTSS)
-and acking the irq (USR1_RTSD) the last edge doesn't generate an irq and
-uart_handle_cts_change is called with a outdated value for cts.
+If the call to nfs_wcc_update_inode() results in an attribute update, we
+need to ensure that the inode's attr_gencount gets bumped too, otherwise
+we are not protected against races with other GETATTR calls.
 
-The race was introduced by commit
-
-	ceca629 ([ARM] 2971/1: i.MX uart handle rts irq)
-
-Reported-by: Arwed Springer <Arwed.Springer@de.trumpf.com>
-Tested-by: Arwed Springer <Arwed.Springer@de.trumpf.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/serial/imx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/inode.c |   26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-Index: linux-2.6.35.y/drivers/serial/imx.c
+Index: linux-2.6.35.y/fs/nfs/inode.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/serial/imx.c
-+++ linux-2.6.35.y/drivers/serial/imx.c
-@@ -383,12 +383,13 @@ static void imx_start_tx(struct uart_por
- static irqreturn_t imx_rtsint(int irq, void *dev_id)
+--- linux-2.6.35.y.orig/fs/nfs/inode.c
++++ linux-2.6.35.y/fs/nfs/inode.c
+@@ -811,9 +811,10 @@ out:
+ 	return ret;
+ }
+ 
+-static void nfs_wcc_update_inode(struct inode *inode, struct nfs_fattr *fattr)
++static unsigned long nfs_wcc_update_inode(struct inode *inode, struct nfs_fattr *fattr)
  {
- 	struct imx_port *sport = dev_id;
--	unsigned int val = readl(sport->port.membase + USR1) & USR1_RTSS;
-+	unsigned int val;
- 	unsigned long flags;
+ 	struct nfs_inode *nfsi = NFS_I(inode);
++	unsigned long ret = 0;
  
- 	spin_lock_irqsave(&sport->port.lock, flags);
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PRECHANGE)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_CHANGE)
+@@ -821,25 +822,32 @@ static void nfs_wcc_update_inode(struct 
+ 		nfsi->change_attr = fattr->change_attr;
+ 		if (S_ISDIR(inode->i_mode))
+ 			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
++		ret |= NFS_INO_INVALID_ATTR;
+ 	}
+ 	/* If we have atomic WCC data, we may update some attributes */
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PRECTIME)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_CTIME)
+-			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime))
+-			memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
++			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime)) {
++		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
++		ret |= NFS_INO_INVALID_ATTR;
++	}
  
- 	writel(USR1_RTSD, sport->port.membase + USR1);
-+	val = readl(sport->port.membase + USR1) & USR1_RTSS;
- 	uart_handle_cts_change(&sport->port, !!val);
- 	wake_up_interruptible(&sport->port.state->port.delta_msr_wait);
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PREMTIME)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_MTIME)
+ 			&& timespec_equal(&inode->i_mtime, &fattr->pre_mtime)) {
+-			memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
+-			if (S_ISDIR(inode->i_mode))
+-				nfsi->cache_validity |= NFS_INO_INVALID_DATA;
++		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
++		if (S_ISDIR(inode->i_mode))
++			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
++		ret |= NFS_INO_INVALID_ATTR;
+ 	}
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PRESIZE)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_SIZE)
+ 			&& i_size_read(inode) == nfs_size_to_loff_t(fattr->pre_size)
+-			&& nfsi->npages == 0)
+-			i_size_write(inode, nfs_size_to_loff_t(fattr->size));
++			&& nfsi->npages == 0) {
++		i_size_write(inode, nfs_size_to_loff_t(fattr->size));
++		ret |= NFS_INO_INVALID_ATTR;
++	}
++	return ret;
+ }
  
+ /**
+@@ -1153,7 +1161,7 @@ static int nfs_update_inode(struct inode
+ 			| NFS_INO_REVAL_PAGECACHE);
+ 
+ 	/* Do atomic weak cache consistency updates */
+-	nfs_wcc_update_inode(inode, fattr);
++	invalid |= nfs_wcc_update_inode(inode, fattr);
+ 
+ 	/* More cache consistency checks */
+ 	if (fattr->valid & NFS_ATTR_FATTR_CHANGE) {
