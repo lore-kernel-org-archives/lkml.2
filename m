@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab1DZU7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:59:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60610 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756548Ab1DZU7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:59:46 -0400
-Date: Tue, 26 Apr 2011 13:59:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] fix get_scan_count for working well with small targets
-Message-Id: <20110426135934.c1992c3e.akpm@linux-foundation.org>
-In-Reply-To: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758232Ab1DZVAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:00:52 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:58182 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754071Ab1DZVAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:00:51 -0400
+Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation
+ fully internal
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rene Herman <rene.herman@gmail.com>
+In-Reply-To: <20110426213953.6cc227de@endymion.delvare>
+References: <20110426165600.1d9ac91b@endymion.delvare>
+	 <20110426170407.3694e430@endymion.delvare>
+	 <20110426155212.GB18176@ericsson.com>
+	 <20110426182905.72bbf7b6@endymion.delvare>
+	 <1303839812.31666.98.camel@groeck-laptop>
+	 <20110426213953.6cc227de@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 26 Apr 2011 14:00:31 -0700
+Message-ID: <1303851631.31666.109.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 18:17:24 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Tue, 2011-04-26 at 15:39 -0400, Jean Delvare wrote:
+> Hi Guenter,
+> 
+> On Tue, 26 Apr 2011 10:43:32 -0700, Guenter Roeck wrote:
+> > On Tue, 2011-04-26 at 12:29 -0400, Jean Delvare wrote:
+> > > On Tue, 26 Apr 2011 08:52:12 -0700, Guenter Roeck wrote:
+> > > > On Tue, Apr 26, 2011 at 11:04:07AM -0400, Jean Delvare wrote:
+> > > > > * Removal code path is untested, as I have never been able to unload
+> > > > > the thermal_sys module on any of my systems. Something is pinning it
+> > > > > and I have no idea what it is.
+> > > > > 
+> > > > Doesn't lsmod show the culprit ?
+> > > 
+> > > No, it's not a module dependency. The reference counter is set to 1,
+> 
+> Sorry I realize I have been inaccurate. thermal_sys indeed depends on
+> the processor module, and that's what prevents me from unloading it.
+> It's the processor module which has a reference count of 1, and no
+> dependency, so I have no idea how I could unload it.
+> 
+You mean the ACPI processor driver ? This comment might explain it:
 
-> At memory reclaim, we determine the number of pages to be scanned
-> per zone as
-> 	(anon + file) >> priority.
-> Assume 
-> 	scan = (anon + file) >> priority.
-> 
-> If scan < SWAP_CLUSTER_MAX, shlink_list will be skipped for this
-> priority and results no-sacn.  This has some problems.
-> 
->   1. This increases priority as 1 without any scan.
->      To do scan in DEF_PRIORITY always, amount of pages should be larger than
->      512M. If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
->      batched, later. (But we lose 1 priority.)
->      But if the amount of pages is smaller than 16M, no scan at priority==0
->      forever.
-> 
->   2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
->      So, x86's ZONE_DMA will never be recoverred until the user of pages
->      frees memory by itself.
-> 
->   3. With memcg, the limit of memory can be small. When using small memcg,
->      it gets priority < DEF_PRIORITY-2 very easily and need to call
->      wait_iff_congested().
->      For doing scan before priorty=9, 64MB of memory should be used.
-> 
-> This patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
-> 
->   1. the target is enough small.
->   2. it's kswapd or memcg reclaim.
-> 
-> Then we can avoid rapid priority drop and may be able to recover
-> all_unreclaimable in a small zones.
+/*
+ * We keep the driver loaded even when ACPI is not running.
+ * This is needed for the powernow-k8 driver, that works even without
+ * ACPI, but needs symbols from this driver
+ */
 
-What about simply removing the nr_saved_scan logic and permitting small
-scans?  That simplifies the code and I bet it makes no measurable
-performance difference.
+> > > so somewhere in the kernel something is taking a reference to the
+> > > module and won't release it. I wish this was better instrumented so
+> > > that it would be possible to know who is doing that.
+> > 
+> > The most likely culprit seems to be acpi.
+> 
+> I'm not sure. I don't see any relevant call to try_module_get under
+> drivers/acpi, and I'm not aware of any other way to increase the
+> reference count.
+> 
+What happens if the calling code (such as, in my case here, the acpi
+video code) gets built into the kernel ? Would that force the module to
+be and remain loaded ?
 
-(A good thing to do here would be to instrument the code and determine
-the frequency with which we perform short scans, as well as their
-shortness.  ie: a histogram).
+Guenter
+
 
