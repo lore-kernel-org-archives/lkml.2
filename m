@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab1DZVjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:39:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47888 "EHLO mga09.intel.com"
+	id S932849Ab1DZVjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:39:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41140 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758607Ab1DZVNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:41 -0400
+	id S1758562Ab1DZVNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831564"
+   d="scan'208";a="914748355"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: drosenberg@vsecurity.com, davem@davemloft.net, gregkh@suse.de,
+To: haiyangz@microsoft.com, mike@surcouf.co.uk, hjanssen@microsoft.com,
+        v-abkane@microsoft.com, kys@microsoft.com, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [14/106] ROSE: prevent heap corruption with bad facilities
-Message-Id: <20110426211252.7D8943E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:52 -0700 (PDT)
+Subject: [PATCH] [6/106] staging: hv: Fix GARP not sent after Quick Migration
+Message-Id: <20110426211244.12EAB3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:12:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,79 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit be20250c13f88375345ad99950190685eda51eb8 upstream.
+commit c996edcf1c451b81740abbcca5257ed7e353fcc6 upstream.
 
-When parsing the FAC_NATIONAL_DIGIS facilities field, it's possible for
-a remote host to provide more digipeaters than expected, resulting in
-heap corruption.  Check against ROSE_MAX_DIGIS to prevent overflows, and
-abort facilities parsing on failure.
+After Quick Migration, the network is not immediately operational in the
+current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I added
+another netif_notify_peers() into a scheduled work, otherwise GARP packet will
+not be sent after quick migration, and cause network disconnection.
 
-Additionally, when parsing the FAC_CCITT_DEST_NSAP and
-FAC_CCITT_SRC_NSAP facilities fields, a remote host can provide a length
-of less than 10, resulting in an underflow in a memcpy size, causing a
-kernel panic due to massive heap corruption.  A length of greater than
-20 results in a stack overflow of the callsign array.  Abort facilities
-parsing on these invalid length values.
+Thanks to Mike Surcouf <mike@surcouf.co.uk> for reporting the bug and
+testing the patch.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Mike Surcouf <mike@surcouf.co.uk>
+Tested-by: Mike Surcouf <mike@surcouf.co.uk>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/rose/rose_subr.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-Index: linux-2.6.35.y/net/rose/rose_subr.c
+Index: linux-2.6.35.y/drivers/staging/hv/netvsc_drv.c
 ===================================================================
---- linux-2.6.35.y.orig/net/rose/rose_subr.c
-+++ linux-2.6.35.y/net/rose/rose_subr.c
-@@ -290,10 +290,15 @@ static int rose_parse_national(unsigned 
- 				facilities->source_ndigis = 0;
- 				facilities->dest_ndigis   = 0;
- 				for (pt = p + 2, lg = 0 ; lg < l ; pt += AX25_ADDR_LEN, lg += AX25_ADDR_LEN) {
--					if (pt[6] & AX25_HBIT)
-+					if (pt[6] & AX25_HBIT) {
-+						if (facilities->dest_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->dest_digis[facilities->dest_ndigis++], pt, AX25_ADDR_LEN);
--					else
-+					} else {
-+						if (facilities->source_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->source_digis[facilities->source_ndigis++], pt, AX25_ADDR_LEN);
-+					}
- 				}
- 			}
- 			p   += l + 2;
-@@ -333,6 +338,11 @@ static int rose_parse_ccitt(unsigned cha
+--- linux-2.6.35.y.orig/drivers/staging/hv/netvsc_drv.c
++++ linux-2.6.35.y/drivers/staging/hv/netvsc_drv.c
+@@ -46,6 +46,7 @@ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct vm_device *device_ctx;
+ 	unsigned long avail;
++	struct work_struct work;
+ };
  
- 		case 0xC0:
- 			l = p[1];
-+
-+			/* Prevent overflows*/
-+			if (l < 10 || l > 20)
-+				return -1;
-+
- 			if (*p == FAC_CCITT_DEST_NSAP) {
- 				memcpy(&facilities->source_addr, p + 7, ROSE_ADDR_LEN);
- 				memcpy(callsign, p + 12,   l - 10);
-@@ -373,12 +383,16 @@ int rose_parse_facilities(unsigned char 
- 			switch (*p) {
- 			case FAC_NATIONAL:		/* National */
- 				len = rose_parse_national(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
+ struct netvsc_driver_context {
+@@ -237,6 +238,7 @@ static void netvsc_linkstatus_callback(s
+ {
+ 	struct vm_device *device_ctx = to_vm_device(device_obj);
+ 	struct net_device *net = dev_get_drvdata(&device_ctx->device);
++	struct net_device_context *ndev_ctx;
  
- 			case FAC_CCITT:		/* CCITT */
- 				len = rose_parse_ccitt(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
+ 	DPRINT_ENTER(NETVSC_DRV);
+ 
+@@ -250,6 +252,8 @@ static void netvsc_linkstatus_callback(s
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+ 		netif_notify_peers(net);
++		ndev_ctx = netdev_priv(net);
++		schedule_work(&ndev_ctx->work);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
+@@ -354,6 +358,25 @@ static const struct net_device_ops devic
+ 	.ndo_set_mac_address =		eth_mac_addr,
+ };
+ 
++/*
++ * Send GARP packet to network peers after migrations.
++ * After Quick Migration, the network is not immediately operational in the
++ * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
++ * another netif_notify_peers() into a scheduled work, otherwise GARP packet
++ * will not be sent after quick migration, and cause network disconnection.
++ */
++static void netvsc_send_garp(struct work_struct *w)
++{
++	struct net_device_context *ndev_ctx;
++	struct net_device *net;
++
++	msleep(20);
++	ndev_ctx = container_of(w, struct net_device_context, work);
++	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
++	netif_notify_peers(net);
++}
++
++
+ static int netvsc_probe(struct device *device)
+ {
+ 	struct driver_context *driver_ctx =
+@@ -385,6 +408,7 @@ static int netvsc_probe(struct device *d
+ 	net_device_ctx->device_ctx = device_ctx;
+ 	net_device_ctx->avail = ring_size;
+ 	dev_set_drvdata(device, net);
++	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
+ 
+ 	/* Notify the netvsc driver of the new device */
+ 	ret = net_drv_obj->Base.OnDeviceAdd(device_obj, &device_info);
