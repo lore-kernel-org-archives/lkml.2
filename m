@@ -1,33 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1DZKkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:40:36 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58743 "EHLO
+	id S1754110Ab1DZKmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:42:54 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58753 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754177Ab1DZKkb (ORCPT
+	by vger.kernel.org with ESMTP id S1752109Ab1DZKmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:40:31 -0400
-Date: Tue, 26 Apr 2011 11:40:28 +0100
+	Tue, 26 Apr 2011 06:42:53 -0400
+Date: Tue, 26 Apr 2011 11:42:51 +0100
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 3/3] signal: do_sigtimedwait() needs
  retarget_shared_pending()
-Message-ID: <20110426114028.74c5a8a1@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110425170737.GB18363@redhat.com>
+Message-ID: <20110426114251.3d85eec8@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110423180000.GD484@redhat.com>
 References: <20110418134421.GA15951@redhat.com>
 	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
 	<20110418173224.GA27918@redhat.com>
 	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
 	<20110423175901.GA484@redhat.com>
 	<20110423180000.GD484@redhat.com>
-	<20110425115253.GP17734@mtj.dyndns.org>
-	<20110425160115.GC14934@redhat.com>
-	<20110425162758.GD30828@mtj.dyndns.org>
-	<20110425170737.GB18363@redhat.com>
 X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -36,29 +32,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011 19:07:38 +0200
+On Sat, 23 Apr 2011 20:00:00 +0200
 Oleg Nesterov <oleg@redhat.com> wrote:
 
-> On 04/25, Tejun Heo wrote:
-> >
-> > On Mon, Apr 25, 2011 at 06:01:15PM +0200, Oleg Nesterov wrote:
-> > >
-> > > Again, I can rename... Cough, but in this case please simply suggest
-> > > another name. set_tsk_blocked_locked?
-> >
-> > Oooh, blocked_locked, didn't see that one coming.  Maybe
-> > set_tsk_sigmask()
-> 
-> but it is not _tsk, it is specially named set_current_blocked() to
-> show that it only applies to current. And _blocked clearly shows what
-> it should change, like set_current_state().
-> 
-> OK, this is purely cosmetic, and __set_tsk_blocked() is static and has
-> a single caller. Can we keep this naming for now? it would be trivial
-> to rename later.
+> do_sigtimedwait() changes current->blocked and thus it needs
+> set_current_bloked()->retarget_shared_pending().
 
-It might be worth adding a comment to __set_tsk_blocked() saying that
-it expects to be called with ->siglock held.
+If you do another version of this patch could you fix up the function
+names in the commit log, s/set_current_bloked/set_current_blocked/ ? Or
+maybe Andrew can fix it up if he pulls them into -mm.
+
+> We could use set_current_bloked() directly. It is fine to change
+> ->real_blocked from all-zeroes to ->blocked and vice versa lockless,
+> but this is not immediately clear, looks racy, and needs a huge
+> comment to explain why this is correct.
+> 
+> To keep the things simple this patch adds the new static helper,
+> __set_task_blocked() which should be called with ->siglock held. This
+> way we can change both ->real_blocked and ->blocked atomically under
+> ->siglock as the current code does. This is more understandable.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
 
 -- 
 Matt Fleming, Intel Open Source Technology Center
