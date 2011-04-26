@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1DZLd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:33:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49479 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab1DZLd0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:33:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] cpumask: convert cpumask_of_cpu() with cpumask_of()
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1303814572.20212.249.camel@twins>
-References: <20110425184245.2699.A69D9226@jp.fujitsu.com> <1303814572.20212.249.camel@twins>
-Message-Id: <20110426203520.F3AE.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 20:33:23 +0900 (JST)
+	id S1754725Ab1DZLdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:33:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32813 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754237Ab1DZLdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:33:51 -0400
+Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20110426211500.02d6a5a6@notabene.brown>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	 <1303803414-5937-3-git-send-email-mgorman@suse.de>
+	 <20110426211500.02d6a5a6@notabene.brown>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Apr 2011 12:33:48 +0100
+Message-ID: <1303817628.5593.6.camel@machina.109elm.lan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 2011-04-25 at 18:41 +0900, KOSAKI Motohiro wrote:
-> > This patch adapt the code to new api fashion. 
-> > 
-> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > ---
-> >  kernel/kthread.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/kthread.c b/kernel/kthread.c
-> > index 3b34d27..4102518 100644
-> > --- a/kernel/kthread.c
-> > +++ b/kernel/kthread.c
-> > @@ -202,7 +202,7 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
-> >  		return;
-> >  	}
+On Tue, 2011-04-26 at 21:15 +1000, NeilBrown wrote:
+> On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+> > +{
+> > +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
+> > +}
+> > +
+> >  static inline struct page *
+> >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> > @@ -2202,8 +2211,16 @@ nopage:
+> >  got_pg:
+> >  	if (kmemcheck_enabled)
+> >  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+> > -	return page;
 > >  
-> > -	p->cpus_allowed = cpumask_of_cpu(cpu);
-> > +	cpumask_copy(&p->cpus_allowed, cpumask_of(cpu));
-> >  	p->rt.nr_cpus_allowed = 1;
-> >  	p->flags |= PF_THREAD_BOUND;
-> >  }
+> > +	/*
+> > +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
+> > +	 * been OOM killed. The expectation is that the caller is taking
+> > +	 * steps that will free more memory. The caller should avoid the
+> > +	 * page being used for !PFMEMALLOC purposes.
+> > +	 */
+> > +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
+> > +
+> > +	return page;
 > 
-> But why? Are we going to get rid of cpumask_t (which is a fixed sized
-> struct to direct assignment is perfectly fine)?
+> Linus doesn't seem to be a fan of this construct:
+>    https://lkml.org/lkml/2011/4/1/255
 > 
-> Also, do we want to convert cpus_allowed to cpumask_var_t? It would save
-> quite a lot of memory on distro configs that set NR_CPUS silly high.
-> Currently NR_CPUS=4096 configs allocate 512 bytes per task for this
-> bitmap, 511 of which will never be used on most machines (510 in the
-> near future).
->
-> The cost if of course an extra memory dereference in scheduler hot
-> paths.. also not nice.
 
-To be honest, I dislike current cpumask_size() always return NR_CPUS. It
-screw up almost all of cpumask_var_t benefit. But, we have to eliminate
-all dangerous = operator usage before changing its implementation.
+There is confusion around this topic. Andrew prefers bool for true/false
+values and it's self-documenting. I tend to prefer it myself for
+readability and there is a slow conversion in the VM from
+ints-used-as-bools to bools and my understanding of bool is that any
+non-zero value will be treated as true (just as it is for int).
 
-(btw, I wonder this limitation doesn't documented at all in code. Should
- we add this?)
+> pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
+> 
+> If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
+> always be set to 0.
 
-Thus, now I'm finding all of =operator by tool and replacing it. The second
-motivation of eliminating old api is to easy detect obsolete usage by tool.
+It is typedeffed as _Bool though which I thought was able to handle the
+cast appropriately or is that wrong?
 
-So, I personally hope task->cpus_allowed convert to cpumask_var_t 
-as cpuset->cpus_allowed. For some years, storage guys repeatedly alert
-stack overflow chance is increasing as time goes.
+> Ditto for the gfp_pfmemalloc_allowed function.
+> 
+> Prefixing with '!!' would make it safe.
+> 
 
-However, yes, extra memory dereference is also bad. If scheduler folks
-dislike cpumask_var_t, I can drop to think convert task->cpus_allowed.
+Will do that to avoid any oddities. Thanks
 
-But, if we can't convert cpus_allowed, I'd like to move it into last of
-task_struct. because usually cpu_allowed is only accessed first byte
-(as you described).
-
-Thanks.
-
-
-
->From 8844bba7597ac1c7fd2e88406da17d818ce271d1 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 26 Apr 2011 19:58:39 +0900
-Subject: [PATCH] cpumask: add cpumask_var_t documentation
-
-cpumask_var_t has one nortable difference against cpumask_t.
-This patch adds the explanation.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- include/linux/cpumask.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index a3ff24f..3d09505 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -617,6 +617,12 @@ static inline size_t cpumask_size(void)
-  *	  ... use 'tmpmask' like a normal struct cpumask * ...
-  *
-  *	free_cpumask_var(tmpmask);
-+ *
-+ * However, one notable exception is there. cpumask_var_t is allocated
-+ * only nr_cpu_ids bits (in the other hand, real cpumask_t always has
-+ * NR_CPUS bits). therefore cpumask_var_t can't use '=' operator.
-+ * It makes NR_CPUS size memcopy and bring memroy corruption. You have
-+ * to use cpumask_copy() instead.
-  */
- #ifdef CONFIG_CPUMASK_OFFSTACK
- typedef struct cpumask *cpumask_var_t;
 -- 
-1.7.3.1
-
-
+Mel Gorman
+SUSE Labs
 
