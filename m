@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1DZEud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 00:50:33 -0400
-Received: from csamuel.org ([74.50.50.137]:53891 "EHLO csamuel.org"
+	id S1751887Ab1DZE4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 00:56:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47311 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab1DZEub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 00:50:31 -0400
-From: Chris Samuel <chris@csamuel.org>
-To: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use ax/bx as a pair
-Date: Tue, 26 Apr 2011 14:50:09 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: linux-tip-commits@vger.kernel.org
-References: <1303566747.12067.10.camel@localhost.localdomain> <tip-39b68976ac653cfdc7f872a293e8b7928de2dcc6@git.kernel.org>
-In-Reply-To: <tip-39b68976ac653cfdc7f872a293e8b7928de2dcc6@git.kernel.org>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@^SdaXtmdYGRq
-	[>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<{n8m;X_
-	g\Y9LQ=v/b5`)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)F!1M3=w:i9MsWp&v;%usOXL;w
-	6kF?wAZjss.+y(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart26081061.b9chhiMscQ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1751332Ab1DZE4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 00:56:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
+   d="scan'208";a="425450850"
+Subject: Re: [PATCH v2 1/5] dmaengine: at_hdmac: modify way to use
+ interrupts
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20110426043408.GG12904@game.jcrosoft.org>
+References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
+	 <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1303493836.git.nicolas.ferre@atmel.com>
+	 <1303790574.896.11.camel@vkoul-udesk3>
+	 <20110426043408.GG12904@game.jcrosoft.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Apr 2011 09:54:41 +0530
+Message-ID: <1303791881.896.18.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104261450.15786.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart26081061.b9chhiMscQ
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-04-26 at 10:04 +0530, Jean-Christophe PLAGNIOL-VILLARD
+wrote:
+> On 09:32 Tue 26 Apr     , Koul, Vinod wrote:
+> > On Fri, 2011-04-22 at 19:41 +0200, Nicolas Ferre wrote:
+> > > Now we use Buffer Transfer Completed interrupts. If we
+> > > want a chained buffer completed information, we setup the
+> > > ATC_IEN bit in CTRLB register in the lli.
+> > > This is done by set_desc_eol() function and used by
+> > > memcpy/slave_sg functions.
+> > > 
+> > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > > ---
+> > >  drivers/dma/at_hdmac.c      |    4 ++--
+> > >  drivers/dma/at_hdmac_regs.h |   11 ++++++++---
+> > >  2 files changed, 10 insertions(+), 5 deletions(-)
+> > > 
+> > >  
+> > Looks like your forgot to run checkpatch
+> > WARNING: line over 80 characters
+> > #401: FILE: drivers/dma/at_hdmac_regs.h:106:
+> > +#define MEM_IF			0		/* specify AHB interface 0 as memory interface */
+> > 
+> > WARNING: line over 80 characters
+> > #402: FILE: drivers/dma/at_hdmac_regs.h:107:
+> > +#define PER_IF			1		/* specify AHB interface 1 as peripheral interface
+> > */
+> > 
+> > WARNING: line over 80 characters
+> > #689: FILE: drivers/dma/at_hdmac.c:899:
+> > +			direction == DMA_TO_DEVICE ? "TO DEVICE" : "FROM DEVICE",
+> > 
+> > total: 0 errors, 3 warnings, 465 lines checked
+> > 
+> > While I am okay with 3rd one, you can easily reformat code for first two
+> > and avoid these two warnings...
+> It's comments it make it more readable
+And that's why it can be easily reformatted without sacrificing code
+readability and also avoid the warnings.
+These warnings should be removed wherever its possible without
+sacrificing code readability, something like:
++/* AHB interface defines */
++#define MEM_IF 0 /* 0 as memory interface */
++#define PER_IF 1 /* 1 as peripheral interface
 
-On Tue, 26 Apr 2011 09:25:02 AM tip-bot for H. Peter Anvin wrote:
+and while at it, you need to fix these for namespace
 
-> x86, setup: When probing memory with e801, use ax/bx as a pair
+-- 
+~Vinod
 
-ACK. Thanks!
-
-=2D-=20
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
-
-This email may come with a PGP signature as a file. Do not panic.
-=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
-
---nextPart26081061.b9chhiMscQ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEVAwUATbZPAo1yjaOTJg85AQLu0gf/YNGTSCOTxtQ6+VHpABbtyKWWMGy0Zf+v
-dsiQa3NTfOFVam+bO/50gBjG1plbjCYJm9dvDiFn40JnBXf0CvjotK3KR8Dc4lcQ
-acSgjVSlA83IQPtwU0yEfr4piW/0opCf6CEz4CIBzbhFfNjRnaNGmhDW6+QViFVr
-CPtEbsGNlE1UAZXPQrNurGPB7VrDv4VVdtdcAhnySyhMqHOL9dA+XBsKtA1AX++l
-owZBbmtA/9hpsXHO1U9JNhIrc4ffAvEmOSUgIZDzxO1070HhVzhWrFft+wN3RxjX
-MoIcktGUDRw57RlTVyAv9OmvTnyThUCezEJtxZlGBh1v3AWEQ7JTcw==
-=jN75
------END PGP SIGNATURE-----
-
---nextPart26081061.b9chhiMscQ--
