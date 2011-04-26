@@ -1,81 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab1DZSz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 14:55:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43286 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752213Ab1DZSz5 (ORCPT
+	id S1753115Ab1DZS5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:57:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50609 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752479Ab1DZS5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 14:55:57 -0400
-Date: Tue, 26 Apr 2011 14:55:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Valdis.Kletnieks@vt.edu
-cc: Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: Wonkiness with keyboard adapter - not sure if it's in USB or
- input systems
-In-Reply-To: <11501.1303832820@localhost>
-Message-ID: <Pine.LNX.4.44L0.1104261453300.2035-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 26 Apr 2011 14:57:35 -0400
+Date: Tue, 26 Apr 2011 11:56:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: dave@linux.vnet.ibm.com, steffen.klassert@secunet.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
+Subject: Re: [PATCH 1/3] flex_array: flex_array_prealloc takes a number of
+ elements, not an end
+Message-Id: <20110426115638.379068b1.akpm@linux-foundation.org>
+In-Reply-To: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
+References: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 Valdis.Kletnieks@vt.edu wrote:
+On Mon, 25 Apr 2011 21:45:31 -0400
+Eric Paris <eparis@redhat.com> wrote:
 
-> Running 2.6.39-rc1-mmotm at the moment on a Dell Latitude E6500, that wants an
-> external USB keyboard/mouse and monitor when it's in its docking station in the
-> office. I have an old Microsoft Natural keyboard that has a PS/2 connector, but
-> I like the tactile feel so I didn't want to get rid of it.  So we recently got
-> some PS2->USB adapters, which appear in lsusb as follows:
-> 
-> Bus 001 Device 006: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
-> 
-> Now, when I first power up the laptop in the docking station, it *does* see the
-> keyboard just fine, and Grub is able to talk to it, and everything works (this
-> particular boot, I was able to hit the space bar to get to the Grub menu, use
-> arrow up/down to move between entries, all looked good).  So it isn't like the
-> device needs any initialization above and beyond what the BIOS is doing at
-> initial power-on.
-> 
-> However, when the Linux kernel starts up, it sees the adapter, but doesn't
-> recognize key presses until I disconnect and then reconnect the keyboard:
-> 
-> [    5.733323] usb 1-4.2: new low speed USB device number 6 using ehci_hcd
-> [    5.827679] usb 1-4.2: New USB device found, idVendor=0e8f, idProduct=0020
-> [    5.827692] usb 1-4.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> [    5.827701] usb 1-4.2: Product: PS2toUSB Adapter
-> [    5.827708] usb 1-4.2: Manufacturer: GASIA
-> [    5.846069] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:1a.7/usb1/1-4/1-4.2/1-4.2:1.0/input/input12
-> [    5.847894] generic-usb 0003:0E8F:0020.0002: input,hidraw1: USB HID v1.10 Keyboard [GASIA PS2toUSB Adapter] on usb-0000:00:1a.7-4.2/input0
-> [    5.855346] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:1a.7/usb1/1-4/1-4.2/1-4.2:1.1/input/input13
-> [    5.857351] generic-usb 0003:0E8F:0020.0003: input,hidraw2: USB HID v1.10 Mouse [GASIA PS2toUSB Adapter] on usb-0000:00:1a.7-4.2/input1
-> [  134.879149] dracut: Scanning devices dm-0  for LVM volume groups
-> 
-> root VG is LUKS-encrypted, so the initrd waits till the passphrase is entered.
-> That didn't work at 6-8 seconds in when I got the prompt - type keys, no
-> response from dracut.  I gave it some time, then about 2 mins after boot I
-> disconnected and reconnected the keyboard's PS2 connector from the adapter, and
-> then it worked fine, and I was able to enter the passphrase and dracut was
-> happy.
-> 
-> Not sure what to make of the fact that it registers the input devices right
-> off, but I see nothing in the dmesg output that the keyboard was unplugged/
-> replugged.
-> 
-> I have zero evidence that this device ever worked, as I only got it a few days
-> ago and haven't had a chance to try anything older than 39-rc.
-> 
-> Any idea/suggestions?
+> Change flex_array_prealloc to take the number of elements for which space
+> should be allocated instead of the last (inclusive) element. Users
+> and documentation are updated accordingly.
 
-Have you tried testing the adapter by plugging it in after the system 
-is running?
-
-Testing in an initrd environment is rather difficult...
-
-Alan Stern
-
+Why?
