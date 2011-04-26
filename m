@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1DZOBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:01:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14502 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756003Ab1DZOBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:01:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,268,1301900400"; 
-   d="scan'208";a="684128497"
-Date: Tue, 26 Apr 2011 16:01:17 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCHv4 3/4] TPS65910: IRQ: Add interrupt controller
-Message-ID: <20110426140116.GB3175@sortiz-mobl>
-References: <F26256FF-CD37-496F-9DB0-35E9D5407DBB@slimlogic.co.uk>
+	id S1756198Ab1DZOBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:01:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57905 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705Ab1DZOBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:01:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: guenter.roeck@ericsson.com
+Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
+Date: Tue, 26 Apr 2011 16:00:23 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1303248968-5069-1-git-send-email-guenter.roeck@ericsson.com> <20110421233415.GC2786@local> <1303501213.31666.27.camel@groeck-laptop>
+In-Reply-To: <1303501213.31666.27.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F26256FF-CD37-496F-9DB0-35E9D5407DBB@slimlogic.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104261600.23675.arnd@arndb.de>
+X-Provags-ID: V02:K0:9jZGCWdiHAaxCwqmtG89/mV9vhDqd7Nt6x4B0TDS81I
+ 0ry13QWBgkRZVyLvyJ+1bo0OhblTiocNa++48Br6V5WjX1/FEV
+ 8JZX7LMo+m+9JXQuQ3k2xjYLUn3y7FOramrS2xYEoKRfh7J7bS
+ rf4MTp+LzEXIk7Xp6/4i2ILLu9XRLyGeYDwkzahkn1uBS1+Smj
+ JQWV6YROVm/0TXO7kIwOA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jorge,
-
-On Thu, Apr 21, 2011 at 09:35:49AM -0500, Jorge Eduardo Candelaria wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
+On Friday 22 April 2011, Guenter Roeck wrote:
+> On Thu, 2011-04-21 at 19:34 -0400, Hans J. Koch wrote:
+> > I don't think the UIO framework is the right place for such a thing. If it's
+> > just this one driver that needs modification of a clock from userspace, then
+> > a sysfs attribute could be added to that driver. If there are several drivers
+> > that need this, then the clock framework should be extended.
 > 
-> This module controls the interrupt handling for the tps chip. The
-> interrupt sources are the following:
->
-> - GPIO falling/rising edge detection
-> - Battery voltage below/above threshold
-> - PWRON signal
-> - PWRHOLD signal
-> - Temperature detection
-> - RTC alarm and periodic event
-The patch looks good, except for:
+> Agreed. Also, the desire to control the clock frequency through such a
+> driver (user mode or not) seems odd. Such an approach would be
+> inherently non-scalable (for my part I would have to support two drivers
+> already). Voltage regulators are not controlled through the drivers of
+> the chips they are providing power to either, but have an independent
+> existence.
 
-> +int tps65910_irq_init(struct tps65910 *tps65910, int irq,
-> +		    struct tps65910_platform_data *pdata)
-> +{
-> +	int ret, cur_irq;
-> +	int flags = IRQF_ONESHOT;
-> +	u8 reg;
-> +
-> +	if (!irq) {
-> +		dev_warn(tps65910->dev, "No interrupt support, no core IRQ\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!pdata || !pdata->irq_base) {
-> +		dev_warn(tps65910->dev, "No interrupt support, no IRQ base\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* Mask top level interrupts */
-> +	reg = 0xFF;
-> +	tps65910->write(tps65910, TPS65910_INT_MSK, 1, &reg);
-> +	reg = 0x03;
-> +	tps65910->write(tps65910, TPS65910_INT_MSK2, 1, &reg);
-> +
-> +	mutex_init(&tps65910->irq_lock);
-> +	tps65910->chip_irq = irq;
-> +	tps65910->irq_base = pdata->irq_base;
-> +
-> +	/* Register with genirq */
-> +	for (cur_irq = tps65910->irq_base;
-> +	     cur_irq < TPS65910_NUM_IRQ + tps65910->irq_base;
-> +	     cur_irq++) {
-> +		irq_set_chip_data(cur_irq, tps65910);
-> +		irq_set_chip_and_handler(cur_irq, &tps65910_irq_chip,
-> +					 handle_edge_irq);
-> +		irq_set_nested_thread(cur_irq, 1);
-> +
-> +		/* ARM needs us to explicitly flag the IRQ as valid
-> +		 * and will set them noprobe when we do so. */
-> +#ifdef CONFIG_ARM
-> +		set_irq_flags(cur_irq, IRQF_VALID);
-> +#else
-> +		set_irq_noprobe(cur_irq);
-That should be irq_set_noprobe().
+I think you are talking about different things here. What I think
+Hans was saying is that it should be in the specific UIO driver, not
+in the framework, which I can agree with. If we get a bunch of these,
+we can still make it generic at a later point, but that is not your
+problem.
 
-Cheers,
-Samuel.
+I think exporting the clock to kernel drivers as a struct clk is
+the most useful approach to allow reuse, and then you just have to
+interface to that from your existing UIO driver.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+	Arnd
