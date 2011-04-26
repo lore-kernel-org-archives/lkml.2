@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab1DZUch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:32:37 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41405 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab1DZUcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:32:36 -0400
-Subject: Re: [PATCH 1/3] flex_array: flex_array_prealloc takes a number of
- elements, not an end
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: steffen.klassert@secunet.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
-In-Reply-To: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
-References: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 26 Apr 2011 13:32:21 -0700
-Message-ID: <1303849941.9308.17353.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757699Ab1DZUdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:33:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50620 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab1DZUdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 16:33:18 -0400
+Date: Tue, 26 Apr 2011 21:33:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: viresh kumar <viresh.kumar@st.com>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>
+Subject: Re: [PATCH 1/6] dmaengine/dw_dmac: Replace spin_lock_bh with
+	irqsave variants
+Message-ID: <20110426203306.GC17290@n2100.arm.linux.org.uk>
+References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com> <4DAD2AE9.7060106@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAD2AE9.7060106@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 21:45 -0400, Eric Paris wrote:
-> Change flex_array_prealloc to take the number of elements for which space
-> should be allocated instead of the last (inclusive) element. Users
-> and documentation are updated accordingly.
-> 
-> Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
+On Tue, Apr 19, 2011 at 11:55:45AM +0530, viresh kumar wrote:
+> This must have been added in dw_dma_chan instead :(
+> Will resend it.
 
-Perhaps add this to the description?
-
-flex_arrays got introduced before they had users.  When folks started
-using it, they ended up needing a different API than we coded up
-originally.  This swaps over to the API that folks apparently need.
-
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
-
--- Dave
-
+Even that doesn't work.  It has to be a local variable.
