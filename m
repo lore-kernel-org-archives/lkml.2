@@ -1,124 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab1DZGTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 02:19:08 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:52336 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab1DZGTH convert rfc822-to-8bit (ORCPT
+	id S1756336Ab1DZGXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 02:23:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59916 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab1DZGXK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 02:19:07 -0400
-Date: Tue, 26 Apr 2011 08:19:04 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110426081904.0d2b1494@pluto.restena.lu>
-In-Reply-To: <20110425214933.GO2468@linux.vnet.ibm.com>
-References: <20110425111705.786ef0c5@neptune.home>
-	<BANLkTi=d0UHrYXyTK0CBZYCSK-ax8+wuWQ@mail.gmail.com>
-	<20110425180450.1ede0845@neptune.home>
-	<BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
-	<20110425190032.7904c95d@neptune.home>
-	<BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
-	<20110425203606.4e78246c@neptune.home>
-	<20110425191607.GL2468@linux.vnet.ibm.com>
-	<20110425231016.34b4293e@neptune.home>
-	<BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
-	<20110425214933.GO2468@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Tue, 26 Apr 2011 02:23:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dCXSRmykHNzOEQ1HEzAPSZSEJa7zW3YEV52DTBohsB1YEbg1jdVLzj9E53U2vH5C1M
+         PP+oHxPF6CaZ55J7l7XSyIYnk7UMZaCiUZOT7Bt/im24lVjiUZjkGz5rGxqby5azcoIQ
+         WcETNYU1bO/bXv6k6Xt4iuRdxe0IQyG91WcwE=
+MIME-Version: 1.0
+In-Reply-To: <20110426061353.GA19717@localhost>
+References: <BANLkTin8mE=DLWma=U+CdJaQW03X2M2W1w@mail.gmail.com>
+	<20110426055521.GA18473@localhost>
+	<BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
+	<20110426061353.GA19717@localhost>
+Date: Tue, 26 Apr 2011 14:23:08 +0800
+Message-ID: <BANLkTi=JoSwpNk0xW4PSYBhuNa1Q1G9LMw@mail.gmail.com>
+Subject: Re: readahead and oom
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011 14:49:33 "Paul E. McKenney" wrote:
-> On Mon, Apr 25, 2011 at 02:30:02PM -0700, Linus Torvalds wrote:
-> > 2011/4/25 Bruno Prémont <bonbons@linux-vserver.org>:
-> > >
-> > > Between 1-slabinfo and 2-slabinfo some values increased (a lot) while a few
-> > > ones did decrease. Don't know which ones are RCU-affected and which ones are
-> > > not.
-> > 
-> > It really sounds as if the tiny-rcu kthread somehow just stops
-> > handling callbacks. The ones that keep increasing do seem to be all
-> > rcu-free'd (but I didn't really check).
-> > 
-> > The thing is shown as running:
-> > 
-> > root         6  0.0  0.0      0     0 ?        R    22:14   0:00  \_
-> > [rcu_kthread]
-> > 
-> > but nothing seems to happen and the CPU time hasn't increased at all.
-> > 
-> > I dunno. Makes no  sense to me, but yeah, I'm definitely blaming
-> > tiny-rcu. Paul, any ideas?
-> 
-> So the only ways I know for something to be runnable but not run on
-> a uniprocessor are:
-> 
-> 1.	The CPU is continually busy with higher-priority work.
-> 	This doesn't make sense in this case because the system
-> 	is idle much of the time.
-> 
-> 2.	The system is hibernating.  This doesn't make sense, otherwise
-> 	"ps" wouldn't run either.
-> 
-> Any others ideas on how the heck a process can get into this state?
-> (I have thus far been completely unable to reproduce it.)
-> 
-> The process in question has a loop in rcu_kthread() in kernel/rcutiny.c.
-> This loop contains a wait_event_interruptible(), waits for a global flag
-> to become non-zero.
-> 
-> It is awakened by invoke_rcu_kthread() in that same file, which
-> simply sets the flag to 1 and does a wake_up(), all with hardirqs
-> disabled.
-> 
-> Hmmm...  One "hail mary" patch below.  What it does is make rcu_kthread
-> run at normal priority rather than at real-time priority.  This is
-> not for inclusion -- it breaks RCU priority boosting.  But well worth
-> trying.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index 0c343b9..4551824 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -314,11 +314,15 @@ EXPORT_SYMBOL_GPL(rcu_barrier_sched);
->   */
->  static int __init rcu_spawn_kthreads(void)
->  {
-> +#if 0
->  	struct sched_param sp;
-> +#endif
->  
->  	rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
-> +#if 0
->  	sp.sched_priority = RCU_BOOST_PRIO;
->  	sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
-> +#endif
->  	return 0;
->  }
->  early_initcall(rcu_spawn_kthreads);
+On Tue, Apr 26, 2011 at 2:13 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Tue, Apr 26, 2011 at 02:05:12PM +0800, Dave Young wrote:
+>> On Tue, Apr 26, 2011 at 1:55 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > On Tue, Apr 26, 2011 at 01:49:25PM +0800, Dave Young wrote:
+>> >> Hi,
+>> >>
+>> >> When memory pressure is high, readahead could cause oom killing.
+>> >> IMHO we should stop readaheading under such circumstances。If it's true
+>> >> how to fix it?
+>> >
+>> > Good question. Before OOM there will be readahead thrashings, which
+>> > can be addressed by this patch:
+>> >
+>> > http://lkml.org/lkml/2010/2/2/229
+>>
+>> Hi, I'm not clear about the patch, could be regard as below cases?
+>> 1) readahead alloc fail due to low memory such as other large allocation
+>> 2) readahead thrashing caused by itself
+>
+> When memory pressure goes up (not as much as allocation failures and OOM),
+> the readahead pages may be reclaimed before they are read() accessed
+> by the user space. At the time read() asks for the page, it will have
+> to be read from disk _again_. This is called readahead thrashing.
+>
+> What the patch does is to automatically detect readahead thrashing and
+> shrink the readahead size adaptively, which will the reduce memory
+> consumption by readahead buffers.
 
-I will give that patch a shot on Wednesday evening (European time) as I
-wont have enough time in front of the affected box until then to do any
-deeper testing. (same for trying to out with the other -rc kernels as
-suggested by Mike)
+Thanks for the explanation.
 
-Though I will use the few minutes I have this evening to try to fetch
-kernel traces of running tasks with sysrq+t which may eventually give
-us a hint at where rcu_thread is stuck/waiting.
+But still there's the question, if the allocation storm occurs when
+system startup, the allocation is so quick that the detection of
+thrashing is too late to avoid readahead. Is this possible?
 
-Bruno
+>
+> Thanks,
+> Fengguang
+>
+>> >
+>> > However there seems no much interest on that feature.. I can separate
+>> > that out and resubmit it standalone if necessary.
+
+Would like to test your new patch
+
+>> >
+>> > Thanks,
+>> > Fengguang
+>> >
+>>
+>>
+>>
+>> --
+>> Regards
+>> dave
+>
+
+
+
+-- 
+Regards
+dave
