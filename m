@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab1DZMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:05:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47484 "EHLO mx1.suse.de"
+	id S1751812Ab1DZMR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:17:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48044 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab1DZMF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:05:56 -0400
-Date: Tue, 26 Apr 2011 22:05:40 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20110426220540.7c0006e3@notabene.brown>
-In-Reply-To: <1303817628.5593.6.camel@machina.109elm.lan>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	<1303803414-5937-3-git-send-email-mgorman@suse.de>
-	<20110426211500.02d6a5a6@notabene.brown>
-	<1303817628.5593.6.camel@machina.109elm.lan>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750970Ab1DZMRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 08:17:55 -0400
+Date: Tue, 26 Apr 2011 14:17:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110426121751.GB5114@quack.suse.cz>
+References: <20110420080336.441157866@intel.com>
+ <20110420080918.383880412@intel.com>
+ <20110420164005.e3925965.akpm@linux-foundation.org>
+ <20110424031531.GA11220@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110424031531.GA11220@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 12:33:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
-
-> On Tue, 2011-04-26 at 21:15 +1000, NeilBrown wrote:
-> > On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
-> > > +{
-> > > +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
-> > > +}
-> > > +
-> > >  static inline struct page *
-> > >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> > >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> > > @@ -2202,8 +2211,16 @@ nopage:
-> > >  got_pg:
-> > >  	if (kmemcheck_enabled)
-> > >  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
-> > > -	return page;
-> > >  
-> > > +	/*
-> > > +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
-> > > +	 * been OOM killed. The expectation is that the caller is taking
-> > > +	 * steps that will free more memory. The caller should avoid the
-> > > +	 * page being used for !PFMEMALLOC purposes.
-> > > +	 */
-> > > +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
-> > > +
-> > > +	return page;
-> > 
-> > Linus doesn't seem to be a fan of this construct:
-> >    https://lkml.org/lkml/2011/4/1/255
-> > 
+On Sun 24-04-11 11:15:31, Wu Fengguang wrote:
+> > One of the many requirements for writeback is that if userspace is
+> > continually dirtying pages in a particular file, that shouldn't cause
+> > the kupdate function to concentrate on that file's newly-dirtied pages,
+> > neglecting pages from other files which were less-recently dirtied. 
+> > (and dirty nodes, etc).
 > 
-> There is confusion around this topic. Andrew prefers bool for true/false
-> values and it's self-documenting. I tend to prefer it myself for
-> readability and there is a slow conversion in the VM from
-> ints-used-as-bools to bools and my understanding of bool is that any
-> non-zero value will be treated as true (just as it is for int).
+> Sadly I do find the old pages that the flusher never get a chance to
+> catch and write them out.
+  What kind of load do you use?
+
+> In the below case, if the task dirties pages fast enough at the end of
+> file, writeback_index will never get a chance to wrap back. There may
+> be various variations of this case.
 > 
-> > pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
-> > 
-> > If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
-> > always be set to 0.
+> file head
+> [          ***                        ==>***************]==>
+>            old pages          writeback_index            fresh dirties
 > 
-> It is typedeffed as _Bool though which I thought was able to handle the
-> cast appropriately or is that wrong?
+> Ironically the current kernel relies on pageout() to catch these
+> old pages, which is not only inefficient, but also not reliable.
+> If a full LRU walk takes an hour, the old pages may stay dirtied
+> for an hour.
+  Well, the kupdate behavior has always been just a best-effort thing. We
+always tried to handle well common cases but didn't try to solve all of
+them. Unless we want to track dirty-age of every page (which we don't
+want because it's too expensive), there is really no way to make syncing
+of old pages 100% working for all the cases unless we do data-integrity
+type of writeback for the whole inode - but that could create new problems
+with stalling other files for too long I suspect.
 
-Yes, I too believe that _Bool does the right thing, so this particular usage
-does happen to be safe in the kernel.  But there is a long tradition of
-'bool' being typedefed to an int type so the usage can look wrong.  So maybe
-it is best avoided.
+> We may have to do (conditional) tagged ->writepages to safeguard users
+> from losing data he'd expect to be written hours ago.
+  Well, if the file is continuously written (and in your case it must be
+even continuosly grown) I'd be content if we handle well the common case of
+linear append (that happens for log files etc.). If we can do well for more
+cases, even better but I'd be cautious not to disrupt some other more
+common cases.
 
-I have no strong feeling either way - I just thought I would highlight it.
-In general, I like bool, but I don't like automatic casts (I often use
-  if (pointer != NULL) ...
-because I think it reads better).
-
-Thanks,
-NeilBrown
-
-
-
-> 
-> > Ditto for the gfp_pfmemalloc_allowed function.
-> > 
-> > Prefixing with '!!' would make it safe.
-> > 
-> 
-> Will do that to avoid any oddities. Thanks
-> 
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
