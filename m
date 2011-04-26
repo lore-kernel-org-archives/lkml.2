@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045Ab1DZWv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:51:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52805 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759000Ab1DZWv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:51:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=taBieIMVWyIV6D5a24HWBego28HFIdF4rIGRxEL/q81BRp/Wav6QIKHhCICAN10MKt
-         gAYtmjmHwMnu2jJ8ekxg==
+	id S933024Ab1DZW72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:59:28 -0400
+Received: from kroah.org ([198.145.64.141]:55289 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932413Ab1DZW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 18:59:27 -0400
+Date: Tue, 26 Apr 2011 15:50:59 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>
+Subject: Re: [PATCH 12/25] Staging: hv: Cleanup error handling in
+ vmbus_child_device_register()
+Message-ID: <20110426225059.GA12897@kroah.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-12-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=psQRm9W9uXBgCEyYp-oEA0d0GVA@mail.gmail.com>
-References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
-	<1303728272-11408-4-git-send-email-leemgs1@gmail.com>
-	<20110425084508.dda5ec8f.randy.dunlap@oracle.com>
-	<BANLkTi=psQRm9W9uXBgCEyYp-oEA0d0GVA@mail.gmail.com>
-Date: Tue, 26 Apr 2011 15:51:22 -0700
-Message-ID: <BANLkTikVLj3W6dSNRERntjOcX0kh-wrJYg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] munmap: kbuild menu for munmap interface
-From: Hugh Dickins <hughd@google.com>
-To: Geunsik Lim <leemgs1@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303834842-5022-12-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 5:42 PM, Geunsik Lim <leemgs1@gmail.com> wrote:
-> I will modify contents that you commented.
+On Tue, Apr 26, 2011 at 09:20:29AM -0700, K. Y. Srinivasan wrote:
+> Cleanup error handling in vmbus_child_device_register().
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> ---
+>  drivers/staging/hv/vmbus_drv.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> index d597dd4..4d569ad 100644
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -720,11 +720,16 @@ int vmbus_child_device_register(struct hv_device *child_device_obj)
+>  	 */
+>  	ret = device_register(&child_device_obj->device);
+>  
+> +	if (ret)
+> +		return ret;
+> +
+>  	/* vmbus_probe() error does not get propergate to device_register(). */
+>  	ret = child_device_obj->probe_error;
 
-Thank you for making the effort, but we would much prefer to eliminate
-ZAP_BLOCK_SIZE than have a configurable ZAP_BLOCK_SIZE.  So I don't
-think you need update the contents here.
+Wait, why not?  Why is the probe_error have to be saved off like this?
+That seems like something is wrong here, this patch should not be
+needed.
 
-Peter's preemptible mmu_gather work is expected to be included in the
-next mmotm.  Please test on that, and if it does not meet your needs,
-do let us know.
+Well, you should check the return value of device_register, that is
+needed, but this seems broken somehow.
 
-Thanks,
-Hugh
+>  
+> -	if (ret)
+> +	if (ret) {
+>  		pr_err("Unable to register child device\n");
+> +		device_unregister(&child_device_obj->device);
+> +	}
+>  	else
+
+	} else
+is the preferred way.
+
+Care to send a fixup patch to remove the probe_error field and fix this
+formatting error up?
+
+thanks,
+
+greg k-h
