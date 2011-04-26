@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1DZKOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:14:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58346 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab1DZKOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:14:03 -0400
-Date: Tue, 26 Apr 2011 11:13:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Arve Hj?nnev?g <arve@android.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Check if any page in a pageblock is reserved before
- marking it MIGRATE_RESERVE
-Message-ID: <20110426101358.GC4658@suse.de>
-References: <1303436043-26644-1-git-send-email-john.stultz@linaro.org>
- <20110426073410.GA4658@suse.de>
- <20110426185114.F3A4.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110426185114.F3A4.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753476Ab1DZKSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:18:07 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:54585 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753051Ab1DZKSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 06:18:04 -0400
+Date: Tue, 26 Apr 2011 11:18:01 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] signal: sys_rt_sigtimedwait: simplify the timeout
+ logic
+Message-ID: <20110426111801.751c7063@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110423175922.GB484@redhat.com>
+References: <20110418134421.GA15951@redhat.com>
+	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+	<20110418173224.GA27918@redhat.com>
+	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+	<20110423175901.GA484@redhat.com>
+	<20110423175922.GB484@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 06:49:39PM +0900, KOSAKI Motohiro wrote:
-> > On Thu, Apr 21, 2011 at 06:34:03PM -0700, John Stultz wrote:
-> > > From: Arve Hjønnevåg <arve@android.com>
-> > > 
-> > > This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-> > > though it only had a few free pages. This in turn caused no contiguous memory
-> > > to be reserved and frequent kswapd wakeups that emptied the caches to get more
-> > > contiguous memory.
-> > > 
-> > > CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> > > CC: Mel Gorman <mgorman@suse.de>
-> > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > > Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> > > Acked-by: Mel Gorman <mel@csn.ul.ie>
-> > > 
-> > > [This patch was submitted and acked a little over a year ago
-> > > (see: http://lkml.org/lkml/2010/4/6/172 ), but never seemingly
-> > > made it upstream. Resending for comments. -jstultz]
-> > > 
-> > > Signed-off-by: John Stultz <john.stultz@linaro.org>
-> > 
-> > Whoops, should have spotted it slipped through. FWIW, I'm still happy
-> > with my Ack being stuck onto it.
-> 
-> Hehe, No.
-> 
-> You acked another patch at last year and John taked up old one. Sigh.
-> Look,  correct one has pfn_valid_within(). 
-> 	http://lkml.org/lkml/2010/4/6/172
-> 
+On Sat, 23 Apr 2011 19:59:22 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Bah, you're right thanks for catching that. A pfn_valid_within check is
-indeed required, particularly on ARM where there can be holes punched within
-pageblock boundaries. Thanks
+> No functional changes, cleanup compat_sys_rt_sigtimedwait() and
+> sys_rt_sigtimedwait().
+> 
+> Calculate the timeout before we take ->siglock, this simplifies and
+> lessens the code. Use timespec_valid() to check the timespec.
+> 
+> I don't understand why we are adding (ts.tv_sec || ts.tv_nsec) to
+> timespec_to_jiffies(&ts). Perhaps to ensure we will sleep at least
+> one jiffy if ts != 0? But in this case we should only check tv_nsec,
+> I don't think timespec_to_jiffies() can return zero if tv_sec != 0.
+> In fact I suspect timespec_to_jiffies() can only return zero if
+> tv_sec == tv_nsec == 0 because we add "TICK_NSEC - 1", but I am not
+> sure I understand correctly this math.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> 
-> Subject: [PATCH] mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE
-> From: Arve Hjonnevag <arve@android.com>
-> 
-> This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-> though it only had a few free pages. eg, On current ARM port, The kernel starts
-> at offset 0x8000 to leave room for boot parameters, and the memory is freed later.
-> 
-> This in turn caused no contiguous memory to be reserved and frequent kswapd
-> wakeups that emptied the caches to get more contiguous memory.
-> 
-> Unfortunatelly, ARM need order-2 allocation for pgd (see arm/mm/pgd.c#pgd_alloc()).
-> Therefore the issue is not minor nor easy avoidable.
-> 
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Arve Hjonnevag <arve@android.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [added a
-> few explanation]
-> ---
->  mm/page_alloc.c |   16 +++++++++++++++-
->  1 files changed, 15 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1d5c189..10d9fa7 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3282,6 +3282,20 @@ static inline unsigned long wait_table_bits(unsigned long size)
->  #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
->  
->  /*
-> + * Check if a pageblock contains reserved pages
-> + */
-> +static int pageblock_is_reserved(unsigned long start_pfn)
-> +{
-> +	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
-> +	unsigned long pfn;
-> +
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-> +		if (!pfn_valid_within(pfn) || PageReserved(pfn_to_page(pfn)))
-> +			return 1;
-> +	return 0;
-> +}
-> +
-> +/*
->   * Mark a number of pageblocks as MIGRATE_RESERVE. The number
->   * of blocks reserved is based on min_wmark_pages(zone). The memory within
->   * the reserve will tend to store contiguous free pages. Setting min_free_kbytes
-> @@ -3320,7 +3334,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
->  			continue;
->  
->  		/* Blocks with reserved pages will never free, skip them. */
-> -		if (PageReserved(page))
-> +		if (pageblock_is_reserved(pfn))
->  			continue;
->  
->  		block_migratetype = get_pageblock_migratetype(page);
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
 
 -- 
-Mel Gorman
-SUSE Labs
+Matt Fleming, Intel Open Source Technology Center
