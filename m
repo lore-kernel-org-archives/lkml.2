@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab1DZW72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:59:28 -0400
-Received: from kroah.org ([198.145.64.141]:55289 "EHLO coco.kroah.org"
+	id S933041Ab1DZW7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:59:40 -0400
+Received: from kroah.org ([198.145.64.141]:55294 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932413Ab1DZW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932911Ab1DZW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Apr 2011 18:59:27 -0400
-Date: Tue, 26 Apr 2011 15:50:59 -0700
+Date: Tue, 26 Apr 2011 15:56:37 -0700
 From: Greg KH <greg@kroah.com>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>
-Subject: Re: [PATCH 12/25] Staging: hv: Cleanup error handling in
- vmbus_child_device_register()
-Message-ID: <20110426225059.GA12897@kroah.com>
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 11/25] Staging: hv: Get rid of the drv field in struct
+ hv_device
+Message-ID: <20110426225637.GB12897@kroah.com>
 References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
  <1303834842-5022-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-12-git-send-email-kys@microsoft.com>
+ <1303834842-5022-11-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303834842-5022-12-git-send-email-kys@microsoft.com>
+In-Reply-To: <1303834842-5022-11-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 09:20:29AM -0700, K. Y. Srinivasan wrote:
-> Cleanup error handling in vmbus_child_device_register().
+On Tue, Apr 26, 2011 at 09:20:28AM -0700, K. Y. Srinivasan wrote:
+> Now, we can rid of the drv field in struct hv_device.
 > 
 > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 > ---
->  drivers/staging/hv/vmbus_drv.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
+>  drivers/staging/hv/vmbus_api.h |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> index d597dd4..4d569ad 100644
-> --- a/drivers/staging/hv/vmbus_drv.c
-> +++ b/drivers/staging/hv/vmbus_drv.c
-> @@ -720,11 +720,16 @@ int vmbus_child_device_register(struct hv_device *child_device_obj)
->  	 */
->  	ret = device_register(&child_device_obj->device);
+> diff --git a/drivers/staging/hv/vmbus_api.h b/drivers/staging/hv/vmbus_api.h
+> index 51fa952..02e3587 100644
+> --- a/drivers/staging/hv/vmbus_api.h
+> +++ b/drivers/staging/hv/vmbus_api.h
+> @@ -103,9 +103,6 @@ struct hv_driver {
 >  
-> +	if (ret)
-> +		return ret;
-> +
->  	/* vmbus_probe() error does not get propergate to device_register(). */
->  	ret = child_device_obj->probe_error;
+>  /* Base device object */
+>  struct hv_device {
+> -	/* the driver for this device */
+> -	struct hv_driver *drv;
+> -
+>  	char name[64];
 
-Wait, why not?  Why is the probe_error have to be saved off like this?
-That seems like something is wrong here, this patch should not be
-needed.
-
-Well, you should check the return value of device_register, that is
-needed, but this seems broken somehow.
-
->  
-> -	if (ret)
-> +	if (ret) {
->  		pr_err("Unable to register child device\n");
-> +		device_unregister(&child_device_obj->device);
-> +	}
->  	else
-
-	} else
-is the preferred way.
-
-Care to send a fixup patch to remove the probe_error field and fix this
-formatting error up?
+FYI, in the future, you can also remove this name[64] field as well as I
+don't think it's ever used...
 
 thanks,
 
