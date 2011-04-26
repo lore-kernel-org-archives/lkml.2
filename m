@@ -1,115 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab1DZKgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:36:52 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43978 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753664Ab1DZKgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:36:50 -0400
-Date: Tue, 26 Apr 2011 11:36:46 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 03/13] mm: Introduce __GFP_MEMALLOC to allow access to
- emergency reserves
-Message-ID: <20110426103646.GD4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
- <1303803414-5937-4-git-send-email-mgorman@suse.de>
- <20110426194947.764e048a@notabene.brown>
+	id S1754162Ab1DZKkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:40:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60873 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab1DZKkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 06:40:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=quihkq4M8+0sMtID0AUatfWsw5781JPRyekWkPFmLj6yUrcgeI2zqZLozjjWEBtp4h
+         3a6zr/vfp2LiiVxer6pm8AuWhRQeYngnKoiOu0YgK4VAlqadSv8BX278axnUuXotYXUS
+         LuHuLrOX9gnRRyy3L+YfGuiKoL8XCFEpsOnZk=
+Date: Tue, 26 Apr 2011 12:40:14 +0200
+From: Tejun Heo <htejun@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+Subject: Re: [PATCH 1/2]block: optimize non-queueable flush request drive
+Message-ID: <20110426104014.GA878@htj.dyndns.org>
+References: <1303202686.3981.216.camel@sli10-conroe>
+ <20110422233204.GB1576@mtj.dyndns.org>
+ <20110425013328.GA17315@sli10-conroe.sh.intel.com>
+ <20110425085827.GB17734@mtj.dyndns.org>
+ <1303778559.3981.279.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110426194947.764e048a@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1303778559.3981.279.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 07:49:47PM +1000, NeilBrown wrote:
-> On Tue, 26 Apr 2011 08:36:44 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > __GFP_MEMALLOC will allow the allocation to disregard the watermarks,
-> > much like PF_MEMALLOC. It allows one to pass along the memalloc state in
-> > object related allocation flags as opposed to task related flags, such
-> > as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC as
-> > callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag which
-> > is now enough to identify allocations related to page reclaim.
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  include/linux/gfp.h      |    4 +++-
-> >  include/linux/mm_types.h |    2 +-
-> >  mm/page_alloc.c          |   14 ++++++--------
-> >  mm/slab.c                |    2 +-
-> >  4 files changed, 11 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> > index bfb8f93..4e011e7 100644
-> > --- a/include/linux/gfp.h
-> > +++ b/include/linux/gfp.h
-> > @@ -23,6 +23,7 @@ struct vm_area_struct;
-> >  #define ___GFP_REPEAT		0x400u
-> >  #define ___GFP_NOFAIL		0x800u
-> >  #define ___GFP_NORETRY		0x1000u
-> > +#define ___GFP_MEMALLOC		0x2000u
-> >  #define ___GFP_COMP		0x4000u
-> >  #define ___GFP_ZERO		0x8000u
-> >  #define ___GFP_NOMEMALLOC	0x10000u
-> > @@ -75,6 +76,7 @@ struct vm_area_struct;
-> >  #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
-> >  #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
-> >  #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
-> > +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
-> >  #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
-> >  #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
-> >  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
-> 
-> Having both "MEMALLOC" and  "NOMEMALLOC" seems ... unfortunate.
-> 
-> It appears that NOMEMALLOC over-rides MEMALLOC.  It might be good to document
-> this 
-> 
+Hey,
 
-I can document it. Right now, a better name than NOMEMALLOC does not
-spring to mind.
+On Tue, Apr 26, 2011 at 08:42:39AM +0800, Shaohua Li wrote:
+> > What I was saying is that request completion is decoupled from driver
+> > fetching requests from block layer and that the order of completion
+> > doesn't necessarily follow the order of execution.  IOW, nothing
+> > guarantees that FLUSH completion code would run before the low level
+> > driver fetches the next command and _completes_ it, in which case your
+> > code would happily mark flush complete after write without actually
+> > doing it.
+>
+> What I described is in the background of non-queueable flush request.
+> For queueable flush, this definitely isn't correct.
 
-> > +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves
->                                                                    unless __GFP_NOMEMALLOC is set*/
-> 
-> >  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves
->                                                                   Overrides __GFP_MEMALLOC */
-> 
-> I suspect that it is never valid to set both.  So NOMEMALLOC is really
-> NO_PF_MEMALLOC, but making that change is probably just noise.
-> 
-> Maybe a
->    WARN_ON((gfp_mask & __GFP_MEMALLOC) && (gfp_mask & __GFP_NOMEMALLOC));
-> might be wise?
-> 
+We're definitely having communication issues.  The above doesn't have
+anything to do with queueability of flushes.  It's about the
+asynchronous nature of block request completion and issue paths, so it
+can happen whether flush is queueable or not, or am I still
+misunderstanding you?
 
-Both MEMALLOC and NOMEMALLOC are related to PFMEMALLOC reserves so
-it's reasonable for them to have similar names. This warning will
-also trigger because it's a combination of flags that does happen.
+> > Eh, wasn't your optimization only applicable if flush is not
+> > queueable?  IIUC, what your optimization achieves is merging
+> > back-to-back flushes and you're achieving that in a _very_ non-obvious
+> > round-about way.  Do it in straight-forward way even if that costs
+> > more lines of code.
+>
+> This isn't a problem of more code or less code. I thought my patch is
+> already quite simple.
 
-Consider for example
+Well, then, we'll have to agree to disagree there as it looks really
+hackish to me and I don't think it's even correct as written above.
 
-any interrupt
-  -> __netdev_alloc_skb		(mask == GFP_ATOMIC)
-    -> __alloc_skb		(mask == GFP_ATOMIC)
-       if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
-               gfp_mask |= __GFP_MEMALLOC;
-				(mask == GFP_ATOMIC|__GFP_NOMEMALLOC)
-      -> __kmalloc_reserve
-		First attempt tries to avoid reserves so adds __GFP_MEMALLOC
-				(mask == GFP_ATOMIC|__GFP_NOMEMALLOC|__GFP_MEMALLOC)
+> The method your described only works for non-queueable flush too. And it
+> has limitation that the requests between two back-to-back flushes must
+> not be write. my patch works for non-queueable flush but has no such
+> limitation.
 
-You're right in that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC so that
-could do with a note.
+No, I'm saying you can achieve about the same effect in cleaner and
+safer way if you teach the issue and completion paths properly about
+these back-to-back flushes at the cost of more code changes.  Your
+patch doesn't work reliably whether flush is queueable or not.
+
+> > Darrick, do you see flush performance regression between rc1 and rc2?
+> > You're testing on higher end, so maybe it's still okay for you?
+>
+> please ignore the regression. the patch isn't related to the regression,
+> but that problem motivates me to do the patch.
+> Actually I still need the RFC patch in another thread to recover the
+> regression. I hope you and Jens can seriously look at that issue too.
+
+Ah, okay, it's a separately issue.  Sorry about confusing the two.
+I'll continue on another reply.
+
+Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+tejun
