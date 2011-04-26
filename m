@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab1DZWaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:30:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36663 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758496Ab1DZWai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:30:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FoMu1lt0Pg2aDLVBPmEzbSkRjEGqc6LT6q61Tm1+7F0rG1dRx1nhZusmpr2EwEPUza
-         ajFW4Qt0Ycd1fgk910o2Lal0NJt2aXZUG/nBw7xJ9Wp9JSAFI8hOkrUdolBzENE0oZNC
-         QsxCwTifyCZNchgoxNnU31vZ+qXnN6TKtSqf0=
-Message-ID: <4DB74788.2000908@lwfinger.net>
-Date: Tue, 26 Apr 2011 17:30:32 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1758937Ab1DZWca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:32:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54359 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753770Ab1DZWc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 18:32:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>, MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for device PM.
+Date: Wed, 27 Apr 2011 00:32:41 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
+        Len Brown <len.brown@intel.com>,
+        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, rpurdie@rpsys.net,
+        lenz@cs.wisc.edu, arminlitzel@web.de, Cyril Hrubis <metan@ucw.cz>,
+        thommycheck@gmail.com,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>
+References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com> <20110426210627.GA28033@elf.ucw.cz> <201104262346.58046.rjw@sisk.pl>
+In-Reply-To: <201104262346.58046.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Roland Dreier <roland@kernel.org>, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan> <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com> <alpine.DEB.2.02.1104260619420.8361@p34.internal.lan> <alpine.DEB.2.02.1104261753210.3894@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1104261753210.3894@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104270032.42046.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I am trying a different driver now: rt2870sta
-> I've read a few reports this may be the 'proper' one to use.
-> So far so good, no lag or anything and I did not have to set power off
-> either.
+On Tuesday, April 26, 2011, Rafael J. Wysocki wrote:
+> On Tuesday, April 26, 2011, Pavel Machek wrote:
+...
+> > Ok, see the spitz_should_wakeup() function in arch/arm/mach-pxa/* and
+> > should_wakeup() usage.
+> 
+> OK, I will.
 
-Driver rtl2870sta is not the proper one to use. In fact, a patch to delete 
-rt2860sta and rt2870sta from the kernel was queued yesterday, and they will be 
-gone by the time 2.6.40 is released.
+Well, as far as I can tell, on Zaurus this is all done within the platform
+->enter() callback, so it doesn't carry out the device resume, while the
+proposed $subject patch does.  For this reason, I'm not even sure if the
+proposed approach is really suitable for Zaurus (the resuming and suspending
+of all devices every once a while will cost quite some enery I guess).
 
-New firmware for rt2800usb was just accepted into the linux-firmware git tree. 
-Please obtain a copy and try it.
+Still, in the unlikely case it is suitable, here's my opinion.
 
-Larry
+I don't think syscore_ops is the right place to put the new "suspend
+again" callback for reasons stated previously.
+
+I also don't think dev_pm_ops is the right place to put such a callback,
+because it will only be necessary on very few platforms and there's no
+reason why every driver, subsystem or power domain in the kernel should care.
+
+Moreover, the usage cases appear to be suspend-specific.
+
+For the above reasons, the only place the "suspend again" callback may be
+put into is struct platform_suspend_ops.  Then, suspend_devices_and_enter()
+may be modified so that it loops between dpm_suspend_start() and
+dpm_suspend_end() until that callback returns "false" and there are no
+wakeup events (as indicated by pm_wakeup_pending(); but please note that
+this would require suspend_enter() to indicate that pm_wakeup_pending()
+returned "true" and events_check_enabled should not be reset until
+we're sure that we _really_ want to resume).
+
+Alternatively, if that's sufficient, suspend_enter() may be called in a
+loop until the "suspend again" callback returns "false" and there are no
+wakeup events (in the above sense).
+
+The callback can be called "repeat" and return bool as far as I'm concerned,
+but I'm not insisting on that.
+
+MyungJoo, would that be suitable to you?
+
+Rafael
