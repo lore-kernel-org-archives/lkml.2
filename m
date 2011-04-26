@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1DZWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:10:59 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45045 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751646Ab1DZWK5 (ORCPT
+	id S1758392Ab1DZWMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:12:18 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:21276 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab1DZWMQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:10:57 -0400
-Date: Wed, 27 Apr 2011 00:10:54 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, Cyril Hrubis <metan@ucw.cz>,
-        thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for
- device PM.
-Message-ID: <20110426221054.GB29092@elf.ucw.cz>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
- <201104262247.44113.rjw@sisk.pl>
- <20110426210627.GA28033@elf.ucw.cz>
- <201104262346.58046.rjw@sisk.pl>
+	Tue, 26 Apr 2011 18:12:16 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+Thread-Topic: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+Thread-Index: AQHMBCwn1s6JBZAG00mF/Gjulq2PA5RxAJqA//+U6ACAAIDEgP//nuKA
+Date: Tue, 26 Apr 2011 22:12:15 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD0B4@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-18-git-send-email-kys@microsoft.com>
+ <20110426194031.GD17467@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481DD061@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110426205805.GC20381@suse.de>
+In-Reply-To: <20110426205805.GC20381@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104262346.58046.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > > And that's exactly what should be done.  Have a user space process controlling
-> > > that, because avoiding to thaw user space doesn't buy us almost
-> > > anything.
-> > 
-> > That makes Zaurus implement different user-kernel interface than PC
-> > class machine, because of hardware quirk.
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, April 26, 2011 4:58 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
+> PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
 > 
-> Let me say that again: If Zaurus needs to resume everything except for
-> user space periodically to monitor the battery charger, I'm not sure if our
-> suspend interface is the right one for it in the first place.
-
-Well, Zaurus does not need to resume everything. SPI+charger code is
-enough, and that would be preffered. No need to touch disk etc.
-
-> It seriously looks like a workaround for the lack of appropriately implemented
-> runtime PM, just like the Android's opportunistic suspend.
-
-No, not really. I'm running standard Debian; I do not want/need
-anything like opportunistic suspend.
-
-> > > Now, I know that it's probably easier to modify the kernel than to write
-> > > a user space tool for that, test it and so on, but "easier" is not necessarily
-> > > "better".
-> > 
-> > It is easier, allows us to keep same user-kernel interface on PC and
-> > Zaurus, and is compatible with 2.6.38.
-> > 
-> > Heck, I'm used to typing "echo mem > /sys/power/state". I should not
-> > have to learn different interface just because Zaurus does not have
-> > proper hardware charger.
+> On Tue, Apr 26, 2011 at 08:23:25PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@suse.de]
+> > > Sent: Tuesday, April 26, 2011 3:41 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree
+> Consulting
+> > > PVT LTD); Hank Janssen
+> > > Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+> > >
+> > > On Tue, Apr 26, 2011 at 09:20:35AM -0700, K. Y. Srinivasan wrote:
+> > > > Now, get rid of struct hv_bus. We will no longer be embedding
+> > > > struct bus_type.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > > ---
+> > > >  drivers/staging/hv/vmbus_drv.c |   33 ++++++++++++++-------------------
+> > > >  1 files changed, 14 insertions(+), 19 deletions(-)
+> > > >
+> > > >
+> > > > -	hv_bus.bus.name = driver_name;
+> > > > +	hv_bus.name = driver_name;
+> > >
+> > > Why are you setting the name of the bus again?  Shouldn't this line be
+> > > removed?
+> >
+> > You are absolutely right. Since this redundancy was in the existing
+> > code, should I send you a separate patch to fix this?
 > 
-> No, this interface should not be used on Zaurus at all.  It's not mean for
-> that and while you can hack it to kind of work, it still is hacking rather
-> than designing things.
+> A separate one after this series is fine.
 
-Why not? I want the Zaurus to sleep. Why should I have to know how its
-charging unit works? Why should I use different interface than on PC?
-I want it to suspend, put it into backpack and move...
+Done; I have sent the patch out.
 
-> > Bootloader takes care of battery in that case.
-> 
-> So the difference is that we let someone else worry.  Cool. :-)
+Regards,
 
-Yes.
+K. Y
 
-> > Ok, see the spitz_should_wakeup() function in arch/arm/mach-pxa/* and
-> > should_wakeup() usage.
-> 
-> OK, I will.
 
-Thanks.
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
