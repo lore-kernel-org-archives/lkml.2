@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab1DZSwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 14:52:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33299 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1DZSwi convert rfc822-to-8bit (ORCPT
+	id S1752888Ab1DZSz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:55:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43286 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752213Ab1DZSz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 14:52:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L7veKMuFF4gP/Cy6Ow1SZN0R4wyZZCRYkWMQJ/bbGnWrd4krawWK6PLImqF6GrNpv6
-         tGpyo16iEh4L3vkXzXWEwmoiK+kBW5eMh+uY27Nn563ycnjUjs1OXJzRCFGXYAaAjw08
-         vNhF1tn+PsHxI2Og1KfWoRepHO6m2LOqJ6gh8=
+	Tue, 26 Apr 2011 14:55:57 -0400
+Date: Tue, 26 Apr 2011 14:55:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Valdis.Kletnieks@vt.edu
+cc: Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-input@vger.kernel.org>
+Subject: Re: Wonkiness with keyboard adapter - not sure if it's in USB or
+ input systems
+In-Reply-To: <11501.1303832820@localhost>
+Message-ID: <Pine.LNX.4.44L0.1104261453300.2035-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1303488341.6225.2.camel@gandalf.stny.rr.com>
-References: <20110421022825.535486725@goodmis.org>
-	<20110421023737.290712238@goodmis.org>
-	<4DB19A1E.8070806@bitwagon.com>
-	<BANLkTim8mBo3fz9f=quABj-=ycpA+G7q1g@mail.gmail.com>
-	<1303488341.6225.2.camel@gandalf.stny.rr.com>
-Date: Tue, 26 Apr 2011 15:52:37 -0300
-Message-ID: <BANLkTinENP=hpjZBMFp0Y7EKGH8u-gewPA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to use
- Linux style comparisons
-From: Thiago Farina <tfransosi@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: John Reiser <jreiser@bitwagon.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 26 Apr 2011 Valdis.Kletnieks@vt.edu wrote:
 
+> Running 2.6.39-rc1-mmotm at the moment on a Dell Latitude E6500, that wants an
+> external USB keyboard/mouse and monitor when it's in its docking station in the
+> office. I have an old Microsoft Natural keyboard that has a PS/2 connector, but
+> I like the tactile feel so I didn't want to get rid of it.  So we recently got
+> some PS2->USB adapters, which appear in lsusb as follows:
+> 
+> Bus 001 Device 006: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
+> 
+> Now, when I first power up the laptop in the docking station, it *does* see the
+> keyboard just fine, and Grub is able to talk to it, and everything works (this
+> particular boot, I was able to hit the space bar to get to the Grub menu, use
+> arrow up/down to move between entries, all looked good).  So it isn't like the
+> device needs any initialization above and beyond what the BIOS is doing at
+> initial power-on.
+> 
+> However, when the Linux kernel starts up, it sees the adapter, but doesn't
+> recognize key presses until I disconnect and then reconnect the keyboard:
+> 
+> [    5.733323] usb 1-4.2: new low speed USB device number 6 using ehci_hcd
+> [    5.827679] usb 1-4.2: New USB device found, idVendor=0e8f, idProduct=0020
+> [    5.827692] usb 1-4.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+> [    5.827701] usb 1-4.2: Product: PS2toUSB Adapter
+> [    5.827708] usb 1-4.2: Manufacturer: GASIA
+> [    5.846069] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:1a.7/usb1/1-4/1-4.2/1-4.2:1.0/input/input12
+> [    5.847894] generic-usb 0003:0E8F:0020.0002: input,hidraw1: USB HID v1.10 Keyboard [GASIA PS2toUSB Adapter] on usb-0000:00:1a.7-4.2/input0
+> [    5.855346] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:1a.7/usb1/1-4/1-4.2/1-4.2:1.1/input/input13
+> [    5.857351] generic-usb 0003:0E8F:0020.0003: input,hidraw2: USB HID v1.10 Mouse [GASIA PS2toUSB Adapter] on usb-0000:00:1a.7-4.2/input1
+> [  134.879149] dracut: Scanning devices dm-0  for LVM volume groups
+> 
+> root VG is LUKS-encrypted, so the initrd waits till the passphrase is entered.
+> That didn't work at 6-8 seconds in when I got the prompt - type keys, no
+> response from dracut.  I gave it some time, then about 2 mins after boot I
+> disconnected and reconnected the keyboard's PS2 connector from the adapter, and
+> then it worked fine, and I was able to enter the passphrase and dracut was
+> happy.
+> 
+> Not sure what to make of the fact that it registers the input devices right
+> off, but I see nothing in the dmesg output that the keyboard was unplugged/
+> replugged.
+> 
+> I have zero evidence that this device ever worked, as I only got it a few days
+> ago and haven't had a chance to try anything older than 39-rc.
+> 
+> Any idea/suggestions?
 
-On Fri, Apr 22, 2011 at 1:05 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2011-04-22 at 12:52 -0300, Thiago Farina wrote:
->> On Fri, Apr 22, 2011 at 12:09 PM, John Reiser <jreiser@bitwagon.com> wrote:
->> > I consider "0==strcmp(" to be an idiom.  Too often "strcmp(...) == 0"
->> > overflows my mental stack because of the typographic width of the operands
->> > in the source code.  If you still object in this case then please consider
->> > using something like:
->> >        #define strequ(a,b) (strcmp((a), (b)) == 0)
->> > or
->> >        static int strequ(char const *a, char const *b)
->> >        {
->> >                return strcmp(a, b) == 0;
->> >        }
->> > which names the idiom.
->> >
->>
->> Maybe str_eq? Or even just streq? And also just !strcmp(a,b).
->
-> streq() is something I woudn't mind.
->
-> I've too often confused !strcmp(a,b) as "!streq()" which is not the
-> case. Which is why I always use strcmp(a,b) == 0, which to me I see the
-> '==' as eq. I also consider strcmp(a,b) != 0 as not equal. Again, the
-> mind that sees "==" and "!=" can just translate that to human language.
-> Where !strcmp() is just gibberish ;)
+Have you tried testing the adapter by plugging it in after the system 
+is running?
 
-I've sent a patch to linux-kernel adding streq macro as suggested and
-copied you Steven.
+Testing in an initrd environment is rather difficult...
 
-Best regards,
+Alan Stern
+
