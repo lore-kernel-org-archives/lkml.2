@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab1DZVUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:20:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22884 "EHLO mga02.intel.com"
+	id S932498Ab1DZVO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:14:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504Ab1DZVPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:15:00 -0400
+	id S932366Ab1DZVOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831961"
+   d="scan'208";a="634483687"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: Trond.Myklebust@netapp.com, gregkh@suse.de, ak@linux.intel.com,
+To: Paul.Friedrich@hameg.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [89/106] NFS: nfs_wcc_update_inode() should set nfsi->attr_gencount
-Message-Id: <20110426211411.58C7A3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:11 -0700 (PDT)
+Subject: [PATCH] [69/106] USB: ftdi_sio: add ids for Hameg HO720 and HO730
+Message-Id: <20110426211350.6853D3E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,84 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Paul Friedrich <Paul.Friedrich@hameg.com>
 
-commit 27dc1cd3ad9300f81e1219e5fc305d91d85353f8 upstream.
+commit c53c2fab40cf16e13af66f40bfd27200cda98d2f upstream.
 
-If the call to nfs_wcc_update_inode() results in an attribute update, we
-need to ensure that the inode's attr_gencount gets bumped too, otherwise
-we are not protected against races with other GETATTR calls.
+usb serial: ftdi_sio: add two missing USB ID's for Hameg interfaces HO720
+and HO730
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/nfs/inode.c |   26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
-Index: linux-2.6.35.y/fs/nfs/inode.c
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/nfs/inode.c
-+++ linux-2.6.35.y/fs/nfs/inode.c
-@@ -811,9 +811,10 @@ out:
- 	return ret;
- }
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio.c
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
+@@ -787,6 +787,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO720_PID) },
++	{ USB_DEVICE(FTDI_VID, HAMEG_HO730_PID) },
+ 	{ USB_DEVICE(FTDI_VID, HAMEG_HO870_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_GENERIC_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio_ids.h
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+@@ -300,6 +300,8 @@
+  * Hameg HO820 and HO870 interface (using VID 0x0403)
+  */
+ #define HAMEG_HO820_PID			0xed74
++#define HAMEG_HO730_PID			0xed73
++#define HAMEG_HO720_PID			0xed72
+ #define HAMEG_HO870_PID			0xed71
  
--static void nfs_wcc_update_inode(struct inode *inode, struct nfs_fattr *fattr)
-+static unsigned long nfs_wcc_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- {
- 	struct nfs_inode *nfsi = NFS_I(inode);
-+	unsigned long ret = 0;
- 
- 	if ((fattr->valid & NFS_ATTR_FATTR_PRECHANGE)
- 			&& (fattr->valid & NFS_ATTR_FATTR_CHANGE)
-@@ -821,25 +822,32 @@ static void nfs_wcc_update_inode(struct 
- 		nfsi->change_attr = fattr->change_attr;
- 		if (S_ISDIR(inode->i_mode))
- 			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+		ret |= NFS_INO_INVALID_ATTR;
- 	}
- 	/* If we have atomic WCC data, we may update some attributes */
- 	if ((fattr->valid & NFS_ATTR_FATTR_PRECTIME)
- 			&& (fattr->valid & NFS_ATTR_FATTR_CTIME)
--			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime))
--			memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
-+			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime)) {
-+		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
-+		ret |= NFS_INO_INVALID_ATTR;
-+	}
- 
- 	if ((fattr->valid & NFS_ATTR_FATTR_PREMTIME)
- 			&& (fattr->valid & NFS_ATTR_FATTR_MTIME)
- 			&& timespec_equal(&inode->i_mtime, &fattr->pre_mtime)) {
--			memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
--			if (S_ISDIR(inode->i_mode))
--				nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
-+		if (S_ISDIR(inode->i_mode))
-+			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+		ret |= NFS_INO_INVALID_ATTR;
- 	}
- 	if ((fattr->valid & NFS_ATTR_FATTR_PRESIZE)
- 			&& (fattr->valid & NFS_ATTR_FATTR_SIZE)
- 			&& i_size_read(inode) == nfs_size_to_loff_t(fattr->pre_size)
--			&& nfsi->npages == 0)
--			i_size_write(inode, nfs_size_to_loff_t(fattr->size));
-+			&& nfsi->npages == 0) {
-+		i_size_write(inode, nfs_size_to_loff_t(fattr->size));
-+		ret |= NFS_INO_INVALID_ATTR;
-+	}
-+	return ret;
- }
- 
- /**
-@@ -1153,7 +1161,7 @@ static int nfs_update_inode(struct inode
- 			| NFS_INO_REVAL_PAGECACHE);
- 
- 	/* Do atomic weak cache consistency updates */
--	nfs_wcc_update_inode(inode, fattr);
-+	invalid |= nfs_wcc_update_inode(inode, fattr);
- 
- 	/* More cache consistency checks */
- 	if (fattr->valid & NFS_ATTR_FATTR_CHANGE) {
+ /*
