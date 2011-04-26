@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab1DZN7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:59:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41798 "EHLO mx2.suse.de"
+	id S1756070Ab1DZOAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:00:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47156 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754981Ab1DZN7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:59:44 -0400
-Date: Tue, 26 Apr 2011 14:59:40 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20110426135940.GE4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
- <1303803414-5937-3-git-send-email-mgorman@suse.de>
- <20110426213758.450f6f49@notabene.brown>
+	id S1754361Ab1DZOAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:00:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,268,1301900400"; 
+   d="scan'208";a="425690222"
+Date: Tue, 26 Apr 2011 16:00:02 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com, Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCHv4 1/4] MFD: TPS65910: Add new mfd device for TPS65910
+Message-ID: <20110426140001.GA3175@sortiz-mobl>
+References: <DFDB2D0D-E7B1-4E1E-A3CC-D61052D42E54@slimlogic.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110426213758.450f6f49@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <DFDB2D0D-E7B1-4E1E-A3CC-D61052D42E54@slimlogic.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 09:37:58PM +1000, NeilBrown wrote:
-> On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Hi Jorge,
+
+On Thu, Apr 21, 2011 at 09:35:43AM -0500, Jorge Eduardo Candelaria wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
 > 
-> > +		/*
-> > +		 * If there are full empty slabs and we were not forced to
-> > +		 * allocate a slab, mark this one !pfmemalloc
-> > +		 */
-> > +		l3 = cachep->nodelists[numa_mem_id()];
-> > +		if (!list_empty(&l3->slabs_free) && force_refill) {
-> > +			struct slab *slabp = virt_to_slab(objp);
-> > +			slabp->pfmemalloc = false;
-> > +			clear_obj_pfmemalloc(&objp);
-> > +			check_ac_pfmemalloc(cachep, ac);
-> > +			return objp;
-> > +		}
-> 
-> The comment doesn't match the code.  I think you need to remove the words
-> "full" and "not" assuming the code is correct which it probably is...
-> 
+> The TPS65910 chip is a power management IC for multimedia and handheld
+> devices. It contains the following components:
+The patch looks mostly good to me.
+You may want to add a locked tps65910_set|clear_bits() API, since it seems
+you're doing many read(reg), write(reg) sequences in the GPIO driver. That
+could also be directly used by the regulator one.
 
-I'll fix up the comment, you're right, it's confusing.
-
-> But the code seems to be much more complex than Peter's original, and I don't
-> see the gain.
-> 
-
-You're right, it is more complex.
-
-> Peter's code had only one 'reserved' flag for each kmem_cache. 
-
-The reserve was set in a per-cpu structure so there was a "lag" time
-before that information was available to other CPUs. Fine on smaller
-machines but a bit more of a problem today. 
-
-> You seem to
-> have one for every slab.  I don't see the point.
-> It is true that yours is in some sense more fair - but I'm not sure the
-> complexity is worth it.
-> 
-
-More fairness was one of the objects.
-
-> Was there some particular reason you made the change?
-> 
-
-This version survives under considerably more stress than Peter's
-original version did without requiring the additional complexity of
-memory reserves.
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
