@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1DZOgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:36:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53988 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1DZOgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:36:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,268,1301900400"; 
-   d="scan'208";a="425712925"
-Date: Tue, 26 Apr 2011 22:36:47 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: "Chen, Tim C" <tim.c.chen@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: [PATCH 3/3 with new changelog] readahead: trigger mmap sequential
- readahead on PG_readahead
-Message-ID: <20110426143647.GA14604@localhost>
-References: <20110426094352.030753173@intel.com>
- <20110426094859.591091128@intel.com>
-MIME-Version: 1.0
+	id S1753726Ab1DZOkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:40:08 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:54411 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab1DZOkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:40:07 -0400
+Date: Tue, 26 Apr 2011 16:34:36 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, stefano.stabellini@eu.citrix.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
+Message-ID: <20110426143436.GB27417@router-fw-old.local.net-space.pl>
+References: <20110422212545.GA22846@router-fw-old.local.net-space.pl> <20110426134242.GA26275@dumpdata.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110426094859.591091128@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110426134242.GA26275@dumpdata.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously the mmap sequential readahead is triggered by updating
-ra->prev_pos on each page fault and compare it with current page offset.
+On Tue, Apr 26, 2011 at 09:42:42AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Apr 22, 2011 at 11:25:45PM +0200, Daniel Kiper wrote:
+> > Added missed Signed-off-by line.
+> >
+> > After a lot of debugging and long reading of Linux Kernel and Xen code
+> > finally I killed deeply hidden bug in pv-grub. Details below.
+> > Additionally, I am CC'ing this e-mail to LKML because this issue
+> > looks like Linux Kernel problem, however, it is not.
+> >
+> > This patch applies to Xen Ver. 4.0, Xen Ver. 4.1 and unstable tree.
+> >
+> > # HG changeset patch
+> > # User dkiper@net-space.pl
+> > # Date 1303474763 -7200
+> > # Node ID b33bf24be129b7b9cd2248460beb1298088c6af5
+> > # Parent  dbf2ddf652dc3dd927447e79ef4bc586de55d708
+> > Introduction of Linux Kernel git commit ceefccc93932b920a8ec6f35f596db05202a12fe
+> > (x86: default CONFIG_PHYSICAL_START and CONFIG_PHYSICAL_ALIGN to 16 MB) revealed
+> > deeply hidden bug in pv-grub. During kernel load stage dom->p2m_host[] list has
+> > been incorrectly initialized.
+> >
+> > At the beginning of kernel load stage dom->p2m_host[] list is populated with
+> > current pfn->mfn layout. Later during memory allocation (memory is allocated
+> > page by page in kexec_allocate()) page order is changed to establish linear
+> > layout in new domain. It is done by exchanging subsequent mfns with newly
+> > allocated mfns. dom->p2m_host[] list is indexed by currently requested pfn
+> > (it is incremented from 0) and pfn of newly allocated paged. If pfn of newly
+> > allocated page is less than currently requested pfn then relevant earlier
+> > allocated mfn is overwritten which leads to domain crash later. This patch
+> > fix that issue. If pfn of newly allocated page is less then currently
+> > requested pfn then relevant pfn/mfn pair is properly calculated and usual
+> > exchange occurs later.
+>
+> Nice! I presume this fixes the issue you had at the Xen Hack-O-Thon with
+> your guest right?
 
-In the mosbench exim benchmark which does multi-threaded page faults on
-shared struct file, the ra->mmap_miss and ra->prev_pos updates are found
-to cause excessive cache line bouncing on tmpfs, which actually disabled
-readahead totally (shmem_backing_dev_info.ra_pages == 0).
+Yes, it does. It was very difficult to discover because that
+issue overlapped with other memory management issues which
+were coming out last time. Currently, I am working on time
+optimized version of that patch.
 
-So remove the ra->prev_pos recording, and instead tag PG_readahead to
-trigger the possible sequential readahead. It's not only more simple,
-but also will work more reliably on concurrent reads on shared struct file.
-
-Tested-by: Tim Chen <tim.c.chen@intel.com>
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/filemap.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- linux-next.orig/mm/filemap.c	2011-04-23 16:52:21.000000000 +0800
-+++ linux-next/mm/filemap.c	2011-04-24 09:59:08.000000000 +0800
-@@ -1531,8 +1531,7 @@ static void do_sync_mmap_readahead(struc
- 	if (!ra->ra_pages)
- 		return;
- 
--	if (VM_SequentialReadHint(vma) ||
--			offset - 1 == (ra->prev_pos >> PAGE_CACHE_SHIFT)) {
-+	if (VM_SequentialReadHint(vma)) {
- 		page_cache_sync_readahead(mapping, ra, file, offset,
- 					  ra->ra_pages);
- 		return;
-@@ -1555,7 +1554,7 @@ static void do_sync_mmap_readahead(struc
- 	ra_pages = max_sane_readahead(ra->ra_pages);
- 	ra->start = max_t(long, 0, offset - ra_pages / 2);
- 	ra->size = ra_pages;
--	ra->async_size = 0;
-+	ra->async_size = ra_pages / 4;
- 	ra_submit(ra, mapping, file);
- }
- 
-@@ -1661,7 +1660,6 @@ retry_find:
- 		return VM_FAULT_SIGBUS;
- 	}
- 
--	ra->prev_pos = (loff_t)offset << PAGE_CACHE_SHIFT;
- 	vmf->page = page;
- 	return ret | VM_FAULT_LOCKED;
- 
+Daniel
