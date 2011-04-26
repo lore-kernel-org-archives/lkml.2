@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab1DZTMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:12:35 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45162 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab1DZTMd (ORCPT
+	id S1755182Ab1DZTNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:13:18 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49704 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab1DZTNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:12:33 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: Wonkiness with keyboard adapter - not sure if it's in USB or input systems
-In-Reply-To: Your message of "Tue, 26 Apr 2011 14:55:57 EDT."
-             <Pine.LNX.4.44L0.1104261453300.2035-100000@iolanthe.rowland.org>
-From: Valdis.Kletnieks@vt.edu
-References: <Pine.LNX.4.44L0.1104261453300.2035-100000@iolanthe.rowland.org>
+	Tue, 26 Apr 2011 15:13:17 -0400
+Subject: Re: [BUG] perf and kmemcheck : fatal combination
+From: Pekka Enberg <penberg@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Vegard Nossum <vegardno@ifi.uio.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1303821188.20212.264.camel@twins>
+References: <1303747731.2747.182.camel@edumazet-laptop>
+	 <1303803525.20212.20.camel@twins> <20110426080443.GA806@elte.hu>
+	 <1303808257.3012.3.camel@edumazet-laptop>
+	 <1303811635.3358.21.camel@edumazet-laptop>
+	 <BANLkTinOUFrJuauoxnRTkvrhZRxdYd05Mw@mail.gmail.com>
+	 <1303813668.3358.22.camel@edumazet-laptop>
+	 <1303820855.3358.49.camel@edumazet-laptop>
+	 <1303821188.20212.264.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 26 Apr 2011 22:13:12 +0300
+Message-ID: <1303845192.15231.113.camel@jaguar>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1303845136_5095P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Date: Tue, 26 Apr 2011 15:12:16 -0400
-Message-ID: <23191.1303845136@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4DB71911.012B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1303845136_5095P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 2011-04-26 at 14:33 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-04-26 at 14:27 +0200, Eric Dumazet wrote:
+> > Thats far from trivial, maybe because we dont have NOTRACK api for
+> > percpu allocations ? 
+> 
+> We can't use per-cpu allocations from NMI context because of the same
+> problem, per-cpu uses vmalloc and vmalloc needs faults. Hence that
+> shouldn't be a problem.
+> 
+> It looks like you covered most of it though, the buffer and the
+> callchain stuff, aside from that it should only use some static data.
+> 
+> Pekka, what does kmemcheck do for .data and .bss things?
 
-On Tue, 26 Apr 2011 14:55:57 EDT, Alan Stern said:
-> On Tue, 26 Apr 2011 Valdis.Kletnieks@vt.edu wrote:
-
-> > Bus 001 Device 006: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
-
-> Have you tried testing the adapter by plugging it in after the system 
-> is running?
-
-It works fine at the Grub screen.
-
-It *doesn't* work for the kernel when it initially starts up, even though a few
-seconds ago the hardware worked just fine.
-
-It *does* work after I've unplugged/replugged it - I've tested both the USB
-side and the PS2 side, in either case it starts working.
-
-I'm not sure what difference "plug it in after it's running" and "unplug/
-replug" will have. I suppose I could test that, but I'm suspecting the results
-will be "it works fine after plugging it in once the kernel is up".
-
-
---==_Exmh_1303845136_5095P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNtxkQcC3lWbTT17ARAhOxAKCT3S9UY9IRkLRocak5M5Y16ZwvOACgrvij
-I9nkCLDCmulzJDMafWyQe7k=
-=eOQ1
------END PGP SIGNATURE-----
-
---==_Exmh_1303845136_5095P--
+No, kmemcheck is only active for memory allocated with slab and the page
+allocator .
 
