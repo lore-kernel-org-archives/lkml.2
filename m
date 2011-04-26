@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab1DZUi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:38:57 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:43791 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754901Ab1DZUi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:38:56 -0400
-Date: Tue, 26 Apr 2011 22:38:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for
- device PM.
-Message-ID: <20110426203853.GC27140@elf.ucw.cz>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
- <1303781471-2477-1-git-send-email-myungjoo.ham@samsung.com>
- <201104261347.21811.rjw@sisk.pl>
- <20110426131737.GA13597@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110426131737.GA13597@suse.de>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758072Ab1DZUjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:39:22 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:42529 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754901Ab1DZUjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 16:39:21 -0400
+Subject: Re: [PATCH 2/3] flex_arrays: allow zero length flex arrays
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: steffen.klassert@secunet.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
+In-Reply-To: <20110426014537.1740.68472.stgit@paris.rdu.redhat.com>
+References: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
+	 <20110426014537.1740.68472.stgit@paris.rdu.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 26 Apr 2011 13:38:52 -0700
+Message-ID: <1303850332.9308.17366.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > To conclude, I'm not sure about the approach.  In particular, I'm not sure
-> > if the benefit is worth the effort and the resulting complications (ie. the
-> > possibility of having to deal with wakeup signals not requested by user
-> > space) seem to be a bit too far reaching.
-> > 
-> > Greg, what do you think?
+On Mon, 2011-04-25 at 21:45 -0400, Eric Paris wrote:
+> Just like kmalloc will allow one to allocate a 0 length segment of memory
+> flex arrays should do the same thing.  It should bomb if you try to use
+> something, but it should at least allow the allocation.
 > 
-> I agree with you in that I don't think that this type of feature is
-> valid at the moment.
+> Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+> 
+>  lib/flex_array.c |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/flex_array.c b/lib/flex_array.c
+> index 0c33b24..2554a5f 100644
+> --- a/lib/flex_array.c
+> +++ b/lib/flex_array.c
+> @@ -253,9 +253,16 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+>  	unsigned int end;
+>  	struct flex_array_part *part;
+> 
+> +	if (!fa->total_nr_elements && !start)
+> +		return 0;
 
-Our current "solution" is low level suspend code on Zaurus directly
-looking at charger state and doing the "wakeup or not" decision by hand. 
+I guess it works either way, but I'd say that checking for a zero 'len'
+prealloc would be more important (and meaningful) than checking a zero
+'start'.
 
-> I don't understand why our current situation doesn't work, what are we
-> lacking that is needed for these systems that we have not seen
-> before?
+If someone passed start=0 and len=44 for a fa->total_nr_elements=0
+array, I'd expect -ENOSPC, but this would return 0.
 
-It works, but it is ugly; and it seems samsung now needs similar
-hacks.
+-- Dave
 
-> What is the root problem that this is trying to solve?
-
-It is trying to fix machines that need to run periodic kernel tasks
-even when user asked them to sleep. Zaurus needs to periodicaly wake
-up to be able to charge battery in s2ram state, for example.
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
