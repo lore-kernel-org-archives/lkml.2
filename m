@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab1DZVbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:31:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60294 "EHLO mga11.intel.com"
+	id S932207Ab1DZVOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:14:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58780 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932214Ab1DZVOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:17 -0400
+	id S1758761Ab1DZVN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="684327214"
+   d="scan'208";a="738831689"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: bp@amd64.org, greg@kroah.com, borislav.petkov@amd.com, stable@kernel.org,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [42/106] x86, microcode, AMD: Extend ucode size verification
-Message-Id: <20110426211321.EC7513E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:21 -0700 (PDT)
+To: segoon@openwall.com, kaber@trash.net, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [31/106] netfilter: arp_tables: fix infoleak to userspace
+Message-Id: <20110426211310.5F4A33E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,130 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+commit 42eab94fff18cb1091d3501cd284d6bd6cc9c143 upstream.
 
-Upstream commit: 44d60c0f5c58c2168f31df9a481761451840eb54
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
 
-The different families have a different max size for the ucode patch,
-adjust size checking to the family we're running on. Also, do not
-vzalloc the max size of the ucode but only the actual size that is
-passed on from the firmware loader.
+The first bug was introduced before the git epoch;  the second is
+introduced by 6b7d31fc (v2.6.15-rc1);  the third is introduced by
+6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
+CAP_NET_ADMIN.
 
-Cc: <stable@kernel.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kernel/microcode_amd.c |   63 +++++++++++++++++++++++++++-------------
- 1 file changed, 44 insertions(+), 19 deletions(-)
+ net/ipv4/netfilter/arp_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Index: linux-2.6.35.y/arch/x86/kernel/microcode_amd.c
+Index: linux-2.6.35.y/net/ipv4/netfilter/arp_tables.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/microcode_amd.c
-+++ linux-2.6.35.y/arch/x86/kernel/microcode_amd.c
-@@ -66,7 +66,6 @@ struct microcode_amd {
- 	unsigned int			mpb[0];
- };
+--- linux-2.6.35.y.orig/net/ipv4/netfilter/arp_tables.c
++++ linux-2.6.35.y/net/ipv4/netfilter/arp_tables.c
+@@ -1081,6 +1081,7 @@ static int do_replace(struct net *net, c
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
--#define UCODE_MAX_SIZE			2048
- #define UCODE_CONTAINER_SECTION_HDR	8
- #define UCODE_CONTAINER_HEADER_SIZE	12
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1502,6 +1503,7 @@ static int compat_do_replace(struct net 
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
-@@ -125,6 +124,37 @@ static int get_matching_microcode(int cp
- 	return 1;
- }
- 
-+static unsigned int verify_ucode_size(int cpu, const u8 *buf, unsigned int size)
-+{
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	unsigned int max_size, actual_size;
-+
-+#define F1XH_MPB_MAX_SIZE 2048
-+#define F14H_MPB_MAX_SIZE 1824
-+#define F15H_MPB_MAX_SIZE 4096
-+
-+	switch (c->x86) {
-+	case 0x14:
-+		max_size = F14H_MPB_MAX_SIZE;
-+		break;
-+	case 0x15:
-+		max_size = F15H_MPB_MAX_SIZE;
-+		break;
-+	default:
-+		max_size = F1XH_MPB_MAX_SIZE;
-+		break;
-+	}
-+
-+	actual_size = buf[4] + (buf[5] << 8);
-+
-+	if (actual_size > size || actual_size > max_size) {
-+		pr_err("section size mismatch\n");
-+		return 0;
-+	}
-+
-+	return actual_size;
-+}
-+
- static int apply_microcode_amd(int cpu)
- {
- 	u32 rev, dummy;
-@@ -162,11 +192,11 @@ static int get_ucode_data(void *to, cons
- }
- 
- static void *
--get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
-+get_next_ucode(int cpu, const u8 *buf, unsigned int size, unsigned int *mc_size)
- {
--	unsigned int total_size;
-+	unsigned int actual_size = 0;
- 	u8 section_hdr[UCODE_CONTAINER_SECTION_HDR];
--	void *mc;
-+	void *mc = NULL;
- 
- 	if (get_ucode_data(section_hdr, buf, UCODE_CONTAINER_SECTION_HDR))
- 		return NULL;
-@@ -176,23 +206,18 @@ get_next_ucode(const u8 *buf, unsigned i
- 		return NULL;
- 	}
- 
--	total_size = (unsigned long) (section_hdr[4] + (section_hdr[5] << 8));
--
--	if (total_size > size || total_size > UCODE_MAX_SIZE) {
--		pr_err("error: size mismatch\n");
-+	actual_size = verify_ucode_size(cpu, buf, size);
-+	if (!actual_size)
- 		return NULL;
--	}
- 
--	mc = vmalloc(UCODE_MAX_SIZE);
--	if (mc) {
--		memset(mc, 0, UCODE_MAX_SIZE);
--		if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR,
--				   total_size)) {
--			vfree(mc);
--			mc = NULL;
--		} else
--			*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
--	}
-+	mc = vmalloc(actual_size);
-+	if (!mc)
-+ 		return NULL;
-+
-+	memset(mc, 0, actual_size);
-+	get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, actual_size);
-+	*mc_size = actual_size + UCODE_CONTAINER_SECTION_HDR;
-+	
- 	return mc;
- }
- 
-@@ -258,7 +283,7 @@ generic_load_microcode(int cpu, const u8
- 		unsigned int uninitialized_var(mc_size);
- 		struct microcode_header_amd *mc_header;
- 
--		mc = get_next_ucode(ucode_ptr, leftover, &mc_size);
-+		mc = get_next_ucode(cpu, ucode_ptr, leftover, &mc_size);
- 		if (!mc)
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1754,6 +1756,7 @@ static int do_arpt_get_ctl(struct sock *
+ 			ret = -EFAULT;
  			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
  
+ 		try_then_request_module(xt_find_revision(NFPROTO_ARP, rev.name,
+ 							 rev.revision, 1, &ret),
