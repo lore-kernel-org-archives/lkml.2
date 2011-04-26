@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1DZMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:30:26 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57234 "EHLO
+	id S1752652Ab1DZM0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:26:25 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57139 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab1DZM02 (ORCPT
+	with ESMTP id S1751568Ab1DZM0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:26:28 -0400
+	Tue, 26 Apr 2011 08:26:23 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 06/21] drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing." has been added to staging queue
-Date: Tue, 26 Apr 2011 14:26:26 +0200
-Message-Id: <1303820786-3552-1-git-send-email-stefan.bader@canonical.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 02/21] drm/radeon/kms: MC vram map needs to be >= pci aperture size" has been added to staging queue
+Date: Tue, 26 Apr 2011 14:26:19 +0200
+Message-Id: <1303820779-3424-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 06/21] drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing.
+    Subject: [PATCH 02/21] drm/radeon/kms: MC vram map needs to be >= pci aperture size
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -35,52 +36,44 @@ Thanks.
 
 ------
 
->From cb5ba94f9c8bb5e6b9c7c955aca94a84881bfbc0 Mon Sep 17 00:00:00 2001
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Date: Thu, 12 Aug 2010 09:35:00 +0100
-Subject: [PATCH 06/21] drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing.
+>From 4da7981edaa0dbc29b78a3cc5b9d6feb4c5b4ae3 Mon Sep 17 00:00:00 2001
+From: Alex Deucher <alexdeucher@gmail.com>
+Date: Mon, 25 Oct 2010 19:44:00 -0400
+Subject: [PATCH 02/21] drm/radeon/kms: MC vram map needs to be >= pci aperture size
 
-commit 0ddc1289f3ffd779779ddd3922f26ae7d0a21604 upstream.
+commit b7d8cce5b558e0c0aa6898c9865356481598b46d upstream.
 
-Just makes sure that writes are not being aliased by the CPU cache and
-do make it out to main memory.
+The vram map in the radeon memory controller needs to be
+>= the pci aperture size.  Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=28402
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=24977
+The problematic cards in the above bug have 64 MB of vram,
+but the pci aperture is 128 MB and the MC vram map was only
+64 MB.  This can lead to hangs.
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_overlay.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/radeon/r100.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_overlay.c b/drivers/gpu/drm/i915/intel_overlay.c
-index ed4058e..f240e17 100644
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -1371,6 +1371,12 @@ void intel_setup_overlay(struct drm_device *dev)
-                         goto out_free_bo;
-                 }
- 		overlay->flip_addr = overlay->reg_bo->gtt_offset;
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 947570c..b969b7d 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -1918,6 +1918,9 @@ void r100_vram_init_sizes(struct radeon_device *rdev)
+ 		rdev->mc.vram_location = 0xFFFFFFFFUL;
+ 		 /* Fix for RN50, M6, M7 with 8/16/32(??) MBs of VRAM -
+ 		  * Novell bug 204882 + along with lots of ubuntu ones */
++		if (rdev->mc.aper_size > config_aper_size)
++			config_aper_size = rdev->mc.aper_size;
 +
-+		ret = i915_gem_object_set_to_gtt_domain(reg_bo, true);
-+		if (ret) {
-+                        DRM_ERROR("failed to move overlay register bo into the GTT\n");
-+                        goto out_unpin_bo;
-+                }
- 	} else {
- 		ret = i915_gem_attach_phys_object(dev, reg_bo,
- 				I915_GEM_PHYS_OVERLAY_REGS);
-@@ -1402,6 +1408,8 @@ void intel_setup_overlay(struct drm_device *dev)
- 	DRM_INFO("initialized overlay support\n");
- 	return;
-
-+out_unpin_bo:
-+	i915_gem_object_unpin(reg_bo);
- out_free_bo:
- 	drm_gem_object_unreference(reg_bo);
- out_free:
+ 		if (config_aper_size > rdev->mc.real_vram_size)
+ 			rdev->mc.mc_vram_size = config_aper_size;
+ 		else
 --
 1.7.0.4
 
