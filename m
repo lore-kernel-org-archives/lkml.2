@@ -1,260 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1DZIig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 04:38:36 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:6356
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751049Ab1DZIie (ORCPT
+	id S1752252Ab1DZIqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 04:46:35 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:51913 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab1DZIqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 04:38:34 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz8275bh15d4Rz32i668h839h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LK9405-01-5MX-02
-X-M-MSG: 
-Date: Tue, 26 Apr 2011 10:38:27 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Joe Perches <joe@perches.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: SVM: Make dump_vmcb static, reduce text
-Message-ID: <20110426083827.GC19759@amd.com>
-References: <78024a3a74353a4d73be69b4e4f42da942b8fe15.1303707337.git.joe@perches.com>
+	Tue, 26 Apr 2011 04:46:34 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Richard Purdie <rpurdie@rpsys.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Date: Tue, 26 Apr 2011 14:16:04 +0530
+Subject: [PATCHv1 -next] BACKLIGHT: Backlight module for DA9052 PMIC driver
+Thread-Topic: [PATCHv1 -next] BACKLIGHT: Backlight module for DA9052 PMIC
+ driver
+Thread-Index: AcwD7mDYwBMJFs/MT0aXyAWt00/+ug==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B89AF61@KCINPUNHJCMS01.kpit.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <78024a3a74353a4d73be69b4e4f42da942b8fe15.1303707337.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3Q8kiwL016421
 
-On Mon, Apr 25, 2011 at 01:00:50AM -0400, Joe Perches wrote:
-> dump_vmcb isn't used outside this module, make it static.
-> Shrink text and object by ~1% by standardizing formats.
-> 
-> $ size arch/x86/kvm/svm.o*
->    text	   data	    bss	    dec	    hex	filename
->   52910	    580	  10072	  63562	   f84a	arch/x86/kvm/svm.o.new
->   53563	    580	  10072	  64215	   fad7	arch/x86/kvm/svm.o.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Hi Richard,
 
-Looks good.
+Backlight Driver for Dialog Semiconductor DA9052 PMICs.
 
-Acked-by: Joerg Roedel <joerg.roedel@amd.com>
+Changes made since last submission:
+. read and write moved to MFD
 
-> ---
->  arch/x86/kvm/svm.c |  176 ++++++++++++++++++++++++++++------------------------
->  1 files changed, 94 insertions(+), 82 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index a6bf2ad..1b9f67e 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -3188,97 +3188,109 @@ static int (*svm_exit_handlers[])(struct vcpu_svm *svm) = {
->  	[SVM_EXIT_NPF]				= pf_interception,
->  };
->  
-> -void dump_vmcb(struct kvm_vcpu *vcpu)
-> +static void dump_vmcb(struct kvm_vcpu *vcpu)
->  {
->  	struct vcpu_svm *svm = to_svm(vcpu);
->  	struct vmcb_control_area *control = &svm->vmcb->control;
->  	struct vmcb_save_area *save = &svm->vmcb->save;
->  
->  	pr_err("VMCB Control Area:\n");
-> -	pr_err("cr_read:            %04x\n", control->intercept_cr & 0xffff);
-> -	pr_err("cr_write:           %04x\n", control->intercept_cr >> 16);
-> -	pr_err("dr_read:            %04x\n", control->intercept_dr & 0xffff);
-> -	pr_err("dr_write:           %04x\n", control->intercept_dr >> 16);
-> -	pr_err("exceptions:         %08x\n", control->intercept_exceptions);
-> -	pr_err("intercepts:         %016llx\n", control->intercept);
-> -	pr_err("pause filter count: %d\n", control->pause_filter_count);
-> -	pr_err("iopm_base_pa:       %016llx\n", control->iopm_base_pa);
-> -	pr_err("msrpm_base_pa:      %016llx\n", control->msrpm_base_pa);
-> -	pr_err("tsc_offset:         %016llx\n", control->tsc_offset);
-> -	pr_err("asid:               %d\n", control->asid);
-> -	pr_err("tlb_ctl:            %d\n", control->tlb_ctl);
-> -	pr_err("int_ctl:            %08x\n", control->int_ctl);
-> -	pr_err("int_vector:         %08x\n", control->int_vector);
-> -	pr_err("int_state:          %08x\n", control->int_state);
-> -	pr_err("exit_code:          %08x\n", control->exit_code);
-> -	pr_err("exit_info1:         %016llx\n", control->exit_info_1);
-> -	pr_err("exit_info2:         %016llx\n", control->exit_info_2);
-> -	pr_err("exit_int_info:      %08x\n", control->exit_int_info);
-> -	pr_err("exit_int_info_err:  %08x\n", control->exit_int_info_err);
-> -	pr_err("nested_ctl:         %lld\n", control->nested_ctl);
-> -	pr_err("nested_cr3:         %016llx\n", control->nested_cr3);
-> -	pr_err("event_inj:          %08x\n", control->event_inj);
-> -	pr_err("event_inj_err:      %08x\n", control->event_inj_err);
-> -	pr_err("lbr_ctl:            %lld\n", control->lbr_ctl);
-> -	pr_err("next_rip:           %016llx\n", control->next_rip);
-> +	pr_err("%-20s%04x\n", "cr_read:", control->intercept_cr & 0xffff);
-> +	pr_err("%-20s%04x\n", "cr_write:", control->intercept_cr >> 16);
-> +	pr_err("%-20s%04x\n", "dr_read:", control->intercept_dr & 0xffff);
-> +	pr_err("%-20s%04x\n", "dr_write:", control->intercept_dr >> 16);
-> +	pr_err("%-20s%08x\n", "exceptions:", control->intercept_exceptions);
-> +	pr_err("%-20s%016llx\n", "intercepts:", control->intercept);
-> +	pr_err("%-20s%d\n", "pause filter count:", control->pause_filter_count);
-> +	pr_err("%-20s%016llx\n", "iopm_base_pa:", control->iopm_base_pa);
-> +	pr_err("%-20s%016llx\n", "msrpm_base_pa:", control->msrpm_base_pa);
-> +	pr_err("%-20s%016llx\n", "tsc_offset:", control->tsc_offset);
-> +	pr_err("%-20s%d\n", "asid:", control->asid);
-> +	pr_err("%-20s%d\n", "tlb_ctl:", control->tlb_ctl);
-> +	pr_err("%-20s%08x\n", "int_ctl:", control->int_ctl);
-> +	pr_err("%-20s%08x\n", "int_vector:", control->int_vector);
-> +	pr_err("%-20s%08x\n", "int_state:", control->int_state);
-> +	pr_err("%-20s%08x\n", "exit_code:", control->exit_code);
-> +	pr_err("%-20s%016llx\n", "exit_info1:", control->exit_info_1);
-> +	pr_err("%-20s%016llx\n", "exit_info2:", control->exit_info_2);
-> +	pr_err("%-20s%08x\n", "exit_int_info:", control->exit_int_info);
-> +	pr_err("%-20s%08x\n", "exit_int_info_err:", control->exit_int_info_err);
-> +	pr_err("%-20s%lld\n", "nested_ctl:", control->nested_ctl);
-> +	pr_err("%-20s%016llx\n", "nested_cr3:", control->nested_cr3);
-> +	pr_err("%-20s%08x\n", "event_inj:", control->event_inj);
-> +	pr_err("%-20s%08x\n", "event_inj_err:", control->event_inj_err);
-> +	pr_err("%-20s%lld\n", "lbr_ctl:", control->lbr_ctl);
-> +	pr_err("%-20s%016llx\n", "next_rip:", control->next_rip);
->  	pr_err("VMCB State Save Area:\n");
-> -	pr_err("es:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->es.selector, save->es.attrib,
-> -		save->es.limit, save->es.base);
-> -	pr_err("cs:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->cs.selector, save->cs.attrib,
-> -		save->cs.limit, save->cs.base);
-> -	pr_err("ss:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->ss.selector, save->ss.attrib,
-> -		save->ss.limit, save->ss.base);
-> -	pr_err("ds:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->ds.selector, save->ds.attrib,
-> -		save->ds.limit, save->ds.base);
-> -	pr_err("fs:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->fs.selector, save->fs.attrib,
-> -		save->fs.limit, save->fs.base);
-> -	pr_err("gs:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->gs.selector, save->gs.attrib,
-> -		save->gs.limit, save->gs.base);
-> -	pr_err("gdtr: s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->gdtr.selector, save->gdtr.attrib,
-> -		save->gdtr.limit, save->gdtr.base);
-> -	pr_err("ldtr: s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->ldtr.selector, save->ldtr.attrib,
-> -		save->ldtr.limit, save->ldtr.base);
-> -	pr_err("idtr: s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->idtr.selector, save->idtr.attrib,
-> -		save->idtr.limit, save->idtr.base);
-> -	pr_err("tr:   s: %04x a: %04x l: %08x b: %016llx\n",
-> -		save->tr.selector, save->tr.attrib,
-> -		save->tr.limit, save->tr.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "es:",
-> +	       save->es.selector, save->es.attrib,
-> +	       save->es.limit, save->es.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "cs:",
-> +	       save->cs.selector, save->cs.attrib,
-> +	       save->cs.limit, save->cs.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "ss:",
-> +	       save->ss.selector, save->ss.attrib,
-> +	       save->ss.limit, save->ss.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "ds:",
-> +	       save->ds.selector, save->ds.attrib,
-> +	       save->ds.limit, save->ds.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "fs:",
-> +	       save->fs.selector, save->fs.attrib,
-> +	       save->fs.limit, save->fs.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "gs:",
-> +	       save->gs.selector, save->gs.attrib,
-> +	       save->gs.limit, save->gs.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "gdtr:",
-> +	       save->gdtr.selector, save->gdtr.attrib,
-> +	       save->gdtr.limit, save->gdtr.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "ldtr:",
-> +	       save->ldtr.selector, save->ldtr.attrib,
-> +	       save->ldtr.limit, save->ldtr.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "idtr:",
-> +	       save->idtr.selector, save->idtr.attrib,
-> +	       save->idtr.limit, save->idtr.base);
-> +	pr_err("%-5s s: %04x a: %04x l: %08x b: %016llx\n",
-> +	       "tr:",
-> +	       save->tr.selector, save->tr.attrib,
-> +	       save->tr.limit, save->tr.base);
->  	pr_err("cpl:            %d                efer:         %016llx\n",
->  		save->cpl, save->efer);
-> -	pr_err("cr0:            %016llx cr2:          %016llx\n",
-> -		save->cr0, save->cr2);
-> -	pr_err("cr3:            %016llx cr4:          %016llx\n",
-> -		save->cr3, save->cr4);
-> -	pr_err("dr6:            %016llx dr7:          %016llx\n",
-> -		save->dr6, save->dr7);
-> -	pr_err("rip:            %016llx rflags:       %016llx\n",
-> -		save->rip, save->rflags);
-> -	pr_err("rsp:            %016llx rax:          %016llx\n",
-> -		save->rsp, save->rax);
-> -	pr_err("star:           %016llx lstar:        %016llx\n",
-> -		save->star, save->lstar);
-> -	pr_err("cstar:          %016llx sfmask:       %016llx\n",
-> -		save->cstar, save->sfmask);
-> -	pr_err("kernel_gs_base: %016llx sysenter_cs:  %016llx\n",
-> -		save->kernel_gs_base, save->sysenter_cs);
-> -	pr_err("sysenter_esp:   %016llx sysenter_eip: %016llx\n",
-> -		save->sysenter_esp, save->sysenter_eip);
-> -	pr_err("gpat:           %016llx dbgctl:       %016llx\n",
-> -		save->g_pat, save->dbgctl);
-> -	pr_err("br_from:        %016llx br_to:        %016llx\n",
-> -		save->br_from, save->br_to);
-> -	pr_err("excp_from:      %016llx excp_to:      %016llx\n",
-> -		save->last_excp_from, save->last_excp_to);
-> -
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "cr0:", save->cr0, "cr2:", save->cr2);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "cr3:", save->cr3, "cr4:", save->cr4);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "dr6:", save->dr6, "dr7:", save->dr7);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "rip:", save->rip, "rflags:", save->rflags);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "rsp:", save->rsp, "rax:", save->rax);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "star:", save->star, "lstar:", save->lstar);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "cstar:", save->cstar, "sfmask:", save->sfmask);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "kernel_gs_base:", save->kernel_gs_base,
-> +	       "sysenter_cs:", save->sysenter_cs);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "sysenter_esp:", save->sysenter_esp,
-> +	       "sysenter_eip:", save->sysenter_eip);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "gpat:", save->g_pat, "dbgctl:", save->dbgctl);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "br_from:", save->br_from, "br_to:", save->br_to);
-> +	pr_err("%-15s %016llx %-13s %016llx\n",
-> +	       "excp_from:", save->last_excp_from,
-> +	       "excp_to:", save->last_excp_to);
->  }
->  
->  static void svm_get_exit_info(struct kvm_vcpu *vcpu, u64 *info1, u64 *info2)
-> -- 
-> 1.7.5.rc3.dirty
-> 
+Signed-off-by: Dajun Chen <dchen@diasemi.com>
+---
+diff -Naur linux-next-20110421.orig/drivers/video/backlight/da9052_bl.c linux-next-20110421/drivers/video/backlight/da9052_bl.c
+--- linux-next-20110421.orig/drivers/video/backlight/da9052_bl.c	1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/drivers/video/backlight/da9052_bl.c	2011-04-26 10:41:20.000000000 +0500
+@@ -0,0 +1,215 @@
++/*
++ * Backlight Driver for Dialog DA9052 PMICs
++ *
++ * Copyright(c) 2009 Dialog Semiconductor Ltd.
++ *
++ * Author: Dajun Chen <dchen@diasemi.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <linux/fb.h>
++#include <linux/backlight.h>
++#include <linux/delay.h>
++
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/reg.h>
++
++#define DA9052_MAX_BRIGHTNESS		0xFF
++
++enum {
++	DA9052_WLEDS_OFF,
++	DA9052_WLEDS_ON,
++	};
++
++u8 wled_bank[] = {
++			DA9052_LED1_CONF_REG,
++			DA9052_LED2_CONF_REG,
++			DA9052_LED3_CONF_REG,
++		};
++
++struct da9052_bl {
++	struct da9052 *da9052;
++	uint brightness;
++	uint state;
++	uint led_reg;
++	};
++
++static int da9052_adjust_wled_brightness(struct da9052_bl *wleds)
++{
++	u8 boost_en, i_sink;
++	int ret = 0;
++
++	boost_en = 0x3F;
++	i_sink	 = 0xFF;
++	if (wleds->state == DA9052_WLEDS_OFF) {
++		boost_en = 0x00;
++		i_sink	 = 0x00;
++	}
++
++	ret = da9052_reg_write(wleds->da9052, DA9052_BOOST_REG, boost_en);
++	if (ret < 0) {
++		dev_err(wleds->da9052->dev,
++			"Failed to write boost reg, %d\n", ret);
++		return ret;
++	}
++
++	ret = da9052_reg_write(wleds->da9052, DA9052_LED_CONT_REG, i_sink);
++	if (ret < 0) {
++		dev_err(wleds->da9052->dev,
++			"Failed to write led cont reg, %d\n", ret);
++		return ret;
++	}
++
++	ret = da9052_reg_write(wleds->da9052, wled_bank[wleds->led_reg],
++							0x0);
++	if (ret < 0) {
++		dev_err(wleds->da9052->dev,
++			"Failed to write led conf reg, %d", ret);
++		return ret;
++	}
++
++	if (wleds->brightness) {
++		msleep(10);
++		ret = da9052_reg_write(wleds->da9052,
++		wled_bank[wleds->led_reg], wleds->brightness);
++		if (ret < 0)
++			dev_err(wleds->da9052->dev,
++				"Failed to write led conf reg, %d", ret);
++	}
++
++	return ret;
++
++}
++
++static int da9052_backlight_update_status(struct backlight_device *bl)
++{
++	int brightness = bl->props.brightness;
++	struct da9052_bl *wleds = bl_get_data(bl);
++
++	wleds->brightness = brightness;
++	wleds->state = DA9052_WLEDS_ON;
++
++	return da9052_adjust_wled_brightness(wleds);
++}
++
++static int da9052_backlight_get_brightness(struct backlight_device *bl)
++{
++	struct da9052_bl *wleds = bl_get_data(bl);
++	return wleds->brightness;
++}
++
++struct backlight_ops da9052_backlight_ops = {
++	.update_status	= da9052_backlight_update_status,
++	.get_brightness	= da9052_backlight_get_brightness,
++};
++
++static int da9052_backlight_probe(struct platform_device *pdev)
++{
++	struct backlight_device *bl;
++	struct backlight_properties props;
++	int ret = 0;
++	static int led_reg_num;
++	struct da9052_bl *wleds;
++
++
++	wleds = kzalloc(sizeof(struct da9052_bl), GFP_KERNEL);
++
++	if (!wleds)
++		return -ENOMEM;
++
++	wleds->da9052	= dev_get_drvdata(pdev->dev.parent);
++	wleds->brightness = 0;
++	wleds->led_reg = led_reg_num++;
++	wleds->state = DA9052_WLEDS_OFF;
++
++	bl = backlight_device_register(pdev->name, wleds->da9052->dev,
++			wleds, &da9052_backlight_ops, &props);
++
++	if (IS_ERR(bl)) {
++		dev_err(&pdev->dev, "Failed to register backlight\n");
++		return PTR_ERR(bl);
++	}
++
++	bl->props.max_brightness = DA9052_MAX_BRIGHTNESS;
++	bl->props.brightness = 0;
++	platform_set_drvdata(pdev, bl);
++
++	ret = da9052_adjust_wled_brightness(wleds);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int da9052_backlight_remove(struct platform_device *pdev)
++{
++	struct backlight_device *bl = platform_get_drvdata(pdev);
++	struct da9052_bl *wleds = bl_get_data(bl);
++
++	wleds->brightness = 0;
++	wleds->state = DA9052_WLEDS_OFF;
++
++	da9052_adjust_wled_brightness(wleds);
++	backlight_device_unregister(bl);
++
++	return 0;
++}
++
++static struct platform_driver da9052_wled1_driver = {
++	.driver.name	= "da9052-WLED1",
++	.driver.owner	= THIS_MODULE,
++	.probe			= da9052_backlight_probe,
++	.remove			= da9052_backlight_remove,
++};
++
++static struct platform_driver da9052_wled2_driver = {
++	.driver.name	= "da9052-WLED2",
++	.driver.owner	= THIS_MODULE,
++	.probe			= da9052_backlight_probe,
++	.remove			= da9052_backlight_remove,
++};
++static struct platform_driver da9052_wled3_driver = {
++	.driver.name	= "da9052-WLED3",
++	.driver.owner	= THIS_MODULE,
++	.probe			= da9052_backlight_probe,
++	.remove			= da9052_backlight_remove,
++};
++
++static int __init da9052_backlight_init(void)
++{
++	s32 ret;
++	ret = platform_driver_register(&da9052_wled1_driver);
++	if (ret)
++		return ret;
++	ret = platform_driver_register(&da9052_wled2_driver);
++	if (ret)
++		return ret;
++
++	ret = platform_driver_register(&da9052_wled3_driver);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++module_init(da9052_backlight_init);
++
++static void __exit da9052_backlight_exit(void)
++{
++	platform_driver_unregister(&da9052_wled1_driver);
++	platform_driver_unregister(&da9052_wled2_driver);
++	platform_driver_unregister(&da9052_wled3_driver);
++}
++module_exit(da9052_backlight_exit);
++
++MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
++MODULE_DESCRIPTION("Backlight driver for Dialog DA9052 PMIC");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9052-backlight");
++
++
+diff -Naur linux-next-20110421.orig/drivers/video/backlight/Kconfig linux-next-20110421/drivers/video/backlight/Kconfig
+--- linux-next-20110421.orig/drivers/video/backlight/Kconfig	2011-04-26 09:33:59.000000000 +0500
++++ linux-next-20110421/drivers/video/backlight/Kconfig	2011-04-26 10:47:08.000000000 +0500
+@@ -237,6 +237,12 @@
+ 	  If you have a LCD backlight connected to the WLED output of DA9030
+ 	  or DA9034 WLED output, say Y here to enable this driver.
 
--- 
-AMD Operating System Research Center
++config BACKLIGHT_DA9052
++	tristate "Dialog DA9052 WLED"
++	depends on PMIC_DA9052
++	help
++	  Enable the DA9052 Backlight Driver
++
+ config BACKLIGHT_MAX8925
+ 	tristate "Backlight driver for MAX8925"
+ 	depends on MFD_MAX8925
+diff -Naur linux-next-20110421.orig/drivers/video/backlight/Makefile linux-next-20110421/drivers/video/backlight/Makefile
+--- linux-next-20110421.orig/drivers/video/backlight/Makefile	2011-04-26 09:33:59.000000000 +0500
++++ linux-next-20110421/drivers/video/backlight/Makefile	2011-04-26 10:45:49.000000000 +0500
+@@ -26,6 +26,7 @@
+ obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH) += cr_bllcd.o
+ obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
+ obj-$(CONFIG_BACKLIGHT_DA903X)	+= da903x_bl.o
++obj-$(CONFIG_BACKLIGHT_DA9052)	+= da9052_bl.o
+ obj-$(CONFIG_BACKLIGHT_MAX8925)	+= max8925_bl.o
+ obj-$(CONFIG_BACKLIGHT_APPLE)	+= apple_bl.o
+ obj-$(CONFIG_BACKLIGHT_TOSA)		+= tosa_bl.o
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Regards,
+Ashish
 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
