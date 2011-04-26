@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab1DZDvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 23:51:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41283 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757979Ab1DZDvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 23:51:51 -0400
-Date: Tue, 26 Apr 2011 13:51:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hayeswang <hayeswang@realtek.com>,
-        =?UTF-8?B?IkZyYW7Dp29pcyBSb21pZXUi?= <romieu@fr.zoreil.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20110426135146.c01f8395.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933004Ab1DZD4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 23:56:12 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:31715 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758026Ab1DZD4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 23:56:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=OLEXC3yYy+WP4iyFybNqU8zn1rJuZEcnK9V8qJhnVNbpUfkMnGA1KLwh1rW16xxG7U
+         D6/2lnhultdKNuTfrReQ==
+Date: Mon, 25 Apr 2011 20:56:14 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: bookjovi@gmail.com
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page
+ in mem_read
+In-Reply-To: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
+Message-ID: <alpine.LSU.2.00.1104252048190.6978@sister.anvils>
+References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Sun, 17 Apr 2011, bookjovi@gmail.com wrote:
+> From: Jovi Zhang <bookjovi@gmail.com>
+> 
+> It should be better if put check_mem_permission before __get_free_page
+> in mem_read, to be same as function mem_write.
+> 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
-After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Sorry to be contrary, but I disagree with this.  I'm all for consistency,
+but is there a particular reason why you think the mem_write ordering is
+right and mem_read wrong?
 
-drivers/net/r8169.c: In function 'rtl8168e_1_hw_phy_config':
-drivers/net/r8169.c:2578: error: too many arguments to function 'rtl_apply_firmware'
-drivers/net/r8169.c:2578: error: void value not ignored as it ought to be
-drivers/net/r8169.c: In function 'rtl8168e_2_hw_phy_config':
-drivers/net/r8169.c:2586: error: too many arguments to function 'rtl_apply_firmware'
-drivers/net/r8169.c:2586: error: void value not ignored as it ought to be
+My reason for preferring the current mem_read ordering is this:
 
-Caused by commit 953a12cc2889 ("r8169: don't request firmware when
-there's no userspace") from the net-current tree interacting with commit
-01dc7fec4025 ("net/r8169: support RTL8168E").
+check_mem_permission gets a reference to the mm.  If we __get_free_page
+after check_mem_permission, imagine what happens if the system is out
+of memory, and the mm we're looking at is selected for killing by the
+OOM killer: while we wait in __get_free_page for more memory, no memory
+is freed from the selected mm because it cannot reach exit_mmap while
+we hold that reference.
 
-I applied the following fixup patch:
+(I may be overstating the case: a little memory may be freed from the
+exiting task's stack, and kswapd should still be able to pick some pages
+off the mm.  But nonetheless, we would do better to let this mm go.)
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 26 Apr 2011 13:47:51 +1000
-Subject: [PATCH] r8169: fix for rtl_apply_firmware API change
+No doubt there are plenty of other places in /proc which try to
+allocate memory after taking a reference on an mm; but I think
+we should be working to eliminate those rather than add to them.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/r8169.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 3f93fc7..c3e264f 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -190,7 +190,9 @@ static const struct rtl_firmware_info {
- 	{ .mac_version = RTL_GIGA_MAC_VER_25, .fw_name = FIRMWARE_8168D_1 },
- 	{ .mac_version = RTL_GIGA_MAC_VER_26, .fw_name = FIRMWARE_8168D_2 },
- 	{ .mac_version = RTL_GIGA_MAC_VER_29, .fw_name = FIRMWARE_8105E_1 },
--	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 }
-+	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_31, .fw_name = FIRMWARE_8168E_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_32, .fw_name = FIRMWARE_8168E_2 }
- };
- 
- enum cfg_version {
-@@ -2575,16 +2577,14 @@ static void rtl8168e_hw_phy_config(struct rtl8169_private *tp)
- 
- static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
- {
--	if (rtl_apply_firmware(tp, FIRMWARE_8168E_1) < 0)
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+	rtl_apply_firmware(tp);
- 
- 	rtl8168e_hw_phy_config(tp);
- }
- 
- static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- {
--	if (rtl_apply_firmware(tp, FIRMWARE_8168E_2) < 0)
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+	rtl_apply_firmware(tp);
- 
- 	rtl8168e_hw_phy_config(tp);
- }
--- 
-1.7.4.4
-
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Hugh
