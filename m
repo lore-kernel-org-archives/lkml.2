@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab1DZAVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:21:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38152 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab1DZAVy (ORCPT
+	id S1755888Ab1DZAcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:32:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40532 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab1DZAcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:21:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CT1CAxOBywO453dn9IGtxnBAEAWeMQLos9c02Qw1prG6E7pzkcxuOJwzq5zXAYeFUd
-         EAKTYv+yHneuF8BcyT9x+SkmlI8gRTEscPLYc2J7w+Z2td8Z7lPSDB4NsQy0VXxrQnjU
-         XK/TyjF2yaTucfllPtIFT8l2fO4ZnPhDjTE0A=
+	Mon, 25 Apr 2011 20:32:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] convert parisc to sparsemem (was Re: [PATCH v3] mm: make expand_downwards symmetrical to expand_upwards)
+Cc: kosaki.motohiro@jp.fujitsu.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, x86 maintainers <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <1303583657.4116.11.camel@mulgrave.site>
+References: <1303507985.2590.47.camel@mulgrave.site> <1303583657.4116.11.camel@mulgrave.site>
+Message-Id: <20110426093328.F33D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4DB5C8FA.2030700@lwfinger.net>
-References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
-	<4DB4E94C.2060505@lwfinger.net>
-	<BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
-	<4DB5C8FA.2030700@lwfinger.net>
-Date: Tue, 26 Apr 2011 08:21:52 +0800
-Message-ID: <BANLkTi=syavY0Tw-Ny9-QhU=_Ryrbmkhfw@mail.gmail.com>
-Subject: Re: r8712u cannot set essid
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 26 Apr 2011 09:32:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 3:18 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> Please send me the commands that you want to use, and I'll try to get r8712u
-> to support them.
+Hi James,
 
-Larry,
+ % make CROSS_COMPILE=hppa64-linux- ARCH=parisc
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      arch/parisc/kernel/asm-offsets.s
+In file included from include/linux/topology.h:32:0,
+                 from include/linux/sched.h:78,
+                 from arch/parisc/kernel/asm-offsets.c:31:
+include/linux/mmzone.h:916:27: fatal error: asm/sparsemem.h: No such file or directory
 
-All I want is for my iPhone to connect to me notebook, and I use this
-command ...
-
-# iwconfig wlan0 mode ad-hoc essid "123"
-
-A little bit of good news is that I got adhoc to work 2 out of 100
-tries (with wpa_supplicant on another sreen, and the above iwconfig
-command). So, it's working "partially". Once it has an SSID, I could
-change it and it'll still work.
+Parhaps, you forgot to quilt add?
 
 
-> AP mode may not be possible.
+> This is the preliminary conversion.  It's very nasty on parisc because
+> the memory allocation isn't symmetric anymore: under DISCONTIGMEM, we
+> push all memory into bootmem and then let free_all_bootmem() do the
+> magic for us; now we have to do separate initialisations for ranges
+> because SPARSEMEM can't do multi-range boot memory. It's also got the
+> horrible hack that I only use the first found range for bootmem.  I'm
+> not sure if this is correct (it won't be if the first found range can be
+> under about 50MB because we'll run out of bootmem during boot) ... we
+> might have to sort the ranges and use the larges, but that will involve
+> us in even more hackery around the bootmem reservations code.
+> 
+> The boot sequence got a few seconds slower because now all of the loops
+> over our pfn ranges actually have to skip through the holes (which takes
+> time for 64GB).
+> 
+> All in all, I've not been very impressed with SPARSEMEM over
+> DISCONTIGMEM.  It seems to have a lot of rough edges (necessitating
+> exception code) which DISCONTIGMEM just copes with.
+> 
+> And before you say the code is smaller, that's because I converted us to
+> generic show_mem().
 
-So perhaps "CONFIG_R8712_AP=y" should be removed from the kernel if it
-does nothing.
+Cool! I hoped to remove arch specific show_mem() long time.
 
 
-Thanks,
-Jeff
+And, nitpick comment.
+
+Could you please use #ifdef CONFIG_FLAGMEM instead #ifndef CONFIG_SPARSEMEM?
+MM gyes parse '#ifndef CONFIG_SPARSEMEM' as valid-both-flatmem-and-discontigmem.
+but this code isn't.
+
+If my quick grep is correct, all of your #ifndef SPARSEMEM can be converted
+#ifdef FALTMEM.
+
+
+
+
