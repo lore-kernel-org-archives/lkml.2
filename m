@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab1DZLIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:08:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33543 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab1DZLIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:08:10 -0400
-Message-ID: <4DB6A736.3030609@mvista.com>
-Date: Tue, 26 Apr 2011 15:06:30 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1754477Ab1DZLLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:11:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533Ab1DZLLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:11:04 -0400
+Message-ID: <4DB6A87A.2000906@redhat.com>
+Date: Tue, 26 Apr 2011 13:11:54 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110422 Fedora/3.1.9-7.fc15 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com,
-        "Kevin Hilman (supporter:TI DAVINCI MACHIN...,commit_signer:15/17=88%)" 
-	<khilman@ti.com>,
-        "Russell King (maintainer:ARM PORT)" <linux@arm.linux.org.uk>,
-        "Michael Williamson (commit_signer:6/17=35%)" 
-	<michael.williamson@criticallink.com>,
-        "Cyril Chemparathy (commit_signer:3/17=18%)" <cyril@ti.com>,
-        "Sergei Shtylyov (commit_signer:2/17=12%)" <sshtylyov@ru.mvista.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 03/11] da850: pruss platform specific additions.
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-4-git-send-email-subhasish@mistralsolutions.com>
-In-Reply-To: <1303474109-6212-4-git-send-email-subhasish@mistralsolutions.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: Ondrej Zary <linux@rainbow-software.org>,
+        Joerg Heckenbach <joerg@heckenbach-aw.de>,
+        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
+References: <201104252323.20420.linux@rainbow-software.org> <201104260832.11150.hverkuil@xs4all.nl>
+In-Reply-To: <201104260832.11150.hverkuil@xs4all.nl>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-On 22-04-2011 16:08, Subhasish Ghosh wrote:
+On 04/26/2011 08:32 AM, Hans Verkuil wrote:
+> On Monday, April 25, 2011 23:23:17 Ondrej Zary wrote:
+>> The YVU420 and YUV422P formats are broken and cause kernel panic on use.
+>> (YVU420 does not work and sometimes causes "unable to handle paging request"
+>> panic, YUV422P always causes "NULL pointer dereference").
+>>
+>> As V4L2 spec says that drivers shouldn't do any in-kernel image format
+>> conversion, remove it completely (except YUYV).
+>
+> What really should happen is that the conversion is moved to libv4lconvert.
+> I've never had the time to tackle that, but it would improve this driver a
+> lot.
+>
+> Would you perhaps be interested in doing that work?
+>
 
-> This patch adds the platform device and assignes the platform resources
-> for the PRUSS mfd driver.
+Seconded! I would be more then happy to help with the libv4l part (in the form
+of review + merging + advice).
 
-> Signed-off-by: Subhasish Ghosh<subhasish@mistralsolutions.com>
+Regards,
 
-[...]
-
-> diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-> index 09b8ddb..0c23035 100644
-> --- a/arch/arm/mach-davinci/include/mach/da8xx.h
-> +++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-[...]
->   #include<mach/edma.h>
-> @@ -73,6 +75,7 @@ extern unsigned int da850_max_speed;
->   #define DA8XX_DDR2_CTL_BASE	0xb0000000
->   #define DA8XX_ARM_RAM_BASE	0xffff0000
->   #define DA8XX_SHARED_RAM_BASE	0x80000000
-> +#define DA8XX_PRUSS_MEM_BASE	0x01C30000
-
-    Keep the list sorted please. Also, this macro doesn't seem used outside 
-devices-da8xx.c, so should be moved there...
-
-WBR, Sergei
+Hans
