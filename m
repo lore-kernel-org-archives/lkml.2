@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab1DZHnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:43:12 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47842 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757756Ab1DZHnK (ORCPT
+	id S1758809Ab1DZHnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:43:49 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36851 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab1DZHns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:43:10 -0400
-Date: Tue, 26 Apr 2011 09:42:38 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110426074238.GA22448@aftab>
-References: <1303135222-17118-2-git-send-email-bp@amd64.org>
- <20110419171340.GE6640@elte.hu>
- <20110419173521.GA25374@aftab>
- <20110419174446.GA13616@elte.hu>
- <20110420102349.GB1361@aftab>
- <m1hb9mnmqs.fsf@fess.ebiederm.org>
+	Tue, 26 Apr 2011 03:43:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=qt5fKoyO/7eMOMtpHFFwn8zzidQ+xb5MgJAIjIREg39EJwQAwoi608b1yvaNaG5r8N
+         OIFqtxlkmsIpQxqFbpUxvHr6YTlVQ86n/2teRigJmDA42gKJ1uqjph0oh/zDTYfXEICv
+         nK3VCZzZ88yWyCjzHHHpp+ct2K+xHxMXJsRhk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hb9mnmqs.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1303803525.20212.20.camel@twins>
+References: <1303747731.2747.182.camel@edumazet-laptop>
+	<1303803525.20212.20.camel@twins>
+Date: Tue, 26 Apr 2011 10:43:47 +0300
+X-Google-Sender-Auth: dO4IFEUYwhxRyoENswLUuJpWcLs
+Message-ID: <BANLkTikTq+V28wi_zujeJK+OksDTdjiUcg@mail.gmail.com>
+Subject: Re: [BUG] perf and kmemcheck : fatal combination
+From: Pekka Enberg <penberg@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Vegard Nossum <vegardno@ifi.uio.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 03:40:11PM -0400, Eric W. Biederman wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > Date: Wed, 13 Apr 2011 14:32:06 +0200
-> > Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
-> >
-> > The default notifier doesn't make a lot of sense to call in the
-> > correctable errors case. Drop it and emit the mcelog decoding hint only
-> > in the uncorrectable errors case and when no notifier is registered.
-> > Also, limit issuing the "mcelog --ascii" message in the rare case when
-> > we dump unreported CEs before panicking.
-> >
-> > While at it, remove unused old x86_mce_decode_callback from the
-> > header.
-> 
-> Can we please print something if we please log something in the
-> case of a correctable error, when we only report it via mcelog?
-> 
-> I have a stupid recent intel cpu here that hits that case and without
-> the default x86_mce_decode_callback I wouldn't have even known that I am
-> getting something like 50 correctable errors an hour on one of my
-> machines.  In particular I am it hits so often I am seeing:
-> "mce_notify_irq: 2 callbacks suppressed".  I need to get those dimms
-> replaced soon because in a new product I simply can't imagine that many
-> correctable errors.
+On Tue, Apr 26, 2011 at 10:38 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, 2011-04-25 at 18:08 +0200, Eric Dumazet wrote:
+>> Hi guys
+>>
+>> Just got a panic on a kmemcheck kernel, latest linux-2.6 tree.
+>>
+>> I forgot I had kmemcheck enabled, and started "perf top" just because my
+>> machine was damn slow... Oh well...
+>>
+>> Crash in do_nmi -> nmi_enter() -> BUG_ON(in_nmi());
+>
+> Hmm,. I bet because kmemcheck triggers faults from nmi context because
+> it messes about with the page protection bits a lot to track things.
+>
+> Can't really think of anything except not making perf available on
+> kmemcheck kernels.
+>
+> ---
+>  init/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 32745bf..94735b4 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1125,6 +1125,7 @@ config PERF_EVENTS
+>        bool "Kernel performance events and counters"
+>        default y if (PROFILING || PERF_COUNTERS)
+>        depends on HAVE_PERF_EVENTS
+> +       depends on !KMEMCHECK
+>        select ANON_INODES
+>        select IRQ_WORK
+>        help
 
-Isn't there a mcelog daemon or something that polls /dev/mcelog and
-tells you about those DRAM ECCs in some log file where you're supposed
-to look? :)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Acked-by: Pekka Enberg <penberg@kernel.org>
