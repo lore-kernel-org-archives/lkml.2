@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1DZNac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:30:32 -0400
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:36605 "EHLO
-	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab1DZNaa (ORCPT
+	id S1755670Ab1DZNfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 09:35:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37426 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab1DZNfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:30:30 -0400
-Message-ID: <4DB6C89F.10903@csr.com>
-Date: Tue, 26 Apr 2011 14:29:03 +0100
-From: David Vrabel <david.vrabel@csr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Per Forlin <per.forlin@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v2 01/12] mmc: add none blocking mmc request function
-References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>	<1302116833-24540-2-git-send-email-per.forlin@linaro.org>	<4DA81F42.3070208@csr.com> <BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
-In-Reply-To: <BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.101.11.143]
+	Tue, 26 Apr 2011 09:35:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=eCyGBS5hh6v2qcFIOc7f+8w1B+ZNCD6U03B8N2YZCPI5PRxtKpqU2Z/fAOSDaJLWqk
+         cZ1iwJwVNKIG4HNMruF1bNkqz3iP86ezjYr/iH1gbvR5S+e/nYOJboMdUOCbxMf3xuXX
+         iiCoycHDvy3PBCuOXfqC0Ko7sJL0qNGSM9pyY=
+From: yxlraid@gmail.com
+To: James.Bottomley@suse.de
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yuxiangl@marvell.com, jfeng@marvell.com,
+        root <root@localhost.marvell.com>
+Subject: [PATCH 1/2] [PATCH] [SCSI] mvsas: add support for Marvell 88SE9445/88SE9485
+Date: Tue, 26 Apr 2011 06:34:01 -0700
+Message-Id: <1303824841-6196-1-git-send-email-yxlraid@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
+In-Reply-To: <mvsas-support-new-device-id>
+References: <mvsas-support-new-device-id>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/04/11 08:17, Per Forlin wrote:
-> 
->> Using a MMC request queue has other benefits -- it allows multiple users
->> without having to claim/release the host.  This would be useful for
->> (especially multi-function) SDIO.
->
-> You mean claim and release would be done only within the mmc core. The
-> timed saved here would equal the time it takes to release and claim
-> the host.
-> Claim and release can also be used for power management to indicate if
-> any client is using the host, if not the power can be switched off.
+From: root <root@localhost.marvell.com>
 
-Isn't there a separate runtime power management API that different from
-claim/release?
+This is support for Marvell 88SE9445/88SE9485 SAS/SATA HBA, which
+is based on Marvell 88SE9480.
 
-> I just want to make sure I understand the multi-function SDIO case, I
-> haven't done any work with SDIO.
-> Can the SDIO functions compete over the same claim_host at the same time?
-> Example: if function 1 claims the host, function 2 and function 3 also
-> want to claim the host but have to wait for function 1 to release the
-> host.
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+---
+ drivers/scsi/mvsas/mv_defs.h |    2 ++
+ drivers/scsi/mvsas/mv_init.c |   20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-This is the case.   Each function driver has to claim exclusive access
-to the host.
-
-> What is the extra benefit of having the internal request queue for
-> multi function SDIO?
-
-It reduces the delays between commands if multiple drivers are sending
-commands.  I estimated performance improvements with 2-3% from just
-removing the need to claim/release in one particular SDIO function
-driver.  Performance improvements for multi-function cards would be a
-bit more (5% perhaps?).
-
-The more important benefit is the simplification of the API.
-
-David
+diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
+index 1849da1..880613f 100644
+--- a/drivers/scsi/mvsas/mv_defs.h
++++ b/drivers/scsi/mvsas/mv_defs.h
+@@ -34,6 +34,8 @@ enum chip_flavors {
+ 	chip_6485,
+ 	chip_9480,
+ 	chip_9180,
++	chip_9445,
++	chip_9485,
+ 	chip_1300,
+ 	chip_1320
+ };
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 938d045..0123c6b 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -32,6 +32,8 @@ static const struct mvs_chip_info mvs_chips[] = {
+ 	[chip_6485] =	{ 1, 8, 0x800, 33, 32, 10, &mvs_64xx_dispatch, },
+ 	[chip_9180] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+ 	[chip_9480] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
++	[chip_9445] =	{ 1, 4, 0x800, 17, 64, 11, &mvs_94xx_dispatch, },
++	[chip_9485] =	{ 2, 4, 0x800, 17, 64, 11, &mvs_94xx_dispatch, },
+ 	[chip_1300] =	{ 1, 4, 0x400, 17, 16,  9, &mvs_64xx_dispatch, },
+ 	[chip_1320] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+ };
+@@ -670,6 +672,24 @@ static struct pci_device_id __devinitdata mvs_pci_table[] = {
+ 	{ PCI_VDEVICE(TTI, 0x2740), chip_9480 },
+ 	{ PCI_VDEVICE(TTI, 0x2744), chip_9480 },
+ 	{ PCI_VDEVICE(TTI, 0x2760), chip_9480 },
++	{
++		.vendor		= 0x1b4b,
++		.device		= 0x9445,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= 0x9480,
++		.class		= 0,
++		.class_mask	= 0,
++		.driver_data	= chip_9445,
++	},
++	{
++		.vendor		= 0x1b4b,
++		.device		= 0x9485,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= 0x9480,
++		.class		= 0,
++		.class_mask	= 0,
++		.driver_data	= chip_9485,
++	},
+ 
+ 	{ }	/* terminate list */
+ };
 -- 
-David Vrabel, Senior Software Engineer, Drivers
-CSR, Churchill House, Cambridge Business Park,  Tel: +44 (0)1223 692562
-Cowley Road, Cambridge, CB4 0WZ                 http://www.csr.com/
+1.7.4.4
 
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
