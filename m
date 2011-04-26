@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab1DZMpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:45:34 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44862 "EHLO mx3.mail.elte.hu"
+	id S1755260Ab1DZMpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:45:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36640 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568Ab1DZMpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:45:32 -0400
-Date: Tue, 26 Apr 2011 14:45:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 02/18] perf: Add persistent event facilities
-Message-ID: <20110426124510.GB15076@elte.hu>
-References: <1303576100-425-1-git-send-email-bp@amd64.org>
- <1303576100-425-3-git-send-email-bp@amd64.org>
- <1303815470.20212.260.camel@twins>
+	id S1755147Ab1DZMpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 08:45:42 -0400
+Date: Tue, 26 Apr 2011 05:45:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Greg KH <greg@kroah.com>, Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
+Message-ID: <20110426124519.GC5977@suse.de>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
+ <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
+ <20110425212056.GA29313@kroah.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303815470.20212.260.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Sat, 2011-04-23 at 18:28 +0200, Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > Add a barebones implementation for registering persistent events with
-> > perf. For that, we don't destroy the buffers when they're unmapped and
-> > we map them read-only so that multiple agents can access them.
-> > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > ---
-> >  include/linux/perf_event.h |   22 ++++++++++++++++-
-> >  kernel/events/Makefile     |    2 +-
-> >  kernel/events/core.c       |   30 ++++++++++++++++++----
-> >  kernel/events/persistent.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 102 insertions(+), 8 deletions(-)
-> >  create mode 100644 kernel/events/persistent.c
-> > 
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index ee9f1e7..37bfae1 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -216,8 +216,9 @@ struct perf_event_attr {
-> >                                 precise_ip     :  2, /* skid constraint       */
-> >                                 mmap_data      :  1, /* non-exec mmap data    */
-> >                                 sample_id_all  :  1, /* sample_type all events */
-> > +                               persistent     :  1, /* event always on */
+On Tue, Apr 26, 2011 at 12:21:04PM +0530, Nori, Sekhar wrote:
+> On Tue, Apr 26, 2011 at 02:50:56, Greg KH wrote:
+> > On Fri, Apr 22, 2011 at 05:38:26PM +0530, Subhasish Ghosh wrote:
+> > > This patch adds support for the TTY compliant
+> > > Soft-UART device emulated on PRUSS.
+> > > 
+> > > This patch depends on:
+> > > davinci: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS.
+> > >             https://patchwork.kernel.org/patch/615681/
 > 
-> But how will you find it again?
+> This is already in mainline. Plus this patch
+> doesn't really seem to depend on this commit.
 > 
-> Persistent yells filesystem to me, and while we didn't use relayfs for 
-> various reasons, I think we do need something like it at the current stage.
+> > > davinci: changed SRAM allocator to shared ram.
+> > >             https://patchwork.kernel.org/patch/549351/
+> 
+> There should be no build time dependency with this patch
+> (the above patch just changes which pool of SRAM the
+> allocation happens from)
+> 
+> But, this brings out an important dependency of the patch
+> calling platform specific sram allocator functions. There
+> has been SRAM allocator consolidation work done by Russell
+> and as a result the SRAM allocator API for DaVinci will
+> actually change. The driver should probably just get sram
+> space through platform data so that it doesn't depend on the
+> platform specific sram allocation function.
 
-eventfs or sysfs?
+Ok, care to fix up the code then?
 
-We need VFS space for event hierarchy enumeration anyway (and move the current 
-debugfs bits there). Persistent events could show up in that hiearachy as well.
+> > Who is going to be applying these patches to the tree?
+> > 
+> > Should this driver go through a davinci subtree because of these
+> > dependancies?
+> 
+> No, driver and platform changes can be merged separately
+> if the above aspect is taken care of. Russell has been
+> pushing back on merging driver patches through his tree
+> unless absolutely required.
 
-Thanks,
+That's fine, I'll take it through my tree then, care to resolve the
+above issue and resend it?
 
-	Ingo
+thanks,
+
+greg k-h
