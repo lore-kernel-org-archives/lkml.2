@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836Ab1DZHXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:23:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47090 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757651Ab1DZHXg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:23:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=DTsfR0PFEAKHQOJv97dIUbtryTVVQ1ddiVltxr1le1yzf3kRIzfBN6pUyJZz68WBl4
-         eZBbRpgjDpnbtQBr51r+xI4kTjCDq2eXX9pNDxCOOPevoBP/Hn+TmHB4Seqa7ZU/e3dM
-         wDI/7mmU7xEDgzNi9P6ACWu0r9DQ3s99kM1sg=
+	id S1757828Ab1DZHYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:24:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51547 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757557Ab1DZHYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:24:09 -0400
+Date: Tue, 26 Apr 2011 09:23:50 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110426072350.GA30630@elte.hu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
+ <20110422063429.GA16643@elte.hu>
+ <20110422080604.GA22611@elte.hu>
+ <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <20110425175444.GC28239@elte.hu>
+ <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
+ <20110425221258.GA21442@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Date: Tue, 26 Apr 2011 15:23:36 +0800
-Message-ID: <BANLkTinE-8G-Lxp0eKBs28mbaXfcxfuGmA@mail.gmail.com>
-Subject: which is the best kernel version I should choose
-From: lina <lina.lastname@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110425221258.GA21442@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-for my friend's MacBook Pro 8.2
+* Andi Kleen <ak@linux.intel.com> wrote:
 
-in linux OS,
+> > Now it has been disabled for unclear reasons.
+> 
+> Also unfortunately only partial. Previously you could at least write the MSR 
+> from user space through /dev/cpu/*/msr, but now the kernel randomly rewrites 
+> it if anyone else uses cache events.
 
-How to configure to support the internet connection and the graphic
-card support in MacBook Pro?
+Ugh, that's an unbelievable hack - if you hack an active PMU via writing to it 
+via /dev/cpu/*/msr and it breaks you really get to keep the pieces. There's a 
+reason why those devices are root only - it's as if you wrote to a filesystem 
+that is already mounted!
 
-01:00.0 VGA compatible controller: ATI Technologies Inc NI Whistler
-[AMD Radeon HD 6600M Series]
-01:00.1 Audio device: ATI Technologies Inc Device aa90
-02:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57765
-Gigabit Ethernet PCIe (rev 10)
-02:00.1 SD Host controller: Broadcom Corporation Device 16bc (rev 10)
-03:00.0 Network controller: Broadcom Corporation Device 4331 (rev 02)
-04:00.0 FireWire (IEEE 1394): Agere Systems FW643 PCI Express1394b
-Controller (PHY/Link) (rev 08)
+If your user-space twiddling scripts go bad who knows what state the CPU gets 
+into and you might be reporting bogus bugs. I think writing to those msrs 
+directly should probably taint the kernel: i'll prepare a patch for that.
 
+> It's very sad we have to go through this.
+
+Not really, it took Peter 10 minutes to come up with an RFC patch to extend the 
+cache events in a meaningful way - and that was actually more useful to users 
+than all prior offcore patches combined. So the kernel already won from this 
+episode.
+
+We are not at all interested in hiding PMU functionality and keeping it 
+unstructured, and just passing through some opaque raw ABI to user-space.
 
 Thanks,
 
-lina
+	Ingo
