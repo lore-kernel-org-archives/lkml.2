@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1DZQ0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:26:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55753 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264Ab1DZQ01 (ORCPT
+	id S1757489Ab1DZQ1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:27:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60952 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923Ab1DZQ0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:26:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6327"; a="87724424"
-From: David Brown <davidb@codeaurora.org>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Cc: dwalker@fifo99.com, Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm-owner@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andres Salomon <dilinger@queued.net>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PM8921 MFD V5 5/6] MAINTAINERS: Add patterns for pmic 8921 files to MSM subsystem
-References: <1302039657-19395-1-git-send-email-adharmap@codeaurora.org>
-	<1302039657-19395-6-git-send-email-adharmap@codeaurora.org>
-Date: Tue, 26 Apr 2011 09:26:26 -0700
-In-Reply-To: <1302039657-19395-6-git-send-email-adharmap@codeaurora.org>
-	(Abhijeet Dharmapurikar's message of "Tue, 5 Apr 2011 14:40:56 -0700")
-Message-ID: <8yay62x6kst.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 26 Apr 2011 12:26:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=bTjWhEP92hfYwdRzc28f/L+cd4JBMAXI3vPO/TZXRJqTTz8poXkKMUF+XsLUh+l1uB
+         51tzdWywri14zB5PEpF4Lafh1vS3towI6tX438oJ7z14Q7ZfocOuSPYZovR8he5izaRI
+         TrKOw3ZX09dwE2p+5Gn6wJ12t8zBs4iGy4Gc0=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [RFC 5/8] compaction: remove active list counting
+Date: Wed, 27 Apr 2011 01:25:22 +0900
+Message-Id: <2b79bbf9ddceb73624f49bbe9477126147d875fd.1303833417.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <cover.1303833415.git.minchan.kim@gmail.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+In-Reply-To: <cover.1303833415.git.minchan.kim@gmail.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05 2011, Abhijeet Dharmapurikar wrote:
+acct_isolated of compaction uses page_lru_base_type which returns only
+base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+So it's pointless to add lru[LRU_ACTIVE_[ANON|FILE]] to get sum.
 
-> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> ---
->  MAINTAINERS |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 6b4b9cd..b9db68b 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -916,6 +916,8 @@ F:	drivers/mmc/host/msm_sdcc.h
->  F:	drivers/tty/serial/msm_serial.h
->  F:	drivers/tty/serial/msm_serial.c
->  F:	drivers/platform/msm/
-> +F:	drivers/*/pm8???-*
-> +F:	include/linux/mfd/pm8xxx/
->  T:	git git://codeaurora.org/quic/kernel/davidb/linux-msm.git
->  S:	Maintained
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/compaction.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: David Brown <davidb@codeaurora.org>
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9f80b5a..653b02b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -219,8 +219,8 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ 		count[lru]++;
+ 	}
+ 
+-	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+-	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
++	cc->nr_anon = count[LRU_INACTIVE_ANON];
++	cc->nr_file = count[LRU_INACTIVE_FILE];
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
+ }
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.1
+
