@@ -1,149 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab1DZOTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:19:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab1DZOTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:19:17 -0400
-Date: Tue, 26 Apr 2011 16:19:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-Subject: Re: [PATCH] kprobes,x86: disable irq durinr optimized callback
-Message-ID: <20110426141903.GC1896@jolsa.brq.redhat.com>
-References: <1303822891-8450-1-git-send-email-jolsa@redhat.com>
- <20110426134625.GA21840@home.goodmis.org>
+	id S1756407Ab1DZOWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:22:13 -0400
+Received: from mercurio.unical.it ([160.97.7.11]:44881 "EHLO
+	mercurio.unical.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756006Ab1DZOWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:22:12 -0400
+X-Greylist: delayed 3882 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 10:22:11 EDT
+Message-ID: <20110426145955.15347aj4wqzexo0s@webmail.unical.it>
+Date: Tue, 26 Apr 2011 14:59:55 +0200
+From: Ishii <yoshikoishii00@yahoo.co.jp>
+Reply-to: yoshikoishii00@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: Vital Information Reply..
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20110426134625.GA21840@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.4.26.124821
+X-PMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ FORGED_FROM_YAHOO 0.1, FROM_NAME_ONE_WORD 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_600_699 0, BODY_SIZE_7000_LESS 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_CONTACT 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __FRAUD_WEBMAIL_REPLYTO 0, __FROM_YAHOO 0, __HAS_MSGID 0, __INT_PROD_LOC 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __TO_MALFORMED_3 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 09:46:25AM -0400, Steven Rostedt wrote:
-> On Tue, Apr 26, 2011 at 03:01:31PM +0200, Jiri Olsa wrote:
-> > hi,
-> > 
-> > attached patch is disabling irqs during optimized callback,
-> > so we dont miss any in-irq kprobes as missed.
-> > 
-> > Also I think there's small window where current_kprobe variable
-> > could be touched in non-safe way, but I was not able to hit
-> > any issue.
-> > 
-> > I'm not sure wether this is a bug or if it was intentional to have
-> > irqs enabled during the pre_handler callback.
-> 
-> That's not very convincing. Did you see if we actually did miss events.
-> If that's the case then it is a bug. The conversion to optimizing should
-> not cause events to be missed.
-
-yep, running following:
-
-# cd /debug/tracing/
-# echo "p mutex_unlock" >> kprobe_events
-# echo "p _raw_spin_lock" >> kprobe_events
-# echo "p smp_apic_timer_interrupt" >> ./kprobe_events
-# echo 1 > events/enable
-
-makes the optimized kprobes to be missed. They are not missed in
-same testcase for non-optimized kprobes. I should have mentioned
-that, sry ;)
-
-> 
-> 
-> > 
-> > wbr,
-> > jirka
-> > 
-> > ---
-> > Disabling irqs during optimized callback, so we dont miss
-> > any in-irq kprobes as missed.
-> > 
-> > Interrupts are also disabled during non-optimized kprobes callbacks.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  arch/x86/kernel/kprobes.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-> > index c969fd9..917cb31 100644
-> > --- a/arch/x86/kernel/kprobes.c
-> > +++ b/arch/x86/kernel/kprobes.c
-> > @@ -1183,11 +1183,13 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
-> >  					 struct pt_regs *regs)
-> >  {
-> >  	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-> > +	unsigned long flags;
-> >  
-> >  	/* This is possible if op is under delayed unoptimizing */
-> >  	if (kprobe_disabled(&op->kp))
-> >  		return;
-> >  
-> > +	local_irq_save(flags);
-> >  	preempt_disable();
-> 
-> No reason to disable preemption if you disabled interrupts.
-
-ops, missed that..  attaching new patch
-
-thanks,
-jirka
 
 
----
-Disabling irqs during optimized callback, so we dont miss
-any in-irq kprobes as missed.
-
-running following:
-
-# cd /debug/tracing/
-# echo "p mutex_unlock" >> kprobe_events
-# echo "p _raw_spin_lock" >> kprobe_events
-# echo "p smp_apic_timer_interrupt" >> ./kprobe_events
-# echo 1 > events/enable
-
-makes the optimized kprobes to be missed. None is missed
-if the kprobe optimatization is disabled.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/kernel/kprobes.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index c969fd9..f1a6244 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1183,12 +1183,13 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
- 					 struct pt_regs *regs)
- {
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+	unsigned long flags;
- 
- 	/* This is possible if op is under delayed unoptimizing */
- 	if (kprobe_disabled(&op->kp))
- 		return;
- 
--	preempt_disable();
-+	local_irq_save(flags);
- 	if (kprobe_running()) {
- 		kprobes_inc_nmissed_count(&op->kp);
- 	} else {
-@@ -1207,7 +1208,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
- 		opt_pre_handler(&op->kp, regs);
- 		__this_cpu_write(current_kprobe, NULL);
- 	}
--	preempt_enable_no_resched();
-+	local_irq_restore(flags);
- }
- 
- static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
 -- 
-1.7.1
+Hello,
+
+I am Mrs. Yoshiko Ishii, the CEO Mistui Ishii Real Estate and majority share
+holder of Fujitsu Electronic Company here in Japan, I am seeking your
+assistance in helping me receive a large amount of money and in giving
+a clear research and feasibility study on areas I could invest on.
+
+Kindly indicate your interest by sending your reply to my private email
+address which is as follows: yoshii104@hotmail.com
+
+
+Regards.
+
+Mrs. Yoshiko Ishii.
+
+http://news.bbc.co.uk/2/hi/asia-pacific/7289581.stm
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
 
