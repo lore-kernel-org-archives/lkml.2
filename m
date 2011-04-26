@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1DZXPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:15:20 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57496 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751898Ab1DZXPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:15:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Y6FBjLtpa/UXhd1sxtO+2M1rjKoyEuyqIxs+JsV45kQlcY7RFAWljWY7VVmslM+L0jHQcyVsmvLwRJIVeigJnjNsjaaDyb1ObDLHisZKbCRfrMlfwtvDw0vnceBu/UAz;
-Date: Tue, 26 Apr 2011 16:15:16 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Foley <pefoley2@verizon.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] init/Kconfig: use if/endif to surround the EXPERT
- menu kconfig symbols
-Message-Id: <20110426161516.02efca6f.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.00.1104261608210.7639@chino.kir.corp.google.com>
-References: <20110426130036.997a05fc.rdunlap@xenotime.net>
-	<alpine.DEB.2.00.1104261608210.7639@chino.kir.corp.google.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1753698Ab1DZXSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:18:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46456 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab1DZXSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:18:22 -0400
+Date: Wed, 27 Apr 2011 09:18:11 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110427091811.153ca78b@notabene.brown>
+In-Reply-To: <20110426142624.GH4658@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-13-git-send-email-mgorman@suse.de>
+	<20110426223059.10f3edda@notabene.brown>
+	<20110426142624.GH4658@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 16:09:47 -0700 (PDT) David Rientjes wrote:
+On Tue, 26 Apr 2011 15:26:24 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-> On Tue, 26 Apr 2011, Randy Dunlap wrote:
+> On Tue, Apr 26, 2011 at 10:30:59PM +1000, NeilBrown wrote:
+> > On Tue, 26 Apr 2011 08:36:53 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > 
+> > > +/*
+> > > + * Throttle direct reclaimers if backing storage is backed by the network
+> > > + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+> > > + * depleted. kswapd will continue to make progress and wake the processes
+> > > + * when the low watermark is reached
+> > > + */
+> > > +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> > > +					nodemask_t *nodemask)
+> > > +{
+> > > +	struct zone *zone;
+> > > +	int high_zoneidx = gfp_zone(gfp_mask);
+> > > +	DEFINE_WAIT(wait);
+> > > +
+> > > +	/* Check if the pfmemalloc reserves are ok */
+> > > +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> > > +	prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> > > +							TASK_INTERRUPTIBLE);
+> > > +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
+> > > +		goto out;
+> > > +
+> > > +	/* Throttle */
+> > > +	do {
+> > > +		schedule();
+> > > +		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> > > +		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> > > +							TASK_INTERRUPTIBLE);
+> > > +	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
+> > > +			!fatal_signal_pending(current));
+> > > +
+> > > +out:
+> > > +	finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> > > +}
+> > 
+> > You are doing an interruptible wait, but only checking for fatal signals.
+> > So if a non-fatal signal arrives, you will busy-wait.
+> > 
+> > So I suspect you want TASK_KILLABLE, so just use:
+> > 
+> >     wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+> >                         pgmemalloc_watermark_ok(zone->zone_pgdata,
+> >                                                 high_zoneidx));
+> > 
 > 
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > Surround the EXPERT menu with "if EXPERT" and "endif" so that it
-> > is forced to stay as one unit.  Hopefully this will help to prevent
-> > it being broken in the future.
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Cc: Peter Foley <pefoley2@verizon.net>
-> > ---
-> >  init/Kconfig |   36 ++++++++++++++++++++----------------
-> >  1 file changed, 20 insertions(+), 16 deletions(-)
-> > 
-> > --- lnx-2639-rc4.orig/init/Kconfig
-> > +++ lnx-2639-rc4/init/Kconfig
-> > @@ -924,15 +924,17 @@ menuconfig EXPERT
-> >            environments which can tolerate a "non-standard" kernel.
-> >            Only use this if you really know what you are doing.
-> >  
-> > +if EXPERT
-> > +
-> >  config UID16
-> > -	bool "Enable 16-bit UID system calls" if EXPERT
-> > +	bool "Enable 16-bit UID system calls"
-> >  	depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION)
-> >  	default y
-> >  	help
-> >  	  This enables the legacy 16-bit UID syscall wrappers.
-> >  
+> Well, if a normal signal arrives, we do not necessarily want the
+> process to enter reclaim. For fatal signals, I allow it to continue
+> because it's not likely to be putting the system under more pressure
+> if it's exiting.
+
+Yep, I understand that and it doesn't seem unreasonable.
+
+However I don't think the code implements that correctly.
+
+If you get a non-fatal signal, schedule will exit immediately (because of the
+TASK_INTERRUPTIBLE setting) and the 'while' clause will succeed because the
+signal is not fatal, so it will loop around and try to schedule again, which
+will again exit immediately - busy loop.
+
 > 
-> I don't like this, people who look up a Kconfig option typically only 
-> look at the single entry and look for dependencies within it, not the 
-> context in which it is declared in the Kconfig file.
+> > (You also have an extraneous call to finish_wait)
+> > 
+> 
+> Which one? I'm not seeing a flow where finish_wait gets called twice
+> without a prepare_to_wait in between. 
+> 
 
-I think I know a bit about how that's done.
+You don't need to call finish_wait immediately before prepare_to_wait.
 
-People should use tools to look at dependencies (like nconfig, xconfig, oldconfig).
-They report dependencies correctly.
+It really is best to just use the appropriate 'wait_event*' macro....
 
-and this patch goes a long way toward preventing menu problems.
+NeilBrown
 
-so I nak your (implied) nak.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
