@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab1DZDJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 23:09:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44667 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab1DZDJS (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 25 Apr 2011 23:09:18 -0400
-Date: Mon, 25 Apr 2011 23:07:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 112/173] Input: xen-kbdfront - advertise either
- absolute or relative coordinates
-Message-ID: <20110426030745.GA20779@dumpdata.com>
-References: <46075c3a3ef08be6d70339617d6afc98@local>
- <20110425200237.859884245@pcw.home.local>
- <20110425203158.GA8427@aepfle.de>
+	id S1758053Ab1DZDOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 23:14:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53639 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787Ab1DZDOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 23:14:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Subject: Re: [PATCH] use oom_killer_disabled in all oom pathes
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimpidn07YRmm0gNDice3xo-tC8kow@mail.gmail.com>
+References: <20110426115902.F374.A69D9226@jp.fujitsu.com> <BANLkTimpidn07YRmm0gNDice3xo-tC8kow@mail.gmail.com>
+Message-Id: <20110426121555.F378.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110425203158.GA8427@aepfle.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DB63707.0026:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 26 Apr 2011 12:14:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 10:31:58PM +0200, Olaf Hering wrote:
-> On Mon, Apr 25, Willy Tarreau wrote:
+> On Tue, Apr 26, 2011 at 10:57 AM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> >> oom_killer_disable should be a global switch, also fit for oom paths
+> >> other than __alloc_pages_slowpath
+> >>
+> >> Here add it to mem_cgroup_handle_oom and pagefault_out_of_memory as well.
+> >
+> > Can you please explain more? Why should? Now oom_killer_disabled is used
+> > only hibernation path. so, Why pagefault and memcg allocation will be happen?
 > 
-> > 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+> Indeed I'm using it in virtio balloon test, oom killer triggered when
+> memory pressure is high.
 > 
-> These two hunks have to be removed from the patch.
-> If the guest is suspended/resumed the guest has to renegotiate with the
-> new qemu-dm process and set the request-abs-pointer property again.
-> 
+> literally oom_killer_disabled scope should be global, isn't it?
 
-Willy,
+ok. virtio baloon seems fair usage. if you add new usage of oom_killer_disabled 
+into the patch description, I'll ack this one.
 
-Olaf is refering to c36b58e8a9112017c2bcc322cc98e71241814303 which is 
-in the upstream kernel.
+thanks.
 
-> Olaf
-> 
-> > @@ -267,7 +281,7 @@
-> >  				   enum xenbus_state backend_state)
-> >  {
-> >  	struct xenkbd_info *info = dev->dev.driver_data;
-> > -	int ret, val;
-> > +	int val;
-> >  
-> >  	switch (backend_state) {
-> >  	case XenbusStateInitialising:
-> > @@ -278,17 +292,6 @@
-> >  
-> >  	case XenbusStateInitWait:
-> >  InitWait:
-> > -		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
-> > -				   "feature-abs-pointer", "%d", &val);
-> > -		if (ret < 0)
-> > -			val = 0;
-> > -		if (val) {
-> > -			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
-> > -					    "request-abs-pointer", "1");
-> > -			if (ret)
-> > -				printk(KERN_WARNING
-> > -				       "xenkbd: can't request abs-pointer");
-> > -		}
-> >  		xenbus_switch_state(dev, XenbusStateConnected);
-> >  		break;
-> >  
-> > 
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
