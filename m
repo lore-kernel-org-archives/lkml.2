@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab1DZV3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:29:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48614 "EHLO mga02.intel.com"
+	id S932802Ab1DZV3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:29:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60494 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209Ab1DZVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="634483608"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110426212.641772347@firstfloor.org>
-In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: JBeulich@novell.com, jbeulich@novell.com, ak@linux.intel.com,
-        mingo@elte.hu, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [57/106] x86: Fix a bogus unwind annotation in lib/semaphore_32.S
-Message-Id: <20110426211337.B630D3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:37 -0700 (PDT)
+	id S932294Ab1DZV3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:29:44 -0400
+Date: Tue, 26 Apr 2011 23:29:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Valdis.Kletnieks@vt.edu
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: Wonkiness with keyboard adapter - not sure if it's in USB or
+ input systems
+In-Reply-To: <23191.1303845136@localhost>
+Message-ID: <alpine.LNX.2.00.1104262319240.12035@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1104261453300.2035-100000@iolanthe.rowland.org> <23191.1303845136@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Tue, 26 Apr 2011, Valdis.Kletnieks@vt.edu wrote:
 
-------------------
-From: Jan Beulich <JBeulich@novell.com>
+> > > Bus 001 Device 006: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
+> 
+> > Have you tried testing the adapter by plugging it in after the system 
+> > is running?
+> 
+> It works fine at the Grub screen.
+> 
+> It *doesn't* work for the kernel when it initially starts up, even though a few
+> seconds ago the hardware worked just fine.
+> 
+> It *does* work after I've unplugged/replugged it - I've tested both the USB
+> side and the PS2 side, in either case it starts working.
+> 
+> I'm not sure what difference "plug it in after it's running" and "unplug/
+> replug" will have. I suppose I could test that, but I'm suspecting the results
+> will be "it works fine after plugging it in once the kernel is up".
 
-commit e938c287ea8d977e079f07464ac69923412663ce upstream.
+It seems like the BIOS handover of the USB input device doesn't work 
+properly.
 
-'simple' would have required specifying current frame address
-and return address location manually, but that's obviously not
-the case (and not necessary) here.
+The way things usually work in such situations -- BIOS is able to 
+understand USB input devices in a very basic mode (hidp) and translate the 
+events into PS/2-looking events, so that things like grub (which don't 
+understand USB HID) are able to see keyboard events -- BIOS presents those 
+as PS/2 devices.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <4D6D1082020000780003454C@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Once kernel is booted, it takes over devices in this 'legacy' mode from 
+BIOS, and initializes them properly as USB input devices.
 
----
- arch/x86/lib/semaphore_32.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Seems like this process is broken on your system. Could you please try to 
+disable legacy USB emulation in your BIOS, and see if the problem 
+persists? (it will make USB keyboard unavailable in grub).
 
-Index: linux-2.6.35.y/arch/x86/lib/semaphore_32.S
-===================================================================
---- linux-2.6.35.y.orig/arch/x86/lib/semaphore_32.S
-+++ linux-2.6.35.y/arch/x86/lib/semaphore_32.S
-@@ -36,7 +36,7 @@
-  */
- #ifdef CONFIG_SMP
- ENTRY(__write_lock_failed)
--	CFI_STARTPROC simple
-+	CFI_STARTPROC
- 	FRAME
- 2: 	LOCK_PREFIX
- 	addl	$ RW_LOCK_BIAS,(%eax)
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
