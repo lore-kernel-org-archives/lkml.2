@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab1DZRHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 13:07:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59276 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab1DZRHC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 13:07:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=evkCayv6IQ2YVt5B22B6mYitT1dhmv92RzTQ4Wz0sUI/M2lIAzADHudJiX4qZMby8N
-         hs8gg11F3IebzaWjWBeYVqlSVS4726bR7qy0jaSbuL1ceAqUUrVBRLjrenIE/TTtTlyD
-         RHtge7WSS/aCrrwVIXNsMrTplL2jW5wfWz3TU=
+	id S1757581Ab1DZRHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 13:07:21 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46791 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757306Ab1DZRHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 13:07:17 -0400
+Message-ID: <4DB6FBC2.7000806@sgi.com>
+Date: Tue, 26 Apr 2011 10:07:14 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=K3OEumicFMCT_Dh=xhpzfpa3JBw@mail.gmail.com>
-References: <4DB4AEF7.3090607@verizon.net>
-	<BANLkTi=K3OEumicFMCT_Dh=xhpzfpa3JBw@mail.gmail.com>
-Date: Wed, 27 Apr 2011 01:07:01 +0800
-Message-ID: <BANLkTikFUhiDSEM_yLtbzmhfdUWBDv71ww@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: mark unicore32 header export as broken
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: pefoley2@verizon.net, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, mmarek@suse.cz
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yhlu.kernel@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jack Steiner <steiner@sgi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] memblock: add error return when CONFIG_HAVE_MEMBLOCK
+ is not set
+References: <20110425181136.055235992@gulag1.americas.sgi.com>	<20110425181136.211858618@gulag1.americas.sgi.com> <20110425154835.7d41d89e.akpm@linux-foundation.org>
+In-Reply-To: <20110425154835.7d41d89e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 2:48 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sun, Apr 24, 2011 at 7:15 PM, Peter Foley <pefoley2@verizon.net> wrote:
->> This patch marks userspace header export for unicore32 as broken so that
->> it is skipped when running make headers_install_all.
+
+
+Andrew Morton wrote:
+> On Mon, 25 Apr 2011 13:11:37 -0500
+> Mike Travis <travis@sgi.com> wrote:
+> 
+>> 	Add an error return if CONFIG_HAVE_MEMBLOCK is not set instead
+>> 	of having to add #ifdef CONFIG_HAVE_MEMBLOCK around blocks of
+>> 	code calling that function.
 >>
-> Why ?
->
-> I would expect you to send this to arch/unicore32 maintainer too, he
-> is not in the CC: list.
+>> Authored-by: Yinghai Lu <yinghai@kernel.org>
+>> Signed-off-by: Mike Travis <travis@sgi.com>
+> 
+> There is no such thing as "Authored-by:".  If this patch was written by
+> yinghai then it must be tagged as From:him at the top of the changelog
+> and preferably has his signed-off-by: at the end.
+> 
+> Please clarify?
 
-+1
+Yes, you have it correct.  I had added the From: line but when I receive
+the email, it's removed.
 
-If you see errors when install kernel headers on unicore32, fix them instead
-of marking it as broken.
+Why not have an "Authored-by"?  That would eliminate the sendmail program
+from screwing it up?
+
+Thanks,
+Mike
