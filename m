@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab1DZWMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:12:18 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:21276 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab1DZWMQ convert rfc822-to-8bit (ORCPT
+	id S933016Ab1DZWOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:14:24 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:37902 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752904Ab1DZWOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:12:16 -0400
-From: KY Srinivasan <kys@microsoft.com>
+	Tue, 26 Apr 2011 18:14:23 -0400
+Date: Wed, 27 Apr 2011 00:14:20 +0200
+From: Pavel Machek <pavel@ucw.cz>
 To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
-Thread-Topic: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
-Thread-Index: AQHMBCwn1s6JBZAG00mF/Gjulq2PA5RxAJqA//+U6ACAAIDEgP//nuKA
-Date: Tue, 26 Apr 2011 22:12:15 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481DD0B4@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-18-git-send-email-kys@microsoft.com>
- <20110426194031.GD17467@suse.de>
- <6E21E5352C11B742B20C142EB499E0481DD061@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110426205805.GC20381@suse.de>
-In-Reply-To: <20110426205805.GC20381@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for
+ device PM.
+Message-ID: <20110426221420.GC29092@elf.ucw.cz>
+References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
+ <1303781471-2477-1-git-send-email-myungjoo.ham@samsung.com>
+ <201104261347.21811.rjw@sisk.pl>
+ <20110426131737.GA13597@suse.de>
+ <20110426203853.GC27140@elf.ucw.cz>
+ <20110426205745.GB20381@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426205745.GB20381@suse.de>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, April 26, 2011 4:58 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
-> PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+> > > What is the root problem that this is trying to solve?
+> > 
+> > It is trying to fix machines that need to run periodic kernel tasks
+> > even when user asked them to sleep. Zaurus needs to periodicaly wake
+> > up to be able to charge battery in s2ram state, for example.
 > 
-> On Tue, Apr 26, 2011 at 08:23:25PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Tuesday, April 26, 2011 3:41 PM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree
-> Consulting
-> > > PVT LTD); Hank Janssen
-> > > Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
-> > >
-> > > On Tue, Apr 26, 2011 at 09:20:35AM -0700, K. Y. Srinivasan wrote:
-> > > > Now, get rid of struct hv_bus. We will no longer be embedding
-> > > > struct bus_type.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > > > ---
-> > > >  drivers/staging/hv/vmbus_drv.c |   33 ++++++++++++++-------------------
-> > > >  1 files changed, 14 insertions(+), 19 deletions(-)
-> > > >
-> > > >
-> > > > -	hv_bus.bus.name = driver_name;
-> > > > +	hv_bus.name = driver_name;
-> > >
-> > > Why are you setting the name of the bus again?  Shouldn't this line be
-> > > removed?
-> >
-> > You are absolutely right. Since this redundancy was in the existing
-> > code, should I send you a separate patch to fix this?
-> 
-> A separate one after this series is fine.
+> That sounds like a bug in userspace you are trying to work around.  Why
+> not solve it there first?
 
-Done; I have sent the patch out.
+Can you be more specific?
 
-Regards,
+The userspace is standard Debian; or maybe even init=/bin/bash. I want
+to sleep the machine before I move, so I do echo mem >
+/sys/power/state, as I do on PC.
 
-K. Y
+Then I do plug the machine into AC when I move near outlet. In PC,
+embedded controller wakes up and starts charging. In Zaurus, it is
+kernel (SPI+charging drivers) that wake up, start charging, and go
+back to sleep.
 
-
+Then I (the user) press the power button and get "bash#" back. Where
+is the userspace bug?
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
