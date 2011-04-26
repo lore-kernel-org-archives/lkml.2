@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab1DZUdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:33:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50620 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab1DZUdS (ORCPT
+	id S1757942Ab1DZUd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:33:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60248 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757868Ab1DZUdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:33:18 -0400
-Date: Tue, 26 Apr 2011 21:33:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>
-Subject: Re: [PATCH 1/6] dmaengine/dw_dmac: Replace spin_lock_bh with
-	irqsave variants
-Message-ID: <20110426203306.GC17290@n2100.arm.linux.org.uk>
-References: <e52c8e679fbf3007cf7e5e4bcfc86ea208a09d7c.1303123511.git.viresh.kumar@st.com> <4DAD2AE9.7060106@st.com>
+	Tue, 26 Apr 2011 16:33:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Zkf5UZB/6ciNg4S/5xk/9BPQr9nt3P5XLKLeKUsOGm74hSkOx5IGUqm2AOAXQFA0Ax
+         tHC/OJproD/swbYkTwQA7VhLM2KEdy/bAma2EHFtTfJAzBjVa7CWQCr0A4Ngi6coFvff
+         6grLvhIDNK95P8y/v+Qq0pNoTeiNJfW4ybpeI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAD2AE9.7060106@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1303849650.2232.41.camel@offworld>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
+	<1303849650.2232.41.camel@offworld>
+Date: Tue, 26 Apr 2011 17:33:24 -0300
+Message-ID: <BANLkTi=57Q-w2iXeYjdvr4-ZzSkWCRKhSg@mail.gmail.com>
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+From: Thiago Farina <tfransosi@gmail.com>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 11:55:45AM +0530, viresh kumar wrote:
-> This must have been added in dw_dma_chan instead :(
-> Will resend it.
+On Tue, Apr 26, 2011 at 5:27 PM, Davidlohr Bueso <dave@gnu.org> wrote:
+> On Tue, 2011-04-26 at 15:49 -0300, Thiago Farina wrote:
+>> This macro is arguably more readable than its variants:
+>> - !strcmp(a, b)
+>> - strcmp(a, b) == 0
+>
+> Anyone how is going to be reading kernel C code, can understand strcmp I
+> think.
+>
+We all know that, but please see the previous discussion.
 
-Even that doesn't work.  It has to be a local variable.
+http://www.spinics.net/lists/kernel/msg1176975.html
+http://www.spinics.net/lists/kernel/msg1176977.html
+
+Best regards,
+
+> Cheers,
+> Davidlohr
+>
+>
