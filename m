@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1DZTZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:25:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54852 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab1DZTZC (ORCPT
+	id S1755390Ab1DZT0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:26:17 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35650 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab1DZT0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:25:02 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=i38SgkEfDKkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MEeYj32ODMxs1pVXrywA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110426192029.GA4686@p183>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	 <20110426190531.GA4556@p183>
-	 <1303845468.18763.32.camel@gandalf.stny.rr.com>
-	 <20110426192029.GA4686@p183>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Apr 2011 15:25:00 -0400
-Message-ID: <1303845900.18763.34.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Apr 2011 15:26:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=fQzJvMg39wocI4rROWKh0aQ6bie25+kB/sXKP6oLDYiy59pm3Qz5MM3nMOLfNV8yjB
+         1W1G0wnMNAEWuxlRPVUg==
+Date: Tue, 26 Apr 2011 12:26:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Matt Fleming <matt@console-pimps.org>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 2/3] track numbers of pagetable pages
+In-Reply-To: <20110426155743.2e76282d@mfleming-mobl1.ger.corp.intel.com>
+Message-ID: <alpine.LSU.2.00.1104261217430.9334@sister.anvils>
+References: <20110415173821.62660715@kernel> <20110415173823.EA7A7473@kernel> <20110416104456.3915b7de@mfleming-mobl1.ger.corp.intel.com> <1303138924.9615.2487.camel@nimitz> <20110426155743.2e76282d@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 22:20 +0300, Alexey Dobriyan wrote:
-> On Tue, Apr 26, 2011 at 03:17:48PM -0400, Steven Rostedt wrote:
-> > On Tue, 2011-04-26 at 22:05 +0300, Alexey Dobriyan wrote:
-> > > On Tue, Apr 26, 2011 at 03:49:49PM -0300, Thiago Farina wrote:
+On Tue, 26 Apr 2011, Matt Fleming wrote:
+
+> [Added Hugh Dickins to the CC list]
 > 
-> > > >  /**
-> > > > + * streq - Are two strings equal?
-> > > > + * @a: first string
-> > > > + * @b: second string
-> > > > + *
-> > > > + * Example:
-> > > > + *	if (streq(argv[1], "--help"))
-> > > > + *		printf("%s\n", "This help");
+> Sorry it's taken me so long to reply Dave.
+> 
+> On Mon, 18 Apr 2011 08:02:04 -0700
+> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> 
+> > On Sat, 2011-04-16 at 10:44 +0100, Matt Fleming wrote:
+> > > >  static inline void pgtable_page_dtor(struct mm_struct *mm, struct page *page)
+> > > >  {
+> > > >  	pte_lock_deinit(page);
+> > > > +	dec_mm_counter(mm, MM_PTEPAGES);
+> > > >  	dec_zone_page_state(page, NR_PAGETABLE);
+> > > >  }
+> > > 
+> > > I'm probably missing something really obvious but...
+> > > 
+> > > Is this safe in the non-USE_SPLIT_PTLOCKS case? If we're not using
+> > > split-ptlocks then inc/dec_mm_counter() are only safe when done under
+> > > mm->page_table_lock, right? But it looks to me like we can end up doing,
+> > > 
+> > >   __pte_alloc()
+> > >       pte_alloc_one()
+> > >           pgtable_page_ctor()
+> > > 
+> > > before acquiring mm->page_table_lock in __pte_alloc().
 > > 
-> > Userspace example?
+> > No, it's probably not safe.  We'll have to come up with something a bit
+> > different in that case.  Either that, or just kill the non-atomic case.
+> > Surely there's some percpu magic counter somewhere in the kernel that is
+> > optimized for fast (unlocked?) updates and rare, slow reads.
 > 
-> The point is that function is trivial, and if someone doesn't
-> understand it, he should read some Kernighan and Ritchie first.
+> It seems it was Hugh that added these atomics in f412ac08c986 ("[PATCH]
+> mm: fix rss and mmlist locking").
+> 
+> Hugh, what was the reason that you left the old counters around (the
+> ones protected by page_table_lock)? It seems to me that we could
+> delete those and just have the single case that uses the atomic_t
+> operations.
 
-I understood your point, but I missed looking at it in my first reply.
-I'm just stating that it is even worse since it includes a userspace
-example of a macro defined in the kernel. IOW, the example wont even
-work.
+The only reason was to avoid adding costly atomic operations into a
+configuration that had no need for them there: the page_table_lock
+sufficed.
 
--- Steve
+Certainly it would be simpler just to delete the non-atomic variant.
 
+And I think it's fair to say that any configuration on which we're
+measuring performance to that degree (rather than "does it boot fast?"
+type measurements), would already be going the split ptlocks route.
+
+> 
+> Would anyone object to a patch that removed the non-atomic case?
+
+Not I.
+
+Hugh
