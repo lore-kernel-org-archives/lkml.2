@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab1DZAtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:49:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32828 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab1DZAtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:49:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
-   d="scan'208";a="738325590"
-Subject: Re: [RFC]block: add flush request at head
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20110425082103.GA17734@mtj.dyndns.org>
-References: <1303112174.3981.187.camel@sli10-conroe>
-	 <4DABF194.4010603@fusionio.com> <1303115157.3981.198.camel@sli10-conroe>
-	 <20110422225704.GA1576@mtj.dyndns.org>
-	 <1303693319.3981.272.camel@sli10-conroe>
-	 <20110425082103.GA17734@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 08:49:15 +0800
-Message-ID: <1303778955.3981.285.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932703Ab1DZAxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:53:23 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36026 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932190Ab1DZAxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 20:53:22 -0400
+Date: Mon, 25 Apr 2011 19:53:15 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs-devel@lists.launchpad.net
+Subject: [GIT PULL] eCryptfs fixes for 2.6.39-rc5
+Message-ID: <20110426005314.GA27036@boyd.l.tihix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 16:21 +0800, Tejun Heo wrote:
-> Hello, Shaohua.
-> 
-> On Mon, Apr 25, 2011 at 09:01:59AM +0800, Shaohua Li wrote:
-> > this is a regression from 2.6.39-rc2 compared to 2.6.39-rc1, so this
-> > isn't related to the flush rewritten. Workload is sysbench fileio,
-> > please see the first mail at the thread for detail.
-> 
-> Understood.  Let's talk on the other thread.
-This issue isn't related to the optimization patch in another thread.
-And that patch can't recover the regression, which does improve
-throughput even without the regression. So please look at issue again.
+Hi Linus,
 
-Thanks,
-Shaohua
+The first 3 patches below fix bugs when eCryptfs is mounted on top of
+NFSv3 client mount points. The 4th patch fixes a bug that occurs when
+the eCryptfs file metadata can't be read during lookup. The 5th patch
+fixes a regression, introduced in 2.6.39-rc1, causing mtimes to not be
+preserved when using `cp -p`.
 
+The following changes since commit 5dd12af05ca6b7d052c06a9ca4ff755fdfa25ae4:
 
+  Merge branch 'dcache-cleanup' (2011-04-24 08:51:15 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
+
+Tyler Hicks (5):
+      eCryptfs: Remove extra d_delete in ecryptfs_rmdir
+      eCryptfs: dput dentries returned from dget_parent
+      eCryptfs: Add reference counting to lower files
+      eCryptfs: Handle failed metadata read in lookup
+      eCryptfs: Flush dirty pages in setattr
+
+ fs/ecryptfs/crypto.c          |   21 ++++++++++++
+ fs/ecryptfs/ecryptfs_kernel.h |    7 +++-
+ fs/ecryptfs/file.c            |   25 +++++++-------
+ fs/ecryptfs/inode.c           |   60 ++++++++++++++++++----------------
+ fs/ecryptfs/kthread.c         |    6 ++--
+ fs/ecryptfs/main.c            |   72 ++++++++++++++++++++++++++++------------
+ fs/ecryptfs/super.c           |   16 ++-------
+ 7 files changed, 128 insertions(+), 79 deletions(-)
