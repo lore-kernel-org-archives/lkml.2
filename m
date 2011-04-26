@@ -1,106 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab1DZR0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 13:26:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19417 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000Ab1DZR0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 13:26:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,269,1301900400"; 
-   d="scan'208";a="738670456"
-Date: Tue, 26 Apr 2011 10:25:59 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: gregkh@suse.de, linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
-        balbi@ti.com,
-        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        "'Matthew Wilcox'" <matthew.r.wilcox@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC/PATCH v3 2/5] uas: MS UAS Gadget driver - Infrastructure
-Message-ID: <20110426172559.GA5405@xanatos>
-References: <1302788176-27972-1-git-send-email-tlinder@codeaurora.org>
- <20110418193722.GB7194@xanatos>
- <003601cc03f0$70a1d470$51e57d50$@org>
+	id S1757846Ab1DZRhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 13:37:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27689 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757776Ab1DZRhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 13:37:43 -0400
+Date: Tue, 26 Apr 2011 13:37:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: submitting read(1%)/write(99%) IO within a kernel thread, vs doing
+ it in userspace (aio) with CFQ shows drastic drop. Ideas?
+Message-ID: <20110426173732.GA25442@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <003601cc03f0$70a1d470$51e57d50$@org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DB702E5.010F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 12:00:46PM +0300, Tanya Brokhman wrote:
-> Our idea was that UAS supporting devices register with 2 configurations (not
-> a second alternate setting to the MS interface). Upon enumeration the host
-> will choose the operational mode/protocol (BOT/UAS) by choosing the
-> configuration it wishes to operate in. As a first development phase it was
-> easier for us to register only 1 configuration and that's why we added the
-> module parameter. We're now working on removing this hack and registering 2
-> configurations the host can choose from. From what I saw in the host side
-> implementation the host always prefers the first configuration so right now
-> we set the UAS config from user-space via sysfs.
-> 
-> I looked into USB-IF UAS compliance test document and you're right. There is
-> something that mentions "Configuration Descriptor shall report B NUM
-> INTERFACES > 0". Unfortunately in our version of the file this is the only
-> reference I found for this demand so I need to look into that and get more
-> details.
 
-Ok, I'll double check with the people I know from the compliance team.
-I remember the requirement from the discussion of the UAS compliance
-test on the USB-IF website.  Do you have access to the UAS workgroup?
+I was hoping you could shed some light at a peculiar problem I am seeing
+(this is with the PV block backend I posted recently [1]).
 
-> In the meanwhile: will this work with the existing UAS driver
-> implementation? How will I be able to "force" the host to choose the UAS
-> protocol? I can compile just cdc_ncm but I prefer to have my host support
-> both UAS and BOT and be able to choose. As mentioned before, at the moment I
-> achieved that by manually setting the device configuration to UAS from user
-> space.
+I am using the IOmeter fio test, with two threads and modified it slightly
+(please see at the bottom). The "disk" the I/Os are being done on is an iSCSI disk
+that on the other side is LIO TCM 10G RAMdisk. The network is 1GB and
+the line speed when doing just full blow random reads or full random writes
+is 112MB/s (native or from the guest).
 
-Unfortunately, Linux will choose the first configuration and bind
-whatever driver that matches that configuration to the device.  So if
-the BOT configuration is configuration 1, then the BOT driver will be
-loaded.  Same with alternate interface settings.  Alternate interface 0
-will always be chosen first during enumeration.
+I launch a guest and inside the guest I run the 'fio iometer'. When launching
+the guest I have the option of using two different block backends:
+the kernel one (simple code [1] doing 'submit_bio') or the userspace one (which
+uses the AIO library and opens the disk using O_DIRECT). The throughput and submit
+latency are widely different for this particular workload. If I swap the IO
+scheduler in the host for the iSCSI disk from 'cfq' to deadline or noop - throughput
+and latencies become the same (however CPU usage is not, but that is not important here).
+Here is a simple table with the numbers:
 
-We need a way to switch the UAS device from the BOT driver to the UAS
-driver, but I'm not sure how to do that.  I think Alan might have had
-some ideas?
+IOmeter       |       |      |          |
+64K, randrw   |  NOOP | CFQ  | deadline |
+randrwmix=80  |       |      |          |
+--------------+-------+------+----------+
+blkback       |103/27 |32/10 | 102/27   |
+--------------+-------+------+----------+
+QEMU qdisk    |103/27 |102/27| 102/27   |
 
-> > Why not a thread per SCSI command TAG (i.e. per stream ID)?  I think
-> > that most USB storage devices only have one LUN.  You would get better
-> > performance if you could, say, kick off several READ commands for the
-> > same LUN when you receive two separate SCSI commands on different
-> > stream
-> > IDs.
-> 
-> I wasn't aware of the "one LUN" issue. I'm afraid that creating a thread per
-> SCSI command won't be that efficient because we will spend too much CPU on
-> 1. creating/killing the thread
-> 2. context switch between the threads
-> Perhaps the better solution will be the combination of the two approaches:
-> create X threads that will handle the received SCSI commands. 
-> This way X can be a maximum between number of LUNS and some max_threads_val
-> we decide on. 
-> How does this sound?
+What I found out is that if I pollute the ring request with just one
+different type of I/O operation (so 99% is WRITE, and I stick 1% READ on it)
+the I/O  plummets if I use the kernel thread. But that problem does
+not show up when the I/O operations are plumbed through the AIO library.
+And if I switch over from the CFQ scheduler the numbers go up again.
+The host and the guest are both running Fedora Core 13 x86_64.
 
-Sure, that sounds like the right direction.  You can choose how many
-threads you want to support (X), and then set the bMaxStreams value in
-the descriptor to that value.  That way the host will only queue X
-number of SCSI commands, and use X number of stream IDs, and each thread
-can handle one SCSI command.  Or if you want each thread to be able to
-handle C number of commands, you could set bMaxStreams value to C*X.
 
-Right now the UAS driver attempts to allocate 65536 streams (which
-translates to allowing the SCSI core to submit up to 65536 commands
-asynchronously), but the xHCI driver will only let it allocate the
-minimum number of streams that each of the three endpoints advertise.
-Probably the UAS driver needs to update the .can_queue value for the
-SCSI host after looking at the device descriptors.  I'm not sure if that
-means the SCSI core can submit up to .can_queue commands for each LUN,
-or up to .can_queue commands for all LUNs.
+Any ideas what the kernel AIO library or CFQ might be doing differently?
 
-Sarah Sahrp
+The two code pieces simplified:
+
+The kernel thread is quite simple, it does:
+
+	while (!kthread_should_stop()) {
+		struct blk_plug plug;
+
+		.. snip..
+
+		blk_start_plug(&plug);
+
+		if (do_block_io_op(blkif))
+			blkif->waiting_reqs = 1;
+
+		blk_finish_plug(&plug);
+
+	}
+
+ and 'do_block_io_op' picks up the requests from the ring buffer:
+
+	rc = blk_rings->common.req_cons;
+	rp = blk_rings->common.sring->req_prod;
+
+	while (rc != rp) {
+		.. snip ..	
+		switch (req.operation) {
+		case BLKIF_OP_READ:
+			dispatch_rw_block_io(blkif, &req, pending_req);
+			break;
+		case BLKIF_OP_WRITE:
+			blkif->st_wr_req++;
+			dispatch_rw_block_io(blkif, &req, pending_req);
+		.. snip..
+		cond_resched();
+	}
+
+and the 'dispatch_rw_block_io' takes the request (which can contain up
+to 11 pages - so 88 512byte sectors if desired) and sets up 'bio's mapping
+to these pages and then
+
+	for (i = 0; i < nbio; i++)
+		submit_bio(operation, biolist[i]);
+
+That is it. The interesting thing is that the requests can only contain one
+type - either all of the pages are READ or all WRITE (I am ignoring barrieris here).
+
+The userspace code is similar. It has a thread that does:
+
+    rc = blkdev->rings.common.req_cons;
+    rp = blkdev->rings.common.sring->req_prod;
+
+    while (rc != rp) {
+	.. snip..
+	.. picks up the request from the ring buffer and ../
+            /* run i/o in aio mode */
+            ioreq_runio_qemu_aio(ioreq);
+
+and 'ioreq_runio_qemu_aio':
+
+    switch (ioreq->req.operation) {
+    case BLKIF_OP_READ:
+        bdrv_aio_readv(blkdev->bs, ioreq->start / BLOCK_SIZE,
+                       &ioreq->v, ioreq->v.size / BLOCK_SIZE,
+                       qemu_aio_complete, ioreq);
+	.. snip..
+    case BLKIF_OP_WRITE_BARRIER:
+        bdrv_aio_writev(blkdev->bs, ioreq->start / BLOCK_SIZE,
+
+and the 'bdrv_aio_[read|write]v' ends up calling either io_prep_preadv
+or io_prep_writev and then io_submit.
+
+
+The iometer file:
+
+# This job file tries to mimic the Intel IOMeter File Server Access Pattern
+[global]
+description=Emulation of Intel IOmeter File Server Access Pattern
+numjobs=2
+timeout=60
+
+[/dev/xvda]
+#bssplit=512/10:1k/5:2k/5:4k/60:8k/2:16k/4:32k/4:64k/10
+#bssplit=512/10:1k/5:2k/5:4k
+bs=64K
+rw=randrw
+rwmixread=80
+direct=1
+size=4g
+ioengine=libaio
+# IOMeter defines the server loads as the following:
+# iodepth=1	Linear
+# iodepth=4	Very Light
+# iodepth=8	Light
+# iodepth=64	Moderate
+# iodepth=256	Heavy
+iodepth=256
+write_bw_log=iometer
+write_lat_log=iometer
+
+
+[1]: http://lwn.net/Articles/439629/
+    I updated it a bit (move the plug/unplug higher in the calling chain), so would suggest 
+    git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/xen-blkback-v3.1
+
