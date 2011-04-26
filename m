@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab1DZMaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:30:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33741 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab1DZMaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:30:52 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=tM52yTxyLPgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7nQ9QJ0cAYWEfdILexkA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/4] munmap: Flexible mem unmap operation interface for
- scheduling latency
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Geunsik Lim <leemgs1@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Hugh Dickins <hughd@google.com>, Darren Hart <dvhart@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1303802720.20212.7.camel@twins>
-References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
-	 <1303760837.4865.22.camel@laptop>
-	 <1303763393.18763.16.camel@gandalf.stny.rr.com>
-	 <1303802720.20212.7.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Apr 2011 08:30:49 -0400
-Message-ID: <1303821049.18763.20.camel@gandalf.stny.rr.com>
+	id S1755257Ab1DZMbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:31:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48688 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753353Ab1DZMbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 08:31:12 -0400
+Date: Tue, 26 Apr 2011 22:30:59 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110426223059.10f3edda@notabene.brown>
+In-Reply-To: <1303803414-5937-13-git-send-email-mgorman@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-13-git-send-email-mgorman@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 09:25 +0200, Peter Zijlstra wrote:
-> On Mon, 2011-04-25 at 16:29 -0400, Steven Rostedt wrote:
-> > On Mon, 2011-04-25 at 21:47 +0200, Peter Zijlstra wrote:
-> > 
-> > > Also, -rt doesn't care since it already has preemptible mmu_gather.
-> > 
-> > To be fair, he did state:
-> > 
-> > >     In general, This is not a critical latency-path on preemption mode
-> > >     (PREEMPT_VOLUNTARY / PREEMPT_DESKTOP / PREEMPT_RT)
-> 
-> That doesn't parse for me... what does it say? The only one not listed
-> is the non-preempt option, that wouldn't reschedule no matter what
-> ZAP_BLOCK_SIZE.
+On Tue, 26 Apr 2011 08:36:53 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-Heh, it didn't parse for me, as I took PREEMPT_DESKTOP and thought it
-said PREEMPT_NONE.
 
-Oh well.
+> +/*
+> + * Throttle direct reclaimers if backing storage is backed by the network
+> + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+> + * depleted. kswapd will continue to make progress and wake the processes
+> + * when the low watermark is reached
+> + */
+> +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> +					nodemask_t *nodemask)
+> +{
+> +	struct zone *zone;
+> +	int high_zoneidx = gfp_zone(gfp_mask);
+> +	DEFINE_WAIT(wait);
+> +
+> +	/* Check if the pfmemalloc reserves are ok */
+> +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> +	prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> +							TASK_INTERRUPTIBLE);
+> +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
+> +		goto out;
+> +
+> +	/* Throttle */
+> +	do {
+> +		schedule();
+> +		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> +		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> +							TASK_INTERRUPTIBLE);
+> +	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
+> +			!fatal_signal_pending(current));
+> +
+> +out:
+> +	finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> +}
 
--- Steve
+You are doing an interruptible wait, but only checking for fatal signals.
+So if a non-fatal signal arrives, you will busy-wait.
+
+So I suspect you want TASK_KILLABLE, so just use:
+
+    wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+                        pgmemalloc_watermark_ok(zone->zone_pgdata,
+                                                high_zoneidx));
+
+(You also have an extraneous call to finish_wait)
+
+NeilBrown
 
 
