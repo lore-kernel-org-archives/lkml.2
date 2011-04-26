@@ -1,152 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1DZLv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:51:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51911 "EHLO ogre.sisk.pl"
+	id S1753561Ab1DZLxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:53:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29497 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084Ab1DZLvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:51:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [linux-pm] [PATCH/RFC] MMC: remove unbalanced pm_runtime_suspend()
-Date: Tue, 26 Apr 2011 13:51:59 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>, LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1104221709030.1791-100000@iolanthe.rowland.org> <201104251229.27263.rjw@sisk.pl> <Pine.LNX.4.64.1104261239270.11811@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1104261239270.11811@axis700.grange>
+	id S1751495Ab1DZLxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:53:54 -0400
+Message-ID: <4DB6B28D.5090607@redhat.com>
+Date: Tue, 26 Apr 2011 13:54:53 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110422 Fedora/3.1.9-7.fc15 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Hans Verkuil <hverkuil@xs4all.nl>,
+        Joerg Heckenbach <joerg@heckenbach-aw.de>,
+        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
+References: <201104252323.20420.linux@rainbow-software.org> <201104260832.11150.hverkuil@xs4all.nl> <201104261030.21681.linux@rainbow-software.org>
+In-Reply-To: <201104261030.21681.linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104261351.59622.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 26, 2011, Guennadi Liakhovetski wrote:
-> Hi
-
 Hi,
 
-> On Mon, 25 Apr 2011, Rafael J. Wysocki wrote:
-> 
-> > On Saturday, April 23, 2011, Rafael J. Wysocki wrote:
-> > > On Friday, April 22, 2011, Alan Stern wrote:
-> > > > On Fri, 22 Apr 2011, Rafael J. Wysocki wrote:
-> > > > 
-> > > > > > The barrier would not prevent the race between the notifier and runtie PM
-> > > > > > from taking place.  Why don't we do something like this instead:
-> > > > > > 
-> > > > > > ---
-> > > > > >  drivers/base/dd.c |    3 ++-
-> > > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > > > > 
-> > > > > > Index: linux-2.6/drivers/base/dd.c
-> > > > > > ===================================================================
-> > > > > > --- linux-2.6.orig/drivers/base/dd.c
-> > > > > > +++ linux-2.6/drivers/base/dd.c
-> > > > > > @@ -326,6 +326,8 @@ static void __device_release_driver(stru
-> > > > > >  						     BUS_NOTIFY_UNBIND_DRIVER,
-> > > > > >  						     dev);
-> > > > > >  
-> > > > > > +		pm_runtime_put_sync(dev);
-> > > > > > +
-> > > > > 
-> > > > > In fact, I think this one may be _noidle.  If we allow the bus/driver
-> > > > > to do what they wont, we might as well let them handle the "device idle"
-> > > > > case from ->remove().
-> > > > 
-> > > > Maybe...  But keeping it put_sync doesn't do any harm.  In Guennadi's 
-> > > > case, it might allow him to get rid of the pm_runtime_suspend() call in 
-> > > > the remove routine.
-> > > > 
-> > > > > >  		if (dev->bus && dev->bus->remove)
-> > > > > >  			dev->bus->remove(dev);
-> > > > > >  		else if (drv->remove)
-> > > > > > @@ -338,7 +340,6 @@ static void __device_release_driver(stru
-> > > > > >  						     BUS_NOTIFY_UNBOUND_DRIVER,
-> > > > > >  						     dev);
-> > > > > >  
-> > > > > > -		pm_runtime_put_sync(dev);
-> > > > > >  	}
-> > > > > >  }
-> > > > 
-> > > > Basically this is okay with me, and it should allow Guennadi to avoid
-> > > > the extra put/get pair.
-> > > 
-> > > OK, so I'm going to put the appended patch into my linux-next branch
-> > > (hopefully, the problem is explained sufficiently in the changelog).
-> > 
-> > I thought about that a bit more and came to the conclusion that we should
-> > do things a bit differently in __device_release_driver().  Namely, the fact
-> > that the device can be resumed (either synchronously or asynchronously) after
-> > the pm_runtime_barrier() has returned may be problematic too, because it
-> > may race with the bus notifier in some cases.  For this reason, I think it
-> > would be better to do pm_runtime_get_sync() instead of the
-> > pm_runtime_get_noresume() and pm_runtime_barrier().
-> > 
-> > So, I think the appended patch would be better than the previous one.
-> 
-> I refrained in taking part in the general rtpm API behaviour, I'd rather 
-> rely on others here. If you push this your patch, I'll have to change my 
-> TMIO/SDHI and MMCIF patches as follows:
-> 
-> diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
-> index 1889d64..3a22e55 100644
-> --- a/drivers/mmc/host/sh_mmcif.c
-> +++ b/drivers/mmc/host/sh_mmcif.c
-> @@ -1117,6 +1117,8 @@ static int __devexit sh_mmcif_remove(struct platform_device *pdev)
->  	struct sh_mmcif_host *host = platform_get_drvdata(pdev);
->  	int irq[2];
->  
-> +	pm_runtime_get_sync(&pdev->dev);
-> +
->  	mmc_remove_host(host->mmc);
->  	sh_mmcif_release_dma(host);
->  
-> @@ -1137,7 +1139,6 @@ static int __devexit sh_mmcif_remove(struct platform_device *pdev)
->  	mmc_free_host(host->mmc);
->  	pm_runtime_put_sync(&pdev->dev);
->  	pm_runtime_disable(&pdev->dev);
-> -	pm_runtime_get_noresume(&pdev->dev);
->  
->  	return 0;
->  }
-> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
-> index 26598f1..86eaa68 100644
-> --- a/drivers/mmc/host/tmio_mmc_pio.c
-> +++ b/drivers/mmc/host/tmio_mmc_pio.c
-> @@ -956,17 +956,9 @@ void tmio_mmc_host_remove(struct tmio_mmc_host *host)
->  	iounmap(host->ctl);
->  	mmc_free_host(host->mmc);
->  
-> -	/*
-> -	 * Now rtpm usage_count = 2, because we incremented it once in probe()
-> -	 * above, and dd.c incremented it again, before calling .release(). So.
-> -	 * to power the device down we have to decrement the counter to 0 and
-> -	 * suspend it, because after our disable() suspending from dd.c will
-> -	 * only decrement the counter, but not call any callbacks
-> -	 */
-> -	pm_runtime_put_noidle(&pdev->dev);
-> +	/* Compensate for pm_runtime_get_sync() in probe() above */
->  	pm_runtime_put_sync(&pdev->dev);
->  	pm_runtime_disable(&pdev->dev);
-> -	pm_runtime_get_noresume(&pdev->dev);
->  }
->  EXPORT_SYMBOL(tmio_mmc_host_remove);
+On 04/26/2011 10:30 AM, Ondrej Zary wrote:
+> On Tuesday 26 April 2011, you wrote:
+>> On Monday, April 25, 2011 23:23:17 Ondrej Zary wrote:
+>>> The YVU420 and YUV422P formats are broken and cause kernel panic on use.
+>>> (YVU420 does not work and sometimes causes "unable to handle paging
+>>> request" panic, YUV422P always causes "NULL pointer dereference").
+>>>
+>>> As V4L2 spec says that drivers shouldn't do any in-kernel image format
+>>> conversion, remove it completely (except YUYV).
+>>
+>> What really should happen is that the conversion is moved to libv4lconvert.
+>> I've never had the time to tackle that, but it would improve this driver a
+>> lot.
+>
+> Depending on isoc_mode module parameter, the device uses different image
+> formats: YUV 4:2:2 interleaved, YUV 4:2:0 planar or compressed format.
+>
+> Maybe the parameter should go away and these three formats exposed to
+> userspace?
 
-So you won't get the reversed _put/_get calls any more here, good. :-)
+That sounds right,
 
-> Is this your patch final and shall I submit updated versions of my patches 
+> Hopefully the non-compressed formats could be used directly
+> without any conversion. But the compressed format (with new V4L2_PIX_FMT_
+> assigned?) should be preferred (as it provides much higher frame rates). The
+> code moved into libv4lconvert would decompress the format and convert into
+> something standard (YUV420?).
 
-This patch will be final if there are no objections from other people.
+Correct.
 
-> or shall I wait for your patch to take its final form and hit "next?"
+>
+>> Would you perhaps be interested in doing that work?
+>
+> I can try it. But the hardware isn't mine so my time is limited.
+>
 
-It generally is better to wait for a patch to appear in linux-next before
-basing you work on top of it.
+If you could give it a shot that would be great. I've some hardware to
+test this with (although I've never actually tested that hardware), so
+I can hopefully pick things up if you cannot finish things before you
+need to return the hardware.
 
-Thanks,
-Rafael
+Thanks & Regards,
+
+Hans
