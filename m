@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab1DZXEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:04:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64986 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932911Ab1DZXET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:04:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,271,1301900400"; 
-   d="scan'208";a="684369626"
-Date: Tue, 26 Apr 2011 16:03:27 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andi Kleen <andi@firstfloor.org>, bp@amd64.org, greg@kroah.com,
-        borislav.petkov@amd.com, stable@kernel.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [42/106] x86, microcode, AMD: Extend ucode size
- verification
-Message-ID: <20110426230326.GA16968@tassilo.jf.intel.com>
-References: <20110426212.641772347@firstfloor.org>
- <20110426211321.EC7513E1886@tassilo.jf.intel.com>
- <BANLkTikH1DCGKR=iE4ch9hQQihzhyn0e+g@mail.gmail.com>
+	id S1753388Ab1DZXIk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:08:40 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:38926 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752503Ab1DZXIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:08:39 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DB7504C.6060507@verizon.net>
+Date: Tue, 26 Apr 2011 19:07:56 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikH1DCGKR=iE4ch9hQQihzhyn0e+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH V2] kbuild: don't warn about include/linux/version.h not including
+ itself
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 06:44:05PM -0400, Paul Gortmaker wrote:
-> On Tue, Apr 26, 2011 at 5:13 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> > 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> Minor nit, but git am complains about whitespace in this backport.  I checked
-> the original, and at a glance it looks OK in this respect.
-> 
-> (42/106) Applying: x86, microcode, AMD: Extend ucode size verification
-> /home/paul/git/stable/linux-2.6.35.y/.git/rebase-apply/patch:95: space
-> before tab in indent.
->  		return NULL;
-> /home/paul/git/stable/linux-2.6.35.y/.git/rebase-apply/patch:100:
-> trailing whitespace.
-> 	
-> warning: 2 lines add whitespace errors.
+This patch makes checkversion.pl not warn that include/linux/version.h
+dosen't include itself.
 
-I ran cleanpatch over it.
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
+---
+ scripts/checkversion.pl |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
--Andi
+diff --git a/scripts/checkversion.pl b/scripts/checkversion.pl
+index b444e89..cf4b1dc 100755
+--- a/scripts/checkversion.pl
++++ b/scripts/checkversion.pl
+@@ -12,6 +12,8 @@ $| = 1;
+ my $debugging;
+ 
+ foreach my $file (@ARGV) {
++    if($file !~ "include/linux/version\.h")
++    {
+     # Open this file.
+     open( my $f, '<', $file )
+       or die "Can't open $file: $!\n";
+@@ -67,4 +69,5 @@ foreach my $file (@ARGV) {
+     }
+ 
+     close($f);
++    }
+ }
+-- 
+1.7.5.rc1
 
