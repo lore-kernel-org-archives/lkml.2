@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab1DZQ10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:27:26 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55949 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab1DZQ1W (ORCPT
+	id S1756488Ab1DZQ3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:29:14 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:25619 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1DZQ3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:27:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6327"; a="87724627"
-From: David Brown <davidb@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, dwalker@fifo99.com,
-        linux-arm-msm-owner@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andres Salomon <dilinger@queued.net>
-Subject: Re: [PM8921 MFD V5 0/6] pm8921 core and subdevices
-References: <1302039657-19395-1-git-send-email-adharmap@codeaurora.org>
-	<20110426150746.GF3175@sortiz-mobl>
-Date: Tue, 26 Apr 2011 09:27:12 -0700
-In-Reply-To: <20110426150746.GF3175@sortiz-mobl> (Samuel Ortiz's message of
-	"Tue, 26 Apr 2011 17:07:47 +0200")
-Message-ID: <8yatydl6krj.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 26 Apr 2011 12:29:13 -0400
+Date: Tue, 26 Apr 2011 18:29:05 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rene Herman <rene.herman@gmail.com>
+Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation 
+ fully internal
+Message-ID: <20110426182905.72bbf7b6@endymion.delvare>
+In-Reply-To: <20110426155212.GB18176@ericsson.com>
+References: <20110426165600.1d9ac91b@endymion.delvare>
+	<20110426170407.3694e430@endymion.delvare>
+	<20110426155212.GB18176@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26 2011, Samuel Ortiz wrote:
+On Tue, 26 Apr 2011 08:52:12 -0700, Guenter Roeck wrote:
+> On Tue, Apr 26, 2011 at 11:04:07AM -0400, Jean Delvare wrote:
+> > THERMAL_HWMON is implemented inside the thermal_sys driver and has no
+> > effect on drivers implementing thermal zones, so they shouldn't see
+> > anything related to it in <linux/thermal.h>. Making the THERMAL_HWMON
+> > implementation fully internal has two advantages beyond the cleaner
+> > design:
+> > * This avoids rebuilding all thermal drivers if the THERMAL_HWMON
+> >   implementation changes, or if CONFIG_THERMAL_HWMON gets enabled or
+> >   disabled.
+> > * This avoids breaking the thermal kABI in these cases too, which
+> >   should make distributions happy.
+> > 
+> > The only drawback I can see is slightly higher memory fragmentation,
+> > as the number of kzalloc() calls will increase by one per thermal zone.
+> > But I doubt it will be a problem in practice, as I've never seen a
+> > system with more than two thermal zones.
+> > 
+> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> > Cc: Rene Herman <rene.herman@gmail.com>
+> > Cc: Len Brown <len.brown@intel.com>
+> > Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+> > ---
+> > * If memory fragmentation is really a concern to anyone, it would be
+> >   possible to save one kalloc for the first temperature input of each
+> >   zone type, as the price of slightly more complex code.
+> > 
+> > * Removal code path is untested, as I have never been able to unload
+> > the thermal_sys module on any of my systems. Something is pinning it
+> > and I have no idea what it is.
+> > 
+> Doesn't lsmod show the culprit ?
 
-> I have applied patch #1 and #2 to my for-next branch. For 3 and4, I'll wait
-> for Grant's ACK. As for #5, I'd like to get an ACK from the current MSM
-> maintainers.
+No, it's not a module dependency. The reference counter is set to 1,
+so somewhere in the kernel something is taking a reference to the
+module and won't release it. I wish this was better instrumented so
+that it would be possible to know who is doing that.
 
-I've replied to that patch with an Ack.
+> Otherwise
+> 
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-David
+Thanks for the reviews.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Jean Delvare
