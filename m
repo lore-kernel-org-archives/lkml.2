@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab1DZEie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 00:38:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54602 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab1DZEid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 00:38:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
-   d="scan'208";a="425446811"
-Subject: Re: [PATCH v2 1/5] dmaengine: at_hdmac: modify way to use
- interrupts
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1303790574.896.11.camel@vkoul-udesk3>
-References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>
-	 <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1303493836.git.nicolas.ferre@atmel.com>
-	 <1303790574.896.11.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 09:36:56 +0530
-Message-ID: <1303790816.896.12.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751725Ab1DZEjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 00:39:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64002 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab1DZEjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 00:39:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=rvbZ8H5M5uFIrJk/6baBM8MxaVM/nhGJwi5WyGw/xTpzCnPQtz7CLd6ih/FZ3CEWEa
+         0Y0YdZ8HqXRyuOFnp/wsrEduUujTTp/EP1T4nPjnO1r/QVwVusGT/8x1Q2I8AEpY2TcO
+         LneKBpEu25GaXVcTvYD2cpTlyYt1O8ks5Bz+Y=
+Date: Tue, 26 Apr 2011 12:38:37 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, joe@perches.com, randy.dunlap@oracle.com,
+        akpm@linux-foundation.org
+Subject: [PATCH]Remove a warning
+Message-ID: <20110426043835.GA4154@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com,
+	joe@perches.com, randy.dunlap@oracle.com, akpm@linux-foundation.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 09:32 +0530, Koul, Vinod wrote:
-> On Fri, 2011-04-22 at 19:41 +0200, Nicolas Ferre wrote:
-> > Now we use Buffer Transfer Completed interrupts. If we
-> > want a chained buffer completed information, we setup the
-> > ATC_IEN bit in CTRLB register in the lli.
-> > This is done by set_desc_eol() function and used by
-> > memcpy/slave_sg functions.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > ---
-> >  drivers/dma/at_hdmac.c      |    4 ++--
-> >  drivers/dma/at_hdmac_regs.h |   11 ++++++++---
-> >  2 files changed, 10 insertions(+), 5 deletions(-)
-> > 
-> >  
-> Looks like your forgot to run checkpatch
-> WARNING: line over 80 characters
-> #401: FILE: drivers/dma/at_hdmac_regs.h:106:
-> +#define MEM_IF			0		/* specify AHB interface 0 as memory interface */
-> 
-> WARNING: line over 80 characters
-> #402: FILE: drivers/dma/at_hdmac_regs.h:107:
-> +#define PER_IF			1		/* specify AHB interface 1 as peripheral interface
-> */
-> 
-> WARNING: line over 80 characters
-> #689: FILE: drivers/dma/at_hdmac.c:899:
-> +			direction == DMA_TO_DEVICE ? "TO DEVICE" : "FROM DEVICE",
-> 
-> total: 0 errors, 3 warnings, 465 lines checked
-> 
-> While I am okay with 3rd one, you can easily reformat code for first two
-> and avoid these two warnings...
-> 
-And your 4th patch fails to apply on my tree, please rebase these to my
-tree as well
+Hi us,
+   When i was compiling kernel, a warning happened to me.
+The warning said like following.
 
+drivers/staging/wlan-ng/cfg80211.c:709: warning: initialization from 
+incompatible pointer type
+
+So i patched like this.
+
+From: Harry Wei <harryxiyou@gmail.com>
+
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+---
+ drivers/staging/wlan-ng/cfg80211.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 6a71f52..7637839 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -273,7 +273,7 @@ exit:
+ }
+ 
+ int prism2_set_default_key(struct wiphy *wiphy, struct net_device *dev,
+-			   u8 key_index)
++			   u8 key_index, bool unicast, bool multicast)
+ {
+ 	wlandevice_t *wlandev = dev->ml_priv;
+ 
 -- 
-~Vinod
+1.7.0.4
+
+
 
