@@ -1,321 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1DZK0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:26:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39733 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab1DZK0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:26:09 -0400
-Date: Tue, 26 Apr 2011 20:26:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for April 26
-Message-Id: <20110426202605.c66ce0ea.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__26_Apr_2011_20_26_05_+1000_kwIfrarbdua2qm41"
+	id S1753969Ab1DZK01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:26:27 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:40579 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab1DZK00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 06:26:26 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Date: Tue, 26 Apr 2011 15:56:01 +0530
+Subject: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
+Thread-Topic: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
+Thread-Index: AcwD/Fb0wleH2cPPS1KdTVc7Bf4Tvw==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B89B0E8@KCINPUNHJCMS01.kpit.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3QAQhOt016991
 
---Signature=_Tue__26_Apr_2011_20_26_05_+1000_kwIfrarbdua2qm41
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+LED Driver for Dialog Semiconductor DA9052 PMICs.
 
-The kernel.org mirroring is being very slow today.
+Changes made since last submission:
+. used 'flags' field of led_platform_data to pass the led index
 
-Changes since 20110421:
+Signed-off-by: Dajun Chen <dchen@diasemi.com>
+---
 
-New tree: at91
+diff -Naur linux-next-20110421.orig/drivers/leds/Kconfig linux-next-20110421/drivers/leds/Kconfig
+--- linux-next-20110421.orig/drivers/leds/Kconfig	2011-04-26 09:32:34.000000000 +0500
++++ linux-next-20110421/drivers/leds/Kconfig	2011-04-26 10:02:16.000000000 +0500
+@@ -284,6 +284,14 @@
+ 	  This option enables support for on-chip LED drivers found
+ 	  on Dialog Semiconductor DA9030/DA9034 PMICs.
 
-Dropped tree: xen
++config LEDS_DA9052
++	tristate "Dialog DA9052 LEDS"
++	depends on LEDS_CLASS
++	depends on PMIC_DA9052
++	help
++	  This option enables support for on-chip LED drivers found
++	  on Dialog Semiconductor DA9052 PMICs
++
+ config LEDS_DAC124S085
+ 	tristate "LED Support for DAC124S085 SPI DAC"
+ 	depends on LEDS_CLASS
+diff -Naur linux-next-20110421.orig/drivers/leds/leds-da9052.c linux-next-20110421/drivers/leds/leds-da9052.c
+--- linux-next-20110421.orig/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/drivers/leds/leds-da9052.c	2011-04-26 09:57:59.000000000 +0500
+@@ -0,0 +1,214 @@
++/*
++ * LED Driver for Dialog DA9052
++ *
++ * Copyright(c) 2009 Dialog Semiconductor Ltd.
++ *
++ * Author: Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/leds.h>
++#include <linux/workqueue.h>
++#include <linux/slab.h>
++
++#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/pdata.h>
++#include <linux/mfd/da9052/gpio.h>
++
++struct da9052_led {
++	struct led_classdev cdev;
++	struct work_struct work;
++	struct da9052 *da9052;
++	u8 led_index;
++	u8 id;
++	int brightness;
++};
++
++u8 led_reg[] = {
++		DA9052_LED_CONT_4_REG,
++		DA9052_LED_CONT_5_REG,
++};
++
++static int da9052_set_led_brightness(struct da9052_led *led)
++{
++	int error;
++
++	error = da9052_reg_write(led->da9052, led_reg[led->led_index],
++				led->brightness | DA9052_LED_CONT_DIM);
++	if (error < 0)
++		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", error);
++	return error;
++}
++
++static void da9052_led_work(struct work_struct *work)
++{
++	struct da9052_led *led = container_of(work,
++				 struct da9052_led, work);
++
++	da9052_set_led_brightness(led);
++}
++
++static void da9052_led_set(struct led_classdev *led_cdev,
++			   enum led_brightness value)
++{
++	struct da9052_led *led;
++
++	led = container_of(led_cdev, struct da9052_led, cdev);
++	led->brightness = value;
++	schedule_work(&led->work);
++}
++
++
++static int da9052_configure_leds_gpio(struct da9052_led *led)
++{
++	int error;
++	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
++			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
++
++	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
++				DA9052_GPIO_MASK_LOWER_NIBBLE,
++				register_value);
++
++	if (error < 0) {
++		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
++		return error;
++	}
++
++	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
++				DA9052_GPIO_MASK_UPPER_NIBBLE,
++				register_value << DA9052_GPIO_NIBBLE_SHIFT
++				);
++	if (error < 0)
++		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
++
++	return error;
++}
++
++static int __devinit da9052_led_probe(struct platform_device *pdev)
++{
++	struct da9052_pdata *pdata;
++	struct da9052 *da9052;
++	struct led_platform_data *pled;
++	struct da9052_led *led;
++	int error, i;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++	if (pdata == NULL) {
++		dev_err(&pdev->dev, "No platform data\n");
++		error = -ENODEV;
++		goto err_mem;
++	}
++
++	pled = pdata->pled;
++
++	if (pled == NULL) {
++		dev_err(&pdev->dev, "Failed no platform data for LED\n");
++		return -ENOMEM;
++	}
++
++	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
++	if (led == NULL) {
++		dev_err(&pdev->dev, "Failed to alloc memory\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < pled->num_leds; i++) {
++		led[i].cdev.name = pled->leds[i].name;
++		led[i].cdev.brightness_set = da9052_led_set;
++		led[i].cdev.brightness = LED_OFF;
++		led[i].brightness = 0;
++		led[i].led_index = pled->leds[i].flags;
++		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
++		INIT_WORK(&led[i].work, da9052_led_work);
++
++		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
++		if (error) {
++			dev_err(&pdev->dev, "Failed to register led %d\n", led[i].led_index);
++			goto err_register;
++		}
++
++		error = da9052_set_led_brightness(&led[i]);
++		if (error) {
++			dev_err(&pdev->dev, "Unable to init led %d\n", led[i].led_index);
++			continue;
++		}
++	}
++	error = da9052_configure_leds_gpio(led);
++	if (error) {
++		dev_err(&pdev->dev, "Failed to configure GPIO Led,%d\n", error);
++		goto err_register;
++	}
++
++	platform_set_drvdata(pdev, led);
++
++	return 0;
++
++err_register:
++	for (i = i - 1; i >= 0; i--) {
++		led_classdev_unregister(&led[i].cdev);
++		cancel_work_sync(&led[i].work);
++	}
++err_mem:
++	kfree(led);
++	return error;
++}
++
++static int __devexit da9052_led_remove(struct platform_device *pdev)
++{
++	struct da9052_led *led = platform_get_drvdata(pdev);
++	struct da9052_pdata *pdata;
++	struct da9052 *da9052;
++	struct led_platform_data *pled;
++	int i;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++	pled = pdata->pled;
++
++	for (i = 0; i < pled->num_leds; i++) {
++		led[i].brightness = 0;
++		da9052_set_led_brightness(&led[i]);
++		led_classdev_unregister(&led[i].cdev);
++		cancel_work_sync(&led[i].work);
++	}
++
++	kfree(led);
++
++	return 0;
++}
++
++static struct platform_driver da9052_led_driver = {
++	.driver = {
++		.name	= "da9052-leds",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= da9052_led_probe,
++	.remove		= __devexit_p(da9052_led_remove),
++};
++
++static int __init da9052_led_init(void)
++{
++	return platform_driver_register(&da9052_led_driver);
++}
++module_init(da9052_led_init);
++
++static void __exit da9052_led_exit(void)
++{
++	platform_driver_unregister(&da9052_led_driver);
++}
++module_exit(da9052_led_exit);
++
++MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>	");
++MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
++MODULE_LICENSE("GPL v2");
+diff -Naur linux-next-20110421.orig/drivers/leds/Makefile linux-next-20110421/drivers/leds/Makefile
+--- linux-next-20110421.orig/drivers/leds/Makefile	2011-04-26 09:32:34.000000000 +0500
++++ linux-next-20110421/drivers/leds/Makefile	2011-04-26 10:01:02.000000000 +0500
+@@ -31,6 +31,7 @@
+ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
+ obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
+ obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
++obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
+ obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
+ obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
+ obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
 
-The i2c tree gained a conflict against the pci tree.
+Regards,
+Ashish
 
-The net tree gained a build failure for which I applied a merge fixup
-patch.
 
-The tty tree gained a conflict against the bluetooth tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 185 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-CONFLICT (content): Merge conflict in fs/ubifs/super.c
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
-e.c
-CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
-ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
-i2c-intel-mid.c left in tree.
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
-$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
-Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
-Applying: i2c: designware-pcidrv depends on PCI
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Applying: r8169: fix for rtl_apply_firmware API change
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
-.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rt2x00/rt2x00que=
-ue.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rt2x00/rt2x00que=
-ue.h
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/mfd-core.c
-CONFLICT (content): Merge conflict in include/linux/mfd/core.h
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-CONFLICT (content): Merge conflict in security/selinux/hooks.c
-CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Tue__26_Apr_2011_20_26_05_+1000_kwIfrarbdua2qm41
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNtp29AAoJEDMEi1NhKgbs8MYH/jTp3Nf8pkBeUREB8DD+SaHx
-erBz9+mbkQBgcAf5CL0dFqIEyh+Ny5QdetL72Pyfx3cqL/AYg11Zqtol+kF+S1vq
-F8M0lfQmxIDea4Ymt4/usj4lYAHeQwNGd1APbjCTN3bTGaripWj/IkLox+BneHjg
-MJo+xSfNd6lsbIeBQODQsyHPWNo8lXwGwBzuByaudJlgmXSJLceuzMBHCPNvsVas
-xt41Ht55a+jJnSiYzzDauOzXgdguIdlvXpU/SANhrIuBwLr/Kk8CWbWkzyOqEtme
-o1hmziBzDw5e0YYvgZZ7uOj+M/rBfILhg8m0kvPBPLs5wDgK2lkRNwbuc0TpOzs=
-=NgKy
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Apr_2011_20_26_05_+1000_kwIfrarbdua2qm41--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
