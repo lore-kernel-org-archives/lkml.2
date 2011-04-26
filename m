@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab1DZCno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 22:43:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42902 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337Ab1DZCnn (ORCPT
+	id S1757914Ab1DZCsa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 22:48:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42366 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab1DZCs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 22:43:43 -0400
+	Mon, 25 Apr 2011 22:48:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=QVttB1XJJ9tkhli1oKXkzUy/YCSweUvCaVVO/QLBy9WAuY/vg17ARJjwPwU/QRVl2M
-         rNoXNV0ujIKlQUK3i86hzi/nI6Vf0DqUHN68q2mdvg8YLmCYfJbFCiY5f8R++/eiEEvc
-         fIAuhDOVJ083iduk7HECfo4/HeB9u0QGYqOkY=
-Date: Tue, 26 Apr 2011 10:54:29 +0800
-From: Dave Young <hidave.darkstar@gmail.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] use oom_killer_disabled in all oom pathes
-Message-ID: <20110426025429.GA11812@darkstar>
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=fN7AOLHGVs/qgV8YIMlRT6Yvfn710H45MEsUBM5Ubuj/z0rrca8Ji7uRUr7XG5C3Ko
+         VV2YCscok98kKFoFK1Pv2QiV5rXL39hOMrz/y+VAdyIk6k93+Vuvm+fUJO7VIrxLMxfI
+         oikSHLPHM4vMMjurLfRuu0W2gUgOTBi7TJG+I=
+Date: Tue, 26 Apr 2011 10:48:10 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [TRIVIAL PATCH] treewide: Cleanup continuations and remove
+ logging message whitespace
+Message-ID: <20110426024807.GA2751@gmail.com>
+Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
+	linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+	Jiri Kosina <trivial@kernel.org>
+References: <65136ab68431de0cc0c554663cee33fc9d4a9850.1303615717.git.joe@perches.com>
+ <20110425082230.6d656ed0.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110425082230.6d656ed0.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oom_killer_disable should be a global switch, also fit for oom paths
-other than __alloc_pages_slowpath 
+On Mon, Apr 25, 2011 at 08:22:30AM -0700, Randy Dunlap wrote:
+> On Sat, 23 Apr 2011 20:38:19 -0700 Joe Perches wrote:
+> 
+> > Using C line continuation inside format strings is error prone.
+> > Clean up the unintended whitespace introduced by misuse of \.
+> > Neaten correctly used line continations as well for consistency.
+> > 
+> > drivers/scsi/arcmsr/arcmsr_hba.c has these errors as well,
+> > but arcmsr needs a lot more work and the driver should likely be
+> > moved to staging instead.
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+>
+Acked-by: Harry Wei <harryxiyou@gmail.com>
+> 
+> 
+> Joe,
+> Is there a decent fix for this warning in linux-next:
+> 
+> drivers/tty/n_gsm.c:535: warning: zero-length gnu_printf format string
+Hi Randy & Joe,
+   I have seen the drivers/tty/n_gsm.c. 
+>From line 529 to line 540 in drivers/tty/n_gsm.c like following.
 
-Here add it to mem_cgroup_handle_oom and pagefault_out_of_memory as well.
+529 static void hex_packet(const unsigned char *p, int len)
+530 {
+531	int i;
+532	for (i = 0; i < len; i++) {
+533		if (i && (i % 16) == 0) {
+534			pr_cont("\n");
+535			pr_debug("");                                                                      
+536		}
+537		pr_cont("%02X ", *p++);
+538	}
+539	pr_cont("\n");
+540 }
 
-Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
----
- mm/memcontrol.c |    2 +-
- mm/oom_kill.c   |    3 +++
+Should we need the line 535? If true, i wanna the function of 
+'pr_debug("");'
 
- 2 files changed, 4 insertions(+), 1 deletion(-)
---- linux-2.6.orig/mm/memcontrol.c	2011-04-20 15:49:10.336660690 +0800
-+++ linux-2.6/mm/memcontrol.c	2011-04-26 10:41:04.746459757 +0800
-@@ -1610,7 +1610,7 @@ bool mem_cgroup_handle_oom(struct mem_cg
- 	 * under OOM is always welcomed, use TASK_KILLABLE here.
- 	 */
- 	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
--	if (!locked || mem->oom_kill_disable)
-+	if (!locked || mem->oom_kill_disable || oom_killer_disabled)
- 		need_to_kill = false;
- 	if (locked)
- 		mem_cgroup_oom_notify(mem);
---- linux-2.6.orig/mm/oom_kill.c	2011-04-20 15:49:10.353327356 +0800
-+++ linux-2.6/mm/oom_kill.c	2011-04-26 10:41:04.753126423 +0800
-@@ -747,6 +747,9 @@ out:
-  */
- void pagefault_out_of_memory(void)
- {
-+	if (oom_killer_disabled)
-+		return;
-+
- 	if (try_set_system_oom()) {
- 		out_of_memory(NULL, 0, 0, NULL);
- 		clear_system_oom();
+Thanks.
+Harry Wei.
