@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab1DZTFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:05:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60351 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab1DZTFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:05:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MxGAgRm5+Bnj4GH1ZyeNg+EcGys7aTDDoIqbcX0153XRRIC1WVBisuq6q95JfDQPv3
-         1JMldARFTAr4l75RFy+n0OjoICTS2cr4DLkJASeW+rAtZv5D/BC+a+0fPkoMTS9aKnOw
-         //E1GPOrDIwGVEL62ewndcth7KXqkeyXvEq3c=
-Date: Tue, 26 Apr 2011 22:05:31 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-Message-ID: <20110426190531.GA4556@p183>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753728Ab1DZTGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:06:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab1DZTGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 15:06:43 -0400
+Subject: Re: [PATCH 1/3] flex_array: flex_array_prealloc takes a number of
+ elements, not an end
+From: Eric Paris <eparis@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: dave@linux.vnet.ibm.com, steffen.klassert@secunet.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
+Date: Tue, 26 Apr 2011 15:06:27 -0400
+In-Reply-To: <20110426115638.379068b1.akpm@linux-foundation.org>
+References: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
+	 <20110426115638.379068b1.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1303844791.2101.7.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 03:49:49PM -0300, Thiago Farina wrote:
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -134,6 +134,17 @@ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
->  			const void *from, size_t available);
->  
->  /**
-> + * streq - Are two strings equal?
-> + * @a: first string
-> + * @b: second string
-> + *
-> + * Example:
-> + *	if (streq(argv[1], "--help"))
-> + *		printf("%s\n", "This help");
-> + */
+On Tue, 2011-04-26 at 11:56 -0700, Andrew Morton wrote:
+> On Mon, 25 Apr 2011 21:45:31 -0400
+> Eric Paris <eparis@redhat.com> wrote:
+> 
+> > Change flex_array_prealloc to take the number of elements for which space
+> > should be allocated instead of the last (inclusive) element. Users
+> > and documentation are updated accordingly.
+> 
+> Why?
 
-Oh, come on!
-Next, you're going to explain if statement.
+All three of these patches came from these discussions:
+http://marc.info/?t=129552800100005&r=1&w=2
+http://marc.info/?t=129646395700004&r=1&w=2
+http://marc.info/?t=129708178200007&r=1&w=2
 
-> +#define streq(a, b) (strcmp((a), (b)) == 0)
+1/3 was changed just because it seemed to be the way the interface was
+used
 
-It should be inline function.
+2/3 was changed because the 2.6.38 kernel fails to load certain selinux
+policies which worked under 2.6.37 because of this lack of functionality
+
+3/3 was changed just because that's how maybe it should work, although
+there are no known users.
+
+I can certainly update 2/3 to better explain the rational but I can't
+really do any better on 1/3 and 3/3 other than to just say what the
+change is......
+
+-Eric
+
