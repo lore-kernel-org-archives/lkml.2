@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab1DZRNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 13:13:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53356 "EHLO ogre.sisk.pl"
+	id S1757657Ab1DZRVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 13:21:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757637Ab1DZRNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 13:13:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>
-Subject: Re: [PATCH 11/14] PM / AVR32: Use struct syscore_ops instead of sysdevs for PM
-Date: Tue, 26 Apr 2011 19:14:13 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, linux-arm-kernel@lists.infradead.org,
-        Ben Dooks <ben-linux@fluff.org>, Mike Frysinger <vapier@gentoo.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Jiri Kosina <jkosina@suse.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-References: <201103280125.11750.rjw@sisk.pl> <201104172313.09712.rjw@sisk.pl> <1303820532.3125.12.camel@hcegtvedt>
-In-Reply-To: <1303820532.3125.12.camel@hcegtvedt>
+	id S1754356Ab1DZRVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 13:21:42 -0400
+Date: Tue, 26 Apr 2011 13:19:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
+Message-ID: <20110426171954.GD9414@redhat.com>
+References: <20110416132546.765212221@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104261914.14351.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110416132546.765212221@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 26, 2011, Hans-Christian Egtvedt wrote:
-> On Sun, 2011-04-17 at 23:13 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > Convert some AVR32 architecture's code to using struct syscore_ops
-> > objects for power management instead of sysdev classes and sysdevs.
-> > 
-> > This simplifies the code and reduces the kernel's memory footprint.
-> > It also is necessary for removing sysdevs from the kernel entirely in
-> > the future.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, Apr 16, 2011 at 09:25:46PM +0800, Wu Fengguang wrote:
+> Andrew,
 > 
-> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> This revision undergoes a number of simplifications, cleanups and fixes.
+> Independent patches are separated out. The core patches (07, 08) now have
+> easier to understand changelog. Detailed rationals can be found in patch 08.
 > 
-> Thanks, nice work. Tested and run on hardware.
+> In response to the complexity complaints, an introduction document is
+> written explaining the rationals, algorithm and visual case studies:
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/smooth-dirty-throttling.pdf
+> 
 
-Thanks!
+Hi Fenguang,
 
-Rafael
+I went quickly browsed through above document and am trying to understand
+the meaning of following lines and see how does it fit into the framework
+of existing IO conroller.
+
+- task IO controller endogenous
+- cgroup IO controller well integrated
+- proportional IO controller endogenous
+
+You had sent me a link where you had prepared a patch to control the
+async IO completely. So because this code is all about measuring the
+bdi writeback rate and then coming up task ratelimit accoridingly, it
+will never know about other IO going on in the cgroup. READS and direct
+IO.
+
+So IIUC, to make use of above logic for cgroup throttling, one shall have
+to come up with explicity notion of async bandwidth per cgroup which does
+not control other writes. Currently we have following when it comes to
+throttling.
+
+blkio.throttle_read_bps
+blkio.throttle_write_bps
+
+The intention is to be able to control the WRITE bandwidth of cgroup and
+it could be any kind of WRITE (be it buffered WRITE or direct WRITES). 
+Currently we control only direct WRITES and question of how to also
+control buffered writes is still on the table.
+
+Because your patch does not know about other WRITES happening in the
+system, one needs to create a way so that buffered WRITES and direct
+WRITES can be accounted together against a group and throttled
+accordingly.
+
+What does "proportional IO controller endogenous" mean? Currently we do
+all proportional IO division in CFQ. So are you proposing that for 
+buffered WRITES we come up with a different policy altogether in writeback
+layer or somehow it is integrating with CFQ mechanism?
+
+Thanks
+Vivek
