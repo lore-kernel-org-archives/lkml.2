@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab1DZLPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:15:12 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45397 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab1DZLPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:15:11 -0400
-Date: Tue, 26 Apr 2011 21:15:00 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20110426211500.02d6a5a6@notabene.brown>
-In-Reply-To: <1303803414-5937-3-git-send-email-mgorman@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	<1303803414-5937-3-git-send-email-mgorman@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754571Ab1DZLWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:22:54 -0400
+Received: from www85.your-server.de ([213.133.104.85]:58861 "EHLO
+	www85.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab1DZLWx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:22:53 -0400
+From: Olaf Dietsche <olaf+list.linux-kernel@olafdietsche.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Rod Cordova <rcordova@ethernet.org>
+Subject: Re: [PATCH] 2.6.38: access permission filesystem 0.25
+References: <Pine.LNX.4.64.1103291321440.32194@fatboy.ethernet.org>
+	<87sjtpai9d.fsf@rat.lan> <4DA26159.7050902@oracle.com>
+	<87zknw8qh5.fsf@rat.lan> <4DB47564.3020202@oracle.com>
+Date: Tue, 26 Apr 2011 13:22:47 +0200
+Message-ID: <87oc3tnto8.fsf@rat.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Authenticated-Sender: webmaster@olafdietsche.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Randy Dunlap <randy.dunlap@oracle.com> writes:
 
-> +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
-> +{
-> +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
-> +}
-> +
->  static inline struct page *
->  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> @@ -2202,8 +2211,16 @@ nopage:
->  got_pg:
->  	if (kmemcheck_enabled)
->  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
-> -	return page;
->  
-> +	/*
-> +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
-> +	 * been OOM killed. The expectation is that the caller is taking
-> +	 * steps that will free more memory. The caller should avoid the
-> +	 * page being used for !PFMEMALLOC purposes.
-> +	 */
-> +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
-> +
-> +	return page;
+> On 04/11/11 13:47, Olaf Dietsche wrote:
+>
+> +config ACCESSFS_USER_PORTS
+> +	tristate "User permission based IP ports"
+> +	depends on ACCESS_FS && INET
+> +	select NET_HOOKS
+> +	default n
+> +	help
+> +	  If you say Y here, you will be able to control access to IP ports
+> +	  based on user-/groupid. For this to work, you must say Y
+> +	  to CONFIG_NET_HOOKS.
+>
+> The last sentence of help text is unneeded and could be confusing to a user
+> since the "select NET_HOOKS" is already done above.
 
-Linus doesn't seem to be a fan of this construct:
-   https://lkml.org/lkml/2011/4/1/255
+Yes, I'll change this.
 
-pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
+> Have you built this lately?  There have been a few vfs changes recently.
+> Building on 2.6.39-rc4, I get this:
+[compile errors snipped]
 
-If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
-always be set to 0.
-Ditto for the gfp_pfmemalloc_allowed function.
+No, I haven't. I've built this against 2.6.38 only, as the subject says.
+As soon as the need arises (and laziness allows ;-), I will look into it.
 
-Prefixing with '!!' would make it safe.
-
-NeilBrown
+Regards, Olaf
