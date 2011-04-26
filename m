@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1DZKcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:32:33 -0400
-Received: from mhqmail.moxa.com ([218.210.60.130]:5767 "EHLO
-	mhqmail01.moxa.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753671Ab1DZKcc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:32:32 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754081Ab1DZKgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:36:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43978 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753664Ab1DZKgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 06:36:50 -0400
+Date: Tue, 26 Apr 2011 11:36:46 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/13] mm: Introduce __GFP_MEMALLOC to allow access to
+ emergency reserves
+Message-ID: <20110426103646.GD4658@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+ <1303803414-5937-4-git-send-email-mgorman@suse.de>
+ <20110426194947.764e048a@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/2] watchdog: add option in menu to support MOXA V2100 watchdog driver
-Date: Tue, 26 Apr 2011 18:32:10 +0800
-Message-ID: <ECB3782BB8F03341905DD923270296115F6AD9@mhqms01.moxa.com>
-In-Reply-To: <ECB3782BB8F03341905DD923270296115F6AD7@mhqms01.moxa.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/2] watchdog: add option in menu to support MOXA V2100 watchdog driver
-Thread-Index: AcwD/NBMCatjKIfPTFqwalST3J4LDgAAAlXQ
-From: =?big5?B?SmltbXkgQ2hlbiAos6+lw7lGKQ==?= <jimmy.chen@moxa.com>
-To: =?big5?B?SmltbXkgQ2hlbiAos6+lw7lGKQ==?= <jimmy.chen@moxa.com>,
-        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <wim@iguana.be>
-X-OriginalArrivalTime: 26 Apr 2011 10:32:11.0681 (UTC) FILETIME=[33C13110:01CC03FD]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110426194947.764e048a@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jimmy Chen <jimmy.chen@moxa.com>
+On Tue, Apr 26, 2011 at 07:49:47PM +1000, NeilBrown wrote:
+> On Tue, 26 Apr 2011 08:36:44 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > __GFP_MEMALLOC will allow the allocation to disregard the watermarks,
+> > much like PF_MEMALLOC. It allows one to pass along the memalloc state in
+> > object related allocation flags as opposed to task related flags, such
+> > as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC as
+> > callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag which
+> > is now enough to identify allocations related to page reclaim.
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  include/linux/gfp.h      |    4 +++-
+> >  include/linux/mm_types.h |    2 +-
+> >  mm/page_alloc.c          |   14 ++++++--------
+> >  mm/slab.c                |    2 +-
+> >  4 files changed, 11 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> > index bfb8f93..4e011e7 100644
+> > --- a/include/linux/gfp.h
+> > +++ b/include/linux/gfp.h
+> > @@ -23,6 +23,7 @@ struct vm_area_struct;
+> >  #define ___GFP_REPEAT		0x400u
+> >  #define ___GFP_NOFAIL		0x800u
+> >  #define ___GFP_NORETRY		0x1000u
+> > +#define ___GFP_MEMALLOC		0x2000u
+> >  #define ___GFP_COMP		0x4000u
+> >  #define ___GFP_ZERO		0x8000u
+> >  #define ___GFP_NOMEMALLOC	0x10000u
+> > @@ -75,6 +76,7 @@ struct vm_area_struct;
+> >  #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
+> >  #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
+> >  #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
+> > +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
+> >  #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
+> >  #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
+> >  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
+> 
+> Having both "MEMALLOC" and  "NOMEMALLOC" seems ... unfortunate.
+> 
+> It appears that NOMEMALLOC over-rides MEMALLOC.  It might be good to document
+> this 
+> 
 
-Add selection and help in menu to support watchdog driver
+I can document it. Right now, a better name than NOMEMALLOC does not
+spring to mind.
 
-Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
----
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 1b0f98b..224dc9d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -384,6 +384,18 @@ config ADVANTECH_WDT
- 	  feature. More information can be found at
- 	  <http://www.advantech.com.tw/products/>
- 
-+config MOXA_SWTD
-+	tristate "MOXA V2100 WATCHDOG driver"
-+	depends on X86
-+	default n
-+	help
-+	  If you say yes here you get support for the MOXA V2100 watchdog
-+	  driver.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called moxa_swtd. More information can be found at
-+	  <http://www.moxa.com>
-+
- config ALIM1535_WDT
- 	tristate "ALi M1535 PMU Watchdog Timer"
- 	depends on X86 && PCI
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 3f8608b..df04622 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_BFIN_WDT) += bfin_wdt.o
- # X86 (i386 + ia64 + x86_64) Architecture
- obj-$(CONFIG_ACQUIRE_WDT) += acquirewdt.o
- obj-$(CONFIG_ADVANTECH_WDT) += advantechwdt.o
-+obj-$(CONFIG_MOXA_SWTD)	+= moxa_swtd.o
- obj-$(CONFIG_ALIM1535_WDT) += alim1535_wdt.o
- obj-$(CONFIG_ALIM7101_WDT) += alim7101_wdt.o
- obj-$(CONFIG_F71808E_WDT) += f71808e_wdt.o
-diff --git a/drivers/watchdog/moxa_swtd.c b/drivers/watchdog/moxa_swtd.c
-new file mode 100644
-index 0000000..e69de29
-diff --git a/drivers/watchdog/moxa_swtd.h b/drivers/watchdog/moxa_swtd.h
-new file mode 100644
-index 0000000..e69de29
---
-To unsubscribe from this list: send the line "unsubscribe 
-linux-kernel" in the body of a message to majordomo@vger.kernel.org 
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+> > +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves
+>                                                                    unless __GFP_NOMEMALLOC is set*/
+> 
+> >  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves
+>                                                                   Overrides __GFP_MEMALLOC */
+> 
+> I suspect that it is never valid to set both.  So NOMEMALLOC is really
+> NO_PF_MEMALLOC, but making that change is probably just noise.
+> 
+> Maybe a
+>    WARN_ON((gfp_mask & __GFP_MEMALLOC) && (gfp_mask & __GFP_NOMEMALLOC));
+> might be wise?
+> 
+
+Both MEMALLOC and NOMEMALLOC are related to PFMEMALLOC reserves so
+it's reasonable for them to have similar names. This warning will
+also trigger because it's a combination of flags that does happen.
+
+Consider for example
+
+any interrupt
+  -> __netdev_alloc_skb		(mask == GFP_ATOMIC)
+    -> __alloc_skb		(mask == GFP_ATOMIC)
+       if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
+               gfp_mask |= __GFP_MEMALLOC;
+				(mask == GFP_ATOMIC|__GFP_NOMEMALLOC)
+      -> __kmalloc_reserve
+		First attempt tries to avoid reserves so adds __GFP_MEMALLOC
+				(mask == GFP_ATOMIC|__GFP_NOMEMALLOC|__GFP_MEMALLOC)
+
+You're right in that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC so that
+could do with a note.
+
+-- 
+Mel Gorman
+SUSE Labs
