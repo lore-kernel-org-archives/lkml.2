@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1DZQsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:48:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20099 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1DZQsV (ORCPT
+	id S1754713Ab1DZQvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:51:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54413 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab1DZQvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:48:21 -0400
-Date: Tue, 26 Apr 2011 09:47:23 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, joe@perches.com,
-        randy.dunlap@oracle.com, akpm@linux-foundation.org
-Subject: Re: [PATCH]Remove a warning
-Message-Id: <20110426094723.a127116e.randy.dunlap@oracle.com>
-In-Reply-To: <20110426043835.GA4154@gmail.com>
-References: <20110426043835.GA4154@gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DB6F72E.0033:SCFMA922111,ss=1,fgs=0
+	Tue, 26 Apr 2011 12:51:54 -0400
+Date: Tue, 26 Apr 2011 12:51:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 20/25] Staging: hv: Use the probe function in struct
+ hv_driver
+Message-ID: <20110426165150.GA21187@infradead.org>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-20-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303834842-5022-20-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 12:38:37 +0800 Harry Wei wrote:
-
-> Hi us,
->    When i was compiling kernel, a warning happened to me.
-> The warning said like following.
-> 
-> drivers/staging/wlan-ng/cfg80211.c:709: warning: initialization from 
-> incompatible pointer type
-> 
-> So i patched like this.
-> 
-> From: Harry Wei <harryxiyou@gmail.com>
-> 
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-Thanks.
-
-
-> ---
->  drivers/staging/wlan-ng/cfg80211.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-> index 6a71f52..7637839 100644
-> --- a/drivers/staging/wlan-ng/cfg80211.c
-> +++ b/drivers/staging/wlan-ng/cfg80211.c
-> @@ -273,7 +273,7 @@ exit:
->  }
+> @@ -882,7 +882,7 @@ static int blkvsc_drv_init(void)
 >  
->  int prism2_set_default_key(struct wiphy *wiphy, struct net_device *dev,
-> -			   u8 key_index)
-> +			   u8 key_index, bool unicast, bool multicast)
->  {
->  	wlandevice_t *wlandev = dev->ml_priv;
+>  	drv->driver.name = storvsc_drv_obj->base.name;
 >  
-> -- 
+> -	drv->driver.probe = blkvsc_probe;
+> +	drv->probe = blkvsc_probe;
+>  	drv->driver.remove = blkvsc_remove;
+>  	drv->driver.shutdown = blkvsc_shutdown;
 
+Not new in this patch, but you should really declare the driver as a
+static object and initialize it at compile time, similar to how it's 
+done for PCI and countless other busses, e.g.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+struct hv_driver blkvsc_driver {
+	.name		= "blkvsc",
+	.probe		= blkvsc_probe,
+	.remove		= blkvsc_remove,
+	.shutdown	= blkvsc_shutdown,
+};
+
