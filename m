@@ -1,193 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab1DZH7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:59:50 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60689 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758430Ab1DZH7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:59:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Subject: (resend) [PATCH] vmscan,memcg: memcg aware swap token
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20110426170146.F396.A69D9226@jp.fujitsu.com>
+	id S1751488Ab1DZIFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 04:05:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47305 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750939Ab1DZIE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 04:04:58 -0400
+Date: Tue, 26 Apr 2011 10:04:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Vegard Nossum <vegardno@ifi.uio.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [BUG] perf and kmemcheck : fatal combination
+Message-ID: <20110426080443.GA806@elte.hu>
+References: <1303747731.2747.182.camel@edumazet-laptop>
+ <1303803525.20212.20.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 16:59:19 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303803525.20212.20.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, memcg reclaim can disable swap token even if the swap token
-mm doesn't belong in its memory cgroup. It's slightly riskly. If an
-admin makes very small mem-cgroup and silly guy runs contenious heavy
-memory pressure workloa, whole tasks in the system are going to lose
-swap-token and then system may become unresponsive. That's bad.
 
-This patch adds 'memcg' parameter into disable_swap_token(). and if
-the parameter doesn't match swap-token, VM doesn't put swap-token.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    6 ++++++
- include/linux/swap.h       |   24 +++++++++++++++++-------
- mm/memcontrol.c            |    2 +-
- mm/thrash.c                |   17 +++++++++++++++++
- mm/vmscan.c                |    4 ++--
- 5 files changed, 43 insertions(+), 10 deletions(-)
+> On Mon, 2011-04-25 at 18:08 +0200, Eric Dumazet wrote:
+> > Hi guys
+> > 
+> > Just got a panic on a kmemcheck kernel, latest linux-2.6 tree.
+> > 
+> > I forgot I had kmemcheck enabled, and started "perf top" just because my
+> > machine was damn slow... Oh well...
+> > 
+> > Crash in do_nmi -> nmi_enter() -> BUG_ON(in_nmi());
+> 
+> Hmm,. I bet because kmemcheck triggers faults from nmi context because
+> it messes about with the page protection bits a lot to track things.
+> 
+> Can't really think of anything except not making perf available on
+> kmemcheck kernels.
+> 
+> ---
+>  init/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 32745bf..94735b4 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1125,6 +1125,7 @@ config PERF_EVENTS
+>  	bool "Kernel performance events and counters"
+>  	default y if (PROFILING || PERF_COUNTERS)
+>  	depends on HAVE_PERF_EVENTS
+> +	depends on !KMEMCHECK
+>  	select ANON_INODES
+>  	select IRQ_WORK
+>  	help
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 6a0cffd..df572af 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -84,6 +84,7 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem);
- 
- extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
- extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
-+extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
- 
- static inline
- int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
-@@ -244,6 +245,11 @@ static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
- 	return NULL;
- }
- 
-+static inline struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-+{
-+	return NULL;
-+}
-+
- static inline int mm_match_cgroup(struct mm_struct *mm, struct mem_cgroup *mem)
- {
- 	return 1;
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 384eb5f..ccea15d 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -358,21 +358,31 @@ struct backing_dev_info;
- extern struct mm_struct *swap_token_mm;
- extern void grab_swap_token(struct mm_struct *);
- extern void __put_swap_token(struct mm_struct *);
-+extern int has_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg);
- 
--static inline int has_swap_token(struct mm_struct *mm)
-+static inline
-+int has_swap_token(struct mm_struct *mm)
- {
--	return (mm == swap_token_mm);
-+	return has_swap_token_memcg(mm, NULL);
- }
- 
--static inline void put_swap_token(struct mm_struct *mm)
-+static inline
-+void put_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg)
- {
--	if (has_swap_token(mm))
-+	if (has_swap_token_memcg(mm, memcg))
- 		__put_swap_token(mm);
- }
- 
--static inline void disable_swap_token(void)
-+static inline
-+void put_swap_token(struct mm_struct *mm)
-+{
-+	return put_swap_token_memcg(mm, NULL);
-+}
-+
-+static inline
-+void disable_swap_token(struct mem_cgroup *memcg)
- {
--	put_swap_token(swap_token_mm);
-+	put_swap_token_memcg(swap_token_mm, memcg);
- }
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-@@ -500,7 +510,7 @@ static inline int has_swap_token(struct mm_struct *mm)
- 	return 0;
- }
- 
--static inline void disable_swap_token(void)
-+static inline void disable_swap_token(struct mem_cgroup *memcg)
- {
- }
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c2776f1..5683c7a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -735,7 +735,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
- 				struct mem_cgroup, css);
- }
- 
--static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-+struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
- {
- 	struct mem_cgroup *mem = NULL;
- 
-diff --git a/mm/thrash.c b/mm/thrash.c
-index 2372d4e..f892a6e 100644
---- a/mm/thrash.c
-+++ b/mm/thrash.c
-@@ -21,6 +21,7 @@
- #include <linux/mm.h>
- #include <linux/sched.h>
- #include <linux/swap.h>
-+#include <linux/memcontrol.h>
- 
- static DEFINE_SPINLOCK(swap_token_lock);
- struct mm_struct *swap_token_mm;
-@@ -75,3 +76,19 @@ void __put_swap_token(struct mm_struct *mm)
- 		swap_token_mm = NULL;
- 	spin_unlock(&swap_token_lock);
- }
-+
-+int has_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg)
-+{
-+	if (memcg) {
-+		struct mem_cgroup *swap_token_memcg;
-+
-+		/*
-+		 * memcgroup reclaim can disable swap token only if token task
-+		 * is in the same cgroup.
-+		 */
-+		swap_token_memcg = try_get_mem_cgroup_from_mm(swap_token_mm);
-+		return ((mm == swap_token_mm) && (memcg == swap_token_memcg));
-+	} else
-+		return (mm == swap_token_mm);
-+}
-+
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b3a569f..19e179b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2044,7 +2044,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
- 		sc->nr_scanned = 0;
- 		if (!priority)
--			disable_swap_token();
-+			disable_swap_token(sc->mem_cgroup);
- 		shrink_zones(priority, zonelist, sc);
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
-@@ -2353,7 +2353,7 @@ loop_again:
- 
- 		/* The swap token gets in the way of swapout... */
- 		if (!priority)
--			disable_swap_token();
-+			disable_swap_token(NULL);
- 
- 		all_zones_ok = 1;
- 		balanced = 0;
--- 
-1.7.3.1
+Eric, does it manage to limp along if you remove the BUG_ON()?
 
+That risks NMI recursion but maybe it allows you to see why things are slow, 
+before it crashes ;-)
 
+Thanks,
 
-
+	Ingo
