@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab1DZXds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:33:48 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52427 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab1DZXdr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:33:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aLoDTElzQK0d/YWb0yn3jCeeB5AEBllquLaFOXKn13swNGMcwjdrIlmqGYVKdvqAQa
-         AvV650tY2lX3jfotq/TzhlmmlY63+/j/5+N4o3OG+2aqZagg32zVgVBmbuu5ef+phEv5
-         GmDFJUlnwAKqyx5vq+2tmZDSue6h0newUZD5U=
+	id S1755344Ab1DZXeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:34:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46104 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754954Ab1DZXeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:34:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,271,1301900400"; 
+   d="scan'208";a="738886496"
+From: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+To: Maximilian Engelhardt <maxi@daemonizer.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Date: Tue, 26 Apr 2011 16:34:09 -0700
+Subject: RE: Kernel crash after using new Intel NIC (igb)
+Thread-Topic: Kernel crash after using new Intel NIC (igb)
+Thread-Index: AcwC0NXTQ7OJQ7B+SPKDTk15EuQJJwBmOnkQ
+Message-ID: <EDC0E76513226749BFBC9C3FB031318F016B4125A4@orsmsx508.amr.corp.intel.com>
+References: <201104250033.03401.maxi@daemonizer.de>
+In-Reply-To: <201104250033.03401.maxi@daemonizer.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin0wj3AhCtR5ZD=N_LUKjE1etBcFg@mail.gmail.com>
-References: <20110426085953.GA12389@darkstar>
-	<BANLkTikkUq7rg4umYQ5yt9ve+q34Pf+=Ag@mail.gmail.com>
-	<BANLkTin0wj3AhCtR5ZD=N_LUKjE1etBcFg@mail.gmail.com>
-Date: Wed, 27 Apr 2011 08:33:46 +0900
-Message-ID: <BANLkTim067_+bycA-rJk6u595YucMmruqQ@mail.gmail.com>
-Subject: Re: [PATCH v2] virtio_balloon: disable oom killer when fill balloon
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3QNYPi7021781
 
-On Tue, Apr 26, 2011 at 6:39 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Tue, Apr 26, 2011 at 5:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> Please resend this with [2/2] to linux-mm.
->>
->> On Tue, Apr 26, 2011 at 5:59 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->>> When memory pressure is high, virtio ballooning will probably cause oom killing.
->>> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
->>> will make memory becoming low then memory alloc of other processes will trigger
->>> oom killing. It is not desired behaviour.
->>
->> I can't understand why it is undesirable.
->> Why do we have to handle it specially?
->>
+
+
+>-----Original Message-----
+>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+>On Behalf Of Maximilian Engelhardt
+>Sent: Sunday, April 24, 2011 3:33 PM
+>To: linux-kernel@vger.kernel.org
+>Cc: netdev@vger.kernel.org; StuStaNet Vorstand
+>Subject: Kernel crash after using new Intel NIC (igb)
 >
-> Suppose user run some random memory hogging process while ballooning
-> it will be undesirable.
+>Hello,
+>
+>some time ago we switched some of our servers to a new networking card
+>that
+>uses the Intel igb driver. Since that time we see regular kernel
+>crashes.
+>The crashes happen at very irregular intervals, sometimes after a week
+>uptime,
+>sometimes after a month or even more. They seem to be independent of the
+>server load as they also happen in the night when there is low traffic.
+>
+>The affected server is used as a NAT device with some iptables rules and
+>serves
+>about 2000 people.
+>
+>Attached are two logs of the crashes as well as the output of dmesg,
+>lspci,
+>and /proc/interrupts as well as the used kernel config.
+>
+>I have no idea what might be wrong but I think it is a kernel bug.
+>Perhaps
+>someone with more knowledge has a clue.
+>
+>If needed I can provide additional information or build different
+>kernels.
+>
+>Greetings,
+>Maxi
+
+Hello,
+
+I'm sorry you're having crashes since installing our NIC.  Thank you for the data.  I haven't had a chance to review it carefully yet, but it looks to me like the crashes have us in the stack sometimes and sometimes not.  I need to do a bit more research and will need some more information.  Can I get an ethtool -i eth# for the device and also lspci -vvv for the platform its installed on.
+
+If you open an issue at SourceForge we will have a place to keep the logs.
+
+I will research this a bit more and get back to you tomorrow my time.
+
+Thanks,
+
+Carolyn
+Carolyn Wyborny
+Linux Development
+LAN Access Division
+Intel Corporation
 
 
-In VM POV, kvm and random memory hogging processes are customers.
-If we handle ballooning specially with disable OOM, what happens other
-processes requires memory at same time? Should they wait for balloon
-driver to release memory?
 
-I don't know your point. Sorry.
-Could you explain your scenario in detail for justify your idea?
-And as I previous said, we have to solve oom_killer_disabled issue in
-do_try_to_free_pages.
 
-Thanks, Dave.
--- 
-Kind regards,
-Minchan Kim
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
