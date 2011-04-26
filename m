@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab1DZViE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:38:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9586 "EHLO mga09.intel.com"
+	id S1758631Ab1DZVNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:13:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19033 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758655Ab1DZVNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:46 -0400
+	id S1758483Ab1DZVNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831599"
+   d="scan'208";a="425950825"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: Artem.Bityutskiy@nokia.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [19/106] UBIFS: fix debugging failure in dbg_check_space_info
-Message-Id: <20110426211257.B95193E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:57 -0700 (PDT)
+To: olaf@aepfle.de, haiyangz@microsoft.com, hjanssen@microsoft.com,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [7/106] staging: hv: use sync_bitops when interacting with the hypervisor
+Message-Id: <20110426211245.218663E1887@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:12:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,96 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Olaf Hering <olaf@aepfle.de>
 
-commit 7da6443aca9be29c6948dcbd636ad50154d0bc0c upstream.
+commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
 
-This patch fixes a debugging failure with which looks like this:
-UBIFS error (pid 32313): dbg_check_space_info: free space changed from 6019344 to 6022654
+Locking is required when tweaking bits located in a shared page, use the
+sync_ version of bitops. Without this change vmbus_on_event() will miss
+events and as a result, vmbus_isr() will not schedule the receive tasklet.
 
-The reason for this failure is described in the comment this patch adds
-to the code. But in short - 'c->freeable_cnt' may be different before
-and after re-mounting, and this is normal. So the debugging code should
-make sure that free space calculations do not depend on 'c->freeable_cnt'.
+[Backported to 2.6.32 stable kernel by Haiyang Zhang <haiyangz@microsoft.com>]
 
-A similar issue has been reported here:
-http://lists.infradead.org/pipermail/linux-mtd/2011-April/034647.html
-
-This patch should fix it.
-
-For the -stable guys: this patch is only relevant for kernels 2.6.30
-onwards.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Acked-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/ubifs/debug.c |   41 ++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 36 insertions(+), 5 deletions(-)
+ drivers/staging/hv/Channel.c      |    8 ++++----
+ drivers/staging/hv/Connection.c   |    6 ++++--
+ drivers/staging/hv/Vmbus.c        |    2 +-
+ drivers/staging/hv/VmbusPrivate.h |    1 +
+ 4 files changed, 10 insertions(+), 7 deletions(-)
 
-Index: linux-2.6.35.y/fs/ubifs/debug.c
+Index: linux-2.6.35.y/drivers/staging/hv/channel.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/ubifs/debug.c
-+++ linux-2.6.35.y/fs/ubifs/debug.c
-@@ -961,11 +961,39 @@ void dbg_dump_index(struct ubifs_info *c
- void dbg_save_space_info(struct ubifs_info *c)
- {
- 	struct ubifs_debug_info *d = c->dbg;
--
--	ubifs_get_lp_stats(c, &d->saved_lst);
-+	int freeable_cnt;
+--- linux-2.6.35.y.orig/drivers/staging/hv/channel.c
++++ linux-2.6.35.y/drivers/staging/hv/channel.c
+@@ -78,14 +78,14 @@ static void VmbusChannelSetEvent(struct 
  
- 	spin_lock(&c->space_lock);
-+	memcpy(&d->saved_lst, &c->lst, sizeof(struct ubifs_lp_stats));
-+
-+	/*
-+	 * We use a dirty hack here and zero out @c->freeable_cnt, because it
-+	 * affects the free space calculations, and UBIFS might not know about
-+	 * all freeable eraseblocks. Indeed, we know about freeable eraseblocks
-+	 * only when we read their lprops, and we do this only lazily, upon the
-+	 * need. So at any given point of time @c->freeable_cnt might be not
-+	 * exactly accurate.
-+	 *
-+	 * Just one example about the issue we hit when we did not zero
-+	 * @c->freeable_cnt.
-+	 * 1. The file-system is mounted R/O, c->freeable_cnt is %0. We save the
-+	 *    amount of free space in @d->saved_free
-+	 * 2. We re-mount R/W, which makes UBIFS to read the "lsave"
-+	 *    information from flash, where we cache LEBs from various
-+	 *    categories ('ubifs_remount_fs()' -> 'ubifs_lpt_init()'
-+	 *    -> 'lpt_init_wr()' -> 'read_lsave()' -> 'ubifs_lpt_lookup()'
-+	 *    -> 'ubifs_get_pnode()' -> 'update_cats()'
-+	 *    -> 'ubifs_add_to_cat()').
-+	 * 3. Lsave contains a freeable eraseblock, and @c->freeable_cnt
-+	 *    becomes %1.
-+	 * 4. We calculate the amount of free space when the re-mount is
-+	 *    finished in 'dbg_check_space_info()' and it does not match
-+	 *    @d->saved_free.
-+	 */
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
- 	d->saved_free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
- }
+ 	if (Channel->OfferMsg.MonitorAllocated) {
+ 		/* Each u32 represents 32 channels */
+-		set_bit(Channel->OfferMsg.ChildRelId & 31,
++		sync_set_bit(Channel->OfferMsg.ChildRelId & 31,
+ 			(unsigned long *) gVmbusConnection.SendInterruptPage +
+ 			(Channel->OfferMsg.ChildRelId >> 5));
  
-@@ -982,12 +1010,15 @@ int dbg_check_space_info(struct ubifs_in
- {
- 	struct ubifs_debug_info *d = c->dbg;
- 	struct ubifs_lp_stats lst;
--	long long avail, free;
-+	long long free;
-+	int freeable_cnt;
+ 		monitorPage = gVmbusConnection.MonitorPages;
+ 		monitorPage++; /* Get the child to parent monitor page */
  
- 	spin_lock(&c->space_lock);
--	avail = ubifs_calc_available(c, c->min_idx_lebs);
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
-+	free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
--	free = ubifs_get_free_space(c);
+-		set_bit(Channel->MonitorBit,
++		sync_set_bit(Channel->MonitorBit,
+ 			(unsigned long *)&monitorPage->TriggerGroup
+ 					[Channel->MonitorGroup].Pending);
  
- 	if (free != d->saved_free) {
- 		ubifs_err("free space changed from %lld to %lld",
+@@ -105,7 +105,7 @@ static void VmbusChannelClearEvent(struc
+ 
+ 	if (Channel->OfferMsg.MonitorAllocated) {
+ 		/* Each u32 represents 32 channels */
+-		clear_bit(Channel->OfferMsg.ChildRelId & 31,
++		sync_clear_bit(Channel->OfferMsg.ChildRelId & 31,
+ 			  (unsigned long *)gVmbusConnection.SendInterruptPage +
+ 			  (Channel->OfferMsg.ChildRelId >> 5));
+ 
+@@ -113,7 +113,7 @@ static void VmbusChannelClearEvent(struc
+ 			(struct hv_monitor_page *)gVmbusConnection.MonitorPages;
+ 		monitorPage++; /* Get the child to parent monitor page */
+ 
+-		clear_bit(Channel->MonitorBit,
++		sync_clear_bit(Channel->MonitorBit,
+ 			  (unsigned long *)&monitorPage->TriggerGroup
+ 					[Channel->MonitorGroup].Pending);
+ 	}
+Index: linux-2.6.35.y/drivers/staging/hv/connection.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/hv/connection.c
++++ linux-2.6.35.y/drivers/staging/hv/connection.c
+@@ -292,7 +292,9 @@ void VmbusOnEvents(void)
+ 		for (dword = 0; dword < maxdword; dword++) {
+ 			if (recvInterruptPage[dword]) {
+ 				for (bit = 0; bit < 32; bit++) {
+-					if (test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
++					if (sync_test_and_clear_bit(bit,
++						(unsigned long *)
++						&recvInterruptPage[dword])) {
+ 						relid = (dword << 5) + bit;
+ 						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
+ 
+@@ -337,7 +339,7 @@ int VmbusSetEvent(u32 childRelId)
+ 	DPRINT_ENTER(VMBUS);
+ 
+ 	/* Each u32 represents 32 channels */
+-	set_bit(childRelId & 31,
++	sync_set_bit(childRelId & 31,
+ 		(unsigned long *)gVmbusConnection.SendInterruptPage +
+ 		(childRelId >> 5));
+ 
+Index: linux-2.6.35.y/drivers/staging/hv/vmbus.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/hv/vmbus.c
++++ linux-2.6.35.y/drivers/staging/hv/vmbus.c
+@@ -254,7 +254,7 @@ static int VmbusOnISR(struct hv_driver *
+ 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
+ 
+ 	/* Since we are a child, we only need to check bit 0 */
+-	if (test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
++	if (sync_test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
+ 		DPRINT_DBG(VMBUS, "received event %d", event->Flags32[0]);
+ 		ret |= 0x2;
+ 	}
+Index: linux-2.6.35.y/drivers/staging/hv/vmbus_private.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/hv/vmbus_private.h
++++ linux-2.6.35.y/drivers/staging/hv/vmbus_private.h
+@@ -32,6 +32,7 @@
+ #include "channel_interface.h"
+ #include "ring_buffer.h"
+ #include <linux/list.h>
++#include <asm/sync_bitops.h>
+ 
+ 
+ /*
