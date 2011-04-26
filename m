@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab1DZVYC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:24:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
+	id S932678Ab1DZVYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:24:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1301 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423Ab1DZVOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:47 -0400
+	id S932179Ab1DZVOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831918"
+   d="scan'208";a="914748808"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: dtor@vmware.com, micah@vmware.com, sarah.a.sharp@linux.intel.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [77/106] USB: xhci - fix math in xhci_get_endpoint_interval()
-Message-Id: <20110426211358.C58BB3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:58 -0700 (PDT)
+To: dtor@vmware.com, sarah.a.sharp@linux.intel.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [76/106] USB: xhci - fix unsafe macro definitions
+Message-Id: <20110426211357.BAA993E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,141 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Dmitry Torokhov <dtor@vmware.com>
 
-commit dfa49c4ad120a784ef1ff0717168aa79f55a483a upstream.
+commit 5a6c2f3ff039154872ce597952f8b8900ea0d732 upstream.
 
-When parsing exponent-expressed intervals we subtract 1 from the
-value and then expect it to match with original + 1, which is
-highly unlikely, and we end with frequent spew:
+Macro arguments used in expressions need to be enclosed in parenthesis
+to avoid unpleasant surprises.
 
-	usb 3-4: ep 0x83 - rounding interval to 512 microframes
+This should be queued for kernels back to 2.6.31
 
-Also, parsing interval for fullspeed isochronous endpoints was
-incorrect - according to USB spec they use exponent-based
-intervals (but xHCI spec claims frame-based intervals). I trust
-USB spec more, especially since USB core agrees with it.
-
-This should be queued for stable kernels back to 2.6.31.
-
-Reviewed-by: Micah Elizabeth Scott <micah@vmware.com>
 Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/host/xhci-mem.c |   85 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 62 insertions(+), 23 deletions(-)
+ drivers/usb/host/xhci.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/host/xhci-mem.c
+Index: linux-2.6.35.y/drivers/usb/host/xhci.h
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/host/xhci-mem.c
-+++ linux-2.6.35.y/drivers/usb/host/xhci-mem.c
-@@ -961,6 +961,47 @@ int xhci_setup_addressable_virt_dev(stru
- 	return 0;
- }
- 
-+/*
-+ * Convert interval expressed as 2^(bInterval - 1) == interval into
-+ * straight exponent value 2^n == interval.
-+ *
-+ */
-+static unsigned int xhci_parse_exponent_interval(struct usb_device *udev,
-+		struct usb_host_endpoint *ep)
-+{
-+	unsigned int interval;
-+
-+	interval = clamp_val(ep->desc.bInterval, 1, 16) - 1;
-+	if (interval != ep->desc.bInterval - 1)
-+		dev_warn(&udev->dev,
-+			 "ep %#x - rounding interval to %d microframes\n",
-+			 ep->desc.bEndpointAddress,
-+			 1 << interval);
-+
-+	return interval;
-+}
-+
-+/*
-+ * Convert bInterval expressed in frames (in 1-255 range) to exponent of
-+ * microframes, rounded down to nearest power of 2.
-+ */
-+static unsigned int xhci_parse_frame_interval(struct usb_device *udev,
-+		struct usb_host_endpoint *ep)
-+{
-+	unsigned int interval;
-+
-+	interval = fls(8 * ep->desc.bInterval) - 1;
-+	interval = clamp_val(interval, 3, 10);
-+	if ((1 << interval) != 8 * ep->desc.bInterval)
-+		dev_warn(&udev->dev,
-+			 "ep %#x - rounding interval to %d microframes, ep desc says %d microframes\n",
-+			 ep->desc.bEndpointAddress,
-+			 1 << interval,
-+			 8 * ep->desc.bInterval);
-+
-+	return interval;
-+}
-+
- /* Return the polling or NAK interval.
-  *
-  * The polling interval is expressed in "microframes".  If xHCI's Interval field
-@@ -978,43 +1019,35 @@ static inline unsigned int xhci_get_endp
- 	case USB_SPEED_HIGH:
- 		/* Max NAK rate */
- 		if (usb_endpoint_xfer_control(&ep->desc) ||
--				usb_endpoint_xfer_bulk(&ep->desc))
-+		    usb_endpoint_xfer_bulk(&ep->desc)) {
- 			interval = ep->desc.bInterval;
-+			break;
-+		}
- 		/* Fall through - SS and HS isoc/int have same decoding */
- 	case USB_SPEED_SUPER:
- 		if (usb_endpoint_xfer_int(&ep->desc) ||
--				usb_endpoint_xfer_isoc(&ep->desc)) {
--			if (ep->desc.bInterval == 0)
--				interval = 0;
--			else
--				interval = ep->desc.bInterval - 1;
--			if (interval > 15)
--				interval = 15;
--			if (interval != ep->desc.bInterval + 1)
--				dev_warn(&udev->dev, "ep %#x - rounding interval to %d microframes\n",
--						ep->desc.bEndpointAddress, 1 << interval);
-+		    usb_endpoint_xfer_isoc(&ep->desc)) {
-+			interval = xhci_parse_exponent_interval(udev, ep);
- 		}
- 		break;
- 	/* Convert bInterval (in 1-255 frames) to microframes and round down to
- 	 * nearest power of 2.
- 	 */
- 	case USB_SPEED_FULL:
-+		if (usb_endpoint_xfer_int(&ep->desc)) {
-+			interval = xhci_parse_exponent_interval(udev, ep);
-+			break;
-+		}
-+		/*
-+		 * Fall through for isochronous endpoint interval decoding
-+		 * since it uses the same rules as low speed interrupt
-+		 * endpoints.
-+		 */
- 	case USB_SPEED_LOW:
- 		if (usb_endpoint_xfer_int(&ep->desc) ||
--				usb_endpoint_xfer_isoc(&ep->desc)) {
--			interval = fls(8*ep->desc.bInterval) - 1;
--			if (interval > 10)
--				interval = 10;
--			if (interval < 3)
--				interval = 3;
--			if ((1 << interval) != 8*ep->desc.bInterval)
--				dev_warn(&udev->dev,
--						"ep %#x - rounding interval"
--						" to %d microframes, "
--						"ep desc says %d microframes\n",
--						ep->desc.bEndpointAddress,
--						1 << interval,
--						8*ep->desc.bInterval);
-+		    usb_endpoint_xfer_isoc(&ep->desc)) {
-+
-+			interval = xhci_parse_frame_interval(udev, ep);
- 		}
- 		break;
- 	default:
+--- linux-2.6.35.y.orig/drivers/usb/host/xhci.h
++++ linux-2.6.35.y/drivers/usb/host/xhci.h
+@@ -232,7 +232,7 @@ struct xhci_op_regs {
+  * notification type that matches a bit set in this bit field.
+  */
+ #define	DEV_NOTE_MASK		(0xffff)
+-#define ENABLE_DEV_NOTE(x)	(1 << x)
++#define ENABLE_DEV_NOTE(x)	(1 << (x))
+ /* Most of the device notification types should only be used for debug.
+  * SW does need to pay attention to function wake notifications.
+  */
+@@ -598,11 +598,11 @@ struct xhci_ep_ctx {
+ #define EP_STATE_STOPPED	3
+ #define EP_STATE_ERROR		4
+ /* Mult - Max number of burtst within an interval, in EP companion desc. */
+-#define EP_MULT(p)		((p & 0x3) << 8)
++#define EP_MULT(p)		(((p) & 0x3) << 8)
+ /* bits 10:14 are Max Primary Streams */
+ /* bit 15 is Linear Stream Array */
+ /* Interval - period between requests to an endpoint - 125u increments. */
+-#define EP_INTERVAL(p)		((p & 0xff) << 16)
++#define EP_INTERVAL(p)		(((p) & 0xff) << 16)
+ #define EP_INTERVAL_TO_UFRAMES(p)		(1 << (((p) >> 16) & 0xff))
+ #define EP_MAXPSTREAMS_MASK	(0x1f << 10)
+ #define EP_MAXPSTREAMS(p)	(((p) << 10) & EP_MAXPSTREAMS_MASK)
