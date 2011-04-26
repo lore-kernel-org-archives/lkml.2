@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab1DZWmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:42:04 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.39.38]:46075 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932391Ab1DZWmD (ORCPT
+	id S932447Ab1DZWmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:42:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29915 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab1DZWmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:42:03 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=qTA5/x/l4s7GzkwcT3Xf5J1l730qzqdygOEJlMxFCmwQSEIjuocYeU75A88YbCAvKy3IfaLsWuD78lWvti9s/NbHs6XugI00vTAaMf6HpfvRAo/r5aiP2PfeoLT0fmL1;
-Date: Tue, 26 Apr 2011 15:42:00 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
+	Tue, 26 Apr 2011 18:42:38 -0400
+Date: Tue, 26 Apr 2011 15:42:25 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
 To: Cyril Brulebois <kibi@debian.org>
 Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH 1/4] Documentation/00-INDEX: fix typo
-Message-Id: <20110426154200.499f2d06.rdunlap@xenotime.net>
-In-Reply-To: <1303575344-10403-1-git-send-email-kibi@debian.org>
+Subject: Re: [PATCH 2/4] Documentation/00-INDEX: improve description for sh/
+Message-Id: <20110426154225.85864ffe.randy.dunlap@oracle.com>
+In-Reply-To: <1303575344-10403-2-git-send-email-kibi@debian.org>
 References: <1303575344-10403-1-git-send-email-kibi@debian.org>
-Organization: YPO4
+	<1303575344-10403-2-git-send-email-kibi@debian.org>
+Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DB74A55.0082:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Apr 2011 18:15:41 +0200 Cyril Brulebois wrote:
+On Sat, 23 Apr 2011 18:15:42 +0200 Cyril Brulebois wrote:
 
 > Signed-off-by: Cyril Brulebois <kibi@debian.org>
 
@@ -41,18 +41,18 @@ Thanks.
 >  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-> index c17cd4b..7be2510 100644
+> index 7be2510..1c089cf 100644
 > --- a/Documentation/00-INDEX
 > +++ b/Documentation/00-INDEX
-> @@ -71,7 +71,7 @@ atomic_ops.txt
->  auxdisplay/
->  	- misc. LCD driver documentation (cfag12864b, ks0108).
->  basic_profiling.txt
-> -	- basic instructions for those who wants to profile Linux kernel.
-> +	- basic instructions for those who want to profile Linux kernel.
->  binfmt_misc.txt
->  	- info on the kernel support for extra binary formats.
->  blackfin/
+> @@ -303,7 +303,7 @@ sgi-ioc4.txt
+>  sgi-visws.txt
+>  	- short blurb on the SGI Visual Workstations.
+>  sh/
+> -	- directory with info on porting Linux to a new architecture.
+> +	- directory with info on adding new boards to LinuxSH.
+>  sound/
+>  	- directory with info on sound card support.
+>  sparc/
 > -- 
 
 
