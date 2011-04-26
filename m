@@ -1,94 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1DZX51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:57:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64130 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab1DZX5Z convert rfc822-to-8bit (ORCPT
+	id S1753287Ab1D0AFU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 20:05:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41441 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1D0AFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:57:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vIBsWV3oj4UHCBEHExCnd3AbMNfRC1az/8Vr5FScG3qFRtUILzRuDQSyisJ8v2LBx9
-         /OG8zyda4R0gE5zN3mAqxXBwJOu6mLamHN1xXev5+9FA7vMt2J8eX0kuokbcCw5EnaCb
-         zsSQ9HhRA6iOJCLz4TasWHfavYPb6tjuheaC8=
-MIME-Version: 1.0
-In-Reply-To: <1303802572.20212.4.camel@twins>
-References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
-	<1303760837.4865.22.camel@laptop>
-	<BANLkTimoG7muVanF6P8YYvfZA7WUT+9XKg@mail.gmail.com>
-	<1303802572.20212.4.camel@twins>
-Date: Wed, 27 Apr 2011 08:57:24 +0900
-Message-ID: <BANLkTi=V8gU6ax1b69dOwB_apB-s6eS2xg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] munmap: Flexible mem unmap operation interface for
- scheduling latency
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Apr 2011 20:05:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 27 Apr 2011 08:58:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [PATCH] fix get_scan_count for working well with small targets
+Message-Id: <20110427085842.877ca83b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTikACmxYqczKtJjO_FVWCy2=rVjUMA@mail.gmail.com>
+References: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTikACmxYqczKtJjO_FVWCy2=rVjUMA@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 4:22 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-04-26 at 10:20 +0900, Geunsik Lim wrote:
->> Yes. I also checked the patch that you stated at LKML mailing list previously.
->> In my thinking. I want to keep ZAP_BLOCK_SIZE related contents
->> that adjusted by Ingo, Robert, Andrew, and so on a long time ago
->> because I believe that we can overcome below problems sufficiently
->> in real world.
->> . LKML archive - http://lkml.org/lkml/2002/7/24/273
->> . LKML archive - http://lkml.org/lkml/2004/9/14/101
->
-> Real ancient world, that was 2004, well before we grew preemptible
-> mmu_gather.
->
->> In my experience, I did overcome below problems with this patch
->> based on ZAP_BLOCK_SIZE.
->>
->> 1) To solve temporal CPU contention
->>     (e.g: case that cpu contention is 93% ~ 96% according to mmap/munmap
->>             to access mass files )
->> 2) To get real-time or real-fast selectively on specified linux system
->
-> I still don't get it, what kernel are you targeting here and why?
-In my case, I tested at embedded target(e.g: 2.6.29 , 2.6.32) based on
-arm cortex-a series for user responsiveness when trying to access mass files.
->
-> -RT doesn't care, and clearly PREEMPT=n doesn't care because its not
-> about latency at all, the only half-way point is PREEMPT=y and for that
-> you could simply reduce ZAP_BLOCK_SIZE.
-Thank you for your reviews.  yes. we can simply reduce ZAP_BLOCK_SIZE.
-I mean that we can control ZAP_BLOCK_SIZE after consider a suitable
-munmap() operation size both preemptive mode and non-preemptive mode.
->
-> Then again, what's the point, simply remove the whole thing (like I did)
-> and your problem is solved too.
-If we can get real-fast or real-time with advanced preemptive mmu_gather
-sufficiently according to user needs sometimes, I also think that
-that's good certainly.
->
->
->
+On Tue, 26 Apr 2011 10:36:51 -0700
+Ying Han <yinghan@google.com> wrote:
+
+> On Tue, Apr 26, 2011 at 2:17 AM, KAMEZAWA Hiroyuki <
+> kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > At memory reclaim, we determine the number of pages to be scanned
+> > per zone as
+> >        (anon + file) >> priority.
+> > Assume
+> >        scan = (anon + file) >> priority.
+> >
+> > If scan < SWAP_CLUSTER_MAX, shlink_list will be skipped for this
+> > priority and results no-sacn.  This has some problems.
+> >
+> >  1. This increases priority as 1 without any scan.
+> >     To do scan in DEF_PRIORITY always, amount of pages should be larger
+> > than
+> >     512M. If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan
+> > will be
+> >     batched, later. (But we lose 1 priority.)
+> >     But if the amount of pages is smaller than 16M, no scan at priority==0
+> >     forever.
+> >
+> >  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
+> >     So, x86's ZONE_DMA will never be recoverred until the user of pages
+> >     frees memory by itself.
+> >
+> >  3. With memcg, the limit of memory can be small. When using small memcg,
+> >     it gets priority < DEF_PRIORITY-2 very easily and need to call
+> >     wait_iff_congested().
+> >     For doing scan before priorty=9, 64MB of memory should be used.
+> >
+> > This patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
+> >
+> >  1. the target is enough small.
+> >  2. it's kswapd or memcg reclaim.
+> >
+> > Then we can avoid rapid priority drop and may be able to recover
+> > all_unreclaimable in a small zones.
+> >
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/vmscan.c |   31 ++++++++++++++++++++++++++-----
+> >  1 file changed, 26 insertions(+), 5 deletions(-)
+> >
+> > Index: memcg/mm/vmscan.c
+> > ===================================================================
+> > --- memcg.orig/mm/vmscan.c
+> > +++ memcg/mm/vmscan.c
+> > @@ -1737,6 +1737,16 @@ static void get_scan_count(struct zone *
+> >        u64 fraction[2], denominator;
+> >        enum lru_list l;
+> >        int noswap = 0;
+> > +       int may_noscan = 0;
+> > +
+> > +
+> >
+> extra line?
+> 
+will fix.
+
+> 
+> > +       anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+> > +               zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+> > +       file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+> > +               zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+> > +
+> > +       if (((anon + file) >> priority) < SWAP_CLUSTER_MAX)
+> > +               may_noscan = 1;
+> >
+> >        /* If we have no swap space, do not bother scanning anon pages. */
+> >        if (!sc->may_swap || (nr_swap_pages <= 0)) {
+> > @@ -1747,11 +1757,6 @@ static void get_scan_count(struct zone *
+> >                goto out;
+> >        }
+> >
+> > -       anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+> > -               zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+> > -       file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+> > -               zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+> > -
+> >        if (scanning_global_lru(sc)) {
+> >                free  = zone_page_state(zone, NR_FREE_PAGES);
+> >                /* If we have very few page cache pages,
+> > @@ -1814,10 +1819,26 @@ out:
+> >                unsigned long scan;
+> >
+> >                scan = zone_nr_lru_pages(zone, sc, l);
+> > +
+> >
+> extra line?
+> 
+will fix.
+
+> >                if (priority || noswap) {
+> >                        scan >>= priority;
+> >                        scan = div64_u64(scan * fraction[file],
+> > denominator);
+> >                }
+> > +
+> > +               if (!scan &&
+> > +                   may_noscan &&
+> > +                   (current_is_kswapd() || !scanning_global_lru(sc))) {
+> > +                       /*
+> > +                        * if we do target scan, the whole amount of memory
+> > +                        * can be too small to scan with low priority
+> > value.
+> > +                        * This raise up priority rapidly without any scan.
+> > +                        * Avoid that and give some scan.
+> > +                        */
+> > +                       if (file)
+> > +                               scan = SWAP_CLUSTER_MAX;
+> > +                       else if (!noswap && (fraction[anon] >
+> > fraction[file]*16))
+> > +                               scan = SWAP_CLUSTER_MAX;
+> > +               }
+> >
+> Ok, so we are changing the global kswapd, and per-memcg bg and direct
+> reclaim both. Just to be clear here.
+
+and softlimit reclaim.
+
+> Also, how did we calculated the "16" to be the fraction of anon vs file?
+> 
+I intended that it implies if file cache is lower than 5-6% of scan target.
+
+With current implementation, which has been used for some long time, we made no
+swapout because we do no scan. After this, we may do swapouts which has been
+unseen .....I felt it as regression. This check is only for very small zones
+or small memcgs. So, I thought it was ok to to limit scanning of anon only when
+we needed it. 
+
+Thanks,
+-Kame
 
 
 
--- 
-Regards,
-Geunsik Lim ( Samsung Electronics )
-Blog : http://blog.naver.com/invain/
-e-Mail: geunsik.lim@samsung.com
-           leemgs@gmail.com , leemgs1@gmail.com
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+
+
+
+
+
