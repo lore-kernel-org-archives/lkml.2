@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab1DZM03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 08:26:29 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57223 "EHLO
+	id S1753228Ab1DZM0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:26:33 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57258 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab1DZM01 (ORCPT
+	with ESMTP id S1752970Ab1DZM0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 08:26:27 -0400
+	Tue, 26 Apr 2011 08:26:30 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
         Stefan Bader <stefan.bader@canonical.com>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 05/21] drm/i915: Free hardware status page on unload when physically mapped" has been added to staging queue
-Date: Tue, 26 Apr 2011 14:26:24 +0200
-Message-Id: <1303820784-3520-1-git-send-email-stefan.bader@canonical.com>
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 07/21] drm/radeon/kms/atom: set sane defaults in atombios_get_encoder_mode()" has been added to staging queue
+Date: Tue, 26 Apr 2011 14:26:27 +0200
+Message-Id: <1303820787-3584-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 05/21] drm/i915: Free hardware status page on unload when physically mapped
+    Subject: [PATCH 07/21] drm/radeon/kms/atom: set sane defaults in atombios_get_encoder_mode()
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -36,42 +36,57 @@ Thanks.
 
 ------
 
->From 266b030ef0bbf2986895ab789cdba90561af1ac8 Mon Sep 17 00:00:00 2001
-From: Keith Packard <keithp@keithp.com>
-Date: Thu, 7 Oct 2010 09:20:12 +0100
-Subject: [PATCH 05/21] drm/i915: Free hardware status page on unload when physically mapped
+>From d90cc9b9d2dc0fa19f37cd019c07a982c96809ba Mon Sep 17 00:00:00 2001
+From: Alex Deucher <alexdeucher@gmail.com>
+Date: Wed, 17 Nov 2010 02:49:40 -0500
+Subject: [PATCH 07/21] drm/radeon/kms/atom: set sane defaults in atombios_get_encoder_mode()
 
-commit c2873e9633fe908dccd36dbb1d370e9c59a1ca62 upstream.
+commit c7a71fc761551dc8be8543f14a90d08cda4e77f9 upstream.
 
-A physically mapped hardware status page is allocated at driver load
-time but was never freed. Call the existing code to free this page at
-driver unload time on hardware which uses this kind.
+If there was no connector mapped to the encoder, atombios_get_encoder_mode()
+returned 0 which is the id for DP.  Return something sane instead based on
+the encoder id.  This avoids hitting the DP paths on non-DP encoders.
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-[ickle: call before tearing down registers on KMS-only path, as pointed
-out by Dave Airlie]
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/radeon/radeon_encoders.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 7f13d50..2b2adb5 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1583,6 +1583,9 @@ int i915_driver_unload(struct drm_device *dev)
- 		i915_gem_lastclose(dev);
+diff --git a/drivers/gpu/drm/radeon/radeon_encoders.c b/drivers/gpu/drm/radeon/radeon_encoders.c
+index 7626bd5..ea55516 100644
+--- a/drivers/gpu/drm/radeon/radeon_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_encoders.c
+@@ -587,11 +587,23 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector;
+ 	struct radeon_connector_atom_dig *radeon_dig_connector;
++	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
 
- 		intel_cleanup_overlay(dev);
-+
-+		if (!I915_NEED_GFX_HWS(dev))
-+			i915_free_hws(dev);
- 	}
+ 	connector = radeon_get_connector_for_encoder(encoder);
+-	if (!connector)
+-		return 0;
+-
++	if (!connector) {
++		switch (radeon_encoder->encoder_id) {
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
++			return ATOM_ENCODER_MODE_DVI;
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
++		default:
++			return ATOM_ENCODER_MODE_CRT;
++		}
++	}
+ 	radeon_connector = to_radeon_connector(connector);
 
- 	pci_dev_put(dev_priv->bridge_dev);
+ 	switch (connector->connector_type) {
 --
 1.7.0.4
 
