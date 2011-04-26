@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1DZO2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:28:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59187 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756414Ab1DZO2p (ORCPT
+	id S1756707Ab1DZO3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:29:08 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:54383 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab1DZO3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:28:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Zach Pfeffer <zach.pfeffer@linaro.org>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Date: Tue, 26 Apr 2011 16:28:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <201104212129.17013.arnd@arndb.de> <20110421130930.4be9e9e1@jbarnes-desktop> <BANLkTim5umALqafjA2e88UCLzMp9LQu3_Q@mail.gmail.com>
-In-Reply-To: <BANLkTim5umALqafjA2e88UCLzMp9LQu3_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104261628.38734.arnd@arndb.de>
-X-Provags-ID: V02:K0:QpoeHA+QU+dT6fOj+RsU3Lo6o+XbFJ9G0GKW2No9Ywc
- cQs+tXyFVuxT5UO2YrUL8t9exd+I3xXcLFcZJCYGzH3EfMun5g
- 1NJdI8SH80IxHYYQHZTdHCXMsjxKdebKn/vFPfzAnJbAI3RoPs
- 5m6u5xU/KxPHSNi8OScfhXJWEnccAE3k10VFO+tvXUg4O3Fud6
- U2WEM7AARN3EPj/KRQDlg==
+	Tue, 26 Apr 2011 10:29:06 -0400
+Date: Tue, 26 Apr 2011 16:25:35 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Daniel Kiper <dkiper@net-space.pl>, konrad.wilk@oracle.com,
+        stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
+Message-ID: <20110426142535.GA27417@router-fw-old.local.net-space.pl>
+References: <20110422212545.GA22846@router-fw-old.local.net-space.pl> <20110422223331.GB5124@const.famille.thibault.fr>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422223331.GB5124@const.famille.thibault.fr>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 April 2011, Zach Pfeffer wrote:
+On Sat, Apr 23, 2011 at 12:33:32AM +0200, Samuel Thibault wrote:
+> Hello,
+>
+> Daniel Kiper, le Fri 22 Apr 2011 23:25:45 +0200, a ?crit :
+> > If pfn of newly allocated page is less than currently requested pfn
+> > then relevant earlier allocated mfn is overwritten which leads to
+> > domain crash later.
+>
+> Oops, good catch! And unfortunately it happens seldomly... I guess it
+> may be the culprit for a fair number of other issues.
 
-> I agree with Jesse that the separation of mapping from allocation is
-> central to the current usage models. I realize most people didn't like
-> VCMM, but it provided an abstraction for this - if software can handle
-> the multiple mapper approach in a rational way across ARM than we can
-> solve a lot of problems with all the map and unmap current solutions
-> and we don't have to hack in coherency.
- 
-Any solution we come up with needs to work on only across ARM, but
-also across other architectures. Fortunately, most have less weird
-constraints, for instance some architecture have no concept of uncached
-mappings (and don't need them), or there might be DMA ordering settings
-that we have not yet seen on ARM.
+I discovered that issue on domU i386. It does not affect x86_64
+in my environment. However, as you stated above that issue in some
+circumstances could lead to mysterious system crashes or data
+corruptions.
 
-	Arnd
+> > +	if (new_pfn < i)
+> > +		for (new_pfn = i; new_pfn < dom->total_pages; ++new_pfn)
+> > +			if (dom->p2m_host[new_pfn] == new_mfn)
+> > +				break;
+>
+> Instead of looking for the page, which takes a linear time for each page
+> and thus potentially quadratic time, we should probably rather record
+> which PFN the MFNs < allocated have been moved to?
+
+I am going to post new time optimized version
+of that patch today or tommorow.
+
+Daniel
