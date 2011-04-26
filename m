@@ -1,169 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab1DZFGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 01:06:18 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33716 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab1DZFGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 01:06:16 -0400
-Date: Mon, 25 Apr 2011 22:06:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, peterz@infradead.org
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
- related?)
-Message-ID: <20110426050612.GA7651@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTi=W=s876U===LVfp59Nnfui8d-1RQ@mail.gmail.com>
- <20110422150222.GA2300@linux.vnet.ibm.com>
- <BANLkTind84Gf8JA9Fa4QL2GbaF8nMNhDzw@mail.gmail.com>
- <20110423210539.GI2628@linux.vnet.ibm.com>
- <BANLkTimXW2=PYOXkKjnLuH+eN2TjZBqAxw@mail.gmail.com>
- <BANLkTi=ntjm-5D=OD1oFogpNjmJSJiZygQ@mail.gmail.com>
- <BANLkTim9H1k4c7xSZZJ09WXs8WCeCQQJJg@mail.gmail.com>
- <20110424062728.GM2628@linux.vnet.ibm.com>
- <BANLkTinTd10K6Ho6FhuynROT7yDLHNLojw@mail.gmail.com>
- <20110424164331.GN2628@linux.vnet.ibm.com>
+	id S1752564Ab1DZFMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 01:12:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41653 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab1DZFMt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 01:12:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page in mem_read
+Cc: kosaki.motohiro@jp.fujitsu.com, bookjovi@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LSU.2.00.1104252048190.6978@sister.anvils>
+References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com> <alpine.LSU.2.00.1104252048190.6978@sister.anvils>
+Message-Id: <20110426141449.F37C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110424164331.GN2628@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 26 Apr 2011 14:12:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 24, 2011 at 09:43:31AM -0700, Paul E. McKenney wrote:
-> On Sun, Apr 24, 2011 at 11:36:44AM +0200, Sedat Dilek wrote:
-> > On Sun, Apr 24, 2011 at 8:27 AM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> [ . . . ]
-> 
-> > > OK, this looks unrelated, but just in case, could you please try it
-> > > again with the following patch?  (Not mainlinable, debug only.)
-> > >
-> > > Also, it does look like you are still seeing a grace-period hang.
-> > > Could you please send the output of the script?  Same one as last time.
-> > >
-> > >                                                        Thanx, Paul
-> > >
-> > > ------------------------------------------------------------------------
-> > >
-> > >  debugobjects.c |    8 +++++---
-> > >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > >
-> > > diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-> > > index 9d86e45..10a7c7a 100644
-> > > --- a/lib/debugobjects.c
-> > > +++ b/lib/debugobjects.c
-> > > @@ -289,10 +289,12 @@ static void debug_object_is_on_stack(void *addr, int onstack)
-> > >                return;
-> > >
-> > >        limit++;
-> > > -       if (is_on_stack)
-> > > +       if (is_on_stack) {
-> > > +               struct rcu_head *p = (struct rcu_head *)addr;
-> > >                printk(KERN_WARNING
-> > > -                      "ODEBUG: object is on stack, but not annotated\n");
-> > > -       else
-> > > +                      "ODEBUG: object is on stack, but not annotated: %p\n",
-> > > +                      p->func);
-> > > +       } else
-> > >                printk(KERN_WARNING
-> > >                       "ODEBUG: object is not on stack, but annotated\n");
-> > >        WARN_ON(1);
-> > >
+Hi High,
+
+> On Sun, 17 Apr 2011, bookjovi@gmail.com wrote:
+> > From: Jovi Zhang <bookjovi@gmail.com>
 > > 
-> > Somehow your attached patch was not applicable.
-> > As the changes were a few lines I applied it by myself.
-> > Attached are log, dmesg and patches (orig + mine)
+> > It should be better if put check_mem_permission before __get_free_page
+> > in mem_read, to be same as function mem_write.
+> > 
+> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 > 
-> Hmmm...  Does 0xc10231a1 correspond to a function in your build?  If so,
-> could you please let me know which one?
+> Sorry to be contrary, but I disagree with this.  I'm all for consistency,
+> but is there a particular reason why you think the mem_write ordering is
+> right and mem_read wrong?
 > 
-> OK, so according to "ps" the per-CPU kthread is runnable, but it appears
-> to never run.  You only have one CPU, so it cannot be waiting due to
-> running on the wrong CPU.  The only other loop is in wait_event(), and
-> that code looks good -- besides, if wait_event() was broken, we would
-> be seeing breakage everywhere.
+> My reason for preferring the current mem_read ordering is this:
 > 
-> Peter, any thoughts on what I might have done wrong to get the scheduler
-> into a state where it was ignoring a runnable realtime task?
+> check_mem_permission gets a reference to the mm.  If we __get_free_page
+> after check_mem_permission, imagine what happens if the system is out
+> of memory, and the mm we're looking at is selected for killing by the
+> OOM killer: while we wait in __get_free_page for more memory, no memory
+> is freed from the selected mm because it cannot reach exit_mmap while
+> we hold that reference.
 
-Hello, Sedat,
+Right.
 
-Here is a diagnostic patch to apply on top of sedat.2011.04.23a from
-the -rcu git tree.  Could you please try it out, let me know what
-happens, and run the last collectdebugfs.sh during the test?
+sorry for that. I missed this point.
 
-							Thanx, Paul
 
-------------------------------------------------------------------------
+> (I may be overstating the case: a little memory may be freed from the
+> exiting task's stack, and kswapd should still be able to pick some pages
+> off the mm.  But nonetheless, we would do better to let this mm go.)
+> 
+> No doubt there are plenty of other places in /proc which try to
+> allocate memory after taking a reference on an mm; but I think
+> we should be working to eliminate those rather than add to them.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 6cf6e47..65ae701 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1524,9 +1524,9 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
- 		return;
- 	if (to_rt) {
- 		policy = SCHED_NORMAL;
--		sp.sched_priority = RCU_KTHREAD_PRIO;
-+		sp.sched_priority = 0;
- 	} else {
--		policy = SCHED_FIFO;
-+		policy = SCHED_NORMAL;
- 		sp.sched_priority = 0;
+then, Should we change mem_write instead?
+
+
+>From 74f827ce74e1c4f846905e940edfa5f639b5a2ce Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 26 Apr 2011 13:57:02 +0900
+Subject: [PATCH] [PATCH] proc: put check_mem_permission after __get_free_page in mem_write
+
+It should be better if put check_mem_permission after __get_free_page
+in mem_write, to be same as function mem_read.
+
+Hugh Dickins explained the reason.
+
+    check_mem_permission gets a reference to the mm.  If we __get_free_page
+    after check_mem_permission, imagine what happens if the system is out
+    of memory, and the mm we're looking at is selected for killing by the
+    OOM killer: while we wait in __get_free_page for more memory, no memory
+    is freed from the selected mm because it cannot reach exit_mmap while
+    we hold that reference.
+
+
+Reported-by: Jovi Zhang <bookjovi@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Stephen Wilson <wilsons@start.ca>
+---
+ fs/proc/base.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 4deef2e..e93be6e 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -894,20 +894,20 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
++	copied = -ENOMEM;
++	page = (char *)__get_free_page(GFP_TEMPORARY);
++	if (!page)
++		goto out_task;
++
+ 	mm = check_mem_permission(task);
+ 	copied = PTR_ERR(mm);
+ 	if (IS_ERR(mm))
+-		goto out_task;
++		goto out_free;
+ 
+ 	copied = -EIO;
+ 	if (file->private_data != (void *)((long)current->self_exec_id))
+ 		goto out_mm;
+ 
+-	copied = -ENOMEM;
+-	page = (char *)__get_free_page(GFP_TEMPORARY);
+-	if (!page)
+-		goto out_mm;
+-
+ 	copied = 0;
+ 	while (count > 0) {
+ 		int this_len, retval;
+@@ -929,9 +929,11 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 		count -= retval;			
  	}
- 	sched_setscheduler_nocheck(t, policy, &sp);
-@@ -1566,8 +1566,8 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
- 	sp.sched_priority = 0;
- 	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
- 	schedule();
--	sp.sched_priority = RCU_KTHREAD_PRIO;
--	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
-+	sp.sched_priority = 0;
-+	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
- 	del_timer(&yield_timer);
- }
- 
-@@ -1671,8 +1671,8 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
- 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
- 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
- 	wake_up_process(t);
--	sp.sched_priority = RCU_KTHREAD_PRIO;
--	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
-+	sp.sched_priority = 0;
-+	sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
- 	return 0;
- }
- 
-@@ -1713,8 +1713,8 @@ static int rcu_node_kthread(void *arg)
- 				continue;
- 			}
- 			per_cpu(rcu_cpu_has_work, cpu) = 1;
--			sp.sched_priority = RCU_KTHREAD_PRIO;
--			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
-+			sp.sched_priority = 0;
-+			sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
- 			preempt_enable();
- 		}
- 	}
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index a21413d..baee185 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1307,8 +1307,8 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 	rnp->boost_kthread_task = t;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	wake_up_process(t);
--	sp.sched_priority = RCU_KTHREAD_PRIO;
--	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
-+	sp.sched_priority = 0;
-+	sched_setscheduler_nocheck(t, SCHED_NORMAL, &sp);
- 	return 0;
- }
- 
+ 	*ppos = dst;
+-	free_page((unsigned long) page);
++
+ out_mm:
+ 	mmput(mm);
++out_free:
++	free_page((unsigned long) page);
+ out_task:
+ 	put_task_struct(task);
+ out_no_task:
+-- 
+1.7.3.1
+
+
+
