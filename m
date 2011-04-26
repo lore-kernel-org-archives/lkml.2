@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab1DZGun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 02:50:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42910 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab1DZGul (ORCPT
+	id S1757450Ab1DZGwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 02:52:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58981 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756895Ab1DZGwF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 02:50:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: readahead and oom
-Cc: kosaki.motohiro@jp.fujitsu.com, Dave Young <hidave.darkstar@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Tue, 26 Apr 2011 02:52:05 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Greg KH <greg@kroah.com>, Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>
-In-Reply-To: <20110426063421.GC19717@localhost>
-References: <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com> <20110426063421.GC19717@localhost>
-Message-Id: <20110426155258.F38F.A69D9226@jp.fujitsu.com>
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 26 Apr 2011 12:21:04 +0530
+Subject: RE: [PATCH v4 08/11] tty: add pruss SUART driver
+Thread-Topic: [PATCH v4 08/11] tty: add pruss SUART driver
+Thread-Index: AcwDjtvtV5t6U5PbSg6bfQzDj70LkQARAXgg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
+ <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
+ <20110425212056.GA29313@kroah.com>
+In-Reply-To: <20110425212056.GA29313@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 15:50:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > btw readahead page allocations are completely optional. They are OK to
-> > > fail and in theory shall not trigger OOM on themselves. We may
-> > > consider passing __GFP_NORETRY for readahead page allocations.
+On Tue, Apr 26, 2011 at 02:50:56, Greg KH wrote:
+> On Fri, Apr 22, 2011 at 05:38:26PM +0530, Subhasish Ghosh wrote:
+> > This patch adds support for the TTY compliant
+> > Soft-UART device emulated on PRUSS.
 > > 
-> > Good idea, care to submit a patch?
-> 
-> Here it is :)
-> 
-> Thanks,
-> Fengguang
-> ---
-> readahead: readahead page allocations is OK to fail
-> 
-> Pass __GFP_NORETRY for readahead page allocations.
-> 
-> readahead page allocations are completely optional. They are OK to
-> fail and in particular shall not trigger OOM on themselves.
-> 
-> Reported-by: Dave Young <hidave.darkstar@gmail.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/pagemap.h |    5 +++++
->  mm/readahead.c          |    2 +-
->  2 files changed, 6 insertions(+), 1 deletion(-)
-> 
-> --- linux-next.orig/include/linux/pagemap.h	2011-04-26 14:27:46.000000000 +0800
-> +++ linux-next/include/linux/pagemap.h	2011-04-26 14:29:31.000000000 +0800
-> @@ -219,6 +219,11 @@ static inline struct page *page_cache_al
->  	return __page_cache_alloc(mapping_gfp_mask(x)|__GFP_COLD);
->  }
->  
-> +static inline struct page *page_cache_alloc_cold_noretry(struct address_space *x)
-> +{
-> +	return __page_cache_alloc(mapping_gfp_mask(x)|__GFP_COLD|__GFP_NORETRY);
-> +}
-> +
->  typedef int filler_t(void *, struct page *);
->  
->  extern struct page * find_get_page(struct address_space *mapping,
-> --- linux-next.orig/mm/readahead.c	2011-04-26 14:27:02.000000000 +0800
-> +++ linux-next/mm/readahead.c	2011-04-26 14:27:24.000000000 +0800
-> @@ -180,7 +180,7 @@ __do_page_cache_readahead(struct address
->  		if (page)
->  			continue;
->  
-> -		page = page_cache_alloc_cold(mapping);
-> +		page = page_cache_alloc_cold_noretry(mapping);
->  		if (!page)
->  			break;
->  		page->index = page_offset;
+> > This patch depends on:
+> > davinci: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS.
+> >             https://patchwork.kernel.org/patch/615681/
 
-I like this patch.
+This is already in mainline. Plus this patch
+doesn't really seem to depend on this commit.
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > davinci: changed SRAM allocator to shared ram.
+> >             https://patchwork.kernel.org/patch/549351/
 
+There should be no build time dependency with this patch
+(the above patch just changes which pool of SRAM the
+allocation happens from)
 
+But, this brings out an important dependency of the patch
+calling platform specific sram allocator functions. There
+has been SRAM allocator consolidation work done by Russell
+and as a result the SRAM allocator API for DaVinci will
+actually change. The driver should probably just get sram
+space through platform data so that it doesn't depend on the
+platform specific sram allocation function.
+
+> 
+> Who is going to be applying these patches to the tree?
+> 
+> Should this driver go through a davinci subtree because of these
+> dependancies?
+
+No, driver and platform changes can be merged separately
+if the above aspect is taken care of. Russell has been
+pushing back on merging driver patches through his tree
+unless absolutely required.
+
+Thanks,
+Sekhar
 
