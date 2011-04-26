@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab1DZShN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 14:37:13 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:37913 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751016Ab1DZShM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 14:37:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAFEQt01Ld/sX/2dsb2JhbAAMhEbXKpFKgSmBWYF3fQSVJIdZ
-X-IronPort-AV: E=Sophos;i="4.64,270,1301889600"; 
-   d="scan'208";a="111568103"
-Message-ID: <4DB710D5.6060901@teksavvy.com>
-Date: Tue, 26 Apr 2011 14:37:09 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1751924Ab1DZSjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:39:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42636 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750826Ab1DZSjR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 14:39:17 -0400
 MIME-Version: 1.0
-To: Bruce Stenning <b.stenning@indigovision.com>, Tejun Heo <htejun@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <4D9CD275.9000002@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com> <4D9FACC9.7020200@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com> <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com> <20110423005610.GC1576@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com> <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110426110300.6da0b684@mschwide.boeblingen.de.ibm.com>
+References: <20110426110300.6da0b684@mschwide.boeblingen.de.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Apr 2011 11:38:22 -0700
+Message-ID: <BANLkTik_SMi17rgLVss9esoez9OeHEhN0w@mail.gmail.com>
+Subject: Re: [GIT PULL] s390 patches for 2.6.39-rc4
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-26 11:41 AM, Bruce Stenning wrote:
-> Tejun wrote:
->> Does the following patch resolve the problem?
->>
->> Thanks.
-> 
-> I have applied that patch, keeping Mark's mv_set_main_irq_mask spinlock patch
-> in place.  I would not like to commit absolutely, for obvious reasons, but I
-> have abused the port considerably and have not been able to coax it into
-> locking up.
+I'll pull this, but:
 
-I'm thinking perhaps I should dust off that spinlock patch
-and send something more proper like that upstream.
+On Tue, Apr 26, 2011 at 2:03 AM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
+>
+> Jan Glauber (3):
+>      [S390] prng: prevent access beyond end of stack
 
-With that mask register shared among the ports, it is really
-hard to keep track of when we're locked and when not.
-So having a lock just for the shared part of the chip
-has got to be a less error-prone way to do it.
+I don't think that's _still_ correct.
 
-I'll pull down a recent -git to patch against first.
+Just looking at the diff, it looks broken:
 
-Cheers
+>        /* Add the entropy */
+>        while (nbytes >= 8) {
+> -               *((__u64 *)parm_block) ^= *((__u64 *)buf+i*8);
+> +               *((__u64 *)parm_block) ^= *((__u64 *)buf+i);
+>                prng_add_entropy();
+>                i += 8;
+>                nbytes -= 8;
+
+The "i += 8" implies that "i" is a byte offset.
+
+But "(__u64 *)buf+i" will parse as "((__u64 *)buf) + i" and thus still
+do another multiply-by-eight.
+
+So the diff fixes one "off by a factor of 8", but not another, if I
+read it right.
+
+So the parenthesis should be moved around to something like "*(__u64
+*) (buf+i)", I think.
+
+                     Linus
