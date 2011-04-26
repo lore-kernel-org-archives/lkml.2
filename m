@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1DZXIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:08:40 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:38926 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752503Ab1DZXIj (ORCPT
+	id S1753753Ab1DZXJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:09:55 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1746 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1DZXJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:08:39 -0400
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB7504C.6060507@verizon.net>
-Date: Tue, 26 Apr 2011 19:07:56 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Tue, 26 Apr 2011 19:09:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=pszdjerQKRQGCLesMqExJSelDJuB/yUSPEbSVDrJD6g7XxCfjajMW/yyyXTYn6t5fJ
+         K3q7iHgvKgu4FmvT7NEg==
+Date: Tue, 26 Apr 2011 16:09:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Foley <pefoley2@verizon.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] init/Kconfig: use if/endif to surround the EXPERT
+ menu kconfig symbols
+In-Reply-To: <20110426130036.997a05fc.rdunlap@xenotime.net>
+Message-ID: <alpine.DEB.2.00.1104261608210.7639@chino.kir.corp.google.com>
+References: <20110426130036.997a05fc.rdunlap@xenotime.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH V2] kbuild: don't warn about include/linux/version.h not including
- itself
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes checkversion.pl not warn that include/linux/version.h
-dosen't include itself.
+On Tue, 26 Apr 2011, Randy Dunlap wrote:
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- scripts/checkversion.pl |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Surround the EXPERT menu with "if EXPERT" and "endif" so that it
+> is forced to stay as one unit.  Hopefully this will help to prevent
+> it being broken in the future.
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Peter Foley <pefoley2@verizon.net>
+> ---
+>  init/Kconfig |   36 ++++++++++++++++++++----------------
+>  1 file changed, 20 insertions(+), 16 deletions(-)
+> 
+> --- lnx-2639-rc4.orig/init/Kconfig
+> +++ lnx-2639-rc4/init/Kconfig
+> @@ -924,15 +924,17 @@ menuconfig EXPERT
+>            environments which can tolerate a "non-standard" kernel.
+>            Only use this if you really know what you are doing.
+>  
+> +if EXPERT
+> +
+>  config UID16
+> -	bool "Enable 16-bit UID system calls" if EXPERT
+> +	bool "Enable 16-bit UID system calls"
+>  	depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION)
+>  	default y
+>  	help
+>  	  This enables the legacy 16-bit UID syscall wrappers.
+>  
 
-diff --git a/scripts/checkversion.pl b/scripts/checkversion.pl
-index b444e89..cf4b1dc 100755
---- a/scripts/checkversion.pl
-+++ b/scripts/checkversion.pl
-@@ -12,6 +12,8 @@ $| = 1;
- my $debugging;
- 
- foreach my $file (@ARGV) {
-+    if($file !~ "include/linux/version\.h")
-+    {
-     # Open this file.
-     open( my $f, '<', $file )
-       or die "Can't open $file: $!\n";
-@@ -67,4 +69,5 @@ foreach my $file (@ARGV) {
-     }
- 
-     close($f);
-+    }
- }
--- 
-1.7.5.rc1
-
+I don't like this, people who look up a Kconfig option typically only 
+look at the single entry and look for dependencies within it, not the 
+context in which it is declared in the Kconfig file.
