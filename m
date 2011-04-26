@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab1DZVkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:40:46 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51374 "EHLO mga14.intel.com"
+	id S1758757Ab1DZVlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:41:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9957 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758558Ab1DZVNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:37 -0400
+	id S1758518Ab1DZVNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="425950842"
+   d="scan'208";a="425950810"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: drosenberg@vsecurity.com, davem@davemloft.net, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [10/106] irda: prevent heap corruption on invalid nickname
-Message-Id: <20110426211248.4B6223E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:48 -0700 (PDT)
+To: arjan.mels@gmx.net, ak@linux.intel.com, hirofuchi@users.sourceforge.net,
+        max@vozeler.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [5/106] staging: usbip: bugfix for isochronous packets and optimization
+Message-Id: <20110426211243.060013E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:12:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,37 +25,276 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Arjan Mels <arjan.mels@gmx.net>
 
-commit d50e7e3604778bfc2dc40f440e0742dbae399d54 upstream.
+commit 28276a28d8b3cd19f4449991faad4945fe557656 upstream.
 
-Invalid nicknames containing only spaces will result in an underflow in
-a memcpy size calculation, subsequently destroying the heap and
-panicking.
+For isochronous packets the actual_length is the sum of the actual
+length of each of the packets, however between the packets might be
+padding, so it is not sufficient to just send the first actual_length
+bytes of the buffer. To fix this and simultanesouly optimize the
+bandwidth the content of the isochronous packets are send without the
+padding, the padding is restored on the receiving end.
 
-v2 also catches the case where the provided nickname is longer than the
-buffer size, which can result in controllable heap corruption.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Cc: Max Vozeler <max@vozeler.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/irda/irnet/irnet_ppp.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/usbip/stub_tx.c      |   74 ++++++++++++++++++++++++++++-------
+ drivers/staging/usbip/usbip_common.c |   57 ++++++++++++++++++++++++++
+ drivers/staging/usbip/usbip_common.h |    2 
+ drivers/staging/usbip/vhci_rx.c      |    3 +
+ 4 files changed, 122 insertions(+), 14 deletions(-)
 
-Index: linux-2.6.35.y/net/irda/irnet/irnet_ppp.c
+Index: linux-2.6.35.y/drivers/staging/usbip/stub_tx.c
 ===================================================================
---- linux-2.6.35.y.orig/net/irda/irnet/irnet_ppp.c
-+++ linux-2.6.35.y/net/irda/irnet/irnet_ppp.c
-@@ -106,6 +106,9 @@ irnet_ctrl_write(irnet_socket *	ap,
- 	      while(isspace(start[length - 1]))
- 		length--;
+--- linux-2.6.35.y.orig/drivers/staging/usbip/stub_tx.c
++++ linux-2.6.35.y/drivers/staging/usbip/stub_tx.c
+@@ -169,7 +169,6 @@ static int stub_send_ret_submit(struct s
+ 	struct stub_priv *priv, *tmp;
  
-+	      DABORT(length < 5 || length > NICKNAME_MAX_LEN + 5,
-+		     -EINVAL, CTRL_ERROR, "Invalid nickname.\n");
+ 	struct msghdr msg;
+-	struct kvec iov[3];
+ 	size_t txsize;
+ 
+ 	size_t total_size = 0;
+@@ -179,28 +178,73 @@ static int stub_send_ret_submit(struct s
+ 		struct urb *urb = priv->urb;
+ 		struct usbip_header pdu_header;
+ 		void *iso_buffer = NULL;
++		struct kvec *iov = NULL;
++		int iovnum = 0;
+ 
+ 		txsize = 0;
+ 		memset(&pdu_header, 0, sizeof(pdu_header));
+ 		memset(&msg, 0, sizeof(msg));
+-		memset(&iov, 0, sizeof(iov));
+ 
+-		usbip_dbg_stub_tx("setup txdata urb %p\n", urb);
++		if (usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS)
++			iovnum = 2 + urb->number_of_packets;
++		else
++			iovnum = 2;
 +
- 	      /* Copy the name for later reuse */
- 	      memcpy(ap->rname, start + 5, length - 5);
- 	      ap->rname[length - 5] = '\0';
++		iov = kzalloc(iovnum * sizeof(struct kvec), GFP_KERNEL);
+ 
++		if (!iov) {
++			usbip_event_add(&sdev->ud, SDEV_EVENT_ERROR_MALLOC);
++			return -1;
++		}
++
++		iovnum = 0;
+ 
+ 		/* 1. setup usbip_header */
+ 		setup_ret_submit_pdu(&pdu_header, urb);
++		usbip_dbg_stub_tx("setup txdata seqnum: %d urb: %p\n",
++						pdu_header.base.seqnum, urb);
++		/*usbip_dump_header(pdu_header);*/
+ 		usbip_header_correct_endian(&pdu_header, 1);
+ 
+-		iov[0].iov_base = &pdu_header;
+-		iov[0].iov_len  = sizeof(pdu_header);
++		iov[iovnum].iov_base = &pdu_header;
++		iov[iovnum].iov_len  = sizeof(pdu_header);
++		iovnum++;
+ 		txsize += sizeof(pdu_header);
+ 
+ 		/* 2. setup transfer buffer */
+-		if (usb_pipein(urb->pipe) && urb->actual_length > 0) {
+-			iov[1].iov_base = urb->transfer_buffer;
+-			iov[1].iov_len  = urb->actual_length;
++		if (usb_pipein(urb->pipe) &&
++				usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS &&
++					urb->actual_length > 0) {
++			iov[iovnum].iov_base = urb->transfer_buffer;
++			iov[iovnum].iov_len  = urb->actual_length;
++			iovnum++;
+ 			txsize += urb->actual_length;
++		} else if (usb_pipein(urb->pipe) &&
++				usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS) {
++			/*
++			 * For isochronous packets: actual length is the sum of
++			 * the actual length of the individual, packets, but as
++			 * the packet offsets are not changed there will be
++			 * padding between the packets. To optimally use the
++			 * bandwidth the padding is not transmitted.
++			 */
++
++			int i;
++			for (i = 0; i < urb->number_of_packets; i++) {
++				iov[iovnum].iov_base = urb->transfer_buffer + urb->iso_frame_desc[i].offset;
++				iov[iovnum].iov_len = urb->iso_frame_desc[i].actual_length;
++				iovnum++;
++				txsize += urb->iso_frame_desc[i].actual_length;
++			}
++
++			if (txsize != sizeof(pdu_header) + urb->actual_length) {
++				dev_err(&sdev->interface->dev,
++					"actual length of urb (%d) does not match iso packet sizes (%d)\n",
++					urb->actual_length, txsize-sizeof(pdu_header));
++				kfree(iov);
++				usbip_event_add(&sdev->ud, SDEV_EVENT_ERROR_TCP);
++			   return -1;
++			}
+ 		}
+ 
+ 		/* 3. setup iso_packet_descriptor */
+@@ -211,32 +255,34 @@ static int stub_send_ret_submit(struct s
+ 			if (!iso_buffer) {
+ 				usbip_event_add(&sdev->ud,
+ 						SDEV_EVENT_ERROR_MALLOC);
++				kfree(iov);
+ 				return -1;
+ 			}
+ 
+-			iov[2].iov_base = iso_buffer;
+-			iov[2].iov_len  = len;
++			iov[iovnum].iov_base = iso_buffer;
++			iov[iovnum].iov_len  = len;
+ 			txsize += len;
++			iovnum++;
+ 		}
+ 
+-		ret = kernel_sendmsg(sdev->ud.tcp_socket, &msg, iov,
+-				     3, txsize);
++		ret = kernel_sendmsg(sdev->ud.tcp_socket, &msg,
++						iov,  iovnum, txsize);
+ 		if (ret != txsize) {
+ 			dev_err(&sdev->interface->dev,
+ 				"sendmsg failed!, retval %d for %zd\n",
+ 				ret, txsize);
++			kfree(iov);
+ 			kfree(iso_buffer);
+ 			usbip_event_add(&sdev->ud, SDEV_EVENT_ERROR_TCP);
+ 			return -1;
+ 		}
+ 
++		kfree(iov);
+ 		kfree(iso_buffer);
+-		usbip_dbg_stub_tx("send txdata\n");
+ 
+ 		total_size += txsize;
+ 	}
+ 
+-
+ 	spin_lock_irqsave(&sdev->priv_lock, flags);
+ 
+ 	list_for_each_entry_safe(priv, tmp, &sdev->priv_free, list) {
+Index: linux-2.6.35.y/drivers/staging/usbip/usbip_common.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/usbip/usbip_common.c
++++ linux-2.6.35.y/drivers/staging/usbip/usbip_common.c
+@@ -835,6 +835,7 @@ int usbip_recv_iso(struct usbip_device *
+ 	int size = np * sizeof(*iso);
+ 	int i;
+ 	int ret;
++	int total_length = 0;
+ 
+ 	if (!usb_pipeisoc(urb->pipe))
+ 		return 0;
+@@ -864,19 +865,75 @@ int usbip_recv_iso(struct usbip_device *
+ 		return -EPIPE;
+ 	}
+ 
++
+ 	for (i = 0; i < np; i++) {
+ 		iso = buff + (i * sizeof(*iso));
+ 
+ 		usbip_iso_pakcet_correct_endian(iso, 0);
+ 		usbip_pack_iso(iso, &urb->iso_frame_desc[i], 0);
++		total_length += urb->iso_frame_desc[i].actual_length;
+ 	}
+ 
+ 	kfree(buff);
+ 
++	if (total_length != urb->actual_length) {
++		dev_err(&urb->dev->dev,
++		  "total length of iso packets (%d) not equal to actual length of buffer (%d)\n",
++		  total_length, urb->actual_length);
++
++		if (ud->side == USBIP_STUB)
++			usbip_event_add(ud, SDEV_EVENT_ERROR_TCP);
++		else
++			usbip_event_add(ud, VDEV_EVENT_ERROR_TCP);
++
++		return -EPIPE;
++	}
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usbip_recv_iso);
+ 
++/*
++ * This functions restores the padding which was removed for optimizing
++ * the bandwidth during transfer over tcp/ip
++ *
++ * buffer and iso packets need to be stored and be in propeper endian in urb
++ * before calling this function
++ */
++int usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
++{
++	int np = urb->number_of_packets;
++	int i;
++	int ret;
++	int actualoffset = urb->actual_length;
++
++	if (!usb_pipeisoc(urb->pipe))
++		return 0;
++
++	/* if no packets or length of data is 0, then nothing to unpack */
++	if (np == 0 || urb->actual_length == 0)
++		return 0;
++
++	/*
++	 * if actual_length is transfer_buffer_length then no padding is
++	 * present.
++	*/
++	if (urb->actual_length == urb->transfer_buffer_length)
++		return 0;
++
++	/*
++	 * loop over all packets from last to first (to prevent overwritting
++	 * memory when padding) and move them into the proper place
++	 */
++	for (i = np-1; i > 0; i--) {
++		actualoffset -= urb->iso_frame_desc[i].actual_length;
++		memmove(urb->transfer_buffer + urb->iso_frame_desc[i].offset,
++				  urb->transfer_buffer + actualoffset,
++				  urb->iso_frame_desc[i].actual_length);
++	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(usbip_pad_iso);
+ 
+ /* some members of urb must be substituted before. */
+ int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb)
+Index: linux-2.6.35.y/drivers/staging/usbip/usbip_common.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/usbip/usbip_common.h
++++ linux-2.6.35.y/drivers/staging/usbip/usbip_common.h
+@@ -393,6 +393,8 @@ void usbip_header_correct_endian(struct 
+ int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb);
+ /* some members of urb must be substituted before. */
+ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb);
++/* some members of urb must be substituted before. */
++int usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
+ void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen);
+ 
+ 
+Index: linux-2.6.35.y/drivers/staging/usbip/vhci_rx.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/staging/usbip/vhci_rx.c
++++ linux-2.6.35.y/drivers/staging/usbip/vhci_rx.c
+@@ -99,6 +99,9 @@ static void vhci_recv_ret_submit(struct 
+ 	if (usbip_recv_iso(ud, urb) < 0)
+ 		return;
+ 
++	/* restore the padding in iso packets */
++	if (usbip_pad_iso(ud, urb) < 0)
++		return;
+ 
+ 	if (usbip_dbg_flag_vhci_rx)
+ 		usbip_dump_urb(urb);
