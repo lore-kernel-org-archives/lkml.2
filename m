@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1DZAht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:37:49 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40466 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190Ab1DZAhr (ORCPT
+	id S932262Ab1DZAlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:41:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45650 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1DZAk7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:37:47 -0400
-Date: Mon, 25 Apr 2011 17:37:38 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Chris Mason <chris.mason@oracle.com>, Mingming Cao <cmm@us.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
-Message-ID: <20110426003738.GB22189@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <1303476503-sup-4141@think> <20110422203434.GA2977@quack.suse.cz>
+	Mon, 25 Apr 2011 20:40:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=riXLXKm5404JQnR+4jSonG/8sPs8QPiiseVmpRAYU1LoGPfXfFHfzKkTbj1EbKjMsB
+         veoqjxCC3DQQFTNd7QXL0tZ0RXFuWcmJHz+bhbg2hP5qhgcD1p1s4EGZLlQ3PMdnT388
+         5L4dpUZi1lep9My4L7e/0m83EKMfAhAKN4yVc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422203434.GA2977@quack.suse.cz>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1303745473.18763.9.camel@gandalf.stny.rr.com>
+References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
+	<1303728272-11408-4-git-send-email-leemgs1@gmail.com>
+	<1303745473.18763.9.camel@gandalf.stny.rr.com>
+Date: Tue, 26 Apr 2011 09:40:58 +0900
+Message-ID: <BANLkTi=CHQ39hQZuvUdZ0z2OZxy2jksE_w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] munmap: kbuild menu for munmap interface
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Hugh Dickins <hughd@google.com>, Darren Hart <dvhart@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 10:34:34PM +0200, Jan Kara wrote:
-> On Fri 22-04-11 08:50:01, Chris Mason wrote:
-> > Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
-> > > Hi everyone,
-> > > 
-> > > I've finally managed to get together a patch that seems to provide stable pages
-> > > during writeback, or at least gets us to the point that after several days of
-> > > running tests I don't see DIF checksum errors anymore. :)
-> > > 
-> > > The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
-> > > walk the process tree to find all userland ptes that map to a particular memory
-> > > page and revoke write access, and
-> > 
-> > Hmm, did you need the bio_integrity_prep change for all the filesystems?
-> > This should be happening already as part of using page_mkwrite.
->   Or more precisely page_mkclean() should do what you try to do in
-> bio_integrity_prep()... It would certainly be interesting (bug) if you
-> could write to the page after calling page_mkclean() without page_mkwrite()
-> being called.
+On Tue, Apr 26, 2011 at 12:31 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-04-25 at 19:44 +0900, Geunsik Lim wrote:
+>> From: Geunsik Lim <geunsik.lim@samsung.com>
+>>
+>> Support kbuild menu to select memory unmap operation size
+>> at build time.
+>
+> The subject and this line are not quite the same. The subject looks like
+> it only modifies the kbuild options, not mm/memory.c as well. Please
+> fix.
+You are right. I will fix it.
+>
+>>
+>> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+>> Acked-by: Hyunjin Choi <hj89.choi@samsung.com>
+>> ---
+>>  init/Kconfig |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  mm/memory.c  |   21 +++++++++++-----
+>>  2 files changed, 84 insertions(+), 7 deletions(-)
+>>
+>
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -57,6 +57,7 @@
+>>  #include <linux/swapops.h>
+>>  #include <linux/elf.h>
+>>  #include <linux/gfp.h>
+>> +#include <linux/munmap_unit_size.h>
+>>
+>>  #include <asm/io.h>
+>>  #include <asm/pgalloc.h>
+>> @@ -1079,6 +1080,10 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
+>>                       (*zap_work)--;
+>>                       continue;
+>>               }
+>> +#if 0
+>> +printk("DEBUG:munmap step2,(%s:%d), unmap range = current(%lu) + \
+>> +zap_work(%lu bytes) \n", current->comm, current->pid, addr, *zap_work);
+>> +#endif
+>
+> No #if 0 debug printing in mainline.
+Thank you for your advice.
+>
+>>               next = zap_pud_range(tlb, vma, pgd, addr, next,
+>>                                               zap_work, details);
+>>       } while (pgd++, addr = next, (addr != end && *zap_work > 0));
+>> @@ -1088,12 +1093,10 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
+>>       return addr;
+>>  }
+>>
+>> -#ifdef CONFIG_PREEMPT
+>> -# define ZAP_BLOCK_SIZE      (8 * PAGE_SIZE)
+>> -#else
+>> -/* No preempt: go for improved straight-line efficiency */
+>> -# define ZAP_BLOCK_SIZE      (1024 * PAGE_SIZE)
+>> -#endif
+>> +/* No preempt: go for improved straight-line efficiency
+>> + * on PREEMPT(preemption mode) this is not a critical latency-path.
+>> + */
+>> +# define ZAP_BLOCK_SIZE        (munmap_unit_size * PAGE_SIZE)
+>>
+>>  /**
+>>   * unmap_vmas - unmap a range of memory covered by a list of vma's
+>> @@ -1133,7 +1136,11 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
+>>       spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
+>>       int fullmm = (*tlbp)->fullmm;
+>>       struct mm_struct *mm = vma->vm_mm;
+>> -
+>> +#if 0
+>> +printk("DEBUG:munmap step1,(%s:%d), unit=zap_work(%ld)/ZAP_BLOCK(%ld), \
+>> +vma:[%8lu]=%lu-%lu \n", current->comm, current->pid, zap_work, ZAP_BLOCK_SIZE, \
+>> +vma->vm_end - vma->vm_start, vma->vm_end, vma->vm_start);
+>> +#endif
+>
+> Get rid of this too.
+>
+> Either have pr_debug(...) or nothing at all.
+In fact, I wondered about this debug messages for just debugging. :)
+Yes. I will remove this debug messages because it is not necessary
+as you commented.
+>
+> -- Steve
+>
+>>       mmu_notifier_invalidate_range_start(mm, start_addr, end_addr);
+>>       for ( ; vma && vma->vm_start < end_addr; vma = vma->vm_next) {
+>>               unsigned long end;
+>
+>
+>
 
-Hm... in mpage_da_submit_io I see the following sequence of calls:
 
-1. clear_page_dirty_for_io
-2. possibly one of: ext4_bio_write_page or block_write_full_page.
-   If ext4_bio_write_page, 
-   2a. kmem_cache_alloc
-   2b. set_page_writeback
 
-Before and after #1, the page is locked but writeback is not set.
-
-Before #2, the page must be locked and writeback must not be set, because both
-of those two functions want to set the writeback bit themselves.  However,
-ext4_bio_write_page tries to allocate memory with GFP_NOFS, which means it can
-sleep (I think).
-
-Unfortunately, ext4_page_mkwrite will check for page locked, wait for page
-writeback, and then return the page.  I think it is theoretically possible for
-#1 to trigger a page_mkwrite which completes before #2b, right?  In which case
-the thread that called mkwrite will think that the page isn't being written
-out, and happily scribble on it during writeback.  I could be wrong, but it
-seems to me that one has to write-protect the page after setting the writeback
-bit.
-
-I guess we could call page_mkclean from bio_integrity_prep, though.
-
---D
+-- 
+Regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+e-Mail: geunsik.lim@samsung.com
+           leemgs@gmail.com , leemgs1@gmail.com
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
