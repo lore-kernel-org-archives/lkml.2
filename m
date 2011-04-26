@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab1DZPxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 11:53:17 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:58581 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab1DZPxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 11:53:15 -0400
-Date: Tue, 26 Apr 2011 08:53:04 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>
-Subject: Re: [PATCH v2 2/3] thermal: Split hwmon lookup to a separate
- function
-Message-ID: <20110426155304.GD18176@ericsson.com>
-References: <20110426165600.1d9ac91b@endymion.delvare>
- <20110426170253.58f05975@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110426170253.58f05975@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752535Ab1DZP6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 11:58:44 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50022 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab1DZP6m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 11:58:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=jgtgk/gfdcW+qs5NUO8MZCjnQRxXHnemNOgcwYhiOEYY0/AyNQq4WKzzVS+Ou78RwJ
+         ipzseBvghQMtiuMwCJz5ON2c4xUD+cqCnJLj5r5xHtM6ToZAygZYZVroGK3KyKY9Bd9+
+         Po8wP7dpuq+fXUcQYTSwxwbxlB5Y6zf0cNiJk=
+Subject: [PATCH] ARM: ARCH_SMDK2410: add select S3C_DEV_USB_HOST to fix
+ build error
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Apr 2011 23:58:33 +0800
+Message-ID: <1303833513.24142.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 11:02:53AM -0400, Jean Delvare wrote:
-> We'll soon need to reuse it.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Rene Herman <rene.herman@gmail.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Add select S3C_DEV_USB_HOST for ARCH_SMDK2410 to fix below build error.
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+  LD      .tmp_vmlinux1
+arch/arm/mach-s3c2410/built-in.o:(.init.data+0x30): undefined reference to `s3c_device_ohci'
+make: *** [.tmp_vmlinux1] Error 1
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/mach-s3c2410/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-s3c2410/Kconfig b/arch/arm/mach-s3c2410/Kconfig
+index 7245a55..81b45e6 100644
+--- a/arch/arm/mach-s3c2410/Kconfig
++++ b/arch/arm/mach-s3c2410/Kconfig
+@@ -66,6 +66,7 @@ menu "S3C2410 Machines"
+ config ARCH_SMDK2410
+ 	bool "SMDK2410/A9M2410"
+ 	select CPU_S3C2410
++	select S3C_DEV_USB_HOST
+ 	select MACH_SMDK
+ 	help
+ 	   Say Y here if you are using the SMDK2410 or the derived module A9M2410
+-- 
+1.7.1
+
+
 
