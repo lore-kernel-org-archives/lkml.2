@@ -1,129 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab1DZJYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 05:24:07 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50384 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab1DZJYF (ORCPT
+	id S1752736Ab1DZJ0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 05:26:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49892 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab1DZJ0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 05:24:05 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 26 Apr 2011 18:17:24 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, Ying Han <yinghan@google.com>
-Subject: [PATCH] fix get_scan_count for working well with small targets
-Message-Id: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 26 Apr 2011 05:26:20 -0400
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+	 <1303407662-15564-2-git-send-email-acme@infradead.org>
+	 <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu>
+	 <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Apr 2011 11:25:58 +0200
+Message-ID: <1303809958.20212.219.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At memory reclaim, we determine the number of pages to be scanned
-per zone as
-	(anon + file) >> priority.
-Assume 
-	scan = (anon + file) >> priority.
+On Mon, 2011-04-25 at 13:12 -0400, Vince Weaver wrote:
+> On Fri, 22 Apr 2011, Ingo Molnar wrote:
+> 
+> > But this kind of usability is absolutely unacceptable - users should not
+> > be expected to type in magic, CPU and model specific incantations to get
+> > access to useful hardware functionality.
+> 
+> That's why people use libpfm4.  or PAPI.  And they do.
 
-If scan < SWAP_CLUSTER_MAX, shlink_list will be skipped for this
-priority and results no-sacn.  This has some problems.
+And how is typing in hex numbers different from typing in model specific
+event names? All the same to me, you still need to understand your micro
+architecture very thoroughly and read the SDMs.
 
-  1. This increases priority as 1 without any scan.
-     To do scan in DEF_PRIORITY always, amount of pages should be larger than
-     512M. If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
-     batched, later. (But we lose 1 priority.)
-     But if the amount of pages is smaller than 16M, no scan at priority==0
-     forever.
+PAPI actually has 'generalized' events, but I guess you're going to tell
+me nobody uses those since they're not useful.
 
-  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
-     So, x86's ZONE_DMA will never be recoverred until the user of pages
-     frees memory by itself.
+> Current PAPI snapshots support offcore response on recent git kernels.
+> With full names, no hex values, thanks to libpfm4.
+> 
+> All the world is not perf.
 
-  3. With memcg, the limit of memory can be small. When using small memcg,
-     it gets priority < DEF_PRIORITY-2 very easily and need to call
-     wait_iff_congested().
-     For doing scan before priorty=9, 64MB of memory should be used.
+I know, all the world is interested in investing tons of time learning
+about their one architecture and extract the last few percent of
+performance.
 
-This patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
+And that is fine for those few people who can afford it, but generally
+optimizing for a single specific platform isn't cost effective.
 
-  1. the target is enough small.
-  2. it's kswapd or memcg reclaim.
+I looks like you're all so stuck in your HPC/lowlevel way of things
+you're not even realizing there's much more to be gained by providing
+easy and useful tools to the general public, stuff that works similarly
+across architectures.
 
-Then we can avoid rapid priority drop and may be able to recover
-all_unreclaimable in a small zones.
+> > The proper solution is to expose useful offcore functionality via
+> > generalized events - that way users do not have to care which specific
+> > CPU model they are using, they can use the conceptual event and not some
+> > model specific quirky hexa number.
+> 
+> No no no no.
+> 
+> Blocking access to raw events is the wrong idea.  If anything, the whole 
+> "generic events" thing in the kernel should be ditched.  Wrong events are 
+> used at times (see AMD branch events a few releases back, now Nehalem 
+> cache events).  This all belongs in userspace, as was pointed out at the 
+> start.  The kernel has no business telling users which perf events are 
+> interesting, or limiting them!  What is this, windows?
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/vmscan.c |   31 ++++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+The kernel has no place scheduling pmcs either I expect, or scheduling
+tasks for that matter.
 
-Index: memcg/mm/vmscan.c
-===================================================================
---- memcg.orig/mm/vmscan.c
-+++ memcg/mm/vmscan.c
-@@ -1737,6 +1737,16 @@ static void get_scan_count(struct zone *
- 	u64 fraction[2], denominator;
- 	enum lru_list l;
- 	int noswap = 0;
-+	int may_noscan = 0;
-+
-+
-+	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
-+	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+
-+	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX)
-+		may_noscan = 1;
- 
- 	/* If we have no swap space, do not bother scanning anon pages. */
- 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-@@ -1747,11 +1757,6 @@ static void get_scan_count(struct zone *
- 		goto out;
- 	}
- 
--	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
--	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
--
- 	if (scanning_global_lru(sc)) {
- 		free  = zone_page_state(zone, NR_FREE_PAGES);
- 		/* If we have very few page cache pages,
-@@ -1814,10 +1819,26 @@ out:
- 		unsigned long scan;
- 
- 		scan = zone_nr_lru_pages(zone, sc, l);
-+
- 		if (priority || noswap) {
- 			scan >>= priority;
- 			scan = div64_u64(scan * fraction[file], denominator);
- 		}
-+
-+		if (!scan &&
-+		    may_noscan &&
-+		    (current_is_kswapd() || !scanning_global_lru(sc))) {
-+			/*
-+ 			 * if we do target scan, the whole amount of memory
-+ 			 * can be too small to scan with low priority value.
-+ 			 * This raise up priority rapidly without any scan.
-+ 			 * Avoid that and give some scan.
-+ 			 */
-+			if (file)
-+				scan = SWAP_CLUSTER_MAX;
-+			else if (!noswap && (fraction[anon] > fraction[file]*16))
-+				scan = SWAP_CLUSTER_MAX;
-+		}
- 		nr[l] = nr_scan_try_batch(scan,
- 					  &reclaim_stat->nr_saved_scan[l]);
- 	}
+We all know you don't believe in upgrading kernels or in kernels very
+much at all.
 
+> If you do block access to any raw events, we're going to have to start 
+> recommending people ditch perf_events and start patching the kernel with 
+> perfctr again.  We already do for P4/netburst users, as Pentium 4 support 
+> is currently hosed due to NMI event conflicts.
+
+Very constructive attitude, instead of helping you simply subvert and
+route around, thanks man! 
+
+You could of course a) simply disable the NMI watchdog, or b) improve
+the space-heater (aka. P4) PMU implementation to use alternative
+encodings -- from what I understood the problem with P4 is that there's
+multiple ways to encode the same event and currently if you take one it
+doesn't try others.
+
+> Also with perfctr it's much easier to get low-latency access to the 
+> counters.  See:
+>   http://web.eecs.utk.edu/~vweaver1/projects/papi-cost/
+
+And why is that? is that the lack of userspace rdpmc? That should be
+possible with perf, powerpc actually does that already. Various people
+mentioned wanting to make this work on x86 but I've yet to see a patch.
