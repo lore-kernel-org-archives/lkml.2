@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab1DZHzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:55:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52604 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756105Ab1DZHzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:55:37 -0400
-Date: Tue, 26 Apr 2011 17:55:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiejing Zhang <kzjeef@gmail.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Felipe Balbi <balbi@ti.com>
-Subject: linux-next: manual merge of the tty tree with the bluetooth tree
-Message-Id: <20110426175530.d27179e2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758224Ab1DZH7R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:59:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40613 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab1DZH7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:59:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cYU6ObJdhgJrIOONoE5/Xa+dbOIxyRF9sKl+r3Sc86eNGnc4c/6tHp2KQIlIZrQy2m
+         3DfQxwESTbmqUuhoWedtsx8XarU5sTuy4800RyhVSfjtLsxdn9WboE9x2hgTSzSKTFWk
+         95TSsQrQqY/dLe59s57IoPXPRB28w/PxS9TsQ=
+MIME-Version: 1.0
+In-Reply-To: <1303073786.31723.14.camel@Joe-Laptop>
+References: <cover.1302907496.git.joe@perches.com>
+	<440aa7f6bb99bec705b83796894f843bfc1b7bf9.1302907497.git.joe@perches.com>
+	<BANLkTikeV-jHXWSDyLmtTTc1d2S9L3eG0Q@mail.gmail.com>
+	<1303073786.31723.14.camel@Joe-Laptop>
+Date: Tue, 26 Apr 2011 10:59:14 +0300
+Message-ID: <BANLkTimsuTYRn0+_Ap+W_a9d6X=zFgngfQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ata: Add and use ata_print_version_once
+From: saeed bishara <saeed.bishara@gmail.com>
+To: Joe Perches <joe@perches.com>, Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, Mikael Pettersson <mikpe@it.uu.se>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Today's linux-next merge of the tty tree got a conflict in
-drivers/bluetooth/hci_ldisc.c between commit 78b4a56c28c0 ("Bluetooth:
-hci_uart: check the return value of recv()") from the bluetooth tree and
-commit b1c43f82c5aa ("tty: make receive_buf() return the amout of bytes
-received") from the tty tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/bluetooth/hci_ldisc.c
-index 320f718,0d4da5e..0000000
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@@ -357,21 -357,21 +357,22 @@@ static void hci_uart_tty_wakeup(struct 
-   *     
-   * Return Value:    None
-   */
-- static void hci_uart_tty_receive(struct tty_struct *tty, const u8 *data, char *flags, int count)
-+ static unsigned int hci_uart_tty_receive(struct tty_struct *tty,
-+ 		const u8 *data, char *flags, int count)
-  {
-- 	int ret;
-  	struct hci_uart *hu = (void *)tty->disc_data;
-+ 	int received;
-  
-  	if (!hu || tty != hu->tty)
-- 		return;
-+ 		return -ENODEV;
-  
-  	if (!test_bit(HCI_UART_PROTO_SET, &hu->flags))
-- 		return;
-+ 		return -EINVAL;
-  
-  	spin_lock(&hu->rx_lock);
-- 	ret = hu->proto->recv(hu, (void *) data, count);
-- 	if (ret > 0)
-+ 	received = hu->proto->recv(hu, (void *) data, count);
- -	hu->hdev->stat.byte_rx += count;
-++	if (received > 0)
- +		hu->hdev->stat.byte_rx += count;
-  	spin_unlock(&hu->rx_lock);
-  
-  	tty_unthrottle(tty);
+On Sun, Apr 17, 2011 at 11:56 PM, Joe Perches <joe@perches.com> wrote:
+> On Sun, 2011-04-17 at 13:45 +0300, saeed bishara wrote:
+>> On Sat, Apr 16, 2011 at 1:52 AM, Joe Perches <joe@perches.com> wrote:
+>> > Use a single mechanism to show driver version.
+>> > Reduces text a tiny bit too.
+>> > Remove uses of static int printed_version
+>> > Add and use ata_print_version(const struct device *, const char *ver)
+>> > and ata_print_version_once.
+>> any idea why we really need this driver version for in-kernel drivers?
+>> isn't the kernel version good enough?
+>
+> Some think it useful to see what module
+> version is linked against the kernel.
+1. I looked at 3-4 drivers, and found that it didn't modified its
+version since at least 3 years, so it doesn't look to me that this
+version is maintained properly.
+2. anyway, if you still think this feature is needed, then maybe you
+should consider making it generic one, this is not ata specific
+feature.
+saeed
