@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab1DZPtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 11:49:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44340 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab1DZPth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 11:49:37 -0400
-Date: Tue, 26 Apr 2011 12:49:50 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Imran Haider <imran1008@gmail.com>
-Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Don't sleep after deleting command timer
-Message-ID: <20110426154950.GA2242@joana>
-Mail-Followup-To: Imran Haider <imran1008@gmail.com>, marcel@holtmann.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1303513362-9357-1-git-send-email-imran1008@gmail.com>
+	id S1752452Ab1DZPwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 11:52:31 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:58451 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab1DZPwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 11:52:30 -0400
+Date: Tue, 26 Apr 2011 08:52:12 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rene Herman <rene.herman@gmail.com>
+Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation
+ fully internal
+Message-ID: <20110426155212.GB18176@ericsson.com>
+References: <20110426165600.1d9ac91b@endymion.delvare>
+ <20110426170407.3694e430@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1303513362-9357-1-git-send-email-imran1008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110426170407.3694e430@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Imran,
-
-* Imran Haider <imran1008@gmail.com> [2011-04-22 19:02:42 -0400]:
-
-> This fix adds on to commit b77dcf84. It seems that scheduling a timeout
-> of 250ms after deleting the command timer causes a kernel panic when
-> system is resuming from Suspend-to-RAM. I tried adding another timeout
-> before deleting the command timer but that didn't help so I believe that
-> some code in hci_dev_do_close must execute after the command timer is
-> deleted before control is returned to another thread.
+On Tue, Apr 26, 2011 at 11:04:07AM -0400, Jean Delvare wrote:
+> THERMAL_HWMON is implemented inside the thermal_sys driver and has no
+> effect on drivers implementing thermal zones, so they shouldn't see
+> anything related to it in <linux/thermal.h>. Making the THERMAL_HWMON
+> implementation fully internal has two advantages beyond the cleaner
+> design:
+> * This avoids rebuilding all thermal drivers if the THERMAL_HWMON
+>   implementation changes, or if CONFIG_THERMAL_HWMON gets enabled or
+>   disabled.
+> * This avoids breaking the thermal kABI in these cases too, which
+>   should make distributions happy.
 > 
-> The only bit the command timer handler hci_cmd_timer() touches is HCI_RESET.
-> It should be fine to delete the timer after testing the HCI_UP bit.
+> The only drawback I can see is slightly higher memory fragmentation,
+> as the number of kzalloc() calls will increase by one per thermal zone.
+> But I doubt it will be a problem in practice, as I've never seen a
+> system with more than two thermal zones.
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> Cc: Rene Herman <rene.herman@gmail.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
 > ---
->  net/bluetooth/hci_core.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
+> * If memory fragmentation is really a concern to anyone, it would be
+>   possible to save one kalloc for the first temperature input of each
+>   zone type, as the price of slightly more complex code.
+> 
+> * Removal code path is untested, as I have never been able to unload
+> the thermal_sys module on any of my systems. Something is pinning it
+> and I have no idea what it is.
+> 
+Doesn't lsmod show the culprit ?
 
-I already have for that. But thanks anyway. ;)
+Otherwise
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
