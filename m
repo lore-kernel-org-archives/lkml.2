@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1DZSvE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 14:51:04 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36899 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751504Ab1DZSvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 14:51:02 -0400
-Date: Tue, 26 Apr 2011 14:51:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Rabin Vincent <rabin@rab.in>
-cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>,
-        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
-        <linux-kernel@vger.kernel.org>, <gcc@gcc.gnu.org>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-In-Reply-To: <BANLkTi=-DFfdiBKZzRBxF-yMJFtWnzuk1g@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1104261447481.2035-100000@iolanthe.rowland.org>
+	id S1752719Ab1DZSuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:50:44 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:41337 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123Ab1DZSum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 14:50:42 -0400
+Date: Tue, 26 Apr 2011 11:50:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+Message-ID: <20110426185036.GG2135@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
+ <20110425203606.4e78246c@neptune.home>
+ <20110425191607.GL2468@linux.vnet.ibm.com>
+ <20110425231016.34b4293e@neptune.home>
+ <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
+ <20110425214933.GO2468@linux.vnet.ibm.com>
+ <20110426081904.0d2b1494@pluto.restena.lu>
+ <20110426112756.GF4308@linux.vnet.ibm.com>
+ <20110426183859.6ff6279b@neptune.home>
+ <BANLkTin3UG=xF1VQOtdEDOnShoMQwQ7gFg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTin3UG=xF1VQOtdEDOnShoMQwQ7gFg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011, Rabin Vincent wrote:
-
-> On Wed, Feb 2, 2011 at 21:30, Arnd Bergmann <arnd@arndb.de> wrote:
-> > As noticed by Peter Maydell, the EHCI device driver in Linux gets
-> > miscompiled by some versions of arm-gcc (still need to find out which)
-> > due to a combination of problems:
+On Tue, Apr 26, 2011 at 10:12:39AM -0700, Linus Torvalds wrote:
+> On Tue, Apr 26, 2011 at 9:38 AM, Bruno Prémont
+> <bonbons@linux-vserver.org> wrote:
 > >
-> > 1. In include/linux/usb/ehci_def.h, struct ehci_caps is defined
-> > with __attribute__((packed)), for no good reason. This is clearly
-> > a bug and needs to get fixed, but other drivers have the same bug
+> > Here it comes:
+> >
+> > rcu_kthread (when build processes are STOPped):
+> > [  836.050003] rcu_kthread     R running   7324     6      2 0x00000000
+> > [  836.050003]  dd473f28 00000046 5a000240 dd65207c dd407360 dd651d40 0000035c dd473ed8
+> > [  836.050003]  c10bf8a2 c14d63d8 dd65207c dd473f28 dd445040 dd445040 dd473eec c10be848
+> > [  836.050003]  dd651d40 dd407360 ddfdca00 dd473f14 c10bfde2 00000000 00000001 000007b6
+> > [  836.050003] Call Trace:
+> > [  836.050003]  [<c10bf8a2>] ? check_object+0x92/0x210
+> > [  836.050003]  [<c10be848>] ? init_object+0x38/0x70
+> > [  836.050003]  [<c10bfde2>] ? free_debug_processing+0x112/0x1f0
+> > [  836.050003]  [<c103d9fd>] ? lock_timer_base+0x2d/0x70
+> > [  836.050003]  [<c13c8ec7>] schedule_timeout+0x137/0x280
 > 
-> Was a patch submitted for this?  I couldn't find it in the archives.
-> U-Boot seems to be fixing this by adding an "aligned(4)" instead
-> of removing the packed:
+> Hmm.
 > 
-> http://www.mail-archive.com/u-boot@lists.denx.de/msg51418.html
-
-ISTR a patch was submitted,  but apparently it never got picked up.
-
-> > and it used to work. The attribute forces byte access on all members
-> > accessed through pointer dereference, which is not allowed on
-> > MMIO accesses in general. The specific code triggering the problem
-> > in Peter's case is in ehci-omap.c:
-> >        omap->ehci->regs = hcd->regs
-> >                + HC_LENGTH(readl(&omap->ehci->caps->hc_capbase));
+> I'm adding Ingo and Peter to the cc, because this whole "rcu_kthread
+> is running, but never actually running" is starting to smell like a
+> scheduler issue.
 > 
-> In my case it's this writel() in ehci-hub.c that gets chopped into
-> strbs:
+> Peter/Ingo: RCUTINY seems to be broken for Bruno. During any kind of
+> heavy workload, at some point it looks like rcu_kthread simply stops
+> making any progress. It's constantly in runnable state, but it doesn't
+> actually use any CPU time, and it's not processing the RCU callbacks,
+> so the RCU memory freeing isn't happening, and slabs just build up
+> until the machine dies.
 > 
-> 	/* force reset to complete */
-> 	ehci_writel(ehci, temp & ~(PORT_RWC_BITS | PORT_RESET),
-> 				status_reg);
+> And it really is RCUTINY, because the thing doesn't happen with the
+> regular tree-RCU.
 
-Why would that get messed up?  The status_reg variable doesn't have any 
-__atribute__((packed)) associated with it.
+The difference between TINY_RCU and TREE_RCU is that TREE_RCU still uses
+softirq for the core RCU processing.  TINY_RCU switched to a kthread
+when I implemented RCU priority boosting.  There is a similar change in
+my -rcu tree that makes TREE_RCU use kthreads, and Sedat has been running
+into a very similar problem with that change in place.  Which is why I
+do not yet push it to the -next tree.
 
-Alan Stern
+> This is without CONFIG_RCU_BOOST_PRIO, so we basically have
+> 
+>         struct sched_param sp;
+> 
+>         rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
+>         sp.sched_priority = RCU_BOOST_PRIO;
+>         sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
+> 
+> where RCU_BOOST_PRIO is 1 for the non-boost case.
 
+Good point!  Bruno, Sedat, could you please set CONFIG_RCU_BOOST_PRIO to
+(say) 50, and see if this still happens?  (I bet that you do, but...)
+
+> Is that so low that even the idle thread will take priority? It's a UP
+> config with PREEMPT_VOLUNTARY. So pretty much _all_ the stars are
+> aligned for odd scheduling behavior.
+> 
+> Other users of SCHED_FIFO tend to set the priority really high (eg
+> "MAX_RT_PRIO-1" is clearly the default one - softirq's, watchdog), but
+> "1" is not unheard of either (touchscreen/ucb1400_ts and
+> mmc/core/sdio_irq), and there are some other random choises out tere.
+> 
+> Any ideas?
+
+I have found one bug so far in my code, but it only affects TREE_RCU
+in my -rcu tree, and even then only if HOTPLUG_CPU is enabled.  I am
+testing a fix, but I expect Sedat's tests to still break.
+
+I gave Sedat a patch that make rcu_kthread() run at normal (non-realtime)
+priority, and he did not see the failure.  So running non-realtime at
+least greatly reduces the probability of failure.
+
+							Thanx, Paul
