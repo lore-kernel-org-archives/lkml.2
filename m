@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1DZS1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 14:27:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40317 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab1DZS07 convert rfc822-to-8bit (ORCPT
+	id S1753613Ab1DZS1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 14:27:38 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:47996 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751047Ab1DZS1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 14:26:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ioc+AKllFWmAFdkKro3a5QLKZTePIxBZcF573T/A0cSUpyHK9JcH5sug47HuZkaQ9R
-         r0REt0QShfXFEj7SDNmn1bL4HMFPP4OHghsUEMIqF/seW3NMu12FtPJaNMPyqqjyYo4a
-         p0n2D0lHbkIDQQZ+5ujkHKvszzCeE51iufHjA=
+	Tue, 26 Apr 2011 14:27:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAOcNt01Ld/sX/2dsb2JhbAAMhEbXJpFMgSmDUH0ElSSHWQ
+X-IronPort-AV: E=Sophos;i="4.64,270,1301889600"; 
+   d="scan'208";a="111566870"
+Message-ID: <4DB70E92.2020209@teksavvy.com>
+Date: Tue, 26 Apr 2011 14:27:30 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110425182906.2673.A69D9226@jp.fujitsu.com>
-References: <20110425182906.2673.A69D9226@jp.fujitsu.com>
-Date: Tue, 26 Apr 2011 15:26:58 -0300
-Message-ID: <BANLkTikiyjWT4GmSopf=kW=_pGamQnTuGg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] blackfin: convet cpumask apis
-From: Thiago Farina <tfransosi@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        device-driver-devel@blackfin.uclinux.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <htejun@gmail.com>
+CC: Bruce Stenning <b.stenning@indigovision.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com> <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com> <4D9CD275.9000002@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com> <4D9FACC9.7020200@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com> <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com> <20110423005610.GC1576@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C7755494A@gretna.indigovision.com> <20110425113036.GL17734@mtj.dyndns.org>
+In-Reply-To: <20110425113036.GL17734@mtj.dyndns.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 6:27 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->
-> Rusty Russle introduced a lot of cpumask related APIs. and He gone even
+On 11-04-25 07:30 AM, Tejun Heo wrote:
+> On Mon, Apr 25, 2011 at 12:07:04PM +0100, Bruce Stenning wrote:
+>> Tejun, what does it mean to limit a sata link to UDMA/100? I thought that this
+>> was only for ata devices, and sata devices have the choice of 1.5Gbps, 3Gbps,
+>> or 6 Gbps. Is that a false assumption? Is it related to early sata devices that
+>> were still somewhat based on parallel ata designs?
+> 
+> Yeap, devices behind SATA-PATA bridge were still affected by the
+> transfer mode so libata tries to slow them down too along with link
+> speed when limiting speed due to errors.  Shouldn't affect native SATA
+> devices.
 
-s/Russle/Russell
 
-s/and He/And he/
+Yeah, what he said.  :)
 
-> though the work is unfinished. This patch series is sequel of his work.
->
-> No functional change. only api change.
->
-> note: I've confirmed only cross-compile build. so, I hope blackfin
-> developers see the code.
->
->
-> KOSAKI Motohiro (4):
->  blackfin: remove unused function
->  blackfin: don't touch cpu_possible_map and cpu_present_map directly
->  blackfin: don't touch task->cpus_allowed directly
->  blackfin: convert old cpumask API to new one
->
->  arch/blackfin/kernel/nmi.c                  |    8 ++--
->  arch/blackfin/kernel/process.c              |    6 +--
->  arch/blackfin/kernel/setup.c                |    4 +-
->  arch/blackfin/mach-bf561/include/mach/smp.h |    2 -
->  arch/blackfin/mach-bf561/smp.c              |   27 ++++-------
->  arch/blackfin/mach-common/dpmc.c            |    7 ++-
->  arch/blackfin/mach-common/smp.c             |   27 ++++++-----
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+First generation SATA devices were merely PATA transports
+with a SATA-to-PATA converter chip onboard.  Some of those
+require that we set the transfer modes.
+
+Ditto for various more modern setups, where CF-cards, PATA drives,
+and other weirdos are connected through a discrete SATA bridge device.
+
+Cheers
