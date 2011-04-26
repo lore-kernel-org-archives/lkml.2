@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1DZLLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:11:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31939 "EHLO mx1.redhat.com"
+	id S1754510Ab1DZLPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:15:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45397 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab1DZLLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:11:04 -0400
-Message-ID: <4DB6A87A.2000906@redhat.com>
-Date: Tue, 26 Apr 2011 13:11:54 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110422 Fedora/3.1.9-7.fc15 Lightning/1.0b2 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-        Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
-References: <201104252323.20420.linux@rainbow-software.org> <201104260832.11150.hverkuil@xs4all.nl>
-In-Reply-To: <201104260832.11150.hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752987Ab1DZLPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:15:11 -0400
+Date: Tue, 26 Apr 2011 21:15:00 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20110426211500.02d6a5a6@notabene.brown>
+In-Reply-To: <1303803414-5937-3-git-send-email-mgorman@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-3-git-send-email-mgorman@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-On 04/26/2011 08:32 AM, Hans Verkuil wrote:
-> On Monday, April 25, 2011 23:23:17 Ondrej Zary wrote:
->> The YVU420 and YUV422P formats are broken and cause kernel panic on use.
->> (YVU420 does not work and sometimes causes "unable to handle paging request"
->> panic, YUV422P always causes "NULL pointer dereference").
->>
->> As V4L2 spec says that drivers shouldn't do any in-kernel image format
->> conversion, remove it completely (except YUYV).
->
-> What really should happen is that the conversion is moved to libv4lconvert.
-> I've never had the time to tackle that, but it would improve this driver a
-> lot.
->
-> Would you perhaps be interested in doing that work?
->
+> +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+> +{
+> +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
+> +}
+> +
+>  static inline struct page *
+>  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+>  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> @@ -2202,8 +2211,16 @@ nopage:
+>  got_pg:
+>  	if (kmemcheck_enabled)
+>  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+> -	return page;
+>  
+> +	/*
+> +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
+> +	 * been OOM killed. The expectation is that the caller is taking
+> +	 * steps that will free more memory. The caller should avoid the
+> +	 * page being used for !PFMEMALLOC purposes.
+> +	 */
+> +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
+> +
+> +	return page;
 
-Seconded! I would be more then happy to help with the libv4l part (in the form
-of review + merging + advice).
+Linus doesn't seem to be a fan of this construct:
+   https://lkml.org/lkml/2011/4/1/255
 
-Regards,
+pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
 
-Hans
+If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
+always be set to 0.
+Ditto for the gfp_pfmemalloc_allowed function.
+
+Prefixing with '!!' would make it safe.
+
+NeilBrown
