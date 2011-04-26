@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1DZLdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:33:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32813 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1DZLdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:33:51 -0400
-Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20110426211500.02d6a5a6@notabene.brown>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	 <1303803414-5937-3-git-send-email-mgorman@suse.de>
-	 <20110426211500.02d6a5a6@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Apr 2011 12:33:48 +0100
-Message-ID: <1303817628.5593.6.camel@machina.109elm.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1754768Ab1DZLgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:36:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25489 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1DZLgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:36:12 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: djwong <djwong@us.ibm.com>
+Cc: Jan Kara <jack@suse.cz>, Mingming Cao <cmm@us.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
+In-reply-to: <20110426003738.GB22189@tux1.beaverton.ibm.com>
+References: <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <1303476503-sup-4141@think> <20110422203434.GA2977@quack.suse.cz> <20110426003738.GB22189@tux1.beaverton.ibm.com>
+Date: Tue, 26 Apr 2011 07:33:18 -0400
+Message-Id: <1303817010-sup-351@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DB6ADF8.0111:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 21:15 +1000, NeilBrown wrote:
-> On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Excerpts from Darrick J. Wong's message of 2011-04-25 20:37:38 -0400:
+> On Fri, Apr 22, 2011 at 10:34:34PM +0200, Jan Kara wrote:
+> > On Fri 22-04-11 08:50:01, Chris Mason wrote:
+> > > Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
+> > > > Hi everyone,
+> > > > 
+> > > > I've finally managed to get together a patch that seems to provide stable pages
+> > > > during writeback, or at least gets us to the point that after several days of
+> > > > running tests I don't see DIF checksum errors anymore. :)
+> > > > 
+> > > > The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
+> > > > walk the process tree to find all userland ptes that map to a particular memory
+> > > > page and revoke write access, and
+> > > 
+> > > Hmm, did you need the bio_integrity_prep change for all the filesystems?
+> > > This should be happening already as part of using page_mkwrite.
+> >   Or more precisely page_mkclean() should do what you try to do in
+> > bio_integrity_prep()... It would certainly be interesting (bug) if you
+> > could write to the page after calling page_mkclean() without page_mkwrite()
+> > being called.
 > 
-> > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
-> > +{
-> > +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
-> > +}
-> > +
-> >  static inline struct page *
-> >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> > @@ -2202,8 +2211,16 @@ nopage:
-> >  got_pg:
-> >  	if (kmemcheck_enabled)
-> >  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
-> > -	return page;
-> >  
-> > +	/*
-> > +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
-> > +	 * been OOM killed. The expectation is that the caller is taking
-> > +	 * steps that will free more memory. The caller should avoid the
-> > +	 * page being used for !PFMEMALLOC purposes.
-> > +	 */
-> > +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
-> > +
-> > +	return page;
+> Hm... in mpage_da_submit_io I see the following sequence of calls:
 > 
-> Linus doesn't seem to be a fan of this construct:
->    https://lkml.org/lkml/2011/4/1/255
+> 1. clear_page_dirty_for_io
+> 2. possibly one of: ext4_bio_write_page or block_write_full_page.
+>    If ext4_bio_write_page, 
+>    2a. kmem_cache_alloc
+>    2b. set_page_writeback
 > 
-
-There is confusion around this topic. Andrew prefers bool for true/false
-values and it's self-documenting. I tend to prefer it myself for
-readability and there is a slow conversion in the VM from
-ints-used-as-bools to bools and my understanding of bool is that any
-non-zero value will be treated as true (just as it is for int).
-
-> pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
+> Before and after #1, the page is locked but writeback is not set.
 > 
-> If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
-> always be set to 0.
+> Before #2, the page must be locked and writeback must not be set, because both
+> of those two functions want to set the writeback bit themselves.  However,
+> ext4_bio_write_page tries to allocate memory with GFP_NOFS, which means it can
+> sleep (I think).
 
-It is typedeffed as _Bool though which I thought was able to handle the
-cast appropriately or is that wrong?
+Sleeping isn't the problem as long as you sleep with the page locked.
+The idea is that writepage will:
 
-> Ditto for the gfp_pfmemalloc_allowed function.
-> 
-> Prefixing with '!!' would make it safe.
-> 
+1) lock the page
+2) clear_page_dirty_for_io (which calls page_mkclean)
+3) set_page_writeback()
+4) unlock the page
+5) start the IO
 
-Will do that to avoid any oddities. Thanks
+page_mkwrite will:
 
--- 
-Mel Gorman
-SUSE Labs
+1) lock the page
+2) wait on page writeback
+3) do other stuff
 
+So if ext is calling set_page_writeback() on an unlocked page, that's a
+problem.  Otherwise it should be working.
+
+-chris
