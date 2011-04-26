@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1DZKSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:18:07 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:54585 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753051Ab1DZKSE (ORCPT
+	id S1753616Ab1DZKS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:18:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55857 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1DZKS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:18:04 -0400
-Date: Tue, 26 Apr 2011 11:18:01 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] signal: sys_rt_sigtimedwait: simplify the timeout
- logic
-Message-ID: <20110426111801.751c7063@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110423175922.GB484@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
-	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
-	<20110418173224.GA27918@redhat.com>
-	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
-	<20110423175901.GA484@redhat.com>
-	<20110423175922.GB484@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Apr 2011 06:18:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=U0fYjeH2zW8FqxufLes25uqZfTCCUecXmpoyPmE2HqYbick0OGDJTtJFJTZTEIvic/
+         tfNaCOtaTLLEq7dxpzsCC3W+3JFKZYLp06yxQI69HmHz1xjfb7OzbCnvaPunSsd+MliW
+         85XhKkXGHZsm7lM3xqluBbcVVQ2qqlsXXKOvY=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTiknvQ-dmOB4vEfYeC-wmFJL3A0ekA@mail.gmail.com>
+References: <BANLkTin8mE=DLWma=U+CdJaQW03X2M2W1w@mail.gmail.com>
+	<20110426055521.GA18473@localhost>
+	<BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
+	<BANLkTim0MNgqeh1KTfvpVFuAvebKyQV8Hg@mail.gmail.com>
+	<20110426062535.GB19717@localhost>
+	<BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
+	<20110426063421.GC19717@localhost>
+	<BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
+	<20110426092029.GA27053@localhost>
+	<BANLkTiknvQ-dmOB4vEfYeC-wmFJL3A0ekA@mail.gmail.com>
+Date: Tue, 26 Apr 2011 13:18:55 +0300
+X-Google-Sender-Auth: KJDNFwho_KJqJLgavDmtcNXarec
+Message-ID: <BANLkTikR0nsGaXgLvGQ_a01JeK0LgLxT_Q@mail.gmail.com>
+Subject: Re: readahead and oom
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Apr 2011 19:59:22 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Tue, Apr 26, 2011 at 12:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Tue, Apr 26, 2011 at 6:20 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> Minchan,
+>>
+>>> > +static inline struct page *page_cache_alloc_cold_noretry(struct address_space *x)
+>>> > +{
+>>> > +       return __page_cache_alloc(mapping_gfp_mask(x)|__GFP_COLD|__GFP_NORETRY);
+>>>
+>>> It makes sense to me but it could make a noise about page allocation
+>>> failure. I think it's not desirable.
+>>> How about adding __GFP_NOWARAN?
+>>
+>> Yeah it makes sense. Here is the new version.
+>>
+>> Thanks,
+>> Fengguang
+>> ---
+>> Subject: readahead: readahead page allocations is OK to fail
+>> Date: Tue Apr 26 14:29:40 CST 2011
+>>
+>> Pass __GFP_NORETRY|__GFP_NOWARN for readahead page allocations.
+>>
+>> readahead page allocations are completely optional. They are OK to
+>> fail and in particular shall not trigger OOM on themselves.
+>>
+>> Reported-by: Dave Young <hidave.darkstar@gmail.com>
+>> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> No functional changes, cleanup compat_sys_rt_sigtimedwait() and
-> sys_rt_sigtimedwait().
-> 
-> Calculate the timeout before we take ->siglock, this simplifies and
-> lessens the code. Use timespec_valid() to check the timespec.
-> 
-> I don't understand why we are adding (ts.tv_sec || ts.tv_nsec) to
-> timespec_to_jiffies(&ts). Perhaps to ensure we will sleep at least
-> one jiffy if ts != 0? But in this case we should only check tv_nsec,
-> I don't think timespec_to_jiffies() can return zero if tv_sec != 0.
-> In fact I suspect timespec_to_jiffies() can only return zero if
-> tv_sec == tv_nsec == 0 because we add "TICK_NSEC - 1", but I am not
-> sure I understand correctly this math.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
