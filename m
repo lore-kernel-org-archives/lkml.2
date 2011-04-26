@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1DZO01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:26:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57632 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426Ab1DZO0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:26:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Date: Tue, 26 Apr 2011 16:26:19 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <201104212129.17013.arnd@arndb.de> <20110421130930.4be9e9e1@jbarnes-desktop>
-In-Reply-To: <20110421130930.4be9e9e1@jbarnes-desktop>
+	id S932088Ab1DZO0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:26:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43662 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756527Ab1DZO02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:26:28 -0400
+Date: Tue, 26 Apr 2011 15:26:24 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110426142624.GH4658@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+ <1303803414-5937-13-git-send-email-mgorman@suse.de>
+ <20110426223059.10f3edda@notabene.brown>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104261626.20152.arnd@arndb.de>
-X-Provags-ID: V02:K0:1JKpf5UIEqO+bGax4Ypq9Pwq9trxpwghgPQhcy4EOGp
- cd+VQd52214111qAv+zHt7iF6UPNacyDA075r4SxjzjPZERmnl
- RPccdxf6/bfnnqFbJFcLqIkmWs/7dtjPqtLP1cDS5RjyzSnAMx
- m4qz0L9+8XIJAirELqhlFA0KCa7scR+VYhopd6qcCxixrP55dU
- zCbCLRh1f2kTybXlhv02Q==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110426223059.10f3edda@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 April 2011, Jesse Barnes wrote:
-> On Thu, 21 Apr 2011 21:29:16 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
+On Tue, Apr 26, 2011 at 10:30:59PM +1000, NeilBrown wrote:
+> On Tue, 26 Apr 2011 08:36:53 +0100 Mel Gorman <mgorman@suse.de> wrote:
 > 
-> > I think the recent discussions on linaro-mm-sig and the BoF last week
-> > at ELC have been quite productive, and at least my understanding
-> > of the missing pieces has improved quite a bit. This is a list of
-> > things that I think need to be done in the kernel. Please complain
-> > if any of these still seem controversial:
-> > 
-> > 1. Fix the arm version of dma_alloc_coherent. It's in use today and
-> >    is broken on modern CPUs because it results in both cached and
-> >    uncached mappings. Rebecca suggested different approaches how to
-> >    get there.
-> > 
-> > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
-> >    that this is needed, and it currently is not implemented, with
-> >    an outdated comment explaining why it used to not be possible
-> >    to do it.
-> > 
-> > 3. Convert ARM to use asm-generic/dma-mapping-common.h. We need
-> >    both IOMMU and direct mapped DMA on some machines.
 > 
-> I don't think the DMA mapping and allocation APIs are sufficient for
-> high performance graphics at least.  It's fairly common to allocate a
-> bunch of buffers necessary to render a scene, build up a command buffer
-> that references them, then hand the whole thing off to the kernel to
-> execute at once on the GPU.  That allows for a lot of extra efficiency,
-> since it allows you to batch the MMU binding until execution occurs (or
-> even put it off entirely until the page is referenced by the GPU in the
-> case of faulting support).  It's also necessary to avoid livelocks
-> between two clients trying to render; if mapping is incremental on both
-> sides, it's possible that neither will be able to make forward
-> progress due to IOMMU space exhaustion.
+> > +/*
+> > + * Throttle direct reclaimers if backing storage is backed by the network
+> > + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+> > + * depleted. kswapd will continue to make progress and wake the processes
+> > + * when the low watermark is reached
+> > + */
+> > +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> > +					nodemask_t *nodemask)
+> > +{
+> > +	struct zone *zone;
+> > +	int high_zoneidx = gfp_zone(gfp_mask);
+> > +	DEFINE_WAIT(wait);
+> > +
+> > +	/* Check if the pfmemalloc reserves are ok */
+> > +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> > +	prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> > +							TASK_INTERRUPTIBLE);
+> > +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
+> > +		goto out;
+> > +
+> > +	/* Throttle */
+> > +	do {
+> > +		schedule();
+> > +		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> > +		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> > +							TASK_INTERRUPTIBLE);
+> > +	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
+> > +			!fatal_signal_pending(current));
+> > +
+> > +out:
+> > +	finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> > +}
 > 
-> So that argues for separating allocation from mapping both on the user
-> side (which I think everyone agrees on) as well as on the kernel side,
-> both for CPU access (which some drivers won't need) and for GPU access.
+> You are doing an interruptible wait, but only checking for fatal signals.
+> So if a non-fatal signal arrives, you will busy-wait.
+> 
+> So I suspect you want TASK_KILLABLE, so just use:
+> 
+>     wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+>                         pgmemalloc_watermark_ok(zone->zone_pgdata,
+>                                                 high_zoneidx));
+> 
 
-I don't thing that this argument has anything to do with what the
-underlying API should be, right? I can see this built on top of either
-the dma-mapping headers with extensions to map potentially uncached
-pages, and with the iommu API. Neither way would however save us from
-implementing the three items listed above.
+Well, if a normal signal arrives, we do not necessarily want the
+process to enter reclaim. For fatal signals, I allow it to continue
+because it's not likely to be putting the system under more pressure
+if it's exiting.
 
-It's certainly a good point to note that we should have a way to
-allocate pages for a device without mapping them into any address
-space right away. My feeling is still that the dma mapping API is
-the right place for this, because it is the only part of the kernel
-that has knowledge about whether a device needs uncached memory for
-coherent access, under what constraints it can map noncontiguous
-memory into its own address space, and what its addressing capabilities
-are (dma mask).
+> (You also have an extraneous call to finish_wait)
+> 
 
-	Arnd
+Which one? I'm not seeing a flow where finish_wait gets called twice
+without a prepare_to_wait in between. 
+
+-- 
+Mel Gorman
+SUSE Labs
