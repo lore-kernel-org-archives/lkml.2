@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1DZN2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:28:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39833 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab1DZN2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:28:14 -0400
-Date: Tue, 26 Apr 2011 06:17:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for device
- PM.
-Message-ID: <20110426131737.GA13597@suse.de>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com>
- <1303781471-2477-1-git-send-email-myungjoo.ham@samsung.com>
- <201104261347.21811.rjw@sisk.pl>
+	id S1755607Ab1DZNac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 09:30:32 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:36605 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab1DZNaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 09:30:30 -0400
+Message-ID: <4DB6C89F.10903@csr.com>
+Date: Tue, 26 Apr 2011 14:29:03 +0100
+From: David Vrabel <david.vrabel@csr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104261347.21811.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Per Forlin <per.forlin@linaro.org>
+CC: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2 01/12] mmc: add none blocking mmc request function
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>	<1302116833-24540-2-git-send-email-per.forlin@linaro.org>	<4DA81F42.3070208@csr.com> <BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
+In-Reply-To: <BANLkTimaTe0qD5sbEJj88YRv2DZv=1oxTQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.101.11.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 01:47:21PM +0200, Rafael J. Wysocki wrote:
-> Moreover, I'm not sure if kernel subsystems (including drivers) should really
-> decide when to generate wakeup signals in the first place.  Generally,
-> user space decides what devices should wake up the system from sleep and the
-> kernel should follow.  So, there shouldn't be any wakeup signals enabled
-> beyond what user space has requested.
-
-The RTC wakeup signals are ok though, right?  Userspace is the one
-asking for that from what I can tell.
-
-> To conclude, I'm not sure about the approach.  In particular, I'm not sure
-> if the benefit is worth the effort and the resulting complications (ie. the
-> possibility of having to deal with wakeup signals not requested by user
-> space) seem to be a bit too far reaching.
+On 20/04/11 08:17, Per Forlin wrote:
 > 
-> Greg, what do you think?
+>> Using a MMC request queue has other benefits -- it allows multiple users
+>> without having to claim/release the host.  This would be useful for
+>> (especially multi-function) SDIO.
+>
+> You mean claim and release would be done only within the mmc core. The
+> timed saved here would equal the time it takes to release and claim
+> the host.
+> Claim and release can also be used for power management to indicate if
+> any client is using the host, if not the power can be switched off.
 
-I agree with you in that I don't think that this type of feature is
-valid at the moment.
+Isn't there a separate runtime power management API that different from
+claim/release?
 
-I don't understand why our current situation doesn't work, what are we
-lacking that is needed for these systems that we have not seen before?
+> I just want to make sure I understand the multi-function SDIO case, I
+> haven't done any work with SDIO.
+> Can the SDIO functions compete over the same claim_host at the same time?
+> Example: if function 1 claims the host, function 2 and function 3 also
+> want to claim the host but have to wait for function 1 to release the
+> host.
 
-What is the root problem that this is trying to solve?
+This is the case.   Each function driver has to claim exclusive access
+to the host.
 
-thanks,
+> What is the extra benefit of having the internal request queue for
+> multi function SDIO?
 
-greg k-h
+It reduces the delays between commands if multiple drivers are sending
+commands.  I estimated performance improvements with 2-3% from just
+removing the need to claim/release in one particular SDIO function
+driver.  Performance improvements for multi-function cards would be a
+bit more (5% perhaps?).
+
+The more important benefit is the simplification of the API.
+
+David
+-- 
+David Vrabel, Senior Software Engineer, Drivers
+CSR, Churchill House, Cambridge Business Park,  Tel: +44 (0)1223 692562
+Cowley Road, Cambridge, CB4 0WZ                 http://www.csr.com/
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
