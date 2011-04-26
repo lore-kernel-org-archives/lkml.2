@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab1DZKyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:54:20 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:17162
+	id S1754403Ab1DZKz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:55:27 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:17869
 	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754362Ab1DZKyS (ORCPT
+	by vger.kernel.org with ESMTP id S1754167Ab1DZKzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:54:18 -0400
+	Tue, 26 Apr 2011 06:55:25 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
+X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bhz32i2a8h668h839h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:203.197.93.240;KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
 From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "dtor@mail.ru" <dtor@mail.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 26 Apr 2011 16:22:06 +0530
-Subject: [PATCHv1 -next] Touch: Touch screen module of DA9052 PMIC driver
-Thread-Topic: [PATCHv1 -next] Touch: Touch screen module of DA9052 PMIC
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen2@diasemi.com>
+Date: Tue, 26 Apr 2011 16:24:49 +0530
+Subject: [PATCHv1 -next] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
  driver
-Thread-Index: AcwD//v2kZOcck4zTQ62PcG/4z6GYQ==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B89B14D@KCINPUNHJCMS01.kpit.com>
+Thread-Topic: [PATCHv1 -next] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
+ driver
+Thread-Index: AcwEAF1Lf720QSqKTXS7ERvuTRSp1A==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B89B15A@KCINPUNHJCMS01.kpit.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -33,24 +34,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3QAsREt017142
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3QAtaZv017146
 
-Hi Randy,
+Hi Dmitry,
 
-Touch Screen Driver for Dialog Semiconductor DA9052 PMICs.
+ONKEY Driver for Dialog Semiconductor DA9052 PMICs.
 
 Changes made since last submission:
-. read and write operation move to MFD.
+. made changes to error handling in probe function
+. changed variable names to reflect their use
 
 Signed-off-by: D. Chen <dchen@diasemi.com>
 ---
 
-diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi.c linux-next-20110421/drivers/input/touchscreen/da9052_tsi.c
---- linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi.c     1970-01-01 05:00:00.000000000 +0500
-+++ linux-next-20110421/drivers/input/touchscreen/da9052_tsi.c  2011-04-26 10:51:28.000000000 +0500
-@@ -0,0 +1,474 @@
+diff -Naur linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c linux-next-20110421/drivers/input/misc/da9052_onkey.c
+--- linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c	1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/drivers/input/misc/da9052_onkey.c	2011-04-26 11:04:21.000000000 +0500
+@@ -0,0 +1,165 @@
 +/*
-+ * TSI driver for Dialog DA9052
++ * ON pin driver for Dialog DA9052 PMICs
 + *
 + * Copyright(c) 2009 Dialog Semiconductor Ltd.
 + *
@@ -62,700 +64,186 @@ diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi.c linux
 + *  option) any later version.
 + *
 + */
++
 +#include <linux/module.h>
++#include <linux/init.h>
 +#include <linux/input.h>
-+#include <linux/delay.h>
++#include <linux/workqueue.h>
 +#include <linux/platform_device.h>
-+#include <linux/freezer.h>
-+#include <linux/kthread.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/tsi.h>
-+#include <linux/mfd/da9052/gpio.h>
-+#include <linux/mfd/da9052/pdata.h>
-+
-+ssize_t tsi_process_thread(void *ptr);
-+
-+int da9052_fifo_lengthToEnd(struct da9052_tsi_fifo *fifo, long op)
-+{
-+       if (op == idRead)
-+               return TSI_FIFO_SIZE - fifo->m_read;
-+       else
-+               return TSI_FIFO_SIZE - fifo->m_write;
-+}
-+
-+inline void da9052_fifo_incpos(struct da9052_tsi_fifo *fifo, int inc, int op)
-+{
-+       int *pos;
-+
-+       if (inc < 0 || inc > TSI_FIFO_SIZE)
-+               return;
-+
-+       pos = &fifo->m_write;
-+       if (op == idRead)
-+               pos = &fifo->m_read;
-+
-+       if (*pos < TSI_FIFO_SIZE - 1)
-+               *pos += inc;
-+       else
-+               *pos = 0;
-+
-+       if (fifo->m_read == fifo->m_write) {
-+               fifo->m_wrapType = idWriteWrap;
-+               if (op == idRead)
-+                       fifo->m_wrapType = idReadWrap;
-+       } else
-+               fifo->m_wrapType = idNoWrap;
-+
-+       return;
-+}
-+
-+void da9052_fifo_getcount(int *count, long op,
-+                       struct da9052_tsi_fifo *fifo)
-+{
-+       int write = fifo->m_write;
-+       int read  = fifo->m_read;
-+
-+       *count = 0;
-+       if (write == read)
-+               *count = 0;
-+       else if (write > read)
-+               *count = (TSI_FIFO_SIZE - write) + read;
-+       else
-+               *count = read - write;
-+
-+       if (op == idRead && fifo->m_wrapType != idReadWrap)
-+               *count = TSI_FIFO_SIZE - *count;
-+
-+       return;
-+}
-+
-+inline void da9052_fifo_put(struct da9052_tsi_fifo *fifo,
-+                       struct da9052_tsi_reg temp)
-+{
-+       memcpy(&fifo->fifo[fifo->m_write], &temp,
-+                       sizeof(struct da9052_tsi_reg));
-+       da9052_fifo_incpos(fifo, 1, idWrite);
-+}
-+
-+struct da9052_tsi_reg da9052_fifo_get(struct da9052_tsi_fifo *fifo)
-+{
-+       struct da9052_tsi_reg temp;
-+       long lenToEnd = da9052_fifo_lengthToEnd(fifo, idRead);
-+
-+       if (lenToEnd > 0)
-+               memcpy(&temp, &fifo->fifo[fifo->m_read],
-+                       sizeof(struct da9052_tsi_reg));
-+       else
-+               memcpy(&temp, &fifo->fifo[0],
-+                       sizeof(struct da9052_tsi_reg));
-+
-+       da9052_fifo_incpos(fifo, 1, idRead);
-+
-+       return temp;
-+}
-+
-+static inline int start_tsi(struct da9052_tsi *tsi)
-+{
-+       return da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG,
-+                               1 << 0, 1 << 0);
-+}
-+
-+static inline int stop_tsi(struct da9052_tsi *tsi)
-+{
-+       return da9052_clear_bits(tsi->da9052, DA9052_TSICONT_A_REG, 1 << 0);
-+}
-+
-+static irqreturn_t da9052_tsi_pendwn(int irq, void *data)
-+{
-+       struct da9052_tsi *tsi = (struct da9052_tsi *)data;
-+       int ret = 0;
-+
-+       ret = da9052_mask_events(tsi->da9052, DA9052_E_PEN_DOWN);
-+       if (ret < 0) {
-+               dev_err(tsi->da9052->dev, "Failed to mask pen down event, %d\n", ret);
-+               return IRQ_NONE;
-+       }
-+
-+       ret = da9052_unmask_events(tsi->da9052, DA9052_E_TSI_READY);
-+       if (ret < 0) {
-+               dev_err(tsi->da9052->dev, "Failed to mask tsi ready event, %d\n", ret);
-+               return IRQ_NONE;
-+       }
-+
-+       start_tsi(tsi);
-+
-+       tsi->pen_state = DA9052_PEN_DOWN;
-+
-+       return IRQ_HANDLED;
-+}
-+
-+static int read_tsi(struct da9052_tsi *tsi)
-+{
-+       struct da9052_tsi_reg co_ord = {0, 0};
-+       int ret;
-+       uint8_t _x, _y, _v;
-+
-+       ret = da9052_reg_read(tsi->da9052, DA9052_TSIXMSB_REG);
-+       if (ret < 0)
-+               return ret;
-+       _x = (uint8_t) ret;
-+
-+       ret = da9052_reg_read(tsi->da9052, DA9052_TSIYMSB_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       _y = (uint8_t) ret;
-+
-+       ret = da9052_reg_read(tsi->da9052, DA9052_TSILSB_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       _v = (uint8_t) ret;
-+
-+       co_ord.x = ((_x << 2) & 0x3fc) | (_v & 0x3);
-+       co_ord.y = ((_y << 2) & 0x3fc) | ((_v & 0xc) >> 2);
-+
-+       da9052_fifo_put(&tsi->tsi_fifo, co_ord);
-+
-+       tsi->adc_cnt++;
-+
-+       return 0;
-+}
-+
-+
-+static irqreturn_t da9052_tsi_datardy(int irq, void *data)
-+{
-+       struct da9052_tsi *tsi = (struct da9052_tsi *)data;
-+       int ret = 0;
-+
-+       ret = read_tsi(tsi);
-+       if (ret) {
-+                       dev_err(tsi->da9052->dev,
-+                               "Failed to read TSI co-ordinate, %d\n", ret);
-+                       return IRQ_NONE;
-+       }
-+
-+       return IRQ_HANDLED;
-+}
-+
-+void da9052_tsi_process_reg_data(struct da9052_tsi *tsi)
-+{
-+       struct da9052_tsi_reg tmp_raw_data;
-+       u32 reg_data_cnt;
-+
-+       da9052_fifo_getcount(&reg_data_cnt, idRead, &tsi->tsi_fifo);
-+
-+       while (reg_data_cnt-- > 0) {
-+               tmp_raw_data =  da9052_fifo_get(&tsi->tsi_fifo);
-+               da9052_fifo_put(&tsi->tsi_fifo_buf, tmp_raw_data);
-+       }
-+       return;
-+}
-+
-+static void da9052_report_penup(struct da9052_tsi *tsi)
-+{
-+
-+       struct input_dev *ip_dev = tsi->dev;
-+       ssize_t ret = 0;
-+
-+       ret = stop_tsi(tsi);
-+       if (ret < 0)
-+               return;
-+
-+       ret = da9052_mask_events(tsi->da9052, DA9052_E_TSI_READY);
-+       if (ret < 0)
-+               return;
-+
-+       ret = da9052_unmask_events(tsi->da9052, DA9052_E_PEN_DOWN);
-+       if (ret < 0)
-+               return;
-+
-+       input_report_abs(ip_dev, BTN_TOUCH, 0);
-+       input_sync(ip_dev);
-+
-+       tsi->zero_data_cnt = 0;
-+       tsi->adc_cnt = 0;
-+       tsi->filter_cnt = 0;
-+
-+}
-+
-+static ssize_t monitor_pen_state(void *data)
-+{
-+       struct da9052_tsi *tsi = (struct da9052_tsi *) data;
-+       u32 data_cnt;
-+
-+       set_freezable();
-+
-+       while (tsi->tsi_pen_state_thread.state == DA9052_ACTIVE) {
-+               try_to_freeze();
-+
-+               set_current_state(TASK_INTERRUPTIBLE);
-+               schedule_timeout(msecs_to_jiffies(10));
-+
-+               if (tsi->pen_state != DA9052_PEN_DOWN)
-+                       continue;
-+
-+               da9052_fifo_getcount(&data_cnt, idRead, &tsi->tsi_fifo);
-+               da9052_tsi_process_reg_data(tsi);
-+
-+               if (data_cnt)
-+                       tsi->zero_data_cnt = 0;
-+               else {
-+                       if ((++(tsi->zero_data_cnt)) >
-+                                                    tsi->valid_penup_count) {
-+                               tsi->pen_state = DA9052_PEN_UP;
-+                               da9052_report_penup(tsi);
-+                       }
-+               }
-+       }
-+
-+       complete_and_exit(&tsi->tsi_pen_state_thread.notifier, 0);
-+       return 0;
-+}
-+
-+static ssize_t da9052_configure_gpio(struct da9052 *da9052)
-+{
-+       ssize_t ret = 0;
-+
-+       ret = da9052_clear_bits(da9052, DA9052_GPIO_2_3_REG, 0x30);
-+       if (ret < 0)
-+               return -EIO;
-+
-+       return ret;
-+}
-+
-+
-+static ssize_t __init da9052_tsi_enable_device(struct da9052_tsi *tsi)
-+{
-+
-+       ssize_t ret = 0;
-+
-+       ret = da9052_configure_gpio(tsi->da9052);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret = da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG, 0xFC, 0xC0);
-+       if (ret < 0)
-+               return ret;
-+
-+       tsi->valid_penup_count = 5;
-+
-+       init_completion(&tsi->tsi_pen_state_thread.notifier);
-+       tsi->tsi_pen_state_thread.state = DA9052_ACTIVE;
-+       tsi->tsi_pen_state_thread.pid =
-+                               kernel_thread(monitor_pen_state,
-+                                       tsi, CLONE_KERNEL | SIGCHLD);
-+
-+       init_completion(&tsi->tsi_filter_thread.notifier);
-+       tsi->tsi_filter_thread.state = DA9052_ACTIVE;
-+       tsi->tsi_filter_thread.pid =
-+                               kernel_thread(tsi_process_thread,
-+                                       tsi, CLONE_KERNEL | SIGCHLD);
-+
-+       tsi->zero_data_cnt = 0;
-+       tsi->adc_cnt = 0;
-+       tsi->filter_cnt = 0;
-+
-+       ret = da9052_reg_update(tsi->da9052, DA9052_ADC_CONT_REG,
-+                               1 << 6, 1 << 6);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret = da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG,
-+                               1 << 1, 1 << 1);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret = da9052_mask_events(tsi->da9052, DA9052_E_TSI_READY);
-+       if (ret < 0)
-+                       return ret;
-+
-+       ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x59);
-+
-+       return ret;
-+}
-+
-+static s32 __devinit da9052_tsi_probe(struct platform_device *pdev)
-+{
-+
-+       struct da9052_tsi *tsi;
-+       struct input_dev *input_dev;
-+       struct da9052_pdata  *pdata;
-+       struct da9052 *da9052;
-+       struct da9052_tsi_platform_data *ptsi;
-+       int ret;
-+
-+       da9052 = dev_get_drvdata(pdev->dev.parent);
-+       pdata = da9052->dev->platform_data;
-+       ptsi = pdata->ptsi;
-+
-+       tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
-+       if (!tsi)
-+               return -ENOMEM;
-+
-+       input_dev = input_allocate_device();
-+       if (!input_dev) {
-+               dev_err(tsi->da9052->dev,
-+                               "failed to allocate input device\n");
-+               ret = -ENOMEM;
-+               goto err_mem;
-+       }
-+
-+       tsi->da9052 = dev_get_drvdata(pdev->dev.parent);
-+       tsi->pen_up_detect_interval = ptsi->pen_up_detect_interval;
-+       platform_set_drvdata(pdev, tsi);
-+
-+       input_dev->id.version = 0x0101;
-+       input_dev->id.vendor = 0x15B6;
-+       input_dev->id.product = 0x9052;
-+       input_dev->id.bustype = BUS_RS232;
-+       input_dev->name = "Dialog DA9052 TouchScreen Driver";
-+       input_dev->dev.parent   = &pdev->dev;
-+       __set_bit(EV_ABS, input_dev->evbit);
-+       __set_bit(EV_KEY, input_dev->evbit);
-+       __set_bit(BTN_TOUCH, input_dev->keybit);
-+       __set_bit(ABS_X, input_dev->absbit);
-+       __set_bit(ABS_Y, input_dev->absbit);
-+
-+       input_set_abs_params(input_dev, ABS_X, 0, 1023, 0, 0);
-+       input_set_abs_params(input_dev, ABS_Y, 0, 1023, 0, 0);
-+       input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1023, 0, 0);
-+
-+       tsi->dev = input_dev;
-+       input_set_drvdata(input_dev, tsi);
-+       ret = input_register_device(tsi->dev);
-+       if (ret)
-+               goto err_mem;
-+
-+       tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
-+       ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_pendwn,
-+                               NULL, da9052_tsi_pendwn,
-+                               IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+                               "PENDWN", tsi);
-+       if (ret < 0) {
-+               dev_err(tsi->da9052->dev, "Failed to register %s IRQ %d, error = %d \n", "PENDWN",
-+                       tsi->da9052->irq_base + tsi->irq_pendwn, ret);
-+               goto err_mem;
-+       }
-+
-+       tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
-+       ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_datardy,
-+                               NULL, da9052_tsi_datardy,
-+                               IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+                               "TSIRDY", tsi);
-+       if (ret < 0) {
-+               dev_err(tsi->da9052->dev, "Failed to register %s IRQ %d, error = %d \n", "TSIRDY",
-+                       tsi->da9052->irq_base + tsi->irq_datardy,
-+                       ret);
-+               goto err_mem;
-+       }
-+
-+       ret = da9052_tsi_enable_device(tsi);
-+       if (ret < 0)
-+               goto err_input;
-+
-+       tsi->adc_cnt = 0;
-+       tsi->filter_cnt = 0;
-+
-+       return 0;
-+
-+err_input:
-+       input_free_device(input_dev);
-+err_mem:
-+       kfree(tsi);
-+       return ret;
-+}
-+
-+static int __devexit da9052_tsi_remove(struct platform_device *pdev)
-+{
-+       struct da9052_tsi *tsi = platform_get_drvdata(pdev);
-+       s32 ret = 0;
-+
-+       ret = da9052_clear_bits(tsi->da9052, DA9052_TSICONT_A_REG, 1 << 0);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
-+       if (ret < 0)
-+               return ret;
-+
-+       free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, NULL);
-+       free_irq(tsi->da9052->irq_base + tsi->irq_datardy, NULL);
-+
-+       tsi->tsi_pen_state_thread.state = DA9052_INACTIVE;
-+       wait_for_completion(&tsi->tsi_pen_state_thread.notifier);
-+
-+       tsi->tsi_filter_thread.state = DA9052_INACTIVE;
-+       wait_for_completion(&tsi->tsi_filter_thread.notifier);
-+
-+       input_unregister_device(tsi->dev);
-+
-+       platform_set_drvdata(pdev, NULL);
-+
-+       kfree(tsi);
-+
-+       return 0;
-+}
-+
-+static struct platform_driver da9052_tsi_driver = {
-+       .driver.name    = "da9052-tsi",
-+       .driver.owner   = THIS_MODULE,
-+       .probe                  = da9052_tsi_probe,
-+       .remove                 = __devexit_p(da9052_tsi_remove),
-+
-+};
-+
-+static int __init da9052_tsi_init(void)
-+{
-+       return platform_driver_register(&da9052_tsi_driver);
-+}
-+module_init(da9052_tsi_init);
-+
-+static void __exit da9052_tsi_exit(void)
-+{
-+       platform_driver_unregister(&da9052_tsi_driver);
-+
-+}
-+module_exit(da9052_tsi_exit);
-+
-+MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9052");
-+MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-+MODULE_LICENSE("GPL v2");
-+
-diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi_filter.c linux-next-20110421/drivers/input/touchscreen/da9052_tsi_filter.c
---- linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi_filter.c      1970-01-01 05:00:00.000000000 +0500
-+++ linux-next-20110421/drivers/input/touchscreen/da9052_tsi_filter.c   2011-04-26 10:51:28.000000000 +0500
-@@ -0,0 +1,87 @@
-+/*
-+ * TSI filter driver for Dialog DA9052
-+ *
-+ * Copyright(c) 2009 Dialog Semiconductor Ltd.
-+ *
-+ * Author: Dialog Semiconductor Ltd <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/input.h>
-+#include <linux/freezer.h>
-+#include <linux/mfd/da9052/tsi.h>
-+
-+#define DEFAULT_AVERAGE_FILTER_SIZE            3
-+
-+#if ENABLE_AVERAGE_FILTER
-+static void da9052_tsi_avrg_filter(struct da9052_tsi *tsi,
-+                                       struct da9052_tsi_reg *tsi_avg_data)
-+{
-+       u8 cnt;
-+       struct da9052_tsi_reg temp;
-+
-+       *tsi_avg_data = da9052_fifo_get(&tsi->tsi_fifo_buf);
-+
-+       for (cnt = 2; cnt <= TSI_AVERAGE_FILTER_SIZE; cnt++) {
-+
-+               temp = da9052_fifo_get(&tsi->tsi_fifo_buf);
-+               tsi_avg_data->x += temp.x;
-+               tsi_avg_data->y += temp.y;
-+
-+       }
-+
-+
-+       tsi_avg_data->x /= TSI_AVERAGE_FILTER_SIZE;
-+       tsi_avg_data->y /= TSI_AVERAGE_FILTER_SIZE;
-+
-+       tsi->filter_cnt++;
-+
-+       return;
-+}
-+#endif
-+
-+ssize_t tsi_process_thread(void *ptr)
-+{
-+       struct da9052_tsi_reg coord;
-+       int cnt = 0;
-+       struct da9052_tsi *tsi = (struct da9052_tsi *)ptr;
-+
-+       set_freezable();
-+
-+       while (tsi->tsi_filter_thread.state == DA9052_ACTIVE) {
-+
-+               try_to_freeze();
-+
-+               set_current_state(TASK_INTERRUPTIBLE);
-+               schedule_timeout(msecs_to_jiffies(10));
-+               da9052_fifo_getcount(&cnt, idRead, &tsi->tsi_fifo_buf);
-+
-+               if (cnt == 0)
-+                       continue;
-+
-+#if ENABLE_AVERAGE_FILTER
-+               if (cnt < TSI_AVERAGE_FILTER_SIZE)
-+                       continue;
-+               da9052_tsi_avrg_filter(tsi, &coord);
-+#else
-+               coord =  da9052_fifo_get(&tsi->tsi_fifo_buf);
-+#endif
-+               input_report_abs(tsi->dev, BTN_TOUCH, 1);
-+               input_report_abs(tsi->dev, ABS_X, coord.x);
-+               input_report_abs(tsi->dev, ABS_Y, coord.y);
-+               input_sync(tsi->dev);
-+
-+       }
-+
-+       tsi->tsi_filter_thread.thread_task = NULL;
-+       complete_and_exit(&tsi->tsi_filter_thread.notifier, 0);
-+
-+       return 0;
-+
-+}
-+
-diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/Kconfig linux-next-20110421/drivers/input/touchscreen/Kconfig
---- linux-next-20110421.orig/drivers/input/touchscreen/Kconfig  2011-04-26 09:32:55.000000000 +0500
-+++ linux-next-20110421/drivers/input/touchscreen/Kconfig       2011-04-26 10:59:02.000000000 +0500
-@@ -144,6 +144,13 @@
-          Say Y here to enable the support for the touchscreen found
-          on Dialog Semiconductor DA9034 PMIC.
-
-+config TOUCHSCREEN_DA9052
-+       tristate "Dialog DA9052 TSI"
-+       depends on PMIC_DA9052
-+       help
-+         Say y here to support the touchscreen found on
-+         Dialog Semiconductor DA9052 PMIC
-+
- config TOUCHSCREEN_DYNAPRO
-        tristate "Dynapro serial touchscreen"
-        select SERIO
-diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/Makefile linux-next-20110421/drivers/input/touchscreen/Makefile
---- linux-next-20110421.orig/drivers/input/touchscreen/Makefile 2011-04-26 09:32:55.000000000 +0500
-+++ linux-next-20110421/drivers/input/touchscreen/Makefile      2011-04-26 10:56:56.000000000 +0500
-@@ -4,6 +4,7 @@
-
- # Each configuration option enables a list of files.
-
-+da9052-tsi-objs        := da9052_tsi.o da9052_tsi_filter.o
- wm97xx-ts-y := wm97xx-core.o
-
- obj-$(CONFIG_TOUCHSCREEN_88PM860X)             += 88pm860x-ts.o
-@@ -18,6 +19,7 @@
- obj-$(CONFIG_TOUCHSCREEN_BU21013)              += bu21013_ts.o
- obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)   += cy8ctmg110_ts.o
- obj-$(CONFIG_TOUCHSCREEN_DA9034)               += da9034-ts.o
-+obj-$(CONFIG_TOUCHSCREEN_DA9052)               += da9052-tsi.o
- obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)              += dynapro.o
- obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)    += hampshire.o
- obj-$(CONFIG_TOUCHSCREEN_GUNZE)                += gunze.o
-diff -Naur linux-next-20110421.orig/include/linux/mfd/da9052/tsi.h linux-next-20110421/include/linux/mfd/da9052/tsi.h
---- linux-next-20110421.orig/include/linux/mfd/da9052/tsi.h     1970-01-01 05:00:00.000000000 +0500
-+++ linux-next-20110421/include/linux/mfd/da9052/tsi.h  2011-04-26 10:53:05.000000000 +0500
-@@ -0,0 +1,102 @@
-+/*
-+ * da9052 TSI module declarations.
-+  *
-+ * Copyright(c) 2009 Dialog Semiconductor Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_DA9052_TSI_H
-+#define __LINUX_MFD_DA9052_TSI_H
 +
 +#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/reg.h>
 +
-+#define TSI_FIFO_SIZE                  16
-+#define ENABLE_AVERAGE_FILTER  1
-+
-+#define TSI_AVERAGE_FILTER_SIZE        3
-+#define DA9052_ACTIVE                  1
-+#define DA9052_INACTIVE                0
-+
-+enum {
-+       DA9052_PEN_IDLE,
-+       DA9052_PEN_DOWN,
-+       DA9052_PEN_UP
++struct da9052_onkey {
++	struct da9052 *da9052;
++	struct input_dev *input;
++	struct delayed_work work;
++	int irq;
 +};
 +
++static void da9052_onkey_work(struct work_struct *work)
++{
++	int ret;
++	struct da9052_onkey *onkey;
++	onkey = container_of(work, struct da9052_onkey, work.work);
 +
++	ret = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
++	if (ret < 0) {
++		dev_err(onkey->da9052->dev,
++			"da9052_onkey_report_event da9052_reg_read error %d\n",
++			ret);
++		ret = 1;
++	} else {
++		ret = ret & DA9052_E_nONKEY;
++		input_report_key(onkey->input, KEY_POWER, ret);
++		input_sync(onkey->input);
++	}
 +
-+enum {
-+       idRead,
-+       idWrite
++	if (ret)
++		schedule_delayed_work(&onkey->work, 10);
++
++}
++
++static irqreturn_t da9052_onkey_irq(int irq, void *data)
++{
++	struct da9052_onkey *onkey = (struct da9052_onkey *) data;
++
++	schedule_delayed_work(&onkey->work, 0);
++
++	return IRQ_HANDLED;
++}
++
++static int __devinit da9052_onkey_probe(struct platform_device *pdev)
++{
++	struct da9052_onkey *onkey;
++	int error = 0;
++
++	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
++	if (!onkey) {
++		dev_err(&pdev->dev, "Failed to allocate memory\n");
++		return -ENOMEM;
++	}
++	onkey->input = input_allocate_device();
++	if (!onkey->input) {
++		error = -ENOMEM;
++		dev_err(&pdev->dev, "Failed to allocate input device, %d\n",
++			error);
++		goto err_mem;
++	}
++	onkey->da9052 = dev_get_drvdata(pdev->dev.parent);
++	onkey->irq = platform_get_irq_byname(pdev, "ONKEY");
++	if (onkey->irq < 0) {
++		dev_err(&pdev->dev, "Failed to get an IRQ for input device, %d\n",
++			onkey->irq);
++		goto err_mem;
++	}
++
++	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
++	onkey->input->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
++	onkey->input->name = "da9052-onkey";
++	onkey->input->phys = "da9052-onkey/input0";
++	onkey->input->dev.parent = &pdev->dev;
++
++	INIT_DELAYED_WORK(&onkey->work, da9052_onkey_work);
++
++	error = request_threaded_irq(onkey->da9052->irq_base + onkey->irq, NULL,
++					da9052_onkey_irq,
++					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					"ONKEY", onkey);
++	if (error < 0) {
++		dev_err(onkey->da9052->dev,
++			" Failed to register %s IRQ %d, error = %d\n",
++			"ONKEY", onkey->da9052->irq_base + onkey->irq, error);
++		goto err_input;
++	}
++
++	error = input_register_device(onkey->input);
++	if (error) {
++		dev_err(&pdev->dev, "Unable to register input device, %d\n",
++			error);
++		goto err_reg;
++	}
++
++	platform_set_drvdata(pdev, onkey);
++
++	return 0;
++
++err_reg:
++	free_irq(onkey->da9052->irq_base + onkey->irq, NULL);
++err_input:
++	cancel_delayed_work_sync(&onkey->work);
++err_mem:
++	input_free_device(onkey->input);
++	kfree(onkey);
++	return error;
++}
++
++static int __devexit da9052_onkey_remove(struct platform_device *pdev)
++{
++	struct da9052_onkey *onkey = platform_get_drvdata(pdev);
++
++	free_irq(onkey->da9052->irq_base + onkey->irq, NULL);
++	cancel_delayed_work_sync(&onkey->work);
++	input_unregister_device(onkey->input);
++	kfree(onkey);
++
++	return 0;
++}
++
++static struct platform_driver da9052_onkey_driver = {
++	.driver = {
++		.name	= "da9052-onkey",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= da9052_onkey_probe,
++	.remove		= __devexit_p(da9052_onkey_remove),
 +};
 +
-+enum {
-+       idNoWrap,
-+       idReadWrap,
-+       idWriteWrap
-+};
++static int __init da9052_onkey_init(void)
++{
++	return platform_driver_register(&da9052_onkey_driver);
++}
 +
-+struct da9052_tsi_reg {
-+       u16     x;
-+       u16     y;
-+};
++static void __exit da9052_onkey_exit(void)
++{
++	platform_driver_unregister(&da9052_onkey_driver);
++}
 +
-+struct da9052_tsi_fifo {
-+       int m_write;
-+       int m_read;
-+       int m_wrapType;
-+       struct da9052_tsi_reg fifo[TSI_FIFO_SIZE];
++module_init(da9052_onkey_init);
++module_exit(da9052_onkey_exit);
 +
-+};
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_DESCRIPTION("Onkey driver for DA9052");
++MODULE_ALIAS("platform:da9052-onkey");
+diff -Naur linux-next-20110421.orig/drivers/input/misc/Kconfig linux-next-20110421/drivers/input/misc/Kconfig
+--- linux-next-20110421.orig/drivers/input/misc/Kconfig	2011-04-26 09:32:56.000000000 +0500
++++ linux-next-20110421/drivers/input/misc/Kconfig	2011-04-26 11:10:59.000000000 +0500
+@@ -353,6 +353,13 @@
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called rb532_button.
+
++config INPUT_DA9052_ONKEY
++	tristate "Dialog DA9052 Onkey"
++	depends on PMIC_DA9052
++	help
++	  Support the ONKEY of Dialog DA9052 PMICs as an input device
++	  reporting power button status.
 +
-+struct da9052_tsi_platform_data {
-+       u8 pen_up_detect_interval;
-+};
-+
-+struct tsi_thread_type {
-+       u8              pid;
-+       u8              state;
-+       struct completion       notifier;
-+       struct task_struct      *thread_task;
-+} ;
-+
-+
-+struct da9052_tsi {
-+       struct da9052   *da9052;
-+       struct input_dev *dev;
-+       struct tsi_thread_type  tsi_pen_state_thread;
-+       struct tsi_thread_type  tsi_filter_thread;
-+       struct da9052_tsi_fifo tsi_fifo;
-+       struct da9052_tsi_fifo tsi_fifo_buf;
-+       struct da9052_tsi_reg read_buf[TSI_AVERAGE_FILTER_SIZE];
-+       u32 pen_up_detect_interval;
-+       u32 zero_data_cnt;
-+       u32 valid_penup_count;
-+       u8 pen_state;
-+       int adc_cnt;
-+       int filter_cnt;
-+       int irq_pendwn;
-+       int irq_datardy;
-+};
-+
-+struct da9052_tsi_reg da9052_fifo_get(struct da9052_tsi_fifo *fifo);
-+void da9052_fifo_put(struct da9052_tsi_fifo *fifo, struct da9052_tsi_reg temp);
-+void da9052_fifo_getcount(int *count, long op, struct da9052_tsi_fifo *fifo);
-+void da9052_fifo_incpos(struct da9052_tsi_fifo *fifo, int inc, int op);
-+int da9052_fifo_lengthToEnd(struct da9052_tsi_fifo *fifo, long op);
-+
-+#endif /* __LINUX_MFD_DA9052_TSI_H */
+ config INPUT_DM355EVM
+ 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
+ 	depends on MFD_DM355EVM_MSP
+diff -Naur linux-next-20110421.orig/drivers/input/misc/Makefile linux-next-20110421/drivers/input/misc/Makefile
+--- linux-next-20110421.orig/drivers/input/misc/Makefile	2011-04-26 09:32:56.000000000 +0500
++++ linux-next-20110421/drivers/input/misc/Makefile	2011-04-26 11:06:17.000000000 +0500
+@@ -21,6 +21,7 @@
+ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
+ obj-$(CONFIG_INPUT_CMA3000_I2C)	+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)	+= cobalt_btns.o
++obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+ obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
+ obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
 
 
 Regards,
