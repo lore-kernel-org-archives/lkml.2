@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab1DZWdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:33:06 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33570 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753770Ab1DZWdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:33:04 -0400
-Date: Tue, 26 Apr 2011 17:32:57 -0500
-From: Russ Anderson <rja@sgi.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        rja@americas.sgi.com
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110426223257.GB27953@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1303135222-17118-2-git-send-email-bp@amd64.org> <20110419171340.GE6640@elte.hu> <20110419173521.GA25374@aftab> <20110419174446.GA13616@elte.hu> <20110420102349.GB1361@aftab> <m1hb9mnmqs.fsf@fess.ebiederm.org> <20110426074238.GA22448@aftab> <m1y62wk9i8.fsf@fess.ebiederm.org>
+	id S932940Ab1DZWmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:42:04 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.39.38]:46075 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932391Ab1DZWmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 18:42:03 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=qTA5/x/l4s7GzkwcT3Xf5J1l730qzqdygOEJlMxFCmwQSEIjuocYeU75A88YbCAvKy3IfaLsWuD78lWvti9s/NbHs6XugI00vTAaMf6HpfvRAo/r5aiP2PfeoLT0fmL1;
+Date: Tue, 26 Apr 2011 15:42:00 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Cyril Brulebois <kibi@debian.org>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH 1/4] Documentation/00-INDEX: fix typo
+Message-Id: <20110426154200.499f2d06.rdunlap@xenotime.net>
+In-Reply-To: <1303575344-10403-1-git-send-email-kibi@debian.org>
+References: <1303575344-10403-1-git-send-email-kibi@debian.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1y62wk9i8.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 02:06:39PM -0700, Eric W. Biederman wrote:
-> Borislav Petkov <bp@amd64.org> writes:
-> > On Mon, Apr 25, 2011 at 03:40:11PM -0400, Eric W. Biederman wrote:
-> >> > From: Borislav Petkov <borislav.petkov@amd.com>
-> >> > Date: Wed, 13 Apr 2011 14:32:06 +0200
-> >> > Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
-> >> >
-> >> > The default notifier doesn't make a lot of sense to call in the
-> >> > correctable errors case. Drop it and emit the mcelog decoding hint only
-> >> > in the uncorrectable errors case and when no notifier is registered.
-> >> > Also, limit issuing the "mcelog --ascii" message in the rare case when
-> >> > we dump unreported CEs before panicking.
-> >> >
-> >> > While at it, remove unused old x86_mce_decode_callback from the
-> >> > header.
-> >> 
-> >> Can we please print something if we please log something in the
-> >> case of a correctable error, when we only report it via mcelog?
-> >> 
-> >> I have a stupid recent intel cpu here that hits that case and without
-> >> the default x86_mce_decode_callback I wouldn't have even known that I am
-> >> getting something like 50 correctable errors an hour on one of my
-> >> machines.  In particular I am it hits so often I am seeing:
-> >> "mce_notify_irq: 2 callbacks suppressed".  I need to get those dimms
-> >> replaced soon because in a new product I simply can't imagine that many
-> >> correctable errors.
-> >
-> > Isn't there a mcelog daemon or something that polls /dev/mcelog and
-> > tells you about those DRAM ECCs in some log file where you're supposed
-> > to look? :)
+On Sat, 23 Apr 2011 18:15:41 +0200 Cyril Brulebois wrote:
+
+> Signed-off-by: Cyril Brulebois <kibi@debian.org>
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Thanks.
+
+> ---
+>  Documentation/00-INDEX |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> On fedora 14 there is a cron job that writes to /var/log/mcelog, and
-> does not go through syslog.
+> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+> index c17cd4b..7be2510 100644
+> --- a/Documentation/00-INDEX
+> +++ b/Documentation/00-INDEX
+> @@ -71,7 +71,7 @@ atomic_ops.txt
+>  auxdisplay/
+>  	- misc. LCD driver documentation (cfag12864b, ks0108).
+>  basic_profiling.txt
+> -	- basic instructions for those who wants to profile Linux kernel.
+> +	- basic instructions for those who want to profile Linux kernel.
+>  binfmt_misc.txt
+>  	- info on the kernel support for extra binary formats.
+>  blackfin/
+> -- 
 
-Interesting.  I'm running fedora 14 and don't have a /var/log/mcelog
-file or see an mcelog package (not that I'd looked until just now).
 
->                              But you have to be proactive and look
-> there.  If the people who work on this code can't even remember
-> where to look I can't imagine how anyone else can remember.
-> Which is why I object to the removal of the one printk that told
-> me something was broken on my machine.
-
-Historically hardware error reporting has been very platform
-dependent.  Those differences made it difficult to come up with
-agreement on standard ways to report errors.  You raise a good
-point that it needs to work better.
-
-> So far from what I have seen /dev/mcelog and the userspace mcelog is
-> over complicated and near useless.
-
-/dev/mcelog is extremely useful to SGI.  As you said, "you have to 
-be proactive and look there" which we are and do.  :-)
-
->                                     It seems to focused around the
-> notion that "This is not a software problem, please do not bug
-> Andi Kleen about it"
-> 
-> Well it is a hardware problem so I do need to RMA that hardware.
-> Sigh.
-
-You raise a good issue that users do need to know when their 
-hardware is having issues.
-
-> Eric
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
