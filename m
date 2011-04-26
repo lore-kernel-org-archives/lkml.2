@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106Ab1DZWqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:46:48 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:58747 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759091Ab1DZWqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:46:46 -0400
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB74B2C.70606@verizon.net>
-Date: Tue, 26 Apr 2011 18:46:04 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1759016Ab1DZWpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:45:52 -0400
+Received: from kroah.org ([198.145.64.141]:36281 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759000Ab1DZWpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 18:45:50 -0400
+Date: Tue, 26 Apr 2011 15:43:19 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>
+Subject: Re: [PATCH 17/25] Staging: hv: Make event_dpc a global variable
+Message-ID: <20110426224319.GA31974@kroah.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-17-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: [PATCH V2 7/7] kbuild: quiet commands unless V=1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303834842-5022-17-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch quiets some commands unless V=1.
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- scripts/kconfig/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Tue, Apr 26, 2011 at 09:20:34AM -0700, K. Y. Srinivasan wrote:
+> In preparation for getting rid of struct hv_bus, Make event_dpc a
+> global variable.
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 0674e78..572e5fa 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -328,11 +328,11 @@ $(obj)/%.moc: $(src)/%.h
- 	$(KC_QT_MOC) -i $< -o $@
+It's "static", one for the whole driver, not global.
 
- $(obj)/lkc_defs.h: $(src)/lkc_proto.h
--	sed < $< > $@ 's/P(\([^,]*\),.*/#define \1 (\*\1_p)/'
-+	$(Q)sed < $< > $@ 's/P(\([^,]*\),.*/#define \1 (\*\1_p)/'
+thanks,
 
- # Extract gconf menu items for I18N support
- $(obj)/gconf.glade.h: $(obj)/gconf.glade
--	intltool-extract --type=gettext/glade --srcdir=$(srctree) \
-+	$(Q)intltool-extract --type=gettext/glade --srcdir=$(srctree) \
- 	$(obj)/gconf.glade
-
- ###
--- 
-1.7.5.rc1
-
+greg k-h
