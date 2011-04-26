@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab1DZVn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:43:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56740 "EHLO
+	id S932830Ab1DZVnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:43:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58217 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758438Ab1DZVnZ (ORCPT
+	by vger.kernel.org with ESMTP id S1758531Ab1DZVnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:43:25 -0400
-Date: Tue, 26 Apr 2011 14:42:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] split inode_wb_list_lock into
- bdi_writeback.list_lock
-Message-Id: <20110426144209.06317674.akpm@linux-foundation.org>
-In-Reply-To: <20110426144218.GA14862@localhost>
-References: <20110426144218.GA14862@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Apr 2011 17:43:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110426195002.GF8520@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+ <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+ <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com> <20110426195002.GF8520@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Apr 2011 14:43:00 -0700
+Message-ID: <BANLkTinp8FGQu2D1NVVc7xfEsqopook7Hg@mail.gmail.com>
+Subject: Re: [PATCH v2 5/6] signal: sys_sigprocmask() needs retarget_shared_pending()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 22:42:19 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+> +               sigemptyset(&new_full_set);
+> +               if (how == SIG_SETMASK)
+> +                       new_full_set = current->blocked;
+> +               new_full_set.sig[0] = new_set;
 
-> @@ -55,13 +55,16 @@ EXPORT_SYMBOL(I_BDEV);
->  static void bdev_inode_switch_bdi(struct inode *inode,
->  			struct backing_dev_info *dst)
->  {
-> -	spin_lock(&inode_wb_list_lock);
-> +	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-> +
-> +	bdi_lock_two(&old->wb, &dst->wb);
->  	spin_lock(&inode->i_lock);
->  	inode->i_data.backing_dev_info = dst;
->  	if (inode->i_state & I_DIRTY)
->  		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
->  	spin_unlock(&inode->i_lock);
-> -	spin_unlock(&inode_wb_list_lock);
-> +	spin_unlock(&old->wb.list_lock);
-> +	spin_unlock(&dst->wb.list_lock);
->  }
+Ugh. This is just ugly.
 
-Has this patch been well tested under lockdep?
+Could we not instead turn the whole thing into a "clear these bits"
+and "set these bits", and get rid of the "how" entirely for the helper
+function?
+
+IOW, we'd have
+
+  switch (how) {
+  case SIG_BLOCK:
+      clear_bits = 0;
+      set_bits = new_set;
+      break;
+  case SIG_UNBLOCK:
+      clear_bits = new_set;
+      set_bits = 0;
+      break
+  case SIG_SET:
+     clear_bits = low_bits;
+     set_bits = new_set;
+     break;
+   default:
+     return -EINVAL;
+  }
+
+and notice how you now can do that helper function *WITHOUT* any
+conditionals, and just make it do
+
+    sigprocmask(&clear, &set, NULL);
+
+which handles all cases correctly (just "andn clear" + "or set") with
+no if's or switch'es.
+
+This is why I _detest_ that idiotic "sigprocmask()" interface. That
+"how" parameter is the invention of somebody who didn't understand
+sets. It's stupid. There is no reason to have multiple different set
+operations, when in practice all anybody ever wants is the "clear
+these bits and set those other bits" - an operation that is not only
+more generic than the idiotic "how", but is _faster_ too, because it
+involves no conditionals.
+
+So I realize that we cannot get away from the broken user interface,
+but I do not believe that that means that our _internal_ helper
+functions should use that idiotic and broken interface!
+
+I had basically this same comment earlier when you did something
+similarly mindless for another case.
+
+So basic rule should be: if you ever pass "how" to any helper
+functions, it's broken.
+
+                                     Linus
