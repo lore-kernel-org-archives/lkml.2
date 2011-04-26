@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab1DZQ3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:29:14 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:25619 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab1DZQ3N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:29:13 -0400
-Date: Tue, 26 Apr 2011 18:29:05 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>
-Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation 
- fully internal
-Message-ID: <20110426182905.72bbf7b6@endymion.delvare>
-In-Reply-To: <20110426155212.GB18176@ericsson.com>
-References: <20110426165600.1d9ac91b@endymion.delvare>
-	<20110426170407.3694e430@endymion.delvare>
-	<20110426155212.GB18176@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757346Ab1DZQaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:30:06 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36962
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754467Ab1DZQaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 12:30:03 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 10/25] Staging: hv: Get rid of the priv pointer in struct hv_driver
+Date: Tue, 26 Apr 2011 09:20:27 -0700
+Message-Id: <1303834842-5022-10-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1303834842-5022-1-git-send-email-kys@microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 08:52:12 -0700, Guenter Roeck wrote:
-> On Tue, Apr 26, 2011 at 11:04:07AM -0400, Jean Delvare wrote:
-> > THERMAL_HWMON is implemented inside the thermal_sys driver and has no
-> > effect on drivers implementing thermal zones, so they shouldn't see
-> > anything related to it in <linux/thermal.h>. Making the THERMAL_HWMON
-> > implementation fully internal has two advantages beyond the cleaner
-> > design:
-> > * This avoids rebuilding all thermal drivers if the THERMAL_HWMON
-> >   implementation changes, or if CONFIG_THERMAL_HWMON gets enabled or
-> >   disabled.
-> > * This avoids breaking the thermal kABI in these cases too, which
-> >   should make distributions happy.
-> > 
-> > The only drawback I can see is slightly higher memory fragmentation,
-> > as the number of kzalloc() calls will increase by one per thermal zone.
-> > But I doubt it will be a problem in practice, as I've never seen a
-> > system with more than two thermal zones.
-> > 
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Rene Herman <rene.herman@gmail.com>
-> > Cc: Len Brown <len.brown@intel.com>
-> > Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-> > ---
-> > * If memory fragmentation is really a concern to anyone, it would be
-> >   possible to save one kalloc for the first temperature input of each
-> >   zone type, as the price of slightly more complex code.
-> > 
-> > * Removal code path is untested, as I have never been able to unload
-> > the thermal_sys module on any of my systems. Something is pinning it
-> > and I have no idea what it is.
-> > 
-> Doesn't lsmod show the culprit ?
+Now that we have gotten rid of all uses of the priv element in
+struct hv_driver, get rid of the priv pointer.
 
-No, it's not a module dependency. The reference counter is set to 1,
-so somewhere in the kernel something is taking a reference to the
-module and won't release it. I wish this was better instrumented so
-that it would be possible to know who is doing that.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/vmbus_api.h |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-> Otherwise
-> 
-> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-
-Thanks for the reviews.
-
+diff --git a/drivers/staging/hv/vmbus_api.h b/drivers/staging/hv/vmbus_api.h
+index f0d96eb..51fa952 100644
+--- a/drivers/staging/hv/vmbus_api.h
++++ b/drivers/staging/hv/vmbus_api.h
+@@ -94,16 +94,6 @@ struct hv_driver {
+ 	/* the device type supported by this driver */
+ 	struct hv_guid dev_type;
+ 
+-	/*
+-	 * Device type specific drivers (net, blk etc.)
+-	 * need a mechanism to get a pointer to
+-	 * device type specific driver structure given
+-	 * a pointer to the base hyperv driver structure.
+-	 * The current code solves this problem using
+-	 * a hack. Support this need explicitly
+-	 */
+-	void *priv;
+-
+ 	struct device_driver driver;
+ 
+ 	int (*dev_add)(struct hv_device *device, void *data);
 -- 
-Jean Delvare
+1.7.4.1
+
