@@ -1,116 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1DZUTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:19:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10490 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab1DZUTj (ORCPT
+	id S1754260Ab1DZUX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:23:28 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:45295 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab1DZUX1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:19:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=tjJuhAyQK6yn8uvGNm8jAKFM/ix77zyKTq0aEuVpp8EVGcwoubZM8jfmrlVp8ceNp+
-         YTg84RMjhNpfIZOdJD8A==
-Date: Tue, 26 Apr 2011 13:19:41 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: bookjovi@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page
- in mem_read
-In-Reply-To: <20110426141449.F37C.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1104261317400.9533@sister.anvils>
-References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com> <alpine.LSU.2.00.1104252048190.6978@sister.anvils> <20110426141449.F37C.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 26 Apr 2011 16:23:27 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+Thread-Topic: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+Thread-Index: AQHMBCwn1s6JBZAG00mF/Gjulq2PA5RxAJqA//+U6AA=
+Date: Tue, 26 Apr 2011 20:23:25 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD061@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-18-git-send-email-kys@microsoft.com>
+ <20110426194031.GD17467@suse.de>
+In-Reply-To: <20110426194031.GD17467@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011, KOSAKI Motohiro wrote:
-> 
-> From 74f827ce74e1c4f846905e940edfa5f639b5a2ce Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Tue, 26 Apr 2011 13:57:02 +0900
-> Subject: [PATCH] [PATCH] proc: put check_mem_permission after __get_free_page in mem_write
-> 
-> It should be better if put check_mem_permission after __get_free_page
-> in mem_write, to be same as function mem_read.
-> 
-> Hugh Dickins explained the reason.
-> 
->     check_mem_permission gets a reference to the mm.  If we __get_free_page
->     after check_mem_permission, imagine what happens if the system is out
->     of memory, and the mm we're looking at is selected for killing by the
->     OOM killer: while we wait in __get_free_page for more memory, no memory
->     is freed from the selected mm because it cannot reach exit_mmap while
->     we hold that reference.
-> 
-> 
-> Reported-by: Jovi Zhang <bookjovi@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Stephen Wilson <wilsons@start.ca>
 
-Thank you, yes!
 
-Acked-by: Hugh Dickins <hughd@google.com>
-
-> ---
->  fs/proc/base.c |   16 +++++++++-------
->  1 files changed, 9 insertions(+), 7 deletions(-)
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, April 26, 2011 3:41 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
+> PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
 > 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 4deef2e..e93be6e 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -894,20 +894,20 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
->  	if (!task)
->  		goto out_no_task;
->  
-> +	copied = -ENOMEM;
-> +	page = (char *)__get_free_page(GFP_TEMPORARY);
-> +	if (!page)
-> +		goto out_task;
-> +
->  	mm = check_mem_permission(task);
->  	copied = PTR_ERR(mm);
->  	if (IS_ERR(mm))
-> -		goto out_task;
-> +		goto out_free;
->  
->  	copied = -EIO;
->  	if (file->private_data != (void *)((long)current->self_exec_id))
->  		goto out_mm;
->  
-> -	copied = -ENOMEM;
-> -	page = (char *)__get_free_page(GFP_TEMPORARY);
-> -	if (!page)
-> -		goto out_mm;
-> -
->  	copied = 0;
->  	while (count > 0) {
->  		int this_len, retval;
-> @@ -929,9 +929,11 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
->  		count -= retval;			
->  	}
->  	*ppos = dst;
-> -	free_page((unsigned long) page);
-> +
->  out_mm:
->  	mmput(mm);
-> +out_free:
-> +	free_page((unsigned long) page);
->  out_task:
->  	put_task_struct(task);
->  out_no_task:
-> -- 
-> 1.7.3.1
+> On Tue, Apr 26, 2011 at 09:20:35AM -0700, K. Y. Srinivasan wrote:
+> > Now, get rid of struct hv_bus. We will no longer be embedding
+> > struct bus_type.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |   33 ++++++++++++++-------------------
+> >  1 files changed, 14 insertions(+), 19 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index a3a7741..515311c 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -45,11 +45,6 @@ static struct pci_dev *hv_pci_dev;
+> >  static struct tasklet_struct msg_dpc;
+> >  static struct tasklet_struct event_dpc;
+> >
+> > -/* Main vmbus driver data structure */
+> > -struct hv_bus {
+> > -	struct bus_type bus;
+> > -};
+> > -
+> >  unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
+> >  EXPORT_SYMBOL(vmbus_loglevel);
+> >  	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
+> > @@ -405,14 +400,14 @@ static void vmbus_device_release(struct device
+> *device)
+> >  }
+> >
+> >  /* The one and only one */
+> > -static struct hv_bus  hv_bus = {
+> > -	.bus.name =		"vmbus",
+> > -	.bus.match =		vmbus_match,
+> > -	.bus.shutdown =		vmbus_shutdown,
+> > -	.bus.remove =		vmbus_remove,
+> > -	.bus.probe =		vmbus_probe,
+> > -	.bus.uevent =		vmbus_uevent,
+> > -	.bus.dev_attrs =	vmbus_device_attrs,
+> > +static struct bus_type  hv_bus = {
+> > +	.name =		"vmbus",
+> > +	.match =		vmbus_match,
+> > +	.shutdown =		vmbus_shutdown,
+> > +	.remove =		vmbus_remove,
+> > +	.probe =		vmbus_probe,
+> > +	.uevent =		vmbus_uevent,
+> > +	.dev_attrs =	vmbus_device_attrs,
+> >  };
+> >
+> >  static const char *driver_name = "hyperv";
+> > @@ -550,14 +545,14 @@ static int vmbus_bus_init(struct pci_dev *pdev)
+> >  		goto cleanup;
+> >  	}
+> >
+> > -	hv_bus.bus.name = driver_name;
+> > +	hv_bus.name = driver_name;
+> 
+> Why are you setting the name of the bus again?  Shouldn't this line be
+> removed?
+
+You are absolutely right. Since this redundancy was in the existing
+code, should I send you a separate patch to fix this?
+
+Regards,
+
+K. Y
+
+> 
+> thanks,
+> 
+> greg k-h
+
