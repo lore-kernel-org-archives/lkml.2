@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1DZL3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:29:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41206 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab1DZL3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:29:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=f2jA+zzCeatycRrlWjAX7EPOVWR07+NJkzinLMDvMRRTh/7l2B474+clf8r1gKIBSE
-         rcI0Zgs/1fIphXMtuLjMu+9YxlqEzbzpksZMbGNn63YOCd+m+2QqTQTJN94qlEOeIuE/
-         hIcmDfgb8cvGXhwFkCZNedWDh1Njkt5I7ZmXE=
-Date: Tue, 26 Apr 2011 13:29:05 +0200
-From: Tejun Heo <htejun@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-Subject: Re: [RFC]block: add flush request at head
-Message-ID: <20110426112905.GC878@htj.dyndns.org>
-References: <1303112174.3981.187.camel@sli10-conroe>
- <4DABF194.4010603@fusionio.com>
- <1303115157.3981.198.camel@sli10-conroe>
- <20110422225704.GA1576@mtj.dyndns.org>
- <1303693319.3981.272.camel@sli10-conroe>
- <20110425082103.GA17734@mtj.dyndns.org>
- <1303778955.3981.285.camel@sli10-conroe>
+	id S1754673Ab1DZLbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 07:31:19 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:49260 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754349Ab1DZLbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 07:31:17 -0400
+Date: Tue, 26 Apr 2011 04:31:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
+ related?)
+Message-ID: <20110426113113.GH4308@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110422150222.GA2300@linux.vnet.ibm.com>
+ <BANLkTind84Gf8JA9Fa4QL2GbaF8nMNhDzw@mail.gmail.com>
+ <20110423210539.GI2628@linux.vnet.ibm.com>
+ <BANLkTimXW2=PYOXkKjnLuH+eN2TjZBqAxw@mail.gmail.com>
+ <BANLkTi=ntjm-5D=OD1oFogpNjmJSJiZygQ@mail.gmail.com>
+ <BANLkTim9H1k4c7xSZZJ09WXs8WCeCQQJJg@mail.gmail.com>
+ <20110424062728.GM2628@linux.vnet.ibm.com>
+ <BANLkTinTd10K6Ho6FhuynROT7yDLHNLojw@mail.gmail.com>
+ <20110424164331.GN2628@linux.vnet.ibm.com>
+ <1303812417.20212.239.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303778955.3981.285.camel@sli10-conroe>
+In-Reply-To: <1303812417.20212.239.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On Tue, Apr 26, 2011 at 08:49:15AM +0800, Shaohua Li wrote:
-> On Mon, 2011-04-25 at 16:21 +0800, Tejun Heo wrote:
-> > Hello, Shaohua.
+On Tue, Apr 26, 2011 at 12:06:57PM +0200, Peter Zijlstra wrote:
+> On Sun, 2011-04-24 at 09:43 -0700, Paul E. McKenney wrote:
 > > 
-> > On Mon, Apr 25, 2011 at 09:01:59AM +0800, Shaohua Li wrote:
-> > > this is a regression from 2.6.39-rc2 compared to 2.6.39-rc1, so this
-> > > isn't related to the flush rewritten. Workload is sysbench fileio,
-> > > please see the first mail at the thread for detail.
-> > 
-> > Understood.  Let's talk on the other thread.
->
-> This issue isn't related to the optimization patch in another thread.
-> And that patch can't recover the regression, which does improve
-> throughput even without the regression. So please look at issue again.
+> > Peter, any thoughts on what I might have done wrong to get the scheduler
+> > into a state where it was ignoring a runnable realtime task? 
+> 
+> Not really, the only thing I can think of is something like poking at
+> task->state while its sleeping. One you set it to TASK_RUNNING wakeups
+> will be ignored since its already running ;-)
 
-IIUC, the regression happened because, before, back-to-back flushes
-were basically optimized out by hardware but, after, due to regular
-writes thrown into the mix, aren't.  If that's the case, I would still
-prefer to solve this from issue side instead of completion if possible
-(it might not be tho).
+Well, that does give my something to check for -- thank you!
 
-Or is the latency introduced for each flush actually making difference
-for the specific benchmark?  Hmmm... maybe that's the case given that
-your patches merging back-to-back flushes doesn't recover the whole
-regression.
-
-I don't know.  Darrick, can you please chime in?  Do you see
-regression between front and back queueing of flushes?  The original
-thread is
-
- http://thread.gmane.org/gmane.linux.kernel/1127779
-
-and the offending commit is 53d63e6b0dfb95882ec0219ba6bbd50cde423794
-(block: make the flush insertion use the tail of the dispatch list).
-
-Thanks.
-
--- 
-tejun
+							Thanx, Paul
