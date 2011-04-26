@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab1DZV0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:26:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61258 "EHLO mga09.intel.com"
+	id S932711Ab1DZV0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:26:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60554 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab1DZVOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:14:40 -0400
+	id S932355Ab1DZVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:14:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="634483691"
+   d="scan'208";a="684327570"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110426212.641772347@firstfloor.org>
 In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: mrkiko.rs@gmail.com, gregkh@suse.de, ak@linux.intel.com,
+To: jhovold@gmail.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [70/106] USB: option: Add new ONDA vendor id and product id for ONDA MT825UP
-Message-Id: <20110426211351.74E513E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:13:51 -0700 (PDT)
+Subject: [PATCH] [68/106] USB: ftdi_sio: add PID for OCT DK201 docking station
+Message-Id: <20110426211349.5BC183E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,54 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Enrico Mioso <mrkiko.rs@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit c6991b6fd2b4201174dc4620d0c8c4f5ff27b36f upstream.
+commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
 
-This patch, adds to the option driver the Onda Communication
-(http://www.ondacommunication.com) vendor id, and the MT825UP modem
-device id.
+Add PID 0x0103 for serial port of the OCT DK201 docking station.
 
-Note that many variants of this same device are being release here in
-Italy (at least one or two per telephony operator).
-
-These devices are perfectly equivalent except for some predefined
-settings (which can be changed of course).
-
-It should be noted that most ONDA devices are allready supported (they
-used other vendor's ids in the past). The patch seems working fine here,
-and the rest of the driver seems uninfluenced.
-
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
+Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/serial/option.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
-Index: linux-2.6.35.y/drivers/usb/serial/option.c
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/serial/option.c
-+++ linux-2.6.35.y/drivers/usb/serial/option.c
-@@ -381,6 +381,12 @@ static void option_instat_callback(struc
- #define CELOT_VENDOR_ID				0x211f
- #define CELOT_PRODUCT_CT680M			0x6801
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio.c
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
+@@ -526,6 +526,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
+ 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
++	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio_ids.h
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+@@ -572,6 +572,7 @@
+ /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
+ /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
+ /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
++#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
+ #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
  
-+/* ONDA Communication vendor id */
-+#define ONDA_VENDOR_ID       0x1ee8
-+
-+/* ONDA MT825UP HSDPA 14.2 modem */
-+#define ONDA_MT825UP         0x000b
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -934,6 +940,7 @@ static const struct usb_device_id option
- 
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
-+	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ /*
