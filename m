@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab1DZTkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:40:14 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:18589 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab1DZTkM (ORCPT
+	id S1755751Ab1DZTo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:44:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48363
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751074Ab1DZTo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:40:12 -0400
-Date: Tue, 26 Apr 2011 21:39:53 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: guenter.roeck@ericsson.com
-Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>
-Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation 
- fully internal
-Message-ID: <20110426213953.6cc227de@endymion.delvare>
-In-Reply-To: <1303839812.31666.98.camel@groeck-laptop>
-References: <20110426165600.1d9ac91b@endymion.delvare>
-	<20110426170407.3694e430@endymion.delvare>
-	<20110426155212.GB18176@ericsson.com>
-	<20110426182905.72bbf7b6@endymion.delvare>
-	<1303839812.31666.98.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Tue, 26 Apr 2011 15:44:27 -0400
+Date: Tue, 26 Apr 2011 12:43:54 -0700 (PDT)
+Message-Id: <20110426.124354.71125507.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hayeswang@realtek.com,
+        romieu@fr.zoreil.com
+Subject: Re: linux-next: build failure after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110426135146.c01f8395.sfr@canb.auug.org.au>
+References: <20110426135146.c01f8395.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 26 Apr 2011 13:51:46 +1000
 
-On Tue, 26 Apr 2011 10:43:32 -0700, Guenter Roeck wrote:
-> On Tue, 2011-04-26 at 12:29 -0400, Jean Delvare wrote:
-> > On Tue, 26 Apr 2011 08:52:12 -0700, Guenter Roeck wrote:
-> > > On Tue, Apr 26, 2011 at 11:04:07AM -0400, Jean Delvare wrote:
-> > > > * Removal code path is untested, as I have never been able to unload
-> > > > the thermal_sys module on any of my systems. Something is pinning it
-> > > > and I have no idea what it is.
-> > > > 
-> > > Doesn't lsmod show the culprit ?
-> > 
-> > No, it's not a module dependency. The reference counter is set to 1,
-
-Sorry I realize I have been inaccurate. thermal_sys indeed depends on
-the processor module, and that's what prevents me from unloading it.
-It's the processor module which has a reference count of 1, and no
-dependency, so I have no idea how I could unload it.
-
-> > so somewhere in the kernel something is taking a reference to the
-> > module and won't release it. I wish this was better instrumented so
-> > that it would be possible to know who is doing that.
+> Hi all,
 > 
-> The most likely culprit seems to be acpi.
+> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/net/r8169.c: In function 'rtl8168e_1_hw_phy_config':
+> drivers/net/r8169.c:2578: error: too many arguments to function 'rtl_apply_firmware'
+> drivers/net/r8169.c:2578: error: void value not ignored as it ought to be
+> drivers/net/r8169.c: In function 'rtl8168e_2_hw_phy_config':
+> drivers/net/r8169.c:2586: error: too many arguments to function 'rtl_apply_firmware'
+> drivers/net/r8169.c:2586: error: void value not ignored as it ought to be
+> 
+> Caused by commit 953a12cc2889 ("r8169: don't request firmware when
+> there's no userspace") from the net-current tree interacting with commit
+> 01dc7fec4025 ("net/r8169: support RTL8168E").
+> 
+> I applied the following fixup patch:
 
-I'm not sure. I don't see any relevant call to try_module_get under
-drivers/acpi, and I'm not aware of any other way to increase the
-reference count.
+Stephen, I just merged net-2.6 into net-next-2.6 and added your patch
+to the merge commit to make sure the build is fine.
 
--- 
-Jean Delvare
+Thanks a lot!
