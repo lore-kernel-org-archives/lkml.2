@@ -1,179 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1DZHjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:39:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36575 "EHLO mx1.suse.de"
+	id S1758918Ab1DZHjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:39:13 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49029 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758282Ab1DZHhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:37:03 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/13] net: Introduce sk_allocation() to allow addition of GFP flags depending on the individual socket
-Date: Tue, 26 Apr 2011 08:36:47 +0100
-Message-Id: <1303803414-5937-7-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	id S1758444Ab1DZHjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:39:08 -0400
+Date: Tue, 26 Apr 2011 09:38:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110426073847.GB30630@elte.hu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
+ <20110422063429.GA16643@elte.hu>
+ <20110422080604.GA22611@elte.hu>
+ <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <20110425175444.GC28239@elte.hu>
+ <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce sk_allocation(), this function allows to inject sock specific
-flags to each sock related allocation. It is only used on allocation
-paths that may be required for writing pages back to network storage.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/net/sock.h    |    5 +++++
- net/ipv4/tcp.c        |    3 ++-
- net/ipv4/tcp_output.c |   13 +++++++------
- net/ipv6/tcp_ipv6.c   |   12 +++++++++---
- 4 files changed, 23 insertions(+), 10 deletions(-)
+* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index f2046e4..e89c38f 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -585,6 +585,11 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
- }
- 
-+static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
-+{
-+	return gfp_mask;
-+}
-+
- static inline void sk_acceptq_removed(struct sock *sk)
- {
- 	sk->sk_ack_backlog--;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 054a59d..8c1a9d5 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -698,7 +698,8 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
- 	/* The TCP header must be at least 32-bit aligned.  */
- 	size = ALIGN(size, 4);
- 
--	skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
-+	skb = alloc_skb_fclone(size + sk->sk_prot->max_header,
-+			       sk_allocation(sk, gfp));
- 	if (skb) {
- 		if (sk_wmem_schedule(sk, skb->truesize)) {
- 			/*
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 17388c7..6157ced 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2324,7 +2324,7 @@ void tcp_send_fin(struct sock *sk)
- 		/* Socket is locked, keep trying until memory is available. */
- 		for (;;) {
- 			skb = alloc_skb_fclone(MAX_TCP_HEADER,
--					       sk->sk_allocation);
-+					       sk_allocation(sk, GFP_KERNEL));
- 			if (skb)
- 				break;
- 			yield();
-@@ -2350,7 +2350,7 @@ void tcp_send_active_reset(struct sock *sk, gfp_t priority)
- 	struct sk_buff *skb;
- 
- 	/* NOTE: No TCP options attached and we never retransmit this. */
--	skb = alloc_skb(MAX_TCP_HEADER, priority);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, priority));
- 	if (!skb) {
- 		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPABORTFAILED);
- 		return;
-@@ -2423,7 +2423,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
-+	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
-+					sk_allocation(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return NULL;
- 
-@@ -2719,7 +2720,7 @@ void tcp_send_ack(struct sock *sk)
- 	 * tcp_transmit_skb() will set the ownership to this
- 	 * sock.
- 	 */
--	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	buff = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
- 	if (buff == NULL) {
- 		inet_csk_schedule_ack(sk);
- 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
-@@ -2734,7 +2735,7 @@ void tcp_send_ack(struct sock *sk)
- 
- 	/* Send it off, this clears delayed acks for us. */
- 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
--	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
-+	tcp_transmit_skb(sk, buff, 0, sk_allocation(sk, GFP_ATOMIC));
- }
- 
- /* This routine sends a packet with an out of date sequence
-@@ -2754,7 +2755,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
- 	struct sk_buff *skb;
- 
- 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
--	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return -1;
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 2f6c671..4c11638 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -597,7 +597,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
- 	} else {
- 		/* reallocate new list if current one is full. */
- 		if (!tp->md5sig_info) {
--			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info), GFP_ATOMIC);
-+			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info),
-+					sk_allocation(sk, GFP_ATOMIC));
- 			if (!tp->md5sig_info) {
- 				kfree(newkey);
- 				return -ENOMEM;
-@@ -610,7 +611,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
- 		}
- 		if (tp->md5sig_info->alloced6 == tp->md5sig_info->entries6) {
- 			keys = kmalloc((sizeof (tp->md5sig_info->keys6[0]) *
--				       (tp->md5sig_info->entries6 + 1)), GFP_ATOMIC);
-+				       (tp->md5sig_info->entries6 + 1)),
-+				       sk_allocation(sk, GFP_ATOMIC));
- 
- 			if (!keys) {
- 				tcp_free_md5sig_pool();
-@@ -734,7 +736,8 @@ static int tcp_v6_parse_md5_keys (struct sock *sk, char __user *optval,
- 		struct tcp_sock *tp = tcp_sk(sk);
- 		struct tcp_md5sig_info *p;
- 
--		p = kzalloc(sizeof(struct tcp_md5sig_info), GFP_KERNEL);
-+		p = kzalloc(sizeof(struct tcp_md5sig_info),
-+				   sk_allocation(sk, GFP_KERNEL));
- 		if (!p)
- 			return -ENOMEM;
- 
-@@ -1084,6 +1087,7 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
- 	struct tcphdr *th = tcp_hdr(skb);
- 	u32 seq = 0, ack_seq = 0;
- 	struct tcp_md5sig_key *key = NULL;
-+	gfp_t gfp_mask = GFP_ATOMIC;
- 
- 	if (th->rst)
- 		return;
-@@ -1095,6 +1099,8 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
- 	if (sk)
- 		key = tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->daddr);
- #endif
-+	if (sk)
-+		gfp_mask = sk_allocation(sk, gfp_mask);
- 
- 	if (th->ack)
- 		seq = ntohl(th->ack_seq);
--- 
-1.7.3.4
+> On Mon, 25 Apr 2011, Ingo Molnar wrote:
+> 
+> > 
+> > * Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+> > 
+> > > [...] The kernel has no business telling users which perf events are 
+> > > interesting, or limiting them! [...]
+> > 
+> > The policy is very simple and common-sense: if a given piece of PMU 
+> > functionality is useful enough to be exposed via a raw interface, then
+> > it must be useful enough to be generalized as well.
+> 
+> what does that even mean?  How do you "generalize" a functionality like 
+> writing a value to an auxiliary MSR register?
 
+Here are a few examples:
+
+ - the pure act of task switching sometimes involves writing to MSRs. How is it
+   generalized? The concept of 'processes/threads' is offered to user-space and
+   thus this functionality is generalized - the raw MSRs are not just passed
+   through to user-space.
+
+ - a wide range of VMX (virtualization) functionality on Intel CPUs operates via 
+   writing special values to specific MSR registers. How is it 'generalized'? A 
+   meaningful, structured ABI is provided to user-space in form of the KVM 
+   device and associated semantics. The raw MSRs are not just passed through to
+   user-space.
+
+ - the ability of CPUs to change frequency is offered via writing special
+   values to special MSRs. How is this generalized? The cpufreq subsystem 
+   offers a frequency/cpu API and associated abstractions - the raw MSRs are 
+   not just passed through to user-space.
+
+ - in the context of perf events we generalize the concept of an 'event' and
+   we abstract out common, CPU model neutral CPU hardware concepts like 
+   'cycles', 'instructions', 'branches' and a simplified cache hierarchy - and 
+   offer those events as generic events to user-space. We do not just pass the 
+   raw MSRs through to user-space.
+
+ - [ etc. - a lot of useful CPU functionality is MSR driven, the PMU is nothing
+     special there. ]
+
+The kernel development process is in essence an abstraction engine, and if you 
+expect something else you'll probably be facing a lot of frustrating episodes 
+in the future as well where others try to abstract out meaningful 
+generalizations.
+
+Thanks,
+
+	Ingo
