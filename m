@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab1DZHjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:39:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49436 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab1DZHjP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:39:15 -0400
-Subject: Re: [BUG] perf and kmemcheck : fatal combination
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Vegard Nossum <vegardno@ifi.uio.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <1303747731.2747.182.camel@edumazet-laptop>
-References: <1303747731.2747.182.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Apr 2011 09:38:45 +0200
-Message-ID: <1303803525.20212.20.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1758548Ab1DZHjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:39:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51491 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758080Ab1DZHhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:37:01 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 05/13] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
+Date: Tue, 26 Apr 2011 08:36:46 +0100
+Message-Id: <1303803414-5937-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 18:08 +0200, Eric Dumazet wrote:
-> Hi guys
-> 
-> Just got a panic on a kmemcheck kernel, latest linux-2.6 tree.
-> 
-> I forgot I had kmemcheck enabled, and started "perf top" just because my
-> machine was damn slow... Oh well...
-> 
-> Crash in do_nmi -> nmi_enter() -> BUG_ON(in_nmi());
+The reserve is proportionally distributed over all !highmem zones in the
+system. So we need to allow an emergency allocation access to all zones.
+In order to do that we need to break out of any mempolicy boundaries we
+might have.
 
-Hmm,. I bet because kmemcheck triggers faults from nmi context because
-it messes about with the page protection bits a lot to track things.
+In my opinion that does not break mempolicies as those are user oriented
+and not system oriented. That is, system allocations are not guaranteed to
+be within mempolicy boundaries. For instance IRQs don't even have a mempolicy.
 
-Can't really think of anything except not making perf available on
-kmemcheck kernels.
+So breaking out of mempolicy boundaries for 'rare' emergency allocations,
+which are always system allocations (as opposed to user) is ok.
 
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- init/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ mm/page_alloc.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 32745bf..94735b4 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1125,6 +1125,7 @@ config PERF_EVENTS
- 	bool "Kernel performance events and counters"
- 	default y if (PROFILING || PERF_COUNTERS)
- 	depends on HAVE_PERF_EVENTS
-+	depends on !KMEMCHECK
- 	select ANON_INODES
- 	select IRQ_WORK
- 	help
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 457c701..c0c42ce 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2085,6 +2085,13 @@ restart:
+ rebalance:
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
++		/*
++		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
++		 * the allocation is high priority and these type of
++		 * allocations are system rather than user orientated
++		 */
++		zonelist = node_zonelist(numa_node_id(), gfp_mask);
++
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
+-- 
+1.7.3.4
 
