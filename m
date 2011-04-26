@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab1DZGN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 02:13:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44834 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335Ab1DZGNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 02:13:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
-   d="scan'208";a="914417217"
-Date: Tue, 26 Apr 2011 14:13:53 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: readahead and oom
-Message-ID: <20110426061353.GA19717@localhost>
-References: <BANLkTin8mE=DLWma=U+CdJaQW03X2M2W1w@mail.gmail.com>
- <20110426055521.GA18473@localhost>
- <BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
+	id S1756186Ab1DZGRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 02:17:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:52040 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab1DZGRh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 02:17:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6327"; a="87625972"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
+Cc: "'Felipe Balbi'" <balbi@ti.com>, <gregkh@suse.de>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <20110414114605.GA17871@linutronix.de> <Pine.LNX.4.44L0.1104141141480.2487-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1104141141480.2487-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH] usb: merge the two dummy_hcds into one
+Date: Tue, 26 Apr 2011 09:18:53 +0300
+Message-ID: <003501cc03d9$d3989300$7ac9b900$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acv6uvWCiprKJT+WTvyLWgUio0mBdgJHhTwg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 02:05:12PM +0800, Dave Young wrote:
-> On Tue, Apr 26, 2011 at 1:55 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Tue, Apr 26, 2011 at 01:49:25PM +0800, Dave Young wrote:
-> >> Hi,
-> >>
-> >> When memory pressure is high, readahead could cause oom killing.
-> >> IMHO we should stop readaheading under such circumstances。If it's true
-> >> how to fix it?
-> >
-> > Good question. Before OOM there will be readahead thrashings, which
-> > can be addressed by this patch:
-> >
-> > http://lkml.org/lkml/2010/2/2/229
+> On Thu, 14 Apr 2011, Sebastian Andrzej Siewior wrote:
 > 
-> Hi, I'm not clear about the patch, could be regard as below cases?
-> 1) readahead alloc fail due to low memory such as other large allocation
-> 2) readahead thrashing caused by itself
-
-When memory pressure goes up (not as much as allocation failures and OOM),
-the readahead pages may be reclaimed before they are read() accessed
-by the user space. At the time read() asks for the page, it will have
-to be read from disk _again_. This is called readahead thrashing.
-
-What the patch does is to automatically detect readahead thrashing and
-shrink the readahead size adaptively, which will the reduce memory
-consumption by readahead buffers.
-
-Thanks,
-Fengguang
-
-> >
-> > However there seems no much interest on that feature.. I can separate
-> > that out and resubmit it standalone if necessary.
-> >
-> > Thanks,
-> > Fengguang
-> >
+> > This patch merges the two HCDs so there is one for both.
 > 
+> It is too premature for this.
 > 
+> In fact, the support for USB-3 HCDs is currently in flux.  Sarah Sharp
+> has submitted a whole bunch of patches to allow for the creation of
+> primary and secondary HCDs, representing the USB-2 and USB-3 root hubs
+> of an xHCI controller.  dummy-hcd should use the same mechanism.
 > 
-> -- 
-> Regards
-> dave
+> This will means creating only one host-side platform device, and then
+> creating two usb_hcd structures below it.  Tanya's design should be
+> based on Sarah's work.
+> 
+
+Hi Alan
+
+Thank you for your inputs. I'm not familiar with Sarah's work you mentioned.
+I'll have to look into that. Could you please point me to where I can find
+this code? Has it been merged into linux-next yet or just posted on the
+mailing list?
+
+
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
