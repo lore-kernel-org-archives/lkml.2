@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab1DZIHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 04:07:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50009 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab1DZIHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 04:07:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WoJOebOms/indysaNNdt8pj6XI9Pa2H4DIWE99y+WpvUOg9/keidcz1NUkr0ZJrKpT
-         89aX7p1V8Phi6HQ3ILQ/e6YAxiV4njqfF9/HHymCsTOD+RwCh4uwARxkoTvFtiJ19NLz
-         HOf5PyajGmzO2ceGYRd8pJbiq9f24VpLFmWww=
+	id S1751048Ab1DZIMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 04:12:54 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59278 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750756Ab1DZIMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 04:12:52 -0400
+Date: Tue, 26 Apr 2011 10:12:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Chris Samuel <chris@csamuel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use
+ ax/bx as a pair
+Message-ID: <20110426081237.GD806@elte.hu>
+References: <1303566747.12067.10.camel@localhost.localdomain>
+ <tip-39b68976ac653cfdc7f872a293e8b7928de2dcc6@git.kernel.org>
+ <201104261450.15786.chris@csamuel.org>
 MIME-Version: 1.0
-In-Reply-To: <20110426053150.GA11949@darkstar>
-References: <20110426053150.GA11949@darkstar>
-Date: Tue, 26 Apr 2011 17:07:34 +0900
-Message-ID: <BANLkTimzYwa87NJ0F4AEN=9EZs=3-5SBaA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] use oom_killer_disabled in page fault oom path
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104261450.15786.chris@csamuel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 2:31 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> Currently oom_killer_disabled is only used in __alloc_pages_slowpath,
-> For page fault oom case it is not considered. One use case is
-> virtio balloon driver, when memory pressure is high, virtio ballooning
-> will cause oom killing due to such as page fault oom.
 
-Other mm guys already accepted but sorry I can't understand your point
-since I am not familiar with virtio.
+* Chris Samuel <chris@csamuel.org> wrote:
 
-Now oom_killer_disabled is used by only hibernation and hibernation
-freezes processes so page fault shouldn't happen.
+> On Tue, 26 Apr 2011 09:25:02 AM tip-bot for H. Peter Anvin wrote:
+> 
+> > x86, setup: When probing memory with e801, use ax/bx as a pair
+> 
+> ACK. Thanks!
 
-Now are you using oom_killer_disabled in virtio?
-Could you elaborate use case ?
+Nice!
 
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+Just asking, does the box now boot to user-space, or are there other 
+regressions left?
+
+Thanks,
+
+	Ingo
