@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab1DZQNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:13:22 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59552 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab1DZQNR (ORCPT
+	id S1755021Ab1DZQPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:15:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37680 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751993Ab1DZQPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:13:17 -0400
-Date: Tue, 26 Apr 2011 13:13:30 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Hui Zhu <teawater@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
-Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
-Message-ID: <20110426161330.GC2242@joana>
-Mail-Followup-To: Ed Tomlinson <edt@aei.ca>, Hui Zhu <teawater@gmail.com>,
-	Dave Young <hidave.darkstar@gmail.com>,
-	linux-kernel@vger.kernel.org,
-	Bluettooth Linux <linux-bluetooth@vger.kernel.org>
-References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
- <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
- <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
- <201104240952.14848.edt@aei.ca>
+	Tue, 26 Apr 2011 12:15:18 -0400
+Date: Tue, 26 Apr 2011 17:15:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bill Gatliff <bgat@billgatliff.com>
+Cc: linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Expose regulator:set_consumer_device_supply()?
+Message-ID: <20110426161516.GC11848@opensource.wolfsonmicro.com>
+References: <BANLkTi=dCHXEtv+=+sRaDp_Pt3zQy5o7ug@mail.gmail.com>
+ <20110426083350.GA20595@sirena.org.uk>
+ <BANLkTimmpx5ZThXj705Yn_wRQ6bF7VzwPw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201104240952.14848.edt@aei.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimmpx5ZThXj705Yn_wRQ6bF7VzwPw@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ed Tomlinson <edt@aei.ca> [2011-04-24 09:52:14 -0400]:
+On Tue, Apr 26, 2011 at 10:33:29AM -0500, Bill Gatliff wrote:
+> On Tue, Apr 26, 2011 at 3:33 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
 
-> On Tuesday 19 April 2011 11:34:30 Hui Zhu wrote:
-> > Do you part is OK?
-> > 
-> > I think it will be very easy to reproduce.
-> > 
-> > Thanks,
-> > Hui
-> > 
-> > On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > > On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
-> > >> Cannot connect to any outside devices through bluetooth.
-> > >>
-> > >> And I think this is not a bug of low level driver.  Because both my
-> > >> laptop and a usb bluetooth card cannot work.
-> > >
-> > > Hi, please explain the "cannot work" in detail,
-> > > Firstly check dmesg and hciconfig to see if there's anything wrong.
-> 
-> I am also seeing problems with bluetooth in .39-rc4+
-> 
-> [54511.033258] usb 2-4.4: USB disconnect, device number 5
-> [54513.920060] usb 2-4.3: new full speed USB device number 6 using ehci_hcd
-> [54514.063057] usb 2-4.3: New USB device found, idVendor=0a12, idProduct=0001
-> [54514.070281] usb 2-4.3: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-> grover ~ # hciconfig -a
-> hci0:   Type: BR/EDR  Bus: USB
->         BD Address: 00:0A:3A:55:07:5A  ACL MTU: 192:8  SCO MTU: 64:8
->         DOWN 
->         RX bytes:718 acl:0 sco:0 events:25 errors:0
->         TX bytes:108 acl:0 sco:0 commands:24 errors:0
->         Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00
->         Packet type: DM1 DM3 DM5 DH1 DH3 DH5 HV1 HV2 HV3 
->         Link policy: CONFIG_BT_HCIBTUSB=m
->         Link mode: SLAVE ACCEPT 
-> 
-> grover ~ # hciconfig hci0 up
-> Can't init device hci0: Invalid argument (22)
+> > You can specify the device by either dev_name() or a dev pointer.  You
+> > can use dev_name() at any time without the device having been
+> > instantiated, it would be unusal to use a struct device.
 
-does dmesg show something? I'm using a -rc kernel and bluetooth is working to
-me.
+> When a consumer e.g. i2c chip driver is trying to get a handle for its
+> own regulator, the only function I see is:
+> 
+> struct regulator* regulator_get(struct device *dev, const char *id)
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+There's also regulator_get_exclusive() but it's almost exactly the same
+thing.
+
+> In order for there to be a regulator with a matching device:id
+> combination, someone must have previously provided a struct
+> regulator_consumer_supply with the identical device pointer to
+> regulator_register().  That means that I have to call
+> regulator_register() AFTER I register the i2c chip driver, so that I
+> have a struct device pointer to place in the regulator_consumer_supply
+> list.  Right?
+
+No.  As I said in the text you've quoted above you can also specify the
+device mapping using the dev_name() of the device.  As you will have
+seen when looking through the regulator_get() implementation the
+matching is actually done on the dev_name(), if the mapping is set up
+with a struct device we always do matches based on the dev_name()
+string, not by comparing pointers.
+  
+> > This would facilitate abuse of the API, we already have enough problems
+> > with people trying to pass regulators as platform data.
+
+> But I think you'll agree that regulators are pretty important platform data, no?
+
+No, the set of power supplies the device has is not platform data, it's
+a physical property of the device.
+
+> What specifically is the breakage that comes from allowing consumers
+> to add themselves to regulator consumer lists at a time after
+> regulator_register() is complete?  Why is passing a regulator pointer
+> as platform data such a problem?
+
+It means you get reams of code in drivers conditionally using the
+regulator API, all of which adds needless complexity all over the tree
+as people invariably make everything conditional on the regulator not
+being there when they shouldn't.  This then means you also end up with
+no meaningful error handling, all errors just get silently eaten.
