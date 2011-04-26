@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab1DZPBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 11:01:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55422 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756Ab1DZPBd convert rfc822-to-8bit (ORCPT
+	id S1756861Ab1DZPCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 11:02:16 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:47874 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756207Ab1DZPCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 11:01:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=eAXk7oLUIUKwUtRCb3yDOzNcFJVoCMOCKyYwKbSpo+l5OvMMWUBoXmIaqk3sYekltm
-         mxBYOP4gqYpkskpK9LN1dJevGhy+Km6ajQ6wnvkYD20r0P4deMJYQdkkkynPUv0DErMa
-         leYFOEcsRhiVheBSpm1b47CChPF+T1zNM6vqI=
-MIME-Version: 1.0
-In-Reply-To: <201102021700.20683.arnd@arndb.de>
-References: <201102021700.20683.arnd@arndb.de>
-From: Rabin Vincent <rabin@rab.in>
-Date: Tue, 26 Apr 2011 20:30:51 +0530
-X-Google-Sender-Auth: BUSRMwtlsHnayI91Ikvwuk-6ock
-Message-ID: <BANLkTi=-DFfdiBKZzRBxF-yMJFtWnzuk1g@mail.gmail.com>
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
-        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org,
-        Peter Maydell <peter.maydell@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Apr 2011 11:02:15 -0400
+Date: Tue, 26 Apr 2011 17:02:08 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Len Brown <len.brown@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rene Herman <rene.herman@gmail.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v2 1/3] thermal: Hide CONFIG_THERMAL_HWMON
+Message-ID: <20110426170208.504b04e9@endymion.delvare>
+In-Reply-To: <20110426165600.1d9ac91b@endymion.delvare>
+References: <20110426165600.1d9ac91b@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 2, 2011 at 21:30, Arnd Bergmann <arnd@arndb.de> wrote:
-> As noticed by Peter Maydell, the EHCI device driver in Linux gets
-> miscompiled by some versions of arm-gcc (still need to find out which)
-> due to a combination of problems:
->
-> 1. In include/linux/usb/ehci_def.h, struct ehci_caps is defined
-> with __attribute__((packed)), for no good reason. This is clearly
-> a bug and needs to get fixed, but other drivers have the same bug
+It's about time to revert 16d752397301b95abaa95cbaf9e785d221872311.
+Anybody running a kernel >= 2.6.40 would also be running a recent
+enough version of lm-sensors.
 
-Was a patch submitted for this?  I couldn't find it in the archives.
-U-Boot seems to be fixing this by adding an "aligned(4)" instead
-of removing the packed:
+Actually having CONFIG_THERMAL_HWMON is pretty convenient so instead
+of dopping it, we keep it but hide it.
 
-http://www.mail-archive.com/u-boot@lists.denx.de/msg51418.html
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Rene Herman <rene.herman@gmail.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ Documentation/feature-removal-schedule.txt |    9 ---------
+ drivers/thermal/Kconfig                    |    8 ++------
+ 2 files changed, 2 insertions(+), 15 deletions(-)
 
-> and it used to work. The attribute forces byte access on all members
-> accessed through pointer dereference, which is not allowed on
-> MMIO accesses in general. The specific code triggering the problem
-> in Peter's case is in ehci-omap.c:
->        omap->ehci->regs = hcd->regs
->                + HC_LENGTH(readl(&omap->ehci->caps->hc_capbase));
+--- linux-2.6.39-rc4.orig/Documentation/feature-removal-schedule.txt	2011-04-25 16:16:10.000000000 +0200
++++ linux-2.6.39-rc4/Documentation/feature-removal-schedule.txt	2011-04-26 09:29:09.000000000 +0200
+@@ -295,15 +295,6 @@ Who:	Ravikiran Thirumalai <kiran@scalex8
+ 
+ ---------------------------
+ 
+-What:	CONFIG_THERMAL_HWMON
+-When:	January 2009
+-Why:	This option was introduced just to allow older lm-sensors userspace
+-	to keep working over the upgrade to 2.6.26. At the scheduled time of
+-	removal fixed lm-sensors (2.x or 3.x) should be readily available.
+-Who:	Rene Herman <rene.herman@gmail.com>
+-
+----------------------------
+-
+ What:	Code that is now under CONFIG_WIRELESS_EXT_SYSFS
+ 	(in net/core/net-sysfs.c)
+ When:	After the only user (hal) has seen a release with the patches
+--- linux-2.6.39-rc4.orig/drivers/thermal/Kconfig	2011-04-25 16:16:10.000000000 +0200
++++ linux-2.6.39-rc4/drivers/thermal/Kconfig	2011-04-26 09:32:30.000000000 +0200
+@@ -14,11 +14,7 @@ menuconfig THERMAL
+ 	  If you want this support, you should say Y or M here.
+ 
+ config THERMAL_HWMON
+-	bool "Hardware monitoring support"
++	bool
+ 	depends on THERMAL
+ 	depends on HWMON=y || HWMON=THERMAL
+-	help
+-	  The generic thermal sysfs driver's hardware monitoring support
+-	  requires a 2.10.7/3.0.2 or later lm-sensors userspace.
+-
+-	  Say Y if your user-space is new enough.
++	default y
 
-In my case it's this writel() in ehci-hub.c that gets chopped into
-strbs:
-
-	/* force reset to complete */
-	ehci_writel(ehci, temp & ~(PORT_RWC_BITS | PORT_RESET),
-				status_reg);
+-- 
+Jean Delvare
