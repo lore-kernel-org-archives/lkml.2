@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab1DZQbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:31:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4455 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324Ab1DZQbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:31:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,269,1301900400"; 
-   d="scan'208";a="684204584"
-Date: Tue, 26 Apr 2011 18:31:08 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, dwalker@fifo99.com,
-        linux-arm-msm-owner@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andres Salomon <dilinger@queued.net>
-Subject: Re: [PM8921 MFD V5 0/6] pm8921 core and subdevices
-Message-ID: <20110426163107.GH3175@sortiz-mobl>
-References: <1302039657-19395-1-git-send-email-adharmap@codeaurora.org>
- <20110426150746.GF3175@sortiz-mobl>
- <8yatydl6krj.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8yatydl6krj.fsf@huya.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756743Ab1DZQeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:34:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28891 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab1DZQet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 12:34:49 -0400
+Date: Tue, 26 Apr 2011 09:34:34 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [TRIVIAL PATCH] treewide: Cleanup continuations and remove
+ logging message whitespace
+Message-Id: <20110426093434.e999ed24.randy.dunlap@oracle.com>
+In-Reply-To: <20110426024807.GA2751@gmail.com>
+References: <65136ab68431de0cc0c554663cee33fc9d4a9850.1303615717.git.joe@perches.com>
+	<20110425082230.6d656ed0.randy.dunlap@oracle.com>
+	<20110426024807.GA2751@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DB6F425.005E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, 26 Apr 2011 10:48:10 +0800 Harry Wei wrote:
 
-On Tue, Apr 26, 2011 at 09:27:12AM -0700, David Brown wrote:
-> On Tue, Apr 26 2011, Samuel Ortiz wrote:
+> On Mon, Apr 25, 2011 at 08:22:30AM -0700, Randy Dunlap wrote:
+> > On Sat, 23 Apr 2011 20:38:19 -0700 Joe Perches wrote:
+> > 
+> > > Using C line continuation inside format strings is error prone.
+> > > Clean up the unintended whitespace introduced by misuse of \.
+> > > Neaten correctly used line continations as well for consistency.
+> > > 
+> > > drivers/scsi/arcmsr/arcmsr_hba.c has these errors as well,
+> > > but arcmsr needs a lot more work and the driver should likely be
+> > > moved to staging instead.
+> > > 
+> > > Signed-off-by: Joe Perches <joe@perches.com>
+> >
+> Acked-by: Harry Wei <harryxiyou@gmail.com>
+> > 
+> > 
+> > Joe,
+> > Is there a decent fix for this warning in linux-next:
+> > 
+> > drivers/tty/n_gsm.c:535: warning: zero-length gnu_printf format string
+> Hi Randy & Joe,
+>    I have seen the drivers/tty/n_gsm.c. 
+> From line 529 to line 540 in drivers/tty/n_gsm.c like following.
 > 
-> > I have applied patch #1 and #2 to my for-next branch. For 3 and4, I'll wait
-> > for Grant's ACK. As for #5, I'd like to get an ACK from the current MSM
-> > maintainers.
+> 529 static void hex_packet(const unsigned char *p, int len)
+> 530 {
+> 531	int i;
+> 532	for (i = 0; i < len; i++) {
+> 533		if (i && (i % 16) == 0) {
+> 534			pr_cont("\n");
+> 535			pr_debug("");                                                                      
+> 536		}
+> 537		pr_cont("%02X ", *p++);
+> 538	}
+> 539	pr_cont("\n");
+> 540 }
 > 
-> I've replied to that patch with an Ack.
-Thanks a lot. I applied the patch now.
+> Should we need the line 535? If true, i wanna the function of 
+> 'pr_debug("");'
 
-Cheers,
-Samuel.
+Hi Harry,
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Joe sent a different patch for this warning message.
+
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
