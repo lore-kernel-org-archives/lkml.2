@@ -1,133 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab1DZQNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:13:10 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:45471
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754122Ab1DZQIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:08:11 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
-Date: Tue, 26 Apr 2011 09:20:35 -0700
-Message-Id: <1303834842-5022-18-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1303834842-5022-1-git-send-email-kys@microsoft.com>
-References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-1-git-send-email-kys@microsoft.com>
+	id S1757434Ab1DZQNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:13:22 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59552 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189Ab1DZQNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 12:13:17 -0400
+Date: Tue, 26 Apr 2011 13:13:30 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Hui Zhu <teawater@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>
+Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
+Message-ID: <20110426161330.GC2242@joana>
+Mail-Followup-To: Ed Tomlinson <edt@aei.ca>, Hui Zhu <teawater@gmail.com>,
+	Dave Young <hidave.darkstar@gmail.com>,
+	linux-kernel@vger.kernel.org,
+	Bluettooth Linux <linux-bluetooth@vger.kernel.org>
+References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
+ <BANLkTi=-RnUyuC2VGuRix_J4KOx+9BhroQ@mail.gmail.com>
+ <BANLkTik67uGB-1q17JcTPnr_WjuNd_37gA@mail.gmail.com>
+ <201104240952.14848.edt@aei.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104240952.14848.edt@aei.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of struct hv_bus. We will no longer be embedding
-struct bus_type.
+* Ed Tomlinson <edt@aei.ca> [2011-04-24 09:52:14 -0400]:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/vmbus_drv.c |   33 ++++++++++++++-------------------
- 1 files changed, 14 insertions(+), 19 deletions(-)
+> On Tuesday 19 April 2011 11:34:30 Hui Zhu wrote:
+> > Do you part is OK?
+> > 
+> > I think it will be very easy to reproduce.
+> > 
+> > Thanks,
+> > Hui
+> > 
+> > On Tue, Apr 19, 2011 at 15:46, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > > On Tue, Apr 19, 2011 at 10:53 AM, Hui Zhu <teawater@gmail.com> wrote:
+> > >> Cannot connect to any outside devices through bluetooth.
+> > >>
+> > >> And I think this is not a bug of low level driver.  Because both my
+> > >> laptop and a usb bluetooth card cannot work.
+> > >
+> > > Hi, please explain the "cannot work" in detail,
+> > > Firstly check dmesg and hciconfig to see if there's anything wrong.
+> 
+> I am also seeing problems with bluetooth in .39-rc4+
+> 
+> [54511.033258] usb 2-4.4: USB disconnect, device number 5
+> [54513.920060] usb 2-4.3: new full speed USB device number 6 using ehci_hcd
+> [54514.063057] usb 2-4.3: New USB device found, idVendor=0a12, idProduct=0001
+> [54514.070281] usb 2-4.3: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> grover ~ # hciconfig -a
+> hci0:   Type: BR/EDR  Bus: USB
+>         BD Address: 00:0A:3A:55:07:5A  ACL MTU: 192:8  SCO MTU: 64:8
+>         DOWN 
+>         RX bytes:718 acl:0 sco:0 events:25 errors:0
+>         TX bytes:108 acl:0 sco:0 commands:24 errors:0
+>         Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00
+>         Packet type: DM1 DM3 DM5 DH1 DH3 DH5 HV1 HV2 HV3 
+>         Link policy: CONFIG_BT_HCIBTUSB=m
+>         Link mode: SLAVE ACCEPT 
+> 
+> grover ~ # hciconfig hci0 up
+> Can't init device hci0: Invalid argument (22)
 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index a3a7741..515311c 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -45,11 +45,6 @@ static struct pci_dev *hv_pci_dev;
- static struct tasklet_struct msg_dpc;
- static struct tasklet_struct event_dpc;
- 
--/* Main vmbus driver data structure */
--struct hv_bus {
--	struct bus_type bus;
--};
--
- unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
- EXPORT_SYMBOL(vmbus_loglevel);
- 	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
-@@ -405,14 +400,14 @@ static void vmbus_device_release(struct device *device)
- }
- 
- /* The one and only one */
--static struct hv_bus  hv_bus = {
--	.bus.name =		"vmbus",
--	.bus.match =		vmbus_match,
--	.bus.shutdown =		vmbus_shutdown,
--	.bus.remove =		vmbus_remove,
--	.bus.probe =		vmbus_probe,
--	.bus.uevent =		vmbus_uevent,
--	.bus.dev_attrs =	vmbus_device_attrs,
-+static struct bus_type  hv_bus = {
-+	.name =		"vmbus",
-+	.match =		vmbus_match,
-+	.shutdown =		vmbus_shutdown,
-+	.remove =		vmbus_remove,
-+	.probe =		vmbus_probe,
-+	.uevent =		vmbus_uevent,
-+	.dev_attrs =	vmbus_device_attrs,
- };
- 
- static const char *driver_name = "hyperv";
-@@ -550,14 +545,14 @@ static int vmbus_bus_init(struct pci_dev *pdev)
- 		goto cleanup;
- 	}
- 
--	hv_bus.bus.name = driver_name;
-+	hv_bus.name = driver_name;
- 
- 	/* Initialize the bus context */
- 	tasklet_init(&msg_dpc, vmbus_on_msg_dpc, 0);
- 	tasklet_init(&event_dpc, vmbus_on_event, 0);
- 
- 	/* Now, register the bus  with LDM */
--	ret = bus_register(&hv_bus.bus);
-+	ret = bus_register(&hv_bus);
- 	if (ret) {
- 		ret = -1;
- 		goto cleanup;
-@@ -572,7 +567,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
- 		pr_err("Unable to request IRQ %d\n",
- 			   pdev->irq);
- 
--		bus_unregister(&hv_bus.bus);
-+		bus_unregister(&hv_bus);
- 
- 		ret = -1;
- 		goto cleanup;
-@@ -588,7 +583,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
- 	ret = vmbus_connect();
- 	if (ret) {
- 		free_irq(pdev->irq, pdev);
--		bus_unregister(&hv_bus.bus);
-+		bus_unregister(&hv_bus);
- 		goto cleanup;
- 	}
- 
-@@ -618,7 +613,7 @@ int vmbus_child_driver_register(struct device_driver *drv)
- 	pr_info("child driver registering - name %s\n", drv->name);
- 
- 	/* The child driver on this vmbus */
--	drv->bus = &hv_bus.bus;
-+	drv->bus = &hv_bus;
- 
- 	ret = driver_register(drv);
- 
-@@ -688,7 +683,7 @@ int vmbus_child_device_register(struct hv_device *child_device_obj)
- 		     atomic_inc_return(&device_num));
- 
- 	/* The new device belongs to this bus */
--	child_device_obj->device.bus = &hv_bus.bus; /* device->dev.bus; */
-+	child_device_obj->device.bus = &hv_bus; /* device->dev.bus; */
- 	child_device_obj->device.parent = &hv_pci_dev->dev;
- 	child_device_obj->device.release = vmbus_device_release;
- 
+does dmesg show something? I'm using a -rc kernel and bluetooth is working to
+me.
+
 -- 
-1.7.4.1
-
+Gustavo F. Padovan
+http://profusion.mobi
