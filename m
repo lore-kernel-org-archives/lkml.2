@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab1DZHuY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:50:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33907 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab1DZHuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:50:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=dJzDUXeC3qdNcyuBqof8FKTP7IZwKBBEZEZseTLywa+ZsPUldDsG+TtbBjbJT55xJS
-         p8Q/MsrXP+TEkO3igS3LNpwcnSKj32ZBVCp/FPfNasa8OkO4wG0ljyFuJvdu7eTGHjWL
-         4Co405Bm7rPRzW/NxmIjqsVHGy6sk1pde5JbQ=
-Message-ID: <4DB67935.8050104@gmail.com>
-Date: Tue, 26 Apr 2011 15:50:13 +0800
-From: Liu Yuan <namei.unix@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio, ring: Use ALIGN macros in virtio_ring.h
-References: <1303791070-15196-1-git-send-email-namei.unix@gmail.com> <20110426074230.GA10364@redhat.com>
-In-Reply-To: <20110426074230.GA10364@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758101Ab1DZHzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:55:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52604 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756105Ab1DZHzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:55:37 -0400
+Date: Tue, 26 Apr 2011 17:55:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiejing Zhang <kzjeef@gmail.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Felipe Balbi <balbi@ti.com>
+Subject: linux-next: manual merge of the tty tree with the bluetooth tree
+Message-Id: <20110426175530.d27179e2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2011 03:42 PM, Michael S. Tsirkin wrote:
-> On Tue, Apr 26, 2011 at 12:11:10PM +0800, Liu Yuan wrote:
->> From: Liu Yuan<tailai.ly@taobao.com>
->>
->>
->> Signed-off-by: Liu Yuan<tailai.ly@taobao.com>
-> Issue is, these functions are exported to userspace,
-> which does not have these macros.
->
-Ah, thanks, I should have noticed the '#ifdef __KERNEL__' just below the 
-lines I touched.
+Hi Greg,
 
-Thanks,
-Yuan
+Today's linux-next merge of the tty tree got a conflict in
+drivers/bluetooth/hci_ldisc.c between commit 78b4a56c28c0 ("Bluetooth:
+hci_uart: check the return value of recv()") from the bluetooth tree and
+commit b1c43f82c5aa ("tty: make receive_buf() return the amout of bytes
+received") from the tty tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/bluetooth/hci_ldisc.c
+index 320f718,0d4da5e..0000000
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@@ -357,21 -357,21 +357,22 @@@ static void hci_uart_tty_wakeup(struct 
+   *     
+   * Return Value:    None
+   */
+- static void hci_uart_tty_receive(struct tty_struct *tty, const u8 *data, char *flags, int count)
++ static unsigned int hci_uart_tty_receive(struct tty_struct *tty,
++ 		const u8 *data, char *flags, int count)
+  {
+- 	int ret;
+  	struct hci_uart *hu = (void *)tty->disc_data;
++ 	int received;
+  
+  	if (!hu || tty != hu->tty)
+- 		return;
++ 		return -ENODEV;
+  
+  	if (!test_bit(HCI_UART_PROTO_SET, &hu->flags))
+- 		return;
++ 		return -EINVAL;
+  
+  	spin_lock(&hu->rx_lock);
+- 	ret = hu->proto->recv(hu, (void *) data, count);
+- 	if (ret > 0)
++ 	received = hu->proto->recv(hu, (void *) data, count);
+ -	hu->hdev->stat.byte_rx += count;
+++	if (received > 0)
+ +		hu->hdev->stat.byte_rx += count;
+  	spin_unlock(&hu->rx_lock);
+  
+  	tty_unthrottle(tty);
