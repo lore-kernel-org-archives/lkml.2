@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab1DZAp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:45:28 -0400
-Received: from kroah.org ([198.145.64.141]:39972 "EHLO coco.kroah.org"
+	id S932401Ab1DZAqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:46:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3144 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932289Ab1DZApX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:45:23 -0400
-Date: Mon, 25 Apr 2011 17:40:05 -0700
-From: Greg KH <greg@kroah.com>
-To: "Mark A. Allyn" <mark.a.allyn@intel.com>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        jayant.mangalampalli@intel.com, venkat.r.gokulrangan@intel.com
-Subject: Re: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-Message-ID: <20110426004005.GA29534@kroah.com>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932102Ab1DZAqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 20:46:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
+   d="scan'208";a="425368277"
+Subject: Re: [PATCH 1/2]block: optimize non-queueable flush request drive
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+In-Reply-To: <20110425091311.GC17734@mtj.dyndns.org>
+References: <1303202686.3981.216.camel@sli10-conroe>
+	 <20110422233204.GB1576@mtj.dyndns.org>
+	 <20110425013328.GA17315@sli10-conroe.sh.intel.com>
+	 <20110425085827.GB17734@mtj.dyndns.org>
+	 <20110425091311.GC17734@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Apr 2011 08:46:30 +0800
+Message-ID: <1303778790.3981.283.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 02:29:35PM -0700, Mark A. Allyn wrote:
-> Sorry, I had an incorrect return address config in alpine. . .
+On Mon, 2011-04-25 at 17:13 +0800, Tejun Heo wrote:
+> Hello,
 > 
-> What else needs to be done to the sep driver in order for it to be
-> moved to the kernel from staging?
+> On Mon, Apr 25, 2011 at 10:58:27AM +0200, Tejun Heo wrote:
+> > Eh, wasn't your optimization only applicable if flush is not
+> > queueable?  IIUC, what your optimization achieves is merging
+> > back-to-back flushes and you're achieving that in a _very_ non-obvious
+> > round-about way.  Do it in straight-forward way even if that costs
+> > more lines of code.
+> 
+> To add a bit more, here, flush exclusivity gives you an extra ordering
+> contraint that while flush is in progress no other request can proceed
+> and thus if there's another flush queued, it can be completed
+> together, right?  If so, teach block layer the whole thing - let block
+> layer hold further requests while flush is in progress and complete
+> back-to-back flushes together on completion and then resume normal
+> queue processing.
+the blk-flush is part of block layer. If what you mean is the libata
+part, block layer doesn't know if flush is queueable without knowledge
+from driver.
 
-Some things at first glance:
-	- you have a lot of ioctls, do you really need them all?
-	- your ioctls use structures with very "generic" names, please
-	  prefix them with "sep_" as you are joining the global
-	  namespace here.
-	- sep_driver_api.h seems to have a lot of information in it that
-	  doesn't need to be there (i.e. move it to a private .h file.)
-	- is there documentation for how to use this device through the
-	  ioctls anywhere?
-	- are you sure your ioctl magic number isn't already reserved by
-	  some other driver?
-	- the structures you use for the ioctls, shouldn't they use the
-	  correct "__" prefixes on their type?  How about 64/32 bit
-	  thunking layer, isn't that needed?
-	- you have a number of basic checkpatch formatting issues to fix
-	  up, please do so.
-	- do you really even need all of the .h files you have?  Can't
-	  they just go into the .c file?
-	- sep_wait_sram_write() has no way to abort, if the hardware
-	  hangs, you just locked up your kernel :(
+> Also, another interesting thing to investigate is why the two flushes
+> didn't get merged in the first place.  The two flushes apparently
+> didn't have any ordering requirement between them.  Why didn't they
+> get merged in the first place?  If the first flush were slightly
+> delayed, the second would have been issued together from the beginning
+> and we wouldn't have to think about merging them afterwards.  Maybe
+> what we really need is better algorithm than C1/2/3 described in the
+> comment?
+the sysbench fileio does a 16 threads write-fsync, so it's quite normal
+a flush is running and another flush is added into pending list.
 
-that's good for a first round of review, right?
+Thanks,
+Shaohua
 
-thanks,
-
-greg k-h
