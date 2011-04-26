@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab1DZTIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:08:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40289 "EHLO
+	id S1754397Ab1DZTJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:09:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39578 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab1DZTIE (ORCPT
+	with ESMTP id S1753186Ab1DZTJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:08:04 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=xiwGX1Xr2kgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=kw_iyntxYLnKvsw6xCoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 26 Apr 2011 15:09:17 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=Ar9dcRiOBTsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Y73rfEG-K5SVbGcFCHoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 07/11] kbuild/recordmcount: Add RECORDMCOUNT_WARN
- to warn about mcount callers
+Subject: Re: [RFC][PATCH 01/11] ftrace/trivial: Clean up recordmcount.c to
+ use Linux style comparisons
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: John Reiser <jreiser@bitwagon.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org
-In-Reply-To: <4DB09629.7080008@suse.cz>
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <BANLkTinENP=hpjZBMFp0Y7EKGH8u-gewPA@mail.gmail.com>
 References: <20110421022825.535486725@goodmis.org>
-	 <20110421023738.714956282@goodmis.org>  <4DB09629.7080008@suse.cz>
+	 <20110421023737.290712238@goodmis.org> <4DB19A1E.8070806@bitwagon.com>
+	 <BANLkTim8mBo3fz9f=quABj-=ycpA+G7q1g@mail.gmail.com>
+	 <1303488341.6225.2.camel@gandalf.stny.rr.com>
+	 <BANLkTinENP=hpjZBMFp0Y7EKGH8u-gewPA@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Apr 2011 15:08:02 -0400
-Message-ID: <1303844882.18763.29.camel@gandalf.stny.rr.com>
+Date: Tue, 26 Apr 2011 15:09:15 -0400
+Message-ID: <1303844955.18763.30.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -31,21 +34,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 22:40 +0200, Michal Marek wrote:
-> On 21.4.2011 04:28, Steven Rostedt wrote:
-> > +ifeq ("$(origin RECORDMCOUNT_WARN)", "command line")
-> > +  RECORDMCOUNT_FLAGS = -w
-> > +endif
-> 
-> RECORDMCOUNT_WARN is IMO unlikely to be used with some other meaning in
-> the environment, so I think you can drop the origin check. Nevertheless
+On Tue, 2011-04-26 at 15:52 -0300, Thiago Farina wrote:
+> Hi,
 
-You haven't seen my environment variables ;)
+> I've sent a patch to linux-kernel adding streq macro as suggested and
+> copied you Steven.
 
-> 
-> Acked-by: Michal Marek <mmarek@suse.cz>
-
- Thanks!
+Yep, saw it. If it is accepted, then I'll start conversions to it.
 
 -- Steve
 
