@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758790Ab1DZVgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:36:38 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54187 "EHLO ogre.sisk.pl"
+	id S1758734Ab1DZVNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:13:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30103 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758739Ab1DZVgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:36:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for device PM.
-Date: Tue, 26 Apr 2011 23:36:56 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com> <201104262249.22564.rjw@sisk.pl> <20110426211159.GB28033@elf.ucw.cz>
-In-Reply-To: <20110426211159.GB28033@elf.ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104262336.56347.rjw@sisk.pl>
+	id S1758705Ab1DZVNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:13:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
+   d="scan'208";a="634483465"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110426212.641772347@firstfloor.org>
+In-Reply-To: <20110426212.641772347@firstfloor.org>
+To: chunkeey@googlemail.com, linville@tuxdriver.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [22/106] p54usb: IDs for two new devices
+Message-Id: <20110426211300.E37773E1886@tassilo.jf.intel.com>
+Date: Tue, 26 Apr 2011 14:13:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 26, 2011, Pavel Machek wrote:
-> Hi!
-> 
-> > > > What is the root problem that this is trying to solve?
-> > > 
-> > > It is trying to fix machines that need to run periodic kernel tasks
-> > > even when user asked them to sleep. Zaurus needs to periodicaly wake
-> > > up to be able to charge battery in s2ram state, for example.
-> > 
-> > Well, if you wake up periodically, it's not S2RAM any more, I'd say.
-> 
-> It certainly looks a lot like s2ram to the user.
-> 
-> Now, your PC wakes up periodically in s2ram, too; but it is keyboard
-> controller that wakes up, not CPU, so you do not know.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-I seriously doubt it's a keyboard controller in contemporary machines.
+------------------
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-Yes, there are parts of them that don't actually sleep, but that's not
-under OS control.
+commit 220107610c7c2c9703e09eb363e8ab31025b9315 upstream.
 
-> On Zaurus, you do not know, either; nothing visible happens and
-> userspace is shielded from these details.
+Reported-by: Mark Davis [via p54/devices wiki]
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-If you wake up device drivers, it _is_ visible.  Maybe not to user
-space, but that's a semantic difference.
+---
+ drivers/net/wireless/p54/p54usb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> Should user really have to know if battery charger is implemented on
-> keyboard controller or on main cpu before he selects which interface
-> to use?
-
-Please don't confuse user space with the user.  You can resume all the
-way to user space without turning the backlight on and the user will not
-notice, right?
-
-Rafael
+Index: linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/net/wireless/p54/p54usb.c
++++ linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c
+@@ -56,6 +56,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x0846, 0x4210)},	/* Netgear WG121 the second ? */
+ 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
+ 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
++	{USB_DEVICE(0x0bf8, 0x1007)},	/* Fujitsu E-5400 USB */
+ 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
+ 	{USB_DEVICE(0x0db0, 0x6826)},	/* MSI UB54G (MS-6826) */
+ 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
+@@ -68,6 +69,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
+ 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
+ 	{USB_DEVICE(0x2001, 0x3703)},	/* DLink DWL-G122 */
++	{USB_DEVICE(0x2001, 0x3762)},	/* Conceptronic C54U */
+ 	{USB_DEVICE(0x5041, 0x2234)},	/* Linksys WUSB54G */
+ 	{USB_DEVICE(0x5041, 0x2235)},	/* Linksys WUSB54G Portable */
+ 
