@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab1DZHhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:37:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51476 "EHLO mx2.suse.de"
+	id S1758866Ab1DZHhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:37:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51514 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758080Ab1DZHg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:36:58 -0400
+	id S1758372Ab1DZHhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:37:08 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
         Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/13] mm: Serialize access to min_free_kbytes
-Date: Tue, 26 Apr 2011 08:36:42 +0100
-Message-Id: <1303803414-5937-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/13] mm: Account for the number of times direct reclaimers get throttled
+Date: Tue, 26 Apr 2011 08:36:54 +0100
+Message-Id: <1303803414-5937-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1303803414-5937-1-git-send-email-mgorman@suse.de>
 References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
@@ -21,58 +21,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race between the min_free_kbytes sysctl, memory hotplug
-and transparent hugepage support enablement.  Memory hotplug uses a
-zonelists_mutex to avoid a race when building zonelists. Reuse it to
-serialise watermark updates.
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-[a.p.zijlstra@chello.nl: Older patch fixed the race with spinlock]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    1 +
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1d5c189..a93013a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4990,14 +4990,7 @@ static void setup_per_zone_lowmem_reserve(void)
- 	calculate_totalreserve_pages();
- }
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cdc..652e5f3 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -29,6 +29,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 8b6da2b..e88138b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2154,6 +2154,7 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 		goto out;
  
--/**
-- * setup_per_zone_wmarks - called when min_free_kbytes changes
-- * or when memory is hot-{added|removed}
-- *
-- * Ensures that the watermark[min,low,high] values for each zone are set
-- * correctly with respect to min_free_kbytes.
-- */
--void setup_per_zone_wmarks(void)
-+static void __setup_per_zone_wmarks(void)
- {
- 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
- 	unsigned long lowmem_pages = 0;
-@@ -5052,6 +5045,20 @@ void setup_per_zone_wmarks(void)
- 	calculate_totalreserve_pages();
- }
+ 	/* Throttle */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
+ 	do {
+ 		schedule();
+ 		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index a2b7344..5725387 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -911,6 +911,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
  
-+/**
-+ * setup_per_zone_wmarks - called when min_free_kbytes changes
-+ * or when memory is hot-{added|removed}
-+ *
-+ * Ensures that the watermark[min,low,high] values for each zone are set
-+ * correctly with respect to min_free_kbytes.
-+ */
-+void setup_per_zone_wmarks(void)
-+{
-+	mutex_lock(&zonelists_mutex);
-+	__setup_per_zone_wmarks();
-+	mutex_unlock(&zonelists_mutex);
-+}
-+
- /*
-  * The inactive anon list should be small enough that the VM never has to
-  * do too much work, but large enough that each inactive page has a chance
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
 -- 
 1.7.3.4
 
