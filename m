@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1DZVPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:15:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62270 "EHLO mga02.intel.com"
+	id S1758779Ab1DZVQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:16:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43728 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932552Ab1DZVPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:15:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738832056"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110426212.641772347@firstfloor.org>
-In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: lydiawang@viatech.com.cn, tiwai@suse.de, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [100/106] ALSA: hda - VIA: Fix stereo mixer recording no sound issue
-Message-Id: <20110426211422.DDBD33E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:14:22 -0700 (PDT)
+	id S1758778Ab1DZVP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:15:56 -0400
+Date: Tue, 26 Apr 2011 13:58:05 -0700
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+Message-ID: <20110426205805.GC20381@suse.de>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-18-git-send-email-kys@microsoft.com>
+ <20110426194031.GD17467@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481DD061@TK5EX14MBXC124.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD061@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 26, 2011 at 08:23:25PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Tuesday, April 26, 2011 3:41 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
+> > PVT LTD); Hank Janssen
+> > Subject: Re: [PATCH 18/25] Staging: hv: Get rid of struct hv_bus
+> > 
+> > On Tue, Apr 26, 2011 at 09:20:35AM -0700, K. Y. Srinivasan wrote:
+> > > Now, get rid of struct hv_bus. We will no longer be embedding
+> > > struct bus_type.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > ---
+> > >  drivers/staging/hv/vmbus_drv.c |   33 ++++++++++++++-------------------
+> > >  1 files changed, 14 insertions(+), 19 deletions(-)
+> > >
+> > > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > > index a3a7741..515311c 100644
+> > > --- a/drivers/staging/hv/vmbus_drv.c
+> > > +++ b/drivers/staging/hv/vmbus_drv.c
+> > > @@ -45,11 +45,6 @@ static struct pci_dev *hv_pci_dev;
+> > >  static struct tasklet_struct msg_dpc;
+> > >  static struct tasklet_struct event_dpc;
+> > >
+> > > -/* Main vmbus driver data structure */
+> > > -struct hv_bus {
+> > > -	struct bus_type bus;
+> > > -};
+> > > -
+> > >  unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
+> > >  EXPORT_SYMBOL(vmbus_loglevel);
+> > >  	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
+> > > @@ -405,14 +400,14 @@ static void vmbus_device_release(struct device
+> > *device)
+> > >  }
+> > >
+> > >  /* The one and only one */
+> > > -static struct hv_bus  hv_bus = {
+> > > -	.bus.name =		"vmbus",
+> > > -	.bus.match =		vmbus_match,
+> > > -	.bus.shutdown =		vmbus_shutdown,
+> > > -	.bus.remove =		vmbus_remove,
+> > > -	.bus.probe =		vmbus_probe,
+> > > -	.bus.uevent =		vmbus_uevent,
+> > > -	.bus.dev_attrs =	vmbus_device_attrs,
+> > > +static struct bus_type  hv_bus = {
+> > > +	.name =		"vmbus",
+> > > +	.match =		vmbus_match,
+> > > +	.shutdown =		vmbus_shutdown,
+> > > +	.remove =		vmbus_remove,
+> > > +	.probe =		vmbus_probe,
+> > > +	.uevent =		vmbus_uevent,
+> > > +	.dev_attrs =	vmbus_device_attrs,
+> > >  };
+> > >
+> > >  static const char *driver_name = "hyperv";
+> > > @@ -550,14 +545,14 @@ static int vmbus_bus_init(struct pci_dev *pdev)
+> > >  		goto cleanup;
+> > >  	}
+> > >
+> > > -	hv_bus.bus.name = driver_name;
+> > > +	hv_bus.name = driver_name;
+> > 
+> > Why are you setting the name of the bus again?  Shouldn't this line be
+> > removed?
+> 
+> You are absolutely right. Since this redundancy was in the existing
+> code, should I send you a separate patch to fix this?
 
-------------------
-From: Lydia Wang <lydiawang@viatech.com.cn>
+A separate one after this series is fine.
 
-commit bff5fbf50bd498c217994bd2d41a53ac3141185a upstream.
+thanks,
 
-Modify function via_mux_enum_put() to fix stereo mixer recording
-no sound issue.
-
-Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- sound/pci/hda/patch_via.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-Index: linux-2.6.35.y/sound/pci/hda/patch_via.c
-===================================================================
---- linux-2.6.35.y.orig/sound/pci/hda/patch_via.c
-+++ linux-2.6.35.y/sound/pci/hda/patch_via.c
-@@ -1091,6 +1091,7 @@ static int via_mux_enum_put(struct snd_k
- 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
- 	struct via_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
-+	int ret;
- 
- 	if (!spec->mux_nids[adc_idx])
- 		return -EINVAL;
-@@ -1099,12 +1100,14 @@ static int via_mux_enum_put(struct snd_k
- 			       AC_VERB_GET_POWER_STATE, 0x00) != AC_PWRST_D0)
- 		snd_hda_codec_write(codec, spec->mux_nids[adc_idx], 0,
- 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D0);
--	/* update jack power state */
--	set_jack_power_state(codec);
- 
--	return snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
-+	ret = snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
- 				     spec->mux_nids[adc_idx],
- 				     &spec->cur_mux[adc_idx]);
-+	/* update jack power state */
-+	set_jack_power_state(codec);
-+
-+	return ret;
- }
- 
- static int via_independent_hp_info(struct snd_kcontrol *kcontrol,
+greg k-h
