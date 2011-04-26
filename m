@@ -1,126 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1DZJtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 05:49:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50961 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab1DZJtm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 05:49:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+	id S1753506Ab1DZJuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 05:50:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56821 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170Ab1DZJuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 05:50:01 -0400
+Date: Tue, 26 Apr 2011 19:49:47 +1000
+From: NeilBrown <neilb@suse.de>
 To: Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE
-Cc: kosaki.motohiro@jp.fujitsu.com, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, Arve Hj?nnev?g <arve@android.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110426073410.GA4658@suse.de>
-References: <1303436043-26644-1-git-send-email-john.stultz@linaro.org> <20110426073410.GA4658@suse.de>
-Message-Id: <20110426185114.F3A4.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 18:49:39 +0900 (JST)
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/13] mm: Introduce __GFP_MEMALLOC to allow access to
+ emergency reserves
+Message-ID: <20110426194947.764e048a@notabene.brown>
+In-Reply-To: <1303803414-5937-4-git-send-email-mgorman@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-4-git-send-email-mgorman@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 21, 2011 at 06:34:03PM -0700, John Stultz wrote:
-> > From: Arve Hjønnevåg <arve@android.com>
-> > 
-> > This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-> > though it only had a few free pages. This in turn caused no contiguous memory
-> > to be reserved and frequent kswapd wakeups that emptied the caches to get more
-> > contiguous memory.
-> > 
-> > CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> > CC: Mel Gorman <mgorman@suse.de>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> > Acked-by: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > [This patch was submitted and acked a little over a year ago
-> > (see: http://lkml.org/lkml/2010/4/6/172 ), but never seemingly
-> > made it upstream. Resending for comments. -jstultz]
-> > 
-> > Signed-off-by: John Stultz <john.stultz@linaro.org>
+On Tue, 26 Apr 2011 08:36:44 +0100 Mel Gorman <mgorman@suse.de> wrote:
+
+> __GFP_MEMALLOC will allow the allocation to disregard the watermarks,
+> much like PF_MEMALLOC. It allows one to pass along the memalloc state in
+> object related allocation flags as opposed to task related flags, such
+> as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC as
+> callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag which
+> is now enough to identify allocations related to page reclaim.
 > 
-> Whoops, should have spotted it slipped through. FWIW, I'm still happy
-> with my Ack being stuck onto it.
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/linux/gfp.h      |    4 +++-
+>  include/linux/mm_types.h |    2 +-
+>  mm/page_alloc.c          |   14 ++++++--------
+>  mm/slab.c                |    2 +-
+>  4 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> index bfb8f93..4e011e7 100644
+> --- a/include/linux/gfp.h
+> +++ b/include/linux/gfp.h
+> @@ -23,6 +23,7 @@ struct vm_area_struct;
+>  #define ___GFP_REPEAT		0x400u
+>  #define ___GFP_NOFAIL		0x800u
+>  #define ___GFP_NORETRY		0x1000u
+> +#define ___GFP_MEMALLOC		0x2000u
+>  #define ___GFP_COMP		0x4000u
+>  #define ___GFP_ZERO		0x8000u
+>  #define ___GFP_NOMEMALLOC	0x10000u
+> @@ -75,6 +76,7 @@ struct vm_area_struct;
+>  #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
+>  #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
+>  #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
+> +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
+>  #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
+>  #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
+>  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
 
-Hehe, No.
+Having both "MEMALLOC" and  "NOMEMALLOC" seems ... unfortunate.
 
-You acked another patch at last year and John taked up old one. Sigh.
-Look,  correct one has pfn_valid_within(). 
-	http://lkml.org/lkml/2010/4/6/172
+It appears that NOMEMALLOC over-rides MEMALLOC.  It might be good to document
+this 
 
-And, Minchan suggested to add more explanation to the description. Then, I think
-following is desiable one.
+> +#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves
+                                                                   unless __GFP_NOMEMALLOC is set*/
 
+>  #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves
+                                                                  Overrides __GFP_MEMALLOC */
 
+I suspect that it is never valid to set both.  So NOMEMALLOC is really
+NO_PF_MEMALLOC, but making that change is probably just noise.
 
-Subject: [PATCH] mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE
-From: Arve Hjonnevag <arve@android.com>
+Maybe a
+   WARN_ON((gfp_mask & __GFP_MEMALLOC) && (gfp_mask & __GFP_NOMEMALLOC));
+might be wise?
 
-This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-though it only had a few free pages. eg, On current ARM port, The kernel starts
-at offset 0x8000 to leave room for boot parameters, and the memory is freed later.
-
-This in turn caused no contiguous memory to be reserved and frequent kswapd
-wakeups that emptied the caches to get more contiguous memory.
-
-Unfortunatelly, ARM need order-2 allocation for pgd (see arm/mm/pgd.c#pgd_alloc()).
-Therefore the issue is not minor nor easy avoidable.
-
-CC: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Arve Hjonnevag <arve@android.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [added a
-few explanation]
----
- mm/page_alloc.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1d5c189..10d9fa7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3282,6 +3282,20 @@ static inline unsigned long wait_table_bits(unsigned long size)
- #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
- 
- /*
-+ * Check if a pageblock contains reserved pages
-+ */
-+static int pageblock_is_reserved(unsigned long start_pfn)
-+{
-+	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
-+	unsigned long pfn;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-+		if (!pfn_valid_within(pfn) || PageReserved(pfn_to_page(pfn)))
-+			return 1;
-+	return 0;
-+}
-+
-+/*
-  * Mark a number of pageblocks as MIGRATE_RESERVE. The number
-  * of blocks reserved is based on min_wmark_pages(zone). The memory within
-  * the reserve will tend to store contiguous free pages. Setting min_free_kbytes
-@@ -3320,7 +3334,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			continue;
- 
- 		/* Blocks with reserved pages will never free, skip them. */
--		if (PageReserved(page))
-+		if (pageblock_is_reserved(pfn))
- 			continue;
- 
- 		block_migratetype = get_pageblock_migratetype(page);
--- 
-1.7.3.1
-
-
-
+NeilBrown.
