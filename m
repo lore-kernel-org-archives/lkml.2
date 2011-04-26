@@ -1,91 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1DZNyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:54:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19002 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab1DZNyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:54:23 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Linux Btrfs" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs plugging
-Date: Tue, 26 Apr 2011 09:52:16 -0400
-Message-Id: <1303825489-sup-1263@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DB6CE8B.004A:SCFMA4539811,ss=1,fgs=0
+	id S1755955Ab1DZN7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 09:59:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65316 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754361Ab1DZN7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 09:59:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,268,1301900400"; 
+   d="scan'208";a="684127163"
+Date: Tue, 26 Apr 2011 21:59:31 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110426135931.GA12147@localhost>
+References: <20110420080336.441157866@intel.com>
+ <20110420080918.383880412@intel.com>
+ <20110420164005.e3925965.akpm@linux-foundation.org>
+ <20110424031531.GA11220@localhost>
+ <20110426121751.GB5114@quack.suse.cz>
+ <20110426135130.GA5719@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426135130.GA5719@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Tue, Apr 26, 2011 at 09:51:30PM +0800, Wu Fengguang wrote:
+> On Tue, Apr 26, 2011 at 08:17:51PM +0800, Jan Kara wrote:
+> > On Sun 24-04-11 11:15:31, Wu Fengguang wrote:
+> > > > One of the many requirements for writeback is that if userspace is
+> > > > continually dirtying pages in a particular file, that shouldn't cause
+> > > > the kupdate function to concentrate on that file's newly-dirtied pages,
+> > > > neglecting pages from other files which were less-recently dirtied. 
+> > > > (and dirty nodes, etc).
+> > > 
+> > > Sadly I do find the old pages that the flusher never get a chance to
+> > > catch and write them out.
+> >   What kind of load do you use?
+> 
+> Sorry I was just thinking about it and then got a _theoretic_ case.
+> 
+> > > In the below case, if the task dirties pages fast enough at the end of
+> > > file, writeback_index will never get a chance to wrap back. There may
+> > > be various variations of this case.
+> > > 
+> > > file head
+> > > [          ***                        ==>***************]==>
+> > >            old pages          writeback_index            fresh dirties
+> > > 
+> > > Ironically the current kernel relies on pageout() to catch these
+> > > old pages, which is not only inefficient, but also not reliable.
+> > > If a full LRU walk takes an hour, the old pages may stay dirtied
+> > > for an hour.
+> >   Well, the kupdate behavior has always been just a best-effort thing. We
+> > always tried to handle well common cases but didn't try to solve all of
+> > them. Unless we want to track dirty-age of every page (which we don't
+> > want because it's too expensive), there is really no way to make syncing
+> > of old pages 100% working for all the cases unless we do data-integrity
+> > type of writeback for the whole inode - but that could create new problems
+> > with stalling other files for too long I suspect.
+> 
+> Yeah, it's a hard problem in general. The flusher works naturally in
+> the coarse way..
+> 
+> > > We may have to do (conditional) tagged ->writepages to safeguard users
+> > > from losing data he'd expect to be written hours ago.
+> >   Well, if the file is continuously written (and in your case it must be
+> > even continuosly grown) I'd be content if we handle well the common case of
+> > linear append (that happens for log files etc.). If we can do well for more
+> > cases, even better but I'd be cautious not to disrupt some other more
+> > common cases.
+> 
+> I scratched a patch (totally untested) which will guarantee any kind
+> of starvation inside an inode. Will this be too overweight?
+> 
+> Thanks,
+> Fengguang
+> ---
+> Subject: writeback: livelock prevention inside actively dirtied files
+> Date: Tue Apr 26 21:35:47 CST 2011
+> 
+> - refresh dirtied_when on every full writeback_index cycle
+>   (pages may be skipped on SYNC_NONE, but as long as they are retried in
+>   next cycle..)
+> 
+> - do tagged sync when writeback_index not cycled for too long time
+>   (the arbitrarily 60s may lead to more page tagging overheads in
+>   "large dirty threshold but slow storage" system..)
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c       |    1 +
+>  include/linux/fs.h      |    1 +
+>  include/linux/pagemap.h |   16 ++++++++++++++++
+>  mm/page-writeback.c     |   24 ++++++++++++++++++------
+>  4 files changed, 36 insertions(+), 6 deletions(-)
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2011-04-26 21:26:28.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2011-04-26 21:26:39.000000000 +0800
+> @@ -1110,6 +1110,7 @@ void __mark_inode_dirty(struct inode *in
+>  			spin_unlock(&inode->i_lock);
+>  			spin_lock(&bdi->wb.list_lock);
+>  			inode->dirtied_when = jiffies;
+> +			inode->i_mapping->writeback_cycle_time = jiffies;
+>  			list_move(&inode->i_wb_list, &bdi->wb.b_dirty);
+>  			spin_unlock(&bdi->wb.list_lock);
+>  
+> --- linux-next.orig/include/linux/fs.h	2011-04-26 21:26:28.000000000 +0800
+> +++ linux-next/include/linux/fs.h	2011-04-26 21:26:39.000000000 +0800
+> @@ -639,6 +639,7 @@ struct address_space {
+>  	unsigned int		truncate_count;	/* Cover race condition with truncate */
+>  	unsigned long		nrpages;	/* number of total pages */
+>  	pgoff_t			writeback_index;/* writeback starts here */
+> +	unsigned long		writeback_cycle_time;
+>  	const struct address_space_operations *a_ops;	/* methods */
+>  	unsigned long		flags;		/* error bits/gfp mask */
+>  	struct backing_dev_info *backing_dev_info; /* device readahead, etc */
 
-The for-linus branch of the btrfs unstable tree:
+> --- linux-next.orig/mm/page-writeback.c	2011-04-26 21:26:28.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-04-26 21:33:47.000000000 +0800
+> @@ -835,6 +835,9 @@ void tag_pages_for_writeback(struct addr
+>  		cond_resched();
+>  		/* We check 'start' to handle wrapping when end == ~0UL */
+>  	} while (tagged >= WRITEBACK_TAG_BATCH && start);
+> +
+> +	mapping_set_tagged_sync(mapping);
+> +	mapping->writeback_cycle_time = jiffies;
+>  }
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+Sorry the above "mapping->writeback_cycle_time = jiffies" is not
+correct and shall be removed. It should be updated iff (index == 0).
 
-Has a single commit for the btrfs bio submission worker threads.  These
-gather up IOs when the checksumming or compression threads are done with
-the CPU intensive work.  Since the submission threads go one device at a
-time, they want to unplug after finishing off all the bios for one
-device.
+Thanks,
+Fengguang
 
-Jens ripped this code out when he did the plugging work, I had promised
-to redo it in the new framework.
-
-Instead of the normal shortlog:
-
-commit 211588ad1902df57beeeadc9b44546540fa4bd81
-Author: Chris Mason <chris.mason@oracle.com>
-Date:   Tue Apr 19 20:12:40 2011 -0400
-
-    Btrfs: do some plugging in the submit_bio threads
-    
-    The Btrfs submit bio threads have a small number of
-    threads responsible for pushing down bios we've collected
-    for a large number of devices.
-    
-    Since we do all the bios for a single device at once,
-    we want to make sure we unplug and send down the bios
-    for each device as we're done processing them.
-    
-    The new plugging API removed the btrfs code to
-    unplug while processing bios, this adds it back with
-    the new API.
-    
-    Signed-off-by: Chris Mason <chris.mason@oracle.com>
-
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 309a57b..c7367ae 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -155,6 +155,15 @@ static noinline int run_scheduled_bios(struct btrfs_device *device)
- 	unsigned long limit;
- 	unsigned long last_waited = 0;
- 	int force_reg = 0;
-+	struct blk_plug plug;
-+
-+	/*
-+	 * this function runs all the bios we've collected for
-+	 * a particular device.  We don't want to wander off to
-+	 * another device without first sending all of these down.
-+	 * So, setup a plug here and finish it off before we return
-+	 */
-+	blk_start_plug(&plug);
- 
- 	bdi = blk_get_backing_dev_info(device->bdev);
- 	fs_info = device->dev_root->fs_info;
-@@ -294,6 +303,7 @@ loop_lock:
- 	spin_unlock(&device->io_lock);
- 
- done:
-+	blk_finish_plug(&plug);
- 	return 0;
- }
- 
+>  EXPORT_SYMBOL(tag_pages_for_writeback);
+>  
+> @@ -872,7 +875,7 @@ int write_cache_pages(struct address_spa
+>  	pgoff_t end;		/* Inclusive */
+>  	pgoff_t done_index;
+>  	int range_whole = 0;
+> -	int tag;
+> +	int tag = PAGECACHE_TAG_DIRTY;
+>  
+>  	pagevec_init(&pvec, 0);
+>  	if (wbc->range_cyclic) {
+> @@ -884,13 +887,19 @@ int write_cache_pages(struct address_spa
+>  		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+>  			range_whole = 1;
+>  	}
+> -	if (wbc->sync_mode == WB_SYNC_ALL)
+> -		tag = PAGECACHE_TAG_TOWRITE;
+> -	else
+> -		tag = PAGECACHE_TAG_DIRTY;
+> +	if (!index)
+> +		mapping->writeback_cycle_time = jiffies;
