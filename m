@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab1DZFvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 01:51:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50110 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab1DZFvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 01:51:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+	id S1755404Ab1DZFzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 01:55:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7882 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753754Ab1DZFzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 01:55:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,267,1301900400"; 
+   d="scan'208";a="425473974"
+Date: Tue, 26 Apr 2011 13:55:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
 To: Dave Young <hidave.darkstar@gmail.com>
-Subject: Re: [PATCH 2/2] use oom_killer_disabled in page fault oom path
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com
-In-Reply-To: <20110426053150.GA11949@darkstar>
-References: <20110426053150.GA11949@darkstar>
-Message-Id: <20110426145320.F387.A69D9226@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: readahead and oom
+Message-ID: <20110426055521.GA18473@localhost>
+References: <BANLkTin8mE=DLWma=U+CdJaQW03X2M2W1w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 14:51:06 +0900 (JST)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTin8mE=DLWma=U+CdJaQW03X2M2W1w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Currently oom_killer_disabled is only used in __alloc_pages_slowpath,
-> For page fault oom case it is not considered. One use case is
-> virtio balloon driver, when memory pressure is high, virtio ballooning
-> will cause oom killing due to such as page fault oom.
+On Tue, Apr 26, 2011 at 01:49:25PM +0800, Dave Young wrote:
+> Hi,
 > 
-> Thus add oom_killer_disabled checking in pagefault_out_of_memory.
-> 
-> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+> When memory pressure is high, readahead could cause oom killing.
+> IMHO we should stop readaheading under such circumstances。If it's true
+> how to fix it?
 
-Thank you.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Good question. Before OOM there will be readahead thrashings, which
+can be addressed by this patch:
 
+http://lkml.org/lkml/2010/2/2/229
 
+However there seems no much interest on that feature.. I can separate
+that out and resubmit it standalone if necessary.
 
+Thanks,
+Fengguang
