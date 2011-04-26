@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab1DZHWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:22:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52013 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757651Ab1DZHWO (ORCPT
+	id S932109Ab1DZHXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:23:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45769 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757755Ab1DZHXS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:22:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Subject: Re: [PATCH 1/2] virtio_balloon: disable oom killer when fill balloon
-Cc: kosaki.motohiro@jp.fujitsu.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTikXR-A-za7dd6FDqc6B0fLhi4LbJg@mail.gmail.com>
-References: <20110426154037.F38B.A69D9226@jp.fujitsu.com> <BANLkTikXR-A-za7dd6FDqc6B0fLhi4LbJg@mail.gmail.com>
-Message-Id: <20110426162438.F393.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	Tue, 26 Apr 2011 03:23:18 -0400
+Subject: Re: [PATCH 0/4] munmap: Flexible mem unmap operation interface for
+ scheduling latency
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Geunsik Lim <leemgs1@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <BANLkTimoG7muVanF6P8YYvfZA7WUT+9XKg@mail.gmail.com>
+References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
+	 <1303760837.4865.22.camel@laptop>
+	 <BANLkTimoG7muVanF6P8YYvfZA7WUT+9XKg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 26 Apr 2011 16:22:12 +0900 (JST)
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Apr 2011 09:22:52 +0200
+Message-ID: <1303802572.20212.4.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Apr 26, 2011 at 2:38 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> When memory pressure is high, virtio ballooning will probably cause oom killing.
-> >> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
-> >> will make memory becoming low then memory alloc of other processes will trigger
-> >> oom killing. It is not desired behaviour.
-> >>
-> >> Here disable oom killer in fill_balloon to address this issue.
-> >>
-> >> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
-> >> ---
-> >>  drivers/virtio/virtio_balloon.c |    3 +++
-> >>  1 file changed, 3 insertions(+)
-> >>
-> >> --- linux-2.6.orig/drivers/virtio/virtio_balloon.c    2010-10-13 10:14:38.000000000 +0800
-> >> +++ linux-2.6/drivers/virtio/virtio_balloon.c 2011-04-26 11:38:43.979785141 +0800
-> >> @@ -25,6 +25,7 @@
-> >>  #include <linux/freezer.h>
-> >>  #include <linux/delay.h>
-> >>  #include <linux/slab.h>
-> >> +#include <linux/oom.h>
-> >>
-> >>  struct virtio_balloon
-> >>  {
-> >> @@ -102,6 +103,7 @@ static void fill_balloon(struct virtio_b
-> >>       /* We can only do one array worth at a time. */
-> >>       num = min(num, ARRAY_SIZE(vb->pfns));
-> >>
-> >> +     oom_killer_disable();
-> >
-> > I think this patch need proper comment at least. My first impression
-> > is, "Hm, __GFP_NORETRY should prevent oom, why is this necessary?".
-> > So, this actually prevent _another_ thread call out_of_memory().
-> 
-> Thanks, will fix.
-> 
-> > Also, Here doesn't have any exclusion against hibernation (ie another
-> > oom_killer_disable() callsite). It should be described why lock is
-> > unnecessary.
-> 
-> Good catch, but lock should better be handled in oom_killer_disable
-> function itself,
-> What do you think?
-> 
-> For oom killer multi user there's more problem, if process A disable
-> oom killer then Process B enable oom killer, it is not A want to see,
-> Any thoughts?
+On Tue, 2011-04-26 at 10:20 +0900, Geunsik Lim wrote:
+> Yes. I also checked the patch that you stated at LKML mailing list previously.
+> In my thinking. I want to keep ZAP_BLOCK_SIZE related contents
+> that adjusted by Ingo, Robert, Andrew, and so on a long time ago
+> because I believe that we can overcome below problems sufficiently
+> in real world.
+> . LKML archive - http://lkml.org/lkml/2002/7/24/273
+> . LKML archive - http://lkml.org/lkml/2004/9/14/101
 
-If baloon and hibernation don't have any implicit exclusion, you are
-right.
+Real ancient world, that was 2004, well before we grew preemptible
+mmu_gather.
 
-Sorry, I don't virtio internal. please don't ask me.
+> In my experience, I did overcome below problems with this patch
+> based on ZAP_BLOCK_SIZE.
+> 
+> 1) To solve temporal CPU contention
+>     (e.g: case that cpu contention is 93% ~ 96% according to mmap/munmap
+>             to access mass files )
+> 2) To get real-time or real-fast selectively on specified linux system 
 
+I still don't get it, what kernel are you targeting here and why?
+
+-RT doesn't care, and clearly PREEMPT=n doesn't care because its not
+about latency at all, the only half-way point is PREEMPT=y and for that
+you could simply reduce ZAP_BLOCK_SIZE.
+
+Then again, what's the point, simply remove the whole thing (like I did)
+and your problem is solved too.
 
 
