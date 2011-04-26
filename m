@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab1DZNFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:05:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3766 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822Ab1DZNFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:05:50 -0400
-Date: Tue, 26 Apr 2011 15:03:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        Julien Tinnes <jln@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 104/173] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
-	from spoofing the signal code
-Message-ID: <20110426130349.GA7103@redhat.com>
-References: <46075c3a3ef08be6d70339617d6afc98@local> <20110425200237.513372128@pcw.home.local>
+	id S1754753Ab1DZNI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 09:08:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61521 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab1DZNIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 09:08:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:reply-to:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type;
+        b=kAm7n5xU49oUFaW7M8AEphZNwxz250P2jG73LIIjgCHyAYDm+kTGBzSsmddYLVMEnH
+         Fi7sBXSpqcY5TPaSn0XZMuTobX1c4zxoqfruaz0toOO9lj6DUQ9CIJMOf8nBmtRTgjGr
+         pyvy/+zvLUC+4C/o4HfJhFcrW1eFjHnkoFmM8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110425200237.513372128@pcw.home.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Reply-To: wanlong.gao@gmail.com
+In-Reply-To: <20110426070754.GB4154@gmail.com>
+References: <20110426043835.GA4154@gmail.com>
+	<20110426070754.GB4154@gmail.com>
+Date: Tue, 26 Apr 2011 21:08:54 +0800
+X-Google-Sender-Auth: EFF_XP889Ymsngw6L8WjYMleWjU
+Message-ID: <BANLkTi=NMh50rGsir-kSvgWmGGM36NS4og@mail.gmail.com>
+Subject: Re: [PATCH]Remove a warning
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org,
+        joe@perches.com, randy.dunlap@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Willy Tarreau wrote:
->
-> 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Julien Tinnes <jln@google.com>
->
-> commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
+>>On Tue, Apr 26, 2011 at 12:38:37PM +0800, Harry Wei wrote:
 
-This also needs 243b422af9ea9af4ead07a8ad54c90d4f9b6081a
-
-> Userland should be able to trust the pid and uid of the sender of a
-> signal if the si_code is SI_TKILL.
+>> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+>> ---
+>>  drivers/staging/wlan-ng/cfg80211.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/wlan-ng/cfg80211.c
+>> b/drivers/staging/wlan-ng/cfg80211.c
+>> index 6a71f52..7637839 100644
+>> --- a/drivers/staging/wlan-ng/cfg80211.c
+>> +++ b/drivers/staging/wlan-ng/cfg80211.c
+>> @@ -273,7 +273,7 @@ exit:
+>>  }
+>>
+>>  int prism2_set_default_key(struct wiphy *wiphy, struct net_device *dev,
+>> -			   u8 key_index)
+>> +			   u8 key_index, bool unicast, bool multicast)
+It seems can fix the warning .
+Thanks
+>>  {
+>>  	wlandevice_t *wlandev = dev->ml_priv;
+>>
+>> --
+>> 1.7.0.4
+>>
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
-> Unfortunately, the kernel has historically allowed sigqueueinfo() to
-> send any si_code at all (as long as it was negative - to distinguish it
-> from kernel-generated signals like SIGILL etc), so it could spoof a
-> SI_TKILL with incorrect siginfo values.
->
-> Happily, it looks like glibc has always set si_code to the appropriate
-> SI_QUEUE, so there are probably no actual user code that ever uses
-> anything but the appropriate SI_QUEUE flag.
->
-> So just tighten the check for si_code (we used to allow any negative
-> value), and add a (one-time) warning in case there are binaries out
-> there that might depend on using other si_code values.
->
-> Signed-off-by: Julien Tinnes <jln@google.com>
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> [wt: 2.6.27 does not have do_rt_tgsigqueueinfo()]
->
-> ---
->  kernel/signal.c |   16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
->
-> Index: longterm-2.6.27/kernel/signal.c
-> ===================================================================
-> --- longterm-2.6.27.orig/kernel/signal.c	2011-01-23 10:52:37.000000000 +0100
-> +++ longterm-2.6.27/kernel/signal.c	2011-04-25 16:06:27.491278774 +0200
-> @@ -2294,9 +2294,13 @@
->  		return -EFAULT;
->
->  	/* Not even root can pretend to send signals from the kernel.
-> -	   Nor can they impersonate a kill(), which adds source info.  */
-> -	if (info.si_code >= 0)
-> +	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-> +	 */
-> +	if (info.si_code != SI_QUEUE) {
-> +		/* We used to allow any < 0 si_code */
-> +		WARN_ON_ONCE(info.si_code < 0);
->  		return -EPERM;
-> +	}
->  	info.si_signo = sig;
->
->  	/* POSIX.1b doesn't mention process groups.  */
->
->
-
