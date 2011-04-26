@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab1DZUjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 16:39:22 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:42529 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab1DZUjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 16:39:21 -0400
-Subject: Re: [PATCH 2/3] flex_arrays: allow zero length flex arrays
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: steffen.klassert@secunet.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
-In-Reply-To: <20110426014537.1740.68472.stgit@paris.rdu.redhat.com>
-References: <20110426014531.1740.24077.stgit@paris.rdu.redhat.com>
-	 <20110426014537.1740.68472.stgit@paris.rdu.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 26 Apr 2011 13:38:52 -0700
-Message-ID: <1303850332.9308.17366.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757983Ab1DZUk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 16:40:57 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:39275 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754071Ab1DZUk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 16:40:56 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Hans Verkuil" <hverkuil@xs4all.nl>
+Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
+Date: Tue, 26 Apr 2011 22:40:35 +0200
+User-Agent: KMail/1.9.10
+Cc: "Hans de Goede" <hdegoede@redhat.com>,
+        "Joerg Heckenbach" <joerg@heckenbach-aw.de>,
+        "Dwaine Garden" <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+References: <201104252323.20420.linux@rainbow-software.org> <4DB6B28D.5090607@redhat.com> <f2291b622da20d240c4ebe0ae72beb8c.squirrel@webmail.xs4all.nl>
+In-Reply-To: <f2291b622da20d240c4ebe0ae72beb8c.squirrel@webmail.xs4all.nl>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201104262240.40497.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 21:45 -0400, Eric Paris wrote:
-> Just like kmalloc will allow one to allocate a 0 length segment of memory
-> flex arrays should do the same thing.  It should bomb if you try to use
-> something, but it should at least allow the allocation.
-> 
-> Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> ---
-> 
->  lib/flex_array.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/flex_array.c b/lib/flex_array.c
-> index 0c33b24..2554a5f 100644
-> --- a/lib/flex_array.c
-> +++ b/lib/flex_array.c
-> @@ -253,9 +253,16 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
->  	unsigned int end;
->  	struct flex_array_part *part;
-> 
-> +	if (!fa->total_nr_elements && !start)
-> +		return 0;
+On Tuesday 26 April 2011 14:33:20 Hans Verkuil wrote:
+> > Hi,
+> >
+> > On 04/26/2011 10:30 AM, Ondrej Zary wrote:
+> >> On Tuesday 26 April 2011, you wrote:
+> >>> On Monday, April 25, 2011 23:23:17 Ondrej Zary wrote:
+> >>>> The YVU420 and YUV422P formats are broken and cause kernel panic on
+> >>>> use.
+> >>>> (YVU420 does not work and sometimes causes "unable to handle paging
+> >>>> request" panic, YUV422P always causes "NULL pointer dereference").
+> >>>>
+> >>>> As V4L2 spec says that drivers shouldn't do any in-kernel image format
+> >>>> conversion, remove it completely (except YUYV).
+> >>>
+> >>> What really should happen is that the conversion is moved to
+> >>> libv4lconvert.
+> >>> I've never had the time to tackle that, but it would improve this
+> >>> driver a
+> >>> lot.
+> >>
+> >> Depending on isoc_mode module parameter, the device uses different image
+> >> formats: YUV 4:2:2 interleaved, YUV 4:2:0 planar or compressed format.
+> >>
+> >> Maybe the parameter should go away and these three formats exposed to
+> >> userspace?
+> >
+> > That sounds right,
+> >
+> >> Hopefully the non-compressed formats could be used directly
+> >> without any conversion. But the compressed format (with new
+> >> V4L2_PIX_FMT_
+> >> assigned?) should be preferred (as it provides much higher frame rates).
+> >> The
+> >> code moved into libv4lconvert would decompress the format and convert
+> >> into
+> >> something standard (YUV420?).
+> >
+> > Correct.
+> >
+> >>> Would you perhaps be interested in doing that work?
+> >>
+> >> I can try it. But the hardware isn't mine so my time is limited.
+> >
+> > If you could give it a shot that would be great. I've some hardware to
+> > test this with (although I've never actually tested that hardware), so
+> > I can hopefully pick things up if you cannot finish things before you
+> > need to return the hardware.
+>
+> I can also test this.
 
-I guess it works either way, but I'd say that checking for a zero 'len'
-prealloc would be more important (and meaningful) than checking a zero
-'start'.
+After digging in the code for hours, I'm giving this up. It's not worth it.
 
-If someone passed start=0 and len=44 for a fa->total_nr_elements=0
-array, I'd expect -ENOSPC, but this would return 0.
+The ISOC_MODE_YUV422 mode works as V4L2_PIX_FMT_YVYU with VLC and 
+mplayer+libv4lconvert, reducing the loop (and dropping strech_*) in 
+usbvision_parse_lines_422() to:
+ scratch_get(usbvision, frame->data + (frame->v4l2_linesize * frame->curline),
+ 2 * frame->frmwidth);
 
--- Dave
+The ISOC_MODE_YUV420 is some weird custom format with 64-byte lines of YYUV. 
+usbvision_parse_lines_420() is real mess with that scratch_* crap everywhere.
 
+ISOC_MODE_COMPRESS: There are callbacks to usbvision_request_intra() and also 
+usbvision_adjust_compression(). This is not going to work outside the kernel.
+
+
+So I can redo the conversion removal patch to keep the RGB formats and also 
+provide another one to remove the testpattern (it oopses too). But I'm not 
+going to do any major changes in the driver.
+
+-- 
+Ondrej Zary
