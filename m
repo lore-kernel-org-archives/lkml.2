@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab1DZIad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 04:30:33 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:36525 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751123Ab1DZIab (ORCPT
+	id S1751891Ab1DZIdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 04:33:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55760 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab1DZIdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 04:30:31 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
-Date: Tue, 26 Apr 2011 10:30:21 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201104252323.20420.linux@rainbow-software.org> <201104260832.11150.hverkuil@xs4all.nl>
-In-Reply-To: <201104260832.11150.hverkuil@xs4all.nl>
-X-KMail-QuotePrefix: > 
+	Tue, 26 Apr 2011 04:33:52 -0400
+Date: Tue, 26 Apr 2011 09:33:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bill Gatliff <bgat@billgatliff.com>
+Cc: linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Expose regulator:set_consumer_device_supply()?
+Message-ID: <20110426083350.GA20595@sirena.org.uk>
+References: <BANLkTi=dCHXEtv+=+sRaDp_Pt3zQy5o7ug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201104261030.21681.linux@rainbow-software.org>
+In-Reply-To: <BANLkTi=dCHXEtv+=+sRaDp_Pt3zQy5o7ug@mail.gmail.com>
+X-Cookie: I'm also against BODY-SURFING!!
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 April 2011, you wrote:
-> On Monday, April 25, 2011 23:23:17 Ondrej Zary wrote:
-> > The YVU420 and YUV422P formats are broken and cause kernel panic on use.
-> > (YVU420 does not work and sometimes causes "unable to handle paging
-> > request" panic, YUV422P always causes "NULL pointer dereference").
-> >
-> > As V4L2 spec says that drivers shouldn't do any in-kernel image format
-> > conversion, remove it completely (except YUYV).
->
-> What really should happen is that the conversion is moved to libv4lconvert.
-> I've never had the time to tackle that, but it would improve this driver a
-> lot.
+On Mon, Apr 25, 2011 at 09:16:55PM -0500, Bill Gatliff wrote:
+> Guys:
 
-Depending on isoc_mode module parameter, the device uses different image 
-formats: YUV 4:2:2 interleaved, YUV 4:2:0 planar or compressed format.
+Please always:
+- CC maintainers on mails (in this case myself and Liam).
+- CC the relevant list (in this case linux-kernel).
 
-Maybe the parameter should go away and these three formats exposed to 
-userspace? Hopefully the non-compressed formats could be used directly 
-without any conversion. But the compressed format (with new V4L2_PIX_FMT_ 
-assigned?) should be preferred (as it provides much higher frame rates). The 
-code moved into libv4lconvert would decompress the format and convert into 
-something standard (YUV420?).
+> In a nutshell, I have a lot of i2c chips, each of which is powered by
+> its own voltage regulator.  Among other things, I'm trying to write
+> the i2c drivers so that they are as platform-agnostic as possible,
+> because I intend for these drivers to be reused on future platforms
+> with different voltage regulator layouts.  On future platforms
+> regulators might be shared with multiple i2c chips, for example.
 
-> Would you perhaps be interested in doing that work?
+OK, this is absolutely normal for the regulator API.
 
-I can try it. But the hardware isn't mine so my time is limited.
+> What I'm hoping for is i2c driver code that asks for a regulator based
+> on the name of the pin to which the regulator is connected.  So
+> instead of doing this:
 
-> > The removal also reveals an off-by-one bug in enum_fmt ioctl - it misses
-> > the last format, so this patch fixes it too.
->
-> Good. But why are the GREY/RGB formats also removed? Are those broken as
-> well?
+> ... I can do this:
+> 
+> i2c_chip_probe(i2c_client *this, ...)
+> {
+> ...
+>    /* ask for the regulator connected to our VDD pin */
+>    reg = regulator_get(this, "VDD");
+> ...
+> }
 
-GREY, RGB24 and RGB32 seem to work (at least with mplayer). RGB565 and RGB555 
-have wrong colors. GREY is implemented only in compressed mode but can be 
-selected in other modes too. Can't userspace do the conversion better?
+This is exactly what you're supposed to do with the regulator API now.
+If you're not doing that the consumer driver is buggy and should be
+fixed, it should be written without reference to the board it is running
+on.
 
-> Regards,
->
-> 	Hans
+> The problem with i2c devices is that if you register them with
+> i2c_register_board_info(), you don't have a device pointer that you
+> can associate a regulator with.  So you have to register the regulator
+> after the i2c chip gets registered, which means doing it in the i2c
+> chip's probe method.  Ugly, and it won't work when regulators are
+> shared between devices.
 
--- 
-Ondrej Zary
+You can specify the device by either dev_name() or a dev pointer.  You
+can use dev_name() at any time without the device having been
+instantiated, it would be unusal to use a struct device.
+
+> Any reason why we couldn't expose set_consumer_device_supply(), so
+> that I can add a device as a regulator consumer after a regulator is
+> already registered?
+
+This would facilitate abuse of the API, we already have enough problems
+with people trying to pass regulators as platform data.
