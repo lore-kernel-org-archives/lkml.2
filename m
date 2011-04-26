@@ -1,59 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab1DZH77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 03:59:59 -0400
-Received: from smtpout06.highway.telekom.at ([195.3.96.89]:59088 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758413Ab1DZH75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 03:59:57 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: i915 completely unusable in 2.6.38.x
-Date: Tue, 26 Apr 2011 09:59:52 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
-References: <4DB53B79.4070704@kernelpanic.ru> <201104252210.46523@rk-nord.at> <20110425210323.GA23418@kroah.com>
-In-Reply-To: <20110425210323.GA23418@kroah.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Greg KH <greg@kroah.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1758933Ab1DZH7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 03:59:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60689 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758430Ab1DZH7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 03:59:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: (resend) [PATCH] vmscan,memcg: memcg aware swap token
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110426170146.F396.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104260959.53084@rk-nord.at>
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 26 Apr 2011 16:59:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't really want to hijack this thread -- just confirm that the i915
-driver is/was broken through the whole 2.6.38 series, up to 2.6.38.4.
+Currently, memcg reclaim can disable swap token even if the swap token
+mm doesn't belong in its memory cgroup. It's slightly riskly. If an
+admin makes very small mem-cgroup and silly guy runs contenious heavy
+memory pressure workloa, whole tasks in the system are going to lose
+swap-token and then system may become unresponsive. That's bad.
+
+This patch adds 'memcg' parameter into disable_swap_token(). and if
+the parameter doesn't match swap-token, VM doesn't put swap-token.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    6 ++++++
+ include/linux/swap.h       |   24 +++++++++++++++++-------
+ mm/memcontrol.c            |    2 +-
+ mm/thrash.c                |   17 +++++++++++++++++
+ mm/vmscan.c                |    4 ++--
+ 5 files changed, 43 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 6a0cffd..df572af 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -84,6 +84,7 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem);
+ 
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
++extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
+ 
+ static inline
+ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+@@ -244,6 +245,11 @@ static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ 	return NULL;
+ }
+ 
++static inline struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
++{
++	return NULL;
++}
++
+ static inline int mm_match_cgroup(struct mm_struct *mm, struct mem_cgroup *mem)
+ {
+ 	return 1;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 384eb5f..ccea15d 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -358,21 +358,31 @@ struct backing_dev_info;
+ extern struct mm_struct *swap_token_mm;
+ extern void grab_swap_token(struct mm_struct *);
+ extern void __put_swap_token(struct mm_struct *);
++extern int has_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg);
+ 
+-static inline int has_swap_token(struct mm_struct *mm)
++static inline
++int has_swap_token(struct mm_struct *mm)
+ {
+-	return (mm == swap_token_mm);
++	return has_swap_token_memcg(mm, NULL);
+ }
+ 
+-static inline void put_swap_token(struct mm_struct *mm)
++static inline
++void put_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg)
+ {
+-	if (has_swap_token(mm))
++	if (has_swap_token_memcg(mm, memcg))
+ 		__put_swap_token(mm);
+ }
+ 
+-static inline void disable_swap_token(void)
++static inline
++void put_swap_token(struct mm_struct *mm)
++{
++	return put_swap_token_memcg(mm, NULL);
++}
++
++static inline
++void disable_swap_token(struct mem_cgroup *memcg)
+ {
+-	put_swap_token(swap_token_mm);
++	put_swap_token_memcg(swap_token_mm, memcg);
+ }
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+@@ -500,7 +510,7 @@ static inline int has_swap_token(struct mm_struct *mm)
+ 	return 0;
+ }
+ 
+-static inline void disable_swap_token(void)
++static inline void disable_swap_token(struct mem_cgroup *memcg)
+ {
+ }
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c2776f1..5683c7a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -735,7 +735,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+ 				struct mem_cgroup, css);
+ }
+ 
+-static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
++struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+ {
+ 	struct mem_cgroup *mem = NULL;
+ 
+diff --git a/mm/thrash.c b/mm/thrash.c
+index 2372d4e..f892a6e 100644
+--- a/mm/thrash.c
++++ b/mm/thrash.c
+@@ -21,6 +21,7 @@
+ #include <linux/mm.h>
+ #include <linux/sched.h>
+ #include <linux/swap.h>
++#include <linux/memcontrol.h>
+ 
+ static DEFINE_SPINLOCK(swap_token_lock);
+ struct mm_struct *swap_token_mm;
+@@ -75,3 +76,19 @@ void __put_swap_token(struct mm_struct *mm)
+ 		swap_token_mm = NULL;
+ 	spin_unlock(&swap_token_lock);
+ }
++
++int has_swap_token_memcg(struct mm_struct *mm, struct mem_cgroup *memcg)
++{
++	if (memcg) {
++		struct mem_cgroup *swap_token_memcg;
++
++		/*
++		 * memcgroup reclaim can disable swap token only if token task
++		 * is in the same cgroup.
++		 */
++		swap_token_memcg = try_get_mem_cgroup_from_mm(swap_token_mm);
++		return ((mm == swap_token_mm) && (memcg == swap_token_memcg));
++	} else
++		return (mm == swap_token_mm);
++}
++
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b3a569f..19e179b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2044,7 +2044,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+-			disable_swap_token();
++			disable_swap_token(sc->mem_cgroup);
+ 		shrink_zones(priority, zonelist, sc);
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+@@ -2353,7 +2353,7 @@ loop_again:
+ 
+ 		/* The swap token gets in the way of swapout... */
+ 		if (!priority)
+-			disable_swap_token();
++			disable_swap_token(NULL);
+ 
+ 		all_zones_ok = 1;
+ 		balanced = 0;
+-- 
+1.7.3.1
 
 
 
-* Greg KH -- Monday 25 April 2011:
-> On Mon, Apr 25, 2011 at 10:10:46PM +0200, Melchior FRANZ wrote:
-> > I'm still using 2.6.38-rc8 (with SuSE 11.4/tumbleweed) on this machine
-> > (Acer TravelMate 5735Z-452G32Mnss), because that's the last version that
-> > supported KMS on my chipset.
 
-> I don't understand, .38 should work as it has the above fix in it,
-> right?
-
-[https://bugzilla.kernel.org/show_bug.cgi?id=31522]
-Argh, sorry -- I hadn't noticed that someone closed this bug report.
-No, this isn't fixed. Exact same symptoms: The notebook's screen 
-goes black early in the boot process with KMS. Closing and reopening
-the lid doesn't help, contrary to what some people reported. Turning
-off KMS kind-of helps: The virtual console is right after that, but
-Xorg apparently gets contradicting info about the screen size, so
-that parts of the desktop end up outside the screen area.
-
-
-
-> Otherwise, what should be done for the .38-stable tree?
-
-I had assumed that the commit that broke it was known, as there hasn't
-much been committed between 2.6.38-rc8 and 26.6.38, but I'll bisect
-and investigate.
-
-m.
