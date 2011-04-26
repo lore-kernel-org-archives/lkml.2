@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab1DZVhc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 17:37:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9586 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758681Ab1DZVNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 17:13:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,270,1301900400"; 
-   d="scan'208";a="738831605"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110426212.641772347@firstfloor.org>
-In-Reply-To: <20110426212.641772347@firstfloor.org>
-To: jack@suse.cz, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [20/106] quota: Don't write quota info in dquot_commit()
-Message-Id: <20110426211258.C63EB3E1886@tassilo.jf.intel.com>
-Date: Tue, 26 Apr 2011 14:12:58 -0700 (PDT)
+	id S1758836Ab1DZVho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 17:37:44 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60043 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758681Ab1DZVhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 17:37:40 -0400
+Subject: [git pull] Posix Alarm Timers for 2.6.40
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Apr 2011 14:37:32 -0700
+Message-ID: <1303853852.2816.135.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Hey Thomas,
 
-------------------
-From: Jan Kara <jack@suse.cz>
+Here's my Posix Alarm Timers patch queue for 2.6.40. Please let me know
+if you see any issues that would block it from being merged into -tip.
 
-commit b03f24567ce7caf2420b8be4c6eb74c191d59a91 upstream.
+thanks
+-john
 
-There's no reason to write quota info in dquot_commit(). The writing is a
-relict from the old days when we didn't have dquot_acquire() and
-dquot_release() and thus dquot_commit() could have created / removed quota
-structures from the file. These days dquot_commit() only updates usage counters
-/ limits in quota structure and thus there's no need to write quota info.
+  git://git.linaro.org/people/jstultz/linux.git fortglx/40/tip/timer/core
 
-This also fixes an issue with journaling filesystem which didn't reserve
-enough space in the transaction for write of quota info (it could have been
-dirty at the time of dquot_commit() because of a race with other operation
-changing it).
+John Stultz (4):
+      time: Add timekeeping_inject_sleeptime
+      timers: Add rb_init_node() to allow for stack allocated rb nodes
+      timers: Introduce in-kernel alarm-timer interface
+      timers: Posix interface for alarm-timers
 
-Reported-and-tested-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+ drivers/rtc/class.c          |   23 +-
+ include/linux/alarmtimer.h   |   30 ++
+ include/linux/capability.h   |    7 +-
+ include/linux/posix-timers.h |    2 +
+ include/linux/rbtree.h       |    8 +
+ include/linux/time.h         |    3 +
+ include/linux/timerqueue.h   |    2 +-
+ kernel/time/Makefile         |    2 +-
+ kernel/time/alarmtimer.c     |  705 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/time/timekeeping.c    |   56 ++++-
+ 10 files changed, 818 insertions(+), 20 deletions(-)
+ create mode 100644 include/linux/alarmtimer.h
+ create mode 100644 kernel/time/alarmtimer.c
 
----
- fs/quota/dquot.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
 
-Index: linux-2.6.35.y/fs/quota/dquot.c
-===================================================================
---- linux-2.6.35.y.orig/fs/quota/dquot.c
-+++ linux-2.6.35.y/fs/quota/dquot.c
-@@ -422,7 +422,7 @@ EXPORT_SYMBOL(dquot_acquire);
-  */
- int dquot_commit(struct dquot *dquot)
- {
--	int ret = 0, ret2 = 0;
-+	int ret = 0;
- 	struct quota_info *dqopt = sb_dqopt(dquot->dq_sb);
- 
- 	mutex_lock(&dqopt->dqio_mutex);
-@@ -434,15 +434,10 @@ int dquot_commit(struct dquot *dquot)
- 	spin_unlock(&dq_list_lock);
- 	/* Inactive dquot can be only if there was error during read/init
- 	 * => we have better not writing it */
--	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-+	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
- 		ret = dqopt->ops[dquot->dq_type]->commit_dqblk(dquot);
--		if (info_dirty(&dqopt->info[dquot->dq_type])) {
--			ret2 = dqopt->ops[dquot->dq_type]->write_file_info(
--						dquot->dq_sb, dquot->dq_type);
--		}
--		if (ret >= 0)
--			ret = ret2;
--	}
-+	else
-+		ret = -EIO;
- out_sem:
- 	mutex_unlock(&dqopt->dqio_mutex);
- 	return ret;
