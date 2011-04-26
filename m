@@ -1,32 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1DZL6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 07:58:01 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61333 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab1DZL6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 07:58:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=un80RYBMdeDpYQ3VXkeR6lKUVPfOQ93ze6cDO3A0Stkf7QWsJzOaeetjC9r+OwK88j
-         EinNEj4Hq1L0R4PrsG/C9rk2TxkC3DhtRf8A+oQaq6cNP64Kh15kJvUWFVOyg8m59ov0
-         J9eq+SCK05VA7v/2+otA7RT0U8ktVMVYtZSdE=
-MIME-Version: 1.0
-Date: Tue, 26 Apr 2011 14:58:00 +0300
-Message-ID: <BANLkTimaJFFCCQOA6=G4i95PsJK_S2bf9Q@mail.gmail.com>
-Subject: Why is the 'loff_t *offset' parameter in the file_operations' read
- function a pointer?
-From: Amit Ben Shahar <amit.bens@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751372Ab1DZMF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 08:05:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47484 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770Ab1DZMF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 08:05:56 -0400
+Date: Tue, 26 Apr 2011 22:05:40 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20110426220540.7c0006e3@notabene.brown>
+In-Reply-To: <1303817628.5593.6.camel@machina.109elm.lan>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-3-git-send-email-mgorman@suse.de>
+	<20110426211500.02d6a5a6@notabene.brown>
+	<1303817628.5593.6.camel@machina.109elm.lan>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(if i'm off topic or should look elsewhere i apologize - couldn't find
-information anywhere)
-I am coding a kernel module and implementing a file's operations, the
-read operation received an loff_t *offset parameter, why is this a
-pointer? is it in userspace?
+On Tue, 26 Apr 2011 12:33:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+
+> On Tue, 2011-04-26 at 21:15 +1000, NeilBrown wrote:
+> > On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+> > > +{
+> > > +	return gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC;
+> > > +}
+> > > +
+> > >  static inline struct page *
+> > >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> > >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> > > @@ -2202,8 +2211,16 @@ nopage:
+> > >  got_pg:
+> > >  	if (kmemcheck_enabled)
+> > >  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+> > > -	return page;
+> > >  
+> > > +	/*
+> > > +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
+> > > +	 * been OOM killed. The expectation is that the caller is taking
+> > > +	 * steps that will free more memory. The caller should avoid the
+> > > +	 * page being used for !PFMEMALLOC purposes.
+> > > +	 */
+> > > +	page->pfmemalloc = (alloc_flags & ALLOC_PFMEMALLOC);
+> > > +
+> > > +	return page;
+> > 
+> > Linus doesn't seem to be a fan of this construct:
+> >    https://lkml.org/lkml/2011/4/1/255
+> > 
+> 
+> There is confusion around this topic. Andrew prefers bool for true/false
+> values and it's self-documenting. I tend to prefer it myself for
+> readability and there is a slow conversion in the VM from
+> ints-used-as-bools to bools and my understanding of bool is that any
+> non-zero value will be treated as true (just as it is for int).
+> 
+> > pfmemalloc is a bool, and the value on the right is either 0 or 0x1000.
+> > 
+> > If bool happens to be typedefed to 'char' or even 'short', pfmemalloc would
+> > always be set to 0.
+> 
+> It is typedeffed as _Bool though which I thought was able to handle the
+> cast appropriately or is that wrong?
+
+Yes, I too believe that _Bool does the right thing, so this particular usage
+does happen to be safe in the kernel.  But there is a long tradition of
+'bool' being typedefed to an int type so the usage can look wrong.  So maybe
+it is best avoided.
+
+I have no strong feeling either way - I just thought I would highlight it.
+In general, I like bool, but I don't like automatic casts (I often use
+  if (pointer != NULL) ...
+because I think it reads better).
+
+Thanks,
+NeilBrown
+
+
+
+> 
+> > Ditto for the gfp_pfmemalloc_allowed function.
+> > 
+> > Prefixing with '!!' would make it safe.
+> > 
+> 
+> Will do that to avoid any oddities. Thanks
+> 
+
