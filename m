@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1DZK1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 06:27:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64174 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab1DZK1w (ORCPT
+	id S1754031Ab1DZK2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 06:28:08 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60141 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753348Ab1DZK2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 06:27:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LOO/RIkDZ8PVe2X1I44V2Ky7FRJ1R1yAjElprSGsDrpVjZPArT6ZAQ5L21J3t2h1FD
-         tsp0xlADJyu5vJtF2vS63ok1yxa623s8OU1AeKJnmi8j3ui2YgoNn+GNfWuwsg5Ng8eD
-         aKhJLKd1+0XQqxDFpVyLdGx/VRs15YpWgnWuI=
-Subject: Re: [BUG] perf and kmemcheck : fatal combination
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Vegard Nossum <vegardno@ifi.uio.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <BANLkTinOUFrJuauoxnRTkvrhZRxdYd05Mw@mail.gmail.com>
-References: <1303747731.2747.182.camel@edumazet-laptop>
-	 <1303803525.20212.20.camel@twins> <20110426080443.GA806@elte.hu>
-	 <1303808257.3012.3.camel@edumazet-laptop>
-	 <1303811635.3358.21.camel@edumazet-laptop>
-	 <BANLkTinOUFrJuauoxnRTkvrhZRxdYd05Mw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 12:27:48 +0200
-Message-ID: <1303813668.3358.22.camel@edumazet-laptop>
+	Tue, 26 Apr 2011 06:28:06 -0400
+Date: Tue, 26 Apr 2011 11:28:04 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] signal: introduce do_sigtimedwait() to factor out
+ compat/native code
+Message-ID: <20110426112804.6bd0713b@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110423175940.GC484@redhat.com>
+References: <20110418134421.GA15951@redhat.com>
+	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+	<20110418173224.GA27918@redhat.com>
+	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+	<20110423175901.GA484@redhat.com>
+	<20110423175940.GC484@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 26 avril 2011 à 13:08 +0300, Pekka Enberg a écrit :
+On Sat, 23 Apr 2011 19:59:40 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-> That's just kmemcheck fault handler warning about in_nmi(). You could
-> try to make the relevant perf allocations use __GFP_NOTRACK and/or
-> SLAB_NOTRACK to avoid page faulting in the perf nmi handler.
+> Factor out the common code in sys_rt_sigtimedwait/compat_sys_rt_sigtimedwait
+> to the new helper, do_sigtimedwait().
+> 
+> Perhaps it would be better to move compat_sys_rt_sigtimedwait() into
+> signal.c under CONFIG_COMPAT, then we can make do_sigtimedwait() static.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Yes, I am going to try that, thanks
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
 
+The changes Tejun suggested seem like a good idea. I also think that
+moving compat_sys_rt_sigtimedwait() into signal.c makes sense.
 
+-- 
+Matt Fleming, Intel Open Source Technology Center
