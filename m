@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1DZQTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:19:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59111 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab1DZQTF (ORCPT
+	id S1753754Ab1DZQYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:24:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58014 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab1DZQYm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:19:05 -0400
-Date: Tue, 26 Apr 2011 09:18:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Pavan Savoy <pavan_savoy@ti.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@suse.de
-Subject: [PATCH -next] misc: fix ti-st build issues
-Message-Id: <20110426091851.87edcef3.randy.dunlap@oracle.com>
-In-Reply-To: <20110426202605.c66ce0ea.sfr@canb.auug.org.au>
-References: <20110426202605.c66ce0ea.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DB6F071.0092:SCFMA4539811,ss=1,fgs=0
+	Tue, 26 Apr 2011 12:24:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Tf40cXXC2/OASuc8lxg8RrzI3OVrNHV3rNFOIl621hfEzojoD9p4BXfSUpNn92sGNW
+         U/LPeEYrWOOgbvFz52VBJ/aXHOGfmr8pPkNsxK2S5cjCuUaQQCsMOYbE8E/XqLZ8PCJK
+         kW9xof+0eZjxkkR+Yu82V6AcMu7jaCKOmMoIc=
+MIME-Version: 1.0
+In-Reply-To: <4DB6E584.9040504@lwfinger.net>
+References: <BANLkTi=fFg6+3DcBNwEOex0jASf1WiBRDQ@mail.gmail.com>
+	<4DB4E94C.2060505@lwfinger.net>
+	<BANLkTinA6GTTjP=MsVcCqmCA1Tgh-6bHjA@mail.gmail.com>
+	<4DB5C8FA.2030700@lwfinger.net>
+	<BANLkTi=syavY0Tw-Ny9-QhU=_Ryrbmkhfw@mail.gmail.com>
+	<4DB61645.8010001@lwfinger.net>
+	<BANLkTikWHxEnzZ+H1OgFv7AdmpmmcwVuzA@mail.gmail.com>
+	<4DB6E584.9040504@lwfinger.net>
+Date: Wed, 27 Apr 2011 00:24:41 +0800
+Message-ID: <BANLkTin7F21PVKqtbohE6EucdinZ60x5=A@mail.gmail.com>
+Subject: Re: r8712u cannot set essid
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, wlanfae@realtek.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, Apr 26, 2011 at 11:32 PM, Larry Finger
+<Larry.Finger@lwfinger.net> wrote:
+> On 04/25/2011 10:26 PM, Jeff Chua wrote:
+>>
+>> On Tue, Apr 26, 2011 at 8:48 AM, Larry Finger<Larry.Finger@lwfinger.net>
+>>  wrote:
+>>>
+>>> On 04/25/2011 07:21 PM, Jeff Chua wrote:
+>>>>
+>>>> A little bit of good news is that I got adhoc to work 2 out of 100
+>>>> tries (with wpa_supplicant on another sreen, and the above iwconfig
+>>>> command). So, it's working "partially". Once it has an SSID, I could
+>>>> change it and it'll still work.
+>>>
+>>> Please try the attached patch.
+>>
+>> Tried, but didn't make any difference.
+>>
+>> Now I can make adhoc work 100% if I first put the device in wpa2
+>> infrastructure and associates it with an AP. Then kill the
+>> wpa_supplicant process, and start a new wpa_supplicant with adhoc
+>> config.
+>>
+>> If I just start with the wpa_supplicant adhoc config, it'll never set the
+>> ssid.
+>>
+>> So, something is not right in the r8712u module or may be the firmware?
+>
+> I must have something wrong in my setup, thus my testing did not work. There
+> is another place in the code where the setting of parameters requires the
+> interface to be connected. Please try the attached patch.
 
-st_drv uses skb*() interfaces, so it should depend on NET.
-It also uses GPIO interfaces, so it should depend on GPIOLIB.
+Larry,
 
-st_kim.c uses syss_*() calls, so it should #include
-<linux/sysfs.h>.
+I hacked it a bit more, and now, it's all working. I'll send you the
+patch shortly. Adhoc mode works now, and I've confirmed that my iPhone
+can connect to it, get an IP and surf the net! The device is so tiny
+and was contemplating on trying another brand.
 
-Fixes these observed build errors:
-ERROR: "skb_queue_purge" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "skb_pull" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "skb_queue_tail" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "__alloc_skb" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "kfree_skb" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "skb_dequeue" [drivers/misc/ti-st/st_drv.ko] undefined!
-ERROR: "skb_put" [drivers/misc/ti-st/st_drv.ko] undefined!
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/misc/ti-st/Kconfig  |    1 +
- drivers/misc/ti-st/st_kim.c |    1 +
- 2 files changed, 2 insertions(+)
-
---- linux-next-20110426.orig/drivers/misc/ti-st/Kconfig
-+++ linux-next-20110426/drivers/misc/ti-st/Kconfig
-@@ -5,6 +5,7 @@
- menu "Texas Instruments shared transport line discipline"
- config TI_ST
- 	tristate "Shared transport core driver"
-+	depends on NET && GPIOLIB
- 	select FW_LOADER
- 	help
- 	  This enables the shared transport core driver for TI
---- linux-next-20110426.orig/drivers/misc/ti-st/st_kim.c
-+++ linux-next-20110426/drivers/misc/ti-st/st_kim.c
-@@ -30,6 +30,7 @@
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/sched.h>
-+#include <linux/sysfs.h>
- #include <linux/tty.h>
- 
- #include <linux/skbuff.h>
+Thanks,
+Jeff
