@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab1DZAhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 20:37:20 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26331 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab1DZAhT (ORCPT
+	id S932234Ab1DZAht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 20:37:49 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:40466 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932190Ab1DZAhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 20:37:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=wOe2PLMKYl6q2mvgWxdvKIqelnZ3BQ//sabW1qy4e2y99SlIiTZ6iMJg5gmTEuS1KH
-         M59URk090YgrkNXVicSg==
-Date: Mon, 25 Apr 2011 17:37:19 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Willy Tarreau <w@1wt.eu>
-cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        Bob Liu <lliubbo@gmail.com>, David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Enrik Berkhan <Enrik.Berkhan@ge.com>
-Subject: Re: [PATCH 165/173] ramfs: fix memleak on no-mmu arch
-In-Reply-To: <20110425200240.164070671@pcw.home.local>
-Message-ID: <alpine.LSU.2.00.1104251653310.5571@sister.anvils>
-References: <20110425200240.164070671@pcw.home.local>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 25 Apr 2011 20:37:47 -0400
+Date: Mon, 25 Apr 2011 17:37:38 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Chris Mason <chris.mason@oracle.com>, Mingming Cao <cmm@us.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
+Message-ID: <20110426003738.GB22189@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <1303476503-sup-4141@think> <20110422203434.GA2977@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422203434.GA2977@quack.suse.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011, Willy Tarreau wrote:
+On Fri, Apr 22, 2011 at 10:34:34PM +0200, Jan Kara wrote:
+> On Fri 22-04-11 08:50:01, Chris Mason wrote:
+> > Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
+> > > Hi everyone,
+> > > 
+> > > I've finally managed to get together a patch that seems to provide stable pages
+> > > during writeback, or at least gets us to the point that after several days of
+> > > running tests I don't see DIF checksum errors anymore. :)
+> > > 
+> > > The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
+> > > walk the process tree to find all userland ptes that map to a particular memory
+> > > page and revoke write access, and
+> > 
+> > Hmm, did you need the bio_integrity_prep change for all the filesystems?
+> > This should be happening already as part of using page_mkwrite.
+>   Or more precisely page_mkclean() should do what you try to do in
+> bio_integrity_prep()... It would certainly be interesting (bug) if you
+> could write to the page after calling page_mkclean() without page_mkwrite()
+> being called.
 
-> 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
-> 
-> ------------------
-> 
-> From: Bob Liu <lliubbo@gmail.com>
-> 
-> commit b836aec53e2bce71de1d5415313380688c851477 upstream.
-> 
-> On no-mmu arch, there is a memleak during shmem test.  The cause of this
-> memleak is ramfs_nommu_expand_for_mapping() added page refcount to 2
-> which makes iput() can't free that pages.
-> 
-...
-> 
-> Signed-off-by: Bob Liu <lliubbo@gmail.com>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  fs/ramfs/file-nommu.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- a/fs/ramfs/file-nommu.c
-> +++ b/fs/ramfs/file-nommu.c
-> @@ -111,6 +111,7 @@ int ramfs_nommu_expand_for_mapping(struc
->  		SetPageDirty(page);
->  
->  		unlock_page(page);
-> +		put_page(page);
->  	}
->  
->  	return 0;
+Hm... in mpage_da_submit_io I see the following sequence of calls:
 
+1. clear_page_dirty_for_io
+2. possibly one of: ext4_bio_write_page or block_write_full_page.
+   If ext4_bio_write_page, 
+   2a. kmem_cache_alloc
+   2b. set_page_writeback
 
-I'm not absolutely certain, but I rather think this patch should NOT
-be included: I never looked to see when the bug it fixes crept in,
-but now I'm thinking it may have been 2678958e1225 "ramfs-nommu:
-use generic lru cache", which did not go in until 2.6.30 -
-__lru_cache_add adding the unbalanced page_cache_get.
+Before and after #1, the page is locked but writeback is not set.
 
-Whereas the "SetPageDirty" you can see above is not in 2.6.27.59-rc1:
-I think you'd do well to include the patch below which introduced it.
-(It may give you a reject because __pagevec_lru_add was enhanced to
-__pagevec_lru_add_file by the time that patch went in.)
+Before #2, the page must be locked and writeback must not be set, because both
+of those two functions want to set the writeback bit themselves.  However,
+ext4_bio_write_page tries to allocate memory with GFP_NOFS, which means it can
+sleep (I think).
 
-Yes, the pages Enrik reports as being wrongly discarded, would not
-have been discarded if their reference counts were too high:
-I do believe you need Enrik's patch instead of Bob's patch.
+Unfortunately, ext4_page_mkwrite will check for page locked, wait for page
+writeback, and then return the page.  I think it is theoretically possible for
+#1 to trigger a page_mkwrite which completes before #2b, right?  In which case
+the thread that called mkwrite will think that the page isn't being written
+out, and happily scribble on it during writeback.  I could be wrong, but it
+seems to me that one has to write-protect the page after setting the writeback
+bit.
 
-Hugh
+I guess we could call page_mkclean from bio_integrity_prep, though.
 
-commit 020fe22ff14320927f394de222cbb11708bcc7a8
-Author: Enrik Berkhan <Enrik.Berkhan@ge.com>
-Date:   Fri Mar 13 13:51:56 2009 -0700
-
-    nommu: ramfs: pages allocated to an inode's pagecache may get wrongly discarded
-    
-    The pages attached to a ramfs inode's pagecache by truncation from nothing
-    - as done by SYSV SHM for example - may get discarded under memory
-    pressure.
-    
-    The problem is that the pages are not marked dirty.  Anything that creates
-    data in an MMU-based ramfs will cause the pages holding that data will
-    cause the set_page_dirty() aop to be called.
-    
-    For the NOMMU-based mmap, set_page_dirty() may be called by write(), but
-    it won't be called by page-writing faults on writable mmaps, and it isn't
-    called by ramfs_nommu_expand_for_mapping() when a file is being truncated
-    from nothing to allocate a contiguous run.
-    
-    The solution is to mark the pages dirty at the point of allocation by the
-    truncation code.
-    
-    Signed-off-by: Enrik Berkhan <Enrik.Berkhan@ge.com>
-    Signed-off-by: David Howells <dhowells@redhat.com>
-    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Nick Piggin <nickpiggin@yahoo.com.au>
-    Cc: Johannes Weiner <hannes@cmpxchg.org>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-diff --git a/fs/ramfs/file-nommu.c b/fs/ramfs/file-nommu.c
-index b9b567a..90d72be 100644
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -114,6 +114,9 @@ int ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize)
- 		if (!pagevec_add(&lru_pvec, page))
- 			__pagevec_lru_add_file(&lru_pvec);
- 
-+		/* prevent the page from being discarded on memory pressure */
-+		SetPageDirty(page);
-+
- 		unlock_page(page);
- 	}
- 
+--D
