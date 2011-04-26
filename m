@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab1DZXWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:22:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34515 "EHLO mx2.suse.de"
+	id S1754890Ab1DZX3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:29:53 -0400
+Received: from kroah.org ([198.145.64.141]:51143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752694Ab1DZXWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:22:13 -0400
-Date: Wed, 27 Apr 2011 09:22:03 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 09/13] netvm: Set PF_MEMALLOC as appropriate during SKB
- processing
-Message-ID: <20110427092203.659fbc25@notabene.brown>
-In-Reply-To: <20110426141048.GG4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	<1303803414-5937-10-git-send-email-mgorman@suse.de>
-	<20110426222157.33a461f8@notabene.brown>
-	<20110426141048.GG4658@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752148Ab1DZX3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:29:52 -0400
+Date: Tue, 26 Apr 2011 16:28:43 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110426232843.GA31184@kroah.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 15:10:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Tue, Apr 26, 2011 at 09:19:45AM -0700, K. Y. Srinivasan wrote:
+> This patch-set addresses some of the bus/driver model cleanup that
+> Greg sugested over the last couple of days.  In this patch-set we
+> deal with the following issues:
+> 
+> 	1) Cleanup unnecessary state in struct hv_device and 
+> 	   struct hv_driver to be compliant with the Linux
+> 	   Driver model.
+> 
+> 	2) Cleanup the vmbus_match() function to conform with the 
+> 	   Linux Driver model.
+> 
+> 	3) Cleanup error handling in the vmbus_probe() and 
+> 	   vmbus_child_device_register() functions. Fixed a 
+> 	   bug in the probe failure path as part of this cleanup.
+> 
+> 	4) The Windows host cannot handle the vmbus_driver being 
+> 	   unloaded and subsequently loaded. Cleanup the driver with
+> 	   this in mind.
 
-> On Tue, Apr 26, 2011 at 10:21:57PM +1000, NeilBrown wrote:
-> > On Tue, 26 Apr 2011 08:36:50 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > diff --git a/net/core/dev.c b/net/core/dev.c
-> > > index 3871bf6..2d79a20 100644
-> > > --- a/net/core/dev.c
-> > > +++ b/net/core/dev.c
-> > > @@ -3095,6 +3095,27 @@ static void vlan_on_bond_hook(struct sk_buff *skb)
-> > >  	}
-> > >  }
-> > >  
-> > > +/*
-> > > + * Limit which protocols can use the PFMEMALLOC reserves to those that are
-> > > + * expected to be used for communication with swap.
-> > > + */
-> > > +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
-> > > +{
-> > > +	if (skb_pfmemalloc(skb))
-> > > +		switch (skb->protocol) {
-> > > +		case __constant_htons(ETH_P_ARP):
-> > > +		case __constant_htons(ETH_P_IP):
-> > > +		case __constant_htons(ETH_P_IPV6):
-> > > +		case __constant_htons(ETH_P_8021Q):
-> > > +			break;
-> > > +
-> > > +		default:
-> > > +			return false;
-> > > +		}
-> > > +
-> > > +	return true;
-> > > +}
-> > 
-> > This sort of thing really bugs me :-)
-> > Neither the comment nor the function name actually describe what the function
-> > is doing.  The function is checking *2* things.
-> >    is_pfmemalloc_skb_or_pfmemalloc_protocol()
-> > might be a more correct name, but is too verbose.
-> > 
-> > I would prefer the skb_pfmemalloc test were removed from here and ....
-> > 
-> > > +	if (!skb_pfmemalloc_protocol(skb))
-> > > +		goto drop;
-> > > +
-> > 
-> > ...added here so this becomes:
-> > 
-> >       if (!skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
-> >                 goto drop;
-> > 
-> > which actually makes sense.
-> > 
-> 
-> Moving the check is neater but that check should be
-> 
-> 	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
-> 
-> ? It's only if the skb was allocated from emergency reserves that we
-> need to consider dropping it to make way for other packets to be
-> received.
-> 
+I've stopped at this patch (well, I applied one more, but you can see
+that.)
 
-Correct.  I got my Boolean algebra all confused. Sorry 'bout that.
+I'd like to get some confirmation that this is really what you all want
+to do here before applying it.  If it is, care to resend them with a bit
+more information about this issue and why you all are making it?
 
-NeilBrown
+Anyway, other than this one, the series looks good.  But you should
+follow-up with some driver structure changes like what Christoph said to
+do.  After that, do you want another round of review of the code, or do
+you have more things you want to send in (like the name[64] removal?)
+
+thanks,
+
+greg k-h
