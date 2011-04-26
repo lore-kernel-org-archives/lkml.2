@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab1DZOkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 10:40:08 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:54411 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab1DZOkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 10:40:07 -0400
-Date: Tue, 26 Apr 2011 16:34:36 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, stefano.stabellini@eu.citrix.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list initialization
-Message-ID: <20110426143436.GB27417@router-fw-old.local.net-space.pl>
-References: <20110422212545.GA22846@router-fw-old.local.net-space.pl> <20110426134242.GA26275@dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110426134242.GA26275@dumpdata.com>
-User-Agent: Mutt/1.3.28i
+	id S1755747Ab1DZOk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 10:40:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57110 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755324Ab1DZOk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 10:40:27 -0400
+Message-ID: <4DB6D959.6090008@suse.cz>
+Date: Tue, 26 Apr 2011 16:40:25 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: pefoley2@verizon.net
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: fix sed error in export_report.pl
+References: <4DB608EE.1060502@verizon.net>
+In-Reply-To: <4DB608EE.1060502@verizon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 09:42:42AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Apr 22, 2011 at 11:25:45PM +0200, Daniel Kiper wrote:
-> > Added missed Signed-off-by line.
-> >
-> > After a lot of debugging and long reading of Linux Kernel and Xen code
-> > finally I killed deeply hidden bug in pv-grub. Details below.
-> > Additionally, I am CC'ing this e-mail to LKML because this issue
-> > looks like Linux Kernel problem, however, it is not.
-> >
-> > This patch applies to Xen Ver. 4.0, Xen Ver. 4.1 and unstable tree.
-> >
-> > # HG changeset patch
-> > # User dkiper@net-space.pl
-> > # Date 1303474763 -7200
-> > # Node ID b33bf24be129b7b9cd2248460beb1298088c6af5
-> > # Parent  dbf2ddf652dc3dd927447e79ef4bc586de55d708
-> > Introduction of Linux Kernel git commit ceefccc93932b920a8ec6f35f596db05202a12fe
-> > (x86: default CONFIG_PHYSICAL_START and CONFIG_PHYSICAL_ALIGN to 16 MB) revealed
-> > deeply hidden bug in pv-grub. During kernel load stage dom->p2m_host[] list has
-> > been incorrectly initialized.
-> >
-> > At the beginning of kernel load stage dom->p2m_host[] list is populated with
-> > current pfn->mfn layout. Later during memory allocation (memory is allocated
-> > page by page in kexec_allocate()) page order is changed to establish linear
-> > layout in new domain. It is done by exchanging subsequent mfns with newly
-> > allocated mfns. dom->p2m_host[] list is indexed by currently requested pfn
-> > (it is incremented from 0) and pfn of newly allocated paged. If pfn of newly
-> > allocated page is less than currently requested pfn then relevant earlier
-> > allocated mfn is overwritten which leads to domain crash later. This patch
-> > fix that issue. If pfn of newly allocated page is less then currently
-> > requested pfn then relevant pfn/mfn pair is properly calculated and usual
-> > exchange occurs later.
+On 26.4.2011 01:51, Peter Foley wrote:
+> This patch fixes a sed error in export_report.pl by escaping a $.
 >
-> Nice! I presume this fixes the issue you had at the Xen Hack-O-Thon with
-> your guest right?
+> Signed-off-by: Peter Foley<pefoley2@verizon.net>
+> ---
+>   scripts/export_report.pl |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/scripts/export_report.pl b/scripts/export_report.pl
+> index 04dce7c..91fa5a2 100644
+> --- a/scripts/export_report.pl
+> +++ b/scripts/export_report.pl
+> @@ -50,7 +50,7 @@ sub usage {
+>    sub collectcfiles {
+>       my @file
+> -	= `cat .tmp_versions/*.mod | grep '.*\.ko\$' | sed s/\.ko$/.mod.c/`;
+> +	= `cat .tmp_versions/*.mod | grep '.*\.ko\$' | sed s/\.ko\$/.mod.c/`;
 
-Yes, it does. It was very difficult to discover because that
-issue overlapped with other memory management issues which
-were coming out last time. Currently, I am working on time
-optimized version of that patch.
+Please enclose the argument in single quotes instead.
 
-Daniel
+Michal
