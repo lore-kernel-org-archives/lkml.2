@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab1DZDFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 23:05:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28464 "EHLO
+	id S1757995Ab1DZDJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 23:09:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44667 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab1DZDFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 23:05:53 -0400
-Date: Mon, 25 Apr 2011 23:05:40 -0400
+	with ESMTP id S1752232Ab1DZDJS (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 25 Apr 2011 23:09:18 -0400
+Date: Mon, 25 Apr 2011 23:07:45 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, konrad@kernel.org
-Subject: Re: [Xen-devel] Re: [PATCH v6] xen pci backend driver.
-Message-ID: <20110426030540.GA29384@dumpdata.com>
-References: <1303333640-5994-1-git-send-email-konrad.wilk@oracle.com>
- <20110425115850.48b7d254@jbarnes-desktop>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 112/173] Input: xen-kbdfront - advertise either
+ absolute or relative coordinates
+Message-ID: <20110426030745.GA20779@dumpdata.com>
+References: <46075c3a3ef08be6d70339617d6afc98@local>
+ <20110425200237.859884245@pcw.home.local>
+ <20110425203158.GA8427@aepfle.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110425115850.48b7d254@jbarnes-desktop>
+In-Reply-To: <20110425203158.GA8427@aepfle.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DB6368E.0025:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4DB63707.0026:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 11:58:50AM -0700, Jesse Barnes wrote:
-> On Wed, 20 Apr 2011 17:07:19 -0400
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Mon, Apr 25, 2011 at 10:31:58PM +0200, Olaf Hering wrote:
+> On Mon, Apr 25, Willy Tarreau wrote:
 > 
-> > The following patch implements the Xen pci backend for upstream Linux.
-> > This is the host side counterpart to the frontend driver in
-> > drivers/pci/xen-pcifront.c. The PV protocol is also implemented by
-> > frontend drivers in other OSes too, such as the BSDs.
+> > 2.6.27.59-stable review patch.  If anyone has any objections, please let us know.
+> 
+> These two hunks have to be removed from the patch.
+> If the guest is suspended/resumed the guest has to renegotiate with the
+> new qemu-dm process and set the request-abs-pointer property again.
+> 
+
+Willy,
+
+Olaf is refering to c36b58e8a9112017c2bcc322cc98e71241814303 which is 
+in the upstream kernel.
+
+> Olaf
+> 
+> > @@ -267,7 +281,7 @@
+> >  				   enum xenbus_state backend_state)
+> >  {
+> >  	struct xenkbd_info *info = dev->dev.driver_data;
+> > -	int ret, val;
+> > +	int val;
+> >  
+> >  	switch (backend_state) {
+> >  	case XenbusStateInitialising:
+> > @@ -278,17 +292,6 @@
+> >  
+> >  	case XenbusStateInitWait:
+> >  InitWait:
+> > -		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
+> > -				   "feature-abs-pointer", "%d", &val);
+> > -		if (ret < 0)
+> > -			val = 0;
+> > -		if (val) {
+> > -			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
+> > -					    "request-abs-pointer", "1");
+> > -			if (ret)
+> > -				printk(KERN_WARNING
+> > -				       "xenkbd: can't request abs-pointer");
+> > -		}
+> >  		xenbus_switch_state(dev, XenbusStateConnected);
+> >  		break;
+> >  
 > > 
-> > This driver has a long history as an out of tree driver but I am
-> > submitting it here as a single monolithic patch to aid review. Once it
-> > has been reviewed and is considered suitable for merging can we perhaps
-> > consider merging the equivalent git branch which maintains much of
-> > history?
-> 
-> It looks pretty clean at first glance (though 128k worth of patch isn't
-> an ideal way to split it).
-
-4K lines of code is a lot :-) Thank you for taking a look at it.
-
-> 
-> But maybe the back end belongs in arch/x86/xen as it's really a arch
-> specific PCI implementation at heart?  I don't want to be a bottleneck
-> for any Xen specific PCI patches in the future, and other arches have a
-> similar split (though not always with an ideal core vs arch split).
-
-I was thinking about having it in the drivers/* as ideally it should
-be a module. You really don't need to have it built in. I am not that
-worried about you being a bottleneck - I am OK asking two weeks before
-a merge for you to pull from my tree if I have some patches for it?
-
-Or is there some other bottleneck that I am not aware of?
-> 
-> Figuring out some way to preserve the git history is probably a good
-> idea, assuming it's not too much of a mess.  If it is, a more
-> reasonable split and history using rebase could probably be contrived
-> before merging it.
-
-<nods>
-> 
-> -- 
-> Jesse Barnes, Intel Open Source Technology Center
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
