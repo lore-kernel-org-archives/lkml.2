@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab1DZW0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:26:41 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43510 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758196Ab1DZW0k (ORCPT
+	id S1758874Ab1DZW27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:28:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47708 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758193Ab1DZW25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:26:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-References: <1303135222-17118-2-git-send-email-bp@amd64.org>
-	<20110419171340.GE6640@elte.hu> <20110419173521.GA25374@aftab>
-	<20110419174446.GA13616@elte.hu> <20110420102349.GB1361@aftab>
-	<m1hb9mnmqs.fsf@fess.ebiederm.org> <20110426074238.GA22448@aftab>
-	<m1y62wk9i8.fsf@fess.ebiederm.org> <20110426214755.GA28314@aftab>
-Date: Tue, 26 Apr 2011 15:26:32 -0700
-In-Reply-To: <20110426214755.GA28314@aftab> (Borislav Petkov's message of
-	"Tue, 26 Apr 2011 23:47:55 +0200")
-Message-ID: <m1oc3sir8n.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 26 Apr 2011 18:28:57 -0400
+Date: Wed, 27 Apr 2011 00:28:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+In-Reply-To: <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1104262314110.3323@ionos>
+References: <20110425180450.1ede0845@neptune.home> <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home> <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home> <20110425191607.GL2468@linux.vnet.ibm.com>
+ <20110425231016.34b4293e@neptune.home> <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com> <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu> <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
+ <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/MBaXPtYZnDoiAX6/Mzp+OVwu2iR8x3jA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1734561087-1303852684=:3323"
+Content-ID: <alpine.LFD.2.02.1104270006260.3323@ionos>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@amd64.org> writes:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Tue, Apr 26, 2011 at 05:06:39PM -0400, Eric W. Biederman wrote:
->
-> Ha!
->
-> I'm working exactly in the opposite direction actually - drop mcelog and
-> make RAS much more user friendly. As a first step, this is why we have
-> all that MCE decoding code for AMD hw and when you get an error, you
-> can't miss it:
+--8323328-1734561087-1303852684=:3323
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LFD.2.02.1104270006261.3323@ionos>
 
-I have no problem with having mcelog go away.
+On Tue, 26 Apr 2011, Linus Torvalds wrote:
 
-When we are on a system where we can't decode the mce, (aka the hardware
-is newer than the kernel) we need some kind of sensible fallback that
-prints something into syslog even if we don't have the full decode.
+> On Tue, Apr 26, 2011 at 10:09 AM, Bruno Prémont
+> <bonbons@linux-vserver.org> wrote:
+> >
+> > Just in case, /proc/$(pidof rcu_kthread)/status shows ~20k voluntary
+> > context switches and exactly one non-voluntary one.
+> >
+> > In addition when rcu_kthread has stopped doing its work
+> > `swapoff $(swapdevice)` seems to block forever (at least normal shutdown
+> > blocks on disabling swap device).
+> > If I get to do it when I get back home I will manually try to swapoff
+> > and take process traces with sysrq-t.
+> 
+> That "exactly one non-voluntary one" sounds like the smoking gun.
+> 
+> Normally SCHED_FIFO runs until it voluntarily gives up the CPU. That's
+> kind of the point of SCHED_FIFO. Involuntary context switches happen
+> when some higher-priority SCHED_FIFO process becomes runnable (irq
+> handlers? You _do_ have CONFIG_IRQ_FORCED_THREADING=y in your config
+> too), and maybe there is a bug in the runqueue handling for that case.
 
-> Apr 20 21:08:24 kepek kernel: [  300.816122] [Hardware Error]: MC4_STATUS[Over|CE|MiscV|-|AddrV|CECC]: 0xdc00c000c6080a13
-> Apr 20 21:08:24 kepek kernel: [  300.825156] [Hardware Error]: Northbridge Error (node 0): DRAM ECC error detected on the NB.
-> Apr 20 21:08:24 kepek kernel: [  300.825167] EDAC amd64 MC0: CE ERROR_ADDRESS= 0x4171fe380
-> Apr 20 21:08:24 kepek kernel: [  300.825257] EDAC MC0: CE page 0x4171fe, offset 0x380, grain 0, syndrome 0xc601, row 3, channel 0, label "": amd64_
-> edac
->
-> or this:
->
-> Apr 15 16:54:17 kepek kernel: [72187.027059] [Hardware Error]: MC0_STATUS[-|UE|-|-|AddrV|UECC]: 0xb400210000010016
-> Apr 15 16:54:17 kepek kernel: [72187.027059] [Hardware Error]: Data Cache Error: L2 TLB multimatch.
-> Apr 15 16:54:17 kepek kernel: [72187.027059] [Hardware Error]: cache level: L2, tx: DATA
->
->
-> There's also this RAS daemon I'm hacking on which uses perf to carry
-> error information to userspace and do more than reporting it. For
-> example, server farm guys don't want to scan syslog for every CECC error
-> but rather have it collected somewhere on one machine, maybe over the
-> network, etc, etc.
+The forced irq threading is only effective when you add the command
+line parameter "threadirqs". I don't see any irq threads in the ps
+outputs, so that's not the problem.
 
-Collected somewhere on one machine sounds remarkably like syslog.
+Though the whole ps output is weird. There is only one thread/process
+which accumulated CPU time
 
-I expect what the big server farm guys object to most is errors that
-are hard to parse and hard to deal with in automation.  And I can't
-say that I blame them.
+collectd  1605  0.6  0.7  49924  3748 ?        SNLsl 22:14   0:14
 
-> So now is the time to speak up and let me know how you would like to get
-> the error reported? In general, what should be done differently in Linux
-> wrt to RAS.
+All others show 0:00 CPU time - not only kthread_rcu.
 
->> Which is why I object to the removal of the one printk that told
->> me something was broken on my machine.
->
-> I dunno, maybe it's time we moved the MCE decoding functionality which
-> is shared by most of x86 into core code. Ingo, Peter, Thomas, what do
-> you guys think?
->
-> This'll at least put something in the logs that is sensible instead
-> of useless strings which tell the users what to do next. Also, we can
-> ratelimit it so that DIMMs generating too many CECCs don't flood them
-> too much. Hmm...
+Bruno, are you running on real hardware or in a virtual machine?
 
-Sure.  Although any DIMM that is generating so many correctable errors
-that you need to rate limit it in the kernel, won't likely to confine
-itself to correctable errors.
+Can you please enable CONFIG_SCHED_DEBUG and provide the output of
+/proc/sched_stat when the problem surfaces and a minute after the
+first snapshot?
 
-Still it can happen that things are so bad that you do need to rate
-limit it in the kernel.  Still with those you start wondering "How did
-this machine boot?"  So printk_ratelimit sounds like a fine idea.
+Also please apply the patch below and check, whether the printk shows
+up in your dmesg.
 
-In the casual use situation where I have not yet bothered on my small
-number of machines to set up sophisticated logging infrastructure
-I just want something that adds an annoying message to syslog so
-people who are logged in can say what was that, and downtime can be
-scheduled.
+Thanks,
 
-Eric
+	tglx
+
+---
+ kernel/sched_rt.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6-tip/kernel/sched_rt.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/sched_rt.c
++++ linux-2.6-tip/kernel/sched_rt.c
+@@ -609,6 +609,7 @@ static int sched_rt_runtime_exceeded(str
+ 
+ 	if (rt_rq->rt_time > runtime) {
+ 		rt_rq->rt_throttled = 1;
++		printk_once(KERN_WARNING "sched: RT throttling activated\n");
+ 		if (rt_rq_throttled(rt_rq)) {
+ 			sched_rt_rq_dequeue(rt_rq);
+ 			return 1;
+--8323328-1734561087-1303852684=:3323--
