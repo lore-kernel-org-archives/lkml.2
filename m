@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab1DZRMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 13:12:18 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:63015 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab1DZRMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 13:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=aaWWPMX/NrCji+G7ylfAk6OPc+SXK5d3ptrr0zoHLuIU9cEa4wxkdDx7b2ICPbIF06
-         lXqFnty6gHxS2T4RtmDQ==
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable <stable@kernel.org>
-Subject: [PATCH] USB: gadget: g_multi: fixed vendor and product ID in inf files
-Date: Tue, 26 Apr 2011 19:08:36 +0200
-Message-Id: <c4ddaa7a40dc982e98ba73e9badc28cf37a570f0.1303836332.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	id S1757664Ab1DZRNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 13:13:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41777 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757556Ab1DZRNi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 13:13:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110426183859.6ff6279b@neptune.home>
+References: <20110425180450.1ede0845@neptune.home> <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>
+ <20110425190032.7904c95d@neptune.home> <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>
+ <20110425203606.4e78246c@neptune.home> <20110425191607.GL2468@linux.vnet.ibm.com>
+ <20110425231016.34b4293e@neptune.home> <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
+ <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu>
+ <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Apr 2011 10:12:39 -0700
+Message-ID: <BANLkTin3UG=xF1VQOtdEDOnShoMQwQ7gFg@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1c6529e92b "USB: gadget: g_multi: fixed vendor and
-product ID" replaced g_multi's vendor and product ID with
-proper ID's from Linux Foundation.  This commit now updates
-INF files in the Documentation/usb directory which were
-omitted in the original commit.
+On Tue, Apr 26, 2011 at 9:38 AM, Bruno Prémont
+<bonbons@linux-vserver.org> wrote:
+>
+> Here it comes:
+>
+> rcu_kthread (when build processes are STOPped):
+> [  836.050003] rcu_kthread     R running   7324     6      2 0x00000000
+> [  836.050003]  dd473f28 00000046 5a000240 dd65207c dd407360 dd651d40 0000035c dd473ed8
+> [  836.050003]  c10bf8a2 c14d63d8 dd65207c dd473f28 dd445040 dd445040 dd473eec c10be848
+> [  836.050003]  dd651d40 dd407360 ddfdca00 dd473f14 c10bfde2 00000000 00000001 000007b6
+> [  836.050003] Call Trace:
+> [  836.050003]  [<c10bf8a2>] ? check_object+0x92/0x210
+> [  836.050003]  [<c10be848>] ? init_object+0x38/0x70
+> [  836.050003]  [<c10bfde2>] ? free_debug_processing+0x112/0x1f0
+> [  836.050003]  [<c103d9fd>] ? lock_timer_base+0x2d/0x70
+> [  836.050003]  [<c13c8ec7>] schedule_timeout+0x137/0x280
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: stable <stable@kernel.org>
----
- Documentation/usb/linux-cdc-acm.inf |    4 ++--
- Documentation/usb/linux.inf         |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+Hmm.
 
-If chosen to be pushed to stable as well, this should be added
-to .36 and newer.
+I'm adding Ingo and Peter to the cc, because this whole "rcu_kthread
+is running, but never actually running" is starting to smell like a
+scheduler issue.
 
-diff --git a/Documentation/usb/linux-cdc-acm.inf b/Documentation/usb/linux-cdc-acm.inf
-index 612e722..37a02ce 100644
---- a/Documentation/usb/linux-cdc-acm.inf
-+++ b/Documentation/usb/linux-cdc-acm.inf
-@@ -90,10 +90,10 @@ ServiceBinary=%12%\USBSER.sys
- [SourceDisksFiles]
- [SourceDisksNames]
- [DeviceList]
--%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_1D6B&PID_0104&MI_02
- 
- [DeviceList.NTamd64]
--%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_1D6B&PID_0104&MI_02
- 
- 
- ;------------------------------------------------------------------------------
-diff --git a/Documentation/usb/linux.inf b/Documentation/usb/linux.inf
-index 4dee958..4ffa715b0 100644
---- a/Documentation/usb/linux.inf
-+++ b/Documentation/usb/linux.inf
-@@ -18,15 +18,15 @@ DriverVer           = 06/21/2006,6.0.6000.16384
- 
- ; Decoration for x86 architecture
- [LinuxDevices.NTx86]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
- 
- ; Decoration for x64 architecture
- [LinuxDevices.NTamd64]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
- 
- ; Decoration for ia64 architecture
- [LinuxDevices.NTia64]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
- 
- ;@@@ This is the common setting for setup
- [ControlFlags]
--- 
-1.7.3.1
+Peter/Ingo: RCUTINY seems to be broken for Bruno. During any kind of
+heavy workload, at some point it looks like rcu_kthread simply stops
+making any progress. It's constantly in runnable state, but it doesn't
+actually use any CPU time, and it's not processing the RCU callbacks,
+so the RCU memory freeing isn't happening, and slabs just build up
+until the machine dies.
 
+And it really is RCUTINY, because the thing doesn't happen with the
+regular tree-RCU.
+
+This is without CONFIG_RCU_BOOST_PRIO, so we basically have
+
+        struct sched_param sp;
+
+        rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
+        sp.sched_priority = RCU_BOOST_PRIO;
+        sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
+
+where RCU_BOOST_PRIO is 1 for the non-boost case.
+
+Is that so low that even the idle thread will take priority? It's a UP
+config with PREEMPT_VOLUNTARY. So pretty much _all_ the stars are
+aligned for odd scheduling behavior.
+
+Other users of SCHED_FIFO tend to set the priority really high (eg
+"MAX_RT_PRIO-1" is clearly the default one - softirq's, watchdog), but
+"1" is not unheard of either (touchscreen/ucb1400_ts and
+mmc/core/sdio_irq), and there are some other random choises out tere.
+
+Any ideas?
+
+                             Linus
