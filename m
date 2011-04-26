@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab1DZNv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 09:51:57 -0400
-Received: from acsinet14.oracle.com ([141.146.126.236]:31844 "EHLO
-	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab1DZNv4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 09:51:56 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 09:51:56 EDT
-Date: Tue, 26 Apr 2011 09:42:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH REPOST] pv-grub: Fix for incorrect dom->p2m_host[] list
- initialization
-Message-ID: <20110426134242.GA26275@dumpdata.com>
-References: <20110422212545.GA22846@router-fw-old.local.net-space.pl>
+	id S1755830Ab1DZNxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 09:53:14 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:36163 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755405Ab1DZNxM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 09:53:12 -0400
+Date: Tue, 26 Apr 2011 09:53:10 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Vegard Nossum <vegardno@ifi.uio.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf and kmemcheck : fatal combination
+Message-ID: <20110426135309.GA24213@Krystal>
+References: <1303747731.2747.182.camel@edumazet-laptop> <1303803525.20212.20.camel@twins> <20110426080443.GA806@elte.hu> <1303808257.3012.3.camel@edumazet-laptop> <1303811635.3358.21.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110422212545.GA22846@router-fw-old.local.net-space.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4DB6CBDE.00C0:SCFMA922111,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1303811635.3358.21.camel@edumazet-laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:51:46 up 153 days, 18:54,  4 users,  load average: 0.00, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 11:25:45PM +0200, Daniel Kiper wrote:
-> Added missed Signed-off-by line.
+* Eric Dumazet (eric.dumazet@gmail.com) wrote:
+> Le mardi 26 avril 2011 à 10:57 +0200, Eric Dumazet a écrit :
+> > Le mardi 26 avril 2011 à 10:04 +0200, Ingo Molnar a écrit :
+> > 
+> > > Eric, does it manage to limp along if you remove the BUG_ON()?
+> > > 
+> > > That risks NMI recursion but maybe it allows you to see why things are slow, 
+> > > before it crashes ;-)
+> > > 
+> > 
+> > If I remove the BUG_ON from nmi_enter, it seems to crash very fast 
+> > 
+> > 
 > 
-> After a lot of debugging and long reading of Linux Kernel and Xen code
-> finally I killed deeply hidden bug in pv-grub. Details below.
-> Additionally, I am CC'ing this e-mail to LKML because this issue
-> looks like Linux Kernel problem, however, it is not.
-> 
-> This patch applies to Xen Ver. 4.0, Xen Ver. 4.1 and unstable tree.
-> 
-> # HG changeset patch
-> # User dkiper@net-space.pl
-> # Date 1303474763 -7200
-> # Node ID b33bf24be129b7b9cd2248460beb1298088c6af5
-> # Parent  dbf2ddf652dc3dd927447e79ef4bc586de55d708
-> Introduction of Linux Kernel git commit ceefccc93932b920a8ec6f35f596db05202a12fe
-> (x86: default CONFIG_PHYSICAL_START and CONFIG_PHYSICAL_ALIGN to 16 MB) revealed
-> deeply hidden bug in pv-grub. During kernel load stage dom->p2m_host[] list has
-> been incorrectly initialized.
-> 
-> At the beginning of kernel load stage dom->p2m_host[] list is populated with
-> current pfn->mfn layout. Later during memory allocation (memory is allocated
-> page by page in kexec_allocate()) page order is changed to establish linear
-> layout in new domain. It is done by exchanging subsequent mfns with newly
-> allocated mfns. dom->p2m_host[] list is indexed by currently requested pfn
-> (it is incremented from 0) and pfn of newly allocated paged. If pfn of newly
-> allocated page is less than currently requested pfn then relevant earlier
-> allocated mfn is overwritten which leads to domain crash later. This patch
-> fix that issue. If pfn of newly allocated page is less then currently
-> requested pfn then relevant pfn/mfn pair is properly calculated and usual
-> exchange occurs later.
+> Before you ask, some more complete netconsole traces :
+[...]
+> [  306.657279]  [<ffffffff8147a48f>] page_fault+0x1f/0x30
+> [  306.657282]  [<ffffffff8100ef42>] ? x86_perf_event_update+0x12/0x70
+> [  306.657284]  [<ffffffff810104b1>] ? intel_pmu_save_and_restart+0x11/0x20
+> [  306.657287]  [<ffffffff81012e84>] intel_pmu_handle_irq+0x1d4/0x420
+> [  306.657290]  [<ffffffff8147b570>] perf_event_nmi_handler+0x50/0xc0
+> [  306.657292]  [<ffffffff8147cfa3>] notifier_call_chain+0x53/0x80
+> [  306.657294]  [<ffffffff8147d018>] __atomic_notifier_call_chain+0x48/0x70
+> [  306.657296]  [<ffffffff8147d051>] atomic_notifier_call_chain+0x11/0x20
+> [  306.657298]  [<ffffffff8147d08e>] notify_die+0x2e/0x30
+> [  306.657300]  [<ffffffff8147a8af>] do_nmi+0x4f/0x200
+> [  306.657302]  [<ffffffff8147a6ea>] nmi+0x1a/0x20
+> [  306.657304]  [<ffffffff8100fd4d>] ? intel_pmu_enable_all+0x9d/0x110
 
-Nice! I presume this fixes the issue you had at the Xen Hack-O-Thon with
-your guest right?
+just a thought: I've seen this kind of issue with LTTng before, and my
+approach is to ensure this does not happen by issuing a
+vmalloc_sync_all() call between all vmalloc/vmap calls and accesses to
+those memory regions from the tracer code. So it boild down to :
 
-> 
-> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> 
-> diff -r dbf2ddf652dc -r b33bf24be129 stubdom/grub/kexec.c
-> --- a/stubdom/grub/kexec.c	Thu Apr 07 15:26:58 2011 +0100
-> +++ b/stubdom/grub/kexec.c	Fri Apr 22 14:19:23 2011 +0200
-> @@ -91,6 +91,11 @@ int kexec_allocate(struct xc_dom_image *
->          new_pfn = PHYS_PFN(to_phys(pages[i]));
->          pages_mfns[i] = new_mfn = pfn_to_mfn(new_pfn);
->  
-> +	if (new_pfn < i)
-> +		for (new_pfn = i; new_pfn < dom->total_pages; ++new_pfn)
-> +			if (dom->p2m_host[new_pfn] == new_mfn)
-> +				break;
-> +
->          /* Put old page at new PFN */
->          dom->p2m_host[new_pfn] = old_mfn;
->  
-> Daniel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+1 - perform all memory allocation at trace session creation (from thread
+    context). I do the page table in software (and allocate my buffer
+    pages with alloc_pages()), so not page fault is generated by those
+    accesses. However, I use kmalloc() to allocate my own
+    software-page-table, which uses vmalloc if the allocation is larger
+    than a certain threshold. Therefore, I need to issue
+    vmalloc_sync_all() before NMI starts using the buffers.
+
+2 - issue vmalloc_sync_all() from the tracer code, after buffer
+    allocation, but before the trace session is added to the RCU list of
+    active traces.
+
+3 - issue vmalloc_sync_all() when each LTTng module is loaded, before
+    they are registered to LTTng, so the memory used to keep their
+    code and data is faulted in.
+
+Until we find time and resources to finally implement the virtualized
+NMI handling (which handles pages faults within NMIs) as discussed with
+Linus last summer, I am staying with this work-around. It might be good
+enough for perf too.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
