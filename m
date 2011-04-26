@@ -1,129 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab1DZBQF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 21:16:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17022 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337Ab1DZBQE (ORCPT
+	id S932756Ab1DZBVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 21:21:01 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53629 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194Ab1DZBVA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 21:16:04 -0400
-Date: Mon, 25 Apr 2011 18:15:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] n_gsm: Use print_hex_dump_bytes
-Message-Id: <20110425181551.c7d23c31.randy.dunlap@oracle.com>
-In-Reply-To: <1303775210.23494.6.camel@Joe-Laptop>
-References: <65136ab68431de0cc0c554663cee33fc9d4a9850.1303615717.git.joe@perches.com>
-	<20110425082230.6d656ed0.randy.dunlap@oracle.com>
-	<1303775210.23494.6.camel@Joe-Laptop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DB61CCD.000E:SCFMA4539811,ss=1,fgs=0
+	Mon, 25 Apr 2011 21:21:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=D8tbJYI9BJf+N/Hd0pDwDAjpItqYOFqbqXHl6Vy4opEtw37P4U0MJHgBy74DlLgxjp
+         YWxdy2mmwyWb8w7MaVDc4mayVHmJZnxtcTOfB/jbe1DvbAIFUv1MCYPAeqejka1YFSfZ
+         C/b9gsKkFOH/QTF4jI4jClU09uoD6mqgoqAgk=
+MIME-Version: 1.0
+In-Reply-To: <1303760837.4865.22.camel@laptop>
+References: <1303728272-11408-1-git-send-email-leemgs1@gmail.com>
+	<1303760837.4865.22.camel@laptop>
+Date: Tue, 26 Apr 2011 10:20:58 +0900
+Message-ID: <BANLkTimoG7muVanF6P8YYvfZA7WUT+9XKg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] munmap: Flexible mem unmap operation interface for
+ scheduling latency
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Apr 2011 16:46:49 -0700 Joe Perches wrote:
+On Tue, Apr 26, 2011 at 4:47 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, 2011-04-25 at 19:44 +0900, Geunsik Lim wrote:
+>>     Originally, We aim to not hold locks for too long (for scheduling latency reasons).
+>>     So zap pages in ZAP_BLOCK_SIZE byte counts.
+>>     This means we need to return the ending mmu_gather to the caller.
+>
+> Please have a look at the mmu_gather rewrite that hit -mm last week,
+> that completely does away with ZAP_BLOCK_SIZE and renders these patches
+> obsolete.
+Yes. I also checked the patch that you stated at LKML mailing list previously.
+In my thinking. I want to keep ZAP_BLOCK_SIZE related contents
+that adjusted by Ingo, Robert, Andrew, and so on a long time ago
+because I believe that we can overcome below problems sufficiently
+in real world.
+. LKML archive - http://lkml.org/lkml/2002/7/24/273
+. LKML archive - http://lkml.org/lkml/2004/9/14/101
 
-> Use the standard mechanism to print a hex buffer
-> to eliminate empty printf warning.
-> 
-> A couple % smaller text and data too.
-> 
-> $ size drivers/tty/n_gsm.o*
->    text	   data	    bss	    dec	    hex	filename
->   23543	    312	   6376	  30231	   7617	drivers/tty/n_gsm.o.new
->   24051	    408	   6496	  30955	   78eb	drivers/tty/n_gsm.o.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+In my experience, I did overcome below problems with this patch
+based on ZAP_BLOCK_SIZE.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-Thanks, Joe.
+1) To solve temporal CPU contention
+    (e.g: case that cpu contention is 93% ~ 96% according to mmap/munmap
+            to access mass files )
+2) To get real-time or real-fast selectively on specified linux system
+    ( demo: http://www.youtube.com/watch?v=PxcgvDTY5F0 )
 
 
-> ---
->  drivers/tty/n_gsm.c |   35 ++++++++++-------------------------
->  1 files changed, 10 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> index 74273e6..b0fcffc 100644
-> --- a/drivers/tty/n_gsm.c
-> +++ b/drivers/tty/n_gsm.c
-> @@ -526,19 +526,6 @@ static int gsm_stuff_frame(const u8 *input, u8 *output, int len)
->  	return olen;
->  }
->  
-> -static void hex_packet(const unsigned char *p, int len)
-> -{
-> -	int i;
-> -	for (i = 0; i < len; i++) {
-> -		if (i && (i % 16) == 0) {
-> -			pr_cont("\n");
-> -			pr_debug("");
-> -		}
-> -		pr_cont("%02X ", *p++);
-> -	}
-> -	pr_cont("\n");
-> -}
-> -
->  /**
->   *	gsm_send	-	send a control frame
->   *	@gsm: our GSM mux
-> @@ -685,10 +672,10 @@ static void gsm_data_kick(struct gsm_mux *gsm)
->  			len = msg->len + 2;
->  		}
->  
-> -		if (debug & 4) {
-> -			pr_debug("gsm_data_kick:\n");
-> -			hex_packet(gsm->txframe, len);
-> -		}
-> +		if (debug & 4)
-> +			print_hex_dump_bytes("gsm_data_kick: ",
-> +					     DUMP_PREFIX_OFFSET,
-> +					     gsm->txframe, len);
->  
->  		if (gsm->output(gsm, gsm->txframe + skip_sof,
->  						len - skip_sof) < 0)
-> @@ -2095,10 +2082,9 @@ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
->  		set_bit(TTY_DO_WRITE_WAKEUP, &gsm->tty->flags);
->  		return -ENOSPC;
->  	}
-> -	if (debug & 4) {
-> -		pr_debug("-->%d bytes out\n", len);
-> -		hex_packet(data, len);
-> -	}
-> +	if (debug & 4)
-> +		print_hex_dump_bytes("gsmld_output: ", DUMP_PREFIX_OFFSET,
-> +				     data, len);
->  	gsm->tty->ops->write(gsm->tty, data, len);
->  	return len;
->  }
-> @@ -2152,10 +2138,9 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
->  	char buf[64];
->  	char flags;
->  
-> -	if (debug & 4) {
-> -		pr_debug("Inbytes %dd\n", count);
-> -		hex_packet(cp, count);
-> -	}
-> +	if (debug & 4)
-> +		print_hex_dump_bytes("gsmld_receive: ", DUMP_PREFIX_OFFSET,
-> +				     cp, count);
->  
->  	for (i = count, dp = cp, f = fp; i; i--, dp++) {
->  		flags = *f++;
-> -- 
+>
+> Also, -rt doesn't care since it already has preemptible mmu_gather.
+>
+> Furthermore:
+>
+>> +L:     linux-rt-users@vger.kernel.org
+Sorry. I think that I have to add "linux-rt-users@vger.kernel.org" because  this
+patch is related to scheduling latencies although this modification
+is in ./linux-2.6/mm/ directory. I will remove "+L: linux-rt-users******" if
+really linux-rt-users mailing list can not care.
+>
+> is complete crap, linux-rt-users is _NOT_ a development list.
+>
+>
 
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+e-Mail: geunsik.lim@samsung.com
+           leemgs@gmail.com , leemgs1@gmail.com
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
