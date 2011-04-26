@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab1DZDcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Apr 2011 23:32:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47455 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757979Ab1DZDcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Apr 2011 23:32:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=x5hogp9DRD9Rq4JfzSLibl+MOqb3DxMIQbjyxP0zPHaMpl3mXz+nbDs7ThvrAERUhL
-         geV2+zAiwmNJK5h3bUPFI/yOOJrZrTLCLUdpgqQw9IGI4HV1ThdHpdp88jOEM4RnQ9AD
-         ol0/FoJrlCRdg+A7A27C2xSNZC0obd5dtby6k=
-MIME-Version: 1.0
-Date: Tue, 26 Apr 2011 11:32:03 +0800
-Message-ID: <BANLkTi=-2h0py+ve-ugnKAMVEqKbjQWPdw@mail.gmail.com>
-Subject: kernel configuration
-From: lina <lina.lastname@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933002Ab1DZDvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Apr 2011 23:51:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41283 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757979Ab1DZDvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Apr 2011 23:51:51 -0400
+Date: Tue, 26 Apr 2011 13:51:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hayeswang <hayeswang@realtek.com>,
+        =?UTF-8?B?IkZyYW7Dp29pcyBSb21pZXUi?= <romieu@fr.zoreil.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20110426135146.c01f8395.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-can anybody give me some specific clues during configuration which
-make the support of below graphic driver and network connection. if
-possible wireless will be great appreciated.
+After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-and which is the best version of kernel I should choose.
+drivers/net/r8169.c: In function 'rtl8168e_1_hw_phy_config':
+drivers/net/r8169.c:2578: error: too many arguments to function 'rtl_apply_firmware'
+drivers/net/r8169.c:2578: error: void value not ignored as it ought to be
+drivers/net/r8169.c: In function 'rtl8168e_2_hw_phy_config':
+drivers/net/r8169.c:2586: error: too many arguments to function 'rtl_apply_firmware'
+drivers/net/r8169.c:2586: error: void value not ignored as it ought to be
 
-Really thanks for any advice,
+Caused by commit 953a12cc2889 ("r8169: don't request firmware when
+there's no userspace") from the net-current tree interacting with commit
+01dc7fec4025 ("net/r8169: support RTL8168E").
+
+I applied the following fixup patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 26 Apr 2011 13:47:51 +1000
+Subject: [PATCH] r8169: fix for rtl_apply_firmware API change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/r8169.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 3f93fc7..c3e264f 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -190,7 +190,9 @@ static const struct rtl_firmware_info {
+ 	{ .mac_version = RTL_GIGA_MAC_VER_25, .fw_name = FIRMWARE_8168D_1 },
+ 	{ .mac_version = RTL_GIGA_MAC_VER_26, .fw_name = FIRMWARE_8168D_2 },
+ 	{ .mac_version = RTL_GIGA_MAC_VER_29, .fw_name = FIRMWARE_8105E_1 },
+-	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 }
++	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 },
++	{ .mac_version = RTL_GIGA_MAC_VER_31, .fw_name = FIRMWARE_8168E_1 },
++	{ .mac_version = RTL_GIGA_MAC_VER_32, .fw_name = FIRMWARE_8168E_2 }
+ };
+ 
+ enum cfg_version {
+@@ -2575,16 +2577,14 @@ static void rtl8168e_hw_phy_config(struct rtl8169_private *tp)
+ 
+ static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
+ {
+-	if (rtl_apply_firmware(tp, FIRMWARE_8168E_1) < 0)
+-		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
++	rtl_apply_firmware(tp);
+ 
+ 	rtl8168e_hw_phy_config(tp);
+ }
+ 
+ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ {
+-	if (rtl_apply_firmware(tp, FIRMWARE_8168E_2) < 0)
+-		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
++	rtl_apply_firmware(tp);
+ 
+ 	rtl8168e_hw_phy_config(tp);
+ }
+-- 
+1.7.4.4
 
 
-# lspci
-
-00:00.0 Host bridge: Intel Corporation Sandy Bridge DRAM Controller (rev 09)
-00:01.0 PCI bridge: Intel Corporation Sandy Bridge PCI Express Root
-Port (rev 09)
-00:01.1 PCI bridge: Intel Corporation Sandy Bridge PCI Express Root
-Port (rev 09)
-00:16.0 Communication controller: Intel Corporation Cougar Point HECI
-Controller #1 (rev 04)
-00:1a.0 USB Controller: Intel Corporation Cougar Point USB Universal
-Host Controller #5 (rev 05)
-00:1a.7 USB Controller: Intel Corporation Cougar Point USB Enhanced
-Host Controller #2 (rev 05)
-00:1b.0 Audio device: Intel Corporation Cougar Point High Definition
-Audio Controller (rev 05)
-00:1c.0 PCI bridge: Intel Corporation Cougar Point PCI Express Root
-Port 1 (rev b5)
-00:1c.1 PCI bridge: Intel Corporation Cougar Point PCI Express Root
-Port 2 (rev b5)
-00:1c.2 PCI bridge: Intel Corporation Cougar Point PCI Express Root
-Port 3 (rev b5)
-00:1d.0 USB Controller: Intel Corporation Cougar Point USB Universal
-Host Controller #1 (rev 05)
-00:1d.7 USB Controller: Intel Corporation Cougar Point USB Enhanced
-Host Controller #1 (rev 05)
-00:1f.0 ISA bridge: Intel Corporation Cougar Point LPC Controller (rev 05)
-00:1f.2 IDE interface: Intel Corporation Cougar Point 4 port SATA IDE
-Controller (rev 05)
-00:1f.3 SMBus: Intel Corporation Cougar Point SMBus Controller (rev 05)
-01:00.0 VGA compatible controller: ATI Technologies Inc NI Whistler
-[AMD Radeon HD 6600M Series]
-01:00.1 Audio device: ATI Technologies Inc Device aa90
-02:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57765
-Gigabit Ethernet PCIe (rev 10)
-02:00.1 SD Host controller: Broadcom Corporation Device 16bc (rev 10)
-03:00.0 Network controller: Broadcom Corporation Device 4331 (rev 02)
-04:00.0 FireWire (IEEE 1394): Agere Systems FW643 PCI Express1394b
-Controller (PHY/Link) (rev 08)
-
-
-best regards,
-
-lina
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
