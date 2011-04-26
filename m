@@ -1,109 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab1DZW27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:28:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47708 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab1DZW25 (ORCPT
+	id S1758931Ab1DZWaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:30:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36663 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758496Ab1DZWai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:28:57 -0400
-Date: Wed, 27 Apr 2011 00:28:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1104262314110.3323@ionos>
-References: <20110425180450.1ede0845@neptune.home> <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home> <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home> <20110425191607.GL2468@linux.vnet.ibm.com>
- <20110425231016.34b4293e@neptune.home> <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com> <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu> <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 26 Apr 2011 18:30:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=FoMu1lt0Pg2aDLVBPmEzbSkRjEGqc6LT6q61Tm1+7F0rG1dRx1nhZusmpr2EwEPUza
+         ajFW4Qt0Ycd1fgk910o2Lal0NJt2aXZUG/nBw7xJ9Wp9JSAFI8hOkrUdolBzENE0oZNC
+         QsxCwTifyCZNchgoxNnU31vZ+qXnN6TKtSqf0=
+Message-ID: <4DB74788.2000908@lwfinger.net>
+Date: Tue, 26 Apr 2011 17:30:32 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1734561087-1303852684=:3323"
-Content-ID: <alpine.LFD.2.02.1104270006260.3323@ionos>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Roland Dreier <roland@kernel.org>, linux-usb@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
+References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan> <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com> <alpine.DEB.2.02.1104260619420.8361@p34.internal.lan> <alpine.DEB.2.02.1104261753210.3894@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1104261753210.3894@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+>
+> I am trying a different driver now: rt2870sta
+> I've read a few reports this may be the 'proper' one to use.
+> So far so good, no lag or anything and I did not have to set power off
+> either.
 
---8323328-1734561087-1303852684=:3323
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LFD.2.02.1104270006261.3323@ionos>
+Driver rtl2870sta is not the proper one to use. In fact, a patch to delete 
+rt2860sta and rt2870sta from the kernel was queued yesterday, and they will be 
+gone by the time 2.6.40 is released.
 
-On Tue, 26 Apr 2011, Linus Torvalds wrote:
+New firmware for rt2800usb was just accepted into the linux-firmware git tree. 
+Please obtain a copy and try it.
 
-> On Tue, Apr 26, 2011 at 10:09 AM, Bruno Prémont
-> <bonbons@linux-vserver.org> wrote:
-> >
-> > Just in case, /proc/$(pidof rcu_kthread)/status shows ~20k voluntary
-> > context switches and exactly one non-voluntary one.
-> >
-> > In addition when rcu_kthread has stopped doing its work
-> > `swapoff $(swapdevice)` seems to block forever (at least normal shutdown
-> > blocks on disabling swap device).
-> > If I get to do it when I get back home I will manually try to swapoff
-> > and take process traces with sysrq-t.
-> 
-> That "exactly one non-voluntary one" sounds like the smoking gun.
-> 
-> Normally SCHED_FIFO runs until it voluntarily gives up the CPU. That's
-> kind of the point of SCHED_FIFO. Involuntary context switches happen
-> when some higher-priority SCHED_FIFO process becomes runnable (irq
-> handlers? You _do_ have CONFIG_IRQ_FORCED_THREADING=y in your config
-> too), and maybe there is a bug in the runqueue handling for that case.
-
-The forced irq threading is only effective when you add the command
-line parameter "threadirqs". I don't see any irq threads in the ps
-outputs, so that's not the problem.
-
-Though the whole ps output is weird. There is only one thread/process
-which accumulated CPU time
-
-collectd  1605  0.6  0.7  49924  3748 ?        SNLsl 22:14   0:14
-
-All others show 0:00 CPU time - not only kthread_rcu.
-
-Bruno, are you running on real hardware or in a virtual machine?
-
-Can you please enable CONFIG_SCHED_DEBUG and provide the output of
-/proc/sched_stat when the problem surfaces and a minute after the
-first snapshot?
-
-Also please apply the patch below and check, whether the printk shows
-up in your dmesg.
-
-Thanks,
-
-	tglx
-
----
- kernel/sched_rt.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-2.6-tip/kernel/sched_rt.c
-===================================================================
---- linux-2.6-tip.orig/kernel/sched_rt.c
-+++ linux-2.6-tip/kernel/sched_rt.c
-@@ -609,6 +609,7 @@ static int sched_rt_runtime_exceeded(str
- 
- 	if (rt_rq->rt_time > runtime) {
- 		rt_rq->rt_throttled = 1;
-+		printk_once(KERN_WARNING "sched: RT throttling activated\n");
- 		if (rt_rq_throttled(rt_rq)) {
- 			sched_rt_rq_dequeue(rt_rq);
- 			return 1;
---8323328-1734561087-1303852684=:3323--
+Larry
