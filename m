@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab1DZWca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 18:32:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54359 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753770Ab1DZWc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 18:32:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>, MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [RFC PATCH v2 1/3] PM / Core: suspend_again callback for device PM.
-Date: Wed, 27 Apr 2011 00:32:41 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
-        Len Brown <len.brown@intel.com>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+	id S1758945Ab1DZWdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 18:33:06 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33570 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753770Ab1DZWdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 18:33:04 -0400
+Date: Tue, 26 Apr 2011 17:32:57 -0500
+From: Russ Anderson <rja@sgi.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, Cyril Hrubis <metan@ucw.cz>,
-        thommycheck@gmail.com,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-References: <1303288106-2965-1-git-send-email-myungjoo.ham@samsung.com> <20110426210627.GA28033@elf.ucw.cz> <201104262346.58046.rjw@sisk.pl>
-In-Reply-To: <201104262346.58046.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104270032.42046.rjw@sisk.pl>
+        Prarit Bhargava <prarit@redhat.com>,
+        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
+        rja@americas.sgi.com
+Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
+Message-ID: <20110426223257.GB27953@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1303135222-17118-2-git-send-email-bp@amd64.org> <20110419171340.GE6640@elte.hu> <20110419173521.GA25374@aftab> <20110419174446.GA13616@elte.hu> <20110420102349.GB1361@aftab> <m1hb9mnmqs.fsf@fess.ebiederm.org> <20110426074238.GA22448@aftab> <m1y62wk9i8.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1y62wk9i8.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 26, 2011, Rafael J. Wysocki wrote:
-> On Tuesday, April 26, 2011, Pavel Machek wrote:
-...
-> > Ok, see the spitz_should_wakeup() function in arch/arm/mach-pxa/* and
-> > should_wakeup() usage.
+On Tue, Apr 26, 2011 at 02:06:39PM -0700, Eric W. Biederman wrote:
+> Borislav Petkov <bp@amd64.org> writes:
+> > On Mon, Apr 25, 2011 at 03:40:11PM -0400, Eric W. Biederman wrote:
+> >> > From: Borislav Petkov <borislav.petkov@amd.com>
+> >> > Date: Wed, 13 Apr 2011 14:32:06 +0200
+> >> > Subject: [PATCH -v2.1 2/2] x86, MCE: Drop the default decoding notifier
+> >> >
+> >> > The default notifier doesn't make a lot of sense to call in the
+> >> > correctable errors case. Drop it and emit the mcelog decoding hint only
+> >> > in the uncorrectable errors case and when no notifier is registered.
+> >> > Also, limit issuing the "mcelog --ascii" message in the rare case when
+> >> > we dump unreported CEs before panicking.
+> >> >
+> >> > While at it, remove unused old x86_mce_decode_callback from the
+> >> > header.
+> >> 
+> >> Can we please print something if we please log something in the
+> >> case of a correctable error, when we only report it via mcelog?
+> >> 
+> >> I have a stupid recent intel cpu here that hits that case and without
+> >> the default x86_mce_decode_callback I wouldn't have even known that I am
+> >> getting something like 50 correctable errors an hour on one of my
+> >> machines.  In particular I am it hits so often I am seeing:
+> >> "mce_notify_irq: 2 callbacks suppressed".  I need to get those dimms
+> >> replaced soon because in a new product I simply can't imagine that many
+> >> correctable errors.
+> >
+> > Isn't there a mcelog daemon or something that polls /dev/mcelog and
+> > tells you about those DRAM ECCs in some log file where you're supposed
+> > to look? :)
 > 
-> OK, I will.
+> On fedora 14 there is a cron job that writes to /var/log/mcelog, and
+> does not go through syslog.
 
-Well, as far as I can tell, on Zaurus this is all done within the platform
-->enter() callback, so it doesn't carry out the device resume, while the
-proposed $subject patch does.  For this reason, I'm not even sure if the
-proposed approach is really suitable for Zaurus (the resuming and suspending
-of all devices every once a while will cost quite some enery I guess).
+Interesting.  I'm running fedora 14 and don't have a /var/log/mcelog
+file or see an mcelog package (not that I'd looked until just now).
 
-Still, in the unlikely case it is suitable, here's my opinion.
+>                              But you have to be proactive and look
+> there.  If the people who work on this code can't even remember
+> where to look I can't imagine how anyone else can remember.
+> Which is why I object to the removal of the one printk that told
+> me something was broken on my machine.
 
-I don't think syscore_ops is the right place to put the new "suspend
-again" callback for reasons stated previously.
+Historically hardware error reporting has been very platform
+dependent.  Those differences made it difficult to come up with
+agreement on standard ways to report errors.  You raise a good
+point that it needs to work better.
 
-I also don't think dev_pm_ops is the right place to put such a callback,
-because it will only be necessary on very few platforms and there's no
-reason why every driver, subsystem or power domain in the kernel should care.
+> So far from what I have seen /dev/mcelog and the userspace mcelog is
+> over complicated and near useless.
 
-Moreover, the usage cases appear to be suspend-specific.
+/dev/mcelog is extremely useful to SGI.  As you said, "you have to 
+be proactive and look there" which we are and do.  :-)
 
-For the above reasons, the only place the "suspend again" callback may be
-put into is struct platform_suspend_ops.  Then, suspend_devices_and_enter()
-may be modified so that it loops between dpm_suspend_start() and
-dpm_suspend_end() until that callback returns "false" and there are no
-wakeup events (as indicated by pm_wakeup_pending(); but please note that
-this would require suspend_enter() to indicate that pm_wakeup_pending()
-returned "true" and events_check_enabled should not be reset until
-we're sure that we _really_ want to resume).
+>                                     It seems to focused around the
+> notion that "This is not a software problem, please do not bug
+> Andi Kleen about it"
+> 
+> Well it is a hardware problem so I do need to RMA that hardware.
+> Sigh.
 
-Alternatively, if that's sufficient, suspend_enter() may be called in a
-loop until the "suspend again" callback returns "false" and there are no
-wakeup events (in the above sense).
+You raise a good issue that users do need to know when their 
+hardware is having issues.
 
-The callback can be called "repeat" and return bool as far as I'm concerned,
-but I'm not insisting on that.
+> Eric
 
-MyungJoo, would that be suitable to you?
-
-Rafael
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
