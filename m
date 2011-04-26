@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab1DZTpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 15:45:13 -0400
-Received: from mail.perches.com ([173.55.12.10]:1024 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811Ab1DZTpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 15:45:12 -0400
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thiago Farina <tfransosi@gmail.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1303846642.18763.37.camel@gandalf.stny.rr.com>
+	id S1756151Ab1DZTp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 15:45:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60931 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab1DZTp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 15:45:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=UxAs14mIuZWh7/zMUqXqL/mf0p7Z7GJhQbWpVPMjixm8T9/9sLQasF+O/0tvKsg5kT
+         AqG9zZh44hMZGvnk1FSCemFxsDtHEb47oaarXimoZ8p1evBcSeuVl1kJKHqXYMPRZ5a2
+         GecurpAFejgodFYJtFfC5wfrElVOwCVOYsPDg=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Thiago Farina <tfransosi@gmail.com>
+Subject: [PATCH] linux/string.h: Introduce streq macro.
+Date: Tue, 26 Apr 2011 16:45:36 -0300
+Message-Id: <e8a554f881a199107afd37795adb0d11e70fdbcc.1303846852.git.tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc2.5.g60e19
+In-Reply-To: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
 References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	 <20110426190531.GA4556@p183>
-	 <1303845468.18763.32.camel@gandalf.stny.rr.com>
-	 <20110426192029.GA4686@p183>
-	 <BANLkTinxvyxSK9f+kkQugNkQEBf1O65bLQ@mail.gmail.com>
-	 <1303846642.18763.37.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Apr 2011 12:45:10 -0700
-Message-ID: <1303847110.24299.50.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-26 at 15:37 -0400, Steven Rostedt wrote:
-> On Tue, 2011-04-26 at 16:21 -0300, Thiago Farina wrote:
-> > On Tue, Apr 26, 2011 at 4:20 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> > > On Tue, Apr 26, 2011 at 03:17:48PM -0400, Steven Rostedt wrote:
-> > >> On Tue, 2011-04-26 at 22:05 +0300, Alexey Dobriyan wrote:
-> > >> > On Tue, Apr 26, 2011 at 03:49:49PM -0300, Thiago Farina wrote:
-> > >> > > + * streq - Are two strings equal?
-> > > The point is that function is trivial, and if someone doesn't
-> > > understand it, he should read some Kernighan and Ritchie first.
-> Replace it with something like:
-> 	* Use this: 	streq(a, b)
-> 	* instead of: 	strcmp(a, b) == 0 or !strcmp(a, b)
-> 	* This makes the code more readable and less error prone.
+This macro is arguably more readable than its variants:
+- !strcmp(a, b)
+- strcmp(a, b) == 0
 
-I think it's not good to introduce another form.
-strcmp is the standard everyone understands.
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ Changes from v1 (Steven and Alexey review):
+ - Convert from macro to static inline.
+ - Remove the example.
+ - Add the suggested comment by Steven.
 
-There are already about 2800 uses of strcmp()==0 and !strcmp
+ include/linux/string.h |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-$ grep -rP --include=*.[ch] "\bstrcmp.*==\s*0\b" * | wc -l
-1143
-$ grep -rP --include=*.[ch] "\!\s*strcmp\s*\(" *  | wc -l
-1663
-
-Can you count how many misuses of strcmp have been
-corrected?  Do you plan to convert the existing 2800?
-
+diff --git a/include/linux/string.h b/include/linux/string.h
+index a716ee2..d859bb2 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -134,6 +134,21 @@ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+ 			const void *from, size_t available);
+ 
+ /**
++ * streq - Are two strings equal?
++ * @a: first string
++ * @b: second string
++ *
++ * Use: streq(a, b)
++ * Instead of: strcmp(a, b) == 0 or !strcmp(a, b)
++ *
++ * This makes the code more readable and less error prone.
++ */
++static inline int streq(const char *a, const char *b)
++{
++	return strcmp(a, b) == 0;
++}
++
++/**
+  * strstarts - does @str start with @prefix?
+  * @str: string to examine
+  * @prefix: prefix to look for.
+-- 
+1.7.5.rc2.5.g60e19
 
