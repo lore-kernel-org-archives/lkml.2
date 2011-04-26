@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab1DZQDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 12:03:47 -0400
-Received: from mout.perfora.net ([74.208.4.194]:54228 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851Ab1DZQDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 12:03:46 -0400
-Date: Tue, 26 Apr 2011 12:03:00 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>, bookjovi@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] proc: put check_mem_permission before __get_free_page
-	in mem_read
-Message-ID: <20110426160300.GA14478@fibrous.localdomain>
-References: <1303086002-6961-1-git-send-email-bookjovi@gmail.com> <alpine.LSU.2.00.1104252048190.6978@sister.anvils> <20110426141449.F37C.A69D9226@jp.fujitsu.com>
+	id S1753537Ab1DZQFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 12:05:49 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:10228 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1DZQFs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 12:05:48 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Date: Tue, 26 Apr 2011 17:05:45 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: AcwEKfU/kZhE0L1/TsqgKuXYidzwewAAB93Q
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com>
+References: <4D9FACC9.7020200@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
+ <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com>
+ <20110423005610.GC1576@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
+ <20110425162242.GB30828@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com>
+ <20110426135027.GI878@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
+ <20110426155229.GM878@htj.dyndns.org>
+In-Reply-To: <20110426155229.GM878@htj.dyndns.org>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110426141449.F37C.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Provags-ID: V02:K0:+lub/nYaYwwdgPOYhrtwRbC5HEQaB/gVJ8zHyVf4ZCm
- /Oft5Mz5V3n6BOiJquMVDZU+uywZPAHEIunqAAOvdKRWWD2ygU
- I4a97TIYovo4imuPdN62dh5oSZP8+QCHMsrrHV3PlHoBQRSv9R
- fzSTmzg3J9hWGq6i7NIkMGz3YQYO3/DcjNts2orISFbs65RTuz
- 4DlVTFpwaeEaQvOT7fDWwckrPQEEUZSKaPgHxBhx6g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 02:12:46PM +0900, KOSAKI Motohiro wrote:
-> From 74f827ce74e1c4f846905e940edfa5f639b5a2ce Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Tue, 26 Apr 2011 13:57:02 +0900
-> Subject: [PATCH] [PATCH] proc: put check_mem_permission after __get_free_page in mem_write
-> 
-> It should be better if put check_mem_permission after __get_free_page
-> in mem_write, to be same as function mem_read.
-> 
-> Hugh Dickins explained the reason.
-> 
->     check_mem_permission gets a reference to the mm.  If we __get_free_page
->     after check_mem_permission, imagine what happens if the system is out
->     of memory, and the mm we're looking at is selected for killing by the
->     OOM killer: while we wait in __get_free_page for more memory, no memory
->     is freed from the selected mm because it cannot reach exit_mmap while
->     we hold that reference.
-> 
-> 
-> Reported-by: Jovi Zhang <bookjovi@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Stephen Wilson <wilsons@start.ca>
+> Yeah, it makes sense.  Hmm... it seems I wasn't thinking straight when
+> I added that work around.  Not sure how to fix it properly at this
+> moment.  I'll think about it.  Can you please keep me posted if you
+> find something while testing?
+
+I'm away for two and a bit weeks so I'm not sure what progress (if any)
+I will make during that time.  But yes, I shall certainly keep you posted
+as soon as I find anything else.  Thank you very much for your inputs.
+
+Cheers,
+
+Bruce.
 
 
-I completely missed the oom case as well.  This certainly appears to be
-the best solution.
-
-	Reviewed-by: Stephen Wilson <wilsons@start.ca>
-
--- 
-steve
-
+Latest News at: http://www.indigovision.com/index.php/en/news.html
