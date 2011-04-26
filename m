@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab1DZXSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 19:18:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46456 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851Ab1DZXSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 19:18:22 -0400
-Date: Wed, 27 Apr 2011 09:18:11 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
- reserves are low and swap is backed by network storage
-Message-ID: <20110427091811.153ca78b@notabene.brown>
-In-Reply-To: <20110426142624.GH4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	<1303803414-5937-13-git-send-email-mgorman@suse.de>
-	<20110426223059.10f3edda@notabene.brown>
-	<20110426142624.GH4658@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1754184Ab1DZXUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 19:20:17 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:52416 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752630Ab1DZXUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 19:20:15 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=fNtDKc8R0YNYAgrI3z/KGyMLn6j1p3hPle/DxARacpxmPKvwToL20uga+vQviPvk5q8G/kXcZOHrhzhDwEOwvJHvK1FvbsD+Y2wSqYFwV9PBE6RBq0E/Sa81QkQ4M1Ex;
+Date: Tue, 26 Apr 2011 16:20:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Cyril Brulebois <kibi@debian.org>, trivial@kernel.org
+Subject: Re: [PATCH 3/4] Documentation/00-INDEX.sh: add script to help
+ keeping the index up-to-date
+Message-Id: <20110426162007.13929384.rdunlap@xenotime.net>
+In-Reply-To: <20110424115811.e96c121f.rdunlap@xenotime.net>
+References: <1303575344-10403-1-git-send-email-kibi@debian.org>
+	<1303575344-10403-3-git-send-email-kibi@debian.org>
+	<20110423093304.8a31e512.rdunlap@xenotime.net>
+	<20110423210537.GI32680@debian.org>
+	<20110424115811.e96c121f.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 15:26:24 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Sun, 24 Apr 2011 11:58:11 -0700 Randy Dunlap wrote:
 
-> On Tue, Apr 26, 2011 at 10:30:59PM +1000, NeilBrown wrote:
-> > On Tue, 26 Apr 2011 08:36:53 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > 
-> > > +/*
-> > > + * Throttle direct reclaimers if backing storage is backed by the network
-> > > + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-> > > + * depleted. kswapd will continue to make progress and wake the processes
-> > > + * when the low watermark is reached
-> > > + */
-> > > +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-> > > +					nodemask_t *nodemask)
-> > > +{
-> > > +	struct zone *zone;
-> > > +	int high_zoneidx = gfp_zone(gfp_mask);
-> > > +	DEFINE_WAIT(wait);
-> > > +
-> > > +	/* Check if the pfmemalloc reserves are ok */
-> > > +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-> > > +	prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
-> > > +							TASK_INTERRUPTIBLE);
-> > > +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
-> > > +		goto out;
-> > > +
-> > > +	/* Throttle */
-> > > +	do {
-> > > +		schedule();
-> > > +		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
-> > > +		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
-> > > +							TASK_INTERRUPTIBLE);
-> > > +	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
-> > > +			!fatal_signal_pending(current));
-> > > +
-> > > +out:
-> > > +	finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
-> > > +}
-> > 
-> > You are doing an interruptible wait, but only checking for fatal signals.
-> > So if a non-fatal signal arrives, you will busy-wait.
-> > 
-> > So I suspect you want TASK_KILLABLE, so just use:
-> > 
-> >     wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
-> >                         pgmemalloc_watermark_ok(zone->zone_pgdata,
-> >                                                 high_zoneidx));
-> > 
+> On Sat, 23 Apr 2011 23:05:37 +0200 Cyril Brulebois wrote:
 > 
-> Well, if a normal signal arrives, we do not necessarily want the
-> process to enter reclaim. For fatal signals, I allow it to continue
-> because it's not likely to be putting the system under more pressure
-> if it's exiting.
-
-Yep, I understand that and it doesn't seem unreasonable.
-
-However I don't think the code implements that correctly.
-
-If you get a non-fatal signal, schedule will exit immediately (because of the
-TASK_INTERRUPTIBLE setting) and the 'while' clause will succeed because the
-signal is not fatal, so it will loop around and try to schedule again, which
-will again exit immediately - busy loop.
-
-> 
-> > (You also have an extraneous call to finish_wait)
+> > Randy Dunlap <rdunlap@xenotime.net> (23/04/2011):
+> > > The "undocumented" list looks correct (well, it could omit .orig
+> > > files), but the "Documented but missing" list contains words, e.g.:
+> > > […]
 > > 
+> > One coffee later… Looks like your grep is behaving as if "grep -F" was
+> > passed; that might be better with an explicit "grep -G" (which is the
+> > default), see patch below?
 > 
-> Which one? I'm not seeing a flow where finish_wait gets called twice
-> without a prepare_to_wait in between. 
+> Sorry, this patch didn't help (did not change the output).
 > 
+> > diff --git a/Documentation/00-INDEX.sh b/Documentation/00-INDEX.sh
+> > index 31d92d2..f22c260 100755
+> > --- a/Documentation/00-INDEX.sh
+> > +++ b/Documentation/00-INDEX.sh
+> > @@ -4,7 +4,7 @@
+> >  # Try and keep the 00-INDEX file up-to-date.
+> >  
+> >  # List all entries below the 00-INDEX entry:
+> > -documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -v '^\s'|sed 's,/$,,')
+> > +documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -G -v '^\s'|sed 's,/$,,')
+> >  
+> >  # List all files/directories except 00-INDEX* and Makefile:
+> >  present=$(ls -1|grep -v '^00-INDEX'|grep -v '^Makefile$')
+> > 
+> > 
+> > Maybe some grep alias in your environment? I couldn't reproduce the
+> > behaviour you mentioned even using (unpack+PATH+LD_LIBRARY_PATH)
+> > pcre-7.8-2.fc11.ppc.rpm and sed-4.2.1-1.fc11.ppc.rpm, until I tried
+> > various options like passing -F to grep.
+> 
+> I couldn't find any grep alias, but I changed "grep" in 00-INDEX.sh to "/bin/grep"
+> anyway, and still got the same results.
 
-You don't need to call finish_wait immediately before prepare_to_wait.
+ad I don't see any environment variables that would affect grep either.
 
-It really is best to just use the appropriate 'wait_event*' macro....
+Anyway, using this line instead of any one of the lines above works for me:
 
-NeilBrown
+documented=$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -G -v ^[[:space:]]|sed 's:/$::')
 
+i.e., use ^[[:space:]] instead of the (original) '^\s'.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
