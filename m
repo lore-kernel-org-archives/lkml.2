@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab1D0LTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:19:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56169 "EHLO bear.ext.ti.com"
+	id S1758713Ab1D0LT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 07:19:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35570 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758613Ab1D0LTq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:19:46 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>, Greg KH <gregkh@suse.de>
-CC: Greg KH <greg@kroah.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>,
-        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 27 Apr 2011 16:49:02 +0530
-Subject: RE: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Topic: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Index: AcwEmyaOiuxO3JY3R7StrVG52j7yvwAGKCxA
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
- <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
- <20110425212056.GA29313@kroah.com>
- <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com>
- <20110426124519.GC5977@suse.de> <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg>
-In-Reply-To: <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758655Ab1D0LTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 07:19:55 -0400
+Message-ID: <4DB7FBD8.20109@suse.cz>
+Date: Wed, 27 Apr 2011 13:19:52 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>
+Subject: Re: [PATCH] kconfig: Avoid buffer underrun in choice input
+References: <1303580576.4815.3.camel@localhost>
+In-Reply-To: <1303580576.4815.3.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 10:53:38, Subhasish Ghosh wrote:
-> >> There should be no build time dependency with this patch
-> >> (the above patch just changes which pool of SRAM the
-> >> allocation happens from)
-> >>
-> >> But, this brings out an important dependency of the patch
-> >> calling platform specific sram allocator functions. There
-> >> has been SRAM allocator consolidation work done by Russell
-> >> and as a result the SRAM allocator API for DaVinci will
-> >> actually change.
-> 
-> I earlier had an implementation where I would get the sram memory addresses
-> through the .resource structure and ioremap it in the driver.
+On 23.4.2011 19:42, Ben Hutchings wrote:
+> commit 40aee729b350672c2550640622416a855e27938f ('kconfig: fix default
+> value for choice input') fixed some cases where kconfig would select
+> the wrong option from a choice with a single valid option and thus
+> enter an infinite loop.
+>
+> However, this broke the test for user input of the form 'N?', because
+> when kconfig selects the single valid option the input is zero-length
+> and the test will read the byte before the input buffer.  If this
+> happens to contain '?' (as it will in a mips build on Debian unstable
+> today) then kconfig again enters an infinite loop.
+>
+> Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
+> Cc: stable@kernel.org [2.6.17+]
+> ---
+> Roman has failed to respond to this after 5 weeks and one reminder, so
+> please take it directly.
 
-This is wrong since it assumes the whole SRAM is available
-for usage by your driver. We already have an allocator
-for SRAM.
+I applied this on 8th April, see
+http://www.spinics.net/lists/linux-kbuild/msg04431.html. Please check 
+linux-next before reposting patches next time, now I either have to 
+rewind the kconfig branch or let Linus merge it with a duplicate commit :-(.
 
-> 
-> >>The driver should probably just get sram
-> >> space through platform data so that it doesn't depend on the
-> >> platform specific sram allocation function.
-> 
-> Are you suggesting that I go back to that implementation.
-
-No, the platform code should use the SRAM allocator and
-pass on the allocated memory to the driver.
-
-Thanks,
-Sekhar
-
+Michal
