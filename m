@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760303Ab1D0Xhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:37:54 -0400
-Received: from mout.perfora.net ([74.208.4.194]:57307 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757162Ab1D0Xhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:37:50 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+	id S1760237Ab1D0Xmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:42:31 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42569 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757101Ab1D0Xma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 19:42:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vmLzDyN84lRG4z99YmtEZicjXn9vpgPerCmaTXQgGbdBPE6p/RqAGy68gpCilzbFdF
+         onrJSBh74eOoF/4gU2Op8IRsI0oPk0EE3J6GdEfq+JARFnbWyXAQOzm4KInc2ay9nDs6
+         fxlX+NxUrOhjP74R7NGfCT+cPS+uA8GnzaIkg=
+MIME-Version: 1.0
+In-Reply-To: <20110427171505.5d7bf485.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<2b79bbf9ddceb73624f49bbe9477126147d875fd.1303833417.git.minchan.kim@gmail.com>
+	<20110427171505.5d7bf485.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 28 Apr 2011 08:42:28 +0900
+Message-ID: <BANLkTim8B7R_9jtBOLS6F_OYJJMwgcG-0Q@mail.gmail.com>
+Subject: Re: [RFC 5/8] compaction: remove active list counting
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] proc: make struct proc_maps_private truly private
-Date: Wed, 27 Apr 2011 19:35:48 -0400
-Message-Id: <1303947349-3620-8-git-send-email-wilsons@start.ca>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1303947349-3620-1-git-send-email-wilsons@start.ca>
-References: <1303947349-3620-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:9TscRgZ3Ho5+SCFMLNc0Jbo8WSh/1sjAuA4/kW2LoqW
- e5wht6m5bzRqb1efI5jos3STl4k3Vkw45ggSZAk06URHQdc2TO
- xO4auymWJthhteJuhZdykx1TE0odJBUofPChExNla7JPJl168S
- hahEuaYRKGBWEft4PNMC3ILtaOLmCXNUnbaC8LAYmgDBbyoSXX
- 5MCsWF082VB77YwZC3Y1Qu2ZyKo26M9wP7YY8s+kag=
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that mm/mempolicy.c is no longer implementing /proc/pid/numa_maps
-there is no need to export struct proc_maps_private to the world.  Move
-it to fs/proc/internal.h instead.
+On Wed, Apr 27, 2011 at 5:15 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 27 Apr 2011 01:25:22 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> acct_isolated of compaction uses page_lru_base_type which returns only
+>> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+>> So it's pointless to add lru[LRU_ACTIVE_[ANON|FILE]] to get sum.
+>>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>
+> I think some comments are necessary to explain why INACTIVE only.
 
-Signed-off-by: Stephen Wilson <wilsons@start.ca>
----
- fs/proc/internal.h      |    8 ++++++++
- include/linux/proc_fs.h |    8 --------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+As alternative, I can change page_lru_base_type with page_lru.
+It's not hot path so I will do.
 
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index c03e8d3..3c39863 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -119,3 +119,11 @@ struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
-  */
- int proc_readdir(struct file *, void *, filldir_t);
- struct dentry *proc_lookup(struct inode *, struct dentry *, struct nameidata *);
-+
-+struct proc_maps_private {
-+	struct pid *pid;
-+	struct task_struct *task;
-+#ifdef CONFIG_MMU
-+	struct vm_area_struct *tail_vma;
-+#endif
-+};
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 838c114..55ff594 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -286,12 +286,4 @@ static inline struct net *PDE_NET(struct proc_dir_entry *pde)
- 	return pde->parent->data;
- }
- 
--struct proc_maps_private {
--	struct pid *pid;
--	struct task_struct *task;
--#ifdef CONFIG_MMU
--	struct vm_area_struct *tail_vma;
--#endif
--};
--
- #endif /* _LINUX_PROC_FS_H */
+Thanks, Kame.
+
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 -- 
-1.7.3.5
-
+Kind regards,
+Minchan Kim
