@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246Ab1D0X1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:27:30 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51016 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab1D0X12 (ORCPT
+	id S1760242Ab1D0X3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:29:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49174 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757162Ab1D0X3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:27:28 -0400
-Date: Wed, 27 Apr 2011 18:27:19 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Roberto Sassu <roberto.sassu@polito.it>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-Message-ID: <20110427232718.GG30854@boyd.l.tihix.com>
-References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
- <4DB87A6B.7060805@schaufler-ca.com>
+	Wed, 27 Apr 2011 19:29:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB87A6B.7060805@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1104280028250.3323@ionos>
+References: <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu>
+ <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
+ <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+ <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
+ <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos>
+ <20110427222727.GU2135@linux.vnet.ibm.com> <alpine.LFD.2.02.1104280028250.3323@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 27 Apr 2011 16:28:09 -0700
+Message-ID: <BANLkTi=Ad2DUQ2Lr-Q5Y+eYxKMyz04fL2g@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
-> > File descriptor labeling issue
-> >
-> > Actually SELinux and SMACK assign to file descriptors the same label of the
-> > opening process and use it in LSM hooks security_file_permission(),
-> > security_file_fcntl() and others to verify if the 'current' process has the
-> > rights to perform the requested operation.
-> >
-> > Using the credentials of the 'current' process may be not appropriate in
-> > case a file descriptor is opened by a kernel service (i.e. a filesystem)
-> > and made shared among user processes. For instance, in a system with
-> > SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
-> > obtains a file descriptor to access the correspondent inode in the lower
-> > filesystem, labeled with the A's label.
-> >
-> > If the process B accesses the same encrypted file, it needs the 'use'
-> > permission on the A's label other than permissions for the lower inode.
-> > However, if B is the first accessing process, A needs the 'use' permission
-> > on the B's label.
-> 
-> I am having trouble understanding the argument. I will pose my
-> question in Smack terms, as I can speak most definitively in them.
-> 
-> A process running with a Smack label "A" creates a file, and that
-> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
-> this ought not change. If eCryptfs in encrypting the label it needs
-> to do so in such a way as to be able to decrypt it prior to
-> presentation to the vfs layer, where it will be used in an access
-> check. When the process running with a Smack label "B" comes along
-> the vfs code will check the fetched and possibly decrypted "A"
-> against "B" and, unless there is an explicit Smack rule in place
-> granting "B" access to "A", fail.
-> 
-> What is the problem? What is eCryptfs doing that prevents this
-> from working?
+On Wed, Apr 27, 2011 at 3:32 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Well that's going to paper over the problem at hand possibly. I really
+> don't see why that thing would run for more than 950ms in a row even
+> if there is a large number of callbacks pending.
 
-Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
-only one lower file per eCryptfs inode. Imagine that there are 5
-files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
-to be open in the lower filesystem and all eCryptfs file operations will
-be multiplexed through it.
+Stop with this bogosity already, guys.
 
-To make things more complicated, if the eCryptfs file is opened for
-writing, the lower file must be opened for reading and writing. This is
-because a write operation requires eCryptfs to vfs_read() from the lower
-filesystem, decrypt that data and then vfs_write() the new data.
+We _know_ it didn't run continuously for 950ms. That number is totally
+made up. There's not enough work for it to run that long, but more
+importantly, the thread has zero CPU time. There is _zero_ reason to
+believe that it runs for long periods.
 
-If the lower file can't be opened O_RDWR by the calling process, the
-request is handed off to a kernel thread to open the lower file on
-behalf of the calling process. It is definitely ugly.
+There is some scheduler bug, probably the rt_time hasn't been
+initialized at all, or runtime we compare against is zero, or the
+calculations are just wrong.
 
-Roberto, I hope I correctly described the situation that you're trying
-to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
-files to lower files?
+The 950ms didn't happen. Stop harping on it. It almost certainly
+simply doesn't exist.
 
-Instead of having just one lower file attached to the eCryptfs inode, we
-could have a list of opened files. There would be one for each eCryptfs
-file that was opened. ecryptfs_writepage() would have to pick, in a
-somewhat random fashion, one of the lower files to use. Of course, we
-would still need to solve the problem of opening the lower file O_RDWR
-when the calling process is only allowed write access (I may have just
-answered my own question of why the 1:1 mapping technique won't solve
-this problem).
+Since that
 
-Tyler
+       if (rt_rq->rt_time > runtime) {
+               rt_rq->rt_throttled = 1;
++               printk_once(KERN_WARNING "sched: RT throttling activated\n");
+
+test triggers, we know that either 'runtime' or 'rt_time' is just
+bogus. Make the printk print out the values, and maybe that gives some
+hints.
+
+But in the meantime, I'd suggest looking for the places that
+initialize or calculate those values, and just assume that some of
+them are buggy.
+
+> And then I don't have an explanation for the hosed CPU accounting and
+> why that thing does not get another 950ms RT time when the 50ms
+> throttling break is over.
+
+Again, don't even bother talking about "another 950ms". It didn't
+happen in the first place, there's no "another" there either.
+
+                      Linus
