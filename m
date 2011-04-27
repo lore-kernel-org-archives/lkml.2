@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759582Ab1D0RAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 13:00:14 -0400
+	id S1759611Ab1D0RAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 13:00:25 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:57034 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756009Ab1D0RAM (ORCPT
+	with ESMTP id S1759595Ab1D0RAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 13:00:12 -0400
+	Wed, 27 Apr 2011 13:00:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dZ+/o7GPkbvoN2NX2VuwIW6eiMzm/DrrJwKeMf5U7AbGTZdKwFoLW4wAGgh9NQFOjP
-         JWa1JuVhMZsdRGTI/9kSDj8tAn741jLYrwP8N30ixfjRPt8us+uon7n3O6EvR7sBMaIv
-         tCtQyS5docXUfTtr1fvPuKZN+eU+xcUtPAGsc=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Wtx3e+LgI79bM53sDrnWGtU1+w7gvTrdSseEIXP1O9leTu1qNWIeTRQc4Synt7Ugz6
+         yF88O6M6qTRQ353K18+/YFRM9n4Ta1HDBont9OtiKHUJc9DqWOvfxDgafOFg5P/y0Ay5
+         AFPyNeDESDbnmSC55vqEA5be9L16HzWyLjbP8=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H . Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 0/6] hw_breakpoint: Let the user choose not to build it (and perf too)
-Date: Wed, 27 Apr 2011 18:59:56 +0200
-Message-Id: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 5/6] hw_breakpoints: Only force perf events if breakpoints are selected
+Date: Wed, 27 Apr 2011 19:00:01 +0200
+Message-Id: <1303923602-2923-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
+References: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Previously, arch were forced to always build perf events if they
+supported hw_breakpoints.
 
-Until now, x86 and superh32 had to always build hw_breakpoint and perf.
-And powerpc and arm were always building hw_breakpoints when perf
-was enabled.
+Now that the user can choose not to build hw_breakpoints, let
+only force perf events if hw_breakpoints are selected.
 
-After this patchset, one can simply disable hw_breakpoints if he
-selected CONFIG_EXPERT. Afterward the user is free to select perf
-or not. Except on SH unfortunately because that would require a
-bit of change in ptrace to support singlestep failures.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+---
+ arch/sh/Kconfig  |    1 -
+ arch/x86/Kconfig |    1 -
+ init/Kconfig     |    1 +
+ 3 files changed, 1 insertions(+), 2 deletions(-)
 
-Frederic Weisbecker (6):
-  hw_breakpoints: Split hardware breakpoints config
-  hw_breakpoints: Migrate breakpoint conditional build under new config
-  x86: Allow the user not to build hw_breakpoints
-  hw_breakpoints: Breakpoints arch ability don't need perf events
-  hw_breakpoints: Only force perf events if breakpoints are selected
-  hw_breakpoints: Drop remaining misplaced dependency on perf
-
- arch/Kconfig                             |    1 -
- arch/arm/Kconfig                         |    2 +-
- arch/arm/include/asm/hw_breakpoint.h     |    4 +-
- arch/arm/include/asm/processor.h         |    2 +-
- arch/arm/kernel/Makefile                 |    2 +-
- arch/arm/kernel/entry-header.S           |    2 +-
- arch/arm/kernel/ptrace.c                 |    4 +-
- arch/powerpc/Kconfig                     |    2 +-
- arch/powerpc/include/asm/cputable.h      |    4 +-
- arch/powerpc/include/asm/hw_breakpoint.h |    6 ++--
- arch/powerpc/include/asm/processor.h     |    4 +-
- arch/powerpc/kernel/Makefile             |    2 +-
- arch/powerpc/kernel/process.c            |   18 ++++++++--------
- arch/powerpc/kernel/ptrace.c             |   12 +++++-----
- arch/powerpc/lib/Makefile                |    2 +-
- arch/sh/Kconfig                          |    2 +-
- arch/sh/kernel/Makefile                  |    2 +-
- arch/sh/kernel/cpu/sh4a/Makefile         |    2 +-
- arch/x86/Kconfig                         |    3 +-
- arch/x86/include/asm/debugreg.h          |   33 ++++++++++++++++++++++++++++-
- arch/x86/kernel/Makefile                 |    3 +-
- arch/x86/kernel/process.c                |    1 +
- arch/x86/kernel/ptrace.c                 |   17 +++++++++++++++
- include/linux/hw_breakpoint.h            |    6 ++--
- include/linux/perf_event.h               |    4 +-
- init/Kconfig                             |   11 ++++++++++
- kernel/Makefile                          |    2 +-
- kernel/perf_event.c                      |    4 +-
- samples/Kconfig                          |    2 +-
- 29 files changed, 108 insertions(+), 51 deletions(-)
-
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 0d4d124..d59e6c2 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -46,7 +46,6 @@ config SUPERH32
+ 	select HAVE_HW_BREAKPOINT
+ 	select HW_BREAKPOINT
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+-	select PERF_EVENTS
+ 	select ARCH_HIBERNATION_POSSIBLE if MMU
+ 	select SPARSE_IRQ
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index fb28dd9..5317f42 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -55,7 +55,6 @@ config X86
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_HW_BREAKPOINT
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+-	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
+ 	select ANON_INODES
+ 	select HAVE_ARCH_KMEMCHECK
+diff --git a/init/Kconfig b/init/Kconfig
+index 51f587f..797c98c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -927,6 +927,7 @@ menuconfig EXPERT
+ config HW_BREAKPOINT
+ 	bool "Hardware breakpoints" if EXPERT
+ 	depends on HAVE_HW_BREAKPOINT
++	select PERF_EVENTS
+ 	default y
+ 	help
+ 	  Hardware breakpoints are a feature implemented by most CPUs
 -- 
 1.7.3.2
 
