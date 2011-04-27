@@ -1,128 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759013Ab1D0PKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 11:10:07 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:60649 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab1D0PKF convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Wed, 27 Apr 2011 11:10:05 -0400
-Message-Id: <4DB84E35020000780003E691@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 27 Apr 2011 16:11:17 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: avoid double stack traces with show_regs()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1758298Ab1D0PM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 11:12:28 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58866 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab1D0PMZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 11:12:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k/idcd5RyxZ6eOEqODzSHGpl2Zpky7UE8IAw4WdydjMNhlMbek9UnnZwt16qwuMC5H
+         pkc4AG5zB2RCCEfkAA3YHBwOdGrx/F0Vlto0KS/mbWaISCuTn13J+DmdwHvfUt0tejKk
+         emw29RSLYjaUNMLknFieGd6/xYNfLj1QYSi4E=
+Date: Wed, 27 Apr 2011 17:12:19 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Message-ID: <20110427151218.GA15335@linux.betterlinux.com>
+References: <1303914545-15642-1-git-send-email-andrea@betterlinux.com>
+ <201104271700.13013.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <201104271700.13013.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What was called show_registers() so far already showed a stack trace
-for kernel faults, and kernel_stack_pointer() isn't even valid to be
-used for faults from user mode, hence it was pointless for show_regs()
-to call show_trace() after show_registers(). Simply rename
-show_registers() to show_regs() and eliminate the old definition.
+On Wed, Apr 27, 2011 at 05:00:12PM +0200, Arnd Bergmann wrote:
+> On Wednesday 27 April 2011 16:29:05 Andrea Righi wrote:
+> > diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
+> > index e8e7471..dc9ce98 100644
+> > --- a/include/linux/fadvise.h
+> > +++ b/include/linux/fadvise.h
+> > @@ -13,9 +13,11 @@
+> >  #if defined(__s390x__)
+> >  #define POSIX_FADV_DONTNEED    6 /* Don't need these pages.  */
+> >  #define POSIX_FADV_NOREUSE     7 /* Data will be accessed once.  */
+> > +#define POSIX_FADV_DONTNEED_FS 8 /* Don't need these filesystem pages.  */
+> >  #else
+> >  #define POSIX_FADV_DONTNEED    4 /* Don't need these pages.  */
+> >  #define POSIX_FADV_NOREUSE     5 /* Data will be accessed once.  */
+> > +#define POSIX_FADV_DONTNEED_FS 6 /* Don't need these filesystem pages.  */
+> >  #endif
+> >  
+> >  #endif /* FADVISE_H_INCLUDED */
+> 
+> Please don't make the s390 mess worse than it already is here.
+> I think the best solution would be to assign new values starting
+> from 8 so they can be common for all architectures.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Agreed.
 
----
- arch/x86/include/asm/kdebug.h  |    1 -
- arch/x86/kernel/dumpstack.c    |    2 +-
- arch/x86/kernel/dumpstack_32.c |    2 +-
- arch/x86/kernel/dumpstack_64.c |    2 +-
- arch/x86/kernel/kprobes.c      |    4 ++--
- arch/x86/kernel/process.c      |    6 ------
- arch/x86/kernel/traps.c        |    2 +-
- 7 files changed, 6 insertions(+), 13 deletions(-)
+> 
+> > @@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+> >                         invalidate_mapping_pages(mapping, start_index,
+> >                                                 end_index);
+> >                 break;
+> > +       case POSIX_FADV_DONTNEED_FS:
+> > +               if (!current_euid())
+> > +                       drop_pagecache_sb(file->f_dentry->d_sb, NULL);
+> > +               else
+> > +                       ret = -EPERM;
+> > +               break;
+> 
+> I somewhat disagree with keying the capability off the UID value, even
+> if that is what the sysctl uses. CAP_SYS_ADMIN is not that nice either, but
+> I think it's better than the UID here.
 
---- 2.6.39-rc5/arch/x86/include/asm/kdebug.h
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/include/asm/kdebug.h
-@@ -24,7 +24,6 @@ enum die_val {
- extern void printk_address(unsigned long address, int reliable);
- extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
--extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
- 		       unsigned long *sp, unsigned long bp);
- extern void __show_regs(struct pt_regs *regs, int all);
---- 2.6.39-rc5/arch/x86/kernel/dumpstack.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/dumpstack.c
-@@ -284,7 +284,7 @@ int __kprobes __die(const char *str, str
- 			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
- 		return 1;
- 
--	show_registers(regs);
-+	show_regs(regs);
- #ifdef CONFIG_X86_32
- 	if (user_mode_vm(regs)) {
- 		sp = regs->sp;
---- 2.6.39-rc5/arch/x86/kernel/dumpstack_32.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/dumpstack_32.c
-@@ -82,7 +82,7 @@ show_stack_log_lvl(struct task_struct *t
- }
- 
- 
--void show_registers(struct pt_regs *regs)
-+void show_regs(struct pt_regs *regs)
- {
- 	int i;
- 
---- 2.6.39-rc5/arch/x86/kernel/dumpstack_64.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/dumpstack_64.c
-@@ -272,7 +272,7 @@ show_stack_log_lvl(struct task_struct *t
- 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
- }
- 
--void show_registers(struct pt_regs *regs)
-+void show_regs(struct pt_regs *regs)
- {
- 	int i;
- 	unsigned long sp;
---- 2.6.39-rc5/arch/x86/kernel/kprobes.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/kprobes.c
-@@ -1089,9 +1089,9 @@ int __kprobes longjmp_break_handler(stru
- 			       "current sp %p does not match saved sp %p\n",
- 			       stack_addr(regs), kcb->jprobe_saved_sp);
- 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
--			show_registers(saved_regs);
-+			show_regs(saved_regs);
- 			printk(KERN_ERR "Current registers\n");
--			show_registers(regs);
-+			show_regs(regs);
- 			BUG();
- 		}
- 		*regs = kcb->jprobe_saved_regs;
---- 2.6.39-rc5/arch/x86/kernel/process.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/process.c
-@@ -84,12 +84,6 @@ void exit_thread(void)
- 	}
- }
- 
--void show_regs(struct pt_regs *regs)
--{
--	show_registers(regs);
--	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
--}
--
- void show_regs_common(void)
- {
- 	const char *vendor, *product, *board;
---- 2.6.39-rc5/arch/x86/kernel/traps.c
-+++ 2.6.39-rc5-x86-no-show_registers/arch/x86/kernel/traps.c
-@@ -349,7 +349,7 @@ io_check_error(unsigned char reason, str
- 	pr_emerg(
- 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
--	show_registers(regs);
-+	show_regs(regs);
- 
- 	if (panic_on_io_nmi)
- 		panic("NMI IOCK error: Not continuing");
+OK, I also prefer CAP_SYS_ADMIN.
 
+> 
+> Aside from these, I like the patch.
+> 
+> 	Arnd
 
+I'll wait for other comments and post another version with the changes
+you suggested.
 
+Thanks for looking at it.
+
+-Andrea
