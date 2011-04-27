@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab1D0Uqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:46:45 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:35448 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759954Ab1D0Uqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:46:43 -0400
-Date: Wed, 27 Apr 2011 22:46:41 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH v3.2] kbuild: implement several W= levels
-Message-ID: <20110427204641.GB9005@merkur.ravnborg.org>
-References: <20110427113513.GB18112@eferding.osrc.amd.com> <1303935327-5154-1-git-send-email-bp@alien8.de>
+	id S1760028Ab1D0Uqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:46:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58076 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759954Ab1D0Uqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 16:46:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Power management regression fixes for 2.6.39
+Date: Wed, 27 Apr 2011 22:47:07 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, "Greg Kroah-Hartman" <gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303935327-5154-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104272247.07545.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 10:15:27PM +0200, Borislav Petkov wrote:
-> From: Sam Ravnborg <sam@ravnborg.org>
-> 
-> Building a kernel with "make W=1" produces far too much noise to be
-> useful.
-> 
-> Divide the warning options in three groups:
-> 
->     W=1 - warnings that may be relevant and does not occur too often
->     W=2 - warnings that occur quite often but may still be relevant
->     W=3 - the more obscure warnings, can most likely be ignored
-> 
-> When building the whole kernel, those levels produce:
-> 
-> W=1 - 4859 warnings
-> W=2 - 1394 warnings
-> W=3 - 86666 warnings
-> 
-> respectively. Warnings have been counted with Geert's script at
-> 
-> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/linux-log-summary.pl
-> 
-> Many warnings occur from .h files so fixing one file may have a nice
-> effect on the total number of warnings.
-> 
-> With these changes I am actually tempted to try W=1 now and then.
-> Previously there was just too much noise.
-> 
-> Borislav:
-> 
-> - make the W= levels exclusive
-> - move very noisy and making little sense for the kernel warnings to W=3
-> - drop -Woverlength-strings due to useless warning message
-> - copy explanatory text for the different warning levels to 'make help'
-> - recount warnings per level
-> 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
+Hi Linus,
 
-Looks good. Michal - please apply.
+Please pull two power management regression fixes for 2.6.39 from:
 
-	Sam
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+
+The first one fixes device initialization so that wakeup-related files are
+created for all wakeup-capable devices as appropriate and the other is a
+workaround for some BIOS brain damage that started to be visible and hurt
+people after recent changes in the handling of ACPI power resources.
+ 
+
+ drivers/acpi/scan.c         |    4 ++++
+ drivers/base/power/main.c   |    1 +
+ drivers/base/power/wakeup.c |    2 +-
+ 3 files changed, 6 insertions(+), 1 deletions(-)
+
+---------------
+
+Rafael J. Wysocki (2):
+      PM / Wakeup: Fix initialization of wakeup-related device sysfs files
+      ACPI / PM: Avoid infinite recurrence while registering power resources
+
