@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab1D0WUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:20:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33289 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab1D0WUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:20:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,276,1301900400"; 
-   d="scan'208";a="739369977"
-Message-ID: <4DB896B5.7090506@linux.intel.com>
-Date: Wed, 27 Apr 2011 15:20:37 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1758938Ab1D0WVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:21:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62471 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab1D0WVB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 18:21:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CFmaLnYw2lB8mufu30KyaYYfQW08rFVils2VIGv76o2yaiKJ8aijF5u2Aw4RzbEAT4
+         hB1MDcMO7ZGpw2ZonHlQgk/2Sb5DJ0wnKfPAky09njIJQbmkBsGb+i5k6oPBUQD1Oem7
+         1FOIP2yMAmxixeMftde/+fUlOo0izaxvx2l8E=
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: tim.gardner@canonical.com, wey-yi.w.guy@intel.com,
-        Andi Kleen <andi@firstfloor.org>, donald.h.fry@intel.com,
-        sgruszka@redhat.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [96/106] iwlagn: Support new 5000 microcode.
-References: <20110426212.641772347@firstfloor.org> <20110426211418.AF9B93E1886@tassilo.jf.intel.com>            <4DB85596.4070105@canonical.com> <38255.1303937247@localhost>
-In-Reply-To: <38255.1303937247@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1303924079.18763.70.camel@gandalf.stny.rr.com>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
+	<20110427164639.GD9487@ZenIV.linux.org.uk>
+	<1303924079.18763.70.camel@gandalf.stny.rr.com>
+Date: Wed, 27 Apr 2011 19:21:00 -0300
+Message-ID: <BANLkTinoMT23UOUXEmH3LSUWVMNCOnN_bQ@mail.gmail.com>
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+From: Thiago Farina <tfransosi@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> I can't speak to Ubuntu, but I hit this on Fedora Rawhide a while ago, they
-> ended including several versions so different kernels would work OK:
+On Wed, Apr 27, 2011 at 2:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 2011-04-27 at 17:46 +0100, Al Viro wrote:
+>> On Tue, Apr 26, 2011 at 03:49:49PM -0300, Thiago Farina wrote:
+>> > This macro is arguably more readable than its variants:
+>> > - !strcmp(a, b)
+>> > - strcmp(a, b) == 0
+>>
+>> Strongly NACKed.  As far as I'm concerned, it's in the same shitbucket as
+>> bcopy(3), bzero(3) et.al.  Use idiomatic C; extensions of that kind are
+>> *bad*, since new developers have to learn them.
 >
-> % rpm -ql iwl5000-firmware
-> /lib/firmware/iwlwifi-5000-1.ucode
-> /lib/firmware/iwlwifi-5000-2.ucode
-> /lib/firmware/iwlwifi-5000-5.ucode
+> What developer has to really learn streq()?
+Yeah, I'm not understanding why they can understand !strcmp(a,b) but
+not streq ;)
 
-I don't want people require to install new firmware for .35. This sounds 
-like I should
-drop this patch. Wey-yi?
+Also, I know it doesn't matter but we already have one definition of
+streq on scripts/dtc/dtc.h
 
--Andi
-
+> I mean it is pretty obvious to what it does, as suppose to what bzero and bcopy do. A quick google
+> on "streq" brings up lots of matches of people who already do this.
+>
+> Actually, some have "optimized" it with:
+>
+> #define streq(a, b) (*(a) == *(b) && strcmp(a, b) == 0)
+>
+> As it fails out if the first character does not match (likely the case
+> if strings do not match) before it calls the strcmp function.
+>
+> -- Steve
+>
+>
+>
