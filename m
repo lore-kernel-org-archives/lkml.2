@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1D0KbZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 06:31:25 -0400
+	id S1755420Ab1D0Kbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 06:31:43 -0400
 Received: from mga02.intel.com ([134.134.136.20]:23595 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932189Ab1D0KaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 06:30:22 -0400
+	id S1751670Ab1D0KaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 06:30:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,273,1301900400"; 
-   d="scan'208";a="739084268"
+   d="scan'208";a="739084225"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         alan@linux.intel.com, david@woodhou.se,
         Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 5/8] staging/mei: Hardware and MEI driver internal struct definition
-Date: Wed, 27 Apr 2011 13:27:34 +0300
-Message-Id: <1303900057-21694-6-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 3/8] staging/mei: MEI "Link" layer code - MEI Hardware communications.
+Date: Wed, 27 Apr 2011 13:27:32 +0300
+Message-Id: <1303900057-21694-4-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
 References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
@@ -26,23 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-define the MEI protocol msg structs and
-HW registers, also define the MEI internal status and struct
+functions that handle the communication between clients.
+e.g. connect/disconnect to/from a client, send MEI message,
+read MEI message, flow control handling.
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Itzhak Tzeel-Krupp <itzhak.tzeel-krupp@intel.com>
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 ---
- drivers/staging/mei/hw.h |  510 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 510 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/mei/hw.h
+ drivers/staging/mei/interface.c |  440 +++++++++++++++++++++++++++++++++++++++
+ drivers/staging/mei/interface.h |  124 +++++++++++
+ 2 files changed, 564 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/mei/interface.c
+ create mode 100644 drivers/staging/mei/interface.h
 
-diff --git a/drivers/staging/mei/hw.h b/drivers/staging/mei/hw.h
+diff --git a/drivers/staging/mei/interface.c b/drivers/staging/mei/interface.c
 new file mode 100644
-index 0000000..df29dfb
+index 0000000..620770b
 --- /dev/null
-+++ b/drivers/staging/mei/hw.h
-@@ -0,0 +1,510 @@
++++ b/drivers/staging/mei/interface.c
+@@ -0,0 +1,440 @@
 +/*
 + *
 + * Intel Management Engine Interface (Intel MEI) Linux driver
@@ -59,500 +62,560 @@ index 0000000..df29dfb
 + *
 + */
 +
-+#ifndef _MEI_DATA_STRUCTURES_H_
-+#define _MEI_DATA_STRUCTURES_H_
++#include <linux/pci.h>
++#include "mei.h"
++#include "interface.h"
 +
-+#include <linux/io.h>
-+#include <linux/wait.h>
-+#include <linux/uuid.h>
 +
-+#define MEI_FC_MESSAGE_RESERVED_LENGTH           5
 +
-+/*
-+ * Number of queue lists used by this driver
++/**
++ * mei_set_csr_register - writes H_CSR register to the mei device,
++ * and ignores the H_IS bit for it is write-one-to-zero.
++ *
++ * @dev: the device structure
 + */
-+#define MEI_IO_LISTS_NUMBER        7
++void mei_hcsr_set(struct mei_device *dev)
++{
++	if ((dev->host_hw_state & H_IS) == H_IS)
++		dev->host_hw_state &= ~H_IS;
++	mei_reg_write(dev, H_CSR, dev->host_hw_state);
++	dev->host_hw_state = mei_hcsr_read(dev);
++}
 +
-+#define MEI_CLIENTS_MAX 255
++/**
++ * mei_csr_enable_interrupts - enables mei device interrupts
++ *
++ * @dev: the device structure
++ */
++void mei_enable_interrupts(struct mei_device *dev)
++{
++	dev->host_hw_state |= H_IE;
++	mei_hcsr_set(dev);
++}
 +
++/**
++ * mei_csr_disable_interrupts - disables mei device interrupts
++ *
++ * @dev: the device structure
++ */
++void mei_disable_interrupts(struct mei_device *dev)
++{
++	dev->host_hw_state &= ~H_IE;
++	mei_hcsr_set(dev);
++}
++
++/**
++ * _host_get_filled_slots - gets number of device filled buffer slots
++ *
++ * @device: the device structure
++ *
++ * returns number of filled slots
++ */
++static unsigned char _host_get_filled_slots(const struct mei_device *dev)
++{
++	char read_ptr, write_ptr;
++
++	read_ptr = (char) ((dev->host_hw_state & H_CBRP) >> 8);
++	write_ptr = (char) ((dev->host_hw_state & H_CBWP) >> 16);
++
++	return (unsigned char) (write_ptr - read_ptr);
++}
++
++/**
++ * mei_host_buffer_is_empty - checks if host buffer is empty.
++ *
++ * @dev: the device structure
++ *
++ * returns 1 if empty, 0 - otherwise.
++ */
++int mei_host_buffer_is_empty(struct mei_device *dev)
++{
++	unsigned char filled_slots;
++
++	dev->host_hw_state = mei_hcsr_read(dev);
++	filled_slots = _host_get_filled_slots(dev);
++
++	if (filled_slots == 0)
++		return 1;
++
++	return 0;
++}
++
++/**
++ * mei_count_empty_write_slots - counts write empty slots.
++ *
++ * @dev: the device structure
++ *
++ * returns -1(ESLOTS_OVERFLOW) if overflow, otherwise empty slots count
++ */
++int mei_count_empty_write_slots(struct mei_device *dev)
++{
++	unsigned char buffer_depth, filled_slots, empty_slots;
++
++	dev->host_hw_state = mei_hcsr_read(dev);
++	buffer_depth = (unsigned char) ((dev->host_hw_state & H_CBD) >> 24);
++	filled_slots = _host_get_filled_slots(dev);
++	empty_slots = buffer_depth - filled_slots;
++
++	/* check for overflow */
++	if (filled_slots > buffer_depth)
++		return -EOVERFLOW;
++
++	return empty_slots;
++}
++
++/**
++ * mei_write_message - writes a message to mei device.
++ *
++ * @dev: the device structure
++ * @header: header of message
++ * @write_buffer: message buffer will be written
++ * @write_length: message size will be written
++ *
++ * returns 1 if success, 0 - otherwise.
++ */
++int mei_write_message(struct mei_device *dev,
++			     struct mei_msg_hdr *header,
++			     unsigned char *write_buffer,
++			     unsigned long write_length)
++{
++	u32 temp_msg = 0;
++	unsigned long bytes_written = 0;
++	unsigned char buffer_depth, filled_slots, empty_slots;
++	unsigned long dw_to_write;
++
++	dev->host_hw_state = mei_hcsr_read(dev);
++
++	dev_dbg(&dev->pdev->dev,
++			"host_hw_state = 0x%08x.\n",
++			dev->host_hw_state);
++
++	dev_dbg(&dev->pdev->dev,
++			"mei_write_message header=%08x.\n",
++			*((u32 *) header));
++
++	buffer_depth = (unsigned char) ((dev->host_hw_state & H_CBD) >> 24);
++	filled_slots = _host_get_filled_slots(dev);
++	empty_slots = buffer_depth - filled_slots;
++	dev_dbg(&dev->pdev->dev,
++			"filled = %hu, empty = %hu.\n",
++			filled_slots, empty_slots);
++
++	dw_to_write = ((write_length + 3) / 4);
++
++	if (dw_to_write > empty_slots)
++		return 0;
++
++	mei_reg_write(dev, H_CB_WW, *((u32 *) header));
++
++	while (write_length >= 4) {
++		mei_reg_write(dev, H_CB_WW,
++				*(u32 *) (write_buffer + bytes_written));
++		bytes_written += 4;
++		write_length -= 4;
++	}
++
++	if (write_length > 0) {
++		memcpy(&temp_msg, &write_buffer[bytes_written], write_length);
++		mei_reg_write(dev, H_CB_WW, temp_msg);
++	}
++
++	dev->host_hw_state |= H_IG;
++	mei_hcsr_set(dev);
++	dev->me_hw_state = mei_mecsr_read(dev);
++	if ((dev->me_hw_state & ME_RDY_HRA) != ME_RDY_HRA)
++		return 0;
++
++	dev->write_hang = 0;
++	return 1;
++}
++
++/**
++ * mei_count_full_read_slots - counts read full slots.
++ *
++ * @dev: the device structure
++ *
++ * returns -1(ESLOTS_OVERFLOW) if overflow, otherwise filled slots count
++ */
++int mei_count_full_read_slots(struct mei_device *dev)
++{
++	char read_ptr, write_ptr;
++	unsigned char buffer_depth, filled_slots;
++
++	dev->me_hw_state = mei_mecsr_read(dev);
++	buffer_depth = (unsigned char)((dev->me_hw_state & ME_CBD_HRA) >> 24);
++	read_ptr = (char) ((dev->me_hw_state & ME_CBRP_HRA) >> 8);
++	write_ptr = (char) ((dev->me_hw_state & ME_CBWP_HRA) >> 16);
++	filled_slots = (unsigned char) (write_ptr - read_ptr);
++
++	/* check for overflow */
++	if (filled_slots > buffer_depth)
++		return -EOVERFLOW;
++
++	dev_dbg(&dev->pdev->dev, "filled_slots =%08x\n", filled_slots);
++	return (int)filled_slots;
++}
++
++/**
++ * mei_read_slots - reads a message from mei device.
++ *
++ * @dev: the device structure
++ * @buffer: message buffer will be written
++ * @buffer_length: message size will be read
++ */
++void mei_read_slots(struct mei_device *dev,
++		     unsigned char *buffer, unsigned long buffer_length)
++{
++	u32 i = 0;
++	unsigned char temp_buf[sizeof(u32)];
++
++	while (buffer_length >= sizeof(u32)) {
++		((u32 *) buffer)[i] = mei_mecbrw_read(dev);
++
++		dev_dbg(&dev->pdev->dev,
++				"buffer[%d]= %d\n",
++				i, ((u32 *) buffer)[i]);
++
++		i++;
++		buffer_length -= sizeof(u32);
++	}
++
++	if (buffer_length > 0) {
++		*((u32 *) &temp_buf) = mei_mecbrw_read(dev);
++		memcpy(&buffer[i * 4], temp_buf, buffer_length);
++	}
++
++	dev->host_hw_state |= H_IG;
++	mei_hcsr_set(dev);
++}
++
++/**
++ * mei_flow_ctrl_creds - checks flow_control credentials.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ *
++ * returns 1 if mei_flow_ctrl_creds >0, 0 - otherwise.
++ */
++int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *file_ext)
++{
++	int i;
++
++	if (!dev->num_mei_me_clients)
++		return 0;
++
++	if (file_ext == NULL)
++		return 0;
++
++	if (file_ext->mei_flow_ctrl_creds > 0)
++		return 1;
++
++	for (i = 0; i < dev->num_mei_me_clients; i++) {
++		if (dev->me_clients[i].client_id == file_ext->me_client_id) {
++			if (dev->me_clients[i].mei_flow_ctrl_creds > 0) {
++				BUG_ON(dev->me_clients[i].props.single_recv_buf
++					 == 0);
++				return 1;
++			}
++			return 0;
++		}
++	}
++	BUG();
++	return 0;
++}
++
++/**
++ * mei_flow_ctrl_reduce - reduces flow_control.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ */
++void mei_flow_ctrl_reduce(struct mei_device *dev, struct mei_cl *file_ext)
++{
++	int i;
++
++	if (!dev->num_mei_me_clients)
++		return;
++
++	for (i = 0; i < dev->num_mei_me_clients; i++) {
++		if (dev->me_clients[i].client_id == file_ext->me_client_id) {
++			if (dev->me_clients[i].props.single_recv_buf != 0) {
++				BUG_ON(dev->me_clients[i].mei_flow_ctrl_creds
++						<= 0);
++				dev->me_clients[i].mei_flow_ctrl_creds--;
++			} else {
++				BUG_ON(file_ext->mei_flow_ctrl_creds <= 0);
++				file_ext->mei_flow_ctrl_creds--;
++			}
++			return;
++		}
++	}
++	BUG();
++}
++
++/**
++ * mei_send_flow_control - sends flow control to fw.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ *
++ * returns 1 if success, 0 - otherwise.
++ */
++int mei_send_flow_control(struct mei_device *dev, struct mei_cl *file_ext)
++{
++	struct mei_msg_hdr *mei_hdr;
++	struct hbm_flow_control *mei_flow_control;
++
++	mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
++	mei_hdr->host_addr = 0;
++	mei_hdr->me_addr = 0;
++	mei_hdr->length = sizeof(struct hbm_flow_control);
++	mei_hdr->msg_complete = 1;
++	mei_hdr->reserved = 0;
++
++	mei_flow_control = (struct hbm_flow_control *) &dev->wr_msg_buf[1];
++	memset(mei_flow_control, 0, sizeof(mei_flow_control));
++	mei_flow_control->host_addr = file_ext->host_client_id;
++	mei_flow_control->me_addr = file_ext->me_client_id;
++	mei_flow_control->cmd.cmd = MEI_FLOW_CONTROL_CMD;
++	memset(mei_flow_control->reserved, 0,
++			sizeof(mei_flow_control->reserved));
++	dev_dbg(&dev->pdev->dev, "sending flow control host client = %d, ME client = %d\n",
++	    file_ext->host_client_id, file_ext->me_client_id);
++	if (!mei_write_message(dev, mei_hdr,
++				(unsigned char *) mei_flow_control,
++				sizeof(struct hbm_flow_control)))
++		return 0;
++
++	return 1;
++
++}
++
++/**
++ * mei_other_client_is_connecting - checks if other
++ *    client with the same client id is connected.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ *
++ * returns 1 if other client is connected, 0 - otherwise.
++ */
++int mei_other_client_is_connecting(struct mei_device *dev,
++				struct mei_cl *file_ext)
++{
++	struct mei_cl *file_pos = NULL;
++	struct mei_cl *file_next = NULL;
++
++	list_for_each_entry_safe(file_pos, file_next, &dev->file_list, link) {
++		if ((file_pos->state == MEI_FILE_CONNECTING) &&
++			(file_pos != file_ext) &&
++			file_ext->me_client_id == file_pos->me_client_id)
++			return 1;
++
++	}
++	return 0;
++}
++
++/**
++ * mei_disconnect - sends disconnect message to fw.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ *
++ * returns 1 if success, 0 - otherwise.
++ */
++int mei_disconnect(struct mei_device *dev, struct mei_cl *file_ext)
++{
++	struct mei_msg_hdr *mei_hdr;
++	struct hbm_client_disconnect_request *mei_cli_disconnect;
++
++	mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
++	mei_hdr->host_addr = 0;
++	mei_hdr->me_addr = 0;
++	mei_hdr->length = sizeof(struct hbm_client_disconnect_request);
++	mei_hdr->msg_complete = 1;
++	mei_hdr->reserved = 0;
++
++	mei_cli_disconnect =
++	    (struct hbm_client_disconnect_request *) &dev->wr_msg_buf[1];
++	memset(mei_cli_disconnect, 0, sizeof(mei_cli_disconnect));
++	mei_cli_disconnect->host_addr = file_ext->host_client_id;
++	mei_cli_disconnect->me_addr = file_ext->me_client_id;
++	mei_cli_disconnect->cmd.cmd = CLIENT_DISCONNECT_REQ_CMD;
++	mei_cli_disconnect->reserved[0] = 0;
++
++	if (!mei_write_message(dev, mei_hdr,
++				(unsigned char *) mei_cli_disconnect,
++				sizeof(struct hbm_client_disconnect_request)))
++		return 0;
++
++	return 1;
++}
++
++/**
++ * mei_connect - sends connect message to fw.
++ *
++ * @dev: the device structure
++ * @file_ext: private data of the file object
++ *
++ * returns 1 if success, 0 - otherwise.
++ */
++int mei_connect(struct mei_device *dev, struct mei_cl *file_ext)
++{
++	struct mei_msg_hdr *mei_hdr;
++	struct hbm_client_connect_request *mei_cli_connect;
++
++	mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
++	mei_hdr->host_addr = 0;
++	mei_hdr->me_addr = 0;
++	mei_hdr->length = sizeof(struct hbm_client_connect_request);
++	mei_hdr->msg_complete = 1;
++	mei_hdr->reserved = 0;
++
++	mei_cli_connect =
++	    (struct hbm_client_connect_request *) &dev->wr_msg_buf[1];
++	mei_cli_connect->host_addr = file_ext->host_client_id;
++	mei_cli_connect->me_addr = file_ext->me_client_id;
++	mei_cli_connect->cmd.cmd = CLIENT_CONNECT_REQ_CMD;
++	mei_cli_connect->reserved = 0;
++
++	if (!mei_write_message(dev, mei_hdr,
++				(unsigned char *) mei_cli_connect,
++				sizeof(struct hbm_client_connect_request)))
++		return 0;
++
++	return 1;
++}
+diff --git a/drivers/staging/mei/interface.h b/drivers/staging/mei/interface.h
+new file mode 100644
+index 0000000..1bac32a
+--- /dev/null
++++ b/drivers/staging/mei/interface.h
+@@ -0,0 +1,124 @@
 +/*
-+ * MEI HW Section
++ *
++ * Intel Management Engine Interface (Intel MEI) Linux driver
++ * Copyright (c) 2003-2011, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
 + */
 +
-+/* MEI registers */
-+/* H_CB_WW - Host Circular Buffer (CB) Write Window register */
-+#define H_CB_WW    0
-+/* H_CSR - Host Control Status register */
-+#define H_CSR      4
-+/* ME_CB_RW - ME Circular Buffer Read Window register (read only) */
-+#define ME_CB_RW   8
-+/* ME_CSR_HA - ME Control Status Host Access register (read only) */
-+#define ME_CSR_HA  0xC
 +
 +
-+/* register bits of H_CSR (Host Control Status register) */
-+/* Host Circular Buffer Depth - maximum number of 32-bit entries in CB */
-+#define H_CBD             0xFF000000
-+/* Host Circular Buffer Write Pointer */
-+#define H_CBWP            0x00FF0000
-+/* Host Circular Buffer Read Pointer */
-+#define H_CBRP            0x0000FF00
-+/* Host Reset */
-+#define H_RST             0x00000010
-+/* Host Ready */
-+#define H_RDY             0x00000008
-+/* Host Interrupt Generate */
-+#define H_IG              0x00000004
-+/* Host Interrupt Status */
-+#define H_IS              0x00000002
-+/* Host Interrupt Enable */
-+#define H_IE              0x00000001
++#ifndef _MEI_INTERFACE_H_
++#define _MEI_INTERFACE_H_
++
++#include <linux/mei.h>
++#include "hw.h"
 +
 +
-+/* register bits of ME_CSR_HA (ME Control Status Host Access register) */
-+/* ME CB (Circular Buffer) Depth HRA (Host Read Access) - host read only
-+access to ME_CBD */
-+#define ME_CBD_HRA        0xFF000000
-+/* ME CB Write Pointer HRA - host read only access to ME_CBWP */
-+#define ME_CBWP_HRA       0x00FF0000
-+/* ME CB Read Pointer HRA - host read only access to ME_CBRP */
-+#define ME_CBRP_HRA       0x0000FF00
-+/* ME Reset HRA - host read only access to ME_RST */
-+#define ME_RST_HRA        0x00000010
-+/* ME Ready HRA - host read only access to ME_RDY */
-+#define ME_RDY_HRA        0x00000008
-+/* ME Interrupt Generate HRA - host read only access to ME_IG */
-+#define ME_IG_HRA         0x00000004
-+/* ME Interrupt Status HRA - host read only access to ME_IS */
-+#define ME_IS_HRA         0x00000002
-+/* ME Interrupt Enable HRA - host read only access to ME_IE */
-+#define ME_IE_HRA         0x00000001
++#define HBM_MINOR_VERSION                   0
++#define HBM_MAJOR_VERSION                   1
++#define HBM_TIMEOUT                         1	/* 1 second */
 +
-+#define MEI_MINORS_BASE	1
-+#define MEI_MINORS_COUNT	1
 +
-+#define  MEI_MINOR_NUMBER	1
-+#define  MEI_MAX_OPEN_HANDLE_COUNT	253
++#define HOST_START_REQ_CMD                  0x01
++#define HOST_START_RES_CMD                  0x81
 +
-+/*
-+ * time to wait for MEI to become ready after init
-+ */
-+#define MEI_INTEROP_TIMEOUT    (HZ * 7)
++#define HOST_STOP_REQ_CMD                   0x02
++#define HOST_STOP_RES_CMD                   0x82
 +
-+/*
-+ * watch dog definition
-+ */
++#define ME_STOP_REQ_CMD                     0x03
++
++#define HOST_ENUM_REQ_CMD                   0x04
++#define HOST_ENUM_RES_CMD                   0x84
++
++#define HOST_CLIENT_PROPERTIES_REQ_CMD      0x05
++#define HOST_CLIENT_PROPERTIES_RES_CMD      0x85
++
++#define CLIENT_CONNECT_REQ_CMD              0x06
++#define CLIENT_CONNECT_RES_CMD              0x86
++
++#define CLIENT_DISCONNECT_REQ_CMD           0x07
++#define CLIENT_DISCONNECT_RES_CMD           0x87
++
++#define MEI_FLOW_CONTROL_CMD               0x08
++
++
++#define AMT_WD_VALUE 120	/* seconds */
++
 +#define MEI_WATCHDOG_DATA_SIZE         16
 +#define MEI_START_WD_DATA_SIZE         20
 +#define MEI_WD_PARAMS_SIZE             4
-+#define MEI_WD_STATE_INDEPENDENCE_MSG_SENT       (1 << 0)
-+
-+#define MEI_WD_HOST_CLIENT_ID          1
-+#define MEI_IAMTHIF_HOST_CLIENT_ID     2
 +
 +
-+/* File state */
-+enum file_state {
-+	MEI_FILE_INITIALIZING = 0,
-+	MEI_FILE_CONNECTING,
-+	MEI_FILE_CONNECTED,
-+	MEI_FILE_DISCONNECTING,
-+	MEI_FILE_DISCONNECTED
++enum mei_stop_reason_types {
++	DRIVER_STOP_REQUEST = 0x00,
++	DEVICE_D1_ENTRY = 0x01,
++	DEVICE_D2_ENTRY = 0x02,
++	DEVICE_D3_ENTRY = 0x03,
++	SYSTEM_S1_ENTRY = 0x04,
++	SYSTEM_S2_ENTRY = 0x05,
++	SYSTEM_S3_ENTRY = 0x06,
++	SYSTEM_S4_ENTRY = 0x07,
++	SYSTEM_S5_ENTRY = 0x08
 +};
 +
-+/* MEI device states */
-+enum mei_states {
-+	MEI_INITIALIZING = 0,
-+	MEI_INIT_CLIENTS,
-+	MEI_ENABLED,
-+	MEI_RESETING,
-+	MEI_DISABLED,
-+	MEI_RECOVERING_FROM_RESET,
-+	MEI_POWER_DOWN,
-+	MEI_POWER_UP
++enum me_stop_reason_types {
++	FW_UPDATE = 0x00
 +};
 +
-+/* init clients  states*/
-+enum mei_init_clients_states {
-+	MEI_START_MESSAGE = 0,
-+	MEI_ENUM_CLIENTS_MESSAGE,
-+	MEI_CLIENT_PROPERTIES_MESSAGE
++enum client_connect_status_types {
++	CCS_SUCCESS = 0x00,
++	CCS_NOT_FOUND = 0x01,
++	CCS_ALREADY_STARTED = 0x02,
++	CCS_OUT_OF_RESOURCES = 0x03,
++	CCS_MESSAGE_SMALL = 0x04
 +};
 +
-+enum iamthif_states {
-+	MEI_IAMTHIF_IDLE,
-+	MEI_IAMTHIF_WRITING,
-+	MEI_IAMTHIF_FLOW_CONTROL,
-+	MEI_IAMTHIF_READING,
-+	MEI_IAMTHIF_READ_COMPLETE
++enum client_disconnect_status_types {
++	CDS_SUCCESS = 0x00
 +};
 +
-+enum mei_file_transaction_states {
-+	MEI_IDLE,
-+	MEI_WRITING,
-+	MEI_WRITE_COMPLETE,
-+	MEI_FLOW_CONTROL,
-+	MEI_READING,
-+	MEI_READ_COMPLETE
-+};
 +
-+/* MEI CB */
-+enum mei_cb_major_types {
-+	MEI_READ = 0,
-+	MEI_WRITE,
-+	MEI_IOCTL,
-+	MEI_OPEN,
-+	MEI_CLOSE
-+};
++void mei_read_slots(struct mei_device *dev,
++		     unsigned char *buffer, unsigned long buffer_length);
 +
-+/*
-+ * Intel MEI user data struct
-+ */
-+struct mei_message_data {
-+	u32 size;
-+	char *data;
-+} __packed;
++int mei_write_message(struct mei_device *dev,
++			     struct mei_msg_hdr *header,
++			     unsigned char *write_buffer,
++			     unsigned long write_length);
 +
++int mei_host_buffer_is_empty(struct mei_device *dev);
 +
++int mei_count_full_read_slots(struct mei_device *dev);
 +
-+#define MEI_CONNECT_TIMEOUT		3	/* at least 2 seconds */
-+#define IAMTHIF_STALL_TIMER		12	/* seconds */
-+#define IAMTHIF_READ_TIMER		10000	/* ms */
++int mei_count_empty_write_slots(struct mei_device *dev);
 +
-+struct mei_cl_cb {
-+	struct list_head cb_list;
-+	enum mei_cb_major_types major_file_operations;
-+	void *file_private;
-+	struct mei_message_data request_buffer;
-+	struct mei_message_data response_buffer;
-+	unsigned long information;
-+	unsigned long read_time;
-+	struct file *file_object;
-+};
++int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *file_ext);
 +
-+/* MEI client instance carried as file->pirvate_data*/
-+struct mei_cl {
-+	struct list_head link;
-+	struct mei_device *dev;
-+	enum file_state state;
-+	wait_queue_head_t tx_wait;
-+	wait_queue_head_t rx_wait;
-+	wait_queue_head_t wait;
-+	int read_pending;
-+	int status;
-+	/* ID of client connected */
-+	u8 host_client_id;
-+	u8 me_client_id;
-+	u8 mei_flow_ctrl_creds;
-+	u8 timer_count;
-+	enum mei_file_transaction_states reading_state;
-+	enum mei_file_transaction_states writing_state;
-+	int sm_state;
-+	struct mei_cl_cb *read_cb;
-+};
++int mei_wd_send(struct mei_device *dev);
++int mei_wd_stop(struct mei_device *dev, bool preserve);
++void mei_wd_host_init(struct mei_device *dev);
++void mei_wd_start_setup(struct mei_device *dev);
 +
-+struct mei_io_list {
-+	struct mei_cl_cb mei_cb;
-+	int status;
-+	struct mei_device *device_extension;
-+};
++void mei_flow_ctrl_reduce(struct mei_device *dev,
++			 struct mei_cl *file_ext);
 +
-+/*
-+ *  MEI BUS Interface Section
-+ */
-+struct mei_msg_hdr {
-+	u32 me_addr:8;
-+	u32 host_addr:8;
-+	u32 length:9;
-+	u32 reserved:6;
-+	u32 msg_complete:1;
-+} __packed;
++int mei_send_flow_control(struct mei_device *dev,
++				 struct mei_cl *file_ext);
 +
++int mei_disconnect(struct mei_device *dev,
++			  struct mei_cl *file_ext);
++int mei_other_client_is_connecting(struct mei_device *dev,
++				     struct mei_cl *file_ext);
++int mei_connect(struct mei_device *dev,
++		       struct mei_cl *file_ext);
 +
-+struct hbm_cmd {
-+	u8 cmd:7;
-+	u8 is_response:1;
-+} __packed;
-+
-+
-+struct mei_bus_message {
-+	struct hbm_cmd cmd;
-+	u8 command_specific_data[];
-+} __packed;
-+
-+struct hbm_version {
-+	u8 minor_version;
-+	u8 major_version;
-+} __packed;
-+
-+struct hbm_host_version_request {
-+	struct hbm_cmd cmd;
-+	u8 reserved;
-+	struct hbm_version host_version;
-+} __packed;
-+
-+struct hbm_host_version_response {
-+	struct hbm_cmd cmd;
-+	int host_version_supported;
-+	struct hbm_version me_max_version;
-+} __packed;
-+
-+struct hbm_host_stop_request {
-+	struct hbm_cmd cmd;
-+	u8 reason;
-+	u8 reserved[2];
-+} __packed;
-+
-+struct hbm_host_stop_response {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+} __packed;
-+
-+struct hbm_me_stop_request {
-+	struct hbm_cmd cmd;
-+	u8 reason;
-+	u8 reserved[2];
-+} __packed;
-+
-+struct hbm_host_enum_request {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+} __packed;
-+
-+struct hbm_host_enum_response {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+	u8 valid_addresses[32];
-+} __packed;
-+
-+struct mei_client_properties {
-+	uuid_le protocol_name;
-+	u8 protocol_version;
-+	u8 max_number_of_connections;
-+	u8 fixed_address;
-+	u8 single_recv_buf;
-+	u32 max_msg_length;
-+} __packed;
-+
-+struct hbm_props_request {
-+	struct hbm_cmd cmd;
-+	u8 address;
-+	u8 reserved[2];
-+} __packed;
-+
-+
-+struct hbm_props_response {
-+	struct hbm_cmd cmd;
-+	u8 address;
-+	u8 status;
-+	u8 reserved[1];
-+	struct mei_client_properties client_properties;
-+} __packed;
-+
-+struct hbm_client_connect_request {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved;
-+} __packed;
-+
-+struct hbm_client_connect_response {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 status;
-+} __packed;
-+
-+struct hbm_client_disconnect_request {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved[1];
-+} __packed;
-+
-+struct hbm_flow_control {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved[MEI_FC_MESSAGE_RESERVED_LENGTH];
-+} __packed;
-+
-+struct mei_me_client {
-+	struct mei_client_properties props;
-+	u8 client_id;
-+	u8 mei_flow_ctrl_creds;
-+} __packed;
-+
-+/* MEI private device struct */
-+struct mei_device {
-+	struct pci_dev *pdev;	/* pointer to pci device struct */
-+	/*
-+	 * lists of queues
-+	 */
-+	 /* array of pointers to aio lists */
-+	struct mei_io_list *io_list_array[MEI_IO_LISTS_NUMBER];
-+	struct mei_io_list read_list;		/* driver read queue */
-+	struct mei_io_list write_list;		/* driver write queue */
-+	struct mei_io_list write_waiting_list;	/* write waiting queue */
-+	struct mei_io_list ctrl_wr_list;	/* managed write IOCTL list */
-+	struct mei_io_list ctrl_rd_list;	/* managed read IOCTL list */
-+	struct mei_io_list amthi_cmd_list;	/* amthi list for cmd waiting */
-+
-+	/* driver managed amthi list for reading completed amthi cmd data */
-+	struct mei_io_list amthi_read_complete_list;
-+	/*
-+	 * list of files
-+	 */
-+	struct list_head file_list;
-+	/*
-+	 * memory of device
-+	 */
-+	unsigned int mem_base;
-+	unsigned int mem_length;
-+	void __iomem *mem_addr;
-+	/*
-+	 * lock for the device
-+	 */
-+	struct mutex device_lock; /* device lock */
-+	int recvd_msg;
-+	struct delayed_work wd_work;	/* watch dog deleye work */
-+	/*
-+	 * hw states of host and fw(ME)
-+	 */
-+	u32 host_hw_state;
-+	u32 me_hw_state;
-+	/*
-+	 * waiting queue for receive message from FW
-+	 */
-+	wait_queue_head_t wait_recvd_msg;
-+	wait_queue_head_t wait_stop_wd;
-+
-+	/*
-+	 * mei device  states
-+	 */
-+	enum mei_states mei_state;
-+	enum mei_init_clients_states init_clients_state;
-+	u16 init_clients_timer;
-+	int stop;
-+
-+	u32 extra_write_index;
-+	u32 rd_msg_buf[128];	/* used for control messages */
-+	u32 wr_msg_buf[128];	/* used for control messages */
-+	u32 ext_msg_buf[8];	/* for control responses */
-+	u32 rd_msg_hdr;
-+
-+	struct hbm_version version;
-+
-+	int mei_host_buffer_is_empty;
-+	struct mei_cl wd_cl;
-+	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
-+	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
-+	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
-+	u8 num_mei_me_clients;
-+	u8 me_client_presentation_num;
-+	u8 me_client_index;
-+
-+	int wd_pending;
-+	int wd_stopped;
-+	u16 wd_timeout;	/* seconds ((wd_data[1] << 8) + wd_data[0]) */
-+	unsigned char wd_data[MEI_START_WD_DATA_SIZE];
-+
-+
-+	u16 wd_due_counter;
-+	bool wd_bypass;	/* if false, don't refresh watchdog ME client */
-+
-+	struct file *iamthif_file_object;
-+	struct mei_cl iamthif_file_ext;
-+	int iamthif_ioctl;
-+	int iamthif_canceled;
-+	int iamthif_mtu;
-+	unsigned long iamthif_timer;
-+	u32 iamthif_stall_timer;
-+	unsigned char *iamthif_msg_buf; /* Note: memory has to be allocated */
-+	u32 iamthif_msg_buf_size;
-+	u32 iamthif_msg_buf_index;
-+	int iamthif_flow_control_pending;
-+	enum iamthif_states iamthif_state;
-+	struct mei_cl_cb *iamthif_current_cb;
-+	u8 write_hang;
-+	int need_reset;
-+	long open_handle_count;
-+
-+};
-+
-+/**
-+ * mei_reg_read - Reads 32bit data from the mei device
-+ *
-+ * @dev: the device structure
-+ * @offset: offset from which to read the data
-+ *
-+ * returns the byte read.
-+ */
-+static inline u32 mei_reg_read(struct mei_device *dev,
-+				unsigned long offset)
-+{
-+	return ioread32(dev->mem_addr + offset);
-+}
-+
-+/**
-+ * mei_reg_write - Writes 32bit data to the mei device
-+ *
-+ * @dev: the device structure
-+ * @offset: offset from which to write the data
-+ * @value: the byte to write
-+ */
-+static inline void mei_reg_write(struct mei_device *dev,
-+				unsigned long offset, u32 value)
-+{
-+	iowrite32(value, dev->mem_addr + offset);
-+}
-+
-+/**
-+ * mei_hcsr_read - Reads 32bit data from the host CSR
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns the byte read.
-+ */
-+static inline u32 mei_hcsr_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, H_CSR);
-+}
-+
-+/**
-+ * mei_mecsr_read - Reads 32bit data from the ME CSR
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns ME_CSR_HA register value (u32)
-+ */
-+static inline u32 mei_mecsr_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, ME_CSR_HA);
-+}
-+
-+/**
-+ * get_me_cb_rw - Reads 32bit data from the mei ME_CB_RW register
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns ME_CB_RW register value (u32)
-+ */
-+static inline u32 mei_mecbrw_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, ME_CB_RW);
-+}
-+
-+
-+/*
-+ * mei interface function prototypes
-+ */
-+void mei_hcsr_set(struct mei_device *dev);
-+void mei_csr_clear_his(struct mei_device *dev);
-+
-+void mei_enable_interrupts(struct mei_device *dev);
-+void mei_disable_interrupts(struct mei_device *dev);
-+#endif /* _MEI_DATA_STRUCTURES_H_ */
++#endif /* _MEI_INTERFACE_H_ */
 -- 
 1.7.1
 
