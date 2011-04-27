@@ -1,183 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760077Ab1D0WCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:02:30 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:49569 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab1D0WC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:02:27 -0400
-Date: Wed, 27 Apr 2011 15:02:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110427220220.GP2135@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110425191607.GL2468@linux.vnet.ibm.com>
- <20110425231016.34b4293e@neptune.home>
- <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>
- <20110425214933.GO2468@linux.vnet.ibm.com>
- <20110426081904.0d2b1494@pluto.restena.lu>
- <20110426112756.GF4308@linux.vnet.ibm.com>
- <20110426183859.6ff6279b@neptune.home>
- <BANLkTin3UG=xF1VQOtdEDOnShoMQwQ7gFg@mail.gmail.com>
- <20110426185036.GG2135@linux.vnet.ibm.com>
- <BANLkTinqm7CTACEYuMZxKmXkjwHRyg+fHw@mail.gmail.com>
+	id S932330Ab1D0WFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:05:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:63255 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab1D0WFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 18:05:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=oyDFyUwfmiRXfZQUgY0LX/fhqr95YdsO/TNqURuDY7pYdpnUR/Yt4ReMekc5CSvGHZ
+         7ogjrUPZ7Uhxe3qOmGgg==
+Message-ID: <4DB89315.6070105@google.com>
+Date: Wed, 27 Apr 2011 15:05:09 -0700
+From: David Decotigny <decot@google.com>
+Reply-To: david@decotigny.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinqm7CTACEYuMZxKmXkjwHRyg+fHw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCHv2 3/4] ethtool: Use the full 32 bit speed range in ethtool's
+ set_settings
+References: <1303001651-4074-1-git-send-email-decot@google.com>	 <1303929290-21037-4-git-send-email-decot@google.com> <1303932477.2875.130.camel@bwh-desktop>
+In-Reply-To: <1303932477.2875.130.camel@bwh-desktop>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 09:17:28PM +0200, Sedat Dilek wrote:
-> On Tue, Apr 26, 2011 at 8:50 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, Apr 26, 2011 at 10:12:39AM -0700, Linus Torvalds wrote:
-> >> On Tue, Apr 26, 2011 at 9:38 AM, Bruno Prémont
-> >> <bonbons@linux-vserver.org> wrote:
-> >> >
-> >> > Here it comes:
-> >> >
-> >> > rcu_kthread (when build processes are STOPped):
-> >> > [  836.050003] rcu_kthread     R running   7324     6      2 0x00000000
-> >> > [  836.050003]  dd473f28 00000046 5a000240 dd65207c dd407360 dd651d40 0000035c dd473ed8
-> >> > [  836.050003]  c10bf8a2 c14d63d8 dd65207c dd473f28 dd445040 dd445040 dd473eec c10be848
-> >> > [  836.050003]  dd651d40 dd407360 ddfdca00 dd473f14 c10bfde2 00000000 00000001 000007b6
-> >> > [  836.050003] Call Trace:
-> >> > [  836.050003]  [<c10bf8a2>] ? check_object+0x92/0x210
-> >> > [  836.050003]  [<c10be848>] ? init_object+0x38/0x70
-> >> > [  836.050003]  [<c10bfde2>] ? free_debug_processing+0x112/0x1f0
-> >> > [  836.050003]  [<c103d9fd>] ? lock_timer_base+0x2d/0x70
-> >> > [  836.050003]  [<c13c8ec7>] schedule_timeout+0x137/0x280
-> >>
-> >> Hmm.
-> >>
-> >> I'm adding Ingo and Peter to the cc, because this whole "rcu_kthread
-> >> is running, but never actually running" is starting to smell like a
-> >> scheduler issue.
-> >>
-> >> Peter/Ingo: RCUTINY seems to be broken for Bruno. During any kind of
-> >> heavy workload, at some point it looks like rcu_kthread simply stops
-> >> making any progress. It's constantly in runnable state, but it doesn't
-> >> actually use any CPU time, and it's not processing the RCU callbacks,
-> >> so the RCU memory freeing isn't happening, and slabs just build up
-> >> until the machine dies.
-> >>
-> >> And it really is RCUTINY, because the thing doesn't happen with the
-> >> regular tree-RCU.
-> >
-> > The difference between TINY_RCU and TREE_RCU is that TREE_RCU still uses
-> > softirq for the core RCU processing.  TINY_RCU switched to a kthread
-> > when I implemented RCU priority boosting.  There is a similar change in
-> > my -rcu tree that makes TREE_RCU use kthreads, and Sedat has been running
-> > into a very similar problem with that change in place.  Which is why I
-> > do not yet push it to the -next tree.
-> >
-> >> This is without CONFIG_RCU_BOOST_PRIO, so we basically have
-> >>
-> >>         struct sched_param sp;
-> >>
-> >>         rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
-> >>         sp.sched_priority = RCU_BOOST_PRIO;
-> >>         sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
-> >>
-> >> where RCU_BOOST_PRIO is 1 for the non-boost case.
-> >
-> > Good point!  Bruno, Sedat, could you please set CONFIG_RCU_BOOST_PRIO to
-> > (say) 50, and see if this still happens?  (I bet that you do, but...)
-> >
+
+Hi,
+
+On 04/27/11 12:27, Ben Hutchings wrote:
+>> diff --git a/drivers/net/tulip/de2104x.c b/drivers/net/tulip/de2104x.c
+>> index b13c6b0..f8d26bf 100644
+>> --- a/drivers/net/tulip/de2104x.c
+>> +++ b/drivers/net/tulip/de2104x.c
+>> @@ -1549,10 +1549,11 @@ static int __de_set_settings(struct de_private *de, struct ethtool_cmd *ecmd)
+>>  {
+>>  	u32 new_media;
+>>  	unsigned int media_lock;
+>> +	u32 speed = ethtool_cmd_speed(ecmd);
+>>  
+>> -	if (ecmd->speed != SPEED_10 && ecmd->speed != 5 && ecmd->speed != 2)
+>> +	if (speed != SPEED_10 && speed != 5 && speed != 2)
+>>  		return -EINVAL;
+>> -	if (de->de21040 && ecmd->speed == 2)
+>> +	if (de->de21040 && speed == 2)
+>>  		return -EINVAL;
+>>  	if (ecmd->duplex != DUPLEX_HALF && ecmd->duplex != DUPLEX_FULL)
+>>  		return -EINVAL;
+> [...]
 > 
-> What's with CONFIG_RCU_BOOST_DELAY setting?
+> This implementation is absolute crap - it's using speed values as
+> mnemonics for different physical ports!  Please change it to report and
+> accept only speed = 10.  (Both get_settings and set_settings have to be
+> changed at the same time.)
 
-CONFIG_RCU_BOOST_DELAY controls how long preemptible RCU lets a grace
-period run before boosting the priority of any blocked RCU readers.
+Well, I am really not sure about this. At first I thought you meant that
+these non standard throughputs were a weird way to switch between
+different ports because of some limitation in the ethtool API at the
+time the driver was written. But looking at the history, this behavior
+is there right from the very first revision of the driver checked in in
+v2.5.0.9
+(http://git.kernel.org/?p=linux/kernel/git/tglx/history.git;a=commit;h=b1507c9acd944c8703612c0e38ac580bf9064e8a),
+and the ports could be switched the normal way with ecmd->port. So this
+leads me to think that these speeds are actual speeds and make sense as
+such, they are not a work-around over some ancient ethtool API
+limitation. I have the patch ready but I would appreciate any feedback
+on this.
 
-It is completely irrelevant if the rcu_kthread task isn't getting a
-chance to run, though.  This is because it is the rcu_kthread task
-that does the boosting.
+Anyway, all your comments are really pertinent and ready to be sent.
 
-> Are those values OK?
-> 
-> $ egrep 'M486|M686|X86_UP|CONFIG_SMP|NR_CPUS|PREEMPT|_RCU|_HIGHMEM|PAE' .config
-> CONFIG_TREE_PREEMPT_RCU=y
-> CONFIG_PREEMPT_RCU=y
-> CONFIG_RCU_TRACE=y
-> CONFIG_RCU_FANOUT=32
-> # CONFIG_RCU_FANOUT_EXACT is not set
-> CONFIG_TREE_RCU_TRACE=y
-> CONFIG_RCU_BOOST=y
-
-I suggest CONFIG_RCU_BOOST=n to keep things simple for the moment, but
-CONFIG_RCU_BOOST=y should be OK too.
-
-> CONFIG_RCU_BOOST_PRIO=50
-> CONFIG_RCU_BOOST_DELAY=500
-> CONFIG_SMP=y
-> # CONFIG_M486 is not set
-> CONFIG_M686=y
-
-I don't have an opinion on CONFIG_M486 vs. CONFIG_M686.
-
-> CONFIG_NR_CPUS=32
-> # CONFIG_PREEMPT_NONE is not set
-> # CONFIG_PREEMPT_VOLUNTARY is not set
-> CONFIG_PREEMPT=y
-> CONFIG_HIGHMEM4G=y
-> # CONFIG_HIGHMEM64G is not set
-> CONFIG_HIGHMEM=y
-> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
-> CONFIG_DEBUG_PREEMPT=y
-
-The above two could be left out, but shouldn't hurt.
-
-> # CONFIG_SPARSE_RCU_POINTER is not set
-> # CONFIG_DEBUG_HIGHMEM is not set
-> CONFIG_RCU_TORTURE_TEST=m
-> CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> CONFIG_RCU_CPU_STALL_VERBOSE=y
-> CONFIG_PREEMPT_TRACER=y
-
-So they look fine to me, the ones that I understand, anyway.  ;-)
-
-							Thanx, Paul
-> 
-> - Sedat -
-> 
-> >> Is that so low that even the idle thread will take priority? It's a UP
-> >> config with PREEMPT_VOLUNTARY. So pretty much _all_ the stars are
-> >> aligned for odd scheduling behavior.
-> >>
-> >> Other users of SCHED_FIFO tend to set the priority really high (eg
-> >> "MAX_RT_PRIO-1" is clearly the default one - softirq's, watchdog), but
-> >> "1" is not unheard of either (touchscreen/ucb1400_ts and
-> >> mmc/core/sdio_irq), and there are some other random choises out tere.
-> >>
-> >> Any ideas?
-> >
-> > I have found one bug so far in my code, but it only affects TREE_RCU
-> > in my -rcu tree, and even then only if HOTPLUG_CPU is enabled.  I am
-> > testing a fix, but I expect Sedat's tests to still break.
-> >
-> > I gave Sedat a patch that make rcu_kthread() run at normal (non-realtime)
-> > priority, and he did not see the failure.  So running non-realtime at
-> > least greatly reduces the probability of failure.
-> >
-> >                                                        Thanx, Paul
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+Thank you!
+Regards,
