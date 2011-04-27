@@ -1,178 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab1D0NyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:54:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61002 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab1D0NyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:54:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CFDAfijDg983qIXoLlwPOvVkVp1EejGuUZarx78/bhagSsJrjeitR0J3NbCdnIExp2
-         vBL9PkxyhoV3qrd/ZaAkzMfNcNTvDeCxi4kH6DEP7CgYLlJsvgOzr0i2GUXmMHuoSIIM
-         2kjp3Uk1tvZ6Sruf5b1lXoYdejkXF9j0PjYfA=
-Date: Wed, 27 Apr 2011 21:54:00 +0800
-From: Lifeng Sun <lifongsun@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] Applying inappropriate ioctl operation on socket should
- return ENOTTY
-Message-ID: <20110427135400.GA2373@localhost>
-References: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
- <20110427130904.47331a9f@lxorguk.ukuu.org.uk>
+	id S932805Ab1D0N5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:57:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29762 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756212Ab1D0N5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 09:57:16 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH 1/2] blkdev: Submit discard bio in batches in blkdev_issue_discard()
+References: <1303303172-22404-1-git-send-email-lczerner@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 27 Apr 2011 09:57:11 -0400
+In-Reply-To: <1303303172-22404-1-git-send-email-lczerner@redhat.com> (Lukas
+	Czerner's message of "Wed, 20 Apr 2011 14:39:31 +0200")
+Message-ID: <x49aafb4x1k.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110427130904.47331a9f@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:09 Wed 04/27/11 Apr, Alan Cox wrote:
-> > diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-> > index 25373df..50c09e4 100644
-> > --- a/drivers/char/applicom.c
-> > +++ b/drivers/char/applicom.c
-> > @@ -838,6 +838,6 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> >  	Dummy = readb(apbs[IndexCard].RamIO + VERS);
-> >  	kfree(adgl);
-> >  	mutex_unlock(&ac_mutex);
-> > -	return 0;
-> > +	return ret;
-> >  }
-> 
-> This one in fact is a bug fix where 0 gets returned not an error code it
-> ought to be submitted separately and described as such.
+Lukas Czerner <lczerner@redhat.com> writes:
 
-Will do.
+> Currently we are waiting for every submitted REQ_DISCARD bio separately,
+> but it can have unwanted consequences of repeatedly flushing the queue,
+> so we rather submit bios in batches and wait for the entire batch, hence
+> narrowing the window of other ios going in.
+>
+> Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+> is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+> always set !BIO_UPTODATE in the case of error and remove the check for
+> bb, since we are the only user of this function and we always set this.
+>
+> Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+> bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+> not needed anymore.
+>
+> I have done simple dd testing with surprising results. The script I have
+> used is:
+>
+> for i in $(seq 10); do
+>         echo $i
+>         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+>         sleep 5
+> done
+> /usr/bin/time -f %e ./blkdiscard /dev/sdc1
+>
+> Running time of BLKDISCARD on the whole device:
+> with patch              without patch
+> 0.95                    15.58
+>
+> So we can see that in this artificial test the kernel with the patch
+> applied is approx 16x faster in discarding the device.
 
-> 
-> > diff --git a/drivers/char/dtlk.c b/drivers/char/dtlk.c
-> > index 85156dd..2d116d5 100644
-> > --- a/drivers/char/dtlk.c
-> > +++ b/drivers/char/dtlk.c
-> > @@ -289,7 +289,7 @@ static long dtlk_ioctl(struct file *file,
-> >  		return put_user(portval, argp);
-> >  
-> >  	default:
-> > -		return -EINVAL;
-> > +		return -ENOTTY;
-> >  	}
-> >  }
-> 
-> This one looks good (and the driver has another error in the ioctl
-> handler too that wants fixing where it returnds -EINVAL not -EFAULT)
+I don't see any major problems here.  I would like you to test
+explicitly for queue_flag_discard before submitting any bios, though.
+Previously, after the first bio returned EOPNOTSUPP, you errored out.
+Now, you submit all bios that will end with the same failure.  It's
+definitely suboptimal, and you already have the q, so you might as well
+test for this early on.
 
-Will fix.
+Also, as I noted to you on irc, another fix required in this area is
+submitting discard requests (the final one in the batch) that do not
+honor the discard granularity exported by the device.  That's not
+directly related to this patch, though.
 
-> > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> > index d72433f..4ba9b9f 100644
-> > --- a/drivers/char/i8k.c
-> > +++ b/drivers/char/i8k.c
-> > @@ -370,7 +370,7 @@ i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
-> >  		break;
-> >  
-> >  	default:
-> > -		return -EINVAL;
-> > +		return -ENOTTY;
-> 
-> This one is incomplete - the driver also has a bogus check for arg being
-> non zero. That means ioctl(fd, BOGUS, 0) will return the wrong error code
-> still.
-
-Will fix.
-
-> > diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-> > index 2aa3977..bc8af5a 100644
-> > --- a/drivers/char/ipmi/ipmi_devintf.c
-> > +++ b/drivers/char/ipmi/ipmi_devintf.c
-> > @@ -232,7 +232,7 @@ static int ipmi_ioctl(struct file   *file,
-> >  		      unsigned int  cmd,
-> >  		      unsigned long data)
-> >  {
-> > -	int                      rv = -EINVAL;
-> > +	int                      rv = -ENOTTY;
-> >  	struct ipmi_file_private *priv = file->private_data;
-> >  	void __user *arg = (void __user *)data;
-> 
-> No - there are cases that should return -EINVAL that this will break - a
-> default case needs adding
-
-All execution paths overwrite the return value except those should
-return -ENOTTY, but it's more clear to add a default case.
-
-Will do.
-
-> > diff --git a/drivers/char/viotape.c b/drivers/char/viotape.c
-> > index ad6e64a..a427d40 100644
-> > --- a/drivers/char/viotape.c
-> > +++ b/drivers/char/viotape.c
-> > @@ -529,7 +529,7 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
-> >  
-> >  	down(&reqSem);
-> >  
-> > -	ret = -EINVAL;
-> > +	ret = -ENOTTY;
-> 
-> Again this messes up the returns because code assumes the initial
-> default.
-
-Likewise, except the unsupported MTIOCPOS command. SuSv4 has two
-appropriate errno's for this unsupported case and the one below
-returns EOPNOTSUPP,
-
- [ENOTSUP]
-     Not supported (may be the same value as [EOPNOTSUPP]).
-
- [EOPNOTSUPP]
-     Operation not supported on socket (may be the same value as
-     [ENOTSUP]).
-
-but the manpage of ioctl disagree. I am wondering how to handle
-unsupported ioctl operations. Maybe following the manpage is a better
-choice though it's not exact.
-
-
-> The original code also has bugs too (wrong error off copy_*_user()
-> again)
-
-Will fix.
-
-> > diff --git a/fs/pipe.c b/fs/pipe.c
-> > index da42f7d..fe7ffe4 100644
-> > --- a/fs/pipe.c
-> > +++ b/fs/pipe.c
-> > @@ -665,7 +665,7 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-> >  
-> >  			return put_user(count, (int __user *)arg);
-> >  		default:
-> > -			return -EINVAL;
-> > +			return -ENOTTY;
-> >  	}
-> 
-> Looks good - but this one really does want to be a patch on its own as if
-> anything causes compatibility funnies it will be this, and we need to be
-> sure we can bisect nicely to it should this occur.
-
-will submit serparately.
-
-> > @@ -5041,7 +5041,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
-> >  		/* Set the per device memory buffer space.
-> >  		 * Not applicable in our case */
-> >  	case SIOCSIFLINK:
-> > -		return -EINVAL;
-> > +		return -EOPNOTSUPP;
-> 
-> This change seems unrelated to anything in your description and outside
-> of anything SuS cares about or demands.
-
-As stated above. I would submit separately.
-
-
-- Lifeng
-
--- 
+Cheers,
+Jeff
