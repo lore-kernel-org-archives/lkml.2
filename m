@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1D0IVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:21:46 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45797 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab1D0IVp (ORCPT
+	id S1754748Ab1D0IWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 04:22:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52613 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab1D0IW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:21:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Apr 2011 17:15:05 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC 5/8] compaction: remove active list counting
-Message-Id: <20110427171505.5d7bf485.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <2b79bbf9ddceb73624f49bbe9477126147d875fd.1303833417.git.minchan.kim@gmail.com>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
-	<2b79bbf9ddceb73624f49bbe9477126147d875fd.1303833417.git.minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 04:22:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YLAlDYltmWw/OPfhJ8bXK05yLq/b3kKDdeHQG3OlZ0iU9Lox4yM+jeOuTXWAo3quON
+         ETV1U7uC05BquoyYEOxUfy3KHxIK9Wmedfo/DUH9RG4FJDkQSEhygLMoCVjipHbPI97q
+         PPCeDRXbGgvRWJJbB5d/+YRnKdK+hrLO7N3NE=
+Date: Wed, 27 Apr 2011 16:22:24 +0800
+From: Lifeng Sun <lifongsun@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] Applying inappropriate ioctl operation on socket should
+ return ENOTTY
+Message-ID: <20110427082224.GC20313@md5.ntu.edu.sg>
+References: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
+ <1303883910.2699.53.camel@edumazet-laptop>
+ <20110427063730.GA20313@md5.ntu.edu.sg>
+ <1303887457.2699.60.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303887457.2699.60.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21hg (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 01:25:22 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On 08:57 Wed 04/27/11 Apr, Eric Dumazet wrote:
+> You quote manpage for a library call, not a system call.
 
-> acct_isolated of compaction uses page_lru_base_type which returns only
-> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
-> So it's pointless to add lru[LRU_ACTIVE_[ANON|FILE]] to get sum.
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+okay, let me quote the one for ioctl system call:
 
-I think some comments are necessary to explain why INACTIVE only.
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+man 2 ioctl
+
+int ioctl(int d, int request, ...);
+
+ERRORS
+   EBADF  d is not a valid descriptor.
+   EFAULT argp references an inaccessible memory area.
+   EINVAL Request or argp is not valid.
+   ENOTTY d is not associated with a character special device.
+   ENOTTY The specified request does not apply to the kind of object
+     that the descriptor d references.
+
+we see ENOTTY and EFAULT refine EVINAL and it should return ENOTTY or
+EFAULT whenever possible rather than EINVAL, otherwise we could always
+return EBADF or EINVAL.
+
+Regarding to isatty, well, it's only a library call, isn't it? :-) If
+you insist on the significance of the manpage of isatty, there are
+also a lot of ioctl operations return ENOTTY, if not less than those
+return EINVAL, for inappropriated command and eventually violate the
+ERRORS section of the manpage. Certainly we could complain to c
+library maintainers.
 
 
-> ---
->  mm/compaction.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 9f80b5a..653b02b 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -219,8 +219,8 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
->  		count[lru]++;
->  	}
->  
-> -	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> -	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> +	cc->nr_anon = count[LRU_INACTIVE_ANON];
-> +	cc->nr_file = count[LRU_INACTIVE_FILE];
->  	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
->  	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
->  }
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> If you feel your glibc doesnt implement well this, please complain to
+> glibc maintainer.
 
+
+-- 
