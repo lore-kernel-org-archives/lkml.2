@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab1D0N01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:26:27 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:38281 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759247Ab1D0N0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:26:25 -0400
-X-Auth-Info: Q+4mccLKPEuFo263ZbfNtXwmcjxgwaKJ7nseg3QgYmc=
-Message-ID: <4DB81A12.1000006@grandegger.com>
-Date: Wed, 27 Apr 2011 15:28:50 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<1303474267-6344-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A3B7.7060300@pengutronix.de> <4DB5D452.9050500@grandegger.com> <46D523E49EFF489F9B088AE7B9CD7286@subhasishg>
-In-Reply-To: <46D523E49EFF489F9B088AE7B9CD7286@subhasishg>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759301Ab1D0N1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:27:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43607 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759284Ab1D0N1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 09:27:05 -0400
+Subject: RE: [PATCH V4] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Eric B Munson <emunson@mgebm.net>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        anton@samba.org, stable@kernel.org
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
+References: <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 23:26:32 +1000
+Message-ID: <1303910792.2513.176.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 03:08 PM, Subhasish Ghosh wrote:
->>
->> - Use just *one* value per sysfs file
+On Wed, 2011-04-27 at 08:40 +0100, David Laight wrote:
+> I keep telling Eric that the code below is incorrect
+> modulo arithimetic...
+
+His previous versions were wrong yes. This one should be limping along
+afaik. But I tend to agree, testing delta is the way to go.
+
+Eric idea was to not test the sign bit to allow for bigger increments of
+the counter, since the rollback is limited to 255... But I agree it's
+non obvious.
+
+I've put the patch in for now, we can always followup with something
+better.
+
+Cheers,
+Ben.
+
+> > +static u64 check_and_compute_delta(u64 prev, u64 val)
+> > +{
+> > +	u64 delta = (val - prev) & 0xfffffffful;
+> > +
+> > +	/*
+> > +	 * POWER7 can roll back counter values, if the new value is
+> smaller
+> > +	 * than the previous value it will cause the delta and the
+> counter to
+> > +	 * have bogus values unless we rolled a counter over.  If a
+> coutner is
+> > +	 * rolled back, it will be smaller, but within 256, which is the
+> maximum
+> > +	 * number of events to rollback at once.  If we dectect a
+> rollback
+> > +	 * return 0.  This can lead to a small lack of precision in the
+> > +	 * counters.
+> > +	 */
+> > +	if (prev > val && (prev - val) < 256)
+> > +		delta = 0;
+> > +
+> > +	return delta;
 > 
-> SG - I felt adding entry for each mbx_id will clutter the sysfs.
->        Is it ok to do that.
-
-No, see:
-
-http://lxr.linux.no/#linux+v2.6.38/Documentation/filesystems/sysfs.txt#L56
-
->>>> +static u32 pruss_intc_init[19][3] = {
->>>> + {PRUSS_INTC_POLARITY0, PRU_INTC_REGMAP_MASK, 0xFFFFFFFF},
->>>> + {PRUSS_INTC_POLARITY1, PRU_INTC_REGMAP_MASK, 0xFFFFFFFF},
->>>> + {PRUSS_INTC_TYPE0, PRU_INTC_REGMAP_MASK, 0x1C000000},
->>>> + {PRUSS_INTC_TYPE1, PRU_INTC_REGMAP_MASK, 0},
->>>> + {PRUSS_INTC_GLBLEN, 0, 1},
->>>> + {PRUSS_INTC_HOSTMAP0, PRU_INTC_REGMAP_MASK, 0x03020100},
->>>> + {PRUSS_INTC_HOSTMAP1, PRU_INTC_REGMAP_MASK, 0x07060504},
->>>> + {PRUSS_INTC_HOSTMAP2, PRU_INTC_REGMAP_MASK, 0x0000908},
->>>> + {PRUSS_INTC_CHANMAP0, PRU_INTC_REGMAP_MASK, 0},
->>>> + {PRUSS_INTC_CHANMAP8, PRU_INTC_REGMAP_MASK, 0x00020200},
->>>> + {PRUSS_INTC_STATIDXCLR, 0, 32},
->>>> + {PRUSS_INTC_STATIDXCLR, 0, 19},
->>>> + {PRUSS_INTC_ENIDXSET, 0, 19},
->>>> + {PRUSS_INTC_STATIDXCLR, 0, 18},
->>>> + {PRUSS_INTC_ENIDXSET, 0, 18},
->>>> + {PRUSS_INTC_STATIDXCLR, 0, 34},
->>>> + {PRUSS_INTC_ENIDXSET, 0, 34},
->>>> + {PRUSS_INTC_ENIDXSET, 0, 32},
->>>> + {PRUSS_INTC_HOSTINTEN, 0, 5}
->>>
->>> please add ","
->>
->> Also a struct to describe each entry would improve readability.
->> Then you could also use ARRAY_SIZE.
+> The code should detect rollback by looking at the value of 'delta'
+> otherwise there are horrid end effects near 2^32-1.
 > 
-> SG _ I could not follow this, are you recommending that I create a
-> structure with three variables and then create
->            an array for it.
-> something like:
+> For instance:
+> 	u32 delta = val - prev;
+> 	return delta & 0x80000000 ? 0 : delta;
 > 
-> const static struct [] = {
->    {
->    unsigned int reg_base;
->    unsigned int reg_mask;
->    unsigned int reg_val;
->    },
-> ...
-> };
-
-Yes:
-
-  struct s_name {
-	unsigned int base;
-	unsigned int mask;
-	unsigned int val;
-  };
-
-  const static struct s_name array[] = {
-	...
-  };
-
 > 
->>>> + value = (PRUSS_CAN_GPIO_SETUP_DELAY *
->>>> + (priv->clk_freq_pru / 1000000) / 1000) /
->>>> + PRUSS_CAN_DELAY_LOOP_LENGTH;
->>
->> This calculation looks delicate. 64-bit math would be safer.
+>    David
 > 
-> SG - This one works fine. I am dividing it twice to avoid the problem.
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Yes, but what if the frequency increases with the next generation of the
-hardware?
 
-Wolfgang.
