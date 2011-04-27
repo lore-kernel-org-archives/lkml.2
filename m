@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759924Ab1D0Tuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:50:54 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:55521 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758142Ab1D0Tux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:50:53 -0400
-Date: Wed, 27 Apr 2011 12:49:56 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Natarajan Gurumoorthy <natg@google.com>
-CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Mike Waychison <mikew@google.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] Use "request_muxed_region" in it87 watchdog
- drivers
-Message-ID: <20110427194956.GA24382@ericsson.com>
-References: <1303153127-11717-1-git-send-email-natg@google.com>
- <1303153204-11784-1-git-send-email-natg@google.com>
- <20110422044451.GB524@ericsson.com>
- <BANLkTikGGO76ToGaRJ0foSc-Yp6Fe4C97g@mail.gmail.com>
+	id S1759935Ab1D0Tws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:52:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59071 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759891Ab1D0Twp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 15:52:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH v4] kbuild: asm-generic support
+Date: Wed, 27 Apr 2011 21:52:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Michal Marek <mmarek@suse.cz>,
+        "'lkml'" <linux-kernel@vger.kernel.org>,
+        "'linux-kbuild'" <linux-kbuild@vger.kernel.org>,
+        "'linux arch'" <linux-arch@vger.kernel.org>,
+        "'Guan Xuetao'" <guanxuetao@mprc.pku.edu.cn>,
+        Remis Lima Baima <remis.developer@googlemail.com>
+References: <20110108130302.GA21698@merkur.ravnborg.org> <20110427194225.GA6551@merkur.ravnborg.org> <20110427194647.GA6621@merkur.ravnborg.org>
+In-Reply-To: <20110427194647.GA6621@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <BANLkTikGGO76ToGaRJ0foSc-Yp6Fe4C97g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104272152.37889.arnd@arndb.de>
+X-Provags-ID: V02:K0:IDTW/vVIvgRjBrr+JuPNQWLmIPnrqjAyeOpBEViPg2J
+ zeJl/yPjiaqZjtN5TNwgkbkY6AJIm6r7omBnKwG8OJR22cytjW
+ c4oq1I55V1pB2l3Dw5yGRZDuYj6zsVwLQ3HU9eoOts1U2YmRzk
+ S3yB6AROZVGkrIAPk0AbsjK8/MMjHjY5rZn0n/8n0H8Y0p+95x
+ olWi3cgHNbH8XyJLdxjsQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 01:49:01PM -0400, Natarajan Gurumoorthy wrote:
-> Guenter,
+On Wednesday 27 April 2011 21:46:47 Sam Ravnborg wrote:
+> From 8546953f0c87d6b1c37c25df73511780c86ad89d Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Fri, 22 Apr 2011 14:45:13 +0200
+> Subject: [PATCH] kbuild: asm-generic support
 > 
-> On Thu, Apr 21, 2011 at 9:44 PM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> > >  /**
-> > > @@ -303,8 +308,6 @@ static void wdt_stop(void)
-> > >
-> > >  static int wdt_set_timeout(int t)
-> > >  {
-> > > -       unsigned long flags;
-> > > -
-> > >         if (t < 1 || t > max_units * 60)
-> > >                 return -EINVAL;
-> > >
-> > > @@ -313,14 +316,14 @@ static int wdt_set_timeout(int t)
-> > >         else
-> > >                 timeout = t;
-> > >
-> > > -       spin_lock_irqsave(&spinlock, flags);
-> > >         if (test_bit(WDTS_TIMER_RUN, &wdt_status)) {
-> > > -               superio_enter();
-> > > +               if (superio_enter())
-> > > +                       return -EBUSY;
-> > > +
-> > I don't think you can do that here. You are moving the lock,
-> > meaning test_bit is no longer protected by the lock.
-> >
-> I am not sure I am in agreement with your here. If you look at other
-> places in the original driver I see sections of code in "wdt_ioctl"
-> that look as follows:
->         case WDIOC_SETOPTIONS:
->                 if (get_user(new_options, uarg.i))
->                         return -EFAULT;
+> There is an increasing amount of header files
+> shared between individual architectures in asm-generic.
+> To avoid a lot of dummy wrapper files that just
+> include the corresponding file in asm-generic provide
+> some basic support in kbuild for this.
 > 
->                 switch (new_options) {
->                 case WDIOS_DISABLECARD:
->                         if (test_bit(WDTS_TIMER_RUN, &wdt_status))
->                                 wdt_stop();
->                         clear_bit(WDTS_TIMER_RUN, &wdt_status);
->                         return 0;
+> With the following patch an architecture can maintain
+> a list of files in the file arch/$(ARCH)/include/asm/Kbuild
 > 
->                 case WDIOS_ENABLECARD:
->                         if (!test_and_set_bit(WDTS_TIMER_RUN, &wdt_status))
->                                 wdt_start();
->                         return 0;
+> To use a generic file just add:
 > 
->                 default:
->                         return -EFAULT;
->                 }
+>         generic-y += <name-of-header-file.h>
 > 
-> They have run through manipulating the "WDTS_TIMER_RUN" bit in
-> wdt_status without touching the spinlock. "wdt_stop" does acquire the
-> spinlock before touching the hardware through superio_enter. It seems
-> to me that the original writers of this driver were using the spinlock
-> to isolate access to the hardware and we will be achieving the same by
-> the use of "request_muxed_region" call from superio_enter.
+> For each file listed kbuild will generate the necessary
+> wrapper in arch/$(ARCH)/include/generated/asm.
 > 
-Agreed. Thanks for the clarification.
+> When installing userspace headers a wrapper is likewise created.
+> 
+> The original inspiration for this came from the unicore32
+> patchset - although a different method is used.
+> 
+> The patch includes several improvements from Arnd Bergmann.
+> Michael Marek contributed Makefile.asm-generic.
+> 
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Acked-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> Tested-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> Cc: Arnd Bergmann <arnd@arndb.de>
 
-Guenter
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I'm glad to see this finally happen.
+
+Maybe you can mention Remis Baima in the changelog as well,
+he did an earlier implementation back in the days when some
+architectures were still using include/asm-${ARCH}, which IIRC
+did not get merged because of the complexity associated with
+that.
+
+	Arnd
