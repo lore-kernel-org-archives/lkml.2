@@ -1,114 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759966Ab1D0Ugq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:36:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60577 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759889Ab1D0Ugm convert rfc822-to-8bit (ORCPT
+	id S1759927Ab1D0Uj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:39:57 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48292 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755722Ab1D0Ujy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:36:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=HGqUxa9yujiUMj9EkAs7AZ00XMOWYHiWs3i5yTsmPzyvozoKOo1Zo5C91xobaJ5yea
-         2XhMccywQG+q/7xUfjxhnTxzGRaoQPdZtcnAA6eiR3JqhlyvREORQjXdA+L4eYSFyHib
-         2oZ7RCxJyOY1fW0AogXOXmOsG9OGsEzSaf89A=
-MIME-Version: 1.0
-In-Reply-To: <1303935518.2583.27.camel@mulgrave.site>
-References: <1303935518.2583.27.camel@mulgrave.site>
-Date: Wed, 27 Apr 2011 22:36:40 +0200
-X-Google-Sender-Auth: kX7nwT9G-9NfOT4nC5bgkZQbzj4
-Message-ID: <BANLkTimPzRuGqjxXqe7tn-C52suTVE9+ig@mail.gmail.com>
-Subject: Re: [GIT PULL] parisc fixes for 2.6.39-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Apr 2011 16:39:54 -0400
+Date: Wed, 27 Apr 2011 21:40:45 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: <johnlinn@comcast.net>
+Cc: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <michal.simek@petalogix.com>, <joe@perches.com>,
+        <grant.likely@secretlab.ca>, <greg@kroah.com>,
+        John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110427214045.6f6d179d@lxorguk.ukuu.org.uk>
+In-Reply-To: <beef0ca4-f7d3-4f61-b22a-d9eeeb0618f4@VA3EHSMHS010.ehs.local>
+References: <beef0ca4-f7d3-4f61-b22a-d9eeeb0618f4@VA3EHSMHS010.ehs.local>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 22:18, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> These two fixes contain the agreed fix for our slub panic (agreed with
-> the mm folks that we'll define SLUB broken in the !NUMA && DISCONTIGMEM
-> case, which should fix m86k as well) and another buglet that turned up
-> examining the parisc discontigmem code.
+On Wed, 27 Apr 2011 12:17:36 -0600
+<johnlinn@comcast.net> wrote:
 
-Do we still need to mark SLUB broken?
-On m68k, the issue seems to have been fixed by setting the N_NORMAL_MEMORY flag
-(pull request scheduled after one more linux-next build cycle).
+> From: John Linn <john.linn@xilinx.com>
+> 
+> The Xilinx PS Uart is used on the new ARM based SoC. This
+> UART is not compatible with others such that a seperate
+> driver is required.
+> 
+> Signed-off-by: John Linn <john.linn@xilinx.com>
 
-Or do you plan to unmark it broken once every affected arch sets the
-N_NORMAL_MEMORY flag?
-
-> The patches are here:
->
-> master.kernel.org:/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#fixes
->
-> The short changelog is:
->
-> David Rientjes (1):
->      [PARISC] set memory ranges in N_NORMAL_MEMORY when onlined
->
-> James Bottomley (1):
->      [PARISC] slub: fix panic with DISCONTIGMEM
->
-> The diffstat is:
->
->  arch/parisc/mm/init.c |    4 +++-
->  init/Kconfig          |    1 +
->  2 files changed, 4 insertions(+), 1 deletions(-)
->
-> And the full diff are below.
->
-> James
->
-> ---
->
-> diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-> index b7ed8d7..b1d1262 100644
-> --- a/arch/parisc/mm/init.c
-> +++ b/arch/parisc/mm/init.c
-> @@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
->        }
->        memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
->
-> -       for (i = 0; i < npmem_ranges; i++)
-> +       for (i = 0; i < npmem_ranges; i++) {
-> +               node_set_state(i, N_NORMAL_MEMORY);
->                node_set_online(i);
-> +       }
->  #endif
->
->        /*
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 56240e7..a7ad8fb 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1226,6 +1226,7 @@ config SLAB
->          per cpu and per node queues.
->
->  config SLUB
-> +       depends on BROKEN || NUMA || !DISCONTIGMEM
->        bool "SLUB (Unqueued Allocator)"
->        help
->           SLUB is a slab allocator that minimizes cache line usage
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Acked-by: Alan Cox <alan@linux.intel.com>
