@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab1D0XnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:43:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45849 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101Ab1D0XnK convert rfc822-to-8bit (ORCPT
+	id S1760176Ab1D0XrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:47:13 -0400
+Received: from smtp102.prem.mail.sp1.yahoo.com ([98.136.44.57]:26157 "HELO
+	smtp102.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752052Ab1D0XrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:43:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nRhEnbuTwaIFDs1JLWbEjf+Ln7zBa6Dc4ziFL1Z9o7URAjeoF1xyRVEvw7wlJUFzAX
-         Gvph1qo/9O0I/ismKYtfMz+kW/nzqqRXx69o14Ey22PMB2O0MwGJ2PjK/k0/drI9QTBq
-         NwCp1ky2kUkgeEI6/v6YDOjTeNi4hhbaBb/z8=
+	Wed, 27 Apr 2011 19:47:09 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: AD0_RJgVM1kyAVOvcYukLiZqT7oKgA_VvBLXmBrQp.DJiGt
+ Xhw7grDgQLGViVl36JBY5kHstqdnNqspunr4WAkj_kfLLEwp9mogzqRxN.0t
+ fCh0znDyMUoKUVQtTLqPLiGBl.6KHjDnYUkSD7cmSqmwC.STJBU8gM0uxlft
+ _OoTcW5ElvWIZdB_LsNWshc1ISX7DlIsEIvYxelVyTCSoiAVAuzLC5Mcl_5e
+ e_bc02hfUDdfKIDkwFi1mhNH9TRtRnIcLx5YMR0.TOwmDzu2jPYSo3t.VPw.
+ Ba_qCO6coN4zLJW7i5PMoYI.Hm0MUqI2NqWFZI45_YJezzOkBd6ljLS_iwha
+ 7SQoQIjDASMLS0GF69YNbfJ03hxe5Vj1133Pmnjzqhg--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DB8AAFA.2050903@schaufler-ca.com>
+Date: Wed, 27 Apr 2011 16:47:06 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110427173450.82cef21e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
-	<51e7412097fa62f86656c77c1934e3eb96d5eef6.1303833417.git.minchan.kim@gmail.com>
-	<20110427173450.82cef21e.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 28 Apr 2011 08:43:08 +0900
-Message-ID: <BANLkTi=i+LjmmPYjYBy8G4btmGz5Qu-rZA@mail.gmail.com>
-Subject: Re: [RFC 6/8] In order putback lru core
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Roberto Sassu <roberto.sassu@polito.it>
+CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
+        ecryptfs-devel@lists.launchpad.net, eparis@redhat.com,
+        sds@tycho.nsa.gov, selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC][PATCH 5/7] smack: import the security label in smack_secctx_to_secid()
+References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it> <1303907657-18366-6-git-send-email-roberto.sassu@polito.it>
+In-Reply-To: <1303907657-18366-6-git-send-email-roberto.sassu@polito.it>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 5:34 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 27 Apr 2011 01:25:23 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
+On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+> The security label passed as argument in smack_secctx_to_secid() must be
+> first imported in the 'smack_known_list' list before finding the security
+> identifier associated to it. This allows the function
+> set_security_override_from_ctx() to be performed successfully even if the
+> label is not yet present in the smack list.
 >
->> This patch defines new APIs to putback the page into previous position of LRU.
->> The idea is simple.
->>
->> When we try to putback the page into lru list and if friends(prev, next) of the pages
->> still is nearest neighbor, we can insert isolated page into prev's next instead of
->> head of LRU list. So it keeps LRU history without losing the LRU information.
->>
->> Before :
->>       LRU POV : H - P1 - P2 - P3 - P4 -T
->>
->> Isolate P3 :
->>       LRU POV : H - P1 - P2 - P4 - T
->>
->> Putback P3 :
->>       if (P2->next == P4)
->>               putback(P3, P2);
->>       So,
->>       LRU POV : H - P1 - P2 - P3 - P4 -T
->>
->> For implement, we defines new structure pages_lru which remebers
->> both lru friend pages of isolated one and handling functions.
->>
->> But this approach has a problem on contiguous pages.
->> In this case, my idea can not work since friend pages are isolated, too.
->> It means prev_page->next == next_page always is false and both pages are not
->> LRU any more at that time. It's pointed out by Rik at LSF/MM summit.
->> So for solving the problem, I can change the idea.
->> I think we don't need both friend(prev, next) pages relation but
->> just consider either prev or next page that it is still same LRU.
->> Worset case in this approach, prev or next page is free and allocate new
->> so it's in head of LRU and our isolated page is located on next of head.
->> But it's almost same situation with current problem. So it doesn't make worse
->> than now and it would be rare. But in this version, I implement based on idea
->> discussed at LSF/MM. If my new idea makes sense, I will change it.
->>
->
-> I think using only 'next'(prev?) pointer will be enough.
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-I think so but let's wait other's opinion. :)
--- 
-Kind regards,
-Minchan Kim
+Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
+
+security_secctx_to_secid() is called from the netlabel code
+and hence cannot (to my understanding) allocate memory,
+which is something that smk_import will do if the label is
+new. I am willing to be convinced that doing so is safe,
+but my understanding is that it is not.
+
+> ---
+>  security/smack/smack_lsm.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+>
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 0e7ed31..6612ba1 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -3346,7 +3346,13 @@ static int smack_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+>   */
+>  static int smack_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid)
+>  {
+> -	*secid = smack_to_secid(secdata);
+> +	char *smack;
+> +
+> +	smack = smk_import(secdata, seclen);
+> +	if (smack == NULL)
+> +		return -EINVAL;
+> +
+> +	*secid = smack_to_secid(smack);
+>  	return 0;
+>  }
+>  
+
