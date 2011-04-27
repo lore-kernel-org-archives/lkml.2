@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab1D0NEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:04:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61689 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab1D0NEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:04:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sU4B+QKbmJjWj3wzoOWkpqKZctEB0qUV6RcsbV8NUvex4gbkdqrqnnMOOHYS6iDZOp
-         YsSDjExErQQ4PHW90CR+KEG3M64c1UfRR9ECl82xohI2H+x3Ri0ZC1buFEdn9Gy248cG
-         TzBG5iyoCQ+hTJPiIMbmigzJkEZlUDgMMZLLg=
-Date: Wed, 27 Apr 2011 15:04:06 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/6] signal: sys_sigprocmask() needs
- retarget_shared_pending()
-Message-ID: <20110427130406.GG31015@htj.dyndns.org>
-References: <20110418134421.GA15951@redhat.com>
- <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
- <20110418173224.GA27918@redhat.com>
- <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
- <20110423175901.GA484@redhat.com>
- <20110426194822.GA8520@redhat.com>
- <20110426195002.GF8520@redhat.com>
- <BANLkTinp8FGQu2D1NVVc7xfEsqopook7Hg@mail.gmail.com>
- <20110427125710.GA21281@redhat.com>
+	id S1759127Ab1D0NEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:04:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30297 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335Ab1D0NEV (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 27 Apr 2011 09:04:21 -0400
+Date: Wed, 27 Apr 2011 09:04:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+Subject: Re: submitting read(1%)/write(99%) IO within a kernel thread, vs
+ doing it in userspace (aio) with CFQ shows drastic drop. Ideas?
+Message-ID: <20110427130403.GA29593@dumpdata.com>
+References: <20110426173732.GA25442@dumpdata.com>
+ <20110426183321.GG9414@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110427125710.GA21281@redhat.com>
+In-Reply-To: <20110426183321.GG9414@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DB8144D.0119:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Just my 5 cents.
-
-On Wed, Apr 27, 2011 at 02:57:10PM +0200, Oleg Nesterov wrote:
-> Yes, sigprocmask(how) is ugly, but there are sys_rt_sigprocmask() and
-> sys_sigprocmask() which have to handle these SIG_* operations anyway.
-> So, I think we should do:
+On Tue, Apr 26, 2011 at 02:33:21PM -0400, Vivek Goyal wrote:
+> On Tue, Apr 26, 2011 at 01:37:32PM -0400, Konrad Rzeszutek Wilk wrote:
+> > 
+> > I was hoping you could shed some light at a peculiar problem I am seeing
+> > (this is with the PV block backend I posted recently [1]).
+> > 
+> > I am using the IOmeter fio test, with two threads and modified it slightly
+> > (please see at the bottom). The "disk" the I/Os are being done on is an iSCSI disk
+> > that on the other side is LIO TCM 10G RAMdisk. The network is 1GB and
+> > the line speed when doing just full blow random reads or full random writes
+> > is 112MB/s (native or from the guest).
+> > 
+> > I launch a guest and inside the guest I run the 'fio iometer'. When launching
+> > the guest I have the option of using two different block backends:
+> > the kernel one (simple code [1] doing 'submit_bio') or the userspace one (which
+> > uses the AIO library and opens the disk using O_DIRECT). The throughput and submit
+> > latency are widely different for this particular workload. If I swap the IO
+> > scheduler in the host for the iSCSI disk from 'cfq' to deadline or noop - throughput
+> > and latencies become the same (however CPU usage is not, but that is not important here).
+> > Here is a simple table with the numbers:
+> > 
+> > IOmeter       |       |      |          |
+> > 64K, randrw   |  NOOP | CFQ  | deadline |
+> > randrwmix=80  |       |      |          |
+> > --------------+-------+------+----------+
+> > blkback       |103/27 |32/10 | 102/27   |
+> > --------------+-------+------+----------+
+> > QEMU qdisk    |103/27 |102/27| 102/27   |
+> > 
+> > What I found out is that if I pollute the ring request with just one
+> > different type of I/O operation (so 99% is WRITE, and I stick 1% READ on it)
+> > the I/O  plummets if I use the kernel thread. But that problem does
+> > not show up when the I/O operations are plumbed through the AIO library.
 > 
-> 	1. Almost all callers of sigprocmask() use SIG_SETMASK, we can
-> 	   simply change them to use set_current_blocked().
+> Konrad,
+> 
+> I suspect that difference is that sync vs async requests. In the case of
+> a kernel thread submitting IO, I think all the WRITES might be being
+> considered as async and will go in a different queue. If you mix those
+> with some READS, they are always sync and will go in differnet queue.
+> In presence of sync queue, CFQ will idle and choke up WRITES in
+> an attempt to improve latencies of READs.
+> 
+> In case of AIO, I am assuming it is direct IO and both READS and WRITES
+> will be considered SYNC and will go in a single queue and no choking
+> of WRITES will take place. 
+> 
+> Can you run blktrace on your host iscsi device (15-20 seconds) and upload
+> the traces somewhere. That might give us some ideas.
+> 
+> The bio's you are preparing in kernel thread, if you flag them sync using
+> (REQ_SYNC flag), then this problem might disappear (Only if my problem
+> analysis is right. :-))
 
-I agree.  We don't need to worry about atomicity here, so there's no
-reason to encode bitops (be it and/or or andn/xor) when the
-determination of the new value can be simply done in the caller.
-
-Thanks.
-
--- 
-tejun
+Your analysis was spot-on-dead right. Thank you!
