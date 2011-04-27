@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759858Ab1D0TCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:02:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53957 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1D0TCA (ORCPT
+	id S1759869Ab1D0TDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:03:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34837 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab1D0TDN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:02:00 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=i38SgkEfDKkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=gu6fZOg2AAAA:8 a=Os8dhU_S_VNIN34lcKIA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <4DB86163.2070201@zytor.com>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	 <e8a554f881a199107afd37795adb0d11e70fdbcc.1303846852.git.tfransosi@gmail.com>
-	 <1303926576.18763.75.camel@gandalf.stny.rr.com>
-	 <4DB86163.2070201@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 27 Apr 2011 15:01:58 -0400
-Message-ID: <1303930918.18763.95.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 15:03:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iF3dmgnYxduuFXeWOn0I2cxgjrrcNw6CvRPyzL/Ik+NX0xCpnV7BYI/+6dc8XlM2Ys
+         7l1cjKda+UkHNgt0rQrYhwu0tt2wiF0CJ+LqURIWvVhryC+UQsmxJXUmZ89twvQPP1vT
+         4S70bSaA5J/8ZohW/sE7mQmmbAQUWf7vfRadg=
+MIME-Version: 1.0
+In-Reply-To: <20110427154805.GB23494@elte.hu>
+References: <BANLkTikNWgzKefWxp6UUqQ-XdBvgG+QSNQ@mail.gmail.com>
+	<20110422092322.GA1948@elte.hu>
+	<BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
+	<20110422105211.GB1948@elte.hu>
+	<20110422165007.GA18401@vps.sharma-home.net>
+	<20110422203022.GA20573@elte.hu>
+	<20110423201409.GA20072@elte.hu>
+	<20110424061645.GA12013@radium.snc4.facebook.com>
+	<20110427111141.GB28993@elte.hu>
+	<BANLkTimz-KevvqmxxUPp73GEaAC5PTGWWw@mail.gmail.com>
+	<20110427154805.GB23494@elte.hu>
+Date: Wed, 27 Apr 2011 12:03:12 -0700
+X-Google-Sender-Auth: gXggd1bdqVKf5_-FkkGaNbBr9D0
+Message-ID: <BANLkTiko3bTCYP9oiX8KuQHQO0j2KtZ-mA@mail.gmail.com>
+Subject: Re: [PATCH] perf events: Add stalled cycles generic event - PERF_COUNT_HW_STALLED_CYCLES
+From: Arun Sharma <arun@sharma-home.net>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arun Sharma <asharma@fb.com>, Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 11:33 -0700, H. Peter Anvin wrote:
-> On 04/27/2011 10:49 AM, Steven Rostedt wrote:
-> > On Tue, 2011-04-26 at 16:45 -0300, Thiago Farina wrote:
-> >> This macro is arguably more readable than its variants:
-> >> - !strcmp(a, b)
-> >> - strcmp(a, b) == 0
-> > 
-> > Actually, this was proposed way back in 2002 my Rusty and I did not see
-> > anyone arguing against it. I wonder why it never was incorporated back
-> > then?
-> > 
-> > http://marc.info/?l=linux-kernel&m=103284339813100&w=2
-> > 
-> > [ added Cc's of some of those that replied to this thread ]
-> > 
-> 
-> Because !strcmp() is idiomatic C.
-> 
-> This is the same kind of stupidity as
-> 
-> #define BEGIN {
-> #define END   }
+On Wed, Apr 27, 2011 at 8:48 AM, Ingo Molnar <mingo@elte.hu> wrote:
 
-I argue that this is totally different than your example. Your example
-demonstrates changing the syntax of C to simulate another language. This
-has nothing to do with simulating any other language. The problem with 
-!strcmp() is that it goes against the semantics of C, as '!' means not.
-And to think '!' is an equal can get a bit confusing.
+>
+>> The other issue I had to deal with was UOPS_RETIRED > UOPS_EXECUTED
+>> condition. I believe this is caused by what AMD calls sideband stack
+>> optimizer and Intel calls dedicated stack manager (i.e. UOPS executed outside
+>> the main pipeline). A recursive fibonacci(30) is a good test case for
+>> reproducing this.
+>
+> So the PORT015+234 sum is not precise? The definition seems to be rather firm:
+>
+>  Counts number of Uops executed that where issued on port 2, 3, or 4.
+>  Counts number of Uops executed that where issued on port 0, 1, or 5.
+>
 
-It is also the reason we already have two semantics in the kernel for
-this:
+There is some work done outside of the main out of order engine for
+power optimization reasons:
 
-	!strcmp(a, b) and strcmp(a, b) == 0
+Described as dedicated stack engine here:
+http://www.intel.com/technology/itj/2003/volume07issue02/art03_pentiumm/vol7iss2_art03.pdf
 
-Personally, I'm fine with just using strcmp(a, b) == 0, as I have
-learned to understand it. And when reading code, I've actually been able
-to teach myself !strcmp(a, b) is equality (although with a slight hiccup
-in my thought process).
+However, I can't seem to be able to reproduce this behavior using a
+micro benchmark right now:
 
-But I still get stuck when I see the use of strcmp(a, b) meaning a != b.
-This is where my brain stops completely to analyze if this is really
-what the author of the code meant.
+# cat foo.s
+.text
+        .global main
+main:
+1:
+        push %rax
+        push %rbx
+        push %rcx
+        push %rdx
+        pop  %rax
+        pop  %rbx
+        pop  %rcx
+        pop  %rdx
+        jmp  1b
 
-> 
-> It doesn't matter if it is more readable *to you*... learn the language,
-> please.
+ Performance counter stats for './foo':
 
-I have learned the language (it's my mother tongue), but I think
-strcmp() is an anomaly of it. It was a mistake that libc never included
-a streq(). If it had, we would not even be having this discussion.
-Another note is that strcmp is not really part of the language itself as
-we must write it ourselves.
+     7,755,881,073 UOPS_ISSUED:ANY:t=1       (scaled from 79.98%)
+    10,569,957,988 UOPS_RETIRED:ANY:t=1      (scaled from 79.96%)
+     9,155,400,383 UOPS_EXECUTED:PORT234_CORE  (scaled from 80.02%)
+     2,594,206,312 UOPS_EXECUTED:PORT015:t=1  (scaled from 80.02%)
 
-Heck, we could add:
+Perhaps I was thinking of UOPS_ISSUED < UOPS_RETIRED.
 
-#ifndef __HAVE_ARCH_STREQ
-/**
- * streq - Test if two strings are equal
- * @cs: One string
- * @ct: Another string
- */
-#undef streq
-int streq(const char *cs, const char *ct)
-{
-	unsigned char c1, c2;
+In general, UOPS_RETIRED (or instruction retirement in general) is the
+"source of truth" in an otherwise crazy world and might be more
+interesting as a generalized event that works on multiple
+architectures.
 
-	while (1) {
-		c1 = *cs++;
-		c2 = *ct++;
-		if (c1 != c2)
-			return 0;
-		if (!c1)
-			break;
-	}
-	return 1;
-}
-EXPORT_SYMBOL(streq);
-#endif
-
-And this would be just like adding another helper function.
-
--- Steve
-
-
+ -Arun
