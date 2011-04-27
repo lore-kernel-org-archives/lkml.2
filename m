@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab1D0BAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 21:00:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42006 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537Ab1D0BAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 21:00:52 -0400
-Date: Wed, 27 Apr 2011 11:00:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Chaoming_Li <chaoming_li@realsil.com.cn>
-Subject: linux-next: manual merge of the wireless tree with Linus' tree
-Message-Id: <20110427110043.9c61e87e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1755012Ab1D0BFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 21:05:45 -0400
+Received: from c.painless.aaisp.net.uk ([81.187.30.53]:48868 "EHLO
+	c.painless.aaisp.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab1D0BFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 21:05:44 -0400
+Date: Wed, 27 Apr 2011 02:05:40 +0100
+From: Andrew Clayton <andrew@digital-domain.net>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg KH <gregkh@suse.de>, Emmanuel Benisty <benisty.e@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: 2.6.38.4 broke my audio
+Message-ID: <20110427020540.25803862@omega.digital-domain.net>
+In-Reply-To: <s5hwrihb2wm.wl%tiwai@suse.de>
+References: <20110424113037.11af0b04@omega.digital-domain.net>
+	<20110425000126.GA18681@suse.de>
+	<s5htydmhed2.wl%tiwai@suse.de>
+	<20110425173409.GA32047@suse.de>
+	<s5hpqoagjtf.wl%tiwai@suse.de>
+	<20110426011212.77630c68@omega.digital-domain.net>
+	<s5hwrihb2wm.wl%tiwai@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__27_Apr_2011_11_00_43_+1000_1Yngf4lydMqImYvz"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__27_Apr_2011_11_00_43_+1000_1Yngf4lydMqImYvz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 26 Apr 2011 14:41:45 +0200, Takashi Iwai wrote:
 
-Hi John,
+> At Tue, 26 Apr 2011 01:12:12 +0100,
+> Andrew Clayton wrote:
+> > 
+> > On Mon, 25 Apr 2011 22:25:16 +0200, Takashi Iwai wrote:
+> > 
+> > > Andrew, could you give alsa-info.sh outputs on your machine?
+> > > Preferably, the outputs both before and after the kernel update
+> > > would be really helpful.
+> > 
+> > Sure, here you go.
+> > 
+> > The first one is from 2.6.38.3 where the audio is fine. The second
+> > is from 2.6.38.4 where the audio is really quiet.
+> 
+> Thanks.  In your case, "Speaker" mixer volume is set to zero.
+> Does the following fix the output?
+> 
+> 	% amixer -c0 set Speaker 100%
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/rtlwifi/pci.c between commit 25985edcedea ("Fix
-common misspellings") from Linus' tree and commit c7cfe38ee0f9 ("rtlwifi:
-Convert pci routines for addition of rtl8192se and rtl8192de") from the
-wireless tree.
+Ah, indeed it does.
 
-The latter removes the line corrected by the former.
---=20
+> Takashi
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__27_Apr_2011_11_00_43_+1000_1Yngf4lydMqImYvz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNt2q7AAoJEDMEi1NhKgbsDt4H/2NvaaTdQorGAXrjd3TQbUf4
-CIPtCkr1LPtrHAzdi90rJ8v2fmzBRA2GdNRBY7VDkyCVyUi3ipOpMCAhgbZhutgN
-9OecLHvkAnt2m8lvYOrbX/EyzTLIFpDnjQeX8mbev1yCMmaRAGhTaujLmdYmE56F
-t4qOCIh+JUCIHwX66pZRFF42wDHOvQt1aK/t3WCv9aiibXnIkXwaS7/Ue1LMGKh4
-K2AaoY9DAI8QBj5CunMNz/1kHeO9fRjk2D0bYOFBl3M4gUREJvG59JjLJ9CjPXQ4
-ef7ix13jWFto0c2bjHI9eGNlCQb2YPggxgcbP4wIQuDAXfaRaT84HzPc8V+cm5s=
-=vtA+
------END PGP SIGNATURE-----
-
---Signature=_Wed__27_Apr_2011_11_00_43_+1000_1Yngf4lydMqImYvz--
+Andrew
