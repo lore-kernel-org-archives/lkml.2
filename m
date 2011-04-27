@@ -1,140 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab1D0Tn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:43:58 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:29091 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab1D0Tn5 (ORCPT
+	id S1759439Ab1D0Tqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:46:52 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:46559 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab1D0Tqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:43:57 -0400
-Subject: Re: [PATCHv2 4/4] ethtool: cosmetic: Use ethtool ethtool_cmd_speed
- API
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Decotigny <decot@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <1303929290-21037-5-git-send-email-decot@google.com>
-References: <1303001651-4074-1-git-send-email-decot@google.com>
-	 <1303929290-21037-5-git-send-email-decot@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Wed, 27 Apr 2011 20:43:50 +0100
-Message-ID: <1303933430.2875.145.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Apr 2011 19:43:53.0416 (UTC) FILETIME=[7056DC80:01CC0513]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18098.005
-X-TM-AS-Result: No--9.598100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Wed, 27 Apr 2011 15:46:50 -0400
+Date: Wed, 27 Apr 2011 21:46:47 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>, Michal Marek <mmarek@suse.cz>
+Cc: "'Michal Marek'" <mmarek@suse.cz>, "'lkml'" <linux-kernel@vger.kernel.org>,
+        "'linux-kbuild'" <linux-kbuild@vger.kernel.org>,
+        "'linux arch'" <linux-arch@vger.kernel.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Guan Xuetao'" <guanxuetao@mprc.pku.edu.cn>
+Subject: [PATCH v4] kbuild: asm-generic support
+Message-ID: <20110427194647.GA6621@merkur.ravnborg.org>
+References: <20110108130302.GA21698@merkur.ravnborg.org> <20110109192707.GA12387@merkur.ravnborg.org> <20110109192907.GA12403@merkur.ravnborg.org> <4D2F24CD.5040101@suse.cz> <20110113170131.GA28377@merkur.ravnborg.org> <20110114144354.GA23611@sepie.suse.cz> <20110422155349.GA9579@merkur.ravnborg.org> <008401cc02e8$415af510$c410df30$@mprc.pku.edu.cn> <20110427194225.GA6551@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427194225.GA6551@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 11:34 -0700, David Decotigny wrote:
-> This updates the network drivers so that they don't access the
-> ethtool_cmd::speed field directly, but use ethtoo_cmd_speed() instead.
-> 
-> For most of the drivers, these changes are purely cosmetic and don't
-> fix any problem, such as for those 1GbE/10GbE drivers that indirectly
-> call their own ethtool get_settings()/mii_ethtool_gset(). The changes
-> are meant to enforce code consistency and provide robustness with
-> future larger throughputs, at the expense of a few CPU cycles for each
-> ethtool operation.
-> 
-> All the drivers compiled with make allyesconfig ion x86_64 have been
-> updated.
-> 
-> Tested: make allyesconfig on x86_64 + e1000e/bnx2x work
-> Signed-off-by: David Decotigny <decot@google.com>
-[...]
-> --- a/drivers/net/mdio.c
-> +++ b/drivers/net/mdio.c
-> @@ -290,33 +290,36 @@ void mdio45_ethtool_gset_npage(const struct mdio_if_info *mdio,
->  		if (modes & (ADVERTISED_10000baseT_Full |
->  			     ADVERTISED_10000baseKX4_Full |
->  			     ADVERTISED_10000baseKR_Full)) {
-> -			ecmd->speed = SPEED_10000;
-> +			ethtool_cmd_speed_set(ecmd, SPEED_10000);
->  			ecmd->duplex = DUPLEX_FULL;
->  		} else if (modes & (ADVERTISED_1000baseT_Full |
->  				    ADVERTISED_1000baseT_Half |
->  				    ADVERTISED_1000baseKX_Full)) {
-> -			ecmd->speed = SPEED_1000;
-> +			ethtool_cmd_speed_set(ecmd, SPEED_1000);
->  			ecmd->duplex = !(modes & ADVERTISED_1000baseT_Half);
->  		} else if (modes & (ADVERTISED_100baseT_Full |
->  				    ADVERTISED_100baseT_Half)) {
-> -			ecmd->speed = SPEED_100;
-> +			ethtool_cmd_speed_set(ecmd, SPEED_100);
->  			ecmd->duplex = !!(modes & ADVERTISED_100baseT_Full);
->  		} else {
-> -			ecmd->speed = SPEED_10;
-> +			ethtool_cmd_speed_set(ecmd, SPEED_10);
->  			ecmd->duplex = !!(modes & ADVERTISED_10baseT_Full);
->  		}
->  	} else {
->  		/* Report forced settings */
-> +		u32 speed;
->  		reg = mdio->mdio_read(mdio->dev, mdio->prtad, MDIO_MMD_PMAPMD,
->  				      MDIO_CTRL1);
-> -		ecmd->speed = (((reg & MDIO_PMA_CTRL1_SPEED1000) ? 100 : 1) *
-> -			       ((reg & MDIO_PMA_CTRL1_SPEED100) ? 100 : 10));
-> +		speed = (((reg & MDIO_PMA_CTRL1_SPEED1000) ? 100 : 1)
-> +			 * ((reg & MDIO_PMA_CTRL1_SPEED100) ? 100 : 10));
->  		ecmd->duplex = (reg & MDIO_CTRL1_FULLDPLX ||
-> -				ecmd->speed == SPEED_10000);
-> +				speed == SPEED_10000);
-> +		ethtool_cmd_speed_set(ecmd, speed);
->  	}
->  
->  	/* 10GBASE-T MDI/MDI-X */
-> -	if (ecmd->port == PORT_TP && ecmd->speed == SPEED_10000) {
-> +	if (ecmd->port == PORT_TP
-> +	    && (ethtool_cmd_speed(ecmd) == SPEED_10000)) {
->  		switch (mdio->mdio_read(mdio->dev, mdio->prtad, MDIO_MMD_PMAPMD,
->  					MDIO_PMA_10GBT_SWAPPOL)) {
->  		case MDIO_PMA_10GBT_SWAPPOL_ABNX | MDIO_PMA_10GBT_SWAPPOL_CDNX:
+>From 8546953f0c87d6b1c37c25df73511780c86ad89d Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Fri, 22 Apr 2011 14:45:13 +0200
+Subject: [PATCH] kbuild: asm-generic support
 
-It seems like the scope of speed should be the whole function.  Then you
-could just have one call to ethtool_cmd_speed_set() after the
-'if (ecmd->autoneg) ... else ...' statement, and no need to use
-ethtool_cmd_speed().
+There is an increasing amount of header files
+shared between individual architectures in asm-generic.
+To avoid a lot of dummy wrapper files that just
+include the corresponding file in asm-generic provide
+some basic support in kbuild for this.
 
-[...]
-> --- a/drivers/net/tulip/de2104x.c
-> +++ b/drivers/net/tulip/de2104x.c
-> @@ -1518,15 +1518,15 @@ static int __de_get_settings(struct de_private *de, struct ethtool_cmd *ecmd)
->  	switch (de->media_type) {
->  	case DE_MEDIA_AUI:
->  		ecmd->port = PORT_AUI;
-> -		ecmd->speed = 5;
-> +		ethtool_cmd_speed_set(ecmd, 5);
->  		break;
->  	case DE_MEDIA_BNC:
->  		ecmd->port = PORT_BNC;
-> -		ecmd->speed = 2;
-> +		ethtool_cmd_speed_set(ecmd, 2);
->  		break;
->  	default:
->  		ecmd->port = PORT_TP;
-> -		ecmd->speed = SPEED_10;
-> +		ethtool_cmd_speed_set(ecmd, SPEED_10);
->  		break;
->  	}
-[...]
+With the following patch an architecture can maintain
+a list of files in the file arch/$(ARCH)/include/asm/Kbuild
 
-As I commented on the previous patch, this should always report a speed
-of 10.
+To use a generic file just add:
 
-Ben.
+        generic-y += <name-of-header-file.h>
 
+For each file listed kbuild will generate the necessary
+wrapper in arch/$(ARCH)/include/generated/asm.
+
+When installing userspace headers a wrapper is likewise created.
+
+The original inspiration for this came from the unicore32
+patchset - although a different method is used.
+
+The patch includes several improvements from Arnd Bergmann.
+Michael Marek contributed Makefile.asm-generic.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Acked-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Tested-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+
+Changes v3 => v4
+Addressed feedback from Guan:
+- drop empty lines
+- fix line-too-long
+- add his Tested-by, Acked-by tags
+
+	Sam
+
+
+ .gitignore                         |    1 +
+ Documentation/kbuild/makefiles.txt |   36 ++++++++++++++++++++++++++++++++++++
+ Makefile                           |   16 ++++++++++++----
+ scripts/Makefile.asm-generic       |   23 +++++++++++++++++++++++
+ scripts/Makefile.headersinst       |   10 +++++++++-
+ 5 files changed, 81 insertions(+), 5 deletions(-)
+ create mode 100644 scripts/Makefile.asm-generic
+
+diff --git a/.gitignore b/.gitignore
+index 5d56a3f..9dacde0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -57,6 +57,7 @@ modules.builtin
+ include/config
+ include/linux/version.h
+ include/generated
++arch/*/include/generated
+ 
+ # stgit generated dirs
+ patches-*
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index 5d145bb..7f2b8e7 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -40,11 +40,13 @@ This document describes the Linux kernel Makefiles.
+ 	   --- 6.6 Commands useful for building a boot image
+ 	   --- 6.7 Custom kbuild commands
+ 	   --- 6.8 Preprocessing linker scripts
++	   --- 6.9 Generic header files
+ 
+ 	=== 7 Kbuild syntax for exported headers
+ 		--- 7.1 header-y
+ 		--- 7.2 objhdr-y
+ 		--- 7.3 destination-y
++		--- 7.4 generic-y
+ 
+ 	=== 8 Kbuild Variables
+ 	=== 9 Makefile language
+@@ -1209,6 +1211,14 @@ When kbuild executes, the following steps are followed (roughly):
+ 	The kbuild infrastructure for *lds file are used in several
+ 	architecture-specific files.
+ 
++--- 6.9 Generic header files
++
++	The directory include/asm-generic contains the header files
++	that may be shared between individual architectures.
++	The recommended approach how to use a generic header file is
++	to list the file in the Kbuild file.
++	See "7.4 generic-y" for further info on syntax etc.
++
+ === 7 Kbuild syntax for exported headers
+ 
+ The kernel include a set of headers that is exported to userspace.
+@@ -1265,6 +1275,32 @@ See subsequent chapter for the syntax of the Kbuild file.
+ 	In the example above all exported headers in the Kbuild file
+ 	will be located in the directory "include/linux" when exported.
+ 
++	--- 7.4 generic-y
++
++	If an architecture uses a verbatim copy of a header from
++	include/asm-generic then this is listed in the file
++	arch/$(ARCH)/include/asm/Kbuild like this:
++
++		Example:
++			#arch/x86/include/asm/Kbuild
++			generic-y += termios.h
++			generic-y += rtc.h
++
++	During the prepare phase of the build a wrapper include
++	file is generated in the directory:
++
++		arch/$(ARCH)/include/generated/asm
++
++	When a header is exported where the architecture uses
++	the generic header a similar wrapper is generated as part
++	of the set of exported headers in the directory:
++
++		usr/include/asm
++
++	The generated wrapper will in both cases look like the following:
++
++		Example: termios.h
++			#include <asm-generic/termios.h>
+ 
+ === 8 Kbuild Variables
+ 
+diff --git a/Makefile b/Makefile
+index b967b96..9c67453 100644
+--- a/Makefile
++++ b/Makefile
+@@ -349,7 +349,8 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+ 
+ # Use LINUXINCLUDE when you must reference the include/ directory.
+ # Needed to be compatible with the O= option
+-LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
++LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
++                   -Iarch/$(hdr-arch)/include/generated -Iinclude \
+                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
+                    -include include/generated/autoconf.h
+ 
+@@ -416,6 +417,12 @@ ifneq ($(KBUILD_SRC),)
+ 	    $(srctree) $(objtree) $(VERSION) $(PATCHLEVEL)
+ endif
+ 
++# Support for using generic headers in asm-generic
++PHONY += asm-generic
++asm-generic:
++	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.asm-generic \
++	            obj=arch/$(SRCARCH)/include/generated/asm
++
+ # To make sure we do not include .config for any of the *config targets
+ # catch them early, and hand them over to scripts/kconfig/Makefile
+ # It is allowed to specify more targets when calling make, including
+@@ -947,7 +954,7 @@ ifneq ($(KBUILD_SRC),)
+ endif
+ 
+ # prepare2 creates a makefile if using a separate output directory
+-prepare2: prepare3 outputmakefile
++prepare2: prepare3 outputmakefile asm-generic
+ 
+ prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
+                    include/config/auto.conf
+@@ -1021,7 +1028,7 @@ hdr-inst := -rR -f $(srctree)/scripts/Makefile.headersinst obj
+ hdr-dst = $(if $(KBUILD_HEADERS), dst=include/asm-$(hdr-arch), dst=include/asm)
+ 
+ PHONY += __headers
+-__headers: include/linux/version.h scripts_basic FORCE
++__headers: include/linux/version.h scripts_basic asm-generic FORCE
+ 	$(Q)$(MAKE) $(build)=scripts build_unifdef
+ 
+ PHONY += headers_install_all
+@@ -1136,7 +1143,8 @@ CLEAN_FILES +=	vmlinux System.map \
+                 .tmp_kallsyms* .tmp_version .tmp_vmlinux* .tmp_System.map
+ 
+ # Directories & files removed with 'make mrproper'
+-MRPROPER_DIRS  += include/config usr/include include/generated
++MRPROPER_DIRS  += include/config usr/include include/generated          \
++                  arch/*/include/generated
+ MRPROPER_FILES += .config .config.old .version .old_version             \
+                   include/linux/version.h                               \
+ 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS
+diff --git a/scripts/Makefile.asm-generic b/scripts/Makefile.asm-generic
+new file mode 100644
+index 0000000..a687cb6
+--- /dev/null
++++ b/scripts/Makefile.asm-generic
+@@ -0,0 +1,23 @@
++# include/asm-generic contains a lot of files that are used
++# verbatim by several architectures.
++#
++# This Makefile reads the file arch/$(SRCARCH)/include/asm/Kbuild
++# and for each file listed in this file with generic-y creates
++# a small wrapper file in $(obj) (arch/$(SRCARCH)/include/generated/asm)
++
++kbuild-file := $(srctree)/arch/$(SRCARCH)/include/asm/Kbuild
++include $(kbuild-file)
++
++include scripts/Kbuild.include
++
++# Create output directory if not already present
++_dummy := $(shell [ -d $(obj) ] || mkdir -p $(obj))
++
++quiet_cmd_wrap = WRAP    $@
++cmd_wrap = echo "\#include <asm-generic/$*.h>" >$@
++
++all: $(patsubst %, $(obj)/%, $(generic-y))
++
++$(obj)/%.h:
++	$(call cmd,wrap)
++
+diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
+index f89cb87..a57f5bd 100644
+--- a/scripts/Makefile.headersinst
++++ b/scripts/Makefile.headersinst
+@@ -27,8 +27,13 @@ header-y      := $(filter-out %/, $(header-y))
+ install-file  := $(install)/.install
+ check-file    := $(install)/.check
+ 
++# generic-y list all files an architecture uses from asm-generic
++# Use this to build a list of headers which require a wrapper
++wrapper-files := $(filter $(header-y), $(generic-y))
++
+ # all headers files for this dir
+-all-files     := $(header-y) $(objhdr-y)
++header-y      := $(filter-out $(generic-y), $(header-y))
++all-files     := $(header-y) $(objhdr-y) $(wrapper-files)
+ input-files   := $(addprefix $(srctree)/$(obj)/,$(header-y)) \
+                  $(addprefix $(objtree)/$(obj)/,$(objhdr-y))
+ output-files  := $(addprefix $(install)/, $(all-files))
+@@ -47,6 +52,9 @@ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+       cmd_install = \
+         $(PERL) $< $(srctree)/$(obj) $(install) $(SRCARCH) $(header-y); \
+         $(PERL) $< $(objtree)/$(obj) $(install) $(SRCARCH) $(objhdr-y); \
++        for F in $(wrapper-files); do                                   \
++                echo "\#include <asm-generic/$$F>" > $(install)/$$F;    \
++        done;                                                           \
+         touch $@
+ 
+ quiet_cmd_remove = REMOVE  $(unwanted)
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.6.0.6
 
