@@ -1,117 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab1D0IJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:09:46 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59074 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab1D0IJn (ORCPT
+	id S1754613Ab1D0IM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 04:12:26 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62904 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab1D0IMU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:09:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Apr 2011 17:03:04 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
+	Wed, 27 Apr 2011 04:12:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=g5OfpBVIVUmY5K7aKQwGkZms1gWX8iOm8+CFIP1wumnjsn+HfeAqn3IZOP+5LhuMeL
+         7IMplVWAtADxqMeHAz8tqsTKipeUOQ/Uec3f4yrzXxVYbEDClJQF3fowBKG5LsNm28Ha
+         fgckAjyvRGYLzLHqA0R/oFlXMwNKO00aePY1I=
+MIME-Version: 1.0
+In-Reply-To: <20110427165437.bef6967a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<1d9791f27df2341cb6750f5d6279b804151f57f9.1303833417.git.minchan.kim@gmail.com>
+	<20110427165437.bef6967a.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 27 Apr 2011 17:12:19 +0900
+Message-ID: <BANLkTinq7w+cejBgBMuWvGw9htK0YJOvEw@mail.gmail.com>
+Subject: Re: [RFC 1/8] Only isolate page we can handle
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
-Message-Id: <20110427170304.d31c1398.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
-	<232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 01:25:20 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On Wed, Apr 27, 2011 at 4:54 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 27 Apr 2011 01:25:18 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> There are some places to isolate lru page and I believe
+>> users of isolate_lru_page will be growing.
+>> The purpose of them is each different so part of isolated pages
+>> should put back to LRU, again.
+>>
+>> The problem is when we put back the page into LRU,
+>> we lose LRU ordering and the page is inserted at head of LRU list.
+>> It makes unnecessary LRU churning so that vm can evict working set pages
+>> rather than idle pages.
+>>
+>> This patch adds new filter mask when we isolate page in LRU.
+>> So, we don't isolate pages if we can't handle it.
+>> It could reduce LRU churning.
+>>
+>> This patch shouldn't change old behavior.
+>> It's just used by next patches.
+>>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> nitpick below.
+>
+>> ---
+>>  include/linux/swap.h |    3 ++-
+>>  mm/compaction.c      |    2 +-
+>>  mm/memcontrol.c      |    2 +-
+>>  mm/vmscan.c          |   26 ++++++++++++++++++++------
+>>  4 files changed, 24 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index 384eb5f..baef4ad 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -259,7 +259,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>>                                               unsigned int swappiness,
+>>                                               struct zone *zone,
+>>                                               unsigned long *nr_scanned);
+>> -extern int __isolate_lru_page(struct page *page, int mode, int file);
+>> +extern int __isolate_lru_page(struct page *page, int mode, int file,
+>> +                             int not_dirty, int not_mapped);
+>
+> Hmm, which is better to use 4 binary args or a flag with bitmask ?
 
-> In some __zone_reclaim case, we don't want to shrink mapped page.
-> Nonetheless, we have isolated mapped page and re-add it into
-> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
-> 
-> Of course, when we isolate the page, the page might be mapped but
-> when we try to migrate the page, the page would be not mapped.
-> So it could be migrated. But race is rare and although it happens,
-> it's no big deal.
-> 
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Yes. Even I added new flags one more in next patch.
+So I try to use bitmask flag in next version.
+Thanks.
 
 
-Hmm, it seems mm/memcontrol.c::mem_cgroup_isolate_pages() should be updated, too.
+>
+> Thanks,
+> -Kame
+>
+>
 
-But it's okay you start from global LRU.
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
-> ---
->  mm/vmscan.c |   11 ++++++-----
->  1 files changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 71d2da9..e8d6190 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1147,7 +1147,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  
->  static unsigned long isolate_pages_global(unsigned long nr,
->  					struct list_head *dst,
-> -					unsigned long *scanned, int order,
-> +					unsigned long *scanned,
-> +					struct scan_control *sc,
->  					int mode, struct zone *z,
->  					int active, int file)
->  {
-> @@ -1156,8 +1157,8 @@ static unsigned long isolate_pages_global(unsigned long nr,
->  		lru += LRU_ACTIVE;
->  	if (file)
->  		lru += LRU_FILE;
-> -	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
-> -					mode, file, 0, 0);
-> +	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, sc->order,
-> +					mode, file, 0, !sc->may_unmap);
->  }
->  
->  /*
-> @@ -1407,7 +1408,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_to_scan,
-> -			&page_list, &nr_scanned, sc->order,
-> +			&page_list, &nr_scanned, sc,
->  			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
->  					ISOLATE_BOTH : ISOLATE_INACTIVE,
->  			zone, 0, file);
-> @@ -1531,7 +1532,7 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
->  	spin_lock_irq(&zone->lru_lock);
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_pages, &l_hold,
-> -						&pgscanned, sc->order,
-> +						&pgscanned, sc,
->  						ISOLATE_ACTIVE, zone,
->  						1, file);
->  		zone->pages_scanned += pgscanned;
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-- 
+Kind regards,
+Minchan Kim
