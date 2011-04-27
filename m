@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216Ab1D0XVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:21:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46138 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757166Ab1D0XVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:21:22 -0400
-Date: Thu, 28 Apr 2011 09:21:10 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20110428092110.608eb354@notabene.brown>
-In-Reply-To: <20110426135940.GE4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
-	<1303803414-5937-3-git-send-email-mgorman@suse.de>
-	<20110426213758.450f6f49@notabene.brown>
-	<20110426135940.GE4658@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1760209Ab1D0XWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:22:40 -0400
+Received: from smtp104.prem.mail.sp1.yahoo.com ([98.136.44.59]:20003 "HELO
+	smtp104.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757155Ab1D0XWh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 19:22:37 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: elIVThEVM1mlaWDvhIBk_fIlcb0qelb2gll.0CXJEc1gSho
+ 82jQQYMLudYMLXg99aRhRojfdhOvXLXW_xr_kvNzNJ5y7bHe4y7ZyGtruV_0
+ C.JLhCba_KRp7NPO74ZjZpD_qDKWssoSiITIulGutH0urDchrAXb.Bv4cadh
+ fC.c6.PRaOxWHZ.6ssDWDKC_DcfGbmXqsn9Mi8lj991KXaN2RpDGi5enWcey
+ 3NW9jg1jKJgnCGtAq_XWYSaL62IqCxkRQ1GQsdOYPVHAbcoXhOexM0NnbWdM
+ v1vsj9xloZZhbwiEhrzM..70ByqKJp2yGLNqRLnGmP_Zmvrg7zuNd8BENYFU
+ fzfTbQ1KsiRnjMRYJdOd3VepP.ohl8UVB0Gmc6aG05Q--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DB8A53A.4010709@schaufler-ca.com>
+Date: Wed, 27 Apr 2011 16:22:34 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Roberto Sassu <roberto.sassu@polito.it>
+CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
+        ecryptfs-devel@lists.launchpad.net, eparis@redhat.com,
+        sds@tycho.nsa.gov, selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk
+Subject: Re: [RFC][PATCH 4/7] smack: fix label check in smack_kernel_act_as()
+References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it> <1303907657-18366-5-git-send-email-roberto.sassu@polito.it>
+In-Reply-To: <1303907657-18366-5-git-send-email-roberto.sassu@polito.it>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 14:59:40 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+> The function smack_kernel_act_as() must return -EINVAL if the label
+> returned by smack_from_secid() is equal to 'smack_known_invalid.smk_known',
+> which means that no entries in the 'smack_known_list' list matching the
+> security identifier given are found.
 
-> On Tue, Apr 26, 2011 at 09:37:58PM +1000, NeilBrown wrote:
-> > On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > +		/*
-> > > +		 * If there are full empty slabs and we were not forced to
-> > > +		 * allocate a slab, mark this one !pfmemalloc
-> > > +		 */
-> > > +		l3 = cachep->nodelists[numa_mem_id()];
-> > > +		if (!list_empty(&l3->slabs_free) && force_refill) {
-> > > +			struct slab *slabp = virt_to_slab(objp);
-> > > +			slabp->pfmemalloc = false;
-> > > +			clear_obj_pfmemalloc(&objp);
-> > > +			check_ac_pfmemalloc(cachep, ac);
-> > > +			return objp;
-> > > +		}
-> > 
-> > The comment doesn't match the code.  I think you need to remove the words
-> > "full" and "not" assuming the code is correct which it probably is...
-> > 
-> 
-> I'll fix up the comment, you're right, it's confusing.
-> 
-> > But the code seems to be much more complex than Peter's original, and I don't
-> > see the gain.
-> > 
-> 
-> You're right, it is more complex.
-> 
-> > Peter's code had only one 'reserved' flag for each kmem_cache. 
-> 
-> The reserve was set in a per-cpu structure so there was a "lag" time
-> before that information was available to other CPUs. Fine on smaller
-> machines but a bit more of a problem today. 
-> 
-> > You seem to
-> > have one for every slab.  I don't see the point.
-> > It is true that yours is in some sense more fair - but I'm not sure the
-> > complexity is worth it.
-> > 
-> 
-> More fairness was one of the objects.
-> 
-> > Was there some particular reason you made the change?
-> > 
-> 
-> This version survives under considerably more stress than Peter's
-> original version did without requiring the additional complexity of
-> memory reserves.
-> 
+I'll admit that the code here is wrong, but I disagree with the fix.
 
-That is certainly a very compelling argument .... but I still don't get why.
-I'm sorry if I'm being dense, but I still don't see why the complexity buys
-us better stability and I really would like to understand.
+smack_from_secid() will never return NULL, so the check for NULL is
+pointless. Checking for known_invalid is not right either, as the
+Smack philosophy is to return a label in all cases, as is evident
+by the behavior of smack_from_secid(). Thus, the correct change
+would be to remove the error check completely and set the new task
+value to the value obtained from smack_from_secid in all cases.
 
-You don't seem to need the same complexity for SLUB with the justification
-of "SLUB generally maintaining smaller lists than SLAB".
+Besides, where did the caller of this function get a secid that isn't
+going to map to a Smack label?
 
-Presumably these are per-CPU lists of free objects or slabs?  If the things
-on those lists could be used by anyone long lists couldn't hurt.
-So the problem must be that the lists get long while the array_cache is still
-marked as 'pfmemalloc' (or 'reserve' in Peter's patches).
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> ---
+>  security/smack/smack_lsm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index e3c9e54..0e7ed31 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -1415,7 +1415,7 @@ static int smack_kernel_act_as(struct cred *new, u32 secid)
+>  	struct task_smack *new_tsp = new->security;
+>  	char *smack = smack_from_secid(secid);
+>  
+> -	if (smack == NULL)
+> +	if (smack == smack_known_invalid.smk_known)
+>  		return -EINVAL;
+>  
+>  	new_tsp->smk_task = smack;
 
-Is that the problem?  That reserve memory gets locked up in SLAB freelists?
-If so - would that be more easily addressed by effectively reducing the
-'batching' when the array_cache had dipped into reserves, so slabs are
-returned to the VM more promptly?
-
-Probably related, now that you've fixed the comment here (thanks):
-
-+		/*
-+		 * If there are empty slabs on the slabs_free list and we are
-+		 * being forced to refill the cache, mark this one !pfmemalloc.
-+		 */
-+		l3 = cachep->nodelists[numa_mem_id()];
-+		if (!list_empty(&l3->slabs_free) && force_refill) {
-+			struct slab *slabp = virt_to_slab(objp);
-+			slabp->pfmemalloc = false;
-+			clear_obj_pfmemalloc(&objp);
-+			check_ac_pfmemalloc(cachep, ac);
-+			return objp;
-+		}
-
-I'm trying to understand it...
-The context is that a non-MEMALLOC allocation is happening and everything on
-the free lists is reserved for MEMALLOC allocations.
-So if in that case there is a completely free slab on the free list we decide
-that it is OK to mark the current slab as non-MEMALLOC.
-The logic seems to be that we could just release that free slab to the VM,
-then an alloc_page would be able to get it back.  But if we are still well
-below the reserve watermark, then there might be some other allocation that
-is more deserving of the page and we shouldn't just assume we can take
-it with actually calling in to alloc_pages to check that we are no longer
-running on reserves..
-
-So this looks like an optimisation that is wrong.
-
-
-
-BTW, 
-
-
-+	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
-+	if (pfmemalloc) {
-+		struct array_cache *ac = cpu_cache_get(cachep);
-+		slabp->pfmemalloc = true;
-+		ac->pfmemalloc = 1;
-+	}
-+
-
-I think that "= 1"  should be "= true".  :-)
-
-NeilBrown
