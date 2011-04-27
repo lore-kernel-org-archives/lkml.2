@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab1D0SYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:24:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35504 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757233Ab1D0SYR (ORCPT
+	id S933102Ab1D0SZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:25:40 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35662 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab1D0SZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:24:17 -0400
-Date: Wed, 27 Apr 2011 11:24:39 -0700
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: torvalds@linux-foundation.org
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Revert wrong misspelling fixes
-Message-ID: <20110427182439.GA1923@vigoh>
+	Wed, 27 Apr 2011 14:25:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=RCg9cKTYTw0TIWVM6qOWEa1goi/4p4xlfyTR2CrVirehQsgkWw4haDGaNia3Ru1uCs
+         4Ex7KP/pwTVjDsZDInbAiC918n5BiBHlUcx2uRfcLOiFiugtLXAx9atq+4OVMVGMySxt
+         eYMT0acL2fYf6AOaLvTqmScQTE2V6L2og2TNk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+References: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 27 Apr 2011 14:25:17 -0400
+X-Google-Sender-Auth: FTW3V2HHDPxHxWSxQbAi17h11yI
+Message-ID: <BANLkTinG+ooNRH-VUjKdaHixbGCwk5XoXA@mail.gmail.com>
+Subject: Re: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+On Wed, Apr 27, 2011 at 14:13, Andrea Righi wrote:
+> Introduce a new fadvise flag to drop page cache pages of a single
+> filesystem.
+>
+> At the moment it is possible to drop page cache pages via
+> /proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+>
+> The first method drops the whole page cache while the second can be used
+> to drop page cache pages of a single file descriptor. However, there's
+> not a simple way to drop all the pages of a filesystem (we could scan
+> all the file descriptors and use posix_fadvise(POSIX_FADV_DONTNEED), but
+> this solution obviously doesn't scale well).
 
-Please pull this for undoing the wrong fixes made by codespell as pointed by
-you and Ingo.
-
-
-Lucas De Marchi
-
-
-
-The following changes since commit 8e10cd74342c7f5ce259cceca36f6eba084f5d58:
-
-  Linux 2.6.39-rc5 (2011-04-26 20:48:50 -0700)
-
-are available in the git repository at:
-  git://git.profusion.mobi/users/lucas/linux-2.6.git spell-fix
-
-Lucas De Marchi (1):
-      Revert wrong fixes for common misspellings
-
- arch/arm/mach-davinci/dm355.c                |    2 +-
- arch/arm/mach-davinci/dm644x.c               |    2 +-
- arch/powerpc/include/asm/uninorth.h          |    2 +-
- drivers/infiniband/hw/qib/qib_iba6120.c      |    2 +-
- drivers/infiniband/hw/qib/qib_iba7220.c      |    2 +-
- drivers/infiniband/hw/qib/qib_iba7322.c      |    2 +-
- drivers/media/radio/radio-sf16fmr2.c         |    2 +-
- drivers/mtd/nand/diskonchip.c                |    2 +-
- drivers/pcmcia/pcmcia_resource.c             |    2 +-
- drivers/staging/rt2860/common/cmm_data_pci.c |    2 +-
- drivers/staging/rt2860/common/cmm_data_usb.c |    2 +-
- drivers/staging/spectra/ffsport.c            |    2 +-
- drivers/staging/tidspbridge/dynload/cload.c  |    2 +-
- drivers/staging/tty/specialix.c              |    2 +-
- fs/btrfs/ctree.h                             |    2 +-
- fs/ocfs2/ocfs2_fs.h                          |    2 +-
- net/l2tp/l2tp_ip.c                           |    2 +-
- net/sctp/ulpevent.c                          |    2 +-
- sound/aoa/codecs/tas.c                       |    2 +-
- 19 files changed, 19 insertions(+), 19 deletions(-)
+what if you open the mount point and use POSIX_FADV_DONTNEED on that
+dir handle ?  if you required write access for that level, it'd also
+implicitly take care of the permission issue.  but maybe this is just
+trying to fit existing code in the wrong way.
+-mike
