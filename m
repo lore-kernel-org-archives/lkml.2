@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab1D0Gmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 02:42:37 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51874 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab1D0Gmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 02:42:36 -0400
-Message-ID: <0A4FA4CFE83C4DD4BA36491027E93552@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Sergei Shtylyov" <sshtylyov@mvista.com>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Kevin Hilman \(supporter:TI DAVINCI MACHIN...,commit_signer:15/17=88%\)" 
-	<khilman@ti.com>,
-        "Russell King \(maintainer:ARM PORT\)" <linux@arm.linux.org.uk>,
-        "Michael Williamson \(commit_signer:6/17=35%\)" 
-	<michael.williamson@criticallink.com>,
-        "Cyril Chemparathy \(commit_signer:3/17=18%\)" <cyril@ti.com>,
-        "Sergei Shtylyov \(commit_signer:2/17=12%\)" 
-	<sshtylyov@ru.mvista.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-4-git-send-email-subhasish@mistralsolutions.com> <4DB6A736.3030609@mvista.com>
-In-Reply-To: <4DB6A736.3030609@mvista.com>
-Subject: Re: [PATCH v4 03/11] da850: pruss platform specific additions.
-Date: Wed, 27 Apr 2011 12:13:12 +0530
-Organization: Mistral Solutions
+	id S1753090Ab1D0GoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 02:44:12 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50529 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765Ab1D0GoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 02:44:10 -0400
+Date: Wed, 27 Apr 2011 08:43:42 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+Message-ID: <20110427064342.GE17079@elte.hu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org>
+ <1303407662-15564-2-git-send-email-acme@infradead.org>
+ <20110422063429.GA16643@elte.hu>
+ <20110422080604.GA22611@elte.hu>
+ <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <1303809958.20212.219.camel@twins>
+ <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=response
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
->>   #include<mach/edma.h>
->> @@ -73,6 +75,7 @@ extern unsigned int da850_max_speed;
->>   #define DA8XX_DDR2_CTL_BASE 0xb0000000
->>   #define DA8XX_ARM_RAM_BASE 0xffff0000
->>   #define DA8XX_SHARED_RAM_BASE 0x80000000
->> +#define DA8XX_PRUSS_MEM_BASE 0x01C30000
->
->    Keep the list sorted please. Also, this macro doesn't seem used outside 
-> devices-da8xx.c, so should be moved there...
+* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
 
-SG - But would it not be better to have all device addresses at the same 
-place.
- 
+> On Tue, 26 Apr 2011, Peter Zijlstra wrote:
+> 
+> > > That's why people use libpfm4.  or PAPI.  And they do.
+> > 
+> > And how is typing in hex numbers different from typing in model specific
+> > event names? 
+> 
+> Reall... quick, tell me what event 0x53cf28 corresponds to on a core2.
+> 
+> Now if I said L2_IFETCH:BOTH_CORES you know several things about what it is.
 
+Erm, that assumes you already know that magic incantation. Most of the users 
+who want to do measurements and profiling do not know that. So there's little 
+difference between:
+
+ - someone shows them the 0x53cf28 magic code
+ - someone shows them the L2_IFETCH:BOTH_CORES magic symbol
+
+So you while hexa values have like 10% utility, the stupid, vendor-specific 
+event names you are pushing here have like 15% utility.
+
+In perf we are aiming for 100% utility, where if someone knows something about 
+CPUs and can type 'cycles', 'instructions' or 'branches', will get the obvious 
+result.
+
+This is not a difficult usability concept really.
+
+Thanks,
+
+	Ingo
