@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab1D0NqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756090Ab1D0NqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:46:18 -0400
-Date: Wed, 27 Apr 2011 15:46:13 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Thomas Sattler <tsattler@gmx.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-Message-ID: <20110427134613.GI32590@random.random>
-References: <4DAF6C0B.3070009@gmx.de>
+	id S932648Ab1D0NrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:47:11 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:33258 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759120Ab1D0NrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 09:47:09 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 05/10] plat-nomadik: add function to read GPIO pull down status
+Date: Wed, 27 Apr 2011 15:13:54 +0200
+Message-ID: <1303910034-3435-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAF6C0B.3070009@gmx.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 01:28:11AM +0200, Thomas Sattler wrote:
-> Hi there ...
-> 
-> While running firefox (>50 open Tabs), khugepaged jumped to 99.99%
-> (according to 'iotop').  I killed firefox and nearly all running
-> programs but khugepaged was still at 99.99% IO while the system
-> was almost idle. I waited about 10 minutes, no improvement, so
-> I rebooted the machine.
-> 
-> I observed this since 2.6.38 (I never run 2.6.37). This time the
-> system was still responsive. When I observed the same thing with
-> 2.6.38.x (x<3), the system became unresponsive within minutes
-> after khugepaged hit 99%, see http://lkml.org/lkml/2011/4/7/306
-> 
-> All this happened five times since 2.6.38 became stable. It does
-> not happen at boot time, but days (or weeks) later.
+From: Rickard Andersson <rickard.andersson@stericsson.com>
 
-With only this info, I'm unsure what it could be, maybe something gets
-corrupt in the vma layout and khugepaged flips on it... If this was a
-race in khugepaged it shouldn't be only you triggering it.
+Signed-off-by: Rickard Andersson <rickard.andersson@stericsson.com>
+Reviewed-by: Martin Persson <martin.persson@stericsson.com>
+[Split off from larger patch]
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/plat-nomadik/gpio.c              |   34 +++++++++++++++++++++++++---
+ arch/arm/plat-nomadik/include/plat/gpio.h |    2 +
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-Could you press SYSRQ+l next time it happens?
+diff --git a/arch/arm/plat-nomadik/gpio.c b/arch/arm/plat-nomadik/gpio.c
+index e6d62b9..978d26c 100644
+--- a/arch/arm/plat-nomadik/gpio.c
++++ b/arch/arm/plat-nomadik/gpio.c
+@@ -55,6 +55,7 @@ struct nmk_gpio_chip {
+ 	u32 fwimsc;
+ 	u32 slpm;
+ 	u32 enabled;
++	u32 pull_up;
+ };
+ 
+ static struct nmk_gpio_chip *
+@@ -101,16 +102,22 @@ static void __nmk_gpio_set_pull(struct nmk_gpio_chip *nmk_chip,
+ 	u32 pdis;
+ 
+ 	pdis = readl(nmk_chip->addr + NMK_GPIO_PDIS);
+-	if (pull == NMK_GPIO_PULL_NONE)
++	if (pull == NMK_GPIO_PULL_NONE) {
+ 		pdis |= bit;
+-	else
++		nmk_chip->pull_up &= ~bit;
++	} else {
+ 		pdis &= ~bit;
++	}
++
+ 	writel(pdis, nmk_chip->addr + NMK_GPIO_PDIS);
+ 
+-	if (pull == NMK_GPIO_PULL_UP)
++	if (pull == NMK_GPIO_PULL_UP) {
++		nmk_chip->pull_up |= bit;
+ 		writel(bit, nmk_chip->addr + NMK_GPIO_DATS);
+-	else if (pull == NMK_GPIO_PULL_DOWN)
++	} else if (pull == NMK_GPIO_PULL_DOWN) {
++		nmk_chip->pull_up &= ~bit;
+ 		writel(bit, nmk_chip->addr + NMK_GPIO_DATC);
++	}
+ }
+ 
+ static void __nmk_gpio_make_input(struct nmk_gpio_chip *nmk_chip,
+@@ -925,6 +932,25 @@ void nmk_gpio_wakeups_resume(void)
+ 	}
+ }
+ 
++/*
++ * Read the pull up/pull down status.
++ * A bit set in 'pull_up' means that pull up
++ * is selected if pull is enabled in PDIS register.
++ * Note: only pull up/down set via this driver can
++ * be detected due to HW limitations.
++ */
++void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up)
++{
++	if (gpio_bank < NUM_BANKS) {
++		struct nmk_gpio_chip *chip = nmk_gpio_chips[gpio_bank];
++
++		if (!chip)
++			return;
++
++		*pull_up = chip->pull_up;
++	}
++}
++
+ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ {
+ 	struct nmk_gpio_platform_data *pdata = dev->dev.platform_data;
+diff --git a/arch/arm/plat-nomadik/include/plat/gpio.h b/arch/arm/plat-nomadik/include/plat/gpio.h
+index 1b9f6f0..ea19a5b 100644
+--- a/arch/arm/plat-nomadik/include/plat/gpio.h
++++ b/arch/arm/plat-nomadik/include/plat/gpio.h
+@@ -78,6 +78,8 @@ extern int nmk_gpio_get_mode(int gpio);
+ extern void nmk_gpio_wakeups_suspend(void);
+ extern void nmk_gpio_wakeups_resume(void);
+ 
++extern void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up);
++
+ /*
+  * Platform data to register a block: only the initial gpio/irq number.
+  */
+-- 
+1.7.3.2
 
-echo l >/proc/sysrq-trigger will work too. That should tell us where
-khugepaged loops and from there we can guess which part of the VM is
-corrupt.
-
-Please also verify not to have any oops in "dmesg" by the time
-khugepaged start spinning. The output of sysrq+l will also end up in
-dmesg so if you post all the dmesg output we'll see if something else
-happened before it.
-
-Thanks a lot and sorry for this (though at this point I'm unsure if
-khugepaged is the source problem or maybe more likely the symptom of
-something else),
-
-Andrea
