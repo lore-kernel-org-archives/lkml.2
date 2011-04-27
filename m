@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab1D0S12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:27:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab1D0S11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:27:27 -0400
-Message-ID: <4DB8600C.8080000@suse.com>
-Date: Wed, 27 Apr 2011 14:27:24 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1757337Ab1D0SdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:33:12 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:46279 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab1D0SdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 14:33:10 -0400
+Date: Wed, 27 Apr 2011 12:33:08 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Message-ID: <20110427183308.GA16716@parisc-linux.org>
+References: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] hung_task_timeout: configurable default
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patch allows the default value for sysctl_hung_task_timeout_secs
- to be set at build time. The feature carries virtually no overhead,
- so it makes sense to keep it enabled. On heavily loaded systems, though,
- it can end up triggering stack traces when there is no bug other than
- the system being underprovisioned. We use this patch to keep the hung task
- facility available but disabled at boot-time.
+On Wed, Apr 27, 2011 at 08:13:47PM +0200, Andrea Righi wrote:
+> @@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>  			invalidate_mapping_pages(mapping, start_index,
+>  						end_index);
+>  		break;
+> +	case POSIX_FADV_DONTNEED_FS:
+> +		if (capable(CAP_SYS_ADMIN))
+> +			drop_pagecache_sb(file->f_dentry->d_sb, NULL);
+> +		else
+> +			ret = -EPERM;
+> +		break;
+>  	default:
+>  		ret = -EINVAL;
+>  	}
 
- The default of 120 seconds is preserved. As a note, commit e162b39a may
- have accidentally reverted commit fb822db4, which raised the default from
- 120 seconds to 480 seconds.
+Mmm ... what if I open /dev/sdxyz and call fadvise() on it?  I think
+you end up flushing /dev's page cache entries, instead of the filesystem
+which is on /dev/sdxyz.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- kernel/hung_task.c |    3 ++-
- lib/Kconfig.debug  |   14 ++++++++++++++
- 2 files changed, 16 insertions(+), 1 deletion(-)
+If I understand correctly, you want mapping->host->i_sb instead of
+file->f_dentry->d_sb.
 
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -33,7 +33,8 @@ unsigned long __read_mostly sysctl_hung_
- /*
-  * Zero means infinite timeout - no checking done:
-  */
--unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
-+unsigned long __read_mostly sysctl_hung_task_timeout_secs =
-+					CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
- 
- unsigned long __read_mostly sysctl_hung_task_warnings = 10;
- 
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -214,6 +214,20 @@ config DETECT_HUNG_TASK
- 	  enabled then all held locks will also be reported. This
- 	  feature has negligible overhead.
- 
-+config DEFAULT_HUNG_TASK_TIMEOUT
-+	int "Default timeout for hung task detection (in seconds)"
-+	depends on DETECT_HUNG_TASK
-+	default 120
-+	help
-+	  This option controls the default timeout (in seconds) used
-+	  to determine when a task has become non-responsive and should
-+	  be considered hung.
-+
-+	  It can be adjusted at runtime via the kernel.hung_task_timeout
-+	  sysctl or by writing a value to /proc/sys/kernel/hung_task_timeout.
-+
-+	  A timeout of 0 disables the check.  The default is 120 seconds.
-+
- config BOOTPARAM_HUNG_TASK_PANIC
- 	bool "Panic (Reboot) On Hung Tasks"
- 	depends on DETECT_HUNG_TASK
 -- 
-Jeff Mahoney
-SUSE Labs
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
