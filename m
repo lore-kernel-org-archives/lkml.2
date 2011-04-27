@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1D0JbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:31:10 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56182 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754050Ab1D0JbI (ORCPT
+	id S1755873Ab1D0Jb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:31:27 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:41238 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755563Ab1D0JbZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:31:08 -0400
-Date: Wed, 27 Apr 2011 10:29:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 090/173] USB: serial/kobil_sct, fix potential tty NULL
- dereference
-Message-ID: <20110427102903.62b2ae09@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DB740A3.4090702@suse.cz>
-References: <20110425200236.905912775@pcw.home.local>
-	<4DB6994B.3060204@suse.cz>
-	<20110426195342.GB19594@1wt.eu>
-	<4DB740A3.4090702@suse.cz>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 27 Apr 2011 05:31:25 -0400
+Subject: Re: [PATCH] kmemleak: Never return a pointer you didn't 'get'
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1303385972-2518-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1303385972-2518-1-git-send-email-ext-phil.2.carmody@nokia.com>
+Organization: ARM Limited
+Date: Wed, 27 Apr 2011 10:31:20 +0100
+Message-ID: <1303896680.15101.1.camel@e102109-lin.cambridge.arm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 27 Apr 2011 09:31:20.0862 (UTC) FILETIME=[DE1C2BE0:01CC04BD]
+X-MC-Unique: 111042710312203501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Ok, but this doesn't fix the bug (the URB should be killed or something
-> >> similar in that kernel), it only makes the window smaller.
-> >
-> > OK I get it now, it requires patch 4a90f09b which is quite not some
-> > suitable material for -longterm.
+On Thu, 2011-04-21 at 12:39 +0100, Phil Carmody wrote:
+> Old - If you don't get the last pointer that you looked at, then it will
+> still be put, as there's no way of knowing you didn't get it.
 > 
-> Yeah and perhaps some other changes (like adding hangup support).
+> New - If you didn't get it, then it refers to something deleted, and
+> your work is done, so return NULL.
 > 
-> > Do you think it's better to completely remove this patch than making
-> > one think the risk of bug is gone while it is not ? Unless we find
-> > something more reliable, I'd rather drop the patch.
-> 
-> To be honest I don't know what's better :). Maybe I would incline to the 
-> drop-it side, but leaving up to you.
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-I'm not sure why a .27 is still maintained to be honest but the reality
-is that the lack of tty refcounting on hangup in old kernels is
-exploitable in many cases via vhangup() and other approaches combined
-with lack of NULL page protection. In several places NULL tty means
-NULL->method() is invoked which on an old kernel where a user process has
-mapped user virtual address zero means you just got owned.
+Good catch. But I think the code may look slightly simpler as below:
 
-This is all well known stuff. SELinux will mitigate fairly effectively on
-some vendors systems.
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index c1d5867..aacee45 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -1414,9 +1414,12 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 	++(*pos);
+ 
+ 	list_for_each_continue_rcu(n, &object_list) {
+-		next_obj = list_entry(n, struct kmemleak_object, object_list);
+-		if (get_object(next_obj))
++		struct kmemleak_object *obj =
++			list_entry(n, struct kmemleak_object, object_list);
++		if (get_object(obj)) {
++			next_obj = obj;
+ 			break;
++		}
+ 	}
+ 
+ 	put_object(prev_obj);
 
-Alan
+
+Thanks.
+
+-- 
+Catalin
+
+
