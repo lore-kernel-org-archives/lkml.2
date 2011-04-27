@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab1D0JiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:38:13 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:43641 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756422Ab1D0JiK (ORCPT
+	id S1756632Ab1D0JlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:41:05 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:40275 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755503Ab1D0JlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:38:10 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
-        <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V3 1/7] dmaengine/dw_dmac: call dwc_descriptor_complete from dwc_control with lock held
-Date: Wed, 27 Apr 2011 15:06:51 +0530
-Message-ID: <8302fa6952d261789c8f0d745ff72f8d0e2d9b97.1303896567.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1303896566.git.viresh.kumar@st.com>
-References: <cover.1303896566.git.viresh.kumar@st.com>
+	Wed, 27 Apr 2011 05:41:03 -0400
+Message-ID: <4DB7E497.8070205@st.com>
+Date: Wed, 27 Apr 2011 15:10:39 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "vinod.koul@intel.com" <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>
+Subject: Re: [PATCH V3 0/7] dmaengine/dw_dmac updates
+References: <cover.1303896566.git.viresh.kumar@st.com> <cover.1303896566.git.viresh.kumar@st.com>
+In-Reply-To: <cover.1303896566.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dwc_descriptor_complete must always be called with channel lock held. This patch
-moves unlock code, in dwc_control(), untill after dwc_descriptor_complete is
-called.
+On 04/27/2011 03:06 PM, Viresh KUMAR wrote:
+> This patchset fixes few issues and extends its support.
+> 
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dw_dmac.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Sorry for two copies of same pathset :(
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index b15c32c..b8985af 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -827,12 +827,12 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	list_splice_init(&dwc->queue, &list);
- 	list_splice_init(&dwc->active_list, &list);
- 
--	spin_unlock_bh(&dwc->lock);
--
- 	/* Flush all pending and queued descriptors */
- 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
- 		dwc_descriptor_complete(dwc, desc);
- 
-+	spin_unlock_bh(&dwc->lock);
-+
- 	return 0;
- }
- 
 -- 
-1.7.3.4
-
+viresh
