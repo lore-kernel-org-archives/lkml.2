@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab1D0OFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 10:05:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932858Ab1D0OFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 10:05:47 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH 2/2] blkdev: Simple cleanup in blkdev_issue_zeroout()
-References: <1303303172-22404-1-git-send-email-lczerner@redhat.com>
-	<1303303172-22404-2-git-send-email-lczerner@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 27 Apr 2011 10:05:42 -0400
-Message-ID: <x4962pz4wnd.fsf@segfault.boston.devel.redhat.com>
+	id S933051Ab1D0OGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 10:06:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41968 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932858Ab1D0OGl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 10:06:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Vieshgy48o17Iv8GN4opRLkpmORTpNJDKqubNh2dTCcq9xz7Y6lBOHVfSMbD1MOb3i
+         7a7goRq+27sSKNfrQdNLlMX/mURgq0pZ/zdvbYxjXw1FS9HFpG90jhO8BVGsBsxhTlzm
+         IpmhD08E3B5OJIMv4FKC8/fCjAjvUKwte/vzU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <Pine.LNX.4.44L0.1104261447481.2035-100000@iolanthe.rowland.org>
+References: <BANLkTi=-DFfdiBKZzRBxF-yMJFtWnzuk1g@mail.gmail.com> <Pine.LNX.4.44L0.1104261447481.2035-100000@iolanthe.rowland.org>
+From: Rabin Vincent <rabin@rab.in>
+Date: Wed, 27 Apr 2011 19:36:00 +0530
+X-Google-Sender-Auth: seCQdnrQA7Hs7JFY_pDnCAhwpY8
+Message-ID: <BANLkTimxLjvq2GC8_TJJk9OXZ9fPc-JKiA@mail.gmail.com>
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org,
+        Peter Maydell <peter.maydell@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On Wed, Apr 27, 2011 at 00:21, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Tue, 26 Apr 2011, Rabin Vincent wrote:
+>> In my case it's this writel() in ehci-hub.c that gets chopped into
+>> strbs:
+>>
+>>       /* force reset to complete */
+>>       ehci_writel(ehci, temp & ~(PORT_RWC_BITS | PORT_RESET),
+>>                               status_reg);
+>
+> Why would that get messed up?  The status_reg variable doesn't have any
+> __atribute__((packed)) associated with it.
 
-> In blkdev_issue_zeroout() we are submitting regular WRITE bios, so we do
-> not need to check for -EOPNOTSUPP specifically in case of error. Also
-> there is no need to have label submit: because there is no way to jump
-> out from the while cycle without an error and we really want to exit,
-> rather than try again.
+The initialization of status_reg is:
 
-Looks good.  While we're at it:
+	u32 __iomem *status_reg
+		= &ehci->regs->port_status[(wIndex & 0xff) - 1];
 
-	while (nr_sects != 0) {
-		sz = min((sector_t) PAGE_SIZE >> 9 , nr_sects);
-		if (sz == 0)
-			/* bio has maximum size possible */
-			break;
-
-how could sz be equal to zero there?
-
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-
-Cheers,
-Jeff
+where ehci->regs is a pointer to the packed struct ehci_regs.  So, this
+is the same problem of casting pointers to stricter alignment.
