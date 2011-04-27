@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab1D0Mg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:36:58 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41434 "EHLO
+	id S1759190Ab1D0MhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:37:06 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54954 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759156Ab1D0Mgy (ORCPT
+	by vger.kernel.org with ESMTP id S1759174Ab1D0MhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:36:54 -0400
-X-Sasl-enc: n5mh5yqrCai4cYrjs4Y4sBrOJ3YOFun092R5OetyPRBn 1303907813
+	Wed, 27 Apr 2011 08:37:00 -0400
+X-Sasl-enc: 6w2+vmTBsFaDPCENp5v5NHGlRpu3nZzKPV7Kz0z5/+Sg 1303907819
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,179 +17,241 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         casey@schaufler-ca.com, eparis@redhat.com, sds@tycho.nsa.gov,
         selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 6/7] security: new LSM hook security_file_getsecid()
-Date: Wed, 27 Apr 2011 14:34:14 +0200
-Message-Id: <1303907657-18366-7-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 7/7] ima: added new LSM conditions in the policy
+Date: Wed, 27 Apr 2011 14:34:15 +0200
+Message-Id: <1303907657-18366-8-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----9E53A120786B392C6DD45B0D0888154C"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----7980DD12C8618D03EA5E05F812D0F250"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------9E53A120786B392C6DD45B0D0888154C
+------7980DD12C8618D03EA5E05F812D0F250
 
-The new LSM hook security_file_getsecid() and its implementation in the
-capability module, SELinux and SMACK allows to obtain the security
-identifier associated to a file descriptor.
+The new parameters 'fowner_user', 'fowner_role' and 'fowner_type' are new
+LSM conditions that allow to measure inodes whose opened file descriptor
+has the label given as a value.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- include/linux/security.h   |   12 ++++++++++++
- security/capability.c      |    6 ++++++
- security/security.c        |    6 ++++++
- security/selinux/hooks.c   |    7 +++++++
- security/smack/smack_lsm.c |   11 +++++++++++
- 5 files changed, 42 insertions(+), 0 deletions(-)
+ Documentation/ABI/testing/ima_policy |    7 ++++-
+ security/integrity/ima/ima.h         |    4 +-
+ security/integrity/ima/ima_api.c     |    4 +-
+ security/integrity/ima/ima_main.c    |    4 +-
+ security/integrity/ima/ima_policy.c  |   45 +++++++++++++++++++++++++++++----
+ 5 files changed, 51 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index ca02f17..6e73a1a 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -630,6 +630,11 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	to receive an open file descriptor via socket IPC.
-  *	@file contains the file structure being received.
-  *	Return 0 if permission is granted.
-+ * @file_getsecid:
-+ *	Get the secid associated with the file descriptor.
-+ *	@file contains a pointer to the file descriptor.
-+ *	@secid contains a pointer to the location where result will be saved.
-+ *	In case of failure, @secid will be set to zero.
-  *
-  * Security hook for dentry
-  *
-@@ -1492,6 +1497,7 @@ struct security_operations {
- 	int (*file_send_sigiotask) (struct task_struct *tsk,
- 				    struct fown_struct *fown, int sig);
- 	int (*file_receive) (struct file *file);
-+	void (*file_getsecid)(const struct file *file, u32 *secid);
- 	int (*dentry_open) (struct file *file, const struct cred *cred);
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 6cd6dae..ee49345 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -18,7 +18,8 @@ Description:
+ 		condition:= base | lsm
+ 			base:	[[func=] [mask=] [fsmagic=] [uid=]]
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+-				 [obj_user=] [obj_role=] [obj_type=]]
++				 [obj_user=] [obj_role=] [obj_type=]
++				 [fowner_user=] [fowner_role=] [fowner_type=]]
  
- 	int (*task_create) (unsigned long clone_flags);
-@@ -1751,6 +1757,7 @@ int security_file_set_fowner(struct file *file);
- int security_file_send_sigiotask(struct task_struct *tsk,
- 				 struct fown_struct *fown, int sig);
- int security_file_receive(struct file *file);
-+void security_file_getsecid(const struct file *file, u32 *secid);
- int security_dentry_open(struct file *file, const struct cred *cred);
- int security_task_create(unsigned long clone_flags);
- int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
-@@ -2251,6 +2258,11 @@ static inline int security_file_receive(struct file *file)
- 	return 0;
- }
+ 		base: 	func:= [BPRM_CHECK][FILE_MMAP][FILE_CHECK]
+ 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
+@@ -46,6 +47,10 @@ Description:
+ 		all files mmapped executable in file_mmap, and all files
+ 		open for read by root in do_filp_open.
  
-+static inline void security_file_getsecid(const struct file *file, u32 *secid)
-+{
-+	*secid = 0;
-+}
++		LSM conditions starting with obj_ refer to security attributes
++		of inodes while those starting with fowner_ involve file
++		descriptors.
 +
- static inline int security_dentry_open(struct file *file,
- 				       const struct cred *cred)
+ 		Examples of LSM specific definitions:
+ 
+ 		SELinux:
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 08408bd..3a05625 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -110,7 +110,7 @@ struct ima_iint_cache {
+ };
+ 
+ /* LIM API function definitions */
+-int ima_must_measure(struct inode *inode, int mask, int function);
++int ima_must_measure(struct file *file, int mask, int function);
+ int ima_collect_measurement(struct ima_iint_cache *iint, struct file *file);
+ void ima_store_measurement(struct ima_iint_cache *iint, struct file *file,
+ 			   const unsigned char *filename);
+@@ -128,7 +128,7 @@ struct ima_iint_cache *ima_iint_find(struct inode *inode);
+ /* IMA policy related functions */
+ enum ima_hooks { FILE_CHECK = 1, FILE_MMAP, BPRM_CHECK };
+ 
+-int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask);
++int ima_match_policy(struct file *file, enum ima_hooks func, int mask);
+ void ima_init_policy(void);
+ void ima_update_policy(void);
+ ssize_t ima_parse_add_rule(char *);
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index da36d2c..d815392 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -108,11 +108,11 @@ err_out:
+  * Return 0 to measure. For matching a DONT_MEASURE policy, no policy,
+  * or other error, return an error code.
+ */
+-int ima_must_measure(struct inode *inode, int mask, int function)
++int ima_must_measure(struct file *file, int mask, int function)
  {
-diff --git a/security/capability.c b/security/capability.c
-index 2984ea4..fcb569d 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -349,6 +349,11 @@ static int cap_file_receive(struct file *file)
- 	return 0;
+ 	int must_measure;
+ 
+-	must_measure = ima_match_policy(inode, function, mask);
++	must_measure = ima_match_policy(file, function, mask);
+ 	return must_measure ? 0 : -EACCES;
  }
  
-+static void cap_file_getsecid(const struct file *file, u32 *secid)
-+{
-+	*secid = 0;
-+}
-+
- static int cap_dentry_open(struct file *file, const struct cred *cred)
- {
- 	return 0;
-@@ -953,6 +958,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, file_set_fowner);
- 	set_to_cap_if_null(ops, file_send_sigiotask);
- 	set_to_cap_if_null(ops, file_receive);
-+	set_to_cap_if_null(ops, file_getsecid);
- 	set_to_cap_if_null(ops, dentry_open);
- 	set_to_cap_if_null(ops, task_create);
- 	set_to_cap_if_null(ops, cred_alloc_blank);
-diff --git a/security/security.c b/security/security.c
-index 1011423..9973dab 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -688,6 +688,12 @@ int security_file_receive(struct file *file)
- 	return security_ops->file_receive(file);
- }
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 39d66dc..9eaca61 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -65,7 +65,7 @@ static void ima_rdwr_violation_check(struct file *file)
+ 		goto out;
+ 	}
  
-+void security_file_getsecid(const struct file *file, u32 *secid)
-+{
-+	security_ops->file_getsecid(file, secid);
-+}
-+EXPORT_SYMBOL(security_file_getsecid);
-+
- int security_dentry_open(struct file *file, const struct cred *cred)
- {
- 	int ret;
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6772687..e1e787c 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3179,6 +3179,12 @@ static int selinux_file_receive(struct file *file)
- 	return file_has_perm(cred, file, file_to_av(file));
- }
+-	rc = ima_must_measure(inode, MAY_READ, FILE_CHECK);
++	rc = ima_must_measure(file, MAY_READ, FILE_CHECK);
+ 	if (rc < 0)
+ 		goto out;
  
-+static void selinux_file_getsecid(const struct file *file, u32 *secid)
-+{
-+	struct file_security_struct *fsec = file->f_security;
-+	*secid = fsec->sid;
-+}
-+
- static int selinux_dentry_open(struct file *file, const struct cred *cred)
- {
- 	struct file_security_struct *fsec;
-@@ -5498,6 +5504,7 @@ static struct security_operations selinux_ops = {
- 	.file_set_fowner =		selinux_file_set_fowner,
- 	.file_send_sigiotask =		selinux_file_send_sigiotask,
- 	.file_receive =			selinux_file_receive,
-+	.file_getsecid =		selinux_file_getsecid,
+@@ -127,7 +127,7 @@ static int process_measurement(struct file *file, const unsigned char *filename,
+ 	if (!ima_initialized || !S_ISREG(inode->i_mode))
+ 		return 0;
  
- 	.dentry_open =			selinux_dentry_open,
+-	rc = ima_must_measure(inode, mask, function);
++	rc = ima_must_measure(file, mask, function);
+ 	if (rc != 0)
+ 		return rc;
+ retry:
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index d661afb..115c2e7 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -27,9 +27,10 @@
  
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 6612ba1..a583736 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -1304,6 +1304,16 @@ static int smack_file_receive(struct file *file)
- 	return smk_curacc(file->f_security, may, &ad);
- }
+ enum ima_action { UNKNOWN = -1, DONT_MEASURE = 0, MEASURE };
  
-+/**
-+ * smack_file_getsecid - Extract file descriptor's security id
-+ * @file: file descriptor to extract the info from
-+ * @secid: where result will be saved
-+ */
-+static void smack_file_getsecid(const struct file *file, u32 *secid)
-+{
-+	*secid = smack_to_secid(file->f_security);
-+}
-+
- /*
-  * Task hooks
+-#define MAX_LSM_RULES 6
++#define MAX_LSM_RULES 9
+ enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
+-	LSM_SUBJ_USER, LSM_SUBJ_ROLE, LSM_SUBJ_TYPE
++	LSM_SUBJ_USER, LSM_SUBJ_ROLE, LSM_SUBJ_TYPE,
++	LSM_FOWNER_USER, LSM_FOWNER_ROLE, LSM_FOWNER_TYPE
+ };
+ 
+ struct ima_measure_rule_entry {
+@@ -96,9 +97,10 @@ __setup("ima_tcb", default_policy_setup);
+  * Returns true on rule match, false on failure.
   */
-@@ -3434,6 +3444,7 @@ struct security_operations smack_ops = {
- 	.file_set_fowner = 		smack_file_set_fowner,
- 	.file_send_sigiotask = 		smack_file_send_sigiotask,
- 	.file_receive = 		smack_file_receive,
-+	.file_getsecid =		smack_file_getsecid,
+ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+-			    struct inode *inode, enum ima_hooks func, int mask)
++			    struct file *file, enum ima_hooks func, int mask)
+ {
+ 	struct task_struct *tsk = current;
++	struct inode *inode = file->f_dentry->d_inode;
+ 	int i;
  
- 	.cred_alloc_blank =		smack_cred_alloc_blank,
- 	.cred_free =			smack_cred_free,
+ 	if ((rule->flags & IMA_FUNC) && rule->func != func)
+@@ -112,7 +114,7 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+ 		return false;
+ 	for (i = 0; i < MAX_LSM_RULES; i++) {
+ 		int rc = 0;
+-		u32 osid, sid;
++		u32 osid, sid, fsid;
+ 
+ 		if (!rule->lsm[i].rule)
+ 			continue;
+@@ -137,6 +139,15 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+ 							Audit_equal,
+ 							rule->lsm[i].rule,
+ 							NULL);
++		case LSM_FOWNER_USER:
++		case LSM_FOWNER_ROLE:
++		case LSM_FOWNER_TYPE:
++			security_file_getsecid(file, &fsid);
++			rc = security_filter_rule_match(fsid,
++							rule->lsm[i].type,
++							Audit_equal,
++							rule->lsm[i].rule,
++							NULL);
+ 		default:
+ 			break;
+ 		}
+@@ -159,14 +170,14 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+  * as elements in the list are never deleted, nor does the list
+  * change.)
+  */
+-int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
++int ima_match_policy(struct file *file, enum ima_hooks func, int mask)
+ {
+ 	struct ima_measure_rule_entry *entry;
+ 
+ 	list_for_each_entry(entry, ima_measure, list) {
+ 		bool rc;
+ 
+-		rc = ima_match_rules(entry, inode, func, mask);
++		rc = ima_match_rules(entry, file, func, mask);
+ 		if (rc)
+ 			return entry->action;
+ 	}
+@@ -222,6 +233,7 @@ enum {
+ 	Opt_measure = 1, Opt_dont_measure,
+ 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+ 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
++	Opt_fowner_user, Opt_fowner_role, Opt_fowner_type,
+ 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid
+ };
+ 
+@@ -234,6 +246,9 @@ static match_table_t policy_tokens = {
+ 	{Opt_subj_user, "subj_user=%s"},
+ 	{Opt_subj_role, "subj_role=%s"},
+ 	{Opt_subj_type, "subj_type=%s"},
++	{Opt_fowner_user, "fowner_user=%s"},
++	{Opt_fowner_role, "fowner_role=%s"},
++	{Opt_fowner_type, "fowner_type=%s"},
+ 	{Opt_func, "func=%s"},
+ 	{Opt_mask, "mask=%s"},
+ 	{Opt_fsmagic, "fsmagic=%s"},
+@@ -407,6 +422,24 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+ 						   LSM_SUBJ_TYPE,
+ 						   AUDIT_SUBJ_TYPE);
+ 			break;
++		case Opt_fowner_user:
++			ima_log_string(ab, "fowner_user", args[0].from);
++			result = ima_lsm_rule_init(entry, args[0].from,
++						   LSM_FOWNER_USER,
++						   AUDIT_SUBJ_USER);
++			break;
++		case Opt_fowner_role:
++			ima_log_string(ab, "fowner_role", args[0].from);
++			result = ima_lsm_rule_init(entry, args[0].from,
++						   LSM_FOWNER_ROLE,
++						   AUDIT_SUBJ_ROLE);
++			break;
++		case Opt_fowner_type:
++			ima_log_string(ab, "fowner_type", args[0].from);
++			result = ima_lsm_rule_init(entry, args[0].from,
++						   LSM_FOWNER_TYPE,
++						   AUDIT_SUBJ_TYPE);
++			break;
+ 		case Opt_err:
+ 			ima_log_string(ab, "UNKNOWN", p);
+ 			result = -EINVAL;
 -- 
 1.7.4.4
 
 
-------9E53A120786B392C6DD45B0D0888154C
+------7980DD12C8618D03EA5E05F812D0F250
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -227,17 +289,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM1MDNaMCMGCSqG
-SIb3DQEJBDEWBBQPpMrtSjx9vko4NtB+uLoinRgLGjB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM1MDlaMCMGCSqG
+SIb3DQEJBDEWBBQcXQ8mWmKWyfylC+GwwM7fYHlFATB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBuYPNpmxPHlKPkPHmmpQEXbgiO
-o4BH9tI5gkTrawVvfZy5wsnHGS2ZD3OGUV8M1QdLiVfhqiiAiVmgnWaaprSdIiTg
-ipOJ6KQqWzZ2yQazgByqvlbXSfatA4XAp0eEetjDZZLe0gDA/uYd0jREwH1S8edT
-AoOJ4yMwmp3fBou72kxnAk3iykShGHod2nd0Lx6WbTxz1SMD+K2bco9PJHh0Q+nA
-eonW/69YZJzV+CNyrsgJnPlyAn0iC2NYq1fmsFYMDr84tnpzslz1uuSf39lLdFjy
-yWP086SIz1FUehSEdLWAhnKwrGBrrPmGuYIsKHFcNjUDEKjIy4P6wLd6Dksw
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDOBid4e6bc1/K++uRC0AiPGGNy
+onpfmwfuAj7d70WPOPQNxO8vvKOf5ksgdiEAp1ojV6jEcVrHUzipp/5yoqVWKefT
+RpWL5eu6tJpCtwvU9/CK52qqkL+p3Ph43VtLfBBk/BJdEEI1K+6vxZ8lBS/PS2nN
+ACVzCHcfLWUjRtX40Nd6sFmG2lqOWt7tNjV5hQ/JtUPMKJDiPaiZ8DtVz/pAVC/N
+UMbJSOP+QqZGsJLiFfpTZTD8Cr9hBLyHp+1C5kV2+ItEYQIxp+1scdR7FEoRM4t5
+tS1fU8AoFU+70bn+ukaU0m5TMFwSFVgzQsu/Vc+qSvm3cyCc/pz9d311Tmjl
 
-------9E53A120786B392C6DD45B0D0888154C--
+------7980DD12C8618D03EA5E05F812D0F250--
 
 
