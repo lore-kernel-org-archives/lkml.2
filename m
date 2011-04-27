@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab1D0C1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 22:27:00 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:24390 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755458Ab1D0C07 (ORCPT
+	id S1757538Ab1D0CbV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 22:31:21 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:54126 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab1D0CbT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 22:26:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvcDAO18t015LHHJgWdsb2JhbAAvpToVAQEWJiXFfA6FaASdAg
-Date: Wed, 27 Apr 2011 12:26:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-Message-ID: <20110427022655.GE12436@dastard>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
- <20110424234655.GC12436@dastard>
- <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org>
- <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org>
+	Tue, 26 Apr 2011 22:31:19 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+ cleanup accordingly
+Thread-Topic: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+ cleanup accordingly
+Thread-Index: AQHMBCwlOahkyDWQA0Cj/4uI6AAO6ZRxNFuA///EzKA=
+Date: Wed, 27 Apr 2011 02:31:18 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD1C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-8-git-send-email-kys@microsoft.com>
+ <20110426224545.GC31974@kroah.com>
+In-Reply-To: <20110426224545.GC31974@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 12:19:24AM -0700, Christian Kujau wrote:
-> On Mon, 25 Apr 2011 at 09:46, Dave Chinner wrote:
-> > I'd say they are not being reclaimmmed because the VFS hasn't let go
-> > of them yet. Can you also dump /proc/sys/fs/{dentry,inode}-state so
-> > we can see if the VFS has released the inodes such that they can be
-> > reclaimed by XFS?
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, April 26, 2011 6:46 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+> cleanup accordingly
 > 
-> Please see http://nerdbynature.de/bits/2.6.39-rc4/oom/
+> On Tue, Apr 26, 2011 at 09:20:25AM -0700, K. Y. Srinivasan wrote:
+> > The vmbus driver cannot be unloaded; the windows host does not
+> > permit this. Cleanup accordingly.
 > 
->  - slabinfo-4.txt.bz2, contains /proc/sys/fs/{dentry,inode}-state and
+> Woah, you just prevented this driver from ever being able to be
+> unloaded.
 
-Ok, so looking at slabinfo-5.txt.bz2, this is the pattern of dentry,
-VFS inode and XFS inode use patterns:
+It was never unloadable; while the driver defined an exit routine, 
+there were couple of issues unloading the vmbus driver:
+ 
+1) All guest resources given to the host could not be recovered.
 
-http://userweb.kernel.org/~dgc/slab-usage.png
+2) Windows host would not permit reloading the driver without 
+rebooting the guest.
 
-What this shows is that VFS inode cache memory usage increases until
-about the 550 sample mark before the VM starts to reclaim it with
-extreme prejudice. At that point, I'd expect the XFS inode cache to
-then shrink, and it doesn't. I've got no idea why the either the
-shrinker or background reclaim is not reclaiming and freeing inodes,
-but it is the reason why the system OOMs.
+All I did was acknowledge the current state and cleanup 
+accordingly. This is not unique to Hyper-V; for what it is worth,
+the Xen platform_pci  driver which is equivalent to the vmbus driver
+is also not unlodable (the last time I checked).
 
-Can you check if there are any blocked tasks nearing OOM (i.e. "echo
-w > /proc/sysrq-trigger") so we can see if XFS inode reclaim is
-stuck somewhere?
+> 
+> That's not a "cleanup" that's a major change in how things work.  I'm
+> sure, if you want to continue down this line, there are more things you
+> can remove from the code, right?
+> 
+> What is the real issue here?  What happens if you unload the bus?  What
+> goes wrong?  Can it be fixed?
 
-Cheers,
+This needs to be fixed on the host side. I have notified them of the issue. 
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> 
+> This is a pretty big commitment...
+
+These drivers only load when Linux is hosted on  a Hyper-V platform;
+I am not sure why it is a "big commitment" given that the host does not 
+permit reloading this driver without rebooting the guest. 
+
+Regards,
+
+K. Y
+
