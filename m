@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1D0MRU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:17:20 -0400
-Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:53839 "EHLO
-	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756453Ab1D0MRT (ORCPT
+	id S1758951Ab1D0MTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:19:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42804 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab1D0MS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:17:19 -0400
-Message-ID: <4DB80901.9070405@fastmail.fm>
-Date: Wed, 27 Apr 2011 14:16:01 +0200
-From: Anders Eriksson <aeriksson@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b3pre Thunderbird/3.1.3
+	Wed, 27 Apr 2011 08:18:59 -0400
+Date: Wed, 27 Apr 2011 08:18:56 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Greg KH <greg@kroah.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110427121856.GA20633@infradead.org>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427064550.GA597@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>
-CC: Alex Deucher <alexdeucher@gmail.com>, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        xorg-driver-ati@lists.x.org
-Subject: Re: Radeon jittery post 2.6.35
-References: <4D7CCFC3.7030906@fastmail.fm>	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>	<4D7FD2FB.9090505@fastmail.fm>	<AANLkTimboMAFkqTUOwP9m2z361TM_EgthQO07T5Y_az1@mail.gmail.com>	<4D8118EB.2070209@fastmail.fm>	<4D831E18.9020904@fastmail.fm>	<4DB3EC35.7000601@fastmail.fm> <BANLkTingdS+OWM3FnzhzPKY72d2h7_+9Jw@mail.gmail.com>
-In-Reply-To: <BANLkTingdS+OWM3FnzhzPKY72d2h7_+9Jw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.252.234.43
-X-Scan-Result: No virus found in message 1QF3fk-0007w1-GV.
-X-Scan-Signature: ch-smtp05.sth.basefarm.net 1QF3fk-0007w1-GV 102fdd0569c4307107071a899ddc6007
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 04/25/11 16:53, Jerome Glisse wrote:
-> On Sun, Apr 24, 2011 at 5:24 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
-> >  On 03/18/11 09:55, Anders Eriksson wrote:
-> >>  On 03/16/11 21:09, Anders Eriksson wrote:
-> >> >  On 03/15/11 22:46, Alex Deucher wrote:
-> >> > >  Try booting with radeon.audio=0 on 2.6.38rc, some TVs have problems
-> >> > > with the hdmi packets we send by default.  disabling audio will treat
-> >> > > the hdmi like dvi.
-> >> > >
-> >> > > Alex
-> >> > You seem to be on to something there. radeon.audio=0 removes
-> >> > what appears to be all of the jitter. I say "appear", because during
-> >> > my many test runs today, I've come across moments where my brain
-> >> > goes "wasn't what I just noticed on the TV something abnormal?" Both
-> >> > in fb mode (post KMS), and in X11. It's definetly improved from useless
-> >> > for family use, to perfectly ok though.
-> >> >
-> >> I was too early on this one. Yesterday (.38) , and today (38-rc8),
-> >> are both jittery in post-KMS fb mode and in X, even though I use
-> >> radeon.audio=0.
-> >>
-> >> A power cycling of the TV stabilizes it though.
-> >>
-> >> I'd be more than happy to test out any patches or ideas you might have.
-> >>
-> >> -A
-> >
-> > It turns out all the failure patterns I've thought I've seen so far up
-> > through .38.x are moot.
-> >
-> > However, now on .39-rc, the KMS'd console is stable, and starting X
-> > makes it bad again.
-> >
-> > It there anything useful I can pull from any logs on the startup of X?
-> > Either from the X
-> > server, or the kernel. Last time I looked at the drm log from the kernel
-> > It was unreadable
-> > to a mere mortal, but I hope you guys can point me to what debug knobs
-> > to enable to get a good
-> > view of the interesting parts (How does one start a minimal X, btw?
-> > "xinit" gives me an
-> > undecorated xterm with the jitter. Can one start something more minimal?)
-> >
-> > Currently running today's git xorg-server and xf86-video-dri.
-> >
-> > -Anders
-> >
-> >
->
-> Best is to open a bug and attach xorg log & kernel dmesg.
->
-> https://bugs.freedesktop.org/
-Done:
-https://bugs.freedesktop.org/show_bug.cgi?id=36630
+On Wed, Apr 27, 2011 at 11:47:03AM +0000, KY Srinivasan wrote:
+> On the host side, Windows emulates the  standard PC hardware
+> to permit hosting of fully virtualized operating systems.
+> To enhance disk I/O performance, we support a virtual block driver.
+> This block driver currently handles disks that have been setup as IDE
+> disks for the guest - as specified in the guest configuration.
+> 
+> On the SCSI side, we emulate a SCSI HBA. Devices configured
+> under the SCSI controller for the guest are handled via this
+> emulated HBA (SCSI front-end). So, SCSI disks configured for
+> the guest are handled through native SCSI upper-level drivers.
+> If this SCSI front-end driver is not loaded, currently, the guest
+> cannot see devices that have been configured as SCSI devices.
+> So, while the virtual block driver described earlier could potentially
+> handle all block devices, the implementation choices made on the host
+> will not permit it. Also, the only SCSI device that can be currently configured
+> for the guest is a disk device.
+> 
+> Both the block device driver (hv_blkvsc) and the SCSI front-end
+> driver (hv_storvsc) communicate with the host via unique channels 
+> that are implemented as bi-directional ring buffers. Each (storage) 
+> channel carries with it enough state to uniquely identify the device on
+> the host side. Microsoft has chosen to use SCSI verbs for this storage channel 
+> communication. 
 
-I'd be happy to produce more detailed logs if you tell me what knobs to
-tweak.
+This doesn't really explain much at all.  The only important piece
+of information I can read from this statement is that both blkvsc
+and storvsc only support disks, but not any other kind of device,
+and that chosing either one is an arbitrary seletin when setting up
+a VM configuration.
 
--Anders
+But this still isn't an excuse to implement a block layer driver for
+a SCSI protocol, and it doesn't not explain in what way the two
+protocols actually differ.  You really should implement blksvs as a SCSI
+LLDD, too - and from the looks of it it doesn't even have to be a
+separate one, but just adding the ids to storvsc would do the work.
