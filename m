@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab1D0Nfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:35:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38019 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab1D0Nfi (ORCPT
+	id S932636Ab1D0Nh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:37:28 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55580 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378Ab1D0Nh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:35:38 -0400
-Message-ID: <4DB81B9E.3000401@pengutronix.de>
-Date: Wed, 27 Apr 2011 15:35:26 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Samuel Ortiz <sameo@linux.intel.com>, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
+	Wed, 27 Apr 2011 09:37:27 -0400
+Message-ID: <FED5DF6465AF41C58DBD4E0EEB200E60@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
+        <nsekhar@ti.com>, "open list" <linux-kernel@vger.kernel.org>,
+        <m-watkins@ti.com>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-2-git-send-email-subhasish@mistralsolutions.com> <201104271516.30951.arnd@arndb.de>
+In-Reply-To: <201104271516.30951.arnd@arndb.de>
 Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A603.2090208@pengutronix.de> <EDC1056430EF4DA8A0D850CE1DEA28FC@subhasishg> <4DB7C5F7.3080103@pengutronix.de> <20110427091252.GP17290@n2100.arm.linux.org.uk> <5BAE2D6F9E6047C19B6BE8FF26F7270B@subhasishg>
-In-Reply-To: <5BAE2D6F9E6047C19B6BE8FF26F7270B@subhasishg>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig7C1FA76626EA78E5E1292373"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Date: Wed, 27 Apr 2011 19:08:03 +0530
+Organization: Mistral Solutions
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig7C1FA76626EA78E5E1292373
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+PRU's resulting in improved load sharing.
+>>
+>> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+>
+> Hi Subhasish,
+>
+> This looks like great progress since the last time I looked at the
+> pruss mfd driver, good work there!
+>
+> Thanks to your explanations and the documentation link, I now have
+> a better understanding of what is actually going on here, but I'd
+> still like to understandhow the decision is made regarding what programs
+> are loaded into each PRU and how the MFD cells are set up.
 
-On 04/27/2011 03:18 PM, Subhasish Ghosh wrote:
-> My problem is, I am doing something like this:
->=20
-> s32 pruss_writel_multi(struct device *dev, u32 offset,
->                u32 *pdatatowrite, u16 wordstowrite)
-> {
->        struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
->        u32 __iomem *paddresstowrite;
->        u16 i;
->=20
->        paddresstowrite =3D pruss->ioaddr + offset;
->=20
->        for (i =3D 0; i < wordstowrite; i++)
->                iowrite32(*pdatatowrite++, paddresstowrite++);
->=20
->        return 0;
-> }
->=20
-> So, if I make paddresstowrite as void, it will not work. The above
-> implementation does not generate any sparse errors though.
+>
+> Is this a fixed setting for each board that strictly depends on how
+> the external pins are connected, or is it possible to use the same
+> hardware for different purposes based on the program?
 
-Incrementing a u32 pointer will result in increasing the address by 4
-bytes. Incrementing a void pointer will result in increasing the address
-by just one byte. (Pointer arithmetic on void * is a gnu extension but
-IMHO a pretty nice one, though)
+SG  -- The PRU pins are exposed as is on the main board,
+            we have separate add on daughter cards
+            specific to the protocol implemented on it.
 
-regards, Marc
+>
+> If I read your code correctly, you hardwire the usage of the two
+> PRUs in the da850 board code, which makes it impossible to use
+> them in different ways even if the hardware supports it. If this is
+> indeed the case, using an MFD device might not be the best option
+> and we should try to come up with a way to dynamically repurpose
+> the PRU with some user interface.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+SG -- It depends upon how the firmware is implemented. If another
+            firmware is downloaded on it, it will emulate another device.
+            Also, if a firmware emulated on it supports switching between 
+devices,
+            that too is possible. Its just a microcontroller, we can do 
+whatever we feel like
+            with it. Both the PRUs have separate instruction/data ram, so 
+both can be used
+            to implement two different devices.
+ 
 
-
---------------enig7C1FA76626EA78E5E1292373
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk24G6EACgkQjTAFq1RaXHPNOQCfYFNAi9O/JdkJKqfT9PnTMtae
-nLEAn1zJtbcGw5K5pkJUWLXCkvfO9pJ5
-=Ri1w
------END PGP SIGNATURE-----
-
---------------enig7C1FA76626EA78E5E1292373--
