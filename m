@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab1D0SpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:45:17 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43822 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab1D0SpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:45:15 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Zhangfei Gao <zhangfei.gao@marvell.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH] rtc: max8925: Set dev_set_drvdata before rtc_device_register
-Date: Wed, 27 Apr 2011 11:44:29 -0700
-Message-Id: <1303929869-25249-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	id S1755230Ab1D0SsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:48:00 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:43130 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab1D0Sr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 14:47:58 -0400
+Date: Wed, 27 Apr 2011 12:47:56 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Andrea Righi <andrea@betterlinux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Message-ID: <20110427184756.GB16716@parisc-linux.org>
+References: <1303928027-5100-1-git-send-email-andrea@betterlinux.com> <20110427183308.GA16716@parisc-linux.org> <BANLkTinPTPMWPN+JELtCZDjrVepLetX6FQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinPTPMWPN+JELtCZDjrVepLetX6FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhangfei Gao <zhangfei.gao@marvell.com>
+On Wed, Apr 27, 2011 at 02:39:53PM -0400, Mike Frysinger wrote:
+> > Mmm ... what if I open /dev/sdxyz and call fadvise() on it? ??I think
+> > you end up flushing /dev's page cache entries, instead of the filesystem
+> > which is on /dev/sdxyz.
+> 
+> i was thinking of that, but was trying to come up with situations
+> where there might not have a node to work on.  fs's in a file go
+> through loop devs, dm/lvm have ones created, and flash fs's still have
+> a mtd block.  how about network based fs's ?  how you going to signal
+> dropping of pages for nfs or cifs or fuse ones ?
 
-	We now call rtc_read_alarm from rtc_device_register, so it
-is important that the rtc device is fully initialized prior to
-reigstration.
+For a regular file, mapping->host->i_sb points to the superblock this
+file is on.  For a device, mapping->host->i_sb points to the superblock
+corresponding to this device.  So it's always what we want.
 
-Because of this, With rtc-max8925, we see NULL pointer errors,
-so call dev_set_drvdata before rtc_device_register
+(hm, what about block devices not currently mounted?  do we need to check
+whether mapping->host is NULL?)
 
-Thomas: This should go in for 2.6.39. 
-
-CC: Alessandro Zummo <a.zummo@towertech.it>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Zhangfei Gao <zhangfei.gao@marvell.com>
-[Reworded commit message -jstultz]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/rtc/rtc-max8925.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/rtc/rtc-max8925.c b/drivers/rtc/rtc-max8925.c
-index 174036d..20494b5 100644
---- a/drivers/rtc/rtc-max8925.c
-+++ b/drivers/rtc/rtc-max8925.c
-@@ -257,6 +257,8 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 		goto out_irq;
- 	}
- 
-+	dev_set_drvdata(&pdev->dev, info);
-+
- 	info->rtc_dev = rtc_device_register("max8925-rtc", &pdev->dev,
- 					&max8925_rtc_ops, THIS_MODULE);
- 	ret = PTR_ERR(info->rtc_dev);
-@@ -265,7 +267,6 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
- 	}
- 
--	dev_set_drvdata(&pdev->dev, info);
- 	platform_set_drvdata(pdev, info);
- 
- 	return 0;
 -- 
-1.7.3.2.146.gca209
-
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
