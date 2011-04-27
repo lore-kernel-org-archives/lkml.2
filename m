@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759790Ab1D0Vfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 17:35:45 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:33675 "EHLO
+	id S1760031Ab1D0Vfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 17:35:52 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:33706 "EHLO
 	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752898Ab1D0Vfo (ORCPT
+	with ESMTP id S1759820Ab1D0Vft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 17:35:44 -0400
+	Wed, 27 Apr 2011 17:35:49 -0400
 X-Complaints-To: abuse@dnsExit.com
 X-SPAM: Please report Spam to abuse@dnsExit.com
         By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
         Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DB88C04.1060109@verizon.net>
-Date: Wed, 27 Apr 2011 17:35:00 -0400
+Message-ID: <4DB88C0A.7070705@verizon.net>
+Date: Wed, 27 Apr 2011 17:35:06 -0400
 From: Peter Foley <pefoley2@verizon.net>
 Reply-To: <pefoley2@verizon.net>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
@@ -20,101 +20,107 @@ MIME-Version: 1.0
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
         Arnaud Lacombe <lacombar@gmail.com>
-Subject: [PATCH V2 resend 1/7] kbuild: only build kxgettext when needed
+Subject: [PATCH V2 resend 2/7] kbuild: change qconf to modify hostprogs-y
+ like nconf and mconf
 Content-Type: multipart/mixed;
-	boundary="------------070909020801070700010203"
+	boundary="------------010704070601080301080303"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------070909020801070700010203
+--------------010704070601080301080303
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 
-This patch only builds kxgettext when running update-po-config
-which is the only target that uses it.
+This patch makes qconf more like nconf and mconf
+by modifying hostprogs insted of qconf-objs.
 
 Signed-off-by: Peter Foley <pefoley2@verizon.net>
 ---
- scripts/kconfig/Makefile |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ scripts/kconfig/Makefile |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 368ae30..fec830f 100644
+index fec830f..b0b3dcb 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -169,7 +169,7 @@ mconf-objs     := mconf.o zconf.tab.o $(lxdialog)
+@@ -168,8 +168,10 @@ conf-objs	:= conf.o  zconf.tab.o
+ mconf-objs     := mconf.o zconf.tab.o $(lxdialog)
  nconf-objs     := nconf.o zconf.tab.o nconf.gui.o
  kxgettext-objs	:= kxgettext.o zconf.tab.o
++qconf-cxxobjs	:= qconf.o
++qconf-objs	:= kconfig_load.o zconf.tab.o
 
--hostprogs-y := conf qconf gconf kxgettext
-+hostprogs-y := conf qconf gconf
+-hostprogs-y := conf qconf gconf
++hostprogs-y := conf gconf
 
  ifeq ($(MAKECMDGOALS),nconfig)
  	hostprogs-y += nconf
-@@ -179,6 +179,10 @@ ifeq ($(MAKECMDGOALS),menuconfig)
- 	hostprogs-y += mconf
+@@ -192,8 +194,7 @@ endif
+
+
+ ifeq ($(qconf-target),1)
+-qconf-cxxobjs	:= qconf.o
+-qconf-objs	:= kconfig_load.o zconf.tab.o
++	hostprogs-y += qconf
  endif
 
-+ifeq ($(MAKECMDGOALS),update-po-config)
-+	hostprogs-y += kxgettext
-+endif
-+
- ifeq ($(MAKECMDGOALS),xconfig)
- 	qconf-target := 1
- endif
+ ifeq ($(gconf-target),1)
 -- 
 1.7.5.rc1
 
 
 
 
---------------070909020801070700010203
+--------------010704070601080301080303
 Content-Type: text/plain;
-	name="kbuild-only-build-kxgettext-when-needed.patch"
+	name="kbuild-change-qconf-to-modify-hostprogs-y-like-nconf.patch"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment;
-	filename="kbuild-only-build-kxgettext-when-needed.patch"
+	filename="kbuild-change-qconf-to-modify-hostprogs-y-like-nconf.patch"
 
->From 71e0ea7aa6c543bfe37d78be8b45e0e06051d891 Mon Sep 17 00:00:00 2001
+>From aa40714349234628e56fe92de1a37dd4b122ec2c Mon Sep 17 00:00:00 2001
 From: Peter Foley <pefoley2@verizon.net>
-Date: Tue, 26 Apr 2011 17:57:38 -0400
-Subject: [PATCH 1/7] kbuild: only build kxgettext when needed
+Date: Tue, 26 Apr 2011 18:00:05 -0400
+Subject: [PATCH 2/7] kbuild: change qconf to modify hostprogs-y like nconf
+ and mconf
 
 
 Signed-off-by: Peter Foley <pefoley2@verizon.net>
 ---
- scripts/kconfig/Makefile |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ scripts/kconfig/Makefile |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 368ae30..fec830f 100644
+index fec830f..b0b3dcb 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -169,7 +169,7 @@ mconf-objs     := mconf.o zconf.tab.o $(lxdialog)
+@@ -168,8 +168,10 @@ conf-objs	:= conf.o  zconf.tab.o
+ mconf-objs     := mconf.o zconf.tab.o $(lxdialog)
  nconf-objs     := nconf.o zconf.tab.o nconf.gui.o
  kxgettext-objs	:= kxgettext.o zconf.tab.o
++qconf-cxxobjs	:= qconf.o
++qconf-objs	:= kconfig_load.o zconf.tab.o
  
--hostprogs-y := conf qconf gconf kxgettext
-+hostprogs-y := conf qconf gconf
+-hostprogs-y := conf qconf gconf
++hostprogs-y := conf gconf
  
  ifeq ($(MAKECMDGOALS),nconfig)
  	hostprogs-y += nconf
-@@ -179,6 +179,10 @@ ifeq ($(MAKECMDGOALS),menuconfig)
- 	hostprogs-y += mconf
+@@ -192,8 +194,7 @@ endif
+ 
+ 
+ ifeq ($(qconf-target),1)
+-qconf-cxxobjs	:= qconf.o
+-qconf-objs	:= kconfig_load.o zconf.tab.o
++	hostprogs-y += qconf
  endif
  
-+ifeq ($(MAKECMDGOALS),update-po-config)
-+	hostprogs-y += kxgettext
-+endif
-+
- ifeq ($(MAKECMDGOALS),xconfig)
- 	qconf-target := 1
- endif
+ ifeq ($(gconf-target),1)
 -- 
 1.7.5.rc1
 
 
 
 
---------------070909020801070700010203--
+--------------010704070601080301080303--
