@@ -1,58 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760212Ab1D0XU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:20:57 -0400
-Received: from mx2.proofpoint.com ([208.86.202.10]:10530 "EHLO
-	mx2.proofpoint.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab1D0XUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:20:55 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 19:20:55 EDT
-Date: Wed, 27 Apr 2011 16:12:38 -0700
-Message-Id: <201104272312.p3RNCcl6002068@jgmyers-vm1.eng.proofpoint.com>
-From: John Myers <jgmyers@proofpoint.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ipv6: fix incorrect unregistration of sysctl when last ip deleted
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2011-04-27_08:2011-04-27,2011-04-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1012030000 definitions=main-1104270166
+	id S1760216Ab1D0XVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:21:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46138 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757166Ab1D0XVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 19:21:22 -0400
+Date: Thu, 28 Apr 2011 09:21:10 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 02/13] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20110428092110.608eb354@notabene.brown>
+In-Reply-To: <20110426135940.GE4658@suse.de>
+References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
+	<1303803414-5937-3-git-send-email-mgorman@suse.de>
+	<20110426213758.450f6f49@notabene.brown>
+	<20110426135940.GE4658@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the last ip address is deleted, the kernel disables IPv6 on the
-interface. (Not sure why, but that's beside the point.) The call that
-does this is over-aggressive--it indicates the interface is about to
-be removed even though that isn't necessarily so.
+On Tue, 26 Apr 2011 14:59:40 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-This causes IPv6 to, among other things, unregister its sysctl
-parameters for the interface. Thus, the "accept_ra" and "addrconf"
-settings can't be set on the interface until after the interface has
-been brought back up, which is too late.
+> On Tue, Apr 26, 2011 at 09:37:58PM +1000, NeilBrown wrote:
+> > On Tue, 26 Apr 2011 08:36:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > +		/*
+> > > +		 * If there are full empty slabs and we were not forced to
+> > > +		 * allocate a slab, mark this one !pfmemalloc
+> > > +		 */
+> > > +		l3 = cachep->nodelists[numa_mem_id()];
+> > > +		if (!list_empty(&l3->slabs_free) && force_refill) {
+> > > +			struct slab *slabp = virt_to_slab(objp);
+> > > +			slabp->pfmemalloc = false;
+> > > +			clear_obj_pfmemalloc(&objp);
+> > > +			check_ac_pfmemalloc(cachep, ac);
+> > > +			return objp;
+> > > +		}
+> > 
+> > The comment doesn't match the code.  I think you need to remove the words
+> > "full" and "not" assuming the code is correct which it probably is...
+> > 
+> 
+> I'll fix up the comment, you're right, it's confusing.
+> 
+> > But the code seems to be much more complex than Peter's original, and I don't
+> > see the gain.
+> > 
+> 
+> You're right, it is more complex.
+> 
+> > Peter's code had only one 'reserved' flag for each kmem_cache. 
+> 
+> The reserve was set in a per-cpu structure so there was a "lag" time
+> before that information was available to other CPUs. Fine on smaller
+> machines but a bit more of a problem today. 
+> 
+> > You seem to
+> > have one for every slab.  I don't see the point.
+> > It is true that yours is in some sense more fair - but I'm not sure the
+> > complexity is worth it.
+> > 
+> 
+> More fairness was one of the objects.
+> 
+> > Was there some particular reason you made the change?
+> > 
+> 
+> This version survives under considerably more stress than Peter's
+> original version did without requiring the additional complexity of
+> memory reserves.
+> 
 
-Signed-off-by: John Gardiner Myers <jgmyers@proofpoint.com>
-Cc: stable@kernel.org
+That is certainly a very compelling argument .... but I still don't get why.
+I'm sorry if I'm being dense, but I still don't see why the complexity buys
+us better stability and I really would like to understand.
 
----
+You don't seem to need the same complexity for SLUB with the justification
+of "SLUB generally maintaining smaller lists than SLAB".
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 1493534..042d0aa 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2215,7 +2215,7 @@ static int inet6_addr_del(struct net *net, int ifindex, struct in6_addr *pfx,
- 			   disable IPv6 on this interface.
- 			 */
- 			if (list_empty(&idev->addr_list))
--				addrconf_ifdown(idev->dev, 1);
-+				addrconf_ifdown(idev->dev, 0);
- 			return 0;
- 		}
- 	}
+Presumably these are per-CPU lists of free objects or slabs?  If the things
+on those lists could be used by anyone long lists couldn't hurt.
+So the problem must be that the lists get long while the array_cache is still
+marked as 'pfmemalloc' (or 'reserve' in Peter's patches).
+
+Is that the problem?  That reserve memory gets locked up in SLAB freelists?
+If so - would that be more easily addressed by effectively reducing the
+'batching' when the array_cache had dipped into reserves, so slabs are
+returned to the VM more promptly?
+
+Probably related, now that you've fixed the comment here (thanks):
+
++		/*
++		 * If there are empty slabs on the slabs_free list and we are
++		 * being forced to refill the cache, mark this one !pfmemalloc.
++		 */
++		l3 = cachep->nodelists[numa_mem_id()];
++		if (!list_empty(&l3->slabs_free) && force_refill) {
++			struct slab *slabp = virt_to_slab(objp);
++			slabp->pfmemalloc = false;
++			clear_obj_pfmemalloc(&objp);
++			check_ac_pfmemalloc(cachep, ac);
++			return objp;
++		}
+
+I'm trying to understand it...
+The context is that a non-MEMALLOC allocation is happening and everything on
+the free lists is reserved for MEMALLOC allocations.
+So if in that case there is a completely free slab on the free list we decide
+that it is OK to mark the current slab as non-MEMALLOC.
+The logic seems to be that we could just release that free slab to the VM,
+then an alloc_page would be able to get it back.  But if we are still well
+below the reserve watermark, then there might be some other allocation that
+is more deserving of the page and we shouldn't just assume we can take
+it with actually calling in to alloc_pages to check that we are no longer
+running on reserves..
+
+So this looks like an optimisation that is wrong.
+
+
+
+BTW, 
+
+
++	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
++	if (pfmemalloc) {
++		struct array_cache *ac = cpu_cache_get(cachep);
++		slabp->pfmemalloc = true;
++		ac->pfmemalloc = 1;
++	}
++
+
+I think that "= 1"  should be "= true".  :-)
+
+NeilBrown
