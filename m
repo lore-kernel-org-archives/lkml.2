@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1D0Vhn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 17:37:43 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42020 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582Ab1D0Vhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 17:37:41 -0400
-Subject: Re: [PATCH 2/3] make new alloc_pages_exact()
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <4DB88AF0.1050501@freescale.com>
-References: <20110414200139.ABD98551@kernel>
-	 <20110414200140.CDE09A20@kernel>  <4DB88AF0.1050501@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 27 Apr 2011 14:37:29 -0700
-Message-ID: <1303940249.9516.366.camel@nimitz>
+	id S1760024Ab1D0ViO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 17:38:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39771 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753869Ab1D0ViL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 17:38:11 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110427073514.GH17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de>
+	 <20110427073514.GH17290@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 07:37:51 +1000
+Message-ID: <1303940271.2513.187.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -28,31 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 16:30 -0500, Timur Tabi wrote:
-> Dave Hansen wrote:
-> > What I really wanted in the end was a highmem-capable
-> > alloc_pages_exact(), so here it is.  This function can be used to
-> > allocate unmapped (like highmem) non-power-of-two-sized areas of
-> > memory.  This is in constast to get_free_pages_exact() which can only
-> > allocate from lowmem.
+On Wed, 2011-04-27 at 08:35 +0100, Russell King - ARM Linux wrote:
+> On Thu, Apr 21, 2011 at 09:29:16PM +0200, Arnd Bergmann wrote:
+> > 1. Fix the arm version of dma_alloc_coherent. It's in use today and
+> >    is broken on modern CPUs because it results in both cached and
+> >    uncached mappings. Rebecca suggested different approaches how to
+> >    get there.
 > 
-> Is there an easy way to verify that alloc_pages_exact(5MB) really does allocate
-> only 5MB and not 8MB?
+> I also suggested various approaches and produced patches, which I'm slowly
+> feeding in.  However, I think whatever we do, we'll end up breaking
+> something along the line - especially as various places assume that
+> dma_alloc_coherent() is ultimately backed by memory with a struct page.
 
-I'm not sure why you're asking.  How do we know that the _normal_
-allocator only gives us 4k when we ask for 4k?  Well, that's just how it
-works.  If alloc_pages_exact() returns success, you know it's got the
-amount of memory that you asked for, and only that plus a bit of masking
-for page alignment.
+Our implementation for embedded ppc has a similar problem. It currently
+uses a pool of memory and does virtual mappings on it which means no
+struct page easy to get to. How do you do on your side ? A fixed size
+pool that you take out of the linear mapping ? Or you allocate pages in
+the linear mapping and "unmap" them ? The problem I have with some
+embedded ppc's is that the linear map is mapped in chunks of 256M or
+so....
 
-Have you seen alloc_pages_exact() behaving in some other way?
+> > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
+> >    that this is needed, and it currently is not implemented, with
+> >    an outdated comment explaining why it used to not be possible
+> >    to do it.
+> 
+> dma_alloc_noncoherent is an entirely pointless API afaics.
 
-> Is there some kind of function that returns the amount of
-> unallocated memory, so I can do a diff?
+I was about to ask what the point is ... (what is the expected
+semantic ? Memory that is reachable but not necessarily cache
+coherent ?)
 
-Nope.  Even if there was, it would be worthless.  Calls to this might
-also cause the system to swap or reclaim memory, so you might end up
-with the same amount of free memory before and after the call.  
+> > 3. Convert ARM to use asm-generic/dma-mapping-common.h. We need
+> >    both IOMMU and direct mapped DMA on some machines.
+> > 
+> > 4. Implement an architecture independent version of dma_map_ops
+> >    based on the iommu.h API. As Joerg mentioned, this has been
+> >    missing for some time, and it would be better to do it once
+> >    than for each IOMMU separately. This is probably a lot of work.
+> 
+> dma_map_ops design is broken - we can't have the entire DMA API indirected
+> through that structure.
 
--- Dave
+Why not ? That's the only way we can deal in my experience with multiple
+type of different iommu's etc... at runtime in a single kernel. We used
+to more/less have global function pointers in a long past but we moved
+to per device ops instead to cope with multiple DMA path within a given
+system and it works fine.
+
+>   Whether you have an IOMMU or not is completely
+> independent of whether you have to do DMA cache handling.  Moreover, with
+> dmabounce, having the DMA cache handling in place doesn't make sense.
+
+Right. For now I don't have that problem on ppc as my iommu archs are
+also fully coherent, so it's a bit more tricky that way but can be
+handled I suppose by having the cache mgmnt be lib functions based on
+flags added to the struct device.
+
+> So you can't have a dma_map_ops for the cache handling bits, a dma_map_ops
+> for IOMMU, and a dma_map_ops for the dmabounce stuff.  It just doesn't
+> work like that.
+
+Well, the dmabounce and cache handling is one implementation that's just
+on/off with parameters no ?. iommu is different implementations. So the
+ops should be for the iommu backends. The dmabounce & cache handling is
+then done by those backends based on flags you stick in struct device
+for example.
+
+> I believe the dma_map_ops stuff in asm-generic to be entirely unsuitable
+> for ARM.
+
+I don't think it is :-)
+
+Cheers,
+Ben.
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
