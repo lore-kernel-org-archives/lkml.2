@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab1D0Bfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 21:35:45 -0400
-Received: from science.horizon.com ([71.41.210.146]:16882 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753308Ab1D0Bfo (ORCPT
+	id S1755904Ab1D0Bh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 21:37:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41664 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1D0Bh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 21:35:44 -0400
-Date: 26 Apr 2011 21:35:41 -0400
-Message-ID: <20110427013541.18526.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 5/6] signal: sys_sigprocmask() needs retarget_shared_pending()
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org, oleg@redhat.com
+	Tue, 26 Apr 2011 21:37:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QYBN0teYrvEJxJaMpRltq1UvJlEnB47/aT2QT0OdgJp2eb7i80KnPalyW8CWx0/Mov
+         Oal1/ZUi4GgiRPPmZPDnB7oxi/DqLkzkhzCEo6qVppk9ISKF1/7SvWa2dw+lU2GmHlva
+         QNQPxuj9QAwSyRc87Vknq5cH7ZkfskqqqQs8w=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim067_+bycA-rJk6u595YucMmruqQ@mail.gmail.com>
+References: <20110426085953.GA12389@darkstar>
+	<BANLkTikkUq7rg4umYQ5yt9ve+q34Pf+=Ag@mail.gmail.com>
+	<BANLkTin0wj3AhCtR5ZD=N_LUKjE1etBcFg@mail.gmail.com>
+	<BANLkTim067_+bycA-rJk6u595YucMmruqQ@mail.gmail.com>
+Date: Wed, 27 Apr 2011 09:37:57 +0800
+Message-ID: <BANLkTi=8ySUPP6_GUL9CTFh98J1PH0a4=g@mail.gmail.com>
+Subject: Re: [PATCH v2] virtio_balloon: disable oom killer when fill balloon
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> and notice how you now can do that helper function *WITHOUT* any
-> conditionals, and just make it do
-> 
->     sigprocmask(&clear, &set, NULL);
-> 
-> which handles all cases correctly (just "andn clear" + "or set") with
-> no if's or switch'es.
+On Wed, Apr 27, 2011 at 7:33 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Tue, Apr 26, 2011 at 6:39 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>> On Tue, Apr 26, 2011 at 5:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>>> Please resend this with [2/2] to linux-mm.
+>>>
+>>> On Tue, Apr 26, 2011 at 5:59 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>>>> When memory pressure is high, virtio ballooning will probably cause oom killing.
+>>>> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
+>>>> will make memory becoming low then memory alloc of other processes will trigger
+>>>> oom killing. It is not desired behaviour.
+>>>
+>>> I can't understand why it is undesirable.
+>>> Why do we have to handle it specially?
+>>>
+>>
+>> Suppose user run some random memory hogging process while ballooning
+>> it will be undesirable.
+>
+>
+> In VM POV, kvm and random memory hogging processes are customers.
+> If we handle ballooning specially with disable OOM, what happens other
+> processes requires memory at same time? Should they wait for balloon
+> driver to release memory?
+>
+> I don't know your point. Sorry.
+> Could you explain your scenario in detail for justify your idea?
 
-Gripe: Arrgh, apostrophe disease!  Linus, youre picking up nasty habits.
+What you said make sense I understand what you said now. Lets ignore
+my above argue and see what I'm actually doing.
 
-Suggestion: Actually, the usual, more flexible implementation, is
-"andn mask" + "xor set".  That gives all 4 bit operations (nop, set,
-clear, and toggle) unique bit combinations.
+I'm hacking with balloon driver to fit to short the vm migration time.
 
-Not that it's of any use in many cases, but it has better hack value.
+while migrating host tell guest to balloon as much memory as it can, then start
+migrate, just skip the ballooned pages, after migration done tell
+guest to release the memory.
 
-That would convert to:
-  switch (how) {
-  case SIG_BLOCK:
-      mask_bits = new_set;
-      set_bits = new_set;
-      break;
-  case SIG_UNBLOCK:
-      mask_bits = new_set;
-      set_bits = 0;
-      break
-  case SIG_SET:
-     mask_bits = low_bits | new_set;
-     set_bits = new_set;
-     break;
-   default:
-     return -EINVAL;
-  }
+In migration case oom is not I want to see and disable oom will be good.
 
-If you prefer separate set & clear fields, with both set meaning "toggle",
-which admittedly is a more elegant representation, then it's
-"andn (set|clear)" + "xor set".
+> And as I previous said, we have to solve oom_killer_disabled issue in
+> do_try_to_free_pages.
+>
+> Thanks, Dave.
+> --
+> Kind regards,
+> Minchan Kim
+>
+
+
+
+-- 
+Regards
+dave
