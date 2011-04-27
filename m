@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951Ab1D0MTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:19:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42804 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab1D0MS7 (ORCPT
+	id S1759000Ab1D0MTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:19:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53088 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758966Ab1D0MTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:18:59 -0400
-Date: Wed, 27 Apr 2011 08:18:56 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Greg KH <greg@kroah.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-Message-ID: <20110427121856.GA20633@infradead.org>
-References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <20110426232843.GA31184@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110427064550.GA597@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
+	Wed, 27 Apr 2011 08:19:08 -0400
+Date: Wed, 27 Apr 2011 08:19:02 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: benh@kernel.crashing.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu, acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org
+Subject: Re: [PATCH V4] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+Message-ID: <20110427121902.GA2936@mgebm.net>
+References: <1302891150-8121-1-git-send-email-emunson@mgebm.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
 Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 11:47:03AM +0000, KY Srinivasan wrote:
-> On the host side, Windows emulates the  standard PC hardware
-> to permit hosting of fully virtualized operating systems.
-> To enhance disk I/O performance, we support a virtual block driver.
-> This block driver currently handles disks that have been setup as IDE
-> disks for the guest - as specified in the guest configuration.
-> 
-> On the SCSI side, we emulate a SCSI HBA. Devices configured
-> under the SCSI controller for the guest are handled via this
-> emulated HBA (SCSI front-end). So, SCSI disks configured for
-> the guest are handled through native SCSI upper-level drivers.
-> If this SCSI front-end driver is not loaded, currently, the guest
-> cannot see devices that have been configured as SCSI devices.
-> So, while the virtual block driver described earlier could potentially
-> handle all block devices, the implementation choices made on the host
-> will not permit it. Also, the only SCSI device that can be currently configured
-> for the guest is a disk device.
-> 
-> Both the block device driver (hv_blkvsc) and the SCSI front-end
-> driver (hv_storvsc) communicate with the host via unique channels 
-> that are implemented as bi-directional ring buffers. Each (storage) 
-> channel carries with it enough state to uniquely identify the device on
-> the host side. Microsoft has chosen to use SCSI verbs for this storage channel 
-> communication. 
 
-This doesn't really explain much at all.  The only important piece
-of information I can read from this statement is that both blkvsc
-and storvsc only support disks, but not any other kind of device,
-and that chosing either one is an arbitrary seletin when setting up
-a VM configuration.
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But this still isn't an excuse to implement a block layer driver for
-a SCSI protocol, and it doesn't not explain in what way the two
-protocols actually differ.  You really should implement blksvs as a SCSI
-LLDD, too - and from the looks of it it doesn't even have to be a
-separate one, but just adding the ids to storvsc would do the work.
+On Wed, 27 Apr 2011, David Laight wrote:
+
+> I keep telling Eric that the code below is incorrect
+> modulo arithimetic...
+
+But it isn't, and it doesn't have trouble with 2^32 - 1.  Here is one done =
+by
+hand:
+
+Counter is at 0xffffffff and is rolled over to 0x101 (258 counted items so
+that we miss the test for rollback).
+
+ 0x00000000ffffffff  (Remember counters are 32 bit, but we store them in 64)
+-0x0000000000000101
+=3D0xffffffff00000102
+
+After the mask we have 0x00000000000102, the actual difference between the
+counters.
+
+>=20
+> > +static u64 check_and_compute_delta(u64 prev, u64 val)
+> > +{
+> > +	u64 delta =3D (val - prev) & 0xfffffffful;
+> > +
+> > +	/*
+> > +	 * POWER7 can roll back counter values, if the new value is
+> smaller
+> > +	 * than the previous value it will cause the delta and the
+> counter to
+> > +	 * have bogus values unless we rolled a counter over.  If a
+> coutner is
+> > +	 * rolled back, it will be smaller, but within 256, which is the
+> maximum
+> > +	 * number of events to rollback at once.  If we dectect a
+> rollback
+> > +	 * return 0.  This can lead to a small lack of precision in the
+> > +	 * counters.
+> > +	 */
+> > +	if (prev > val && (prev - val) < 256)
+> > +		delta =3D 0;
+> > +
+> > +	return delta;
+>=20
+> The code should detect rollback by looking at the value of 'delta'
+> otherwise there are horrid end effects near 2^32-1.
+>=20
+> For instance:
+> 	u32 delta =3D val - prev;
+> 	return delta & 0x80000000 ? 0 : delta;
+>=20
+>=20
+>    David
+>=20
+>=20
+>=20
+>=20
+
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNuAm2AAoJEH65iIruGRnNJXUIAMmRQhchWoC5zG6wCyZ4O9Na
+K28xPGqGF9JHka0P7AL5M5pJtaZxG8uu2bGb/hAYKSh+v99PUxT8YFaFTII4X0Ns
+ZbS13ErCrn+tq7uuF/IVFztG7SsZCLoYlE/AIcNzYGyGT053Jo5oqjloyfRpmv6Z
+NtqDUSiuF58bEP7NnNO7Pl3uOJAcrO1NZ+285DPXq1qeQk6SaT5t8TQlOcKFuhYU
+ajiSBYVgc//EF0ih4uCmoPZch1lKILwZk28Dj5jfoSNDU6Ab9k3Rw760p5HFKz0s
+eNIM0qGg7zLZhicJaOcZvsaCuvRRVWEX5hm06gSTb6i7OyTFjO9JGRduhakQJ8o=
+=caaf
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
