@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab1D0JO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:14:58 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35353 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab1D0JO5 convert rfc822-to-8bit (ORCPT
+	id S1755802Ab1D0JUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:20:01 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55073 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660Ab1D0JT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:14:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=udX0/eOokI6X2XvExEUTOIN5qxyYiumJwhBaBEtuJ96jZfmhpbf8DNnxX4kng0hmWE
-         ikNeAp94qWIY0F7JX+Z46wxisoNNiUuKA0qJNyxuD+ZbvPA1NjDIaEzJoqVNzVLQtEmh
-         HqIwR4jck2dK5qfsm6gaui9sX8p+1JhlmzKjs=
+	Wed, 27 Apr 2011 05:19:59 -0400
+Date: Wed, 27 Apr 2011 10:19:49 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 4/6] arm: use asm-generic/bitops/le.h
+Message-ID: <20110427091949.GQ17290@n2100.arm.linux.org.uk>
+References: <1303824223-3566-1-git-send-email-akinobu.mita@gmail.com> <1303824223-3566-5-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110427174813.8b34df90.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110427164708.1143395e.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTin+rDOWGYq9dg-XcCWs+yT8Yw-VMw@mail.gmail.com>
-	<20110427174813.8b34df90.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 27 Apr 2011 18:14:56 +0900
-Message-ID: <BANLkTim-U3MTnToFPL11NcVnOCig4zJMAQ@mail.gmail.com>
-Subject: Re: [PATCHv3] memcg: fix get_scan_count for small targets
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303824223-3566-5-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 5:48 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 27 Apr 2011 17:48:18 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Apr 27, 2011 at 4:47 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > At memory reclaim, we determine the number of pages to be scanned
->> > per zone as
->> >        (anon + file) >> priority.
->> > Assume
->> >        scan = (anon + file) >> priority.
->> >
->> > If scan < SWAP_CLUSTER_MAX, the scan will be skipped for this time
->> > and priority gets higher. This has some problems.
->> >
->> >  1. This increases priority as 1 without any scan.
->> >     To do scan in this priority, amount of pages should be larger than 512M.
->> >     If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
->> >     batched, later. (But we lose 1 priority.)
->> >     If memory size is below 16M, pages >> priority is 0 and no scan in
->> >     DEF_PRIORITY forever.
->> >
->> >  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
->> >     So, x86's ZONE_DMA will never be recoverred until the user of pages
->> >     frees memory by itself.
->> >
->> >  3. With memcg, the limit of memory can be small. When using small memcg,
->> >     it gets priority < DEF_PRIORITY-2 very easily and need to call
->> >     wait_iff_congested().
->> >     For doing scan before priorty=9, 64MB of memory should be used.
->> >
->> > Then, this patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
->> >
->> >  1. the target is enough small.
->> >  2. it's kswapd or memcg reclaim.
->> >
->> > Then we can avoid rapid priority drop and may be able to recover
->> > all_unreclaimable in a small zones. And this patch removes nr_saved_scan.
->> > This will allow scanning in this priority even when pages >> priority
->> > is very small.
->> >
->> > Changelog v2->v3
->> >  - removed nr_saved_scan completely.
->> >
->> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
->>
->> The patch looks good to me but I have a nitpick about just coding style.
->> How about this? I think below looks better but it's just my private
->> opinion and I can't insist on my style. If you don't mind it, ignore.
->>
->
-> I did this at the 1st try and got bug.....a variable 'file' here is
-> reused and now broken. Renaming it with new variable will be ok, but it
+On Tue, Apr 26, 2011 at 10:23:41PM +0900, Akinobu Mita wrote:
+> The previous style change enables to use asm-generic/bitops/le.h
+> on arm.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-Right you are. I missed that. :)
-Thanks.
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-
--- 
-Kind regards,
-Minchan Kim
+> Cc: linux-arm-kernel@lists.infradead.org
+> ---
+> 
+> No change from previous submission
+> 
+>  arch/arm/include/asm/bitops.h |   43 ++++------------------------------------
+>  1 files changed, 5 insertions(+), 38 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index 18a024b..b4892a0 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -203,8 +203,6 @@ extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
+>  #define find_first_bit(p,sz)		_find_first_bit_le(p,sz)
+>  #define find_next_bit(p,sz,off)		_find_next_bit_le(p,sz,off)
+>  
+> -#define WORD_BITOFF_TO_LE(x)		((x))
+> -
+>  #else
+>  /*
+>   * These are the big endian, atomic definitions.
+> @@ -214,8 +212,6 @@ extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
+>  #define find_first_bit(p,sz)		_find_first_bit_be(p,sz)
+>  #define find_next_bit(p,sz,off)		_find_next_bit_be(p,sz,off)
+>  
+> -#define WORD_BITOFF_TO_LE(x)		((x) ^ 0x18)
+> -
+>  #endif
+>  
+>  #if __LINUX_ARM_ARCH__ < 5
+> @@ -287,40 +283,7 @@ static inline int fls(int x)
+>  #include <asm-generic/bitops/hweight.h>
+>  #include <asm-generic/bitops/lock.h>
+>  
+> -static inline void __set_bit_le(int nr, void *addr)
+> -{
+> -	__set_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline void __clear_bit_le(int nr, void *addr)
+> -{
+> -	__clear_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline int __test_and_set_bit_le(int nr, void *addr)
+> -{
+> -	return __test_and_set_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline int test_and_set_bit_le(int nr, void *addr)
+> -{
+> -	return test_and_set_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline int __test_and_clear_bit_le(int nr, void *addr)
+> -{
+> -	return __test_and_clear_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline int test_and_clear_bit_le(int nr, void *addr)
+> -{
+> -	return test_and_clear_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> -
+> -static inline int test_bit_le(int nr, const void *addr)
+> -{
+> -	return test_bit(WORD_BITOFF_TO_LE(nr), addr);
+> -}
+> +#ifdef __ARMEB__
+>  
+>  static inline int find_first_zero_bit_le(const void *p, unsigned size)
+>  {
+> @@ -340,6 +303,10 @@ static inline int find_next_bit_le(const void *p, int size, int offset)
+>  }
+>  #define find_next_bit_le find_next_bit_le
+>  
+> +#endif
+> +
+> +#include <asm-generic/bitops/le.h>
+> +
+>  /*
+>   * Ext2 is defined to use little-endian byte ordering.
+>   */
+> -- 
+> 1.7.4.4
+> 
