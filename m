@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759000Ab1D0MTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:19:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53088 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758966Ab1D0MTI (ORCPT
+	id S1759035Ab1D0MY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:24:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40804 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075Ab1D0MY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:19:08 -0400
-Date: Wed, 27 Apr 2011 08:19:02 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: benh@kernel.crashing.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@elte.hu, acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org
-Subject: Re: [PATCH V4] POWER: perf_event: Skip updating kernel counters if
- register value shrinks
-Message-ID: <20110427121902.GA2936@mgebm.net>
-References: <1302891150-8121-1-git-send-email-emunson@mgebm.net>
- <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
+	Wed, 27 Apr 2011 08:24:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=jOzd0BSA7J9ytmS+7xfrsjR8WqVz5BH72h4J2UDLOk+zdBbBzrVLMJSafFn26x+LT7
+         yyLSz5RHrPLFi60TlQAW5eM0YukhguUETRPSBDfy+lXFR6vcUNPd3UWeAgmuC+7zUx13
+         BYrFX+OdjHLhj2JKtivGxJbYNYClmS567V0ds=
+Message-ID: <4DB80B15.6050502@gmail.com>
+Date: Wed, 27 Apr 2011 14:24:53 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Oren Weil <oren.jer.weil@intel.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org, david@woodhou.se,
+        linux-kernel@vger.kernel.org, alan@linux.intel.com
+Subject: Re: [PATCH 1/8] staging/mei: PCI device and char driver support.
+References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com> <1303900057-21694-2-git-send-email-oren.jer.weil@intel.com>
+In-Reply-To: <1303900057-21694-2-git-send-email-oren.jer.weil@intel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/27/2011 12:27 PM, Oren Weil wrote:
+> +	dev->mem_addr = pci_iomap(pdev, 0, 0);
+...
+> +	iounmap(dev->mem_addr);
+...
+> +	if (dev->mem_addr)
+> +		iounmap(dev->mem_addr);
 
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just what I noticed after a quick look: you shall use pci_iounmap for
+pci_iomap'ped space.
 
-On Wed, 27 Apr 2011, David Laight wrote:
-
-> I keep telling Eric that the code below is incorrect
-> modulo arithimetic...
-
-But it isn't, and it doesn't have trouble with 2^32 - 1.  Here is one done =
-by
-hand:
-
-Counter is at 0xffffffff and is rolled over to 0x101 (258 counted items so
-that we miss the test for rollback).
-
- 0x00000000ffffffff  (Remember counters are 32 bit, but we store them in 64)
--0x0000000000000101
-=3D0xffffffff00000102
-
-After the mask we have 0x00000000000102, the actual difference between the
-counters.
-
->=20
-> > +static u64 check_and_compute_delta(u64 prev, u64 val)
-> > +{
-> > +	u64 delta =3D (val - prev) & 0xfffffffful;
-> > +
-> > +	/*
-> > +	 * POWER7 can roll back counter values, if the new value is
-> smaller
-> > +	 * than the previous value it will cause the delta and the
-> counter to
-> > +	 * have bogus values unless we rolled a counter over.  If a
-> coutner is
-> > +	 * rolled back, it will be smaller, but within 256, which is the
-> maximum
-> > +	 * number of events to rollback at once.  If we dectect a
-> rollback
-> > +	 * return 0.  This can lead to a small lack of precision in the
-> > +	 * counters.
-> > +	 */
-> > +	if (prev > val && (prev - val) < 256)
-> > +		delta =3D 0;
-> > +
-> > +	return delta;
->=20
-> The code should detect rollback by looking at the value of 'delta'
-> otherwise there are horrid end effects near 2^32-1.
->=20
-> For instance:
-> 	u32 delta =3D val - prev;
-> 	return delta & 0x80000000 ? 0 : delta;
->=20
->=20
->    David
->=20
->=20
->=20
->=20
-
---liOOAslEiF7prFVr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNuAm2AAoJEH65iIruGRnNJXUIAMmRQhchWoC5zG6wCyZ4O9Na
-K28xPGqGF9JHka0P7AL5M5pJtaZxG8uu2bGb/hAYKSh+v99PUxT8YFaFTII4X0Ns
-ZbS13ErCrn+tq7uuF/IVFztG7SsZCLoYlE/AIcNzYGyGT053Jo5oqjloyfRpmv6Z
-NtqDUSiuF58bEP7NnNO7Pl3uOJAcrO1NZ+285DPXq1qeQk6SaT5t8TQlOcKFuhYU
-ajiSBYVgc//EF0ih4uCmoPZch1lKILwZk28Dj5jfoSNDU6Ab9k3Rw760p5HFKz0s
-eNIM0qGg7zLZhicJaOcZvsaCuvRRVWEX5hm06gSTb6i7OyTFjO9JGRduhakQJ8o=
-=caaf
------END PGP SIGNATURE-----
-
---liOOAslEiF7prFVr--
+regards,
+-- 
+js
