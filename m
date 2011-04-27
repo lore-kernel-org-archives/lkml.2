@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1D0DQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 23:16:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37763 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1D0DQK (ORCPT
+	id S1754097Ab1D0DSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 23:18:52 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49930 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab1D0DSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 23:16:10 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Apr 2011 12:09:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH v2] fix get_scan_count for working well with small
- targets
-Message-Id: <20110427120931.a993890f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110427105031.db203b95.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110426135934.c1992c3e.akpm@linux-foundation.org>
-	<20110427105031.db203b95.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Apr 2011 23:18:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZM4SN08CgXRvTySjK0FCx85zk4otOWgU/8tLm0HCfU70Gb0EE7dXbAeR4+bj2c0rve
+         f+xGKhEWnubEYpKuVgpFef22HOUwPJtRsSpGZ73dYcG1PvdLS2lXtpb02G7pxx8+K9fB
+         mCzJPZkWfBRKjnuliLh9O/YFfvnS+vAyQuu/U=
+Date: Wed, 27 Apr 2011 06:18:44 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Am??rico Wang <xiyou.wangcong@gmail.com>
+Cc: Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: How to export information larger than PROC_BLOCK_SIZE via /proc
+ file system?
+Message-ID: <20110427031844.GA5595@p183>
+References: <BANLkTinQJ6wzOR++c-OSiCkf=MjOU=y=1A@mail.gmail.com>
+ <BANLkTik+9oz9fbeTwS4qd32ukw6uPHtrWA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTik+9oz9fbeTwS4qd32ukw6uPHtrWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 10:50:31 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Tue, 26 Apr 2011 13:59:34 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
+On Wed, Apr 27, 2011 at 11:00:32AM +0800, Am??rico Wang wrote:
+> On Wed, Apr 27, 2011 at 8:54 AM, Jidong Xiao <jidong.xiao@gmail.com> wrote:
+> > Hi,
+> >
+> > I am tracing some data inside the kernel, and I plan to export the
+> > tracing data through /proc file system. I created a file under /proc
+> > file system, and I use cat to display the tracing data. However, every
+> > time there is only 3072 bytes data displayed, which is the size
+> > defined by PROC_BLOCK_SIZE. And I wonder that how to export
+> > information more than that limit? Judging from the function
+> > fs/proc/generic.c/proc_file_read(), if the size returned by my
+> > read_proc function is large than a PAGE_SIZE, then I will get a
+> > KERN_ERR message which says "proc_file_read: Apparent buffer
+> > overflow!". Any help would be appreciated!
+> >
 > 
-> > What about simply removing the nr_saved_scan logic and permitting small
-> > scans?  That simplifies the code and I bet it makes no measurable
-> > performance difference.
-> > 
-> 
-> ok, v2 here. How this looks ?
-> For memcg, I think I should add select_victim_node() for direct reclaim,
-> then, we'll be tune big memcg using small memory on a zone case.
-> 
+> Why not switch to use debugfs?
 
-
-Ah, sorry this v2 doesn't remove nr_saved_scan in reclaim_stat. ...
-I will send v3.
-
+Or use seq_file/proc_create.
