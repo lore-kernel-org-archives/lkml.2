@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1D0Bsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 21:48:51 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64249 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab1D0Bsu (ORCPT
+	id S1756120Ab1D0ByG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 21:54:06 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:32094 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755707Ab1D0ByE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 21:48:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=wHKZ0cADt6aupprmgP9AOzHefkSzVR2GoPJFoLqOLYLMDyKNO6piHvAD11gmjtaDay
-         a31nEdw7aGdhChMr9vTjy1L5RXhMzlEWfxMdCyJXiAnDczw5dhWbMvDHr7j0KD92YQes
-         rBi/n9EjhOBkFqYRh29xk5xWkkchvst666ZLs=
+	Tue, 26 Apr 2011 21:54:04 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Topic: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Index: AQHMBGnbOdiUysHbTUGr026Sn7cwwZRw2pzQ
+Date: Wed, 27 Apr 2011 01:54:02 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+In-Reply-To: <20110426232843.GA31184@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=8ySUPP6_GUL9CTFh98J1PH0a4=g@mail.gmail.com>
-References: <20110426085953.GA12389@darkstar>
-	<BANLkTikkUq7rg4umYQ5yt9ve+q34Pf+=Ag@mail.gmail.com>
-	<BANLkTin0wj3AhCtR5ZD=N_LUKjE1etBcFg@mail.gmail.com>
-	<BANLkTim067_+bycA-rJk6u595YucMmruqQ@mail.gmail.com>
-	<BANLkTi=8ySUPP6_GUL9CTFh98J1PH0a4=g@mail.gmail.com>
-Date: Wed, 27 Apr 2011 09:48:48 +0800
-Message-ID: <BANLkTikfyi2FBykk1D1H-tdrSjmRYEh6ug@mail.gmail.com>
-Subject: Re: [PATCH v2] virtio_balloon: disable oom killer when fill balloon
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 9:37 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Wed, Apr 27, 2011 at 7:33 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> On Tue, Apr 26, 2011 at 6:39 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->>> On Tue, Apr 26, 2011 at 5:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->>>> Please resend this with [2/2] to linux-mm.
->>>>
->>>> On Tue, Apr 26, 2011 at 5:59 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->>>>> When memory pressure is high, virtio ballooning will probably cause oom killing.
->>>>> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
->>>>> will make memory becoming low then memory alloc of other processes will trigger
->>>>> oom killing. It is not desired behaviour.
->>>>
->>>> I can't understand why it is undesirable.
->>>> Why do we have to handle it specially?
->>>>
->>>
->>> Suppose user run some random memory hogging process while ballooning
->>> it will be undesirable.
->>
->>
->> In VM POV, kvm and random memory hogging processes are customers.
->> If we handle ballooning specially with disable OOM, what happens other
->> processes requires memory at same time? Should they wait for balloon
->> driver to release memory?
->>
->> I don't know your point. Sorry.
->> Could you explain your scenario in detail for justify your idea?
->
-> What you said make sense I understand what you said now. Lets ignore
-> my above argue and see what I'm actually doing.
->
-> I'm hacking with balloon driver to fit to short the vm migration time.
->
-> while migrating host tell guest to balloon as much memory as it can, then start
-> migrate, just skip the ballooned pages, after migration done tell
-> guest to release the memory.
->
-> In migration case oom is not I want to see and disable oom will be good.
-
-BTW, if oom_killer_disabled is really not recommended to use I can
-switch back to oom_notifier way.
-
->
->> And as I previous said, we have to solve oom_killer_disabled issue in
->> do_try_to_free_pages.
->>
->> Thanks, Dave.
->> --
->> Kind regards,
->> Minchan Kim
->>
->
->
->
-> --
-> Regards
-> dave
->
 
 
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, April 26, 2011 7:29 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+> 
+> On Tue, Apr 26, 2011 at 09:19:45AM -0700, K. Y. Srinivasan wrote:
+> > This patch-set addresses some of the bus/driver model cleanup that
+> > Greg sugested over the last couple of days.  In this patch-set we
+> > deal with the following issues:
+> >
+> > 	1) Cleanup unnecessary state in struct hv_device and
+> > 	   struct hv_driver to be compliant with the Linux
+> > 	   Driver model.
+> >
+> > 	2) Cleanup the vmbus_match() function to conform with the
+> > 	   Linux Driver model.
+> >
+> > 	3) Cleanup error handling in the vmbus_probe() and
+> > 	   vmbus_child_device_register() functions. Fixed a
+> > 	   bug in the probe failure path as part of this cleanup.
+> >
+> > 	4) The Windows host cannot handle the vmbus_driver being
+> > 	   unloaded and subsequently loaded. Cleanup the driver with
+> > 	   this in mind.
+> 
+> I've stopped at this patch (well, I applied one more, but you can see
+> that.)
+> 
+> I'd like to get some confirmation that this is really what you all want
+> to do here before applying it.  If it is, care to resend them with a bit
+> more information about this issue and why you all are making it?
 
--- 
-Regards
-dave
+Greg, this is restriction imposed by the Windows host:  you cannot reload the
+Vmbus driver without rebooting the guest. If you cannot re-load, what good is it
+to be able to unload? Distros that integrate these drivers will load these drivers 
+automatically on boot and there is not much point in being able to unload this since 
+most likely the root device will be handled by these drivers. For systems that don't
+integrate these drivers; I don't see much point in allowing the driver to be unloaded,
+if you cannot reload the driver without rebooting the guest. If and when the Windows 
+host supports reloading the vmbus driver, we can very easily add this functionality.
+The situation currently at best very misleading - you think you can unload the vmbus
+driver, only to discover that you have to reboot the guest!
+
+> 
+> Anyway, other than this one, the series looks good.  But you should
+> follow-up with some driver structure changes like what Christoph said to
+> do. 
+
+I will send you a patch for this.
+
+> After that, do you want another round of review of the code, or do
+> you have more things you want to send in (like the name[64] removal?)
+
+I would prefer that we go through the  review process. What is the process for
+this review? Is there a time window for people to respond. I am hoping I will be able
+to address all the review comments well in advance of the  next closing of the tree,
+with the hope of taking the vmbus driver out of staging this go around (hope springs
+eternal in the human breast ...)! 
+
+Regards,
+
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
+
