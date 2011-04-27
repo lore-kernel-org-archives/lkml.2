@@ -1,144 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab1D0Pdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 11:33:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab1D0Pdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 11:33:36 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
-Date: Wed, 27 Apr 2011 06:32:33 -0400
-Message-Id: <1303900353-10242-1-git-send-email-dzickus@redhat.com>
+	id S1759338Ab1D0Pew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 11:34:52 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:39161 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab1D0Pev convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:3>);
+	Wed, 27 Apr 2011 11:34:51 -0400
+Message-Id: <4DB85404020000780003E6D7@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 27 Apr 2011 16:36:04 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-arch@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] allow placing exception table in .rodata (and do so on
+	 x86)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was noticed that P4 machines were generating double NMIs for each
-perf event.  These extra NMIs lead to 'Dazed and confused' messages on
-the screen.
+This is since the table is really a set of pointers, i.e. misplaced in
+.text.
 
-I tracked this down to a P4 quirk that said the overflow bit had to be
-cleared before re-enabling the apic LVT mask.  My first attempt was
-to move the un-masking inside the perf nmi handler from before the
-chipset NMI handler to after.
+Quite likely other architectures would want to follow.
 
-This broke Nehalem boxes that seem to like the unmasking before the
-counters themselves are re-enabled.
-
-In order to keep this change simple for 2.6.39, I decided to just
-simply move the apic LVT un-masking to the beginning of all the
-chipset NMI handlers, with the exception of Pentium4's to fix the
-double NMI issue.
-
-Later on we can move the un-masking to later in the handlers to save
-a number of 'extra' NMIs on those particular chipsets.
-
-I tested this change on a P4 machine, an AMD machine, a Nehalem box,
-and a core2quad box.  'perf top' worked correctly along with various
-other small 'perf record' runs.  Anything high stress breaks all the
-machines but that is a different problem.
-
-Thanks to various people for testing different versions of this patch.
-
-Reported-and-tested-by: Shaun Ruffell <sruffell@digium.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
 ---
-Originally I was going to bundle this with Cyrill's P4 alias patch but that
-may take awhile, so I am posting this stand alone for now.  Sorry for the
-delay.
+ arch/x86/include/asm/sections.h   |    2 +-
+ arch/x86/kernel/vmlinux.lds.S     |    5 +++--
+ arch/x86/mm/init_64.c             |    6 +++---
+ include/asm-generic/vmlinux.lds.h |    5 +++++
+ 4 files changed, 12 insertions(+), 6 deletions(-)
 
----
- arch/x86/kernel/cpu/perf_event.c       |   12 ++++++++++--
- arch/x86/kernel/cpu/perf_event_intel.c |   10 ++++++++++
- arch/x86/kernel/cpu/perf_event_p4.c    |   17 +++++++++++++----
- 3 files changed, 33 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index eed3673a..9d1130d 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1284,6 +1284,16 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+--- 2.6.39-rc5/arch/x86/include/asm/sections.h
++++ 2.6.39-rc5-extable-in-rodata/arch/x86/include/asm/sections.h
+@@ -5,7 +5,7 @@
+ #include <asm/uaccess.h>
  
- 	cpuc = &__get_cpu_var(cpu_hw_events);
+ extern char __brk_base[], __brk_limit[];
+-extern struct exception_table_entry __stop___ex_table[];
++extern const char __stop_notes[];
  
-+	/*
-+	 * Some chipsets need to unmask the LVTPC in a particular spot
-+	 * inside the nmi handler.  As a result, the unmasking was pushed
-+	 * into all the nmi handlers.
-+	 *
-+	 * This generic handler doesn't seem to have any issues where the
-+	 * unmasking occurs so it was left at the top.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+ extern char __end_rodata_hpage_align[];
+--- 2.6.39-rc5/arch/x86/kernel/vmlinux.lds.S
++++ 2.6.39-rc5-extable-in-rodata/arch/x86/kernel/vmlinux.lds.S
+@@ -20,6 +20,8 @@
+ #define LOAD_OFFSET __START_KERNEL_map
+ #endif
+ 
++#define EXCEPTION_TABLE_RO EXCEPTION_TABLE(16)
 +
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
- 		if (!test_bit(idx, cpuc->active_mask)) {
- 			/*
-@@ -1370,8 +1380,6 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		return NOTIFY_DONE;
- 	}
+ #include <asm-generic/vmlinux.lds.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/thread_info.h>
+@@ -114,8 +116,7 @@ SECTIONS
+ 	} :text = 0x9090
  
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	NOTES :text :note
 -
- 	handled = x86_pmu.handle_irq(args->regs);
- 	if (!handled)
- 		return NOTIFY_DONE;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 8fc2b2c..9607953 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -933,6 +933,16 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+-	EXCEPTION_TABLE(16) :text = 0x9090
++	text_continues : {} :text /* switch back to regular text... */
  
- 	cpuc = &__get_cpu_var(cpu_hw_events);
+ #if defined(CONFIG_DEBUG_RODATA)
+ 	/* .text should occupy whole number of pages */
+--- 2.6.39-rc5/arch/x86/mm/init_64.c
++++ 2.6.39-rc5-extable-in-rodata/arch/x86/mm/init_64.c
+@@ -741,7 +741,7 @@ int kernel_set_to_readonly;
+ void set_kernel_text_rw(void)
+ {
+ 	unsigned long start = PFN_ALIGN(_text);
+-	unsigned long end = PFN_ALIGN(__stop___ex_table);
++	unsigned long end = PFN_ALIGN(_etext);
  
-+	/*
-+	 * Some chipsets need to unmask the LVTPC in a particular spot
-+	 * inside the nmi handler.  As a result, the unmasking was pushed
-+	 * into all the nmi handlers.
-+	 *
-+	 * This handler doesn't seem to have any issues with the unmasking
-+	 * so it was left at the top.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
-+
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index c2520e1..60da195 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -950,11 +950,20 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 			p4_pmu_disable_event(event);
+ 	if (!kernel_set_to_readonly)
+ 		return;
+@@ -760,7 +760,7 @@ void set_kernel_text_rw(void)
+ void set_kernel_text_ro(void)
+ {
+ 	unsigned long start = PFN_ALIGN(_text);
+-	unsigned long end = PFN_ALIGN(__stop___ex_table);
++	unsigned long end = PFN_ALIGN(_etext);
+ 
+ 	if (!kernel_set_to_readonly)
+ 		return;
+@@ -780,7 +780,7 @@ void mark_rodata_ro(void)
+ 	unsigned long rodata_start =
+ 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
+-	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
++	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop_notes);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
+ 
+--- 2.6.39-rc5/include/asm-generic/vmlinux.lds.h
++++ 2.6.39-rc5-extable-in-rodata/include/asm-generic/vmlinux.lds.h
+@@ -226,6 +226,7 @@
+ 		*(.rodata1)						\
+ 	}								\
+ 									\
++	EXCEPTION_TABLE_RO						\
+ 	BUG_TABLE							\
+ 									\
+ 	JUMP_TABLE							\
+@@ -459,6 +460,10 @@
+ 		VMLINUX_SYMBOL(__stop___ex_table) = .;			\
  	}
  
--	if (handled) {
--		/* p4 quirk: unmask it again */
--		apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
-+	if (handled)
- 		inc_irq_stat(apic_perf_irqs);
--	}
++#ifndef EXCEPTION_TABLE_RO
++#define EXCEPTION_TABLE_RO
++#endif
 +
-+	/*
-+	 * When dealing with the unmasking of the LVTPC on P4 perf hw, it has
-+	 * been observed that the OVF bit flag has to be cleared first _before_
-+	 * the LVTPC can be unmasked.
-+	 *
-+	 * The reason is the NMI line will continue to be asserted while the OVF
-+	 * bit is set.  This causes a second NMI to generate if the LVTPC is
-+	 * unmasked before the OVF bit is cleared, leading to unknown NMI
-+	 * messages.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 
- 	return handled;
- }
--- 
-1.7.4.2
+ /*
+  * Init task
+  */
+
+
 
