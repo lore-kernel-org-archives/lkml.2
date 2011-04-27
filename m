@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab1D0WFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:05:44 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48859 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754849Ab1D0WFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:05:42 -0400
-Date: Wed, 27 Apr 2011 15:05:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S932638Ab1D0WG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:06:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33144 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab1D0WGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 18:06:24 -0400
+Date: Thu, 28 Apr 2011 00:06:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
+        paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org,
@@ -21,89 +20,75 @@ Cc: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
         Pekka Enberg <penberg@kernel.org>
 Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
  regression?
-Message-ID: <20110427220524.GQ2135@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110426081904.0d2b1494@pluto.restena.lu>
- <20110426112756.GF4308@linux.vnet.ibm.com>
- <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home>
- <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
- <alpine.LFD.2.02.1104262314110.3323@ionos>
- <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home>
- <4DB86BA4.8070401@draigBrady.com>
- <20110427213431.236c2a15@neptune.home>
+In-Reply-To: <20110427204139.1b0ea23b@neptune.home>
+Message-ID: <alpine.LFD.2.02.1104272351290.3323@ionos>
+References: <20110425180450.1ede0845@neptune.home> <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home> <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home> <20110425191607.GL2468@linux.vnet.ibm.com>
+ <20110425231016.34b4293e@neptune.home> <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com> <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu> <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
+ <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu> <20110427204139.1b0ea23b@neptune.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110427213431.236c2a15@neptune.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1129399958-1303941699=:3323"
+Content-ID: <alpine.LFD.2.02.1104280006080.3323@ionos>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 09:34:31PM +0200, Bruno Prémont wrote:
-> On Wed, 27 April 2011 Pádraig Brady wrote:
-> > On 27/04/11 19:41, Bruno Prémont wrote:
-> > > On Wed, 27 April 2011 Bruno Prémont wrote:
-> > >> On Wed, 27 Apr 2011 00:28:37 +0200 (CEST) Thomas Gleixner wrote:
-> > >>> On Tue, 26 Apr 2011, Linus Torvalds wrote:
-> > >>>> On Tue, Apr 26, 2011 at 10:09 AM, Bruno Prémont wrote:
-> > >>>>> Just in case, /proc/$(pidof rcu_kthread)/status shows ~20k voluntary
-> > >>>>> context switches and exactly one non-voluntary one.
-> > >>>>>
-> > >>>>> In addition when rcu_kthread has stopped doing its work
-> > >>>>> `swapoff $(swapdevice)` seems to block forever (at least normal shutdown
-> > >>>>> blocks on disabling swap device).
-> > > 
-> > > Apparently it's not swapoff but `umount -a -t tmpfs` that's getting
-> > > stuck here. Manual swapoff worked.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Doesn't "umount" wait for an RCU grace period?  If so, then your hang
-is just a consequence of RCU grace periods hanging, which in turn appears
-to be a consequence of rcu_kthread not being allowed to run.
+--8323328-1129399958-1303941699=:3323
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LFD.2.02.1104280006081.3323@ionos>
 
-> > Anything to do with this?
-> > http://thread.gmane.org/gmane.linux.kernel.mm/60953/
+On Wed, 27 Apr 2011, Bruno Prémont wrote:
+> On Wed, 27 April 2011 Bruno Prémont wrote:
+> Voluntary context switches stay constant from the time on SLABs pile up.
+> (which makes sense as it doesn't run get CPU slices anymore)
 > 
-> I don't think so, if it is, it is only loosely related.
+> > > Can you please enable CONFIG_SCHED_DEBUG and provide the output of
+> > > /proc/sched_stat when the problem surfaces and a minute after the
+> > > first snapshot?
 > 
-> From the trace you omitted to keep it's visible that it gets hit by
-> non-operating RCU kthread.
-
-Yep, makes sense!
-
-							Thanx, Paul
-
-> Maybe existence of RCU barrier in this trace has some relation to
-> above thread but I don't see it at first glance.
+> hm, did you mean CONFIG_SCHEDSTAT or /proc/sched_debug?
 > 
-> [ 1714.960735] umount          D 5a000040  5668 20331  20324 0x00000000
-> [ 1714.960735]  c3c99e5c 00000086 dd407900 5a000040 dd25a1a8 dd407900 dd25a120 c3c99e0c
-> [ 1714.960735]  c3c99e24 c10c1be2 c14d9f20 c3c99e5c c3c8c680 c3c8c680 000000bb c3c99e24
-> [ 1714.960735]  c10c0b88 dd25a120 dd407900 ddfd4b40 c3c99e4c ddfc9d20 dd402380 5a000010
-> [ 1714.960735] Call Trace:
-> [ 1714.960735]  [<c10c1be2>] ? check_object+0x92/0x210
-> [ 1714.960735]  [<c10c0b88>] ? init_object+0x38/0x70
-> [ 1714.960735]  [<c10c1be2>] ? check_object+0x92/0x210
-> [ 1714.960735]  [<c13cb37d>] schedule_timeout+0x16d/0x280
-> [ 1714.960735]  [<c10c0b88>] ? init_object+0x38/0x70
-> [ 1714.960735]  [<c10c2122>] ? free_debug_processing+0x112/0x1f0
-> [ 1714.960735]  [<c10a3791>] ? shmem_put_super+0x11/0x20
-> [ 1714.960735]  [<c13cae9c>] wait_for_common+0x9c/0x150
-> [ 1714.960735]  [<c102c890>] ? try_to_wake_up+0x170/0x170
-> [ 1714.960735]  [<c13caff2>] wait_for_completion+0x12/0x20
-> [ 1714.960735]  [<c1075ad7>] rcu_barrier_sched+0x47/0x50
->                              ^^^^^^^^^^^^^^^^^
-> [ 1714.960735]  [<c104d3c0>] ? alloc_pid+0x370/0x370
-> [ 1714.960735]  [<c10ce74a>] deactivate_locked_super+0x3a/0x60
-> [ 1714.960735]  [<c10ce948>] deactivate_super+0x48/0x70
-> [ 1714.960735]  [<c10e7427>] mntput_no_expire+0x87/0xe0
-> [ 1714.960735]  [<c10e7800>] sys_umount+0x60/0x320
-> [ 1714.960735]  [<c10b231a>] ? remove_vma+0x3a/0x50
-> [ 1714.960735]  [<c10b3b22>] ? do_munmap+0x212/0x2f0
-> [ 1714.960735]  [<c10e7ad9>] sys_oldumount+0x19/0x20
-> [ 1714.960735]  [<c13cce10>] sysenter_do_call+0x12/0x26
-> 
-> Bruno
+> I did use CONFIG_SCHED_DEBUG (and there is no /proc/sched_stat) so I took
+> /proc/sched_debug which exists... (attached, taken about 7min and +1min
+> after SLABs started piling up), though build processes were SIGSTOPped
+> during first minute.
+
+Oops. /proc/sched_debug is the right thing.
+ 
+> printk wrote (in case its timestamp is useful, more below):
+> [  518.480103] sched: RT throttling activated
+
+Ok. Aside of the fact that the CPU time accounting is completely hosed
+this is pointing to the root cause of the problem.
+
+kthread_rcu seems to run in circles for whatever reason and the RT
+throttler catches it. After that things go down the drain completely
+as it should get on the CPU again after that 50ms throttling break.
+
+Though we should not ignore the fact, that the RT throttler hit, but
+none of the RT tasks actually accumulated runtime.
+
+So there is a couple of questions:
+
+   - Why does the scheduler detect the 950 ms RT runtime, but does
+     not accumulate that runtime to any thread
+
+   - Why is the runtime accounting totally hosed
+
+   - Why does that not happen (at least not reproducible) with 
+     TREE_RCU
+
+I need some sleep now, but I will try to come up with sensible
+debugging tomorrow unless Paul or someone else beats me to it.
+
+Thanks,
+
+	tglx
+--8323328-1129399958-1303941699=:3323--
