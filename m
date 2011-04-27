@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab1D0CeU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 22:34:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36008 "EHLO mga11.intel.com"
+	id S1758039Ab1D0ClX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 22:41:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26402 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756811Ab1D0CeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 22:34:18 -0400
+	id S1755458Ab1D0ClW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 22:41:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,272,1301900400"; 
-   d="scan'208";a="914860445"
-Date: Wed, 27 Apr 2011 10:34:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] split inode_wb_list_lock into
- bdi_writeback.list_lock
-Message-ID: <20110427023404.GA5821@localhost>
-References: <20110426144218.GA14862@localhost>
- <20110426144209.06317674.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110426144209.06317674.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="914861906"
+Subject: Re: [PATCH RFC] Fix per-task profiling Re: [PATCH] perf: Allow set
+ output buffer for tasks in the same thread group
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Tim Blechmann <tim@klingt.org>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110426204401.GB1746@ghostprotocols.net>
+References: <1303657064.2239.25.camel@localhost>
+	 <1303664726.20212.1.camel@twins> <1303738838.2578.1.camel@localhost>
+	 <20110425152833.GB32069@ghostprotocols.net>
+	 <20110426204401.GB1746@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 10:40:46 +0800
+Message-ID: <1303872046.23673.19.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 05:42:09AM +0800, Andrew Morton wrote:
-> On Tue, 26 Apr 2011 22:42:19 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Wed, 2011-04-27 at 04:44 +0800, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Apr 25, 2011 at 12:28:33PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Mon, Apr 25, 2011 at 09:40:38PM +0800, Lin Ming escreveu:
+> > > On Mon, 2011-04-25 at 01:05 +0800, Peter Zijlstra wrote:
+> > > > On Sun, 2011-04-24 at 22:57 +0800, Lin Ming wrote:
+> > > > > Currently, kernel only allows an event to redirect its output to other
+> > > > > events of the same task.
 > 
-> > @@ -55,13 +55,16 @@ EXPORT_SYMBOL(I_BDEV);
-> >  static void bdev_inode_switch_bdi(struct inode *inode,
-> >  			struct backing_dev_info *dst)
-> >  {
-> > -	spin_lock(&inode_wb_list_lock);
-> > +	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-> > +
-> > +	bdi_lock_two(&old->wb, &dst->wb);
-> >  	spin_lock(&inode->i_lock);
-> >  	inode->i_data.backing_dev_info = dst;
-> >  	if (inode->i_state & I_DIRTY)
-> >  		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-> >  	spin_unlock(&inode->i_lock);
-> > -	spin_unlock(&inode_wb_list_lock);
-> > +	spin_unlock(&old->wb.list_lock);
-> > +	spin_unlock(&dst->wb.list_lock);
-> >  }
+> > > > > This causes PERF_EVENT_IOC_SET_OUTPUT ioctl fails when an event is
+> > > > > trying to redirect its output to other events in the same thread group.
 > 
-> Has this patch been well tested under lockdep?
+> > > > Which is exactly what it should do, you should never be allowed to
+> > > > redirect your events to that of another task, since that other task
+> > > > might be running on another CPU.
+> 
+> > > > The buffer code strictly assumes no concurrency, therefore its either
+> > > > one task or one CPU.
+> 
+> > > Well, this is not the right fix, then the perf tool code need to be
+> > > fixed.
+>  
+> > Yes, I'm working on it.
+> 
+> Lin, David, Tim, can you please try the two patches attached?
+> 
+> Tested with:
+> 
+> [root@felicio ~]# tuna -t 26131 -CP | nl
+>   1                      thread       ctxt_switches
+>   2    pid SCHED_ rtpri affinity voluntary nonvoluntary             cmd
+>   3 26131   OTHER     0      0,1  10814276      2397830 chromium-browse 
+>   4  642    OTHER     0      0,1     14688            0 chromium-browse 
+>   5  26148  OTHER     0      0,1    713602       115479 chromium-browse 
+>   6  26149  OTHER     0      0,1    801958         2262 chromium-browse 
+>   7  26150  OTHER     0      0,1   1271128          248 chromium-browse 
+>   8  26151  OTHER     0      0,1         3            0 chromium-browse 
+>   9  27049  OTHER     0      0,1     36796            9 chromium-browse 
+>  10  618    OTHER     0      0,1     14711            0 chromium-browse 
+>  11  661    OTHER     0      0,1     14593            0 chromium-browse 
+>  12  29048  OTHER     0      0,1     28125            0 chromium-browse 
+>  13  26143  OTHER     0      0,1   2202789          781 chromium-browse 
+> [root@felicio ~]#
+> 
+> So 11 threads under pid 26131, then:
+> 
+> [root@felicio ~]# perf record -F 50000 --pid 26131 
+> 
+> [root@felicio ~]# grep perf_event /proc/`pidof perf`/maps | nl
+>   1 7fa4a2538000-7fa4a25b9000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   2 7fa4a25b9000-7fa4a263a000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   3 7fa4a263a000-7fa4a26bb000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   4 7fa4a26bb000-7fa4a273c000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   5 7fa4a273c000-7fa4a27bd000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   6 7fa4a27bd000-7fa4a283e000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   7 7fa4a283e000-7fa4a28bf000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   8 7fa4a28bf000-7fa4a2940000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>   9 7fa4a2940000-7fa4a29c1000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>  10 7fa4a29c1000-7fa4a2a42000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+>  11 7fa4a2a42000-7fa4a2ac3000 rwxs 00000000 00:09 4064 anon_inode:[perf_event]
+> [root@felicio ~]#
+> 
+> 11 mmaps, one per thread since we didn't specify any CPU list, so we need one
+> mmap per thread and:
+> 
+> [root@felicio ~]# perf record -F 50000 --pid 26131 
+> ^M
+> ^C[ perf record: Woken up 79 times to write data ]
+> [ perf record: Captured and wrote 20.614 MB perf.data (~900639 samples) ]
+> 
+> [root@felicio ~]# perf report -D | grep PERF_RECORD_SAMPLE | cut -d/ -f2 | cut -d: -f1 | sort -n | uniq -c | sort -nr | nl
+>      1	 371310 26131
+>      2	  96516 26148
+>      3	  95694 26149
+>      4	  95203 26150
+>      5	   7291 26143
+>      6	     87 27049
+>      7	     76 661
+>      8	     60 29048
+>      9	     47 618
+>     10	     43 642
+> [root@felicio ~]#
+> 
+> Ok, one of the threads, 26151 was quiescent, so no samples there, but all the
+> others are there.
+> 
+> Then, if I specify one CPU:
+> 
+> [root@felicio ~]# perf record -F 50000 --pid 26131 --cpu 1
 
-Yes, it runs OK on concurrent dd and dd+tar workloads over all major
-filesystems, including NFS. Lockdep is always enabled in my kernels,
-no warnings are found in dmesg.
+Tested and it works OK.
+
+But here is one thing make me confused.
+I thought that "--pid" and "--cpu" parameters are not allowed to be used
+at the same time. Otherwise, is it a task event or cpu event?
+
+Or does it mean that the event is only monitored when the "task" is
+running on the specified "cpu"?
 
 Thanks,
-Fengguang
+Lin Ming
+
