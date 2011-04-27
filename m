@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab1D0P0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 11:26:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52827 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab1D0P0I convert rfc822-to-8bit (ORCPT
+	id S1756552Ab1D0Pbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 11:31:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43343 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1D0Pbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 11:26:08 -0400
+	Wed, 27 Apr 2011 11:31:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=DwKRDcRPgIOktD93SY/E/1Datfy9L6YlxrWL3wwp8OKDfZJ816skY3WTZSGuD7U8jX
-         uIzcU2dszzdv1dCxn7NEk3/klWbLHzu2n+A0HFbvuUtPCAoUaZnIjyPzBp4B4sp1pdKg
-         NrBAppleQA11XHoRNmsw3Y+B7I7Fbh88NWk3E=
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=EoJ+vCEzJkOYz+BXwwpRWuzeOqq20fa8Hb4hEG/LAUlnu67szp6P5E7EFYPjp8Q8vx
+         /QylvPkX2l2c88Ia9pnosKEMrWHwebzWvWJymignNbeYNY9At6SbQuE62kf5pc3MU/qm
+         sbEDrLI2+ur4lVeAxLYr/a3ErUeTde8EWFZmU=
+Message-ID: <4DB836C2.6000504@googlemail.com>
+Date: Wed, 27 Apr 2011 17:31:14 +0200
+From: Dirk Behme <dirk.behme@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110427095709.GA1687@linux.develer.com>
-References: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
- <20110427001453.GD12436@dastard> <20110427085910.GA1749@linux.betterlinux.com>
- <BANLkTimrpNOHVfnund7uc=thf-c3_HxyYQ@mail.gmail.com> <20110427094717.GB1749@linux.betterlinux.com>
- <BANLkTi=ZNq4Yp3U5jVspsJixu4ckbdVjtQ@mail.gmail.com> <20110427095709.GA1687@linux.develer.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 27 Apr 2011 11:25:47 -0400
-X-Google-Sender-Auth: IdJkocejDIna4yBhp2MtiFlLxIs
-Message-ID: <BANLkTi=+E+WzUgqEQTnRPmL1g5yPsXu8Bw@mail.gmail.com>
-Subject: Re: [RFC] [PATCH] drop_pagecache syscall
-To: Andrea Righi <righi.andrea@gmail.com>
-Cc: Andrea Righi <andrea@betterlinux.com>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alessio Igor Bogani <abogani@kernel.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+In-Reply-To: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 05:57, Andrea Righi wrote:
-> On Wed, Apr 27, 2011 at 05:50:04AM -0400, Mike Frysinger wrote:
->> On Wed, Apr 27, 2011 at 05:47, Andrea Righi wrote:
->> > On Wed, Apr 27, 2011 at 05:10:41AM -0400, Mike Frysinger wrote:
->> >> On Wed, Apr 27, 2011 at 05:01, Andrea Righi wrote:
->> >> > On Wed, Apr 27, 2011 at 10:14:53AM +1000, Dave Chinner wrote:
->> >> >> On Tue, Apr 26, 2011 at 11:35:27PM +0200, Andrea Righi wrote:
->> >> >> > This functionality can be used by all the applications that want to have a
->> >> >> > better control over the page cache management (for example to immediately drop
->> >> >> > pages that for sure will not be reused in the near future, without calling
->> >> >> > posix_fadvise() for all the files they've touched), or to provide a more fine
->> >> >> > grained debugging feature usable by the filesystem benchmarks.
->> >> >> >
->> >> >> > The system call does not require root privileges and it can be called by any
->> >> >> > unprivileged application. For example, we can write a userspace tool to run
->> >> >> > something like this:
->> >> >> >
->> >> >> >   $ drop-pagecache /path/file_or_dir
->> >> >>
->> >> >> That's a potential DOS vector, I think. Drop the pagecache in a hard
->> >> >> loop on the root fs of a busy server and watch it crawl...
->> >> >
->> >> > Yes, probably we could allow only the CAP_SYS_ADMIN tasks to execute
->> >> > this syscall.
->> >>
->> >> if /proc/sys/vm/drop_caches has any checks other than file permission
->> >> checks (i.e. UID==0), it'd probably be better to copy those rather
->> >> than picking something different.
->> >
->> > ok, what about checking current_euid() == 0?
->>
->> that's not what i meant.  if the drop_caches file already has certain
->> cap checks/whatever in place, let's use those.  if it doesnt, then
->> picking a cap level as you proposed makes sense.
+On 16.04.2011 15:26, Alessio Igor Bogani wrote:
+> The intent of this patch is to speed up the symbols resolution process.
 >
-> mmh, drop_caches has a file ownership (root:root) and a permission mask
-> (0644), how to apply the same checks to a system call? The most similar
-> thing seems to check the current euid. Am I missing something?
+> This objective is achieved by sorting all ksymtab* and kcrctab* symbols
+> (those which reside both in the kernel and in the modules) and thus use the
+> fast binary search.
+>
+> To avoid adding lots of code for symbols sorting I rely on the linker which can
+> easily do the job thanks to a little trick. The trick isn't really beautiful to
+> see but permits minimal changes to the code and build process. Indeed the patch
+> is very simple and short.
+>
+> In the first place I changed the code for place every symbol in a different
+> section (for example: "___ksymtab" sec "__" #sym) at compile time (this the
+> above mentioned trick!). Thus I request to the linker to sort and merge all
+> these sections into the appropriate ones (for example: "__ksymtab") at link
+> time using the linker scripts. Once all symbols are sorted we can use binary
+> search instead of the linear one.
+>
+> I'm fairly sure that this is a good speed improvement even though I haven't
+> made any comprehensive benchmarking (but follow a simple one). In any case
+> I would be very happy to receive suggestions about how made it. Collaterally,
+> the boot time should be reduced also (proportionally to the number of modules
+> and symbols nvolved at boot stage).
+>
+> I hope that you find that interesting!
+>
+> This work was supported by a hardware donation from the CE Linux Forum.
+>
+> Thanks to Ian Lance Taylor for help about how the linker works.
+>
+>
+> Changes since V3:
+> *) Please ignore this version completely
+>
+> Changes since V2:
+> *) Fix a bug in each_symbol() semantics by Anders Kaseorg
+> *) Split the work in three patches as requested by Rusty Russell
+> *) Add a generic binary search implementation made by Tim Abbott
+> *) Remove CONFIG_SYMBOLS_BSEARCH kernel option
+>
+> Changes since V1:
+> *) Merge all patches into only one
+> *) Remove few useless things
+> *) Introduce CONFIG_SYMBOLS_BSEARCH kernel option
+>
+>
+> Alessio Igor Bogani (3):
+>    module: Restructure each_symbol() code
+>    module: Sort exported symbols
+>    module: Use the binary search for symbols resolution
+>
+> Tim Abbott (1):
+>    lib: Add generic binary search function to the kernel.
+>
+>   include/asm-generic/vmlinux.lds.h |   20 ++++----
+>   include/linux/bsearch.h           |    9 ++++
+>   include/linux/module.h            |    4 +-
+>   kernel/module.c                   |   84 ++++++++++++++++++++++++++++---------
+>   lib/Makefile                      |    3 +-
+>   lib/bsearch.c                     |   53 +++++++++++++++++++++++
+>   scripts/module-common.lds         |   11 +++++
+>   7 files changed, 151 insertions(+), 33 deletions(-)
+>   create mode 100644 include/linux/bsearch.h
+>   create mode 100644 lib/bsearch.c
 
-my (limited) understanding is that you should be using cap checks, not UID
--mike
+Tested-by: Dirk Behme <dirk.behme@googlemail.com>
+
+On an embedded ARM system insmoding a large number of modules the 
+overall module load time is improved up to ~1s. Great! :)
+
+It would be nice to get these patches into mainline asap.
+
+Many thanks
+
+Dirk
+
+
+
