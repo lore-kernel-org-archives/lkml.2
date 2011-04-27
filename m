@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab1D0Gb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 02:31:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47319 "EHLO mx1.redhat.com"
+	id S1751969Ab1D0Gdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 02:33:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41615 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab1D0Gb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 02:31:58 -0400
-Date: Wed, 27 Apr 2011 12:01:47 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Greg KH <greg@kroah.com>, Milton Miller <miltonm@bga.com>,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: hvc_console: Don't access hvc_task if not initialised
-Message-ID: <20110427063147.GA28328@amit-x200.redhat.com>
-References: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
- <hvc-kick-notask@mdm.bga.com>
- <20110325084714.GA28356@amit-x200.redhat.com>
- <hvc-kick-notask-2@mdm.bga.com>
- <20110420123330.GB3519@amit-x200.redhat.com>
- <20110420143435.GB22436@kroah.com>
- <20110420170610.GA6013@amit-x200.redhat.com>
- <87oc3sl23a.fsf@rustcorp.com.au>
+	id S1751748Ab1D0Gdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 02:33:40 -0400
+Date: Wed, 27 Apr 2011 08:33:18 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Travis <travis@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jack Steiner <steiner@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] memblock: add error return when CONFIG_HAVE_MEMBLOCK
+ is not set
+Message-ID: <20110427063318.GC17079@elte.hu>
+References: <20110425181136.055235992@gulag1.americas.sgi.com>
+ <20110425181136.211858618@gulag1.americas.sgi.com>
+ <20110425154835.7d41d89e.akpm@linux-foundation.org>
+ <4DB6FBC2.7000806@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87oc3sl23a.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DB6FBC2.7000806@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 27 Apr 2011 [14:31:29], Rusty Russell wrote:
-> On Wed, 20 Apr 2011 22:36:10 +0530, Amit Shah <amit.shah@redhat.com> wrote:
-> > On (Wed) 20 Apr 2011 [07:34:35], Greg KH wrote:
-> > > Care to either create this patch, or resend your original one, if you
-> > > want it applied?
-> > 
-> > Rusty has the other one queued.  I pinged him about status.
-> 
-> It's merged, but I don't think it had the requisite cc:stable, did it?
 
-No, because at the point of submitting I didn't know it would solve
-this bug as well.  Greg, can you pick
-afa2689e19073cd2e762d0f2c1358fab1ab9f18c for stable?
+* Mike Travis <travis@sgi.com> wrote:
+
+> 
+> 
+> Andrew Morton wrote:
+> >On Mon, 25 Apr 2011 13:11:37 -0500
+> >Mike Travis <travis@sgi.com> wrote:
+> >
+> >>	Add an error return if CONFIG_HAVE_MEMBLOCK is not set instead
+> >>	of having to add #ifdef CONFIG_HAVE_MEMBLOCK around blocks of
+> >>	code calling that function.
+> >>
+> >>Authored-by: Yinghai Lu <yinghai@kernel.org>
+> >>Signed-off-by: Mike Travis <travis@sgi.com>
+> >
+> >There is no such thing as "Authored-by:".  If this patch was written by
+> >yinghai then it must be tagged as From:him at the top of the changelog
+> >and preferably has his signed-off-by: at the end.
+> >
+> >Please clarify?
+> 
+> Yes, you have it correct.  I had added the From: line but when I receive
+> the email, it's removed.
+> 
+> Why not have an "Authored-by"?  That would eliminate the sendmail program
+> from screwing it up?
+
+"From:" headers are properly recognized by Git and both git log and git 
+annotate will show the right authorship. Authored-by does not get propagated.
+
+Also, sendmail does not screw up From: headers that are in the body of the 
+email - forwarding emails is one of the oldest things that can be done to 
+emails.
 
 Thanks,
 
-		Amit
+	Ingo
