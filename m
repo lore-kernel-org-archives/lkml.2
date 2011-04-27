@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1D0Iyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:54:52 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51796 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab1D0Iyu (ORCPT
+	id S1755397Ab1D0I45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 04:56:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56706 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689Ab1D0I4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:54:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Apr 2011 17:48:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Subject: Re: [PATCHv3] memcg: fix get_scan_count for small targets
-Message-Id: <20110427174813.8b34df90.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTin+rDOWGYq9dg-XcCWs+yT8Yw-VMw@mail.gmail.com>
-References: <20110427164708.1143395e.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTin+rDOWGYq9dg-XcCWs+yT8Yw-VMw@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 27 Apr 2011 04:56:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Date: Wed, 27 Apr 2011 10:56:49 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <201104212129.17013.arnd@arndb.de> <20110427073514.GH17290@n2100.arm.linux.org.uk>
+In-Reply-To: <20110427073514.GH17290@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104271056.49920.arnd@arndb.de>
+X-Provags-ID: V02:K0:koYVM6/io2dIjooF4t38IXGkySD3mAVQQRCDXJiAurM
+ jX2f1eflDcYL6gNgYB1SGGx4askKoRblG+emdq/kNhdB4wgE2S
+ C/7E/7M+OhTd47AQopwoPnO6KCrE/qIwkk4k6W6NXZPl/lunK5
+ fxoUEBGDd9Gn25jRrw9mCHL9FBaTaoM5X6K05cWrq6ER+hh2pw
+ qHYSO5dD52qEEPEDbye5Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 17:48:18 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> On Wed, Apr 27, 2011 at 4:47 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > At memory reclaim, we determine the number of pages to be scanned
-> > per zone as
-> >        (anon + file) >> priority.
-> > Assume
-> >        scan = (anon + file) >> priority.
-> >
-> > If scan < SWAP_CLUSTER_MAX, the scan will be skipped for this time
-> > and priority gets higher. This has some problems.
-> >
-> >  1. This increases priority as 1 without any scan.
-> >     To do scan in this priority, amount of pages should be larger than 512M.
-> >     If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
-> >     batched, later. (But we lose 1 priority.)
-> >     If memory size is below 16M, pages >> priority is 0 and no scan in
-> >     DEF_PRIORITY forever.
-> >
-> >  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
-> >     So, x86's ZONE_DMA will never be recoverred until the user of pages
-> >     frees memory by itself.
-> >
-> >  3. With memcg, the limit of memory can be small. When using small memcg,
-> >     it gets priority < DEF_PRIORITY-2 very easily and need to call
-> >     wait_iff_congested().
-> >     For doing scan before priorty=9, 64MB of memory should be used.
-> >
-> > Then, this patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
-> >
-> >  1. the target is enough small.
-> >  2. it's kswapd or memcg reclaim.
-> >
-> > Then we can avoid rapid priority drop and may be able to recover
-> > all_unreclaimable in a small zones. And this patch removes nr_saved_scan.
-> > This will allow scanning in this priority even when pages >> priority
-> > is very small.
-> >
-> > Changelog v2->v3
-> >  - removed nr_saved_scan completely.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Wednesday 27 April 2011, Russell King - ARM Linux wrote:
+> > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
+> >    that this is needed, and it currently is not implemented, with
+> >    an outdated comment explaining why it used to not be possible
+> >    to do it.
 > 
-> The patch looks good to me but I have a nitpick about just coding style.
-> How about this? I think below looks better but it's just my private
-> opinion and I can't insist on my style. If you don't mind it, ignore.
+> dma_alloc_noncoherent is an entirely pointless API afaics.
+
+The main use case that I can see for dma_alloc_noncoherent is being
+able to allocate a large cacheable memory chunk that is mapped
+contiguous into both kernel virtual and bus virtual space, but not
+necessarily in contiguous in physical memory.
+
+Without an IOMMU, I agree that it is pointless, because the only
+sensible imlpementation would be alloc_pages_exact + dma_map_single.
+
+> > 3. Convert ARM to use asm-generic/dma-mapping-common.h. We need
+> >    both IOMMU and direct mapped DMA on some machines.
+> > 
+> > 4. Implement an architecture independent version of dma_map_ops
+> >    based on the iommu.h API. As Joerg mentioned, this has been
+> >    missing for some time, and it would be better to do it once
+> >    than for each IOMMU separately. This is probably a lot of work.
 > 
+> dma_map_ops design is broken - we can't have the entire DMA API indirected
+> through that structure.  Whether you have an IOMMU or not is completely
+> independent of whether you have to do DMA cache handling.  Moreover, with
+> dmabounce, having the DMA cache handling in place doesn't make sense.
+> 
+> So you can't have a dma_map_ops for the cache handling bits, a dma_map_ops
+> for IOMMU, and a dma_map_ops for the dmabounce stuff.  It just doesn't
+> work like that.
+> 
+> I believe the dma_map_ops stuff in asm-generic to be entirely unsuitable
+> for ARM.
 
-I did this at the 1st try and got bug.....a variable 'file' here is
-reused and now broken. Renaming it with new variable will be ok, but it
-seems there will be deep nesting of 'if' and long function names ;)
-So, I did as posted. 
+We probably still need to handle both the coherent and noncoherent case
+in each dma_map_ops implementation, at least for those combinations where
+they matter (definitely the linear mapping). However, I think that using
+dma_mapping_common.h would let us use an architecture-independent dma_map_ops
+for the generic iommu code that Marek wants to introduce now.
 
-Thank you for review.
--Kame
+I still don't understand how dmabounce works, but if it's similar to
+swiotlb, we can have at least three different dma_map_ops: linear, dmabounce
+and iommu.
 
+Without the common iommu abstraction, there would be a bigger incentive
+to go with dma_map_ops, because then we would need one operations structure
+per IOMMU implementation, as some other architectures (x86, powerpc,
+ia64, ...) have. If we only need to distinguish between the common linear
+mapping code and the common iommu code, then you are right and we are likely
+better off adding some more conditionals to the existing code to handle
+the iommu case in addition to the ones we handle today.
+
+	Arnd
