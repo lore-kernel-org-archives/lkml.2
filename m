@@ -1,120 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1D0FXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 01:23:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53301 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab1D0FXH (ORCPT
+	id S1752880Ab1D0FZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 01:25:35 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59134 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab1D0FZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 01:23:07 -0400
-Message-ID: <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Greg KH" <gregkh@suse.de>, "Nori, Sekhar" <nsekhar@ti.com>
-Cc: "Greg KH" <greg@kroah.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com> <20110425212056.GA29313@kroah.com> <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com> <20110426124519.GC5977@suse.de>
-In-Reply-To: <20110426124519.GC5977@suse.de>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Date: Wed, 27 Apr 2011 10:53:38 +0530
-Organization: Mistral Solutions
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+	Wed, 27 Apr 2011 01:25:34 -0400
+Date: Wed, 27 Apr 2011 14:20:59 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memcg: reclaim memory from nodes in round robin
+Message-Id: <20110427142059.a364a8e7.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110427115718.ab6c55ae.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110427115718.ab6c55ae.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> There should be no build time dependency with this patch
->> (the above patch just changes which pool of SRAM the
->> allocation happens from)
->>
->> But, this brings out an important dependency of the patch
->> calling platform specific sram allocator functions. There
->> has been SRAM allocator consolidation work done by Russell
->> and as a result the SRAM allocator API for DaVinci will
->> actually change.
+Hi,
 
-I earlier had an implementation where I would get the sram memory addresses
-through the .resource structure and ioremap it in the driver.
+On Wed, 27 Apr 2011 11:57:18 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
->>The driver should probably just get sram
->> space through platform data so that it doesn't depend on the
->> platform specific sram allocation function.
-
-Are you suggesting that I go back to that implementation.
-Also, should I remove the dependency list from the patch comments then.
-
-
---------------------------------------------------
-From: "Greg KH" <gregkh@suse.de>
-Sent: Tuesday, April 26, 2011 6:15 PM
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: "Greg KH" <greg@kroah.com>; "Subhasish Ghosh" 
-<subhasish@mistralsolutions.com>; 
-<davinci-linux-open-source@linux.davincidsp.com>; 
-<linux-arm-kernel@lists.infradead.org>; "Watkins, Melissa" 
-<m-watkins@ti.com>; <sachi@mistralsolutions.com>; "Andrew Morton" 
-<akpm@linux-foundation.org>; "Randy Dunlap" <randy.dunlap@oracle.com>; "open 
-list" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-
-> On Tue, Apr 26, 2011 at 12:21:04PM +0530, Nori, Sekhar wrote:
->> On Tue, Apr 26, 2011 at 02:50:56, Greg KH wrote:
->> > On Fri, Apr 22, 2011 at 05:38:26PM +0530, Subhasish Ghosh wrote:
->> > > This patch adds support for the TTY compliant
->> > > Soft-UART device emulated on PRUSS.
->> > >
->> > > This patch depends on:
->> > > davinci: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS.
->> > >             https://patchwork.kernel.org/patch/615681/
->>
->> This is already in mainline. Plus this patch
->> doesn't really seem to depend on this commit.
->>
->> > > davinci: changed SRAM allocator to shared ram.
->> > >             https://patchwork.kernel.org/patch/549351/
->>
->> There should be no build time dependency with this patch
->> (the above patch just changes which pool of SRAM the
->> allocation happens from)
->>
->> But, this brings out an important dependency of the patch
->> calling platform specific sram allocator functions. There
->> has been SRAM allocator consolidation work done by Russell
->> and as a result the SRAM allocator API for DaVinci will
->> actually change. The driver should probably just get sram
->> space through platform data so that it doesn't depend on the
->> platform specific sram allocation function.
+> Now, memory cgroup's direct reclaim frees memory from the current node.
+> But this has some troubles. In usual, when a set of threads works in
+> cooperative way, they are tend to on the same node. So, if they hit
+> limits under memcg, it will reclaim memory from themselves, it may be
+> active working set.
+> 
+> For example, assume 2 node system which has Node 0 and Node 1
+> and a memcg which has 1G limit. After some work, file cacne remains and
+> and usages are
+>    Node 0:  1M
+>    Node 1:  998M.
+> 
+> and run an application on Node 0, it will eats its foot before freeing
+> unnecessary file caches.
+> 
+> This patch adds round-robin for NUMA and adds equal pressure to each
+> node. When using cpuset's spread memory feature, this will work very well.
+> 
+> But yes, better algorithm is appreciated.
 >
-> Ok, care to fix up the code then?
->
->> > Who is going to be applying these patches to the tree?
->> >
->> > Should this driver go through a davinci subtree because of these
->> > dependancies?
->>
->> No, driver and platform changes can be merged separately
->> if the above aspect is taken care of. Russell has been
->> pushing back on merging driver patches through his tree
->> unless absolutely required.
->
-> That's fine, I'll take it through my tree then, care to resolve the
-> above issue and resend it?
->
-> thanks,
->
-> greg k-h 
+At first, I thought the process may be oom-killed easily if we have many NUMA nodes
+and we try to reclaim only from nodes where no processes in the memcg allocate memory.
+But considering more, node_zonelists contains zones from other NUMA nodes IIUC,
+so it doesn't happen. 
 
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+
+Except for some typos which have already been pointed out.
+
+Thanks,
+Daisuke Nishimura.
+
+P.S.
+I'm very sorry for my laziness these days. We have a long holidays in Japan
+from this weekend, so I hope I can review recent patches about bgreclaim etc
+in my home.
+
+> From: Ying Han <yinghan@google.com>
+> Signed-off-by: Ying Han <yinghan@google.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/memcontrol.h |    1 +
+>  mm/memcontrol.c            |   25 +++++++++++++++++++++++++
+>  mm/vmscan.c                |    9 ++++++++-
+>  3 files changed, 34 insertions(+), 1 deletion(-)
+> 
+> Index: memcg/include/linux/memcontrol.h
+> ===================================================================
+> --- memcg.orig/include/linux/memcontrol.h
+> +++ memcg/include/linux/memcontrol.h
+> @@ -108,6 +108,7 @@ extern void mem_cgroup_end_migration(str
+>   */
+>  int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
+>  int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
+> +int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+>  unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
+>  				       struct zone *zone,
+>  				       enum lru_list lru);
+> Index: memcg/mm/memcontrol.c
+> ===================================================================
+> --- memcg.orig/mm/memcontrol.c
+> +++ memcg/mm/memcontrol.c
+> @@ -237,6 +237,7 @@ struct mem_cgroup {
+>  	 * reclaimed from.
+>  	 */
+>  	int last_scanned_child;
+> +	int last_scanned_node;
+>  	/*
+>  	 * Should the accounting and control be hierarchical, per subtree?
+>  	 */
+> @@ -1472,6 +1473,29 @@ mem_cgroup_select_victim(struct mem_cgro
+>  }
+>  
+>  /*
+> + * Selecting a node where we start reclaim from. Because what we need is just
+> + * reducing usage counter, start from anywhere is O,K. When considering
+> + * memory reclaim from current node, there are pros. and cons.
+> + * Freeing memory from current node means freeing memory from a node which
+> + * we'll use or we've used. So, it may make LRU bad. And if several threads
+> + * hit limits, it will see a contention on a node. But freeing from remote
+> + * node mean more costs for memory reclaim because of memory latency.
+> + *
+> + * Now, we use round-robin. Better algorithm is welcomed.
+> + */
+> +int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
+> +{
+> +	int node;
+> +
+> +	node = next_node(mem->last_scanned_node, node_states[N_HIGH_MEMORY]);
+> +	if (node == MAX_NUMNODES)
+> +		node = first_node(node_states[N_HIGH_MEMORY]);
+> +
+> +	mem->last_scanned_node = node;
+> +	return node;
+> +}
+> +
+> +/*
+>   * Scan the hierarchy if needed to reclaim memory. We remember the last child
+>   * we reclaimed from, so that we don't end up penalizing one child extensively
+>   * based on its position in the children list.
+> @@ -4678,6 +4702,7 @@ mem_cgroup_create(struct cgroup_subsys *
+>  		res_counter_init(&mem->memsw, NULL);
+>  	}
+>  	mem->last_scanned_child = 0;
+> +	mem->last_scanned_node = MAX_NUMNODES;
+>  	INIT_LIST_HEAD(&mem->oom_notify);
+>  
+>  	if (parent)
+> Index: memcg/mm/vmscan.c
+> ===================================================================
+> --- memcg.orig/mm/vmscan.c
+> +++ memcg/mm/vmscan.c
+> @@ -2198,6 +2198,7 @@ unsigned long try_to_free_mem_cgroup_pag
+>  {
+>  	struct zonelist *zonelist;
+>  	unsigned long nr_reclaimed;
+> +	int nid;
+>  	struct scan_control sc = {
+>  		.may_writepage = !laptop_mode,
+>  		.may_unmap = 1,
+> @@ -2208,10 +2209,16 @@ unsigned long try_to_free_mem_cgroup_pag
+>  		.mem_cgroup = mem_cont,
+>  		.nodemask = NULL, /* we don't care the placement */
+>  	};
+> +	/*
+> +	 * Unlike direct reclaim via allo_pages(), memcg's reclaim
+> +	 * don't take care from where we get free resouce. So, the node where
+> +	 * we need to start scan is not need to be current node.
+> +	 */
+> +	nid = mem_cgroup_select_victim_node(mem_cont);
+>  
+>  	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+>  			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
+> -	zonelist = NODE_DATA(numa_node_id())->node_zonelists;
+> +	zonelist = NODE_DATA(nid)->node_zonelists;
+>  
+>  	trace_mm_vmscan_memcg_reclaim_begin(0,
+>  					    sc.may_writepage,
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
