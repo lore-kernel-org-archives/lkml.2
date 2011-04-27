@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759252Ab1D0NOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:14:16 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:54090 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754522Ab1D0NOP convert rfc822-to-8bit (ORCPT
+	id S1759266Ab1D0NOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:14:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36368 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759186Ab1D0NOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:14:15 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 27 Apr 2011 09:14:30 -0400
+Message-ID: <F6E90395B84D4E9FA9497247841035FC@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>, "Greg KH" <gregkh@suse.de>
+Cc: "Greg KH" <greg@kroah.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com> <20110425212056.GA29313@kroah.com> <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com> <20110426124519.GC5977@suse.de> <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg> <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
+Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
+Date: Wed, 27 Apr 2011 18:45:06 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Date: Wed, 27 Apr 2011 14:13:25 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AD06@saturn3.aculab.com>
-In-Reply-To: <20110427130822.GC2936@mgebm.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Thread-Index: AcwE3BmjfJHFwnUgS6e4tmDp7cu0FwAAFuAQ
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric B Munson" <emunson@mgebm.net>
-Cc: <benh@kernel.crashing.org>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
-        <mingo@elte.hu>, <acme@ghostprotocols.net>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <anton@samba.org>, <stable@kernel.org>
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> prev and val are both 64 bit variables holding 32 bit numbers, we do
-not
-> accumulate in either, they are both replaced by values directly from
-the
-> registers.
-> So prev > val will not always be true.
+ >> >>The driver should probably just get sram
+>> >> space through platform data so that it doesn't depend on the
+>> >> platform specific sram allocation function.
+>>
+>> Are you suggesting that I go back to that implementation.
+>
+> No, the platform code should use the SRAM allocator and
+> pass on the allocated memory to the driver.
 
-The code seems to be:
-    prev = local64_read(&event->hw.prev_count);
-    val = read_pmc(event->hw.idx);
-    delta = check_and_compute_delta(prev, val);
-    local64_add(delta, &event->count);
-Which looks very much like 'prev' being a 64bit counter generated
-from the 32bit pmc register.
+SG - So, should I call the sram_alloc() in the platform setup function. 
+Something like this:
 
-	David
+suart_probe() {
+...
+pdata.setup(&sram_aadr);
+...use sram data;
+}
 
+suart_remove() {
+...
+pdata.free(&sram_aadr);
+...
+} 
 
