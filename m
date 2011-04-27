@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1D0GHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 02:07:16 -0400
-Received: from ozlabs.org ([203.10.76.45]:34256 "EHLO ozlabs.org"
+	id S1754071Ab1D0GI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 02:08:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:58947 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab1D0GHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 02:07:13 -0400
+	id S1753799Ab1D0GHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 02:07:15 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Liu Yuan <namei.unix@gmail.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] driver, virtio: Modify the err hanlding logic
-In-Reply-To: <1303305719-4475-1-git-send-email-namei.unix@gmail.com>
-References: <1303305719-4475-1-git-send-email-namei.unix@gmail.com>
+To: Jan Glauber <jang@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, sliakh.lkml@gmail.com, jiang@cs.ncsu.edu,
+        mingo@elte.hu
+Subject: Re: Undoing module RONX protection fix
+In-Reply-To: <20110421141949.GA10675@hal>
+References: <20110418092348.GB7786@hal> <20110418092801.GC3837@infradead.org> <874o5v6drb.fsf@rustcorp.com.au> <20110421141949.GA10675@hal>
 User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Wed, 27 Apr 2011 14:34:44 +0930
-Message-ID: <87liywl1xv.fsf@rustcorp.com.au>
+Date: Wed, 27 Apr 2011 14:42:34 +0930
+Message-ID: <87ipu0l1kt.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Apr 2011 21:21:59 +0800, Liu Yuan <namei.unix@gmail.com> wrote:
-> From: Liu Yuan <tailai.ly@taobao.com>
+On Thu, 21 Apr 2011 16:19:49 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
+> On Mon, Apr 18, 2011 at 08:13:36PM +0930, Rusty Russell wrote:
+> > On Mon, 18 Apr 2011 11:23:48 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
+> > > While debugging I stumbled over two problems in the code that protects module
+> > > pages.
+> > > 
+> > > First issue is that disabling the protection before freeing init or unload of
+> > > a module is not symmetric with the enablement. For instance, if pages are set
+> > > to RO the page range from module_core to module_core + core_ro_size is
+> > > protected. If a module is unloaded the page range from module_core to
+> > > module_core + core_size is set back to RW.
+> > > So pages that were not set to RO are also changed to RW.
+> > > This is not critical but IMHO it should be symmetric.
+> > > 
+> > > Second issue is that while set_memory_rw & set_memory_ro are used for
+> > > RO/RW changes only set_memory_nx is involved for NX/X. One would await that
+> > > the inverse function is called when the NX protection should be removed,
+> > > which is not the case here, unless I'm missing something.
+> > > 
+> > > The following patch addresses both issues. Works on s390. Boot tested on x86.
+> > > 
+> > > Please comment,
+> > 
+> > Applied, minus the S/390 EXPORT_SYMBOL which Christoph pointed out.  I
+> > turned your mail into the commit message, since it was clearer and more
+> > verbose.  I don't see why they would be different.
 > 
-> In the function vp_request_msix_vectors(), when
-> pci_enable_msix() returns 0, there will be
-> redundant double checks for 'err'. This patch
-> fixes it to avoid the unnecessary check.
-> 
-> Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-> ---
->  drivers/virtio/virtio_pci.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index 4fb5b2b..2c05376 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -298,10 +298,11 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->  
->  	/* pci_enable_msix returns positive if we can't get this many. */
->  	err = pci_enable_msix(vp_dev->pci_dev, vp_dev->msix_entries, nvectors);
-> -	if (err > 0)
-> -		err = -ENOSPC;
-> -	if (err)
-> +	if (err) {
-> +		if (err > 0)
-> +			err = -ENOSPC;
->  		goto error;
-> +	}
->  	vp_dev->msix_vectors = nvectors;
->  	vp_dev->msix_enabled = 1;
+> There's a bug in my patch which just killed one of my s390 machines.
+> Can you merge this with the previuos patch?
 
-This patch is extremely marginal.  It theoretically improves efficiency,
-but it's in a case we don't care about.  The code is quite clear.
+Hmm...
 
-My general policy for such marginal improvements is to only accept them
-from the maintainer him/herself, so I won't be taking this patch.
+Applied, but that function is really kind of silly.  We should probably
+just split into unset_section_ro_nx() into unset_module_init_ro_nx() and
+unset_module_core_ro_nx().
 
-Of course, if you produce a series of fixes to the driver with such a
-patch as a cleaner, I'm lazy enough that I'd take them all at once :)
+(And why isn't that function static anyway?)
 
-Thanks,
+Patch appreciated :)
 Rusty.
