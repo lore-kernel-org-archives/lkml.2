@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab1D0ODn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 10:03:43 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52668 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932978Ab1D0ODi (ORCPT
+	id S932946Ab1D0OFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 10:05:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56108 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932858Ab1D0OFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 10:03:38 -0400
-Date: Wed, 27 Apr 2011 16:03:07 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110427140307.GA1704@aftab>
-References: <20110419171340.GE6640@elte.hu>
- <20110419173521.GA25374@aftab>
- <20110419174446.GA13616@elte.hu>
- <20110420102349.GB1361@aftab>
- <m1hb9mnmqs.fsf@fess.ebiederm.org>
- <20110426074238.GA22448@aftab>
- <m1y62wk9i8.fsf@fess.ebiederm.org>
- <20110426214755.GA28314@aftab>
- <m1oc3sir8n.fsf@fess.ebiederm.org>
- <987664A83D2D224EAE907B061CE93D5301C50FD34B@orsmsx505.amr.corp.intel.com>
+	Wed, 27 Apr 2011 10:05:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Date: Wed, 27 Apr 2011 16:05:09 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        sachi@mistralsolutions.com, "Samuel Ortiz" <sameo@linux.intel.com>,
+        nsekhar@ti.com, "open list" <linux-kernel@vger.kernel.org>,
+        m-watkins@ti.com
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201104271516.30951.arnd@arndb.de> <FED5DF6465AF41C58DBD4E0EEB200E60@subhasishg>
+In-Reply-To: <FED5DF6465AF41C58DBD4E0EEB200E60@subhasishg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301C50FD34B@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104271605.09537.arnd@arndb.de>
+X-Provags-ID: V02:K0:/VsM0ZQxOlG/cmYGfyew0+aQjR+y0ZrFBkfEySZ97Sz
+ F8IzLuBGK4e6+Iv6JSokdpGqzFU6mBp81BQHhUw0uGP0AK5vlQ
+ GSd2gLSdKvUwi6dYsgTBr8g3aPlUjSRibeaVYYFPXQzK4YUcKv
+ cikV7ZuByz5DxTr4/x8OgG9puLHuf5YkYzrnPwZAFOSqY1Hb+9
+ iKUtYyDv2RE5Fq8bL3a3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 07:44:35PM -0400, Luck, Tony wrote:
-> > Sure.  Although any DIMM that is generating so many correctable errors
-> > that you need to rate limit it in the kernel, won't likely to confine
-> > itself to correctable errors.
+On Wednesday 27 April 2011, Subhasish Ghosh wrote:
 > >
-> > Still it can happen that things are so bad that you do need to rate
-> > limit it in the kernel.  Still with those you start wondering "How did
-> > this machine boot?"  So printk_ratelimit sounds like a fine idea.
+> > If I read your code correctly, you hardwire the usage of the two
+> > PRUs in the da850 board code, which makes it impossible to use
+> > them in different ways even if the hardware supports it. If this is
+> > indeed the case, using an MFD device might not be the best option
+> > and we should try to come up with a way to dynamically repurpose
+> > the PRU with some user interface.
 > 
-> 
-> Perhaps we really want thresholds rather than rate limits (for corrected
-> errors).  One corrected error shouldn't cause any but the most paranoid
-> to worry.  A couple of errors from the same DIMM close together might be
-> some cause for concern, but could just be happenstance. Enough errors that
-> rate limiting looks useful, and you are into "something needs to be done"
-> territory.
+> SG -- It depends upon how the firmware is implemented. If another
+>             firmware is downloaded on it, it will emulate another device.
+>             Also, if a firmware emulated on it supports switching between 
+> devices,
+>             that too is possible. Its just a microcontroller, we can do 
+> whatever we feel like
+>             with it. Both the PRUs have separate instruction/data ram, so 
+> both can be used
+>             to implement two different devices.
 
-Right, but for thresholding you need to know to which DIMM the error
-address belongs. And this is not trivial in all cases. It looks like we
-need this error reporting thing dynamic:
+I see. So the problem that I see with the current code is that you
+force the system to provide a set of devices from the MFD, which
+then get passed to the individual drivers (uart and can) that load
+the firmware they need. Please correct me if I am reading your code
+wrong.
 
-As a sane default, we want to dump some _sensible_ info to syslog about
-some errors happening. Then, all in-kernel decoding modules can enrich
-that error info with more specific details. Those two reporting modes
-should be ratelimited since doing thresholding in kernel could be tricky
-and taking up precious resources.
+What I suggest you do instead is to have the request_firmware
+call in the low-level MFD driver, so the user can provide the
+firmware that he/she wants to use, and then the MFD driver will
+create the devices that match the firmware loaded into the device.
 
-Finally, you have the userspace daemon which datacenter people or
-Google with small root partitions could use, which sends that info to a
-centralized location instead of someone collecting it from each node. In
-that case, no info goes out to syslog but is eaten up by the RAS daemon
-which runs on every machine. And in userspace you can do all the cool
-thresholding, rate limiting, policy applying, etc, your heart desires.
+You can easily do that by adding a small header to the firmware
+format and interpret that header by the MFD driver. When the name
+of the subdevice is part of that header, the MFD driver does not
+need to understand the difference, it can simply pass that on
+when creating its child devices.
 
-Makes sense?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+	Arnd
