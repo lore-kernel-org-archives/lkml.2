@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab1D0LFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:05:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63845 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756074Ab1D0LFr (ORCPT
+	id S1758248Ab1D0LIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 07:08:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51985 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab1D0LIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:05:47 -0400
-Message-ID: <4DB7F885.4040402@monstr.eu>
-Date: Wed, 27 Apr 2011 13:05:41 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Wed, 27 Apr 2011 07:08:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=NvATUM6fgCYZEyY7yo/Xu8CDqSGeDZoNLtmqqVZnlF9DVCOojcg/vSmyqiJkJmETp1
+         NvlQpa5/7rpjyGGN9uNta/Yz1AlonDqgGr5OkqDKCtnRG3d4EdzJLSYmPY5DR+HK2+1H
+         JN7d/eIRBEBc8TtI5Od57cz0FsSizaT2MkI3Y=
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, hjk@hansjkoch.de, w.sang@pengutronix.de,
-        arnd@arndb.de
-Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
-References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <20110419060816.GA5252@ponder.secretlab.ca>
-In-Reply-To: <20110419060816.GA5252@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110426152908.GA2879@nowhere>
+References: <201103311704.40372.roucaries.bastien@gmail.com>
+	<BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
+	<4D9B3C10.9060704@suse.com>
+	<BANLkTi=XDzOcZsP+aKS_WQSRxT+N8XHBRQ@mail.gmail.com>
+	<BANLkTi=yTfMiLvVtZTqQvxVhy7aFPdwSXQ@mail.gmail.com>
+	<BANLkTi=KUMNWJZZBQSHK+WViy6BYv8+4dQ@mail.gmail.com>
+	<BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
+	<20110411231843.GB2061@nowhere>
+	<BANLkTinHk7fVi62_Xftwn_0WLOzkS4jggw@mail.gmail.com>
+	<BANLkTikjD9hRPagnvjYO7A3ESGrwd1Qe-Q@mail.gmail.com>
+	<20110426152908.GA2879@nowhere>
+Date: Wed, 27 Apr 2011 13:08:15 +0200
+Message-ID: <BANLkTimdaH5=q8M1bLCUTQ8aXJp4N1Dvyw@mail.gmail.com>
+Subject: Re: Reiserfs deadlock in 2.6.36
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> On Mon, Apr 18, 2011 at 10:50:54AM +0200, Michal Simek wrote:
->> Adding OF binding to genirq.
->> Version string is setup to the "devicetree".
+On Tue, Apr 26, 2011 at 5:29 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Mon, Apr 18, 2011 at 10:01:48AM +0200, Bastien ROUCARIES wrote:
+>> On Tue, Apr 12, 2011 at 2:01 PM, Bastien ROUCARIES
+>> <roucaries.bastien@gmail.com> wrote:
+>> > On Tue, Apr 12, 2011 at 1:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >> On Mon, Apr 11, 2011 at 10:40:18AM +0200, Bastien ROUCARIES wrote:
+>> >>> Any news ? Can I test some patch ?
+>> Do you achieve to reproduce it ?
 >>
->> Compatible string is not setup for now but you can add your
->> custom compatible string to uio_of_genirq_match structure.
->>
->> For example with "uio" compatible string:
->> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
->> 	{ .compatible = "uio", },
->> 	{ /* empty for now */ },
->> };
->>
->> Signed-off-by: Michal Simek <monstr@monstr.eu>
->>
->> ---
->>
->> v3: Fix irq binding
->>     Use "devicetree" as version string
->>
->> v2: Remove additional resource binding
->>     Setup correct version string
->>     Clear compatible string
->> ---
->>  drivers/uio/uio_pdrv_genirq.c |   42 +++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 42 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
->> index 7174d51..c8d565a 100644
->> --- a/drivers/uio/uio_pdrv_genirq.c
->> +++ b/drivers/uio/uio_pdrv_genirq.c
->> @@ -23,6 +23,10 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/slab.h>
->>  
->> +#include <linux/of.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/of_address.h>
->> +
->>  #define DRIVER_NAME "uio_pdrv_genirq"
->>  
->>  struct uio_pdrv_genirq_platdata {
->> @@ -97,6 +101,30 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->>  	int ret = -EINVAL;
->>  	int i;
->>  
->> +	if (!uioinfo) {
->> +		int irq;
->> +
->> +		/* alloc uioinfo for one device */
->> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
->> +		if (!uioinfo) {
->> +			ret = -ENOMEM;
->> +			dev_err(&pdev->dev, "unable to kmalloc\n");
->> +			goto bad2;
->> +		}
->> +		uioinfo->name = pdev->dev.of_node->name;
->> +		uioinfo->version = "devicetree";
->> +
->> +		/* Multiple IRQs are not supported */
->> +		irq = platform_get_irq(pdev, 0);
->> +		if (irq < 0) {
-> 
-> PowerPC and x86 will return 0 for an unassigned IRQ, as will most platforms.
+>> Do you want I test something ?
+>
+> So I've run 8 parallel loops of git reset / git merge in 8 different
+> repos during 2 days but I've been unable to reproduce.
+>
+> I'm going to retry the same with kmail. What kind of thing do you make
+> with kmail for this to trigger? Can you also resend me your config
+> because I can't retrieve it from our discussion.
 
-I have looked at it and platform_get_irq for unassigned IRQ returns -ENXIO.
+I only retrieve every minutes a big imap account on gmail.
+I do nothing else
 
-It is there from 2006 (drivers/base/platform.c)
-"[PATCH] driver core: platform_get_irq*(): return -ENXIO on error"
-(sha1 305b3228f9ff4d59f49e6d34a7034d44ee8ce2f0)
+The config is the same than debian standard kernel + debug reiserfs
+option. Arch is amd64. Will send you in reply of this email
 
-Maybe you have this patch in your queue but it is not in the mainline 2.6.39-rc5.
+Thanks for trying to reproduce.
 
-Maybe should return NO_IRQ instead.
-But anyway for current code I would prefer to use this condition to cover all 
-architectures NO_IRQ definition.
+Note that my home directory (where lockup occurs frequently has
+rw,nosuid,nodev,relatime,user_xattr,acl options.
 
-irq = platform_get_irq(pdev, 0);
-if (irq == -ENXIO || irq == NO_IRQ)
-	uioinfo->irq = UIO_IRQ_NONE;
-else
-	uioinfo->irq = irq;
+May be this bug is trigered by combinaison of relatime and acl ?
 
-or of course to only NO_IRQ if we do s/-ENXIO/NO_IRQ in platform_get_irq.
-
-if (irq == NO_IRQ)
-	uioinfo->irq = UIO_IRQ_NONE;
-else
-	uioinfo->irq = irq;
-
-What do you think?
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+> Thanks.
+>
