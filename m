@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1D0WFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:05:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:63255 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab1D0WFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:05:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=oyDFyUwfmiRXfZQUgY0LX/fhqr95YdsO/TNqURuDY7pYdpnUR/Yt4ReMekc5CSvGHZ
-         7ogjrUPZ7Uhxe3qOmGgg==
-Message-ID: <4DB89315.6070105@google.com>
-Date: Wed, 27 Apr 2011 15:05:09 -0700
-From: David Decotigny <decot@google.com>
-Reply-To: david@decotigny.fr
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S932268Ab1D0WFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:05:44 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48859 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754849Ab1D0WFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 18:05:42 -0400
+Date: Wed, 27 Apr 2011 15:05:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+Message-ID: <20110427220524.GQ2135@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110426081904.0d2b1494@pluto.restena.lu>
+ <20110426112756.GF4308@linux.vnet.ibm.com>
+ <20110426183859.6ff6279b@neptune.home>
+ <20110426190918.01660ccf@neptune.home>
+ <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+ <alpine.LFD.2.02.1104262314110.3323@ionos>
+ <20110427081501.5ba28155@pluto.restena.lu>
+ <20110427204139.1b0ea23b@neptune.home>
+ <4DB86BA4.8070401@draigBrady.com>
+ <20110427213431.236c2a15@neptune.home>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCHv2 3/4] ethtool: Use the full 32 bit speed range in ethtool's
- set_settings
-References: <1303001651-4074-1-git-send-email-decot@google.com>	 <1303929290-21037-4-git-send-email-decot@google.com> <1303932477.2875.130.camel@bwh-desktop>
-In-Reply-To: <1303932477.2875.130.camel@bwh-desktop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110427213431.236c2a15@neptune.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 27, 2011 at 09:34:31PM +0200, Bruno Prémont wrote:
+> On Wed, 27 April 2011 Pádraig Brady wrote:
+> > On 27/04/11 19:41, Bruno Prémont wrote:
+> > > On Wed, 27 April 2011 Bruno Prémont wrote:
+> > >> On Wed, 27 Apr 2011 00:28:37 +0200 (CEST) Thomas Gleixner wrote:
+> > >>> On Tue, 26 Apr 2011, Linus Torvalds wrote:
+> > >>>> On Tue, Apr 26, 2011 at 10:09 AM, Bruno Prémont wrote:
+> > >>>>> Just in case, /proc/$(pidof rcu_kthread)/status shows ~20k voluntary
+> > >>>>> context switches and exactly one non-voluntary one.
+> > >>>>>
+> > >>>>> In addition when rcu_kthread has stopped doing its work
+> > >>>>> `swapoff $(swapdevice)` seems to block forever (at least normal shutdown
+> > >>>>> blocks on disabling swap device).
+> > > 
+> > > Apparently it's not swapoff but `umount -a -t tmpfs` that's getting
+> > > stuck here. Manual swapoff worked.
 
-Hi,
+Doesn't "umount" wait for an RCU grace period?  If so, then your hang
+is just a consequence of RCU grace periods hanging, which in turn appears
+to be a consequence of rcu_kthread not being allowed to run.
 
-On 04/27/11 12:27, Ben Hutchings wrote:
->> diff --git a/drivers/net/tulip/de2104x.c b/drivers/net/tulip/de2104x.c
->> index b13c6b0..f8d26bf 100644
->> --- a/drivers/net/tulip/de2104x.c
->> +++ b/drivers/net/tulip/de2104x.c
->> @@ -1549,10 +1549,11 @@ static int __de_set_settings(struct de_private *de, struct ethtool_cmd *ecmd)
->>  {
->>  	u32 new_media;
->>  	unsigned int media_lock;
->> +	u32 speed = ethtool_cmd_speed(ecmd);
->>  
->> -	if (ecmd->speed != SPEED_10 && ecmd->speed != 5 && ecmd->speed != 2)
->> +	if (speed != SPEED_10 && speed != 5 && speed != 2)
->>  		return -EINVAL;
->> -	if (de->de21040 && ecmd->speed == 2)
->> +	if (de->de21040 && speed == 2)
->>  		return -EINVAL;
->>  	if (ecmd->duplex != DUPLEX_HALF && ecmd->duplex != DUPLEX_FULL)
->>  		return -EINVAL;
-> [...]
+> > Anything to do with this?
+> > http://thread.gmane.org/gmane.linux.kernel.mm/60953/
 > 
-> This implementation is absolute crap - it's using speed values as
-> mnemonics for different physical ports!  Please change it to report and
-> accept only speed = 10.  (Both get_settings and set_settings have to be
-> changed at the same time.)
+> I don't think so, if it is, it is only loosely related.
+> 
+> From the trace you omitted to keep it's visible that it gets hit by
+> non-operating RCU kthread.
 
-Well, I am really not sure about this. At first I thought you meant that
-these non standard throughputs were a weird way to switch between
-different ports because of some limitation in the ethtool API at the
-time the driver was written. But looking at the history, this behavior
-is there right from the very first revision of the driver checked in in
-v2.5.0.9
-(http://git.kernel.org/?p=linux/kernel/git/tglx/history.git;a=commit;h=b1507c9acd944c8703612c0e38ac580bf9064e8a),
-and the ports could be switched the normal way with ecmd->port. So this
-leads me to think that these speeds are actual speeds and make sense as
-such, they are not a work-around over some ancient ethtool API
-limitation. I have the patch ready but I would appreciate any feedback
-on this.
+Yep, makes sense!
 
-Anyway, all your comments are really pertinent and ready to be sent.
+							Thanx, Paul
 
-Thank you!
-Regards,
+> Maybe existence of RCU barrier in this trace has some relation to
+> above thread but I don't see it at first glance.
+> 
+> [ 1714.960735] umount          D 5a000040  5668 20331  20324 0x00000000
+> [ 1714.960735]  c3c99e5c 00000086 dd407900 5a000040 dd25a1a8 dd407900 dd25a120 c3c99e0c
+> [ 1714.960735]  c3c99e24 c10c1be2 c14d9f20 c3c99e5c c3c8c680 c3c8c680 000000bb c3c99e24
+> [ 1714.960735]  c10c0b88 dd25a120 dd407900 ddfd4b40 c3c99e4c ddfc9d20 dd402380 5a000010
+> [ 1714.960735] Call Trace:
+> [ 1714.960735]  [<c10c1be2>] ? check_object+0x92/0x210
+> [ 1714.960735]  [<c10c0b88>] ? init_object+0x38/0x70
+> [ 1714.960735]  [<c10c1be2>] ? check_object+0x92/0x210
+> [ 1714.960735]  [<c13cb37d>] schedule_timeout+0x16d/0x280
+> [ 1714.960735]  [<c10c0b88>] ? init_object+0x38/0x70
+> [ 1714.960735]  [<c10c2122>] ? free_debug_processing+0x112/0x1f0
+> [ 1714.960735]  [<c10a3791>] ? shmem_put_super+0x11/0x20
+> [ 1714.960735]  [<c13cae9c>] wait_for_common+0x9c/0x150
+> [ 1714.960735]  [<c102c890>] ? try_to_wake_up+0x170/0x170
+> [ 1714.960735]  [<c13caff2>] wait_for_completion+0x12/0x20
+> [ 1714.960735]  [<c1075ad7>] rcu_barrier_sched+0x47/0x50
+>                              ^^^^^^^^^^^^^^^^^
+> [ 1714.960735]  [<c104d3c0>] ? alloc_pid+0x370/0x370
+> [ 1714.960735]  [<c10ce74a>] deactivate_locked_super+0x3a/0x60
+> [ 1714.960735]  [<c10ce948>] deactivate_super+0x48/0x70
+> [ 1714.960735]  [<c10e7427>] mntput_no_expire+0x87/0xe0
+> [ 1714.960735]  [<c10e7800>] sys_umount+0x60/0x320
+> [ 1714.960735]  [<c10b231a>] ? remove_vma+0x3a/0x50
+> [ 1714.960735]  [<c10b3b22>] ? do_munmap+0x212/0x2f0
+> [ 1714.960735]  [<c10e7ad9>] sys_oldumount+0x19/0x20
+> [ 1714.960735]  [<c13cce10>] sysenter_do_call+0x12/0x26
+> 
+> Bruno
