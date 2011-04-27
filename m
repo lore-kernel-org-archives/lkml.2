@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485Ab1D0Q1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:27:38 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35828 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759454Ab1D0Q1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:27:37 -0400
-Date: Wed, 27 Apr 2011 18:27:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arun Sharma <arun@sharma-home.net>
-Cc: Arun Sharma <asharma@fb.com>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] perf events: Add stalled cycles generic event -
- PERF_COUNT_HW_STALLED_CYCLES
-Message-ID: <20110427162711.GA29460@elte.hu>
-References: <20110422092322.GA1948@elte.hu>
- <BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
- <20110422105211.GB1948@elte.hu>
- <20110422165007.GA18401@vps.sharma-home.net>
- <20110422203022.GA20573@elte.hu>
- <20110423201409.GA20072@elte.hu>
- <20110424061645.GA12013@radium.snc4.facebook.com>
- <20110427111141.GB28993@elte.hu>
- <BANLkTimz-KevvqmxxUPp73GEaAC5PTGWWw@mail.gmail.com>
- <20110427154805.GB23494@elte.hu>
+	id S1755562Ab1D0Q3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:29:46 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4440 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1D0Q3o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 12:29:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 27 Apr 2011 09:29:21 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Wei Ni <wni@nvidia.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>
+Date: Wed, 27 Apr 2011 09:29:19 -0700
+Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Topic: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Index: Acv/U9peluMUOVgAQtuc8GIYvXxc8QFcZJpQAAyVSsA=
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0497F1AAC4@HQMAIL01.nvidia.com>
+References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
+ <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
+In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110427154805.GB23494@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Wei Ni wrote at Wednesday, April 27, 2011 4:26 AM:
+> Hi, all
+> Could anyone review these changes?
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Wei,
 
-> > [...] why not pick cycles where no uops are retiring?
-> > 
-> > cycles_no_uops_retired = cycles - c["UOPS_RETIRED:ANY:c=1:t=1"]
-> >
-> > In the presence of C-states and some halted cycles, I found that I couldn't 
-> > measure it via UOPS_RETIRED:ANY:c=1:i=1 because it counts halted cycles too 
-> > and could be greater than (unhalted) cycles.
+It looks like some of the patches I recently posted address the same
+issues as the patches you had already posted. Sorry for the potential
+conflicts.
+
+Can you please take a look at the patches I posted and comment on which
+of those are still relevant given your patches. Even for the cases where
+we both posted patches to address the same issue (e.g. use new slave
+mode), there are differences in the patches. I simply took the changes
+from the chromeos-2.6.37 kernel and cherry-picked them into the mainline
+kernel. Are the changes you posted re-written to address issues that
+weren't solved in the ChromeOS kernel?
+
+Thanks for any feedback on this.
+
 > 
-> Agreed, good point.
+> Thanks
+> Wei.
 > 
-> You are right that it is more robust to pick 'the CPU was busy on our behalf' 
-> metric instead of a 'CPU is idle' metric, because that way 'HLT' as a special 
-> type of idling around does not have to be identified.
+> -----Original Message-----
+> From: Wei Ni
+> Sent: Wednesday, April 20, 2011 8:09 PM
+> To: khali@linux-fr.org; ben-linux@fluff.org;
+> lucas.demarchi@profusion.mobi; ccross@android.com; linux-
+> i2c@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: Wei Ni
+> Subject: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+> 
+> From: Wei Ni <wni@nvidia.com>
+> 
+> *** BLURB HERE ***
+> 
+> Wei Ni (2):
+>   i2c: tegra: Retry transfer when unexpected/no_ack status is detected
+>   i2c: tegra: use new i2c slave controller
+> 
+>  drivers/i2c/busses/i2c-tegra.c |   57
+> +++++++++++++++++++++++++++++++++++++--
+>  include/linux/i2c-tegra.h      |    3 ++
+>  2 files changed, 57 insertions(+), 3 deletions(-)
 
-Sidenote, there's one advantage of the idle event: it's more meaningful to 
-profile idle cycles - and it's easy to ignore the HLT loop in the profile 
-output (we already do).
+-- 
+nvpublic
 
-That way we get a 'hidden overhead' profile: a profile of frequently executed 
-code which executes in the CPU in a suboptimal way.
-
-So we should probably offer both events.
-
-Thanks,
-
-	Ingo
