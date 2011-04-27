@@ -1,84 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab1D0QE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:04:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43651 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759504Ab1D0QEY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:04:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=prwB0OYWzMn75IqrRUATxE8w+gohwLctpyKHivTFZmea4CL4D9tDnAj11gsME10aw7
-         BXmGHFIrS3ggX3YGqWMI0jeLGR+OIL31YXxkahJ+dcLBGxxM4VJi5/ADl1tem7awrLu3
-         pLcmPRQu6xtf2cEKPote16ygxgXPZstQsmcy8=
+	id S932958Ab1D0QEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:04:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59626 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759502Ab1D0QEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 12:04:35 -0400
+Date: Wed, 27 Apr 2011 16:04:11 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-cxs98quixs3qyvdqx3goojc4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/stat] perf stat: Add -d/--detailed flag to run with a lot of events
+Git-Commit-ID: c6264deff7ea6125492b442edad885e5429679af
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110427145209.GJ9486@thunk.org>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	<20110427005243.GI9486@thunk.org>
-	<20110427064719.GB597@infradead.org>
-	<alpine.DEB.2.00.1104270445210.7570@mtl.rackplans.net>
-	<20110427145209.GJ9486@thunk.org>
-Date: Wed, 27 Apr 2011 19:04:23 +0300
-Message-ID: <BANLkTikGYLEWx8xrYs3Nv=-oPS3n95rXZA@mail.gmail.com>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, gmack@innerfire.net,
-        Christoph Hellwig <hch@infradead.org>,
-        Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Apr 2011 16:04:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 5:52 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Wed, Apr 27, 2011 at 04:47:40AM -0400, gmack@innerfire.net wrote:
->> Knowing about it and not screwing it up are two different things. I was
->> working on a project a few years ago and we made this exact change thanks
->> to the backwards logic of strcmp constantly screwing people up and the bug
->> count went down considerably.
->
-> If someone could even vaguely possibly screw up strcmp(), I don't want
-> them submitting patches to my subsystem.  I'm generally worried about
-> far more subtle bugs (deadlocks, locking screwups), and as Christoph
-> said, if you can't notice a strcmp bug, there's something
-> ***seriousl**** wrong with your code review process, test suite,
-> testing discpline, or all of the above.
+Commit-ID:  c6264deff7ea6125492b442edad885e5429679af
+Gitweb:     http://git.kernel.org/tip/c6264deff7ea6125492b442edad885e5429679af
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Wed, 27 Apr 2011 13:50:47 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 26 Apr 2011 21:03:16 +0200
 
-This can be good excuse in math where proof of existence is enough.
-For some reason, the one making excuses always fails to say
-what exactly is wrong with all of the above.
+perf stat: Add -d/--detailed flag to run with a lot of events
 
-> I would consider patches to change !strcmp() to streq() in any code I
-> maintain to be worse noise than spelling patches, or whitespace
-> patches.
+Add the new -d/--detailed flag, which generates a pretty detailed event list:
 
-If someone finds strcmp bug in e2fsprogs or ext[234] code,
-will you change your opinion?
+ Performance counter stats for './hackbench 10' (10 runs):
 
+       1514.287888 task-clock               #   10.897 CPUs utilized            ( +-  3.05% )
+            39,698 context-switches         #    0.026 M/sec                    ( +- 12.19% )
+             8,147 CPU-migrations           #    0.005 M/sec                    ( +- 16.55% )
+            17,918 page-faults              #    0.012 M/sec                    ( +-  0.37% )
+     2,944,504,050 cycles                   #    1.944 GHz                      ( +-  3.89% )  (32.60%)
+     1,043,971,283 stalled-cycles           #   35.45% of all cycles are idle   ( +-  5.22% )  (44.48%)
+     1,655,906,768 instructions             #    0.56  insns per cycle
+                                            #    0.63  stalled cycles per insn  ( +-  1.95% )  (55.09%)
+       338,832,373 branches                 #  223.757 M/sec                    ( +-  1.96% )  (64.47%)
+         3,892,416 branch-misses            #    1.15% of all branches          ( +-  5.49% )  (73.12%)
+       606,410,482 L1-dcache-loads          #  400.459 M/sec                    ( +-  1.29% )  (71.21%)
+        31,204,395 L1-dcache-load-misses    #    5.15% of all L1-dcache hits    ( +-  3.04% )  (60.43%)
+         3,922,751 LLC-loads                #    2.590 M/sec                    ( +-  6.80% )  (46.87%)
+         5,037,288 LLC-load-misses          #    3.327 M/sec                    ( +-  3.56% )  (13.00%)
 
-People are trying to add "string comparison by value" idiom
-the way it's supposed to be.
-Adding it into C2042 is very hard, so they add it into kernel.
+        0.138966828  seconds time elapsed  ( +-  4.11% )
 
-But instead of agreeing
-that, yes, streq() as "compare strings by value, relative order is not
-important,
-interesting or relevant" should have existed from the very beginning,
-let's add it into kernel at least,
+This can be used "at a glance" for narrower analysis.
 
-that, yes, strcmp() usage bugs happened
-(side note: kernel doesn't have in-tree testsuite, only chaotic tests,
-so what do these kernel guys know about testing their own code?)
+-d can also be used in addition to other -e events, to further expand an event list.
 
-that, yes, 3 ways to write "S1 equals S2" sucks.
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/n/tip-cxs98quixs3qyvdqx3goojc4@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/builtin-stat.c |   68 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 60 insertions(+), 8 deletions(-)
 
-that, yes, penny-wise Unix is in the past,
-
-instead, there is usual ignorant hand-waving.
-
-P. S.: I for one glad kmemdup() is in tree.
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 03bac6a..6959fde 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -73,6 +73,47 @@ static struct perf_event_attr default_attrs[] = {
+ 
+ };
+ 
++/*
++ * Detailed stats:
++ */
++static struct perf_event_attr detailed_attrs[] = {
++
++  { .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_TASK_CLOCK		},
++  { .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_CONTEXT_SWITCHES	},
++  { .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_CPU_MIGRATIONS		},
++  { .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_PAGE_FAULTS		},
++
++  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_CPU_CYCLES		},
++  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES		},
++  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_INSTRUCTIONS		},
++  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS	},
++  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_BRANCH_MISSES		},
++
++  { .type = PERF_TYPE_HW_CACHE,
++    .config =
++	 PERF_COUNT_HW_CACHE_L1D		<<  0  |
++	(PERF_COUNT_HW_CACHE_OP_READ		<<  8) |
++	(PERF_COUNT_HW_CACHE_RESULT_ACCESS	<< 16)				},
++
++  { .type = PERF_TYPE_HW_CACHE,
++    .config =
++	 PERF_COUNT_HW_CACHE_L1D		<<  0  |
++	(PERF_COUNT_HW_CACHE_OP_READ		<<  8) |
++	(PERF_COUNT_HW_CACHE_RESULT_MISS	<< 16)				},
++
++  { .type = PERF_TYPE_HW_CACHE,
++    .config =
++	 PERF_COUNT_HW_CACHE_LL			<<  0  |
++	(PERF_COUNT_HW_CACHE_OP_READ		<<  8) |
++	(PERF_COUNT_HW_CACHE_RESULT_ACCESS	<< 16)				},
++
++  { .type = PERF_TYPE_HW_CACHE,
++    .config =
++	 PERF_COUNT_HW_CACHE_LL			<<  0  |
++	(PERF_COUNT_HW_CACHE_OP_READ		<<  8) |
++	(PERF_COUNT_HW_CACHE_RESULT_MISS	<< 16)				},
++};
++
+ struct perf_evlist		*evsel_list;
+ 
+ static bool			system_wide			=  false;
+@@ -86,6 +127,7 @@ static pid_t			target_pid			= -1;
+ static pid_t			target_tid			= -1;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
++static bool			detailed_run			=  false;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*cpu_list;
+@@ -550,7 +592,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_L1D |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_branches_stats[cpu].n != 0) {
++			runtime_l1_dcache_stats[cpu].n != 0) {
+ 		print_l1_dcache_misses(cpu, evsel, avg);
+ 	} else if (perf_evsel__match(evsel, HARDWARE, HW_CACHE_MISSES) &&
+ 			runtime_cacherefs_stats[cpu].n != 0) {
+@@ -625,8 +667,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 		avg_enabled = avg_stats(&ps->res_stats[1]);
+ 		avg_running = avg_stats(&ps->res_stats[2]);
+ 
+-		fprintf(stderr, "  (scaled from %.2f%%)",
+-				100 * avg_running / avg_enabled);
++		fprintf(stderr, "  (%.2f%%)", 100 * avg_running / avg_enabled);
+ 	}
+ 	fprintf(stderr, "\n");
+ }
+@@ -668,10 +709,8 @@ static void print_counter(struct perf_evsel *counter)
+ 		if (!csv_output) {
+ 			print_noise(counter, 1.0);
+ 
+-			if (run != ena) {
+-				fprintf(stderr, "  (scaled from %.2f%%)",
+-					100.0 * run / ena);
+-			}
++			if (run != ena)
++				fprintf(stderr, "  (%.2f%%)", 100.0 * run / ena);
+ 		}
+ 		fputc('\n', stderr);
+ 	}
+@@ -778,6 +817,8 @@ static const struct option options[] = {
+ 		    "repeat command and print average + stddev (max: 100)"),
+ 	OPT_BOOLEAN('n', "null", &null_run,
+ 		    "null run - dont start any counters"),
++	OPT_BOOLEAN('d', "detailed", &detailed_run,
++		    "detailed run - start a lot of events"),
+ 	OPT_CALLBACK_NOOPT('B', "big-num", NULL, NULL, 
+ 			   "print large numbers with thousands\' separators",
+ 			   stat__set_big_num),
+@@ -839,7 +880,18 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	}
+ 
+ 	/* Set attrs and nr_counters if no event is selected and !null_run */
+-	if (!null_run && !evsel_list->nr_entries) {
++	if (detailed_run) {
++		size_t c;
++
++		for (c = 0; c < ARRAY_SIZE(detailed_attrs); ++c) {
++			pos = perf_evsel__new(&detailed_attrs[c], c);
++			if (pos == NULL)
++				goto out;
++			perf_evlist__add(evsel_list, pos);
++		}
++	}
++	/* Set attrs and nr_counters if no event is selected and !null_run */
++	if (!detailed_run && !null_run && !evsel_list->nr_entries) {
+ 		size_t c;
+ 
+ 		for (c = 0; c < ARRAY_SIZE(default_attrs); ++c) {
