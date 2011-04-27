@@ -1,64 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1DWMmd (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 23 Apr 2011 08:42:33 -0400
-Received: from mail.deliver-bd.com ([203.76.124.123]:53218 "EHLO
-	mail.deliver-bd.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab1DWMm3 (ORCPT
+	id S1751729Ab1D0E1p (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 27 Apr 2011 00:27:45 -0400
+Received: from mail.beachpark.com.br ([200.166.35.164]:59271 "EHLO
+	mail.beachpark.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1D0E1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Apr 2011 08:42:29 -0400
-X-Greylist: delayed 7154 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Apr 2011 08:42:29 EDT
-Message-ID: <55259.88.147.35.232.1303553564.squirrel@mail.deliver-bd.com>
-Date: Sat, 23 Apr 2011 16:12:44 +0600 (BDT)
+	Wed, 27 Apr 2011 00:27:44 -0400
+X-Greylist: delayed 941 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 00:27:44 EDT
+Date: Wed, 27 Apr 2011 01:11:43 -0300 (GMT-03:00)
+From: Jacob Josh <murilo@beachpark.com.br>
+Reply-To: Jacob Josh <jacob.josh01@gala.net>
+Message-ID: <1232784122.2811303877503940.JavaMail.root@mail>
 Subject: hi
-From: "P. Cha" <eugene@deliver-bd.com>
-Reply-To: patwkkp@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [190.10.198.235]
+X-Mailer: Zimbra 5.0.16_GA_2921.UBUNTU8_64 (ZimbraWebClient - FF3.0 (Win)/5.0.16_GA_2921.UBUNTU8_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+My name is Jacob Josh, I am the branch manager of Banco pichincha Quito Ecuador.
+I have packaged a financial transaction that will benefit both of us, which
+involves three million seven hundred and fifty thousand dollar $3,750.000.00.
+Mean While you will have 35% of the total fund after the transaction.
 
+If you accept this offer to work with me i will give you details on how we can
+achieve it successfully. Please contact me with this email address:
+jacob.josh01@gala.net
 
-Greetings of the day to you. It is understandable that you might be a
-little bit apprehensive because you do not know me but I have a lucrative
-business proposal of mutual interest to share with you. . I got your
-reference in my search for someone who suits my proposed business
-relationship.
-
-Let me start by introducing myself. I am Mr. Patrick K. W. Chan Executive
-Director & Chief financial Officer of Hang Seng Bank Ltd. I have an
-obscured business suggestion for you.
-
-I will need you to assist me in executing a business project from Hong
-Kong to your country. It involves the transfer of a large sum of money.
-Everything concerning this transaction shall be legally done without
-hitch. Please endeavour to observe utmost discretion in all matters
-concerning this issue.
-
-Once the funds have been successfully transferred into your account, we
-shall share in the ratio to be agreed by both of us. Should you be
-interested send the following details to kick-start the process;
-
-Full name
-Address, Nationality
-Age, Sex, Occupation Marital Statu,
-Private Phone Number, Private fax number
-
-I will prefer you reach me on my private email
-address(pattkkwchan@yahoo.com.hk) and finally after that I shall
-furnish you with more information’s about this operation.
-Please if you are not interested delete this email and do not hunt me
-because I am putting my career and the life of my family at stake with
-this venture. Although nothing ventured is nothing gained.
-
-Your earliest response to this letter will be appreciated.
-
-Kind Regards,
-Mr. Patrick Chan
+Best Regards
+Mr.Jacob Josh
