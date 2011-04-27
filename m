@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab1D0LfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:35:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33594 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241Ab1D0LfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:35:06 -0400
-Date: Wed, 27 Apr 2011 13:35:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3.1] kbuild: implement several W= levels
-Message-ID: <20110427113513.GB18112@eferding.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-	linux-kbuild <linux-kbuild@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-References: <20110422110947.GA20715@merkur.ravnborg.org>
- <1303494642-18594-1-git-send-email-bp@alien8.de>
- <20110427082555.GC5726@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110427082555.GC5726@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758400Ab1D0Lji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 07:39:38 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58615 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757465Ab1D0Ljh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 07:39:37 -0400
+Date: Wed, 27 Apr 2011 12:39:35 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: Only print warning when desc_size is smaller
+ than defined one.
+Message-ID: <20110427123935.1aacd8b9@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <4DB74A50.3080804@kernel.org>
+References: <4DB74A50.3080804@kernel.org>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 10:25:55AM +0200, Sam Ravnborg wrote:
-> > - make the W= levels exclusive
-> I do not see the point in this really. This is not what most people would
-> expect.
-> When you ask for more you get more - not something else.
+On Tue, 26 Apr 2011 15:42:24 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
+
 > 
-> We see it with verbose levels where -vv give more output than -v etc.
+> One system get warning:
+> 	Kernel-defined memdesc doesn't match the one from EFI!
 > 
-> Anyway - the important thing is to keep the relevant warnings at W=1 level.
-> Which is independendt of this change.
-> So consider the input and decide - I do not want to make a fuzz about it.
+> UEFI spec allows GetMemoryMap() return bigger desc_size and desc_ver for future
+> extension.
+> And desc_size is already used to get offset of next memory entry.
+> 
+> Only need to check if desc_size is smaller than defined struct.
+> 
+> Also print the size in warning if it happens.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/platform/efi/efi.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/platform/efi/efi.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/platform/efi/efi.c
+> +++ linux-2.6/arch/x86/platform/efi/efi.c
+> @@ -448,9 +448,10 @@ void __init efi_init(void)
+>  		printk(KERN_ERR "Could not map the EFI memory map!\n");
+>  	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
+>  
+> -	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+> +	if (memmap.desc_size < sizeof(efi_memory_desc_t))
+>  		printk(KERN_WARNING
+> -		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+> +		  "Kernel-defined memdesc size is bigger than the one from EFI! %ld > %ld\n",
+> +			 sizeof(efi_memory_desc_t), memmap.desc_size);
 
-I know, -vv.. increases verbosity is probably part of old unix tradition
-or common sense but it doesn't make much sense in this case, IMHO. When
-I use this, I want to see what the most relevant warnings are, maybe
-have a crack at them to fix them, and _then_ look at the less important
-ones (for an arbitrary definition of important warnings).
+Does it make sense for this to just be a warning? If
+sizeof(efi_memory_desec_t) > sizeof(memmap.desc_size) aren't we going
+to run into some pretty serious problems when we start accessing
+memory descriptors?
 
-If we do this inclusive, then W=2 dumps the, let's call it, level 1
-_plus_ the new level 2 warnings, polluting the output with something
-I've already seen, but only partially. And then I start to think, did
-I see this one already, didn't I, which was it? By the time you enable
-W=3, the output becomes pretty useless. For example, W=3 generates 190+
-MB logfile here only with level 3 warnings. Now imagine all 3 levels
-combined.
-
-Dividing the output by level of importance doesn't have this problem and
-is much more workable, IMHO.
-
-But this is just my use case, it could be that I'm completely alone on
-this one. I'd love to hear what other people think.
-
-FWIW, we might even make this behavior configurable by having
-
-make W=1o
-
-meaning level 1 warnings only or whatever sick idea we come up with
-eventually.
-
-;-)
-
-Thanks.
+Would it not make more sense for this to be a BUG_ON()? In the unlikely
+event that the kernel's efi_memory_desc_t is too large I really don't
+see how we can recover from that.
 
 -- 
-Regards/Gruss,
-Boris.
+Matt Fleming, Intel Open Source Technology Center
