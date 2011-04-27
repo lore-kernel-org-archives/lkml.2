@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1D0MgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:36:15 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43172 "EHLO
+	id S1758394Ab1D0MgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:36:24 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44801 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932299Ab1D0MgN (ORCPT
+	by vger.kernel.org with ESMTP id S1754765Ab1D0MgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:36:13 -0400
-X-Sasl-enc: tNLguPep+UYUIi/jUrm0BJh7id2AMP4YJ/f8sGF/AJMp 1303907772
+	Wed, 27 Apr 2011 08:36:22 -0400
+X-Sasl-enc: uvaSZuZItgbmifGbdR2GC1mOLv2d0QiEoCY2MRKC4Gsh 1303907781
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,101 +17,103 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         casey@schaufler-ca.com, eparis@redhat.com, sds@tycho.nsa.gov,
         selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 0/7] File descriptor labeling
-Date: Wed, 27 Apr 2011 14:34:08 +0200
-Message-Id: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 1/7] fs: initialize file->f_cred with credentials provided
+Date: Wed, 27 Apr 2011 14:34:09 +0200
+Message-Id: <1303907657-18366-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
+References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----6CCC17D75421E202643CE78C142AF137"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----224F974968F4756AC202C194A81B7B40"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------6CCC17D75421E202643CE78C142AF137
+------224F974968F4756AC202C194A81B7B40
 
-File descriptor labeling issue
+The 'f_cred' field of a file descriptor is initialized with the credentials
+of the 'current' process except in the case they are provided to the
+function dentry_open(). The get_empty_filp() function's definition has been
+modified to take these credentials set as argument.
 
-Actually SELinux and SMACK assign to file descriptors the same label of the
-opening process and use it in LSM hooks security_file_permission(),
-security_file_fcntl() and others to verify if the 'current' process has the
-rights to perform the requested operation.
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+---
+ fs/file_table.c |    5 ++---
+ fs/internal.h   |    2 +-
+ fs/namei.c      |    2 +-
+ fs/open.c       |    2 +-
+ 4 files changed, 5 insertions(+), 6 deletions(-)
 
-Using the credentials of the 'current' process may be not appropriate in
-case a file descriptor is opened by a kernel service (i.e. a filesystem)
-and made shared among user processes. For instance, in a system with
-SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
-obtains a file descriptor to access the correspondent inode in the lower
-filesystem, labeled with the A's label.
-
-If the process B accesses the same encrypted file, it needs the 'use'
-permission on the A's label other than permissions for the lower inode.
-However, if B is the first accessing process, A needs the 'use' permission
-on the B's label.
-
-The solution proposed is to modify those kernel services that deal with
-file descriptors to provide their set of credentials to dentry_open(), so
-that obtained objects are labeled with a unique label. In this way, in the
-above example, if eCryptfs provides its credentials with the label C to
-dentry_open(), all user processes need the 'use' permission only on C.
-
-
-
-File descriptor labeling and IMA
-
-The above proposal suggests to use the file descriptor label as a new
-criteria in the IMA policy to determine if a file must be measured. It will
-be possible to measure all files opened by a kernel service by simply
-writing a rule where the file descriptor label given as a value matches the
-one provided by the same service together with other credentials to the
-function dentry_open().
-
-In the above example, if eCryptfs provides its credentials with the label C
-to dentry_open(), it is possible to measure all inodes opened in the lower
-filesystem by specifying a rule like:
-
-fowner_type=C
-
-
-The benefits of this new criteria will be greater with the integration of
-EVM and the IMA appraisal feature in the kernel. ECryptfs can be used in
-conjunction with these components to verify the integrity of the content
-and extended attributes of encrypted files.
-
-Roberto Sassu
-
-
-Roberto Sassu (7):
-  fs: initialize file->f_cred with credentials provided
-  selinux: label new file descriptors using file->f_cred
-  smack: assign the label set in file->f_cred to new file descriptors
-  smack: fix label check in smack_kernel_act_as()
-  smack: import the security label in smack_secctx_to_secid()
-  security: new LSM hook security_file_getsecid()
-  ima: added new LSM conditions in the policy
-
- Documentation/ABI/testing/ima_policy |    7 ++++-
- fs/file_table.c                      |    5 +--
- fs/internal.h                        |    2 +-
- fs/namei.c                           |    2 +-
- fs/open.c                            |    2 +-
- include/linux/security.h             |   12 +++++++++
- security/capability.c                |    6 ++++
- security/integrity/ima/ima.h         |    4 +-
- security/integrity/ima/ima_api.c     |    4 +-
- security/integrity/ima/ima_main.c    |    4 +-
- security/integrity/ima/ima_policy.c  |   45 +++++++++++++++++++++++++++++----
- security/security.c                  |    6 ++++
- security/selinux/hooks.c             |    9 ++++++-
- security/smack/smack_lsm.c           |   23 +++++++++++++++--
- 14 files changed, 108 insertions(+), 23 deletions(-)
-
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 01e4c1e..c33018c 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -102,9 +102,8 @@ int proc_nr_files(ctl_table *table, int write,
+  * done, you will imbalance int the mount's writer count
+  * and a warning at __fput() time.
+  */
+-struct file *get_empty_filp(void)
++struct file *get_empty_filp(const struct cred *cred)
+ {
+-	const struct cred *cred = current_cred();
+ 	static long old_max;
+ 	struct file * f;
+ 
+@@ -171,7 +170,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+ {
+ 	struct file *file;
+ 
+-	file = get_empty_filp();
++	file = get_empty_filp(current_cred());
+ 	if (!file)
+ 		return NULL;
+ 
+diff --git a/fs/internal.h b/fs/internal.h
+index b29c46e..c81fc62 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -91,7 +91,7 @@ extern void chroot_fs_refs(struct path *, struct path *);
+ extern void file_sb_list_add(struct file *f, struct super_block *sb);
+ extern void file_sb_list_del(struct file *f);
+ extern void mark_files_ro(struct super_block *);
+-extern struct file *get_empty_filp(void);
++extern struct file *get_empty_filp(const struct cred *cred);
+ 
+ /*
+  * super.c
+diff --git a/fs/namei.c b/fs/namei.c
+index 54fc993..88ac2e5 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2321,7 +2321,7 @@ static struct file *path_openat(int dfd, const char *pathname,
+ 	struct path path;
+ 	int error;
+ 
+-	filp = get_empty_filp();
++	filp = get_empty_filp(current_cred());
+ 	if (!filp)
+ 		return ERR_PTR(-ENFILE);
+ 
+diff --git a/fs/open.c b/fs/open.c
+index b52cf01..6b033e6 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -839,7 +839,7 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
+ 	BUG_ON(!mnt);
+ 
+ 	error = -ENFILE;
+-	f = get_empty_filp();
++	f = get_empty_filp(cred);
+ 	if (f == NULL) {
+ 		dput(dentry);
+ 		mntput(mnt);
 -- 
 1.7.4.4
 
 
-------6CCC17D75421E202643CE78C142AF137
+------224F974968F4756AC202C194A81B7B40
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -149,17 +151,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0MTdaMCMGCSqG
-SIb3DQEJBDEWBBTRptNqNdkGfAAxKfUCE/vbdzJlvzB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0MzBaMCMGCSqG
+SIb3DQEJBDEWBBQEH0JjN+72IP64HuOMLEZgQoVDujB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQC6xoeoAFo29+CG3Ok26bdu5Kfg
-mqDdIQkrhKkxMLGia/24TaXsgy2WWufB4GRKURwqtUPHk/uFEorVTwIhse3SBg6U
-xi2v+rsVLRw3XoL3FrfRpApIZxeLA9VYHGcNjaW40xcap2UTur7CJUnYoeKJWBO6
-0vm7rAO1BktOGyZUb9ocG4QjYawkA7wJZkS+JXwa+Sdn8GLoLY/esg0I5BgdmkrJ
-Pt4DxTDps/OEjBK1G/tsADzJYSTgNEvDPcWyQipDx15NZx9DJImQw4kHvOJOLizV
-kyiTZgO/K/wYlL1/vUJV/qRRs1tcXumv9kpuyP46lRXLiYZyvEJ/2xy3V5Es
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQACOlak+CkiQx8Qk/QQ6fryWBKP
+9gPYxPUOEzGJBuHpQDupWM9dAAvQDKOPY8F98FU0N9USrqAQWjZ/bgIEHjVbD6TU
+RBmQR9HvQOjqrzP3LzoSoESGs34y8/rMwzVjWuIeRHhnXRwDvssFiBBnSD+NM9Kc
+95mS4ZDsQZGaUlUPyhhVu1L4gHFyLcosuZgaxRmGjQyQ5BFopbYOIJ0S9VMSbvRF
+6CYjXbvDvJJ1XzkIUs3LXMGzY7I9e/T5+qFkls57ssguWL7gCShalEminc5PlKPK
+0JxXKLDueQLe235YotlOg19FTNIM5z4eykF5afBPqfgRn+czR7YIDRe8fYYK
 
-------6CCC17D75421E202643CE78C142AF137--
+------224F974968F4756AC202C194A81B7B40--
 
 
