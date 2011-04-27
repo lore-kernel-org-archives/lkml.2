@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850Ab1D0L7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:59:36 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:39141 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab1D0L7e (ORCPT
+	id S1758898Ab1D0ME2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:04:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54357 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab1D0ME0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:59:34 -0400
-Date: Wed, 27 Apr 2011 13:59:22 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: guenter.roeck@ericsson.com
-Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>
-Subject: Re: [PATCH v2 3/3] thermal: Make THERMAL_HWMON implementation 
- fully internal
-Message-ID: <20110427135922.33f1171f@endymion.delvare>
-In-Reply-To: <1303851631.31666.109.camel@groeck-laptop>
-References: <20110426165600.1d9ac91b@endymion.delvare>
-	<20110426170407.3694e430@endymion.delvare>
-	<20110426155212.GB18176@ericsson.com>
-	<20110426182905.72bbf7b6@endymion.delvare>
-	<1303839812.31666.98.camel@groeck-laptop>
-	<20110426213953.6cc227de@endymion.delvare>
-	<1303851631.31666.109.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Wed, 27 Apr 2011 08:04:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=mj8P9p3EXGHM5n4S17haIHyl9chhdPlccp3FQIRiC+qfdwQdEynVYLL6iARr0yZ7Xq
+         YZQYeH46lG//bLnrL8Ua6XW2OcA3Xotpwd1TlpEk6GNxLOQaNOV+IDWJUyh62uPJGfn8
+         dCiI0vF4oHrIygz5NmBM4kPRk81I1EtAFWOgc=
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Maximilian Engelhardt <maxi@daemonizer.de>
+Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+In-Reply-To: <201104271346.34431.maxi@daemonizer.de>
+References: <201104250033.03401.maxi@daemonizer.de>
+	 <EDC0E76513226749BFBC9C3FB031318F016B4125A4@orsmsx508.amr.corp.intel.com>
+	 <201104271346.34431.maxi@daemonizer.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 14:04:18 +0200
+Message-ID: <1303905858.3166.41.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Le mercredi 27 avril 2011 à 13:46 +0200, Maximilian Engelhardt a écrit :
 
-On Tue, 26 Apr 2011 14:00:31 -0700, Guenter Roeck wrote:
-> On Tue, 2011-04-26 at 15:39 -0400, Jean Delvare wrote:
-> > Sorry I realize I have been inaccurate. thermal_sys indeed depends on
-> > the processor module, and that's what prevents me from unloading it.
-> > It's the processor module which has a reference count of 1, and no
-> > dependency, so I have no idea how I could unload it.
-> > 
-> You mean the ACPI processor driver ? This comment might explain it:
+> Hello Carolyn,
 > 
-> /*
->  * We keep the driver loaded even when ACPI is not running.
->  * This is needed for the powernow-k8 driver, that works even without
->  * ACPI, but needs symbols from this driver
->  */
+> Thanks for your response.
+> 
+> I have opened a issue at
+> https://sourceforge.net/tracker/?func=detail&aid=3293703&group_id=42302&atid=447449
+> and also posted all information there.
+> 
+> 
+> Please not that yesterday I updated the kernel, so I'm now running 2.6.38.4.
+> Eric Dumazet mentioned on the LKML that this might be a memory corruption that 
+> my be solved with kernel 2.6.38.
+> 
 
-I doubt it. I don't have powernow-k8 loaded on the affected systems.
-And if I did, that would be a regular inter-module dependency that
-would be listed by lsmod.
+Hmm, I suggested to use slub_nomerge to make sure inetpeer kmemcache is
+not shared with another (possibly mem corruptor) layer.
 
-> > (...)
-> > I'm not sure. I don't see any relevant call to try_module_get under
-> > drivers/acpi, and I'm not aware of any other way to increase the
-> > reference count.
-> > 
-> What happens if the calling code (such as, in my case here, the acpi
-> video code) gets built into the kernel ? Would that force the module to
-> be and remain loaded ?
+Please note we were not able to track the bug in 2.6.37 kernels.
 
-For regular inter-module dependencies, that's not even possible. You
-can't build into the kernel a driver which depends on a symbol exported
-by a driver which is built as a module. It will break at link time.
+> I'll report if the crash happens again, but it might take some times as in the 
+> past it happened within the interval of weeks to month.
+> 
 
-For reference counts increased by try_module_get(), it is possible, but
-that doesn't necessarily make a difference from the all-modules case:
-the reference count can be increased at any time, not only during
-driver initialization, so the corresponding module_put doesn't
-necessarily happen during module unloading (which indeed never happens
-for a built-in driver.)
+Thanks
 
-I tried booting in initlevel 1, but it didn't help, the reference count
-of module processor is stuck to 1. So it's not user-space causing it...
-it's something in the kernel itself. But I really don't have the time
-to investigate this further, especially when I have no idea where to
-look next.
 
--- 
-Jean Delvare
