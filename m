@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab1D0Qqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:46:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38190 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab1D0Qqm (ORCPT
+	id S1759503Ab1D0QuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:50:04 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35133 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753280Ab1D0QuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:46:42 -0400
-Date: Wed, 27 Apr 2011 17:46:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-Message-ID: <20110427164639.GD9487@ZenIV.linux.org.uk>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Apr 2011 12:50:02 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1303921583-sup-4021@think>
+References: <1303920553.2583.7.camel@mulgrave.site>
+	 <1303921583-sup-4021@think>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 11:50:00 -0500
+Message-ID: <1303923000.2583.8.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 03:49:49PM -0300, Thiago Farina wrote:
-> This macro is arguably more readable than its variants:
-> - !strcmp(a, b)
-> - strcmp(a, b) == 0
+On Wed, 2011-04-27 at 12:33 -0400, Chris Mason wrote:
+> Probably easier to debug with a sysrq-l and sysrq-w. 
 
-Strongly NACKed.  As far as I'm concerned, it's in the same shitbucket as
-bcopy(3), bzero(3) et.al.  Use idiomatic C; extensions of that kind are
-*bad*, since new developers have to learn them.
+Yes, just enabling them for the repro ... I didn't echo 1
+> /proc/sys/kernel/sysrq first time around
+
+>  If you get stuck
+> on the filesystem, it is probably waiting on ram, which it probably
+> can't get because kswapd is spinning.  Eventually everyone backs up
+> waiting for the transaction that never ends.  If we're really lucky it
+> is just GFP_KERNEL where it should NOFS.
+> 
+> Since you're often stuck in different spots inside shrink_slab, we're
+> probably not stuck on a lock.  But, trying with lock debugging, lockdep
+> enabled and preempt on is a good idea to rule out locking mistakes.
+> 
+> Does the fedora debug kernel enable preempt?
+
+No ... I've taken the Fedora 15 kernel config directly from their
+install CD for this (with a bit of munging to get it to work on -rc4)
+
+James
+
+
