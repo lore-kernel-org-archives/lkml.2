@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab1D0QI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:08:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47413 "EHLO mx1.suse.de"
+	id S933154Ab1D0QIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:08:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47389 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933137Ab1D0QIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:08:24 -0400
+	id S933137Ab1D0QIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 12:08:20 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
         Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage
-Date: Wed, 27 Apr 2011 17:08:10 +0100
-Message-Id: <1303920491-25302-13-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/13] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Wed, 27 Apr 2011 17:08:05 +0100
+Message-Id: <1303920491-25302-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1303920491-25302-1-git-send-email-mgorman@suse.de>
 References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
@@ -21,123 +21,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If swap is backed by network storage such as NBD, there is a risk that a
-large number of reclaimers can hang the system by consuming all
-PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
-min_free_kbytes in advance. This patch will throttle direct reclaimers
-if half the PF_MEMALLOC reserves are in use as the system is at risk of
-hanging.
+Allow specific sockets to be tagged SOCK_MEMALLOC and use __GFP_MEMALLOC
+for their allocations. These sockets will be able to go below watermarks
+and allocate from the emergency reserve. Such sockets are to be used
+to service the VM (iow. to swap over). They must be handled kernel side,
+exposing such a socket to user-space is a bug.
 
+There is a risk that the reserves be depleted so for now, the administrator is
+responsible for increasing min_free_kbytes as necessary to prevent deadlock
+for their workloads.
+
+[a.p.zijlstra@chello.nl: Original patches]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h |    1 +
- mm/page_alloc.c        |    1 +
- mm/vmscan.c            |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 56 insertions(+), 0 deletions(-)
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index e56f835..8e5c627 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -638,6 +638,7 @@ typedef struct pglist_data {
- 					     range, including holes */
- 	int node_id;
- 	wait_queue_head_t kswapd_wait;
-+	wait_queue_head_t pfmemalloc_wait;
- 	struct task_struct *kswapd;
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5ff1f71..eee10ec 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4225,6 +4225,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	pgdat_resize_init(pgdat);
- 	pgdat->nr_zones = 0;
- 	init_waitqueue_head(&pgdat->kswapd_wait);
-+	init_waitqueue_head(&pgdat->pfmemalloc_wait);
- 	pgdat->kswapd_max_order = 0;
- 	pgdat_page_cgroup_init(pgdat);
- 	
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b3a569f..7f1099f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2117,6 +2117,45 @@ out:
- 	return 0;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index e89c38f..046bc97 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -554,6 +554,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -587,7 +588,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+ 
+ static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return gfp_mask;
++	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
  }
  
-+static bool pfmemalloc_watermark_ok(pg_data_t *pgdat, int high_zoneidx)
-+{
-+	struct zone *zone;
-+	unsigned long pfmemalloc_reserve = 0;
-+	unsigned long free_pages = 0;
-+	int i;
-+
-+	for (i = 0; i <= high_zoneidx; i++) {
-+		zone = &pgdat->node_zones[i];
-+		pfmemalloc_reserve += min_wmark_pages(zone);
-+		free_pages += zone_page_state(zone, NR_FREE_PAGES);
-+	}
-+
-+	return (free_pages > pfmemalloc_reserve / 2) ? true : false;
-+}
-+
-+/*
-+ * Throttle direct reclaimers if backing storage is backed by the network
-+ * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-+ * depleted. kswapd will continue to make progress and wake the processes
-+ * when the low watermark is reached
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -717,6 +718,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
+ 
+ extern int sk_wait_data(struct sock *sk, long *timeo);
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 6e81978..c685eda 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -219,6 +219,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
 + */
-+static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-+					nodemask_t *nodemask)
++void sk_set_memalloc(struct sock *sk)
 +{
-+	struct zone *zone;
-+	int high_zoneidx = gfp_zone(gfp_mask);
-+	DEFINE_WAIT(wait);
-+
-+	/* Check if the pfmemalloc reserves are ok */
-+	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-+	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
-+		return;
-+
-+	/* Throttle */
-+	wait_event_interruptible(zone->zone_pgdat->pfmemalloc_wait,
-+		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
 +}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
 +
- unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 				gfp_t gfp_mask, nodemask_t *nodemask)
- {
-@@ -2133,6 +2172,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.nodemask = nodemask,
- 	};
- 
-+	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
 +
-+	/*
-+	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
-+	 * that the page allocator does not consider triggering OOM
-+	 */
-+	if (fatal_signal_pending(current))
-+		return 1;
-+
- 	trace_mm_vmscan_direct_reclaim_begin(order,
- 				sc.may_writepage,
- 				gfp_mask);
-@@ -2488,6 +2536,12 @@ loop_again:
- 			}
- 
- 		}
-+
-+		/* Wake throttled direct reclaimers if low watermark is met */
-+		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
-+				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
-+			wake_up_interruptible(&pgdat->pfmemalloc_wait);
-+
- 		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
- 			break;		/* kswapd: all done */
- 		/*
+ #if defined(CONFIG_CGROUPS) && !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
+ EXPORT_SYMBOL_GPL(net_cls_subsys_id);
 -- 
 1.7.3.4
 
