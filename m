@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab1D0Pew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 11:34:52 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:39161 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab1D0Pev convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:3>);
-	Wed, 27 Apr 2011 11:34:51 -0400
-Message-Id: <4DB85404020000780003E6D7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 27 Apr 2011 16:36:04 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-arch@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] allow placing exception table in .rodata (and do so on
-	 x86)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758830Ab1D0PlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 11:41:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59163 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab1D0PlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 11:41:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=VDmybYWxWQHDPccZhDlhCKDC4h6vMySpaZHVvV+wAuzmv8jsRhJ8Y3xbBqslHBnuI/
+         KnDAZtwEMS96StWT0UpKErX59hNuAKSHy4sBtEu2TR2+uGKhoaPqChsjf17Y2UtSmS8i
+         uizDiAMAxJMvOa5CmDR3isMUv1A4fcgZTU21A=
+From: Rabin Vincent <rabin@rab.in>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCHv2] echi: remove structure packing from ehci_def
+Date: Wed, 27 Apr 2011 21:07:28 +0530
+Message-Id: <1303918648-7196-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <4DB832FB.8030805@ru.mvista.com>
+References: <4DB832FB.8030805@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is since the table is really a set of pointers, i.e. misplaced in
-.text.
+As pointed out by Arnd Bergmann, in include/linux/usb/ehci_def.h, struct
+ehci_caps is defined with __attribute__((packed)) for no good reason,
+and this triggers undefined behaviour when using ARM's readl() on
+pointers to elements of this structure:
 
-Quite likely other architectures would want to follow.
+http://lkml.kernel.org/r/201102021700.20683.arnd@arndb.de
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+The same problem exists with the other two structures in ehci_def.h too,
+so remove the __attribute__((packed)) from all of them.
 
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
- arch/x86/include/asm/sections.h   |    2 +-
- arch/x86/kernel/vmlinux.lds.S     |    5 +++--
- arch/x86/mm/init_64.c             |    6 +++---
- include/asm-generic/vmlinux.lds.h |    5 +++++
- 4 files changed, 12 insertions(+), 6 deletions(-)
+v2: clarify that the problem is not just with struct ehci_caps
 
---- 2.6.39-rc5/arch/x86/include/asm/sections.h
-+++ 2.6.39-rc5-extable-in-rodata/arch/x86/include/asm/sections.h
-@@ -5,7 +5,7 @@
- #include <asm/uaccess.h>
- 
- extern char __brk_base[], __brk_limit[];
--extern struct exception_table_entry __stop___ex_table[];
-+extern const char __stop_notes[];
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- extern char __end_rodata_hpage_align[];
---- 2.6.39-rc5/arch/x86/kernel/vmlinux.lds.S
-+++ 2.6.39-rc5-extable-in-rodata/arch/x86/kernel/vmlinux.lds.S
-@@ -20,6 +20,8 @@
- #define LOAD_OFFSET __START_KERNEL_map
- #endif
- 
-+#define EXCEPTION_TABLE_RO EXCEPTION_TABLE(16)
-+
- #include <asm-generic/vmlinux.lds.h>
- #include <asm/asm-offsets.h>
- #include <asm/thread_info.h>
-@@ -114,8 +116,7 @@ SECTIONS
- 	} :text = 0x9090
- 
- 	NOTES :text :note
--
--	EXCEPTION_TABLE(16) :text = 0x9090
-+	text_continues : {} :text /* switch back to regular text... */
- 
- #if defined(CONFIG_DEBUG_RODATA)
- 	/* .text should occupy whole number of pages */
---- 2.6.39-rc5/arch/x86/mm/init_64.c
-+++ 2.6.39-rc5-extable-in-rodata/arch/x86/mm/init_64.c
-@@ -741,7 +741,7 @@ int kernel_set_to_readonly;
- void set_kernel_text_rw(void)
- {
- 	unsigned long start = PFN_ALIGN(_text);
--	unsigned long end = PFN_ALIGN(__stop___ex_table);
-+	unsigned long end = PFN_ALIGN(_etext);
- 
- 	if (!kernel_set_to_readonly)
- 		return;
-@@ -760,7 +760,7 @@ void set_kernel_text_rw(void)
- void set_kernel_text_ro(void)
- {
- 	unsigned long start = PFN_ALIGN(_text);
--	unsigned long end = PFN_ALIGN(__stop___ex_table);
-+	unsigned long end = PFN_ALIGN(_etext);
- 
- 	if (!kernel_set_to_readonly)
- 		return;
-@@ -780,7 +780,7 @@ void mark_rodata_ro(void)
- 	unsigned long rodata_start =
- 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
- 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
--	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
-+	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop_notes);
- 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
- 	unsigned long data_start = (unsigned long) &_sdata;
- 
---- 2.6.39-rc5/include/asm-generic/vmlinux.lds.h
-+++ 2.6.39-rc5-extable-in-rodata/include/asm-generic/vmlinux.lds.h
-@@ -226,6 +226,7 @@
- 		*(.rodata1)						\
- 	}								\
- 									\
-+	EXCEPTION_TABLE_RO						\
- 	BUG_TABLE							\
- 									\
- 	JUMP_TABLE							\
-@@ -459,6 +460,10 @@
- 		VMLINUX_SYMBOL(__stop___ex_table) = .;			\
- 	}
- 
-+#ifndef EXCEPTION_TABLE_RO
-+#define EXCEPTION_TABLE_RO
-+#endif
-+
- /*
-  * Init task
-  */
+ include/linux/usb/ehci_def.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
+diff --git a/include/linux/usb/ehci_def.h b/include/linux/usb/ehci_def.h
+index e49dfd4..7879943 100644
+--- a/include/linux/usb/ehci_def.h
++++ b/include/linux/usb/ehci_def.h
+@@ -52,7 +52,7 @@ struct ehci_caps {
+ #define HCC_PGM_FRAMELISTLEN(p) ((p)&(1 << 1))  /* true: periodic_size changes*/
+ #define HCC_64BIT_ADDR(p)       ((p)&(1))       /* true: can use 64-bit addr */
+ 	u8		portroute[8];	 /* nibbles for routing - offset 0xC */
+-} __attribute__ ((packed));
++};
+ 
+ 
+ /* Section 2.3 Host Controller Operational Registers */
+@@ -150,7 +150,7 @@ struct ehci_regs {
+ #define PORT_CSC	(1<<1)		/* connect status change */
+ #define PORT_CONNECT	(1<<0)		/* device connected */
+ #define PORT_RWC_BITS   (PORT_CSC | PORT_PEC | PORT_OCC)
+-} __attribute__ ((packed));
++};
+ 
+ #define USBMODE		0x68		/* USB Device mode */
+ #define USBMODE_SDIS	(1<<3)		/* Stream disable */
+@@ -194,7 +194,7 @@ struct ehci_dbg_port {
+ 	u32	data47;
+ 	u32	address;
+ #define DBGP_EPADDR(dev, ep)	(((dev)<<8)|(ep))
+-} __attribute__ ((packed));
++};
+ 
+ #ifdef CONFIG_EARLY_PRINTK_DBGP
+ #include <linux/init.h>
+-- 
+1.7.4.1
 
