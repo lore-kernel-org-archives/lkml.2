@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab1D0NU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:20:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42968 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932542Ab1D0NUc (ORCPT
+	id S932611Ab1D0NVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:21:03 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62047 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932542Ab1D0NU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:20:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mBM9WpCtWazxdVJC5t/Dw7EKV9BOq5QEVSeb6rtcsSNtMflQvvP+cLTXoNxvrqWVEq
-         IpR68+Orpybi5KAZ1Z0VtOsadIoBpaPw9iSZ629fDayL0OJ4I1qqi+ChVK83OqNHgFZ0
-         OcSveJcOD1eOBLtEWgGYNchz68BHaYeSGWmpY=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org, arnd@arndb.de
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: [PATCH v3 6/7] s390: use asm-generic/bitops/le.h
-Date: Wed, 27 Apr 2011 22:20:10 +0900
-Message-Id: <1303910411-15793-7-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1303910411-15793-1-git-send-email-akinobu.mita@gmail.com>
-References: <1303910411-15793-1-git-send-email-akinobu.mita@gmail.com>
+	Wed, 27 Apr 2011 09:20:59 -0400
+Date: Wed, 27 Apr 2011 09:20:54 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: benh@kernel.crashing.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu, acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org
+Subject: Re: [PATCH V4] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+Message-ID: <20110427132053.GD2936@mgebm.net>
+References: <20110427130822.GC2936@mgebm.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6D8AD06@saturn3.aculab.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ylS2wUBXLOxYXZFQ"
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AD06@saturn3.aculab.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous style change enables to use asm-generic/bitops/le.h on s390.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Greg Ungerer <gerg@uclinux.org>
----
+--ylS2wUBXLOxYXZFQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Changes from previous submission:
-- Add Acked-by: line
-- No change in the patch itself
+On Wed, 27 Apr 2011, David Laight wrote:
 
- arch/s390/include/asm/bitops.h |   37 ++-----------------------------------
- 1 files changed, 2 insertions(+), 35 deletions(-)
+> =20
+> > prev and val are both 64 bit variables holding 32 bit numbers, we do
+> not
+> > accumulate in either, they are both replaced by values directly from
+> the
+> > registers.
+> > So prev > val will not always be true.
+>=20
+> The code seems to be:
+>     prev =3D local64_read(&event->hw.prev_count);
+>     val =3D read_pmc(event->hw.idx);
+>     delta =3D check_and_compute_delta(prev, val);
+>     local64_add(delta, &event->count);
+> Which looks very much like 'prev' being a 64bit counter generated
+> from the 32bit pmc register.
+>=20
 
-diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
-index 426c974..667c6e9 100644
---- a/arch/s390/include/asm/bitops.h
-+++ b/arch/s390/include/asm/bitops.h
-@@ -746,41 +746,6 @@ static inline int sched_find_first_bit(unsigned long *b)
-  *    23 22 21 20 19 18 17 16 31 30 29 28 27 26 25 24
-  */
- 
--static inline void __set_bit_le(unsigned long nr, void *addr)
--{
--	__set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline void __clear_bit_le(unsigned long nr, void *addr)
--{
--	__clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline int __test_and_set_bit_le(unsigned long nr, void *addr)
--{
--	return __test_and_set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline int test_and_set_bit_le(unsigned long nr, void *addr)
--{
--	return test_and_set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline int __test_and_clear_bit_le(unsigned long nr, void *addr)
--{
--	return __test_and_clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline int test_and_clear_bit_le(unsigned long nr, void *addr)
--{
--	return test_and_clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
--static inline int test_bit_le(unsigned long nr, const void *addr)
--{
--	return test_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
--}
--
- static inline int find_first_zero_bit_le(void *vaddr, unsigned int size)
- {
- 	unsigned long bytes, bits;
-@@ -865,6 +830,8 @@ static inline int find_next_bit_le(void *vaddr, unsigned long size,
- }
- #define find_next_bit_le find_next_bit_le
- 
-+#include <asm-generic/bitops/le.h>
-+
- #define ext2_set_bit_atomic(lock, nr, addr)	\
- 	test_and_set_bit_le(nr, addr)
- #define ext2_clear_bit_atomic(lock, nr, addr)	\
--- 
-1.7.4.4
+Which implies that it will only ever be 32 bits wide, just stored in 64.
 
+--ylS2wUBXLOxYXZFQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNuBg1AAoJEH65iIruGRnNzGYIAJIsoYp0R/dJvlfUncOh3B6e
+FGoYP9TL6so1Wa//AYLYgWG7ERPn6XAfIOQx99XzqEhf4sQhJ066c+pz9jnNu6JY
+9Gl7r8haQ81bxzkNNIPws45il40/wyTJNtBajWuAz/AH+Vh/BkEyjTtzLupawOeQ
+AvOPZmVL2Rn+i/zc+3blf5yfeFwX90m2Nqzfj2qGLJcMQ+KN3tH3sLnoXyT+8dn1
+JRcXFPo2AnoD7f43UBiuHq3WsIpnGlly1NN8HOR6zBxI8crrj+l57h/+F5fOzZIm
+KcdqQlPkBXLowV24Zd48V0j/goEacK5ZoXQUWygFnpCq+l+T4wvE/jNwteHGi1o=
+=QRrD
+-----END PGP SIGNATURE-----
+
+--ylS2wUBXLOxYXZFQ--
