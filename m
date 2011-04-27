@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1D0WMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:12:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34259 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab1D0WMU (ORCPT
+	id S1755531Ab1D0WQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:16:55 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:4404 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab1D0WQy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:12:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6329"; a="88216452"
-Message-ID: <4DB894C3.2040300@codeaurora.org>
-Date: Wed, 27 Apr 2011 15:12:19 -0700
-From: Michael Bohan <mbohan@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Wed, 27 Apr 2011 18:16:54 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1303942612!3493269!8
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.69]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Kyungmin Park <kmpark@infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Nizette <bn@niasdigital.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 27 Apr 2011 17:16:42 -0500
+Subject: RE: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Thread-Topic: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Thread-Index: AcwFJjBUjnA0bzC6QZybgn05BsJwEQAAEzyw
+Message-ID: <0D753D10438DA54287A00B027084269764D26C391E@AUSP01VMBX24.collaborationhost.net>
+References: <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+	<20110419093855.36910400@lxorguk.ukuu.org.uk>
+	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
+	<BANLkTint6DGgosVkjK-sveyA9SL9WVS4Mg@mail.gmail.com>
+	<BANLkTinv-MSg5Sobg2X1cJpAwPkM1Gevcg@mail.gmail.com>
+	<BANLkTi=Oc+y+31KugbEy66Mp96=bf_G8Mg@mail.gmail.com>
+	<BANLkTinv_-6dJJXAWc=NFTceXGA9sabanA@mail.gmail.com>
+	<20110420163238.5f0e5ea6@lxorguk.ukuu.org.uk>
+ <20110427215509.GE17290@n2100.arm.linux.org.uk>
+In-Reply-To: <20110427215509.GE17290@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Cernekee <cernekee@gmail.com>, mingo@elte.hu,
-        akpm@linux-foundation.org, simon.kagstrom@netinsight.net,
-        David.Woodhouse@intel.com, lethal@linux-sh.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Conny Seidel <conny.seidel@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: console_cpu_notify can cause scheduling BUG during CPU hotplug
-References: <4DB604C7.8090305@codeaurora.org> <BANLkTimPHaiiiVC_A6jtUtaa_pYJuhepYg@mail.gmail.com> <4DB65EEC.7060604@ti.com> <4DB733D4.3000002@codeaurora.org> <20110427073839.GA16718@liondog.tnic>
-In-Reply-To: <20110427073839.GA16718@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/27/2011 12:38 AM, Borislav Petkov wrote:
-> Great, whatever you guys come up with, we'd like to give it a run too.
-> We (AMD) hit the same issue in one of our tests but in our case we end
-> up in an endless loop of the state machine at stop_machine_cpu_stop()
-> since the core being offlined cannot ack the state transition to
-> STOPMACHINE_EXIT due to a similar reason.
+On Wednesday, April 27, 2011 2:55 PM, Russell King wrote:
+> On Wed, Apr 20, 2011 at 04:32:38PM +0100, Alan Cox wrote:
+>>> Even if some people are only muxing pins that can also be used as GPIO,
+>>> this is not always the case. We can shunt out the same pins to be used as
+>>> I2C or SPI for example, that means this cannot be handled in a GPIO
+>>> driver since it has nothing to do with GPIO pins at all.
+>> 
+>> It sounds very much to me like it belongs in the GPIO driver. That is the
+>> one piece of code which knows what it is doing for all this configuration.
 >
-> One possible fix is dropping CPU_DYING from console_cpu_notify()
-> since it is called into by the offlining path in
-> kernel/cpu.c::take_cpu_down().
+> I don't think so.  See PXA devices, where MFP (multifunction pin)
+> configuration is entirely separate from GPIO - and there's some MFPs
+> which don't even have GPIOs associated with them.
+>
+> If I'm reading the PXA930 MFP header file right, it also appears that
+> GPIOs can be configured on to multiple different pins (eg, GPIO46 can
+> be on GPIO46 or DF_nWE.  So refering to GPIO46 does not give you
+> sufficient information for exactly what pin is to be configured here.
+>
+> To complicate matters, MFP configuration on PXA deals with stuff like
+> low power mode configuration, drive strength, etc which is completely
+> independent of the GPIO layer.
 
-This seems to be a different problem. Could you elaborate about why 
-removing CPU_DYING from console_cpu_notify resolves your problem? What 
-are other possible fixes?
+I agree with Russell.  The muxing goes way beyond GPIO use.
 
-In the failure case I witnessed, we're attempting to sleep in atomic 
-mode, which is a clear violation caused by the addition of CPU_DYING. I 
-haven't thoroughly investigated whether other actions in 
-console_cpu_notify (eg. ONLINE, DEAD, DOWN_FAILED, UP_CANCELED) are in 
-atomic mode violation as well.
+On the i.MX for example, the iomux is used to configured what the pads on the
+chip are used for.  The pad configuration might be gpio related or it could be
+setting the pad for use by one of the internal peripherals.
 
-Thanks,
-Mike
+For instance, on the i.MX35 the uart3 rxd signal can appear on the pads: RTS2,
+SD2_DATA0, ATA_DATA10, or FEC_TX_CLK.  All of these pads can also be configured
+as a gpio or for use by some other on-board peripheral.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Also, like Russell mentions for the PXA930, some of the gpios can be routed to
+multiple pins.  And some of the pads have no gpio use but multiple other uses.
+
+Regards,
+Hartley
