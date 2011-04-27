@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab1D0InZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:43:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58561 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab1D0InW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:43:22 -0400
-Date: Wed, 27 Apr 2011 09:43:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 00/13] Swap-over-NBD without deadlocking
-Message-ID: <20110427084319.GM4658@suse.de>
-References: <1303803414-5937-1-git-send-email-mgorman@suse.de>
- <1303827785.20212.266.camel@twins>
- <20110426144635.GK4658@suse.de>
- <1303829449.20212.285.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1303829449.20212.285.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755151Ab1D0IqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 04:46:05 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38160 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846Ab1D0IqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 04:46:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 27 Apr 2011 17:39:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC 8/8] compaction: make compaction use in-order putback
+Message-Id: <20110427173922.4d65534b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <b7bcce639e9b9bf515431cda79b15d482f889ff2.1303833418.git.minchan.kim@gmail.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<b7bcce639e9b9bf515431cda79b15d482f889ff2.1303833418.git.minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 04:50:49PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-04-26 at 15:46 +0100, Mel Gorman wrote:
-> > 
-> > I did find that only a few route-cache entries should be required. In
-> > the original patches I worked with, there was a reservation for the
-> > maximum possible number of route-cache entries. I thought this was
-> > overkill and instead reserved 1-per-active-swapfile-backed-by-NFS.
+On Wed, 27 Apr 2011 01:25:25 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
+
+> Compaction is good solution to get contiguos page but it makes
+> LRU churing which is not good.
+> This patch makes that compaction code use in-order putback so
+> after compaction completion, migrated pages are keeping LRU ordering.
 > 
-> Right, so the thing I was worried about was a route-cache poison attack
-> where someone would spam the machine such that it would create a lot of
-> route cache entries and might flush the one we needed just as we needed
-> it.
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/compaction.c |   22 +++++++++++++++-------
+>  1 files changed, 15 insertions(+), 7 deletions(-)
 > 
-> Pinning the one entry we need would solve that (if possible).
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index a2f6e96..480d2ac 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -211,11 +211,11 @@ static void isolate_freepages(struct zone *zone,
+>  /* Update the number of anon and file isolated pages in the zone */
+>  static void acct_isolated(struct zone *zone, struct compact_control *cc)
+>  {
+> -	struct page *page;
+> +	struct pages_lru *pages_lru;
+>  	unsigned int count[NR_LRU_LISTS] = { 0, };
+>  
+> -	list_for_each_entry(page, &cc->migratepages, lru) {
+> -		int lru = page_lru_base_type(page);
+> +	list_for_each_entry(pages_lru, &cc->migratepages, lru) {
+> +		int lru = page_lru_base_type(pages_lru->page);
+>  		count[lru]++;
+>  	}
+>  
+> @@ -281,6 +281,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  	spin_lock_irq(&zone->lru_lock);
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+>  		struct page *page;
+> +		struct pages_lru *pages_lru;
+>  		bool locked = true;
+>  
+>  		/* give a chance to irqs before checking need_resched() */
+> @@ -334,10 +335,16 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  			continue;
+>  		}
+>  
+> +		pages_lru = kmalloc(sizeof(struct pages_lru), GFP_ATOMIC);
+> +		if (pages_lru)
+> +			continue;
 
-That is a possibility all right, nice thoughts there. Ok, as I do
-not want this series to grow to the point where it is unreviewable,
-I'll mark pinning the routing cache entry for a follow-on series.
-In this series, the throttling logic should allow a new routing cache
-entry to be allocated by kswapd as it's immune to the throttle.
+Hmm, can't we use fixed size of statically allocated pages_lru, per-node or
+per-zone ? I think using kmalloc() in memory reclaim path is risky.
 
-Thanks.
+Thanks,
+-Kame
 
--- 
-Mel Gorman
-SUSE Labs
