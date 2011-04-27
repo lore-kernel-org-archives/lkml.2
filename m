@@ -1,181 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab1D0B5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 21:57:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58418 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab1D0B5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 21:57:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Apr 2011 10:50:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, Ying Han <yinghan@google.com>
-Subject: [PATCH v2] fix get_scan_count for working well with small targets
-Message-Id: <20110427105031.db203b95.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110426135934.c1992c3e.akpm@linux-foundation.org>
-References: <20110426181724.f8cdad57.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110426135934.c1992c3e.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756318Ab1D0CBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 22:01:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38763 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755876Ab1D0CBX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 22:01:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110427013541.18526.qmail@science.horizon.com>
+References: <20110427013541.18526.qmail@science.horizon.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Apr 2011 19:00:33 -0700
+Message-ID: <BANLkTikwddt4xJoq+pAirKkKg3zNQ26iNA@mail.gmail.com>
+Subject: Re: [PATCH v2 5/6] signal: sys_sigprocmask() needs retarget_shared_pending()
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 13:59:34 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, Apr 26, 2011 at 6:35 PM, George Spelvin <linux@horizon.com> wrote:
+>>
+>> which handles all cases correctly (just "andn clear" + "or set") with
+>> no if's or switch'es.
+>
+> Gripe: Arrgh, apostrophe disease!  Linus, youre picking up nasty habits.
 
-> What about simply removing the nr_saved_scan logic and permitting small
-> scans?  That simplifies the code and I bet it makes no measurable
-> performance difference.
-> 
+I didn't want to make C keywords into English words. So if it's about
+English words it's "no ifs or buts", but when talking about C keywords
+it's "if's or switch'es".
 
-ok, v2 here. How this looks ?
-For memcg, I think I should add select_victim_node() for direct reclaim,
-then, we'll be tune big memcg using small memory on a zone case.
+That's my stand, and I'll stick to it. At least until next time, when
+I might decide on yet another arbitrary rule ;)
 
-==
-At memory reclaim, we determine the number of pages to be scanned
-per zone as
-	(anon + file) >> priority.
-Assume 
-	scan = (anon + file) >> priority.
+> Suggestion: Actually, the usual, more flexible implementation, is
+> "andn mask" + "xor set".  That gives all 4 bit operations (nop, set,
+> clear, and toggle) unique bit combinations.
 
-If scan < SWAP_CLUSTER_MAX, the scan will be skipped for this time
-and priority gets higher. This has some problems.
+Yeah, we can do that too. I agree it is more flexible, although I
+don't think we'd ever need it.
 
-  1. This increases priority as 1 without any scan.
-     To do scan in this priority, amount of pages should be larger than 512M.
-     If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
-     batched, later. (But we lose 1 priority.)
-     But if the amount of pages is smaller than 16M, no scan at priority==0
-     forever.
+And I'm not sure it's more "usual" - most drivers I've seen (where
+this kind of "clear/set mask" issue comes up pretty often) tend to use
+the simpler clear/set model, because it tends to make the usage more
+sensible. Most users simply don't tend to need the toggle operation.
 
-  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
-     So, x86's ZONE_DMA will never be recoverred until the user of pages
-     frees memory by itself.
+But my grep-fu to actually show examples is weak. One example I found would be
 
-  3. With memcg, the limit of memory can be small. When using small memcg,
-     it gets priority < DEF_PRIORITY-2 very easily and need to call
-     wait_iff_congested().
-     For doing scan before priorty=9, 64MB of memory should be used.
+ - drivers/media/video/tw9910.c: tw9910_mask_set()
 
-Then, this patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
+which uses that "andnot + or" model I suggested.
 
-  1. the target is enough small.
-  2. it's kswapd or memcg reclaim.
+But I'm sure there are "andnot + xor" uses out there too.
 
-Then we can avoid rapid priority drop and may be able to recover
-all_unreclaimable in a small zones.
+And I don't actually mind either way. I'd certainly be perfectly ok
+with the andn/xor model. It's just the "how" model I detest.
 
-Changelog v1->v2:
- - removed nr_scan_try_batch
- - scan anon and file if the target memory is very small.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/vmscan.c |   60 +++++++++++++++++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 27 deletions(-)
-
-Index: memcg/mm/vmscan.c
-===================================================================
---- memcg.orig/mm/vmscan.c
-+++ memcg/mm/vmscan.c
-@@ -1700,26 +1700,6 @@ static unsigned long shrink_list(enum lr
- }
- 
- /*
-- * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-- * until we collected @swap_cluster_max pages to scan.
-- */
--static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
--				       unsigned long *nr_saved_scan)
--{
--	unsigned long nr;
--
--	*nr_saved_scan += nr_to_scan;
--	nr = *nr_saved_scan;
--
--	if (nr >= SWAP_CLUSTER_MAX)
--		*nr_saved_scan = 0;
--	else
--		nr = 0;
--
--	return nr;
--}
--
--/*
-  * Determine how aggressively the anon and file LRU lists should be
-  * scanned.  The relative value of each set of LRU lists is determined
-  * by looking at the fraction of the pages scanned we did rotate back
-@@ -1737,6 +1717,22 @@ static void get_scan_count(struct zone *
- 	u64 fraction[2], denominator;
- 	enum lru_list l;
- 	int noswap = 0;
-+	int force_scan = 0;
-+
-+
-+	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
-+	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+
-+	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX) {
-+		/* kswapd does zone balancing and need to scan this zone */
-+		if (scanning_global_lru(sc) && current_is_kswapd())
-+			force_scan = 1;
-+		/* memcg may have small limit and need to avoid priority drop */
-+		if (!scanning_global_lru(sc))
-+			force_scan = 1;
-+	}
- 
- 	/* If we have no swap space, do not bother scanning anon pages. */
- 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-@@ -1747,11 +1743,6 @@ static void get_scan_count(struct zone *
- 		goto out;
- 	}
- 
--	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
--	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
--
- 	if (scanning_global_lru(sc)) {
- 		free  = zone_page_state(zone, NR_FREE_PAGES);
- 		/* If we have very few page cache pages,
-@@ -1818,8 +1809,23 @@ out:
- 			scan >>= priority;
- 			scan = div64_u64(scan * fraction[file], denominator);
- 		}
--		nr[l] = nr_scan_try_batch(scan,
--					  &reclaim_stat->nr_saved_scan[l]);
-+
-+		/*
-+		 * If zone is small or memcg is small, nr[l] can be 0.
-+		 * This results no-scan on this priority and priority drop down.
-+		 * For global direct reclaim, it can visit next zone and tend
-+		 * not to have problems. For global kswapd, it's for zone
-+		 * balancing and it need to scan a small amounts. When using
-+		 * memcg, priority drop can cause big latency. So, it's better
-+		 * to scan small amount. See may_noscan above.
-+		 */
-+		if (!scan && force_scan) {
-+			if (file)
-+				scan = SWAP_CLUSTER_MAX;
-+			else if (!noswap)
-+				scan = SWAP_CLUSTER_MAX;
-+		}
-+		nr[l] = scan;
- 	}
- }
- 
-
+                            Linus
