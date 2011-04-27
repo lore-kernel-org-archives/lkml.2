@@ -1,126 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab1D0O0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 10:26:52 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.186]:12980
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752305Ab1D0O0u (ORCPT
+	id S1755958Ab1D0O3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 10:29:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58377 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab1D0O3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 10:26:50 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LKBESG-01-GUU-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>
-CC: <brgerst@gmail.com>, <tglx@linutronix.de>, <mingo@elte.hu>,
-        <suresh.b.siddha@intel.com>, <eranian@google.com>,
-        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 1/2] x86, xsave: fix non-lazy allocation of the xsave area
-Date: Wed, 27 Apr 2011 16:26:34 +0200
-Message-ID: <1303914395-841373-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <2be7032a-e4b6-4ce7-af53-532d77dbfb48@email.android.com>
-References: <2be7032a-e4b6-4ce7-af53-532d77dbfb48@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Wed, 27 Apr 2011 10:29:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=ZO/+HmlEmlG3Va+B5rJP1bx+EfkEDE3gu4GqivH+cdQf1O4le57nHC1FkNooVf30WJ
+         8W3HYPTZUAmtY1PskyS/UabT1ZyuPWvUYrj2h1z67WWZN60COpn1pagHn6mzcvk87UO/
+         BZqFEL6Jf5yQ5+RHKDxFqP+NlqoEQ1Y9rdO/4=
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Date: Wed, 27 Apr 2011 16:29:05 +0200
+Message-Id: <1303914545-15642-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A single static xsave area just for init is not enough, since there are
-more user processes that are directly executed by kernel threads. Add a
-call to a new arch-specific function to flush_old_exec(), which will in
-turn call fpu_alloc() to allocate a xsave area if necessary.
+Introduce a new fadvise flag to drop page cache pages of a single
+filesystem.
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+At the moment it is possible to drop page cache pages via
+/proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+
+The first method drops the whole page cache while the second can be used
+to drop page cache pages of a single file descriptor. However, there's
+not a simple way to drop all the pages of a filesystem (we could scan
+all the file descriptors and use posix_fadvise(POSIX_FADV_DONTNEED), but
+this solution obviously doesn't scale well).
+
+This functionality requires root privilege to avoid potential DoS in the
+system (i.e., a hard loop of posix_fadvise(POSIX_FADV_DONTNEED_FS) on
+the root filesystem).
+
+A practical example:
+
+  # ls -lh /mnt/sda/zero /mnt/sdb/zero
+  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sda/zero
+  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sdb/zero
+
+  $ grep ^Cached /proc/meminfo
+  Cached:             5660 kB
+  $ md5sum /mnt/sda/zero /mnt/sdb/zero
+  2c7ab85a893283e98c931e9511add182  /mnt/sda/zero
+  2c7ab85a893283e98c931e9511add182  /mnt/sdb/zero
+  $ grep ^Cached /proc/meminfo
+  Cached:            38544 kB
+  $ sudo ./drop-pagecache /mnt/sda/
+  $ grep ^Cached /proc/meminfo
+  Cached:            22440 kB
+  $ sudo ./drop-pagecache /mnt/sdb/
+  $ grep ^Cached /proc/meminfo
+  Cached:             5056 kB
+
+A previous RFC about this topic can be found here:
+  http://marc.info/?l=linux-kernel&m=130385374902114&w=2
+
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 ---
- arch/x86/include/asm/i387.h        |    6 ------
- arch/x86/include/asm/thread_info.h |    2 ++
- arch/x86/kernel/process.c          |    7 +++++++
- fs/exec.c                          |    8 ++++++++
- 4 files changed, 17 insertions(+), 6 deletions(-)
+ fs/drop_caches.c        |    2 +-
+ include/linux/fadvise.h |    2 ++
+ include/linux/mm.h      |    2 ++
+ mm/fadvise.c            |    7 +++++++
+ 4 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 989c0ac..0448f45 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -329,15 +329,9 @@ static inline void fpu_copy(struct fpu *dst, struct fpu *src)
- }
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 98b77c8..59d6caa 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -13,7 +13,7 @@
+ /* A global variable is a bit ugly, but it keeps the code simple */
+ int sysctl_drop_caches;
  
- extern void fpu_finit(struct fpu *fpu);
--static union thread_xstate __init_xstate, *init_xstate = &__init_xstate;
- 
- static inline void fpu_clear(struct fpu *fpu)
+-static void drop_pagecache_sb(struct super_block *sb, void *unused)
++void drop_pagecache_sb(struct super_block *sb, void *unused)
  {
--	if (!fpu_allocated(fpu)) {
--		BUG_ON(init_xstate == NULL);
--		fpu->state = init_xstate;
--		init_xstate = NULL;
--	}
- 	memset(fpu->state, 0, xstate_size);
- 	fpu_finit(fpu);
- 	set_used_math();
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 0e691c6..07c8cfe 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -265,6 +265,8 @@ static inline void set_restore_sigmask(void)
- extern void arch_task_cache_init(void);
- extern void free_thread_info(struct thread_info *ti);
- extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
-+extern int arch_prealloc_fpu(struct task_struct *tsk);
-+#define arch_prealloc_fpu arch_prealloc_fpu
- #define arch_task_cache_init arch_task_cache_init
+ 	struct inode *inode, *toput_inode = NULL;
+ 
+diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
+index e8e7471..dc9ce98 100644
+--- a/include/linux/fadvise.h
++++ b/include/linux/fadvise.h
+@@ -13,9 +13,11 @@
+ #if defined(__s390x__)
+ #define POSIX_FADV_DONTNEED	6 /* Don't need these pages.  */
+ #define POSIX_FADV_NOREUSE	7 /* Data will be accessed once.  */
++#define POSIX_FADV_DONTNEED_FS	8 /* Don't need these filesystem pages.  */
+ #else
+ #define POSIX_FADV_DONTNEED	4 /* Don't need these pages.  */
+ #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
++#define POSIX_FADV_DONTNEED_FS	6 /* Don't need these filesystem pages.  */
  #endif
- #endif /* _ASM_X86_THREAD_INFO_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 0382f98..3edfbf2 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -26,6 +26,13 @@
- struct kmem_cache *task_xstate_cachep;
- EXPORT_SYMBOL_GPL(task_xstate_cachep);
  
-+int arch_prealloc_fpu(struct task_struct *tsk)
-+{
-+	if (!fpu_allocated(&tsk->thread.fpu))
-+		return fpu_alloc(&tsk->thread.fpu);
-+	return 0;
-+}
-+
- int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
- {
- 	int ret;
-diff --git a/fs/exec.c b/fs/exec.c
-index 5e62d26..932b9ad 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1022,10 +1022,18 @@ void set_task_comm(struct task_struct *tsk, char *buf)
- 	perf_event_comm(tsk);
- }
+ #endif	/* FADVISE_H_INCLUDED */
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 692dbae..004cdbc 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -21,6 +21,7 @@ struct anon_vma;
+ struct file_ra_state;
+ struct user_struct;
+ struct writeback_control;
++struct super_block;
  
-+#if !defined(arch_prealloc_fpu)
-+#define arch_prealloc_fpu(tsk) (0)
-+#endif
-+
- int flush_old_exec(struct linux_binprm * bprm)
- {
- 	int retval;
+ #ifndef CONFIG_DISCONTIGMEM          /* Don't use mapnrs, do it properly */
+ extern unsigned long max_mapnr;
+@@ -1602,6 +1603,7 @@ int in_gate_area_no_mm(unsigned long addr);
+ #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
+ #endif	/* __HAVE_ARCH_GATE_AREA */
  
-+	retval = arch_prealloc_fpu(current);
-+	if (retval)
-+		goto out;
-+
- 	/*
- 	 * Make sure we have a private signal table and that
- 	 * we are unassociated from the previous thread group.
++void drop_pagecache_sb(struct super_block *sb, void *unused);
+ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 8d723c9..4e31fe1 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -57,6 +57,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		case POSIX_FADV_WILLNEED:
+ 		case POSIX_FADV_NOREUSE:
+ 		case POSIX_FADV_DONTNEED:
++		case POSIX_FADV_DONTNEED_FS:
+ 			/* no bad return value, but ignore advice */
+ 			break;
+ 		default:
+@@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 			invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
+ 		break;
++	case POSIX_FADV_DONTNEED_FS:
++		if (!current_euid())
++			drop_pagecache_sb(file->f_dentry->d_sb, NULL);
++		else
++			ret = -EPERM;
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
 -- 
-1.5.6.5
-
+1.7.1
 
