@@ -1,105 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1D0F1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 01:27:10 -0400
-Received: from m15-14.126.com ([220.181.15.14]:45702 "EHLO m15-14.126.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab1D0F1I convert rfc822-to-8bit (ORCPT
+	id S1753455Ab1D0Fhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 01:37:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34828 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab1D0Fhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 01:27:08 -0400
-X-Greylist: delayed 1863 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 01:27:07 EDT
-Date: Wed, 27 Apr 2011 12:55:19 +0800 (CST)
-From: uabuntsu@live.com
-To: "KY Srinivasan" <kys@microsoft.com>
-Cc: "Greg KH" <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Message-ID: <232b57ed.60d0.12f954fb649.Coremail.uabuntsu@live.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD1C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <6E21E5352C11B742B20C142EB499E0481DD1C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-1-git-send-email-kys@microsoft.com>
- <1303834842-5022-8-git-send-email-kys@microsoft.com>
- <20110426224545.GC31974@kroah.com>
-Subject: Re:RE: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
- cleanup accordingly
-MIME-Version: 1.0
-Content-Type: text/plain; charset=GBK
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [110.232.35.86]
-X-Priority: 3
-X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
- 110215(12912.3637.3636) Copyright (c) 2002-2011 www.mailtech.cn 126com
-X-CM-TRANSID: DsqowKALBKe4obdNPNkXAA--.880W
-X-CM-SenderInfo: pxde30xwvxqiyswou0bp/1tbi0w8uAkgYxFkvhQAHsQ
-X-Coremail-Antispam: 1U5529EdanIXcx71UUUUU7vcSsGvfC2KfnxnUU==
+	Wed, 27 Apr 2011 01:37:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AW1Hh2l9DsIoKw9hmIrNf4W8n83Y4Zk6pDuEW3FNQ0UcCSNtCWX/ouuasWs2oU61Ck
+         zDSHyhYrfT0F2xMboxwHgsNoUH0qb1onbr7Rf8qmEny1qqIIFcPDrDKdVbsVRy6Err/F
+         ztmtFoezZOAsaGiqLopJczlPo8WbNFjU4pfBY=
+From: Lifeng Sun <lifongsun@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lifeng Sun <lifongsun@gmail.com>
+Subject: [PATCH] Applying inappropriate ioctl operation on socket should return ENOTTY
+Date: Wed, 27 Apr 2011 13:37:05 +0800
+Message-Id: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unsubscribe linux-kernel
-At 2011-04-27 10:31:18£¬"KY Srinivasan" <kys@microsoft.com> wrote:
->
->
->> -----Original Message-----
->> From: Greg KH [mailto:greg@kroah.com]
->> Sent: Tuesday, April 26, 2011 6:46 PM
->> To: KY Srinivasan
->> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
->> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
->> Abhishek Kane (Mindtree Consulting PVT LTD)
->> Subject: Re: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
->> cleanup accordingly
->> 
->> On Tue, Apr 26, 2011 at 09:20:25AM -0700, K. Y. Srinivasan wrote:
->> > The vmbus driver cannot be unloaded; the windows host does not
->> > permit this. Cleanup accordingly.
->> 
->> Woah, you just prevented this driver from ever being able to be
->> unloaded.
->
->It was never unloadable; while the driver defined an exit routine, 
->there were couple of issues unloading the vmbus driver:
-> 
->1) All guest resources given to the host could not be recovered.
->
->2) Windows host would not permit reloading the driver without 
->rebooting the guest.
->
->All I did was acknowledge the current state and cleanup 
->accordingly. This is not unique to Hyper-V; for what it is worth,
->the Xen platform_pci  driver which is equivalent to the vmbus driver
->is also not unlodable (the last time I checked).
->
->> 
->> That's not a "cleanup" that's a major change in how things work.  I'm
->> sure, if you want to continue down this line, there are more things you
->> can remove from the code, right?
->> 
->> What is the real issue here?  What happens if you unload the bus?  What
->> goes wrong?  Can it be fixed?
->
->This needs to be fixed on the host side. I have notified them of the issue. 
->
->> 
->> This is a pretty big commitment...
->
->These drivers only load when Linux is hosted on  a Hyper-V platform;
->I am not sure why it is a "big commitment" given that the host does not 
->permit reloading this driver without rebooting the guest. 
->
->Regards,
->
->K. Y
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
->
+ioctl() calls against a socket with an inappropriate ioctl operation
+are incorrectly returning EINVAL rather than ENOTTY:
+
+  [ENOTTY]
+      Inappropriate I/O control operation.
+
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=33992
+
+This bug is not limited to socket, it also occurs in a lot of, maybe
+some hundred, other ioctl operations, while in the patch I only fixed
+about a dozen of additional ones in pipe, fifo and character device
+drivers.
+
+Signed-off-by: Lifeng Sun <lifongsun@gmail.com>
+---
+ drivers/char/applicom.c          |    2 +-
+ drivers/char/dtlk.c              |    2 +-
+ drivers/char/generic_nvram.c     |    2 +-
+ drivers/char/genrtc.c            |    2 +-
+ drivers/char/hpet.c              |    2 +-
+ drivers/char/i8k.c               |    2 +-
+ drivers/char/ipmi/ipmi_devintf.c |    2 +-
+ drivers/char/lp.c                |    2 +-
+ drivers/char/nwflash.c           |    2 +-
+ drivers/char/ppdev.c             |    2 +-
+ drivers/char/random.c            |    2 +-
+ drivers/char/raw.c               |    4 ++--
+ drivers/char/viotape.c           |    2 +-
+ fs/pipe.c                        |    2 +-
+ net/core/dev.c                   |    6 +++---
+ 15 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+index 25373df..50c09e4 100644
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -838,6 +838,6 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	Dummy = readb(apbs[IndexCard].RamIO + VERS);
+ 	kfree(adgl);
+ 	mutex_unlock(&ac_mutex);
+-	return 0;
++	return ret;
+ }
+ 
+diff --git a/drivers/char/dtlk.c b/drivers/char/dtlk.c
+index 85156dd..2d116d5 100644
+--- a/drivers/char/dtlk.c
++++ b/drivers/char/dtlk.c
+@@ -289,7 +289,7 @@ static long dtlk_ioctl(struct file *file,
+ 		return put_user(portval, argp);
+ 
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ }
+ 
+diff --git a/drivers/char/generic_nvram.c b/drivers/char/generic_nvram.c
+index 0e941b5..95278e9 100644
+--- a/drivers/char/generic_nvram.c
++++ b/drivers/char/generic_nvram.c
+@@ -111,7 +111,7 @@ static int nvram_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		nvram_sync();
+ 		break;
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/char/genrtc.c b/drivers/char/genrtc.c
+index f773a9d..6f4c3da 100644
+--- a/drivers/char/genrtc.c
++++ b/drivers/char/genrtc.c
+@@ -330,7 +330,7 @@ static int gen_rtc_ioctl(struct file *file,
+ 	    }
+ 	}
+ 
+-	return -EINVAL;
++	return -ENOTTY;
+ }
+ 
+ static long gen_rtc_unlocked_ioctl(struct file *file, unsigned int cmd,
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index 7066e80..720de66 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -575,7 +575,7 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg,
+ 	case HPET_IE_ON:
+ 		return hpet_ioctl_ieon(devp);
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ 
+ 	err = 0;
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index d72433f..4ba9b9f 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -370,7 +370,7 @@ i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		break;
+ 
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ 
+ 	if (val < 0)
+diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+index 2aa3977..bc8af5a 100644
+--- a/drivers/char/ipmi/ipmi_devintf.c
++++ b/drivers/char/ipmi/ipmi_devintf.c
+@@ -232,7 +232,7 @@ static int ipmi_ioctl(struct file   *file,
+ 		      unsigned int  cmd,
+ 		      unsigned long data)
+ {
+-	int                      rv = -EINVAL;
++	int                      rv = -ENOTTY;
+ 	struct ipmi_file_private *priv = file->private_data;
+ 	void __user *arg = (void __user *)data;
+ 
+diff --git a/drivers/char/lp.c b/drivers/char/lp.c
+index 97c3edb..2ff32c8 100644
+--- a/drivers/char/lp.c
++++ b/drivers/char/lp.c
+@@ -650,7 +650,7 @@ static int lp_do_ioctl(unsigned int minor, unsigned int cmd,
+ 			break;
+ 
+ 		default:
+-			retval = -EINVAL;
++			retval = -ENOTTY;
+ 	}
+ 	return retval;
+ }
+diff --git a/drivers/char/nwflash.c b/drivers/char/nwflash.c
+index a12f524..45b7a7a 100644
+--- a/drivers/char/nwflash.c
++++ b/drivers/char/nwflash.c
+@@ -115,7 +115,7 @@ static long flash_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		gbWriteBase64Enable = 0;
+ 		gbWriteEnable = 0;
+ 		mutex_unlock(&flash_mutex);
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ 	mutex_unlock(&flash_mutex);
+ 	return 0;
+diff --git a/drivers/char/ppdev.c b/drivers/char/ppdev.c
+index f176dba..8dce214 100644
+--- a/drivers/char/ppdev.c
++++ b/drivers/char/ppdev.c
+@@ -622,7 +622,7 @@ static int pp_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 	default:
+ 		pr_debug(CHRDEV "%x: What? (cmd=0x%x)\n", minor, cmd);
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ 
+ 	/* Keep the compiler happy */
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index d4ddeba..40aad1c 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1157,7 +1157,7 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ 		rand_initialize();
+ 		return 0;
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ }
+ 
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index b4b9d5a..a992bf1 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -231,7 +231,7 @@ static long raw_ctl_ioctl(struct file *filp, unsigned int command,
+ 		return 0;
+ 	}
+ 
+-	return -EINVAL;
++	return -ENOTTY;
+ }
+ 
+ #ifdef CONFIG_COMPAT
+@@ -273,7 +273,7 @@ static long raw_ctl_compat_ioctl(struct file *file, unsigned int cmd,
+ 		return 0;
+ 	}
+ 
+-	return -EINVAL;
++	return -ENOTTY;
+ }
+ #endif
+ 
+diff --git a/drivers/char/viotape.c b/drivers/char/viotape.c
+index ad6e64a..a427d40 100644
+--- a/drivers/char/viotape.c
++++ b/drivers/char/viotape.c
+@@ -529,7 +529,7 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
+ 
+ 	down(&reqSem);
+ 
+-	ret = -EINVAL;
++	ret = -ENOTTY;
+ 
+ 	switch (cmd) {
+ 	case MTIOCTOP:
+diff --git a/fs/pipe.c b/fs/pipe.c
+index da42f7d..fe7ffe4 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -665,7 +665,7 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 
+ 			return put_user(count, (int __user *)arg);
+ 		default:
+-			return -EINVAL;
++			return -ENOTTY;
+ 	}
+ }
+ 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index c2ac599..b93c76d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4773,7 +4773,7 @@ static int dev_ifsioc_locked(struct net *net, struct ifreq *ifr, unsigned int cm
+ 		 * is never reached
+ 		 */
+ 		WARN_ON(1);
+-		err = -EINVAL;
++		err = -ENOTTY;
+ 		break;
+ 
+ 	}
+@@ -5041,7 +5041,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
+ 		/* Set the per device memory buffer space.
+ 		 * Not applicable in our case */
+ 	case SIOCSIFLINK:
+-		return -EINVAL;
++		return -EOPNOTSUPP;
+ 
+ 	/*
+ 	 *	Unknown or private ioctl.
+@@ -5062,7 +5062,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
+ 		/* Take care of Wireless Extensions */
+ 		if (cmd >= SIOCIWFIRST && cmd <= SIOCIWLAST)
+ 			return wext_handle_ioctl(net, &ifr, cmd, arg);
+-		return -EINVAL;
++		return -ENOTTY;
+ 	}
+ }
+ 
+-- 
+1.7.5.rc1
 
