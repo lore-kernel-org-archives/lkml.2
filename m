@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1D0BFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 21:05:45 -0400
-Received: from c.painless.aaisp.net.uk ([81.187.30.53]:48868 "EHLO
-	c.painless.aaisp.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab1D0BFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 21:05:44 -0400
-Date: Wed, 27 Apr 2011 02:05:40 +0100
-From: Andrew Clayton <andrew@digital-domain.net>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <gregkh@suse.de>, Emmanuel Benisty <benisty.e@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: 2.6.38.4 broke my audio
-Message-ID: <20110427020540.25803862@omega.digital-domain.net>
-In-Reply-To: <s5hwrihb2wm.wl%tiwai@suse.de>
-References: <20110424113037.11af0b04@omega.digital-domain.net>
-	<20110425000126.GA18681@suse.de>
-	<s5htydmhed2.wl%tiwai@suse.de>
-	<20110425173409.GA32047@suse.de>
-	<s5hpqoagjtf.wl%tiwai@suse.de>
-	<20110426011212.77630c68@omega.digital-domain.net>
-	<s5hwrihb2wm.wl%tiwai@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+	id S1755599Ab1D0BKc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 21:10:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46631 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754378Ab1D0BKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 21:10:30 -0400
+Date: Wed, 27 Apr 2011 11:10:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Jones <davej@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the cpufreq tree
+Message-Id: <20110427111024.eb26b6f5.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__27_Apr_2011_11_10_24_+1000_CaGiVFLmEu3.v/WU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 14:41:45 +0200, Takashi Iwai wrote:
+--Signature=_Wed__27_Apr_2011_11_10_24_+1000_CaGiVFLmEu3.v/WU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> At Tue, 26 Apr 2011 01:12:12 +0100,
-> Andrew Clayton wrote:
-> > 
-> > On Mon, 25 Apr 2011 22:25:16 +0200, Takashi Iwai wrote:
-> > 
-> > > Andrew, could you give alsa-info.sh outputs on your machine?
-> > > Preferably, the outputs both before and after the kernel update
-> > > would be really helpful.
-> > 
-> > Sure, here you go.
-> > 
-> > The first one is from 2.6.38.3 where the audio is fine. The second
-> > is from 2.6.38.4 where the audio is really quiet.
-> 
-> Thanks.  In your case, "Speaker" mixer volume is set to zero.
-> Does the following fix the output?
-> 
-> 	% amixer -c0 set Speaker 100%
+Hi Dave,
 
-Ah, indeed it does.
+After merging the cpufreq tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
-> Takashi
+drivers/cpufreq/Kconfig:67:warning: choice value used outside its choice gr=
+oup
+drivers/cpufreq/Kconfig:75:warning: choice value used outside its choice gr=
+oup
+drivers/cpufreq/Kconfig:84:warning: choice value used outside its choice gr=
+oup
+drivers/cpufreq/Kconfig:93:warning: choice value used outside its choice gr=
+oup
+drivers/cpufreq/Kconfig:105:warning: choice value used outside its choice g=
+roup
 
+I am not sure what has caused this.  The only change in the cpufreq tree
+to that file is commit e002ba3328a2 ("[CPUFREQ] Move x86 cpufreq drivers
+to drivers/cpufreq/") which rearranged a few things but nothing obvious.
+
+--=20
 Cheers,
-Andrew
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__27_Apr_2011_11_10_24_+1000_CaGiVFLmEu3.v/WU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNt20AAAoJEDMEi1NhKgbsGu8H/0rt25gPZLCsfDywEBsjDFmV
+vH4aV/GxyGrQHrZ7w54DArLqZ7K021q8yrQAq/GPYX9IFZVxdbQKdiNTBqRpVWzu
+cYFedKfe3PWysyIdn3LBgKiSnb4SGh5KXcs/gPJNWdrx+X/UGa1ThCjTItpQRhiX
+rordKoFXN49xOXPgGAW4lnlwIC0XpfKTc6NHmF+VfMYBYp3issbQ2XqAXgLD59ag
+F4gOi3CbPQ8nOF99clypRtbtOfxLa/B9zi5aO97QnvFRnOwnGjiDMurAUh6suIxv
+kmzzFNsFEUd9WzV9liCWa21Ou5UX99GT+f/V69kGSDLefgz08a0PXwELvFExQXA=
+=NWYk
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__27_Apr_2011_11_10_24_+1000_CaGiVFLmEu3.v/WU--
