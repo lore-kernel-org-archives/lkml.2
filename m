@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab1D0GoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 02:44:12 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50529 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab1D0GoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 02:44:10 -0400
-Date: Wed, 27 Apr 2011 08:43:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110427064342.GE17079@elte.hu>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org>
- <1303407662-15564-2-git-send-email-acme@infradead.org>
- <20110422063429.GA16643@elte.hu>
- <20110422080604.GA22611@elte.hu>
- <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
- <1303809958.20212.219.camel@twins>
- <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu>
+	id S1752075Ab1D0Gpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 02:45:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59857 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1D0Gpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 02:45:54 -0400
+Date: Wed, 27 Apr 2011 02:45:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110427064550.GA597@infradead.org>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 27, 2011 at 01:54:02AM +0000, KY Srinivasan wrote:
+> I would prefer that we go through the  review process. What is the process for
+> this review? Is there a time window for people to respond. I am hoping I will be able
+> to address all the review comments well in advance of the  next closing of the tree,
+> with the hope of taking the vmbus driver out of staging this go around (hope springs
+> eternal in the human breast ...)! 
 
-* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+It would be useful if you'd send one driver at a time to the list as the
+full source to review.
 
-> On Tue, 26 Apr 2011, Peter Zijlstra wrote:
-> 
-> > > That's why people use libpfm4.  or PAPI.  And they do.
-> > 
-> > And how is typing in hex numbers different from typing in model specific
-> > event names? 
-> 
-> Reall... quick, tell me what event 0x53cf28 corresponds to on a core2.
-> 
-> Now if I said L2_IFETCH:BOTH_CORES you know several things about what it is.
+Did we make any progress on the naming discussion?  In my opinion hv is
+a far to generic name for your drivers.  Why not call it mshv dor the
+driver directory and prefixes?
 
-Erm, that assumes you already know that magic incantation. Most of the users 
-who want to do measurements and profiling do not know that. So there's little 
-difference between:
+As far as the core code is concerned, can you explain the use of the
+dev_add, dev_rm and cleanup methods and how they relate to the
+normal probe/remove/shutdown methods?
 
- - someone shows them the 0x53cf28 magic code
- - someone shows them the L2_IFETCH:BOTH_CORES magic symbol
+As far as the storage drivers are concerned I still have issues with the
+architecture.  I haven't seen any good explanation why you want to  have
+the blkvsc and storvsc drivers different from each other.  They both
+speak the same vmbus-level protocol and tunnel scsi commands over it.
+Why would you sometimes expose this SCSI protocol as a SCSI LLDD and
+sometimes as a block driver?  What decides that a device is exported
+in a way to that blkvsc is bound to them vs storvsc?  How do they look
+like on the windows side?  From my understanding of the windows driver
+models both the recent storport model and the older scsiport model are
+more or less talking scsi to the driver anyway, so what is the
+difference between the two for a Windows guest?
 
-So you while hexa values have like 10% utility, the stupid, vendor-specific 
-event names you are pushing here have like 15% utility.
+Also pleae get rid of struct storvsc_driver_object, it's just a very
+strange way to store file-scope variables, and useless indirection
+for the I/O submission handler.
 
-In perf we are aiming for 100% utility, where if someone knows something about 
-CPUs and can type 'cycles', 'instructions' or 'branches', will get the obvious 
-result.
-
-This is not a difficult usability concept really.
-
-Thanks,
-
-	Ingo
