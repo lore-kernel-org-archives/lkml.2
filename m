@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab1D0H4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 03:56:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41201 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab1D0H4I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 03:56:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=nXsoGobUvA+f29nKsHhGDnLA7mobz29Z+2+kabpo/13OiU7KdxUMnNjmqMJCfxjIQi
-         kuvJq2QLkNG/BauI2OyCwQZM7sP3hjdwV9CNlmzqCOKS3wPx2/oozriTA9p7uFBdm06C
-         HmR6P+QFlZ08ea/wccH/ULSbXefYEDyYB6rnE=
+	id S1754413Ab1D0H45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 03:56:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753463Ab1D0H44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 03:56:56 -0400
+Date: Wed, 27 Apr 2011 10:56:47 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: RCU+KVM: making CPU guest mode a quiescent state.
+Message-ID: <20110427075647.GJ2265@redhat.com>
+References: <20110426123824.GD22443@redhat.com>
+ <20110426155528.GD2135@linux.vnet.ibm.com>
+ <4DB7C9F8.5070906@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1104261608210.7639@chino.kir.corp.google.com>
-References: <20110426130036.997a05fc.rdunlap@xenotime.net>
-	<alpine.DEB.2.00.1104261608210.7639@chino.kir.corp.google.com>
-Date: Wed, 27 Apr 2011 09:56:06 +0200
-X-Google-Sender-Auth: TiJQcl-3c-7HtBkFjieuAe1_nDw
-Message-ID: <BANLkTimsFd-LfT6wF-iYPY7TNqR0q388XA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] init/Kconfig: use if/endif to surround the EXPERT
- menu kconfig symbols
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Foley <pefoley2@verizon.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB7C9F8.5070906@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 01:09, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 26 Apr 2011, Randy Dunlap wrote:
->
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> Surround the EXPERT menu with "if EXPERT" and "endif" so that it
->> is forced to stay as one unit.  Hopefully this will help to prevent
->> it being broken in the future.
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Peter Foley <pefoley2@verizon.net>
->> ---
->>  init/Kconfig |   36 ++++++++++++++++++++----------------
->>  1 file changed, 20 insertions(+), 16 deletions(-)
->>
->> --- lnx-2639-rc4.orig/init/Kconfig
->> +++ lnx-2639-rc4/init/Kconfig
->> @@ -924,15 +924,17 @@ menuconfig EXPERT
->>            environments which can tolerate a "non-standard" kernel.
->>            Only use this if you really know what you are doing.
->>
->> +if EXPERT
->> +
->>  config UID16
->> -     bool "Enable 16-bit UID system calls" if EXPERT
->> +     bool "Enable 16-bit UID system calls"
->>       depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION)
->>       default y
->>       help
->>         This enables the legacy 16-bit UID syscall wrappers.
->>
->
-> I don't like this, people who look up a Kconfig option typically only
-> look at the single entry and look for dependencies within it, not the
-> context in which it is declared in the Kconfig file.
+On Wed, Apr 27, 2011 at 10:47:04AM +0300, Avi Kivity wrote:
+> On 04/26/2011 06:55 PM, Paul E. McKenney wrote:
+> >On Tue, Apr 26, 2011 at 03:38:24PM +0300, Gleb Natapov wrote:
+> >>  Hello Paul,
+> >>
+> >>  I have a question about RCU + KVM. KVM does not hold any references to RCU
+> >>  protected data when it switches CPU into a guest mode. In fact switching
+> >>  to a guest mode is very similar to exiting to userspase from RCU point
+> >>  of view. In addition CPU may stay in a guest mode for quite a long time
+> >>  (up to one time slice). It looks like it will be beneficial to treat guest
+> >>  mode as quiescent state, just like user-mode execution. How can this be
+> >>  done? I was trying to find how RCU knows about cpu entering user-mode,
+> >>  but it seems that it does this by checking CPU mode in a timer interrupt
+> >>  (update_process_times()->rcu_check_callbacks()). This will not work for
+> >>  guest mode detection since timer interrupt will kick CPU out of a guest
+> >>  mode and timer interrupt will always see CPU in kernel mode. Do we have
+> >>  a simple function to call to notify RCU that CPU passed quiescent state
+> >>  which we can call just before entering guest?
+> >
+> >Hello, Gleb,
+> >
+> >You could call rcu_note_context_switch(), passing it the current
+> >CPU.  Please note that preemption -must- be disabled when calling
+> >this.  You could call this just after exiting the guest as well
+> >as just before entering guest.
+> >
+> 
+> It's expected that after exiting, we'd spend a very short time in
+> the kernel, and then either re-enter the guest, exit to userspace,
+> or switch to another task.  So I think calling it just before entry
+> should be sufficient.
+Definitely. This will allow other CPUs to complete rcu barrier much
+earlier.
 
-What about extracting the part that depends on EXPERT into its own file
-init/Kconfig.expert?
-
-Using separate Kconfig.xxx files could become a Kconfig pattern...
-
-Gr{oetje,eeting}s,
-
-                        Geert
+> 
+> Looking at the code, I see rcu_note_context_switch() calls
+> rcu_sched_qs(), which does
+> 
+>     rdp->passed_quiesc_completed = rdp->gpnum - 1;
+>     barrier();
+>     rdp->passed_quiesc = 1;
+> 
+> and also calls rcu_preempt_note_context_switch(), which calls
+> rcu_preempt_qs(), which does
+> 
+>     rdp->passed_quiesc_completed = rdp->gpnum - 1;
+>     barrier();
+>     rdp->passed_quiesc = 1;
+>     current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+> 
+> the similarity is remarkable.  Is this intended?  Or did I get lost
+> in a maze of #ifdefs?
+> 
+One of them works on rcu_sched_data another on rcu_preempt_data as far
+as I see.
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+			Gleb.
