@@ -1,86 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759476Ab1D0QJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:09:31 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33808 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933049Ab1D0QJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:09:16 -0400
-Subject: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Apr 2011 11:09:13 -0500
-Message-ID: <1303920553.2583.7.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S933218Ab1D0QJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:09:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47405 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933143Ab1D0QIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 12:08:22 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 09/13] netvm: Set PF_MEMALLOC as appropriate during SKB processing
+Date: Wed, 27 Apr 2011 17:08:07 +0100
+Message-Id: <1303920491-25302-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1303920491-25302-1-git-send-email-mgorman@suse.de>
+References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bug manifests as a soft lockup in kswapd:
+In order to make sure pfmemalloc packets receive all memory needed to proceed,
+ensure processing of pfmemalloc SKBs happens under PF_MEMALLOC. This is
+limited to a subset of protocols that are expected to be used for writing
+to swap. Taps are not allowed to use PF_MEMALLOC as these are expected to
+communicate with userspace processes which could be paged out.
 
-[  155.759084] netconsole: network logging started
-[  598.920430] BUG: soft lockup - CPU#1 stuck for 67s! [kswapd0:46]
-[  598.920472] Modules linked in: netconsole configfs fuse sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_seq snd_seq_device snd_pcm iwlagn mac80211 snd_timer uvcvideo btusb bluetooth snd cfg80211 videodev soundcore v4l2_compat_ioctl32 iTCO_wdt xhci_hcd e1000e snd_page_alloc rfkill i2c_i801 wmi iTCO_vendor_support microcode pcspkr joydev uinput ipv6 sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: netconsole]
-[  598.920834] CPU 1 
-[  598.920843] Modules linked in: netconsole configfs fuse sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_seq snd_seq_device snd_pcm iwlagn mac80211 snd_timer uvcvideo btusb bluetooth snd cfg80211 videodev soundcore v4l2_compat_ioctl32 iTCO_wdt xhci_hcd e1000e snd_page_alloc rfkill i2c_i801 wmi iTCO_vendor_support microcode pcspkr joydev uinput ipv6 sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: netconsole]
-[  598.926818] 
-[  598.928043] Pid: 46, comm: kswapd0 Not tainted 2.6.39-rc4+ #1 LENOVO 4170CTO/4170CTO
-[  598.929299] RIP: 0010:[<ffffffffa007ff9b>]  [<ffffffffa007ff9b>] i915_gem_inactive_shrink+0x78/0x194 [i915]
-[  598.930603] RSP: 0018:ffff8800709ebd50  EFLAGS: 00000216
-[  598.931867] RAX: ffff88006ec5c6b0 RBX: 00000000000000c0 RCX: 0000000000000000
-[  598.933135] RDX: ffff880037e59638 RSI: 0000000000000000 RDI: ffff880037876020
-[  598.934408] RBP: ffff8800709ebd90 R08: 0000000000000000 R09: 000000000001bd90
-[  598.935680] R10: 0000000000000002 R11: ffffffff81a44e50 R12: ffffffff8148300e
-[  598.936944] R13: ffff8800709ebcf0 R14: ffff8800709ebcf8 R15: ffffffff810dd64d
-[  598.938221] FS:  0000000000000000(0000) GS:ffff880100240000(0000) knlGS:0000000000000000
-[  598.939525] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  598.940813] CR2: 00007fe16a34d380 CR3: 0000000001a03000 CR4: 00000000000406e0
-[  598.942114] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  598.943441] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  598.944744] Process kswapd0 (pid: 46, threadinfo ffff8800709ea000, task ffff88006df8ae00)
-[  598.946044] Stack:
-[  598.947317]  ffff8800709ebd90 ffff880037e59638 ffff8800709ebd60 ffff880037e595f0
-[  598.948654]  0000000000000000 0000000000000000 00000000000000d0 000000000004c24e
-[  598.949986]  ffff8800709ebde0 ffffffff810e1f89 000000000000003d 0000000000000080
-[  598.951329] Call Trace:
-[  598.952673]  [<ffffffff810e1f89>] shrink_slab+0x6d/0x166
-[  598.954003]  [<ffffffff810e4bcc>] kswapd+0x533/0x798
-[  598.955331]  [<ffffffff810e4699>] ? mem_cgroup_shrink_node_zone+0xe3/0xe3
-[  598.956683]  [<ffffffff8106e157>] kthread+0x84/0x8c
-[  598.958022]  [<ffffffff81483764>] kernel_thread_helper+0x4/0x10
-[  598.959379]  [<ffffffff8106e0d3>] ? kthread_worker_fn+0x148/0x148
-[  598.960709]  [<ffffffff81483760>] ? gs_change+0x13/0x13
-[  598.962032] Code: 31 ed 48 83 c3 48 48 2d b0 00 00 00 eb 0a 48 8d 82 50 ff ff ff 41 ff c5 48 8b 90 b0 00 00 00 48 05 b0 00 00 00 48 39 d8 0f 18 0a 
-[  598.962192]  e1 e9 da 00 00 00 4c 89 f7 e8 c6 fd ff ff 48 8b 43 48 4c 8b 
-[  598.965009] Call Trace:
-[  598.966421]  [<ffffffff810e1f89>] shrink_slab+0x6d/0x166
-[  598.966423]  [<ffffffff810e4bcc>] kswapd+0x533/0x798
-[  598.966426]  [<ffffffff810e4699>] ? mem_cgroup_shrink_node_zone+0xe3/0xe3
-[  598.966429]  [<ffffffff8106e157>] kthread+0x84/0x8c
-[  598.966432]  [<ffffffff81483764>] kernel_thread_helper+0x4/0x10
-[  598.966435]  [<ffffffff8106e0d3>] ? kthread_worker_fn+0x148/0x148
-[  598.966438]  [<ffffffff81483760>] ? gs_change+0x13/0x13
+[a.p.zijlstra@chello.nl: Ideas taken from various patches]
+[jslaby@suse.cz: Lock imbalance fix]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/net/sock.h |    5 +++++
+ net/core/dev.c     |   48 ++++++++++++++++++++++++++++++++++++++++++++----
+ net/core/sock.c    |   16 ++++++++++++++++
+ 3 files changed, 65 insertions(+), 4 deletions(-)
 
-The traces are slightly different each reboot cycle, but it's always in
-kswapd and usually in shrink_slab.  Once it happens, anything that
-touches the filesystem hangs in D wait, so the machine is basically
-toast.
-
-The box is a Lenovo T420s sandybridge core i5 based laptop with 2GB of
-memory.
-
-There is a corresponding Red Hat bugzilla report here:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=694818
-
-And I've verified that the bug also shows in the 2.6.38.3 stable kernel.
-If anyone wants me to try anything, please let me know.
-
-James
-
+diff --git a/include/net/sock.h b/include/net/sock.h
+index e3aaa88..e928880 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -668,8 +668,13 @@ static inline __must_check int sk_add_backlog(struct sock *sk, struct sk_buff *s
+ 	return 0;
+ }
+ 
++extern int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb);
++
+ static inline int sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
+ {
++	if (skb_pfmemalloc(skb))
++		return __sk_backlog_rcv(sk, skb);
++
+ 	return sk->sk_backlog_rcv(sk, skb);
+ }
+ 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 3871bf6..0b69efb 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3095,6 +3095,23 @@ static void vlan_on_bond_hook(struct sk_buff *skb)
+ 	}
+ }
+ 
++/*
++ * Limit which protocols can use the PFMEMALLOC reserves to those that are
++ * expected to be used for communication with swap.
++ */
++static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
++{
++	switch (skb->protocol) {
++	case __constant_htons(ETH_P_ARP):
++	case __constant_htons(ETH_P_IP):
++	case __constant_htons(ETH_P_IPV6):
++	case __constant_htons(ETH_P_8021Q):
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static int __netif_receive_skb(struct sk_buff *skb)
+ {
+ 	struct packet_type *ptype, *pt_prev;
+@@ -3104,15 +3121,28 @@ static int __netif_receive_skb(struct sk_buff *skb)
+ 	bool deliver_exact = false;
+ 	int ret = NET_RX_DROP;
+ 	__be16 type;
++	unsigned long pflags = current->flags;
+ 
+ 	if (!netdev_tstamp_prequeue)
+ 		net_timestamp_check(skb);
+ 
+ 	trace_netif_receive_skb(skb);
+ 
++	/*
++	 * PFMEMALLOC skbs are special, they should
++	 * - be delivered to SOCK_MEMALLOC sockets only
++	 * - stay away from userspace
++	 * - have bounded memory usage
++	 *
++	 * Use PF_MEMALLOC as this saves us from propagating the allocation
++	 * context down to all allocation sites.
++	 */
++	if (skb_pfmemalloc(skb))
++		current->flags |= PF_MEMALLOC;
++
+ 	/* if we've gotten here through NAPI, check netpoll */
+ 	if (netpoll_receive_skb(skb))
+-		return NET_RX_DROP;
++		goto out;
+ 
+ 	if (!skb->skb_iif)
+ 		skb->skb_iif = skb->dev->ifindex;
+@@ -3143,6 +3173,9 @@ another_round:
+ 	}
+ #endif
+ 
++	if (skb_pfmemalloc(skb))
++		goto skip_taps;
++
+ 	list_for_each_entry_rcu(ptype, &ptype_all, list) {
+ 		if (!ptype->dev || ptype->dev == skb->dev) {
+ 			if (pt_prev)
+@@ -3151,13 +3184,17 @@ another_round:
+ 		}
+ 	}
+ 
++skip_taps:
+ #ifdef CONFIG_NET_CLS_ACT
+ 	skb = handle_ing(skb, &pt_prev, &ret, orig_dev);
+ 	if (!skb)
+-		goto out;
++		goto unlock;
+ ncls:
+ #endif
+ 
++	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
++		goto drop;
++
+ 	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+ 		if (pt_prev) {
+@@ -3166,7 +3203,7 @@ ncls:
+ 		}
+ 		switch (rx_handler(&skb)) {
+ 		case RX_HANDLER_CONSUMED:
+-			goto out;
++			goto unlock;
+ 		case RX_HANDLER_ANOTHER:
+ 			goto another_round;
+ 		case RX_HANDLER_EXACT:
+@@ -3210,6 +3247,7 @@ ncls:
+ 	if (pt_prev) {
+ 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+ 	} else {
++drop:
+ 		atomic_long_inc(&skb->dev->rx_dropped);
+ 		kfree_skb(skb);
+ 		/* Jamal, now you will not able to escape explaining
+@@ -3218,8 +3256,10 @@ ncls:
+ 		ret = NET_RX_DROP;
+ 	}
+ 
+-out:
++unlock:
+ 	rcu_read_unlock();
++out:
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ 	return ret;
+ }
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 8308609..ac36807 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -245,6 +245,22 @@ void sk_clear_memalloc(struct sock *sk)
+ }
+ EXPORT_SYMBOL_GPL(sk_clear_memalloc);
+ 
++int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
++{
++	int ret;
++	unsigned long pflags = current->flags;
++
++	/* these should have been dropped before queueing */
++	BUG_ON(!sock_flag(sk, SOCK_MEMALLOC));
++
++	current->flags |= PF_MEMALLOC;
++	ret = sk->sk_backlog_rcv(sk, skb);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
++
++	return ret;
++}
++EXPORT_SYMBOL(__sk_backlog_rcv);
++
+ #if defined(CONFIG_CGROUPS) && !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
+ EXPORT_SYMBOL_GPL(net_cls_subsys_id);
+-- 
+1.7.3.4
 
