@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1D0OuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 10:50:25 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:36854 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab1D0OuY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Wed, 27 Apr 2011 10:50:24 -0400
-Message-Id: <4DB84999020000780003E666@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 27 Apr 2011 15:51:37 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i386: tighten dependencies of CPU_SUP_*_32
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754639Ab1D0OwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 10:52:16 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56244 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753535Ab1D0OwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 10:52:15 -0400
+Date: Wed, 27 Apr 2011 10:52:09 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: gmack@innerfire.net
+Cc: Christoph Hellwig <hch@infradead.org>, Thiago Farina <tfransosi@gmail.com>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+Message-ID: <20110427145209.GJ9486@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, gmack@innerfire.net,
+	Christoph Hellwig <hch@infradead.org>,
+	Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org,
+	Steven Rostedt <rostedt@goodmis.org>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
+ <20110427005243.GI9486@thunk.org>
+ <20110427064719.GB597@infradead.org>
+ <alpine.DEB.2.00.1104270445210.7570@mtl.rackplans.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1104270445210.7570@mtl.rackplans.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building in support for any of these CPUs is pointless when e.g. M686
-was selected (as such a kernel would use cmov instructions, which
-aren't available on these older CPUs).
+On Wed, Apr 27, 2011 at 04:47:40AM -0400, gmack@innerfire.net wrote:
+> Knowing about it and not screwing it up are two different things. I was 
+> working on a project a few years ago and we made this exact change thanks 
+> to the backwards logic of strcmp constantly screwing people up and the bug 
+> count went down considerably.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+If someone could even vaguely possibly screw up strcmp(), I don't want
+them submitting patches to my subsystem.  I'm generally worried about
+far more subtle bugs (deadlocks, locking screwups), and as Christoph
+said, if you can't notice a strcmp bug, there's something
+***seriousl**** wrong with your code review process, test suite,
+testing discpline, or all of the above.
 
----
- arch/x86/Kconfig.cpu |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I would consider patches to change !strcmp() to streq() in any code I
+maintain to be worse noise than spelling patches, or whitespace
+patches.
 
---- 2.6.39-rc5/arch/x86/Kconfig.cpu
-+++ 2.6.39-rc5-i386-cpu-sup-dependencies/arch/x86/Kconfig.cpu
-@@ -440,7 +440,7 @@ config CPU_SUP_INTEL
- config CPU_SUP_CYRIX_32
- 	default y
- 	bool "Support Cyrix processors" if PROCESSOR_SELECT
--	depends on !64BIT
-+	depends on M386 || M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for Cyrix processors
- 
-@@ -480,7 +480,7 @@ config CPU_SUP_CENTAUR
- config CPU_SUP_TRANSMETA_32
- 	default y
- 	bool "Support Transmeta processors" if PROCESSOR_SELECT
--	depends on !64BIT
-+	depends on M386 || M486 || M586 || M586TSC || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for Transmeta processors
- 
-@@ -494,7 +494,7 @@ config CPU_SUP_TRANSMETA_32
- config CPU_SUP_UMC_32
- 	default y
- 	bool "Support UMC processors" if PROCESSOR_SELECT
--	depends on !64BIT
-+	depends on M386 || M486 || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for UMC processors
- 
-
-
-
+						- Ted
