@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1D0FZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 01:25:35 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59134 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098Ab1D0FZe (ORCPT
+	id S1753032Ab1D0F0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 01:26:16 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:53020 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752642Ab1D0F0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 01:25:34 -0400
-Date: Wed, 27 Apr 2011 14:20:59 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: reclaim memory from nodes in round robin
-Message-Id: <20110427142059.a364a8e7.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110427115718.ab6c55ae.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110427115718.ab6c55ae.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 01:26:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvYDABent015LHHJgWdsb2JhbAClaRUBARYmJcRZDoVoBJUwh1I
+Date: Wed, 27 Apr 2011 15:26:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: drosenberg@vsecurity.com, ak@linux.intel.com, eugeneteo@kernel.org,
+        aelder@sgi.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [8/106] xfs: prevent leaking uninitialized stack
+ memory in FSGEOMETRY_V1
+Message-ID: <20110427052610.GH12436@dastard>
+References: <20110426212.641772347@firstfloor.org>
+ <20110426211246.2E1863E1887@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426211246.2E1863E1887@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 27 Apr 2011 11:57:18 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> Now, memory cgroup's direct reclaim frees memory from the current node.
-> But this has some troubles. In usual, when a set of threads works in
-> cooperative way, they are tend to on the same node. So, if they hit
-> limits under memcg, it will reclaim memory from themselves, it may be
-> active working set.
+On Tue, Apr 26, 2011 at 02:12:46PM -0700, Andi Kleen wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> For example, assume 2 node system which has Node 0 and Node 1
-> and a memcg which has 1G limit. After some work, file cacne remains and
-> and usages are
->    Node 0:  1M
->    Node 1:  998M.
+> ------------------
+> From: Dan Rosenberg <drosenberg@vsecurity.com>
 > 
-> and run an application on Node 0, it will eats its foot before freeing
-> unnecessary file caches.
+> commit c4d0c3b097f7584772316ee4d64a09fe0e4ddfca upstream.
 > 
-> This patch adds round-robin for NUMA and adds equal pressure to each
-> node. When using cpuset's spread memory feature, this will work very well.
+> The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
+> xfs_fs_geometry() with a version number of 3.  This code path does not
+> fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
+> the leaking of four bytes of uninitialized stack data to potentially
+> unprivileged callers.
 > 
-> But yes, better algorithm is appreciated.
->
-At first, I thought the process may be oom-killed easily if we have many NUMA nodes
-and we try to reclaim only from nodes where no processes in the memcg allocate memory.
-But considering more, node_zonelists contains zones from other NUMA nodes IIUC,
-so it doesn't happen. 
+> v2 switches to memset() to avoid future issues if structure members
+> change, on suggestion of Dave Chinner.
 
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Did you grab the followup patch that fixed the stack corruption
+this change caused?
 
-Except for some typos which have already been pointed out.
+Cheers,
 
-Thanks,
-Daisuke Nishimura.
-
-P.S.
-I'm very sorry for my laziness these days. We have a long holidays in Japan
-from this weekend, so I hope I can review recent patches about bgreclaim etc
-in my home.
-
-> From: Ying Han <yinghan@google.com>
-> Signed-off-by: Ying Han <yinghan@google.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/memcontrol.h |    1 +
->  mm/memcontrol.c            |   25 +++++++++++++++++++++++++
->  mm/vmscan.c                |    9 ++++++++-
->  3 files changed, 34 insertions(+), 1 deletion(-)
-> 
-> Index: memcg/include/linux/memcontrol.h
-> ===================================================================
-> --- memcg.orig/include/linux/memcontrol.h
-> +++ memcg/include/linux/memcontrol.h
-> @@ -108,6 +108,7 @@ extern void mem_cgroup_end_migration(str
->   */
->  int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
->  int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
-> +int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
->  unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
->  				       struct zone *zone,
->  				       enum lru_list lru);
-> Index: memcg/mm/memcontrol.c
-> ===================================================================
-> --- memcg.orig/mm/memcontrol.c
-> +++ memcg/mm/memcontrol.c
-> @@ -237,6 +237,7 @@ struct mem_cgroup {
->  	 * reclaimed from.
->  	 */
->  	int last_scanned_child;
-> +	int last_scanned_node;
->  	/*
->  	 * Should the accounting and control be hierarchical, per subtree?
->  	 */
-> @@ -1472,6 +1473,29 @@ mem_cgroup_select_victim(struct mem_cgro
->  }
->  
->  /*
-> + * Selecting a node where we start reclaim from. Because what we need is just
-> + * reducing usage counter, start from anywhere is O,K. When considering
-> + * memory reclaim from current node, there are pros. and cons.
-> + * Freeing memory from current node means freeing memory from a node which
-> + * we'll use or we've used. So, it may make LRU bad. And if several threads
-> + * hit limits, it will see a contention on a node. But freeing from remote
-> + * node mean more costs for memory reclaim because of memory latency.
-> + *
-> + * Now, we use round-robin. Better algorithm is welcomed.
-> + */
-> +int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-> +{
-> +	int node;
-> +
-> +	node = next_node(mem->last_scanned_node, node_states[N_HIGH_MEMORY]);
-> +	if (node == MAX_NUMNODES)
-> +		node = first_node(node_states[N_HIGH_MEMORY]);
-> +
-> +	mem->last_scanned_node = node;
-> +	return node;
-> +}
-> +
-> +/*
->   * Scan the hierarchy if needed to reclaim memory. We remember the last child
->   * we reclaimed from, so that we don't end up penalizing one child extensively
->   * based on its position in the children list.
-> @@ -4678,6 +4702,7 @@ mem_cgroup_create(struct cgroup_subsys *
->  		res_counter_init(&mem->memsw, NULL);
->  	}
->  	mem->last_scanned_child = 0;
-> +	mem->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&mem->oom_notify);
->  
->  	if (parent)
-> Index: memcg/mm/vmscan.c
-> ===================================================================
-> --- memcg.orig/mm/vmscan.c
-> +++ memcg/mm/vmscan.c
-> @@ -2198,6 +2198,7 @@ unsigned long try_to_free_mem_cgroup_pag
->  {
->  	struct zonelist *zonelist;
->  	unsigned long nr_reclaimed;
-> +	int nid;
->  	struct scan_control sc = {
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
-> @@ -2208,10 +2209,16 @@ unsigned long try_to_free_mem_cgroup_pag
->  		.mem_cgroup = mem_cont,
->  		.nodemask = NULL, /* we don't care the placement */
->  	};
-> +	/*
-> +	 * Unlike direct reclaim via allo_pages(), memcg's reclaim
-> +	 * don't take care from where we get free resouce. So, the node where
-> +	 * we need to start scan is not need to be current node.
-> +	 */
-> +	nid = mem_cgroup_select_victim_node(mem_cont);
->  
->  	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
-> -	zonelist = NODE_DATA(numa_node_id())->node_zonelists;
-> +	zonelist = NODE_DATA(nid)->node_zonelists;
->  
->  	trace_mm_vmscan_memcg_reclaim_begin(0,
->  					    sc.may_writepage,
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
