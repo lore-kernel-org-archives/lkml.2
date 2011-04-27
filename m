@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab1D0XQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:16:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48178 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154Ab1D0XQb (ORCPT
+	id S1760188Ab1D0XS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:18:58 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:64443 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab1D0XS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:16:31 -0400
+	Wed, 27 Apr 2011 19:18:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=e1fUr2DGEx3DPl3OiHYOKcxrKqSKSNsWWXs5r1dbqiRgV1k9SXR9ubsdswPoMx9JRq
-         AaygkunUSB18dIdZInQXcjuJsmqwB14l3JtUT6tFZgqLITDRvo5VWUz+BXXAK8dQak9B
-         HZ6leon2lB/Jlb3fmIPIF7zWT/+KG7RACfL3M=
+        b=suA0UXbl+5H4ASr61w8V9ywvcGYvJMrXlpeMozezZFIAvmIGNCVvEWf02wmJZ+OziF
+         wgMOF++CGKekLwz+qc3B680FhWC+wjWksx5QIoc0OkPuW6pfEO8wab5C+50uaeXdgy8A
+         iFDPQ9OUv6Dt3cr8Od2HBtL91Tv9Sam+MhDWs=
 MIME-Version: 1.0
-In-Reply-To: <20110427102824.GI12436@dastard>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
-	<20110424234655.GC12436@dastard>
-	<alpine.DEB.2.01.1104242245090.18728@trent.utfs.org>
-	<alpine.DEB.2.01.1104250015480.18728@trent.utfs.org>
-	<20110427022655.GE12436@dastard>
-	<alpine.DEB.2.01.1104270042510.18728@trent.utfs.org>
-	<20110427102824.GI12436@dastard>
-Date: Thu, 28 Apr 2011 08:16:29 +0900
-Message-ID: <BANLkTimDoZueDWqB_LBndqPorCnTOZkNYQ@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110427170304.d31c1398.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+	<20110427170304.d31c1398.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 28 Apr 2011 08:18:54 +0900
+Message-ID: <BANLkTik9c7MVoHH+hjn7SHqMhW-6d4eoLg@mail.gmail.com>
+Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christian Kujau <lists@nerdbynature.de>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 7:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Apr 27, 2011 at 12:46:51AM -0700, Christian Kujau wrote:
->> On Wed, 27 Apr 2011 at 12:26, Dave Chinner wrote:
->> > What this shows is that VFS inode cache memory usage increases until
->> > about the 550 sample mark before the VM starts to reclaim it with
->> > extreme prejudice. At that point, I'd expect the XFS inode cache to
->> > then shrink, and it doesn't. I've got no idea why the either the
->>
->> Do you remember any XFS changes past 2.6.38 that could be related to
->> something like this?
+On Wed, Apr 27, 2011 at 5:03 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 27 Apr 2011 01:25:20 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
 >
-> There's plenty of changes that coul dbe the cause - we've changed
-> the inode reclaim to run in the background out of a workqueue as
-> well as via the shrinker, so it could even be workqueue starvation
-> causing the the problem...
+>> In some __zone_reclaim case, we don't want to shrink mapped page.
+>> Nonetheless, we have isolated mapped page and re-add it into
+>> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
+>>
+>> Of course, when we isolate the page, the page might be mapped but
+>> when we try to migrate the page, the page would be not mapped.
+>> So it could be migrated. But race is rare and although it happens,
+>> it's no big deal.
+>>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>
+>
+> Hmm, it seems mm/memcontrol.c::mem_cgroup_isolate_pages() should be updated, too.
+>
+> But it's okay you start from global LRU.
 
-RCU free starvation is another possibility?
-https://lkml.org/lkml/2011/4/25/124
+Yes. That's exactly what  I want. :)
+I am supposed to consider memcg after concept is approved.
 
+>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Thanks fore the review, Kame.
 -- 
 Kind regards,
 Minchan Kim
