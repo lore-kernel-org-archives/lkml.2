@@ -1,74 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248Ab1D0LIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:08:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51985 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab1D0LIR (ORCPT
+	id S1758325Ab1D0LIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 07:08:35 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:56136 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758269Ab1D0LId convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:08:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NvATUM6fgCYZEyY7yo/Xu8CDqSGeDZoNLtmqqVZnlF9DVCOojcg/vSmyqiJkJmETp1
-         NvlQpa5/7rpjyGGN9uNta/Yz1AlonDqgGr5OkqDKCtnRG3d4EdzJLSYmPY5DR+HK2+1H
-         JN7d/eIRBEBc8TtI5Od57cz0FsSizaT2MkI3Y=
-MIME-Version: 1.0
-In-Reply-To: <20110426152908.GA2879@nowhere>
-References: <201103311704.40372.roucaries.bastien@gmail.com>
-	<BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
-	<4D9B3C10.9060704@suse.com>
-	<BANLkTi=XDzOcZsP+aKS_WQSRxT+N8XHBRQ@mail.gmail.com>
-	<BANLkTi=yTfMiLvVtZTqQvxVhy7aFPdwSXQ@mail.gmail.com>
-	<BANLkTi=KUMNWJZZBQSHK+WViy6BYv8+4dQ@mail.gmail.com>
-	<BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
-	<20110411231843.GB2061@nowhere>
-	<BANLkTinHk7fVi62_Xftwn_0WLOzkS4jggw@mail.gmail.com>
-	<BANLkTikjD9hRPagnvjYO7A3ESGrwd1Qe-Q@mail.gmail.com>
-	<20110426152908.GA2879@nowhere>
-Date: Wed, 27 Apr 2011 13:08:15 +0200
-Message-ID: <BANLkTimdaH5=q8M1bLCUTQ8aXJp4N1Dvyw@mail.gmail.com>
-Subject: Re: Reiserfs deadlock in 2.6.36
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 27 Apr 2011 07:08:33 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201104271243.16868.arnd@arndb.de>
+References: <201104212129.17013.arnd@arndb.de>
+	 <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
+	 <201104271243.16868.arnd@arndb.de>
+Organization: ARM Limited
+Date: Wed, 27 Apr 2011 12:08:28 +0100
+Message-ID: <1303902508.15101.21.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 27 Apr 2011 11:08:28.0747 (UTC) FILETIME=[6FCCD9B0:01CC04CB]
+X-MC-Unique: 111042712083002401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 5:29 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Mon, Apr 18, 2011 at 10:01:48AM +0200, Bastien ROUCARIES wrote:
->> On Tue, Apr 12, 2011 at 2:01 PM, Bastien ROUCARIES
->> <roucaries.bastien@gmail.com> wrote:
->> > On Tue, Apr 12, 2011 at 1:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> On Mon, Apr 11, 2011 at 10:40:18AM +0200, Bastien ROUCARIES wrote:
->> >>> Any news ? Can I test some patch ?
->> Do you achieve to reproduce it ?
->>
->> Do you want I test something ?
->
-> So I've run 8 parallel loops of git reset / git merge in 8 different
-> repos during 2 days but I've been unable to reproduce.
->
-> I'm going to retry the same with kmail. What kind of thing do you make
-> with kmail for this to trigger? Can you also resend me your config
-> because I can't retrieve it from our discussion.
+On Wed, 2011-04-27 at 11:43 +0100, Arnd Bergmann wrote:
+> On Wednesday 27 April 2011, Catalin Marinas wrote:
+> > On 21 April 2011 20:29, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > I think the recent discussions on linaro-mm-sig and the BoF last week
+> > > at ELC have been quite productive, and at least my understanding
+> > > of the missing pieces has improved quite a bit. This is a list of
+> > > things that I think need to be done in the kernel. Please complain
+> > > if any of these still seem controversial:
+> > >
+> > > 1. Fix the arm version of dma_alloc_coherent. It's in use today and
+> > >   is broken on modern CPUs because it results in both cached and
+> > >   uncached mappings. Rebecca suggested different approaches how to
+> > >   get there.
+> >
+> > It's not broken since we moved to using Normal non-cacheable memory
+> > for the coherent DMA buffers (as long as you flush the cacheable alias
+> > before using the buffer, as we already do). The ARM ARM currently says
+> > unpredictable for such situations but this is being clarified in
+> > future updates and the Normal non-cacheable vs cacheable aliases can
+> > be used (given correct cache maintenance before using the buffer).
+> 
+> Thanks for that information, I believe a number of people in the
+> previous discussions were relying on the information from the
+> documentation. Are you sure that this is not only correct for the
+> cores made by ARM ltd but also for the other implementations that
+> may have relied on documentation?
 
-I only retrieve every minutes a big imap account on gmail.
-I do nothing else
+It is a clarification in the ARM ARM so it covers all the cores made by
+architecture licensees, not just ARM Ltd. It basically makes the
+"unpredictable" part more predictable to allow certain types of aliases
+(e.g. Strongly Ordered vs Normal memory would still be disallowed).
 
-The config is the same than debian standard kernel + debug reiserfs
-option. Arch is amd64. Will send you in reply of this email
+All the current implementations are safe with Normal memory aliases
+(cacheable vs non-cacheable) but of course, there may be some
+performance benefits in not having any alias.
 
-Thanks for trying to reproduce.
+> As I mentioned before, there are other architectures, where having
+> conflicting cache settings in TLB entries for the same pysical page
+> immediately checkstops the CPU, and I guess that this was also allowed
+> by the current version of the ARM ARM.
 
-Note that my home directory (where lockup occurs frequently has
-rw,nosuid,nodev,relatime,user_xattr,acl options.
+The current version of the ARM ARM says "unpredictable". But this
+general definition of "unpredictable" does not allow it to deadlock
+(hardware) or have security implications. It is however allowed to
+corrupt data.
 
-May be this bug is trigered by combinaison of relatime and acl ?
+> > > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
+> > >   that this is needed, and it currently is not implemented, with
+> > >   an outdated comment explaining why it used to not be possible
+> > >   to do it.
+> >
+> > As Russell pointed out, there are 4 main combinations with iommu and
+> > some coherency support (i.e. being able to snoop the CPU caches). But
+> > in an SoC you can have different devices with different iommu and
+> > coherency configurations. Some of them may even be able to see the L2
+> > cache but not the L1 (in which case it would help if we can get an
+> > inner non-cacheable outer cacheable mapping).
+> >
+> > Anyway, we end up with different DMA ops per device via dev_archdata.
+> 
+> Having different DMA ops per device was the solution that I was suggesting
+> with dma_mapping_common.h, but Russell pointed out that it may not be
+> the best option.
 
-> Thanks.
->
+IMHO, that's the most flexible option. I can't say for sure whether
+we'll need such flexibility in the future.
+
+> The alternative would be to have just one set of dma_mapping functions
+> as we do today, but to extend the functions to also cover the iommu
+> case, for instance (example, don't take literally):
+> 
+> static inline dma_addr_t dma_map_single(struct device *dev, void *cpu_addr,
+>                 size_t size, enum dma_data_direction dir)
+> {
+>         dma_addr_t ret;
+> 
+> #ifdef CONFIG_DMABOUNCE
+>         if (dev->archdata.dmabounce)
+>                 return dmabounce_map_single(dev, cpu_addr, size, dir);
+> #endif
+> 
+> #ifdef CONFIG_IOMMU
+>         if (dev->archdata.iommu)
+>                 ret = iommu_map_single(dev, cpu_addr, size, dir);
+>         else
+> #endif
+>                 dma_addr = virt_to_dma(dev, ptr);
+> 
+>         dma_sync_single_for_device(dev, dma_addr, size, dir);
+> }
+> 
+> This would not even conflict with having a common implementation
+> for iommu based dma_map_ops -- we would just call the iommu functions
+> directly when needed rather than having an indirect function call.
+
+I don't particularly like having lots of #ifdef's (but we could probably
+have some macros checking archdata.* to make this cleaner).
+
+We also need a way to specify a coherency level as we are getting
+platforms with devices connected to something like ACP (ARM Coherency
+Port).
+
+-- 
+Catalin
+
+
