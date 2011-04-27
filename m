@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760045Ab1D0Vnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 17:43:53 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60336 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754601Ab1D0Vnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 17:43:52 -0400
-Date: Wed, 27 Apr 2011 22:43:49 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/6] signal: rename signandsets() to sigandnsets()
-Message-ID: <20110427224349.69e5f5f0@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110426195018.GG8520@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
-	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
-	<20110418173224.GA27918@redhat.com>
-	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
-	<20110423175901.GA484@redhat.com>
-	<20110426194822.GA8520@redhat.com>
-	<20110426195018.GG8520@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+	id S1760069Ab1D0Vp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 17:45:58 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43020 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759270Ab1D0Vp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 17:45:57 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
+References: <201104212129.17013.arnd@arndb.de>
+	 <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 07:45:37 +1000
+Message-ID: <1303940737.2513.190.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 21:50:18 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> As Tejun and Linus pointed out, "nand" is the wrong name for "x & ~y",
-> it should be "andn". Rename signandsets() as suggested.
+On Wed, 2011-04-27 at 10:52 +0100, Catalin Marinas wrote:
 > 
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com> 
+> It's not broken since we moved to using Normal non-cacheable memory
+> for the coherent DMA buffers (as long as you flush the cacheable alias
+> before using the buffer, as we already do). The ARM ARM currently says
+> unpredictable for such situations but this is being clarified in
+> future updates and the Normal non-cacheable vs cacheable aliases can
+> be used (given correct cache maintenance before using the buffer).
 
-Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
+Don't you have a risk where speculative loads or prefetches might bring
+back some stuff into the cache via the cachable mapping ? Is that an
+issue ? As long as it's non-dirty and the cachable mapping isn't
+otherwise used, I suppose it might be a non-issue, tho I've seen in
+powerpc land cases of processors that can checkstop if a subsequent non
+cachable access "hits" the stuff that was loaded in the cache.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Cheers,
+Ben.
+
+
