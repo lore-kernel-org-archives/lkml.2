@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1D0WQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:16:55 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:4404 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab1D0WQy convert rfc822-to-8bit (ORCPT
+	id S1755559Ab1D0WRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:17:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63153 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab1D0WRM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:16:54 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-209.messagelabs.com!1303942612!3493269!8
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.69]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Kyungmin Park <kmpark@infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Nizette <bn@niasdigital.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 27 Apr 2011 17:16:42 -0500
-Subject: RE: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-Thread-Topic: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
-Thread-Index: AcwFJjBUjnA0bzC6QZybgn05BsJwEQAAEzyw
-Message-ID: <0D753D10438DA54287A00B027084269764D26C391E@AUSP01VMBX24.collaborationhost.net>
-References: <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
-	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
-	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
-	<20110419093855.36910400@lxorguk.ukuu.org.uk>
-	<BANLkTimqpP2k1tBvRL0BXs9E-Q=3bh0C7Q@mail.gmail.com>
-	<BANLkTint6DGgosVkjK-sveyA9SL9WVS4Mg@mail.gmail.com>
-	<BANLkTinv-MSg5Sobg2X1cJpAwPkM1Gevcg@mail.gmail.com>
-	<BANLkTi=Oc+y+31KugbEy66Mp96=bf_G8Mg@mail.gmail.com>
-	<BANLkTinv_-6dJJXAWc=NFTceXGA9sabanA@mail.gmail.com>
-	<20110420163238.5f0e5ea6@lxorguk.ukuu.org.uk>
- <20110427215509.GE17290@n2100.arm.linux.org.uk>
-In-Reply-To: <20110427215509.GE17290@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Apr 2011 18:17:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mNIT2RvUtEbPMx+TZg0yfqx7CYtB5S5/zEKdf/easNweeBlkYrRkOx/Zz7BZCEZxb3
+         TtyybVlHQ4VLmubZ5k/1Ibqqtef2DFQXY1XZlKYj3MSvsnjdZeAPygGZLxNewawkRroH
+         39D8oy0PtnHsqlAnueI44SgXM72SFDia+St/0=
 MIME-Version: 1.0
+In-Reply-To: <20110427214657.GE9487@ZenIV.linux.org.uk>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
+	<20110427164639.GD9487@ZenIV.linux.org.uk>
+	<1303924079.18763.70.camel@gandalf.stny.rr.com>
+	<20110427214657.GE9487@ZenIV.linux.org.uk>
+Date: Wed, 27 Apr 2011 19:17:11 -0300
+Message-ID: <BANLkTin_ZPDmXirK4MmmV5LaC6zmpb+qmw@mail.gmail.com>
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+From: Thiago Farina <tfransosi@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 27, 2011 2:55 PM, Russell King wrote:
-> On Wed, Apr 20, 2011 at 04:32:38PM +0100, Alan Cox wrote:
->>> Even if some people are only muxing pins that can also be used as GPIO,
->>> this is not always the case. We can shunt out the same pins to be used as
->>> I2C or SPI for example, that means this cannot be handled in a GPIO
->>> driver since it has nothing to do with GPIO pins at all.
->> 
->> It sounds very much to me like it belongs in the GPIO driver. That is the
->> one piece of code which knows what it is doing for all this configuration.
+On Wed, Apr 27, 2011 at 6:46 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> That's the whole fucking _point_; adding random extensions to the language
+> leads to the place where Pascal and LISP are and it's not pretty.  Each
+> might make sense taken separately (hell, bzero(3) would prevent real, honest
+> to Cthulhu bugs - it's memset(p, 0, n) and we had memset-with-swapped-arguments
+> bugs fairly often and yes, in our tree most of memset() callers do pass '\0'
+> as the second argument).  Pile enough of those together and you've got yourself
+> a dialect only you understand.  _Bad_ idea, since the next thing that happens
+> is different dialects in different parts of tree.  And the end of non-incestous
+> code review and fixes.  I've seen it first-hand (OK, second - I had enough
+> sense to stay out of that particular clusterfuck) on Algol 68 codebase.  I
+> *really*, *really* do not want to see anything similar ever again.  Especially
+> on projects I can't just piss upon and walk away from.  The fact that in C
+> you *can* extend the language that way doesn't make it a good idea.
 >
-> I don't think so.  See PXA devices, where MFP (multifunction pin)
-> configuration is entirely separate from GPIO - and there's some MFPs
-> which don't even have GPIOs associated with them.
+> While we are at it, strcmp() is, indeed, a part of the language.
+
+Part of the C standard library you mean, no?
+
+> See
+> section 7.21.4.2 in C99.
 >
-> If I'm reading the PXA930 MFP header file right, it also appears that
-> GPIOs can be configured on to multiple different pins (eg, GPIO46 can
-> be on GPIO46 or DF_nWE.  So refering to GPIO46 does not give you
-> sufficient information for exactly what pin is to be configured here.
->
-> To complicate matters, MFP configuration on PXA deals with stuff like
-> low power mode configuration, drive strength, etc which is completely
-> independent of the GPIO layer.
-
-I agree with Russell.  The muxing goes way beyond GPIO use.
-
-On the i.MX for example, the iomux is used to configured what the pads on the
-chip are used for.  The pad configuration might be gpio related or it could be
-setting the pad for use by one of the internal peripherals.
-
-For instance, on the i.MX35 the uart3 rxd signal can appear on the pads: RTS2,
-SD2_DATA0, ATA_DATA10, or FEC_TX_CLK.  All of these pads can also be configured
-as a gpio or for use by some other on-board peripheral.
-
-Also, like Russell mentions for the PXA930, some of the gpios can be routed to
-multiple pins.  And some of the pads have no gpio use but multiple other uses.
-
-Regards,
-Hartley
