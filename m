@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab1D0TVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:21:17 -0400
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:56027 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1759908Ab1D0TVM (ORCPT
+	id S1759930Ab1D0TVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:21:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61516 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759907Ab1D0TVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:21:12 -0400
-Date: Wed, 27 Apr 2011 20:58:28 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: James Nuss <jamesnuss@nanometrics.ca>
-Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
-        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com
-Message-ID: <20110427185828.GE20971@gundam.enneenne.com>
-Mail-Followup-To: James Nuss <jamesnuss@nanometrics.ca>,
-	Ricardo Martins <rasm@fe.up.pt>,
-	Ben Gardiner <bengardiner@nanometrics.ca>,
-	linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com
-References: <1303928054-14662-3-git-send-email-jamesnuss@nanometrics.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303928054-14662-3-git-send-email-jamesnuss@nanometrics.ca>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 192.168.32.254
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH 2/2] pps: new client driver using IRQs
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+	Wed, 27 Apr 2011 15:21:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bh+Z/AGeNP5roKRDDy79xZynPSaAU2lavgJQ72G3fWtfddFTWIvQEatbeBhB6TzwN1
+         O1KB7d3g5wxOvB/qawCdQz2nx8fLkEFSt0oaQ8/X3uKjncaluddV4aADR9UaU5D2GYfX
+         woDZ6uCorP0i/rkZTal4cdIiSmYYVhi5NIx1U=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [PATCH 1/2] hwrng: manage resource allocation in amd driver
+Date: Wed, 27 Apr 2011 23:21:15 +0400
+Message-Id: <1303932076-7428-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 02:14:14PM -0400, James Nuss wrote:
-> This client driver allows you to use raw IRQs as a source for PPS
-> signals.
-> 
-> This driver is based on the work by Ricardo Martins <rasm@fe.up.pt> who
-> submitted an initial implementation [1] of a PPS IRQ client driver to
-> the linuxpps mailing-list on Dec 3 2010.
-> 
-> [1] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
-> 
-> Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
-> Reviewed-by: Ben Gardiner <bengardiner@nanometrics.ca>
-> CC: Ricardo Martins <rasm@fe.up.pt>
+As amd driver doesn't bind to PCI device, we'd better manage reource
+allocation on our own to disallow (possible) conflicts.
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/char/hw_random/amd-rng.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/char/hw_random/amd-rng.c b/drivers/char/hw_random/amd-rng.c
+index 0d8c578..c6af038 100644
+--- a/drivers/char/hw_random/amd-rng.c
++++ b/drivers/char/hw_random/amd-rng.c
+@@ -133,6 +133,12 @@ found:
+ 	pmbase &= 0x0000FF00;
+ 	if (pmbase == 0)
+ 		goto out;
++	if (!request_region(pmbase + 0xF0, 8, "AMD HWRNG")) {
++		dev_err(&pdev->dev, "AMD HWRNG region 0x%x already in use!\n",
++			pmbase + 0xF0);
++		err = -EBUSY;
++		goto out;
++	}
+ 	amd_rng.priv = (unsigned long)pmbase;
+ 	amd_pdev = pdev;
+ 
+@@ -141,6 +147,7 @@ found:
+ 	if (err) {
+ 		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
+ 		       err);
++		release_region(pmbase + 0xF0, 8);
+ 		goto out;
+ 	}
+ out:
+@@ -149,6 +156,8 @@ out:
+ 
+ static void __exit mod_exit(void)
+ {
++	u32 pmbase = (unsigned long)amd_rng.priv;
++	release_region(pmbase + 0xF0, 8);
+ 	hwrng_unregister(&amd_rng);
+ }
+ 
 -- 
+1.7.4.4
 
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
