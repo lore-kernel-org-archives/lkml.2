@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1D0Hl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 03:41:28 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:48674 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751734Ab1D0Hl1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 03:41:27 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1753872Ab1D0Hqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 03:46:54 -0400
+Received: from trent.utfs.org ([194.246.123.103]:45661 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295Ab1D0Hqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 03:46:53 -0400
+Date: Wed, 27 Apr 2011 00:46:51 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110427022655.GE12436@dastard>
+Message-ID: <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Date: Wed, 27 Apr 2011 08:40:36 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8ACFA@saturn3.aculab.com>
-In-Reply-To: <1302891150-8121-1-git-send-email-emunson@mgebm.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Thread-Index: Acv7mKefZwlhdR0kSa61AWY390WAfwJFTC7w
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric B Munson" <emunson@mgebm.net>, <benh@kernel.crashing.org>
-Cc: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@elte.hu>,
-        <acme@ghostprotocols.net>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <anton@samba.org>, <stable@kernel.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I keep telling Eric that the code below is incorrect
-modulo arithimetic...
+On Wed, 27 Apr 2011 at 12:26, Dave Chinner wrote:
+> What this shows is that VFS inode cache memory usage increases until
+> about the 550 sample mark before the VM starts to reclaim it with
+> extreme prejudice. At that point, I'd expect the XFS inode cache to
+> then shrink, and it doesn't. I've got no idea why the either the
 
-> +static u64 check_and_compute_delta(u64 prev, u64 val)
-> +{
-> +	u64 delta = (val - prev) & 0xfffffffful;
-> +
-> +	/*
-> +	 * POWER7 can roll back counter values, if the new value is
-smaller
-> +	 * than the previous value it will cause the delta and the
-counter to
-> +	 * have bogus values unless we rolled a counter over.  If a
-coutner is
-> +	 * rolled back, it will be smaller, but within 256, which is the
-maximum
-> +	 * number of events to rollback at once.  If we dectect a
-rollback
-> +	 * return 0.  This can lead to a small lack of precision in the
-> +	 * counters.
-> +	 */
-> +	if (prev > val && (prev - val) < 256)
-> +		delta = 0;
-> +
-> +	return delta;
+Do you remember any XFS changes past 2.6.38 that could be related to 
+something like this?
 
-The code should detect rollback by looking at the value of 'delta'
-otherwise there are horrid end effects near 2^32-1.
+Bisecting is pretty slow on this machine. Could I somehow try to run 
+2.6.39-rc4 but w/o the XFS changes merged after 2.6.38? (Does someone know 
+how to do this via git?)
 
-For instance:
-	u32 delta = val - prev;
-	return delta & 0x80000000 ? 0 : delta;
+> Can you check if there are any blocked tasks nearing OOM (i.e. "echo
+> w > /proc/sysrq-trigger") so we can see if XFS inode reclaim is
+> stuck somewhere?
 
+Will do, tomorrow.
 
-   David
+Should I open a regression bug, so we don't loose track of this thing?
 
+Thanks,
+Christian.
+-- 
+BOFH excuse #425:
 
-
-
+stop bit received
