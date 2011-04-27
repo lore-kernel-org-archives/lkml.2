@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab1D0Luz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 07:50:55 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41210 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756182Ab1D0Luy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 07:50:54 -0400
-Date: Wed, 27 Apr 2011 12:52:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Lifeng Sun <lifongsun@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Applying inappropriate ioctl operation on socket should
- return ENOTTY
-Message-ID: <20110427125201.18395e2f@lxorguk.ukuu.org.uk>
-In-Reply-To: <1303901103.3166.30.camel@edumazet-laptop>
-References: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
-	<1303883910.2699.53.camel@edumazet-laptop>
-	<20110427104738.2bdbe228@lxorguk.ukuu.org.uk>
-	<1303901103.3166.30.camel@edumazet-laptop>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758842Ab1D0Lvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 07:51:39 -0400
+Received: from smtp7.mail.ru ([94.100.176.52]:59198 "EHLO smtp7.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756182Ab1D0Lvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 07:51:37 -0400
+Date: Wed, 27 Apr 2011 15:51:33 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Alan Ott <alan@signal11.us>, Steve Sakoman <sakoman@gmail.com>,
+        Steve Calfee <stevecalfee@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Regression?] Removed regulator support in ehci-omap
+Message-ID: <20110427115133.GA16447@rainbow>
+References: <20110411093214.GA18215@rainbow>
+ <4DA3350E.2060400@gmail.com>
+ <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com>
+ <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
+ <20110412040420.GB25239@rainbow>
+ <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com>
+ <4DB0D58E.4030508@signal11.us>
+ <8712165194c49f0b4d8c1bd1fe717b8a@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8712165194c49f0b4d8c1bd1fe717b8a@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, I wont argue the point, especially if you Ack the changes ;)
-> 
-> My only concern was to not break old applications, I dont know if it is
-> going to break _any_ of them. Probably these old applications stick with
-> old kernels.
+On 12:07 Sun 24 Apr     , Keshava Munegowda wrote:
+> I have posted the patches on April 22, 2011.
+> If possible I request you to test this.
 
-The number of applications that actually check ioctl error codes beyond
-if error perror; return is pretty small and those that do generally do so
-for very narrow cases or for things like EWOULDBLOCK/EINTR stuff.
+Hi, Keshava!
 
-> If you ask me ENOTTY is plain wrong.
-> ioctl() is not restricted to terminal devices at all.
+Sorry for delay - it took some time to find _where_ exactly you have posted
+the patch (thanks to Alan for giving the link). Anyway, it[1] seems to work
+as advertised (I also applied GPIO polarity fix [2] and board file patch[3],
+all on top of 2.6.39-rc4) - at least stuff in /sys/class/regulator looks right,
+and USB devices are detected. There's probably something still missing in the
+board file, as USB detection starts to work only if I booted TI's kernel
+(that came with board) before trying patched 2.6.39-rc4, but I hope that
+this isn't connected to this regulators issue.
 
-Like the tab/space thing in Makefiles and Qwerty keyboards its now part of
-how stuff all works but EINVAL is even worse because you cannot tell
-between 'this ioctl isn't know/is used on the wrong fd' and 'argument
-wrong to valid ioctl'
+[1] http://www.spinics.net/lists/linux-usb/msg45618.html
+[2] https://lkml.org/lkml/2011/4/14/45
+[3] http://arago-project.org/git/projects/?p=linux-omap3.git;a=commitdiff;h=2ec611981ad76256d5034ae36708d807142bed1c
 
-Alan
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
+
