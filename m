@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab1D0UQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:16:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56896 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab1D0UQW (ORCPT
+	id S1754303Ab1D0USm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:18:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37143 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751954Ab1D0USl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:16:22 -0400
-Date: Wed, 27 Apr 2011 21:16:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] ARM DMA mapping TODO, v1
-Message-ID: <20110427201605.GW17290@n2100.arm.linux.org.uk>
-References: <201104212129.17013.arnd@arndb.de> <201104271056.49920.arnd@arndb.de> <20110427090923.GO17290@n2100.arm.linux.org.uk> <201104271302.44249.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104271302.44249.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 27 Apr 2011 16:18:41 -0400
+Subject: [GIT PULL] parisc fixes for 2.6.39-rc5
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 15:18:38 -0500
+Message-ID: <1303935518.2583.27.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 01:02:43PM +0200, Arnd Bergmann wrote:
-> On Wednesday 27 April 2011, Russell King - ARM Linux wrote:
-> > On Wed, Apr 27, 2011 at 10:56:49AM +0200, Arnd Bergmann wrote:
-> > > We probably still need to handle both the coherent and noncoherent case
-> > > in each dma_map_ops implementation, at least for those combinations where
-> > > they matter (definitely the linear mapping). However, I think that using
-> > > dma_mapping_common.h would let us use an architecture-independent dma_map_ops
-> > > for the generic iommu code that Marek wants to introduce now.
-> > 
-> > The 'do we have an iommu or not' question and the 'do we need to do cache
-> > coherency' question are two independent questions which are unrelated to
-> > each other.  There are four unique but equally valid combinations.
-> > 
-> > Pushing the cache coherency question down into the iommu stuff will mean
-> > that we'll constantly be fighting against the 'but this iommu works on x86'
-> > shite that we've fought with over block device crap for years.  I have
-> > no desire to go there.
-> 
-> Ok, I see. I believe we could avoid having to fight with the people that
-> only care about coherent architectures if we just have two separate
-> implementations of dma_map_ops in the iommu code, one for coherent
-> and one for noncoherent DMA. Any architecture that only needs one
-> of them would then only enable the Kconfig options for that implementation
-> and not care about the other one.
+These two fixes contain the agreed fix for our slub panic (agreed with
+the mm folks that we'll define SLUB broken in the !NUMA && DISCONTIGMEM
+case, which should fix m86k as well) and another buglet that turned up
+examining the parisc discontigmem code.
 
-But then we have to invent yet another whole new API to deal with the
-cache coherency issues - which makes for more documentation, and eventually
-more abuse because it won't quite do what architectures want it to do,
-etc.
+The patches are here:
 
-> Yes, that sounds definitely possible. I guess it could be as simple
-> as having a flag somewhere in struct device if we want to make it
-> architecture independent.
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#fixes
 
-I was referring to a flag in the dma_ops to say whether the DMA ops
-implementation requires DMA cache coherency.  In the case of swiotlb,
-performing full DMA cache coherency is a pure waste of CPU cycles -
-and probably makes DMA much more expensive than merely switching back
-to using PIO.
+The short changelog is:
 
-I'm really not interested in producing "generic" interfaces which end up
-throwing the baby out with the bath water when we already have a better
-implementation in place - even if the hardware sucks.  That's not
-forward progress as far as I'm concerned.
+David Rientjes (1):
+      [PARISC] set memory ranges in N_NORMAL_MEMORY when onlined
 
-> As for making the default being to do cache handling, I'm not completely
-> sure how that would work on architectures where most devices are coherent.
-> If I understood the DRM people correctly, some x86 machine have noncoherent
-> DMA in their GPUs while everything else is coherent.
+James Bottomley (1):
+      [PARISC] slub: fix panic with DISCONTIGMEM
 
-Well, it sounds like struct device needs a flag to indicate whether it is
-coherent or not - but exactly how this gets set seems to be architecture
-dependent.  I don't see bus or driver code being able to make the necessary
-decisions - eg, tulip driver on x86 would be coherent, but tulip driver on
-ARM would be non-coherent.
+The diffstat is:
 
-Nevertheless, doing it on a per-device basis is definitely the right
-answer.
+ arch/parisc/mm/init.c |    4 +++-
+ init/Kconfig          |    1 +
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+And the full diff are below.
+
+James
+
+---
+
+diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+index b7ed8d7..b1d1262 100644
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
+ 	}
+ 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+ 
+-	for (i = 0; i < npmem_ranges; i++)
++	for (i = 0; i < npmem_ranges; i++) {
++		node_set_state(i, N_NORMAL_MEMORY);
+ 		node_set_online(i);
++	}
+ #endif
+ 
+ 	/*
+diff --git a/init/Kconfig b/init/Kconfig
+index 56240e7..a7ad8fb 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1226,6 +1226,7 @@ config SLAB
+ 	  per cpu and per node queues.
+ 
+ config SLUB
++	depends on BROKEN || NUMA || !DISCONTIGMEM
+ 	bool "SLUB (Unqueued Allocator)"
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
+
+
