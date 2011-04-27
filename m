@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759903Ab1D0TTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:19:39 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:2515 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759835Ab1D0TTi (ORCPT
+	id S1759905Ab1D0TVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:21:05 -0400
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:56019 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab1D0TVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:19:38 -0400
-Message-ID: <4DB86BA4.8070401@draigBrady.com>
-Date: Wed, 27 Apr 2011 20:16:52 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Wed, 27 Apr 2011 15:21:03 -0400
+X-Greylist: delayed 1454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 15:21:03 EDT
+Date: Wed, 27 Apr 2011 20:56:43 +0200
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: James Nuss <jamesnuss@nanometrics.ca>
+Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
+        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com
+Message-ID: <20110427185643.GD20971@gundam.enneenne.com>
+Mail-Followup-To: James Nuss <jamesnuss@nanometrics.ca>,
+	Ricardo Martins <rasm@fe.up.pt>,
+	Ben Gardiner <bengardiner@nanometrics.ca>,
+	linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com
+References: <1303928054-14662-2-git-send-email-jamesnuss@nanometrics.ca>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        paulmck@linux.vnet.ibm.com, Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-References: <20110425180450.1ede0845@neptune.home>	<BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com>	<20110425190032.7904c95d@neptune.home>	<BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com>	<20110425203606.4e78246c@neptune.home>	<20110425191607.GL2468@linux.vnet.ibm.com>	<20110425231016.34b4293e@neptune.home>	<BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com>	<20110425214933.GO2468@linux.vnet.ibm.com>	<20110426081904.0d2b1494@pluto.restena.lu>	<20110426112756.GF4308@linux.vnet.ibm.com>	<20110426183859.6ff6279b@neptune.home>	<20110426190918.01660ccf@neptune.home>	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>	<alpine.LFD.2.02.1104262314110.3323@ionos>	<20110427081501.5ba28155@pluto.restena.lu> <20110427204139.1b0ea23b@neptune.home>
-In-Reply-To: <20110427204139.1b0ea23b@neptune.home>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303928054-14662-2-git-send-email-jamesnuss@nanometrics.ca>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 192.168.32.254
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCH 1/2] pps: default echo function
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/04/11 19:41, Bruno Prémont wrote:
-> On Wed, 27 April 2011 Bruno Prémont wrote:
->> On Wed, 27 Apr 2011 00:28:37 +0200 (CEST) Thomas Gleixner wrote:
->>> On Tue, 26 Apr 2011, Linus Torvalds wrote:
->>>> On Tue, Apr 26, 2011 at 10:09 AM, Bruno Prémont wrote:
->>>>>
->>>>> Just in case, /proc/$(pidof rcu_kthread)/status shows ~20k voluntary
->>>>> context switches and exactly one non-voluntary one.
->>>>>
->>>>> In addition when rcu_kthread has stopped doing its work
->>>>> `swapoff $(swapdevice)` seems to block forever (at least normal shutdown
->>>>> blocks on disabling swap device).
+On Wed, Apr 27, 2011 at 02:14:13PM -0400, James Nuss wrote:
+> A default echo function has been provided so it is no longer an
+> error when you specify PPS_ECHOASSERT or PPS_ECHOCLEAR without an explicit
+> echo function. This allows some code re-use and also makes it easier
+> to write client drivers since the default echo function does not
+> normally need to change.
 > 
-> Apparently it's not swapoff but `umount -a -t tmpfs` that's getting
-> stuck here. Manual swapoff worked.
+> Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
+> Reviewed-by: Ben Gardiner <bengardiner@nanometrics.ca>
 
-Anything to do with this?
-http://thread.gmane.org/gmane.linux.kernel.mm/60953/
+Acked-by: Rodolfo Giometti <giometti@linux.it>
 
-cheers,
-Pádraig.
+-- 
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
