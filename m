@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab1D0Jb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:31:27 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:41238 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755563Ab1D0JbZ convert rfc822-to-8bit (ORCPT
+	id S1755658Ab1D0Jcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:32:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56188 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752001Ab1D0Jcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:31:25 -0400
-Subject: Re: [PATCH] kmemleak: Never return a pointer you didn't 'get'
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1303385972-2518-1-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1303385972-2518-1-git-send-email-ext-phil.2.carmody@nokia.com>
-Organization: ARM Limited
-Date: Wed, 27 Apr 2011 10:31:20 +0100
-Message-ID: <1303896680.15101.1.camel@e102109-lin.cambridge.arm.com>
+	Wed, 27 Apr 2011 05:32:45 -0400
+Date: Wed, 27 Apr 2011 10:33:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: johnlinn@comcast.net
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        michal.simek@petalogix.com, joe@perches.com, grant.likely@secretlab.ca,
+        greg@kroah.com
+Subject: Re: [PATCH V3] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110427103340.2554df83@lxorguk.ukuu.org.uk>
+In-Reply-To: <549692800.1907368.1303859758362.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+References: <381805170.1906645.1303859011392.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+	<549692800.1907368.1303859758362.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 27 Apr 2011 09:31:20.0862 (UTC) FILETIME=[DE1C2BE0:01CC04BD]
-X-MC-Unique: 111042710312203501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-21 at 12:39 +0100, Phil Carmody wrote:
-> Old - If you don't get the last pointer that you looked at, then it will
-> still be put, as there's no way of knowing you didn't get it.
+> I thought I was improving but now as I look at it further, that seems like it 
+> was better and I should have stuck to that method.
 > 
-> New - If you didn't get it, then it refers to something deleted, and
-> your work is done, so return NULL.
+> Thoughts?
+
+Go for nearest is the right behaviour. The whole tty layer works on that
+basis as do soem other things. It means you don't have to have a set of
+calls to do things like "enumerate valid data rates" instead you ask and
+compare.
+
+> > > +	uart_update_timeout(port, termios->c_cflag, baud);
+> > 
+> > [which would also fix this timeout!]
 > 
-> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Maybe you were meaning that if the baud rate was not really set because of the
+> error this timeout would be wrong also, and if so that makes sense.
 
-Good catch. But I think the code may look slightly simpler as below:
+Correct
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index c1d5867..aacee45 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -1414,9 +1414,12 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 	++(*pos);
- 
- 	list_for_each_continue_rcu(n, &object_list) {
--		next_obj = list_entry(n, struct kmemleak_object, object_list);
--		if (get_object(next_obj))
-+		struct kmemleak_object *obj =
-+			list_entry(n, struct kmemleak_object, object_list);
-+		if (get_object(obj)) {
-+			next_obj = obj;
- 			break;
-+		}
- 	}
- 
- 	put_object(prev_obj);
-
-
-Thanks.
-
--- 
-Catalin
-
-
+Alan
