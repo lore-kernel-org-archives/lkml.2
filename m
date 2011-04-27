@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1D0QYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:24:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26016 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1D0QX6 convert rfc822-to-8bit (ORCPT
+	id S1755493Ab1D0QZS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:25:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48252 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1D0QZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:23:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=mQsELo9Nf7+F/0BfPjp+nhllqikTEUSkq9GkDm5canNaRTeaCtj66PXEWTK+TR3lmS
-         ZpejCLcZ9w7vhHWBC7VQ==
+	Wed, 27 Apr 2011 12:25:17 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=3rvgeqzMqd0A:10 a=uHzB2e4Qac0A:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=pGLkceISAAAA:8 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=XGz2KfOUNL1kDKcHzHUA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=IcxpeKGZWnEA:10 a=LI9Vle30uBYA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Wed, 27 Apr 2011 11:25:14 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>, jeff.chua.linux@gmail.com
+Cc: wlanfae@realtek.com, ino-news@spotteswoode.dnsalias.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
+Message-ID: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-In-Reply-To: <BANLkTiks1LaJm_phZYi36z7aSix1fe7TdA@mail.gmail.com>
-References: <BANLkTinSOZH=9uD_9uXcVnH-1Yw5K-K3yg@mail.gmail.com>
- <20110425140035.GA27159@comet.dominikbrodowski.net> <BANLkTinaCZcxDEwn-z4u1CmQRm2h+Kkocw@mail.gmail.com>
- <20110425201417.GB1268@comet.dominikbrodowski.net> <BANLkTiks1LaJm_phZYi36z7aSix1fe7TdA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 27 Apr 2011 10:23:36 -0600
-Message-ID: <BANLkTikR+ZRwJRGEniW5McH6P+vp-80FvQ@mail.gmail.com>
-Subject: Re: PCIE-to-PCI bridge doesn't pass mem resources downstream [Re:
- yenta cardbus problem]
-To: =?ISO-8859-1?Q?Germ=E1n_Sanchis?= <eaglecros@gmail.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 4:33 AM, Germán Sanchis <eaglecros@gmail.com> wrote:
-> 2011/4/25 Dominik Brodowski <linux@dominikbrodowski.net>:
->> Hey,
->>
->> thanks for the additional debug information. It seems to me to be not a
->> bug with the yenta driver, but with the parent PCI bridge instead.
->> Therefore, I've added Jesse and the linux-pci list as recipients. Germán's
->> problem relates to Ubuntu's 2.6.35-derived kernel; lspci snippets follow.
->>
->> Let's look at the (grand-)parent bridge: It offers some, if not much I/O and
->> memory resources for its childs to be used:
->>
->> 00:1c.5 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 6 (rev 03) (prog-if 00 [Normal decode])
->>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
->>        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->>        Latency: 0
->>        Bus: primary=00, secondary=04, subordinate=09, sec-latency=0
->>        I/O behind bridge: 00001000-00001fff
->>        Memory behind bridge: d6100000-d70fffff
->>        Prefetchable memory behind bridge: 00000000d5100000-00000000d60fffff
->>
->> The PCI bridge, however, does only pass the I/O resources downstream, but
->> _no_ memory at all.
->>
->> 04:00.0 PCI bridge: Texas Instruments XIO2000(A)/XIO2200(A) PCI Express-to-PCI Bridge (rev 03) (prog-if 00 [Normal decode])
->>        Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
->>        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->>        Latency: 0
->>        Bus: primary=04, secondary=05, subordinate=09, sec-latency=0
->>        I/O behind bridge: 00001000-00001fff
->>        Memory behind bridge: fff00000-000fffff
->>
->> The CardBus bridge then has I/O resources to use, but cannot enable memory
->> resources:
->>
->> 05:00.0 CardBus bridge: Texas Instruments PCIxx12 Cardbus Controller
->>        Memory window 0: 00000000-00000000 [disabled] (prefetchable)
->>        Memory window 1: 00000000-00000000 [disabled] (prefetchable)
->>        I/O window 0: 00001000-000010ff
->>        I/O window 1: 00001400-000014ff
->>
->> So my question to the PCI folks: why does the PCI bridge fail to pass memory
->> regions downstream, and assign them properly to the CardBus bridge?
+From: Jeff Chua <jeff.chua.linux@gmail.com>
 
-The BIOS assigned [mem 0xd6100000-0xd70fffff] (16MB) and [mem
-0xd5100000-0xd60fffff 64bit pref] (16MB) to bus 04, but left the
-04:00.0 bridge windows to bus 05 disabled.  Linux only enables them if
-we find a downstream device that needs resources.  In this case, there
-*is* a downstream CardBus bridge (05:00.0) that would like resources.
-By default, pci_bus_size_cardbus() requests 64MB for each CardBus
-memory window, but there's only 16MB each (prefetchable and
-non-prefetchable) available.
+Driver r8712u is unable to handle ad-hoc mode. The issue is that when
+the driver first starts, there will not be an SSID for association.
+The fix is to always call the "select and join from scan" routine when
+in ad-hoc mode.
 
-I don't think your audio card needs anywhere near 64MB of memory
-space.  Can you try booting with "pci=cbmemsize=8M"?
+Note: Ad-hoc mode worked intermittently before. If the driver had
+previously been associated, then things were OK.
 
-Bjorn
+Signed-off-by: Jeff Chua <jeff.chua.linux@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Stable <stable@kernel.org>
+---
+
+Index: linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/rtl8712/rtl871x_ioctl_set.c
++++ linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
+@@ -68,7 +68,10 @@ static u8 do_join(struct _adapter *padap
+ 	pmlmepriv->fw_state |= _FW_UNDER_LINKING;
+ 	pmlmepriv->pscanned = plist;
+ 	pmlmepriv->to_join = true;
+-	if (_queue_empty(queue) == true) {
++
++	/* adhoc mode will start with an empty queue, but skip checking */
++	if (!check_fwstate(pmlmepriv, WIFI_ADHOC_STATE) &&
++	    _queue_empty(queue)) {
+ 		if (pmlmepriv->fw_state & _FW_UNDER_LINKING)
+ 			pmlmepriv->fw_state ^= _FW_UNDER_LINKING;
+ 		/* when set_ssid/set_bssid for do_join(), but scanning queue
