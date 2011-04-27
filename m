@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab1D0I45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:56:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56706 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab1D0I4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:56:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [RFC] ARM DMA mapping TODO, v1
-Date: Wed, 27 Apr 2011 10:56:49 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <201104212129.17013.arnd@arndb.de> <20110427073514.GH17290@n2100.arm.linux.org.uk>
-In-Reply-To: <20110427073514.GH17290@n2100.arm.linux.org.uk>
+	id S1755441Ab1D0I57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 04:57:59 -0400
+Received: from rackplans.net ([209.44.101.17]:43239 "EHLO mtl.rackplans.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755168Ab1D0I55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 04:57:57 -0400
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 04:57:57 EDT
+Date: Wed, 27 Apr 2011 04:47:40 -0400 (EDT)
+From: gmack@innerfire.net
+X-X-Sender: gmack@mtl.rackplans.net
+To: Christoph Hellwig <hch@infradead.org>
+cc: "Ted Ts'o" <tytso@mit.edu>, Thiago Farina <tfransosi@gmail.com>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
+In-Reply-To: <20110427064719.GB597@infradead.org>
+Message-ID: <alpine.DEB.2.00.1104270445210.7570@mtl.rackplans.net>
+References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com> <20110427005243.GI9486@thunk.org> <20110427064719.GB597@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104271056.49920.arnd@arndb.de>
-X-Provags-ID: V02:K0:koYVM6/io2dIjooF4t38IXGkySD3mAVQQRCDXJiAurM
- jX2f1eflDcYL6gNgYB1SGGx4askKoRblG+emdq/kNhdB4wgE2S
- C/7E/7M+OhTd47AQopwoPnO6KCrE/qIwkk4k6W6NXZPl/lunK5
- fxoUEBGDd9Gn25jRrw9mCHL9FBaTaoM5X6K05cWrq6ER+hh2pw
- qHYSO5dD52qEEPEDbye5Q==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 April 2011, Russell King - ARM Linux wrote:
-> > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
-> >    that this is needed, and it currently is not implemented, with
-> >    an outdated comment explaining why it used to not be possible
-> >    to do it.
+On Wed, 27 Apr 2011, Christoph Hellwig wrote:
+
+> Date: Wed, 27 Apr 2011 02:47:19 -0400
+> From: Christoph Hellwig <hch@infradead.org>
+> To: Ted Ts'o <tytso@mit.edu>, Thiago Farina <tfransosi@gmail.com>,
+>     linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+> Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
 > 
-> dma_alloc_noncoherent is an entirely pointless API afaics.
-
-The main use case that I can see for dma_alloc_noncoherent is being
-able to allocate a large cacheable memory chunk that is mapped
-contiguous into both kernel virtual and bus virtual space, but not
-necessarily in contiguous in physical memory.
-
-Without an IOMMU, I agree that it is pointless, because the only
-sensible imlpementation would be alloc_pages_exact + dma_map_single.
-
-> > 3. Convert ARM to use asm-generic/dma-mapping-common.h. We need
-> >    both IOMMU and direct mapped DMA on some machines.
+> On Tue, Apr 26, 2011 at 08:52:43PM -0400, Ted Ts'o wrote:
+> > I don't think this is not a good idea.
 > > 
-> > 4. Implement an architecture independent version of dma_map_ops
-> >    based on the iommu.h API. As Joerg mentioned, this has been
-> >    missing for some time, and it would be better to do it once
-> >    than for each IOMMU separately. This is probably a lot of work.
+> > First of all, changing 2800 instances of strcmp will induce a huge
+> > amount of code churn, that will cause patches to break, etc.  And
+> > whether streq() looks better is going to be very much a case of
+> > personal preference.  I'm so used to !strcmp(a, b) that streq(a, b)
+> > would be harder for me, just because I'm not used to it.
+> > 
+> > So I'd NACK a change like this to any parts of the kernel that I'm
+> > maintaining.  If another people feel that way, it's not clear that
+> > having two different conventions in the kernel would necessarily help...
 > 
-> dma_map_ops design is broken - we can't have the entire DMA API indirected
-> through that structure.  Whether you have an IOMMU or not is completely
-> independent of whether you have to do DMA cache handling.  Moreover, with
-> dmabounce, having the DMA cache handling in place doesn't make sense.
+> Same here.  Diverging from standard ANSI C just for the sake of being
+> different is an utterly bad idea.  strcmp might not be the most natural
+> calling convention, but it's been in the wild for 30 years, and everyone
+> taking a C 101 course should know about it.
 > 
-> So you can't have a dma_map_ops for the cache handling bits, a dma_map_ops
-> for IOMMU, and a dma_map_ops for the dmabounce stuff.  It just doesn't
-> work like that.
-> 
-> I believe the dma_map_ops stuff in asm-generic to be entirely unsuitable
-> for ARM.
+> And if you get it wrong and don't notice it just means your testing
+> coverage sucks badly.
 
-We probably still need to handle both the coherent and noncoherent case
-in each dma_map_ops implementation, at least for those combinations where
-they matter (definitely the linear mapping). However, I think that using
-dma_mapping_common.h would let us use an architecture-independent dma_map_ops
-for the generic iommu code that Marek wants to introduce now.
+Knowing about it and not screwing it up are two different things. I was 
+working on a project a few years ago and we made this exact change thanks 
+to the backwards logic of strcmp constantly screwing people up and the bug 
+count went down considerably.
 
-I still don't understand how dmabounce works, but if it's similar to
-swiotlb, we can have at least three different dma_map_ops: linear, dmabounce
-and iommu.
 
-Without the common iommu abstraction, there would be a bigger incentive
-to go with dma_map_ops, because then we would need one operations structure
-per IOMMU implementation, as some other architectures (x86, powerpc,
-ia64, ...) have. If we only need to distinguish between the common linear
-mapping code and the common iommu code, then you are right and we are likely
-better off adding some more conditionals to the existing code to handle
-the iommu case in addition to the ones we handle today.
+	Gerhard
 
-	Arnd
+
+--
+Gerhard Mack
+
+gmack@innerfire.net
+
+<>< As a computer I find your faith in technology amusing.
