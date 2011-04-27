@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab1D0JrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:47:24 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59413 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542Ab1D0JrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:47:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=NkRSp0vJOOxicDztSYW6+lgoqKmSHm87AfsTi8H0XTFOukFWLwbeH1wxaWg1f+kZqO
-         HeZMfgMH8pKA50lwK8q7UvIgcRdC5Cs7vZloZq9LFdZcEfEO287zJvlzRyhMF2YoxsxH
-         4DcpStLGcP10Y/VMEdJPsfrsmsjyjiIQZSoiY=
-Date: Wed, 27 Apr 2011 11:47:17 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] drop_pagecache syscall
-Message-ID: <20110427094717.GB1749@linux.betterlinux.com>
-References: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
- <20110427001453.GD12436@dastard>
- <20110427085910.GA1749@linux.betterlinux.com>
- <BANLkTimrpNOHVfnund7uc=thf-c3_HxyYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimrpNOHVfnund7uc=thf-c3_HxyYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756548Ab1D0Jtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:49:45 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:52795 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756075Ab1D0Jtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 05:49:43 -0400
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 2/4] MFD: TWL6030: fix irq definitions
+Date: Wed, 27 Apr 2011 10:39:49 +0100
+Message-Id: <1303897191-14792-3-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
+References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 05:10:41AM -0400, Mike Frysinger wrote:
-> On Wed, Apr 27, 2011 at 05:01, Andrea Righi wrote:
-> > On Wed, Apr 27, 2011 at 10:14:53AM +1000, Dave Chinner wrote:
-> >> On Tue, Apr 26, 2011 at 11:35:27PM +0200, Andrea Righi wrote:
-> >> > This functionality can be used by all the applications that want to have a
-> >> > better control over the page cache management (for example to immediately drop
-> >> > pages that for sure will not be reused in the near future, without calling
-> >> > posix_fadvise() for all the files they've touched), or to provide a more fine
-> >> > grained debugging feature usable by the filesystem benchmarks.
-> >> >
-> >> > The system call does not require root privileges and it can be called by any
-> >> > unprivileged application. For example, we can write a userspace tool to run
-> >> > something like this:
-> >> >
-> >> >   $ drop-pagecache /path/file_or_dir
-> >>
-> >> That's a potential DOS vector, I think. Drop the pagecache in a hard
-> >> loop on the root fs of a busy server and watch it crawl...
-> >
-> > Yes, probably we could allow only the CAP_SYS_ADMIN tasks to execute
-> > this syscall.
-> 
-> if /proc/sys/vm/drop_caches has any checks other than file permission
-> checks (i.e. UID==0), it'd probably be better to copy those rather
-> than picking something different.
+The charger fault IRQs from the twl will in future patches be handled
+by a seperate IRQ handler in the charger driver than the general charger
+IRQ. Give them different IRQ numbers now to allow the charger driver to
+be merged in the future.
 
-ok, what about checking current_euid() == 0?
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/mfd/twl6030-irq.c |    4 ++--
+ include/linux/i2c/twl.h   |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-Thanks,
--Andrea
+diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+index dfbae34..eb3b5f8 100644
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -76,8 +76,8 @@ static int twl6030_interrupt_mapping[24] = {
+ 	USBOTG_INTR_OFFSET,	/* Bit 18	ID			*/
+ 	USB_PRES_INTR_OFFSET,	/* Bit 19	VBUS			*/
+ 	CHARGER_INTR_OFFSET,	/* Bit 20	CHRG_CTRL		*/
+-	CHARGER_INTR_OFFSET,	/* Bit 21	EXT_CHRG		*/
+-	CHARGER_INTR_OFFSET,	/* Bit 22	INT_CHRG		*/
++	CHARGERFAULT_INTR_OFFSET,	/* Bit 21	EXT_CHRG	*/
++	CHARGERFAULT_INTR_OFFSET,	/* Bit 22	INT_CHRG	*/
+ 	RSV_INTR_OFFSET,	/* Bit 23	Reserved		*/
+ };
+ /*----------------------------------------------------------------------*/
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index f85f0ed..4323d3a 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -91,6 +91,7 @@
+ #define BCI_INTR_OFFSET		2
+ #define MADC_INTR_OFFSET	3
+ #define USB_INTR_OFFSET		4
++#define CHARGERFAULT_INTR_OFFSET 5
+ #define BCI_PRES_INTR_OFFSET	9
+ #define USB_PRES_INTR_OFFSET	10
+ #define RTC_INTR_OFFSET		11
+-- 
+1.7.4.1
+
