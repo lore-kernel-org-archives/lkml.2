@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab1D0QKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:10:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47397 "EHLO mx1.suse.de"
+	id S933156Ab1D0QKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:10:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34940 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932588Ab1D0QIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:08:21 -0400
+	id S933085Ab1D0QIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 12:08:19 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
         Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 08/13] netvm: Allow skb allocation to use PFMEMALLOC reserves
-Date: Wed, 27 Apr 2011 17:08:06 +0100
-Message-Id: <1303920491-25302-9-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/13] net: Introduce sk_allocation() to allow addition of GFP flags depending on the individual socket
+Date: Wed, 27 Apr 2011 17:08:04 +0100
+Message-Id: <1303920491-25302-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1303920491-25302-1-git-send-email-mgorman@suse.de>
 References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
@@ -21,400 +21,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the skb allocation API to indicate RX usage and use this to fall back
-to the PFMEMALLOC reserve when needed. SKBs allocated from the reserve are
-tagged in skb->pfmemalloc. If an SKB is allocated from the reserve and
-the socket is later found to be unrelated to page reclaim, the packet is
-dropped so that the memory remains available for page reclaim. Network
-protocols are expected to recover from this packet loss.
+Introduce sk_allocation(), this function allows to inject sock specific
+flags to each sock related allocation. It is only used on allocation
+paths that may be required for writing pages back to network storage.
 
-[a.p.zijlstra@chello.nl: Ideas taken from various patches]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/gfp.h    |    3 ++
- include/linux/skbuff.h |   19 ++++++++--
- include/net/sock.h     |    6 +++
- mm/internal.h          |    3 --
- net/core/filter.c      |    8 ++++
- net/core/skbuff.c      |   95 ++++++++++++++++++++++++++++++++++++++++--------
- net/core/sock.c        |    4 ++
- 7 files changed, 116 insertions(+), 22 deletions(-)
+ include/net/sock.h    |    5 +++++
+ net/ipv4/tcp.c        |    3 ++-
+ net/ipv4/tcp_output.c |   13 +++++++------
+ net/ipv6/tcp_ipv6.c   |   12 +++++++++---
+ 4 files changed, 23 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 7aa80f0..3e7ba18 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -380,6 +380,9 @@ void drain_local_pages(void *dummy);
- 
- extern gfp_t gfp_allowed_mask;
- 
-+/* Returns true if the gfp_mask allows use of ALLOC_NO_WATERMARK */
-+bool gfp_pfmemalloc_allowed(gfp_t gfp_mask);
-+
- extern void pm_restrict_gfp_mask(void);
- extern void pm_restore_gfp_mask(void);
- 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index d0ae90a..e08e2ce 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -396,6 +396,7 @@ struct sk_buff {
- #ifdef CONFIG_IPV6_NDISC_NODETYPE
- 	__u8			ndisc_nodetype:2;
- #endif
-+	__u8			pfmemalloc:1;
- 	__u8			ooo_okay:1;
- 	kmemcheck_bitfield_end(flags2);
- 
-@@ -434,6 +435,15 @@ struct sk_buff {
- 
- #include <asm/system.h>
- 
-+#define SKB_ALLOC_FCLONE	0x01
-+#define SKB_ALLOC_RX		0x02
-+
-+/* Returns true if the skb was allocated from PFMEMALLOC reserves */
-+static inline bool skb_pfmemalloc(struct sk_buff *skb)
-+{
-+	return unlikely(skb->pfmemalloc);
-+}
-+
- /*
-  * skb might have a dst pointer attached, refcounted or not.
-  * _skb_refdst low order bit is set if refcount was _not_ taken
-@@ -491,7 +501,7 @@ extern void kfree_skb(struct sk_buff *skb);
- extern void consume_skb(struct sk_buff *skb);
- extern void	       __kfree_skb(struct sk_buff *skb);
- extern struct sk_buff *__alloc_skb(unsigned int size,
--				   gfp_t priority, int fclone, int node);
-+				   gfp_t priority, int flags, int node);
- static inline struct sk_buff *alloc_skb(unsigned int size,
- 					gfp_t priority)
- {
-@@ -501,7 +511,7 @@ static inline struct sk_buff *alloc_skb(unsigned int size,
- static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
- 					       gfp_t priority)
- {
--	return __alloc_skb(size, priority, 1, NUMA_NO_NODE);
-+	return __alloc_skb(size, priority, SKB_ALLOC_FCLONE, NUMA_NO_NODE);
- }
- 
- extern bool skb_recycle_check(struct sk_buff *skb, int skb_size);
-@@ -1527,7 +1537,8 @@ static inline void __skb_queue_purge(struct sk_buff_head *list)
- static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
- 					      gfp_t gfp_mask)
- {
--	struct sk_buff *skb = alloc_skb(length + NET_SKB_PAD, gfp_mask);
-+	struct sk_buff *skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask,
-+						SKB_ALLOC_RX, NUMA_NO_NODE);
- 	if (likely(skb))
- 		skb_reserve(skb, NET_SKB_PAD);
- 	return skb;
-@@ -1578,7 +1589,7 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
-  */
- static inline struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
- {
--	return alloc_pages_node(NUMA_NO_NODE, gfp_mask, 0);
-+	return alloc_pages_node(NUMA_NO_NODE, gfp_mask | __GFP_MEMALLOC, 0);
- }
- 
- /**
 diff --git a/include/net/sock.h b/include/net/sock.h
-index 046bc97..e3aaa88 100644
+index f2046e4..e89c38f 100644
 --- a/include/net/sock.h
 +++ b/include/net/sock.h
-@@ -586,6 +586,12 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+@@ -585,6 +585,11 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
  	return test_bit(flag, &sk->sk_flags);
  }
  
-+extern atomic_t memalloc_socks;
-+static inline int sk_memalloc_socks(void)
++static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
 +{
-+	return atomic_read(&memalloc_socks);
++	return gfp_mask;
 +}
 +
- static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
+ static inline void sk_acceptq_removed(struct sock *sk)
  {
- 	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
-diff --git a/mm/internal.h b/mm/internal.h
-index a520f3b..d071d380 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -193,9 +193,6 @@ static inline struct page *mem_map_next(struct page *iter,
- #define __paginginit __init
- #endif
+ 	sk->sk_ack_backlog--;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 054a59d..8c1a9d5 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -698,7 +698,8 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
+ 	/* The TCP header must be at least 32-bit aligned.  */
+ 	size = ALIGN(size, 4);
  
--/* Returns true if the gfp_mask allows use of ALLOC_NO_WATERMARK */
--bool gfp_pfmemalloc_allowed(gfp_t gfp_mask);
--
- /* Memory initialisation debug and verification */
- enum mminit_level {
- 	MMINIT_WARNING,
-diff --git a/net/core/filter.c b/net/core/filter.c
-index afb8afb..eac4cc5 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -138,6 +138,14 @@ int sk_filter(struct sock *sk, struct sk_buff *skb)
- 	int err;
- 	struct sk_filter *filter;
- 
-+	/*
-+	 * If the skb was allocated from pfmemalloc reserves, only
-+	 * allow SOCK_MEMALLOC sockets to use it as this socket is
-+	 * helping free memory
-+	 */
-+	if (skb_pfmemalloc(skb) && !sock_flag(sk, SOCK_MEMALLOC))
-+		return -ENOMEM;
-+
- 	err = security_sock_rcv_skb(sk, skb);
- 	if (err)
- 		return err;
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 7ebeed0..c90074d 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -146,6 +146,43 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
- 	BUG();
- }
- 
-+
-+/*
-+ * kmalloc_reserve is a wrapper around kmalloc_node_track_caller that tells
-+ * the caller if emergency pfmemalloc reserves are being used. If it is and
-+ * the socket is later found to be SOCK_MEMALLOC then PFMEMALLOC reserves
-+ * may be used. Otherwise, the packet data may be discarded until enough
-+ * memory is free
-+ */
-+#define kmalloc_reserve(size, gfp, node, pfmemalloc) \
-+	 __kmalloc_reserve(size, gfp, node, _RET_IP_, pfmemalloc)
-+void *__kmalloc_reserve(size_t size, gfp_t flags, int node, unsigned long ip,
-+			 bool *pfmemalloc)
-+{
-+	void *obj;
-+	bool ret_pfmemalloc = false;
-+
-+	/*
-+	 * Try a regular allocation, when that fails and we're not entitled
-+	 * to the reserves, fail.
-+	 */
-+	obj = kmalloc_node_track_caller(size,
-+				flags | __GFP_NOMEMALLOC | __GFP_NOWARN,
-+				node);
-+	if (obj || !(gfp_pfmemalloc_allowed(flags)))
-+		goto out;
-+
-+	/* Try again but now we are using pfmemalloc reserves */
-+	ret_pfmemalloc = true;
-+	obj = kmalloc_node_track_caller(size, flags, node);
-+
-+out:
-+	if (pfmemalloc)
-+		*pfmemalloc = ret_pfmemalloc;
-+
-+	return obj;
-+}
-+
- /* 	Allocate a new skbuff. We do this ourselves so we can fill in a few
-  *	'private' fields and also do memory statistics to find all the
-  *	[BEEP] leaks.
-@@ -156,8 +193,10 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
-  *	__alloc_skb	-	allocate a network buffer
-  *	@size: size to allocate
-  *	@gfp_mask: allocation mask
-- *	@fclone: allocate from fclone cache instead of head cache
-- *		and allocate a cloned (child) skb
-+ *	@flags: If SKB_ALLOC_FCLONE is set, allocate from fclone cache
-+ *		instead of head cache and allocate a cloned (child) skb.
-+ *		If SKB_ALLOC_RX is set, __GFP_MEMALLOC will be used for
-+ *		allocations in case the data is required for writeback
-  *	@node: numa node to allocate memory on
-  *
-  *	Allocate a new &sk_buff. The returned buffer has no headroom and a
-@@ -168,14 +207,19 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
-  *	%GFP_ATOMIC.
-  */
- struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
--			    int fclone, int node)
-+			    int flags, int node)
- {
- 	struct kmem_cache *cache;
- 	struct skb_shared_info *shinfo;
- 	struct sk_buff *skb;
- 	u8 *data;
-+	bool pfmemalloc;
-+
-+	cache = (flags & SKB_ALLOC_FCLONE)
-+		? skbuff_fclone_cache : skbuff_head_cache;
- 
--	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
-+	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
-+		gfp_mask |= __GFP_MEMALLOC;
- 
- 	/* Get the HEAD */
- 	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
-@@ -184,8 +228,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	prefetchw(skb);
- 
- 	size = SKB_DATA_ALIGN(size);
--	data = kmalloc_node_track_caller(size + sizeof(struct skb_shared_info),
--			gfp_mask, node);
-+	data = kmalloc_reserve(size + sizeof(struct skb_shared_info),
-+			gfp_mask, node, &pfmemalloc);
- 	if (!data)
- 		goto nodata;
- 	prefetchw(data + size);
-@@ -196,6 +240,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	 * the tail pointer in struct sk_buff!
- 	 */
- 	memset(skb, 0, offsetof(struct sk_buff, tail));
-+	skb->pfmemalloc = pfmemalloc;
- 	skb->truesize = size + sizeof(struct sk_buff);
- 	atomic_set(&skb->users, 1);
- 	skb->head = data;
-@@ -212,7 +257,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	atomic_set(&shinfo->dataref, 1);
- 	kmemcheck_annotate_variable(shinfo->destructor_arg);
- 
--	if (fclone) {
-+	if (flags & SKB_ALLOC_FCLONE) {
- 		struct sk_buff *child = skb + 1;
- 		atomic_t *fclone_ref = (atomic_t *) (child + 1);
- 
-@@ -222,6 +267,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 		atomic_set(fclone_ref, 1);
- 
- 		child->fclone = SKB_FCLONE_UNAVAILABLE;
-+		child->pfmemalloc = pfmemalloc;
- 	}
- out:
- 	return skb;
-@@ -250,7 +296,8 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
- {
+-	skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
++	skb = alloc_skb_fclone(size + sk->sk_prot->max_header,
++			       sk_allocation(sk, gfp));
+ 	if (skb) {
+ 		if (sk_wmem_schedule(sk, skb->truesize)) {
+ 			/*
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 17388c7..6157ced 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2324,7 +2324,7 @@ void tcp_send_fin(struct sock *sk)
+ 		/* Socket is locked, keep trying until memory is available. */
+ 		for (;;) {
+ 			skb = alloc_skb_fclone(MAX_TCP_HEADER,
+-					       sk->sk_allocation);
++					       sk_allocation(sk, GFP_KERNEL));
+ 			if (skb)
+ 				break;
+ 			yield();
+@@ -2350,7 +2350,7 @@ void tcp_send_active_reset(struct sock *sk, gfp_t priority)
  	struct sk_buff *skb;
  
--	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, NUMA_NO_NODE);
-+	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask,
-+						SKB_ALLOC_RX, NUMA_NO_NODE);
- 	if (likely(skb)) {
- 		skb_reserve(skb, NET_SKB_PAD);
- 		skb->dev = dev;
-@@ -526,6 +573,7 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- #if defined(CONFIG_IP_VS) || defined(CONFIG_IP_VS_MODULE)
- 	new->ipvs_property	= old->ipvs_property;
- #endif
-+	new->pfmemalloc		= old->pfmemalloc;
- 	new->protocol		= old->protocol;
- 	new->mark		= old->mark;
- 	new->skb_iif		= old->skb_iif;
-@@ -620,6 +668,9 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
- 		n->fclone = SKB_FCLONE_CLONE;
- 		atomic_inc(fclone_ref);
- 	} else {
-+		if (skb_pfmemalloc(skb))
-+			gfp_mask |= __GFP_MEMALLOC;
-+
- 		n = kmem_cache_alloc(skbuff_head_cache, gfp_mask);
- 		if (!n)
- 			return NULL;
-@@ -656,6 +707,13 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	skb_shinfo(new)->gso_type = skb_shinfo(old)->gso_type;
- }
+ 	/* NOTE: No TCP options attached and we never retransmit this. */
+-	skb = alloc_skb(MAX_TCP_HEADER, priority);
++	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, priority));
+ 	if (!skb) {
+ 		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPABORTFAILED);
+ 		return;
+@@ -2423,7 +2423,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
  
-+static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
-+{
-+	if (skb_pfmemalloc((struct sk_buff *)skb))
-+		return SKB_ALLOC_RX;
-+	return 0;
-+}
-+
- /**
-  *	skb_copy	-	create private copy of an sk_buff
-  *	@skb: buffer to copy
-@@ -677,7 +735,8 @@ struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
- {
- 	int headerlen = skb_headroom(skb);
- 	unsigned int size = (skb_end_pointer(skb) - skb->head) + skb->data_len;
--	struct sk_buff *n = alloc_skb(size, gfp_mask);
-+	struct sk_buff *n = __alloc_skb(size, gfp_mask,
-+					skb_alloc_rx_flag(skb), NUMA_NO_NODE);
- 
- 	if (!n)
+ 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
+ 		s_data_desired = cvp->s_data_desired;
+-	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
++	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
++					sk_allocation(sk, GFP_ATOMIC));
+ 	if (skb == NULL)
  		return NULL;
-@@ -711,7 +770,8 @@ EXPORT_SYMBOL(skb_copy);
- struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
- {
- 	unsigned int size = skb_end_pointer(skb) - skb->head;
--	struct sk_buff *n = alloc_skb(size, gfp_mask);
-+	struct sk_buff *n = __alloc_skb(size, gfp_mask,
-+					skb_alloc_rx_flag(skb), NUMA_NO_NODE);
  
- 	if (!n)
- 		goto out;
-@@ -802,7 +862,10 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 		goto adjust_others;
- 	}
- 
--	data = kmalloc(size + sizeof(struct skb_shared_info), gfp_mask);
-+	if (skb_pfmemalloc(skb))
-+		gfp_mask |= __GFP_MEMALLOC;
-+	data = kmalloc_reserve(size + sizeof(struct skb_shared_info), gfp_mask,
-+			NUMA_NO_NODE, NULL);
- 	if (!data)
- 		goto nodata;
- 
-@@ -903,8 +966,9 @@ struct sk_buff *skb_copy_expand(const struct sk_buff *skb,
- 	/*
- 	 *	Allocate the copy buffer
+@@ -2719,7 +2720,7 @@ void tcp_send_ack(struct sock *sk)
+ 	 * tcp_transmit_skb() will set the ownership to this
+ 	 * sock.
  	 */
--	struct sk_buff *n = alloc_skb(newheadroom + skb->len + newtailroom,
--				      gfp_mask);
-+	struct sk_buff *n = __alloc_skb(newheadroom + skb->len + newtailroom,
-+				      gfp_mask, skb_alloc_rx_flag(skb),
-+				      NUMA_NO_NODE);
- 	int oldheadroom = skb_headroom(skb);
- 	int head_copy_len, head_copy_off;
- 	int off;
-@@ -2551,8 +2615,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, u32 features)
- 			skb_release_head_state(nskb);
- 			__skb_push(nskb, doffset);
- 		} else {
--			nskb = alloc_skb(hsize + doffset + headroom,
--					 GFP_ATOMIC);
-+			nskb = __alloc_skb(hsize + doffset + headroom,
-+					 GFP_ATOMIC, skb_alloc_rx_flag(skb),
-+					 NUMA_NO_NODE);
+-	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
++	buff = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
+ 	if (buff == NULL) {
+ 		inet_csk_schedule_ack(sk);
+ 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
+@@ -2734,7 +2735,7 @@ void tcp_send_ack(struct sock *sk)
  
- 			if (unlikely(!nskb))
- 				goto err;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index c685eda..8308609 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -219,6 +219,8 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
- int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
- EXPORT_SYMBOL(sysctl_optmem_max);
- 
-+atomic_t memalloc_socks __read_mostly;
-+
- /**
-  * sk_set_memalloc - sets %SOCK_MEMALLOC
-  * @sk: socket to set it on
-@@ -231,6 +233,7 @@ void sk_set_memalloc(struct sock *sk)
- {
- 	sock_set_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation |= __GFP_MEMALLOC;
-+	atomic_inc(&memalloc_socks);
+ 	/* Send it off, this clears delayed acks for us. */
+ 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
+-	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
++	tcp_transmit_skb(sk, buff, 0, sk_allocation(sk, GFP_ATOMIC));
  }
- EXPORT_SYMBOL_GPL(sk_set_memalloc);
  
-@@ -238,6 +241,7 @@ void sk_clear_memalloc(struct sock *sk)
- {
- 	sock_reset_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation &= ~__GFP_MEMALLOC;
-+	atomic_dec(&memalloc_socks);
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
+ /* This routine sends a packet with an out of date sequence
+@@ -2754,7 +2755,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
+ 	struct sk_buff *skb;
  
+ 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
+-	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
++	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
+ 	if (skb == NULL)
+ 		return -1;
+ 
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 2f6c671..4c11638 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -597,7 +597,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
+ 	} else {
+ 		/* reallocate new list if current one is full. */
+ 		if (!tp->md5sig_info) {
+-			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info), GFP_ATOMIC);
++			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info),
++					sk_allocation(sk, GFP_ATOMIC));
+ 			if (!tp->md5sig_info) {
+ 				kfree(newkey);
+ 				return -ENOMEM;
+@@ -610,7 +611,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
+ 		}
+ 		if (tp->md5sig_info->alloced6 == tp->md5sig_info->entries6) {
+ 			keys = kmalloc((sizeof (tp->md5sig_info->keys6[0]) *
+-				       (tp->md5sig_info->entries6 + 1)), GFP_ATOMIC);
++				       (tp->md5sig_info->entries6 + 1)),
++				       sk_allocation(sk, GFP_ATOMIC));
+ 
+ 			if (!keys) {
+ 				tcp_free_md5sig_pool();
+@@ -734,7 +736,8 @@ static int tcp_v6_parse_md5_keys (struct sock *sk, char __user *optval,
+ 		struct tcp_sock *tp = tcp_sk(sk);
+ 		struct tcp_md5sig_info *p;
+ 
+-		p = kzalloc(sizeof(struct tcp_md5sig_info), GFP_KERNEL);
++		p = kzalloc(sizeof(struct tcp_md5sig_info),
++				   sk_allocation(sk, GFP_KERNEL));
+ 		if (!p)
+ 			return -ENOMEM;
+ 
+@@ -1084,6 +1087,7 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
+ 	struct tcphdr *th = tcp_hdr(skb);
+ 	u32 seq = 0, ack_seq = 0;
+ 	struct tcp_md5sig_key *key = NULL;
++	gfp_t gfp_mask = GFP_ATOMIC;
+ 
+ 	if (th->rst)
+ 		return;
+@@ -1095,6 +1099,8 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
+ 	if (sk)
+ 		key = tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->daddr);
+ #endif
++	if (sk)
++		gfp_mask = sk_allocation(sk, gfp_mask);
+ 
+ 	if (th->ack)
+ 		seq = ntohl(th->ack_seq);
 -- 
 1.7.3.4
 
