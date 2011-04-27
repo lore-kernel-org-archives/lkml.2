@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab1D0MgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:36:24 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44801 "EHLO
+	id S1756019Ab1D0Mgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:36:33 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59755 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754765Ab1D0MgW (ORCPT
+	by vger.kernel.org with ESMTP id S1758656Ab1D0Mgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:36:22 -0400
-X-Sasl-enc: uvaSZuZItgbmifGbdR2GC1mOLv2d0QiEoCY2MRKC4Gsh 1303907781
+	Wed, 27 Apr 2011 08:36:31 -0400
+X-Sasl-enc: en9lzzxyHkrFa1viR98CSjP7h0ONivAmkP0l13ipftUE 1303907790
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,103 +17,50 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         casey@schaufler-ca.com, eparis@redhat.com, sds@tycho.nsa.gov,
         selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 1/7] fs: initialize file->f_cred with credentials provided
-Date: Wed, 27 Apr 2011 14:34:09 +0200
-Message-Id: <1303907657-18366-2-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 2/7] selinux: label new file descriptors using file->f_cred
+Date: Wed, 27 Apr 2011 14:34:10 +0200
+Message-Id: <1303907657-18366-3-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----224F974968F4756AC202C194A81B7B40"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----42AB5C7DA28DFE2CAEAAD7A8250D6D99"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------224F974968F4756AC202C194A81B7B40
+------42AB5C7DA28DFE2CAEAAD7A8250D6D99
 
-The 'f_cred' field of a file descriptor is initialized with the credentials
-of the 'current' process except in the case they are provided to the
-function dentry_open(). The get_empty_filp() function's definition has been
-modified to take these credentials set as argument.
+New file descriptors are labeled using the credentials set in the 'f_cred'
+field of the same structure. This permits to distinguish objects directly
+managed by a user process from those created by a kernel service acting
+on behalf of the application.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- fs/file_table.c |    5 ++---
- fs/internal.h   |    2 +-
- fs/namei.c      |    2 +-
- fs/open.c       |    2 +-
- 4 files changed, 5 insertions(+), 6 deletions(-)
+ security/selinux/hooks.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 01e4c1e..c33018c 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -102,9 +102,8 @@ int proc_nr_files(ctl_table *table, int write,
-  * done, you will imbalance int the mount's writer count
-  * and a warning at __fput() time.
-  */
--struct file *get_empty_filp(void)
-+struct file *get_empty_filp(const struct cred *cred)
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index f9c3764..6772687 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -232,7 +232,7 @@ static void inode_free_security(struct inode *inode)
+ static int file_alloc_security(struct file *file)
  {
--	const struct cred *cred = current_cred();
- 	static long old_max;
- 	struct file * f;
+ 	struct file_security_struct *fsec;
+-	u32 sid = current_sid();
++	u32 sid = cred_sid(file->f_cred);
  
-@@ -171,7 +170,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- {
- 	struct file *file;
- 
--	file = get_empty_filp();
-+	file = get_empty_filp(current_cred());
- 	if (!file)
- 		return NULL;
- 
-diff --git a/fs/internal.h b/fs/internal.h
-index b29c46e..c81fc62 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -91,7 +91,7 @@ extern void chroot_fs_refs(struct path *, struct path *);
- extern void file_sb_list_add(struct file *f, struct super_block *sb);
- extern void file_sb_list_del(struct file *f);
- extern void mark_files_ro(struct super_block *);
--extern struct file *get_empty_filp(void);
-+extern struct file *get_empty_filp(const struct cred *cred);
- 
- /*
-  * super.c
-diff --git a/fs/namei.c b/fs/namei.c
-index 54fc993..88ac2e5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2321,7 +2321,7 @@ static struct file *path_openat(int dfd, const char *pathname,
- 	struct path path;
- 	int error;
- 
--	filp = get_empty_filp();
-+	filp = get_empty_filp(current_cred());
- 	if (!filp)
- 		return ERR_PTR(-ENFILE);
- 
-diff --git a/fs/open.c b/fs/open.c
-index b52cf01..6b033e6 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -839,7 +839,7 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
- 	BUG_ON(!mnt);
- 
- 	error = -ENFILE;
--	f = get_empty_filp();
-+	f = get_empty_filp(cred);
- 	if (f == NULL) {
- 		dput(dentry);
- 		mntput(mnt);
+ 	fsec = kzalloc(sizeof(struct file_security_struct), GFP_KERNEL);
+ 	if (!fsec)
 -- 
 1.7.4.4
 
 
-------224F974968F4756AC202C194A81B7B40
+------42AB5C7DA28DFE2CAEAAD7A8250D6D99
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -151,17 +98,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0MzBaMCMGCSqG
-SIb3DQEJBDEWBBQEH0JjN+72IP64HuOMLEZgQoVDujB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0NDBaMCMGCSqG
+SIb3DQEJBDEWBBTH8aKUZEMLVWzQ2+VvA8F58zYUDDB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQACOlak+CkiQx8Qk/QQ6fryWBKP
-9gPYxPUOEzGJBuHpQDupWM9dAAvQDKOPY8F98FU0N9USrqAQWjZ/bgIEHjVbD6TU
-RBmQR9HvQOjqrzP3LzoSoESGs34y8/rMwzVjWuIeRHhnXRwDvssFiBBnSD+NM9Kc
-95mS4ZDsQZGaUlUPyhhVu1L4gHFyLcosuZgaxRmGjQyQ5BFopbYOIJ0S9VMSbvRF
-6CYjXbvDvJJ1XzkIUs3LXMGzY7I9e/T5+qFkls57ssguWL7gCShalEminc5PlKPK
-0JxXKLDueQLe235YotlOg19FTNIM5z4eykF5afBPqfgRn+czR7YIDRe8fYYK
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQC5F+MpFd3S8xLlMQVjQs5hIBHt
+v5SY0DIagoLiD61myv0586EFFzTh3XM9JEgNkj7vbhYHmAAXRcqubkpvlLLREwgu
+LaOnfUT25/xjXrJfVNOtxY2nG5kvxlxrKhXlrBRWfJIvASKZi9JOssvXfcrB09yM
+V5p7XVQpRhR3Bgb+Tw18q9cIG78dJAUGQ7TAPbjH0Bg12KedkWTg3FL/q3towh2i
+2nFsx0O2STW4bMPo6wWJFMe8Uy2uDQ4C4jJncFjuXy0uEwCEmrqwlpMskfQxRdfG
+UAVTB8Mnfp3CTE7m8Gz9ZalQa8xjX7xTqebqUau15lS3WFVu0rPFp/sjr8qa
 
-------224F974968F4756AC202C194A81B7B40--
+------42AB5C7DA28DFE2CAEAAD7A8250D6D99--
 
 
