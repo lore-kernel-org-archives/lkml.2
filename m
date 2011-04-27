@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759798Ab1D0UgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:36:16 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59341 "EHLO
+	id S1759952Ab1D0Ug0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:36:26 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:38463 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759218Ab1D0UgO (ORCPT
+	with ESMTP id S1759910Ab1D0UgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:36:14 -0400
+	Wed, 27 Apr 2011 16:36:24 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Hans Verkuil" <hverkuil@xs4all.nl>
-Subject: [PATCH 1/4] usbvision: add Nogatech USB MicroCam
-Date: Wed, 27 Apr 2011 22:36:05 +0200
+Subject: [PATCH 2/4] usbvision: remove broken YUV format conversion
+Date: Wed, 27 Apr 2011 22:36:13 +0200
 User-Agent: KMail/1.9.10
 Cc: "Hans de Goede" <hdegoede@redhat.com>,
         "Joerg Heckenbach" <joerg@heckenbach-aw.de>,
@@ -21,255 +21,122 @@ Content-Type: text/plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201104272236.09206.linux@rainbow-software.org>
+Message-Id: <201104272236.17852.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Nogatech USB MicroCam PAL (NV3001P) and NTSC (NV3000N) support to
-usbvision driver.
-PAL version is tested, NTSC untested.
-Data captured using usbsnoop, init_values are listed in the INF file along
-with image dimensions, offsets and frame rates.
+The YVU420 and YUV422P formats are broken and cause kernel panic on use.
+(YVU420 does not work and sometimes causes "unable to handle paging request"
+panic, YUV422P always causes "NULL pointer dereference").
+
+As V4L2 spec says that drivers shouldn't do any in-kernel image format
+conversion, just remove the broken formats.
+
+The removal also reveals an off-by-one bug in enum_fmt ioctl - it misses the
+last format, so this patch fixes it too.
+
+This allows the driver to work with mplayer without need to manually specify a
+format and also to work with VLC without causing kernel panic.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-cards.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-cards.c
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-cards.c	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-cards.c	2011-04-27 21:18:57.000000000 +0200
-@@ -1025,6 +1025,34 @@ struct usbvision_device_data_st  usbvisi
- 		.y_offset       = -1,
- 		.model_string   = "Hauppauge WinTv-USB",
- 	},
-+	[MICROCAM_NTSC] = {
-+		.interface      = -1,
-+		.codec          = CODEC_WEBCAM,
-+		.video_channels = 1,
-+		.video_norm     = V4L2_STD_NTSC,
-+		.audio_channels = 0,
-+		.radio          = 0,
-+		.vbi            = 0,
-+		.tuner          = 0,
-+		.tuner_type     = 0,
-+		.x_offset       = 71,
-+		.y_offset       = 15,
-+		.model_string   = "Nogatech USB MicroCam NTSC (NV3000N)",
-+	},
-+	[MICROCAM_PAL] = {
-+		.interface      = -1,
-+		.codec          = CODEC_WEBCAM,
-+		.video_channels = 1,
-+		.video_norm     = V4L2_STD_PAL,
-+		.audio_channels = 0,
-+		.radio          = 0,
-+		.vbi            = 0,
-+		.tuner          = 0,
-+		.tuner_type     = 0,
-+		.x_offset       = 71,
-+		.y_offset       = 18,
-+		.model_string   = "Nogatech USB MicroCam PAL (NV3001P)",
-+	},
+diff -up linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-core.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c
+--- linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-core.c	2011-04-27 22:05:39.000000000 +0200
++++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c	2011-04-27 22:06:28.000000000 +0200
+@@ -801,12 +801,7 @@ static enum parse_state usbvision_parse_
+ 
+ 	frame = usbvision->cur_frame;
+ 	image_size = frame->frmwidth * frame->frmheight;
+-	if ((frame->v4l2_format.format == V4L2_PIX_FMT_YUV422P) ||
+-	    (frame->v4l2_format.format == V4L2_PIX_FMT_YVU420)) {       /* this is a planar format */
+-		/* ... v4l2_linesize not used here. */
+-		f = frame->data + (frame->width * frame->curline);
+-	} else
+-		f = frame->data + (frame->v4l2_linesize * frame->curline);
++	f = frame->data + (frame->v4l2_linesize * frame->curline);
+ 
+ 	if (frame->v4l2_format.format == V4L2_PIX_FMT_YUYV) { /* initialise u and v pointers */
+ 		/* get base of u and b planes add halfoffset */
+@@ -814,9 +809,6 @@ static enum parse_state usbvision_parse_
+ 			+ image_size
+ 			+ (frame->frmwidth >> 1) * frame->curline;
+ 		v = u + (image_size >> 1);
+-	} else if (frame->v4l2_format.format == V4L2_PIX_FMT_YVU420) {
+-		v = frame->data + image_size + ((frame->curline * (frame->width)) >> 2);
+-		u = v + (image_size >> 2);
+ 	}
+ 
+ 	if (frame->curline == 0)
+@@ -891,20 +883,6 @@ static enum parse_state usbvision_parse_
+ 		if (frame->v4l2_format.format == V4L2_PIX_FMT_YUYV) {
+ 			*f++ = Y[idx];
+ 			*f++ = idx & 0x01 ? U[idx / 2] : V[idx / 2];
+-		} else if (frame->v4l2_format.format == V4L2_PIX_FMT_YUV422P) {
+-			*f++ = Y[idx];
+-			if (idx & 0x01)
+-				*u++ = U[idx >> 1];
+-			else
+-				*v++ = V[idx >> 1];
+-		} else if (frame->v4l2_format.format == V4L2_PIX_FMT_YVU420) {
+-			*f++ = Y[idx];
+-			if (!((idx & 0x01) | (frame->curline & 0x01))) {
+-				/* only need do this for 1 in 4 pixels */
+-				/* intraframe buffer is YUV420 format */
+-				*u++ = U[idx >> 1];
+-				*v++ = V[idx >> 1];
+-			}
+ 		} else {
+ 			YUV_TO_RGB_BY_THE_BOOK(Y[idx], U[idx / 2], V[idx / 2], rv, gv, bv);
+ 			switch (frame->v4l2_format.format) {
+@@ -938,11 +916,7 @@ static enum parse_state usbvision_parse_
+ 		}
+ 		clipmask_index++;
+ 	}
+-	/* Deal with non-integer no. of bytes for YUV420P */
+-	if (frame->v4l2_format.format != V4L2_PIX_FMT_YVU420)
+-		*pcopylen += frame->v4l2_linesize;
+-	else
+-		*pcopylen += frame->curline & 0x01 ? frame->v4l2_linesize : frame->v4l2_linesize << 1;
++	*pcopylen += frame->v4l2_linesize;
+ 
+ 	frame->curline += 1;
+ 
+diff -up linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
+--- linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-video.c	2011-04-27 22:05:39.000000000 +0200
++++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c	2011-04-27 22:06:28.000000000 +0200
+@@ -118,8 +118,6 @@ static struct usbvision_v4l2_format_st u
+ 	{ 1, 4, 32, V4L2_PIX_FMT_RGB32   , "RGB32" },
+ 	{ 1, 2, 16, V4L2_PIX_FMT_RGB555  , "RGB555" },
+ 	{ 1, 2, 16, V4L2_PIX_FMT_YUYV    , "YUV422" },
+-	{ 1, 2, 12, V4L2_PIX_FMT_YVU420  , "YUV420P" }, /* 1.5 ! */
+-	{ 1, 2, 16, V4L2_PIX_FMT_YUV422P , "YUV422P" }
  };
- const int usbvision_device_data_size = ARRAY_SIZE(usbvision_device_data);
  
-@@ -1042,6 +1070,8 @@ struct usb_device_id usbvision_table[] =
- 	{ USB_DEVICE(0x0573, 0x2d00), .driver_info = HPG_WINTV_LIVE_PAL_BG },
- 	{ USB_DEVICE(0x0573, 0x2d01), .driver_info = HPG_WINTV_LIVE_PRO_NTSC_MN },
- 	{ USB_DEVICE(0x0573, 0x2101), .driver_info = ZORAN_PMD_NOGATECH },
-+	{ USB_DEVICE(0x0573, 0x3000), .driver_info = MICROCAM_NTSC },
-+	{ USB_DEVICE(0x0573, 0x3001), .driver_info = MICROCAM_PAL },
- 	{ USB_DEVICE(0x0573, 0x4100), .driver_info = NOGATECH_USB_TV_NTSC_FM },
- 	{ USB_DEVICE(0x0573, 0x4110), .driver_info = PNY_USB_TV_NTSC_FM },
- 	{ USB_DEVICE(0x0573, 0x4450), .driver_info = PV_PLAYTV_USB_PRO_PAL_FM },
-@@ -1088,8 +1118,7 @@ struct usb_device_id usbvision_table[] =
- 	{ USB_DEVICE(0x2304, 0x0110), .driver_info = PINNA_PCTV_USB_PAL_FM },
- 	{ USB_DEVICE(0x2304, 0x0111), .driver_info = MIRO_PCTV_USB },
- 	{ USB_DEVICE(0x2304, 0x0112), .driver_info = PINNA_PCTV_USB_NTSC_FM },
--	{ USB_DEVICE(0x2304, 0x0113),
--	  .driver_info = PINNA_PCTV_USB_NTSC_FM_V3 },
-+	{ USB_DEVICE(0x2304, 0x0113), .driver_info = PINNA_PCTV_USB_NTSC_FM_V3 },
- 	{ USB_DEVICE(0x2304, 0x0210), .driver_info = PINNA_PCTV_USB_PAL_FM_V2 },
- 	{ USB_DEVICE(0x2304, 0x0212), .driver_info = PINNA_PCTV_USB_NTSC_FM_V2 },
- 	{ USB_DEVICE(0x2304, 0x0214), .driver_info = PINNA_PCTV_USB_PAL_FM_V3 },
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-cards.h linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-cards.h
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-cards.h	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-cards.h	2011-04-27 21:18:57.000000000 +0200
-@@ -63,5 +63,7 @@
- #define PINNA_PCTV_BUNGEE_PAL_FM                 62
- #define HPG_WINTV                                63
- #define PINNA_PCTV_USB_NTSC_FM_V3                64
-+#define MICROCAM_NTSC                            65
-+#define MICROCAM_PAL                             66
- 
- extern const int usbvision_device_data_size;
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-core.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-core.c	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c	2011-04-27 21:58:28.000000000 +0200
-@@ -1679,6 +1679,55 @@ int usbvision_power_off(struct usb_usbvi
- 	return err_code;
- }
- 
-+/* configure webcam image sensor using the serial port */
-+static int usbvision_init_webcam(struct usb_usbvision *usbvision)
-+{
-+	int rc;
-+	int i;
-+	static char init_values[38][3] = {
-+		{ 0x04, 0x12, 0x08 }, { 0x05, 0xff, 0xc8 }, { 0x06, 0x18, 0x07 }, { 0x07, 0x90, 0x00 },
-+		{ 0x09, 0x00, 0x00 }, { 0x0a, 0x00, 0x00 }, { 0x0b, 0x08, 0x00 }, { 0x0d, 0xcc, 0xcc },
-+		{ 0x0e, 0x13, 0x14 }, { 0x10, 0x9b, 0x83 }, { 0x11, 0x5a, 0x3f }, { 0x12, 0xe4, 0x73 },
-+		{ 0x13, 0x88, 0x84 }, { 0x14, 0x89, 0x80 }, { 0x15, 0x00, 0x20 }, { 0x16, 0x00, 0x00 },
-+		{ 0x17, 0xff, 0xa0 }, { 0x18, 0x6b, 0x20 }, { 0x19, 0x22, 0x40 }, { 0x1a, 0x10, 0x07 },
-+		{ 0x1b, 0x00, 0x47 }, { 0x1c, 0x03, 0xe0 }, { 0x1d, 0x00, 0x00 }, { 0x1e, 0x00, 0x00 },
-+		{ 0x1f, 0x00, 0x00 }, { 0x20, 0x00, 0x00 }, { 0x21, 0x00, 0x00 }, { 0x22, 0x00, 0x00 },
-+		{ 0x23, 0x00, 0x00 }, { 0x24, 0x00, 0x00 }, { 0x25, 0x00, 0x00 }, { 0x26, 0x00, 0x00 },
-+		{ 0x27, 0x00, 0x00 }, { 0x28, 0x00, 0x00 }, { 0x29, 0x00, 0x00 }, { 0x08, 0x80, 0x60 },
-+		{ 0x0f, 0x2d, 0x24 }, { 0x0c, 0x80, 0x80 }
-+	};
-+	char value[3];
-+
-+	/* the only difference between PAL and NTSC init_values */
-+	if (usbvision_device_data[usbvision->dev_model].video_norm == V4L2_STD_NTSC)
-+		init_values[4][1] = 0x34;
-+
-+	for (i = 0; i < sizeof(init_values) / 3; i++) {
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SOFT);
-+		memcpy(value, init_values[i], 3);
-+		rc = usb_control_msg(usbvision->dev,
-+				     usb_sndctrlpipe(usbvision->dev, 1),
-+				     USBVISION_OP_CODE,
-+				     USB_DIR_OUT | USB_TYPE_VENDOR |
-+				     USB_RECIP_ENDPOINT, 0,
-+				     (__u16) USBVISION_SER_DAT1, value,
-+				     3, HZ);
-+		if (rc < 0)
-+			return rc;
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SIO);
-+		/* write 3 bytes to the serial port using SIO mode */
-+		usbvision_write_reg(usbvision, USBVISION_SER_CONT, 3 | 0x10);
-+		usbvision_write_reg(usbvision, USBVISION_IOPIN_REG, 0);
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SOFT);
-+		usbvision_write_reg(usbvision, USBVISION_IOPIN_REG, USBVISION_IO_2);
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SOFT | USBVISION_CLK_OUT);
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SOFT | USBVISION_DAT_IO);
-+		usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_SER_MODE_SOFT | USBVISION_CLK_OUT | USBVISION_DAT_IO);
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * usbvision_set_video_format()
-  *
-@@ -1797,6 +1846,13 @@ int usbvision_set_output(struct usb_usbv
- 
- 	frame_drop = FRAMERATE_MAX;	/* We can allow the maximum here, because dropping is controlled */
- 
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-+		if (usbvision_device_data[usbvision->dev_model].video_norm == V4L2_STD_PAL)
-+			frame_drop = 25;
-+		else
-+			frame_drop = 30;
-+	}
-+
- 	/* frame_drop = 7; => frame_phase = 1, 5, 9, 13, 17, 21, 25, 0, 4, 8, ...
- 		=> frame_skip = 4;
- 		=> frame_rate = (7 + 1) * 25 / 32 = 200 / 32 = 6.25;
-@@ -2046,6 +2102,12 @@ int usbvision_set_input(struct usb_usbvi
- 		value[7] = 0x00;	/* 0x0010 -> 16 Input video v offset */
- 	}
- 
-+	/* webcam is only 480 pixels wide, both PAL and NTSC version */
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-+		value[0] = 0xe0;
-+		value[1] = 0x01;	/* 0x01E0 -> 480 Input video line length */
-+	}
-+
- 	if (usbvision_device_data[usbvision->dev_model].x_offset >= 0) {
- 		value[4] = usbvision_device_data[usbvision->dev_model].x_offset & 0xff;
- 		value[5] = (usbvision_device_data[usbvision->dev_model].x_offset & 0x0300) >> 8;
-@@ -2148,7 +2210,7 @@ static int usbvision_set_dram_settings(s
- 			     (__u16) USBVISION_DRM_PRM1, value, 8, HZ);
- 
- 	if (rc < 0) {
--		dev_err(&usbvision->dev->dev, "%sERROR=%d\n", __func__, rc);
-+		dev_err(&usbvision->dev->dev, "%s: ERROR=%d\n", __func__, rc);
- 		return rc;
- 	}
- 
-@@ -2180,8 +2242,15 @@ int usbvision_power_on(struct usb_usbvis
- 	usbvision_write_reg(usbvision, USBVISION_PWR_REG,
- 			USBVISION_SSPND_EN | USBVISION_RES2);
- 
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-+		usbvision_write_reg(usbvision, USBVISION_VIN_REG1,
-+				USBVISION_16_422_SYNC | USBVISION_HVALID_PO);
-+		usbvision_write_reg(usbvision, USBVISION_VIN_REG2,
-+				USBVISION_NOHVALID | USBVISION_KEEP_BLANK);
-+	}
- 	usbvision_write_reg(usbvision, USBVISION_PWR_REG,
- 			USBVISION_SSPND_EN | USBVISION_PWR_VID);
-+	mdelay(10);
- 	err_code = usbvision_write_reg(usbvision, USBVISION_PWR_REG,
- 			USBVISION_SSPND_EN | USBVISION_PWR_VID | USBVISION_RES2);
- 	if (err_code == 1)
-@@ -2310,6 +2379,8 @@ int usbvision_set_audio(struct usb_usbvi
- 
- int usbvision_setup(struct usb_usbvision *usbvision, int format)
+ /* Function prototypes */
+@@ -888,7 +886,7 @@ static int vidioc_streamoff(struct file
+ static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
+ 					struct v4l2_fmtdesc *vfd)
  {
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM)
-+		usbvision_init_webcam(usbvision);
- 	usbvision_set_video_format(usbvision, format);
- 	usbvision_set_dram_settings(usbvision);
- 	usbvision_set_compress_params(usbvision);
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision.h linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision.h
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision.h	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision.h	2011-04-27 21:35:51.000000000 +0200
-@@ -59,6 +59,11 @@
- 	#define USBVISION_AUDIO_RADIO		2
- 	#define USBVISION_AUDIO_MUTE		3
- #define USBVISION_SER_MODE		0x07
-+	#define USBVISION_CLK_OUT		(1 << 0)
-+	#define USBVISION_DAT_IO		(1 << 1)
-+	#define USBVISION_SENS_OUT		(1 << 2)
-+	#define USBVISION_SER_MODE_SOFT		(0 << 4)
-+	#define USBVISION_SER_MODE_SIO		(1 << 4)
- #define USBVISION_SER_ADRS		0x08
- #define USBVISION_SER_CONT		0x09
- #define USBVISION_SER_DAT1		0x0A
-@@ -328,6 +333,7 @@ struct usbvision_frame {
+-	if (vfd->index >= USBVISION_SUPPORTED_PALETTES - 1)
++	if (vfd->index > USBVISION_SUPPORTED_PALETTES - 1)
+ 		return -EINVAL;
+ 	strcpy(vfd->description, usbvision_v4l2_format[vfd->index].desc);
+ 	vfd->pixelformat = usbvision_v4l2_format[vfd->index].format;
+@@ -1659,13 +1657,6 @@ static int __init usbvision_init(void)
+ 	PDEBUG(DBG_PROBE, "PROBE   debugging is enabled [video]");
+ 	PDEBUG(DBG_MMAP, "MMAP    debugging is enabled [video]");
  
- #define CODEC_SAA7113	7113
- #define CODEC_SAA7111	7111
-+#define CODEC_WEBCAM	3000
- #define BRIDGE_NT1003	1003
- #define BRIDGE_NT1004	1004
- #define BRIDGE_NT1005   1005
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-i2c.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-i2c.c
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-i2c.c	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-i2c.c	2011-04-27 21:18:57.000000000 +0200
-@@ -222,7 +222,7 @@ int usbvision_i2c_register(struct usb_us
- 	i2c_set_adapdata(&usbvision->i2c_adap, &usbvision->v4l2_dev);
+-	/* disable planar mode support unless compression enabled */
+-	if (isoc_mode != ISOC_MODE_COMPRESS) {
+-		/* FIXME : not the right way to set supported flag */
+-		usbvision_v4l2_format[6].supported = 0; /* V4L2_PIX_FMT_YVU420 */
+-		usbvision_v4l2_format[7].supported = 0; /* V4L2_PIX_FMT_YUV422P */
+-	}
+-
+ 	err_code = usb_register(&usbvision_driver);
  
- 	if (usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_IIC_LRNACK) < 0) {
--		printk(KERN_ERR "usbvision_register: can't write reg\n");
-+		printk(KERN_ERR "usbvision_i2c_register: can't write reg\n");
- 		return -EBUSY;
- 	}
- 
-diff -up linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
---- linux-2.6.39-rc2-orig/drivers/media/video/usbvision/usbvision-video.c	2011-04-06 03:30:43.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c	2011-04-27 21:18:57.000000000 +0200
-@@ -1470,7 +1470,8 @@ static void usbvision_configure_video(st
- 
- 	/* This should be here to make i2c clients to be able to register */
- 	/* first switch off audio */
--	usbvision_audio_off(usbvision);
-+	if (usbvision_device_data[model].audio_channels > 0)
-+		usbvision_audio_off(usbvision);
- 	if (!power_on_at_open) {
- 		/* and then power up the noisy tuner */
- 		usbvision_power_on(usbvision);
+ 	if (err_code == 0) {
 
 
 -- 
