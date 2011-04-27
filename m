@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760300Ab1D0XvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:51:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17361 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1D0XvS (ORCPT
+	id S1760296Ab1D0XwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:52:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47255 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab1D0XwF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:51:18 -0400
+	Wed, 27 Apr 2011 19:52:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=azqL/6FdFIOnfK0f2Nl80Q70PGoQAJkiAT3WzmqQY2caHToWZ6UveAGtinmmDMkYJi
-         tK+tNZdTmLQbiVKeI0gg==
-Date: Wed, 27 Apr 2011 16:51:07 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: john stultz <johnstul@us.ibm.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-In-Reply-To: <1303846026.2816.117.camel@work-vm>
-Message-ID: <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com> <1303331695.2796.159.camel@work-vm> <20110421103009.731B.A69D9226@jp.fujitsu.com> <1303846026.2816.117.camel@work-vm>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=ginkel.com; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:from:date
+         :message-id:subject:to:cc:content-type:content-transfer-encoding;
+        b=fsJ9+t+w4SN6noImF6ua0/Z/RX0HvXJpYctex3P2OmXmSBFUok+34r7TxStkMdYUS2
+         35Dxju1Q1jWBaVK2bf9nRpv6hHd9nBqgMWK2+nKL68OMc85X/29gmWltOLvZhX1HERtm
+         D0YfZH0osDgSi9337IeKPNIFn6aXR1XkX29fk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+X-Originating-IP: [91.17.168.251]
+In-Reply-To: <20110426131132.GG878@htj.dyndns.org>
+References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
+ <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com> <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
+ <201104172135.40189.arnd@arndb.de> <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
+ <20110426131132.GG878@htj.dyndns.org>
+From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Date: Thu, 28 Apr 2011 01:51:34 +0200
+Message-ID: <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
+Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
+To: Tejun Heo <tj@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011, john stultz wrote:
+On Tue, Apr 26, 2011 at 15:11, Tejun Heo <tj@kernel.org> wrote:
+> Hello, sorry about the delay.  Was on the road and then sick.
 
-> Sorry if this somehow got off on the wrong foot. Its just surprising to
-> see such passion bubble up after almost two years of quiet since the
-> proc patch went in.
-> 
+No problem. Thanks for getting back to me.
 
-It hasn't been two years, it hasn't even been 18 months.
+>> In the meantime I also figured out that 2.6.39-rc3 seems to fix the
+>> issue (there have been some work queue changes, so this is somewhat
+>> sensible)
+>
+> Hmmm... that's a big demotivator.  :-)
 
-	$ git diff 4614a696bd1c.. | grep "^+.*current\->comm" | wc -l
-	42
+Well, I get your point. ;-) Maybe this fact can help as a motivator: I
+ran some further tests and while -rc3 seems to be ok (and survived 100
+suspend/resume cycles), the issue strangely seems to be back with -rc4
+(the softlockup call stack that I can see is identical to the photos
+below; the lockup happened after only two cycles).
 
-Apparently those dozens of new references directly to current->comm since 
-the change also were unaware of the need to use get_task_comm() to avoid a 
-racy writer.  I don't think there's any code in the kernel that is ok with 
-corrupted task names being printed: those messages are usually important.
+> Before I go ahead and try that, do you happen to have softlockup dump?
+> ie. stack traces of the stuck tasks?  I can't find the original
+> posting.
 
-> So I'm not proposing comm be totally lock free (Dave Hansen might do
-> that for me, we'll see :) but when the original patch was proposed, the
-> idea that transient empty or incomplete comms would be possible was
-> brought up and didn't seem to be a big enough issue at the time to block
-> it from being merged.
-> 
+Sure:
 
-I'm not really interested in the discussion that happened at the time, I'm 
-concerned about racy readers of any thread's comm that result in corrupted 
-strings being printed or used in the kernel.
+>From <BANLkTi=n4jLsjOYCd0L3hYb30sgPmdv_WA@mail.gmail.com>:
+> Unfortunately, the output via a serial console becomes garbled after
+> "Entering mem sleep", so I went for patching dumpstack_64.c and a
+> couple of other source files to reduce the verbosity. I hope not to
+> have stripped any essential information. The result is available in
+> these pictures:
+>   https://secure.tgbyte.de/dropbox/IeZalo4t-1.jpg
+>   https://secure.tgbyte.de/dropbox/IeZalo4t-2.jpg
+>
+> For both traces, the printed error message reads: "BUG: soft lockup -
+> CPU#3 stuck for 67s! [kblockd:28]"
 
-> Its just having a more specific case where these transient
-> null/incomplete comms causes an issue would help prioritize the need for
-> correctness.
-> 
-
-It doesn't seem like there was any due diligence to ensure other code 
-wasn't broken.  When comm could only be changed by prctl(), we needed no 
-protection for current->comm and so code naturally will reference it 
-directly.  Since that's now changed, no audit was done to ensure the 300+ 
-references throughout the tree doesn't require non-racy reads.
-
-> In the meantime, I'll put some effort into trying to protect unlocked
-> current->comm acccess using get_task_comm() where possible. Won't happen
-> in a day, and help would be appreciated. 
-> 
-
-We need to stop protecting ->comm with ->alloc_lock since it is used for 
-other members of task_struct that may or may not be held in a function 
-that wants to read ->comm.  We should probably introduce a seqlock.
+Thanks,
+Thilo
