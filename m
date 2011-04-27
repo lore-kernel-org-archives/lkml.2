@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab1D0CGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 22:06:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36564 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab1D0CGr (ORCPT
+	id S1756829Ab1D0CLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 22:11:51 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:43974 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756556Ab1D0CLu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 22:06:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Subject: Re: [PATCH v2] virtio_balloon: disable oom killer when fill balloon
-Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <BANLkTikfyi2FBykk1D1H-tdrSjmRYEh6ug@mail.gmail.com>
-References: <BANLkTi=8ySUPP6_GUL9CTFh98J1PH0a4=g@mail.gmail.com> <BANLkTikfyi2FBykk1D1H-tdrSjmRYEh6ug@mail.gmail.com>
-Message-Id: <20110427110838.D178.A69D9226@jp.fujitsu.com>
+	Tue, 26 Apr 2011 22:11:50 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 12/25] Staging: hv: Cleanup error handling in
+ vmbus_child_device_register()
+Thread-Topic: [PATCH 12/25] Staging: hv: Cleanup error handling in
+ vmbus_child_device_register()
+Thread-Index: AQHMBCwlB/WUls5NAEKxQl46vg3XoJRxNdKA//++lhA=
+Date: Wed, 27 Apr 2011 02:11:48 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD1AF@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-12-git-send-email-kys@microsoft.com>
+ <20110426225059.GA12897@kroah.com>
+In-Reply-To: <20110426225059.GA12897@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Wed, 27 Apr 2011 11:06:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Apr 27, 2011 at 9:37 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > On Wed, Apr 27, 2011 at 7:33 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> >> On Tue, Apr 26, 2011 at 6:39 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> >>> On Tue, Apr 26, 2011 at 5:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> >>>> Please resend this with [2/2] to linux-mm.
-> >>>>
-> >>>> On Tue, Apr 26, 2011 at 5:59 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> >>>>> When memory pressure is high, virtio ballooning will probably cause oom killing.
-> >>>>> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
-> >>>>> will make memory becoming low then memory alloc of other processes will trigger
-> >>>>> oom killing. It is not desired behaviour.
-> >>>>
-> >>>> I can't understand why it is undesirable.
-> >>>> Why do we have to handle it specially?
-> >>>>
-> >>>
-> >>> Suppose user run some random memory hogging process while ballooning
-> >>> it will be undesirable.
-> >>
-> >>
-> >> In VM POV, kvm and random memory hogging processes are customers.
-> >> If we handle ballooning specially with disable OOM, what happens other
-> >> processes requires memory at same time? Should they wait for balloon
-> >> driver to release memory?
-> >>
-> >> I don't know your point. Sorry.
-> >> Could you explain your scenario in detail for justify your idea?
-> >
-> > What you said make sense I understand what you said now. Lets ignore
-> > my above argue and see what I'm actually doing.
-> >
-> > I'm hacking with balloon driver to fit to short the vm migration time.
-> >
-> > while migrating host tell guest to balloon as much memory as it can, then start
-> > migrate, just skip the ballooned pages, after migration done tell
-> > guest to release the memory.
-> >
-> > In migration case oom is not I want to see and disable oom will be good.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, April 26, 2011 6:51 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 12/25] Staging: hv: Cleanup error handling in
+> vmbus_child_device_register()
 > 
-> BTW, if oom_killer_disabled is really not recommended to use I can
-> switch back to oom_notifier way.
+> On Tue, Apr 26, 2011 at 09:20:29AM -0700, K. Y. Srinivasan wrote:
+> > Cleanup error handling in vmbus_child_device_register().
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |    7 ++++++-
+> >  1 files changed, 6 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index d597dd4..4d569ad 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -720,11 +720,16 @@ int vmbus_child_device_register(struct hv_device
+> *child_device_obj)
+> >  	 */
+> >  	ret = device_register(&child_device_obj->device);
+> >
+> > +	if (ret)
+> > +		return ret;
+> > +
+> >  	/* vmbus_probe() error does not get propergate to device_register(). */
+> >  	ret = child_device_obj->probe_error;
+> 
+> Wait, why not?  Why is the probe_error have to be saved off like this?
+> That seems like something is wrong here, this patch should not be
+> needed.
+> 
+> Well, you should check the return value of device_register, that is
+> needed, but this seems broken somehow.
 
-Could you please explain why you dislike oom_notifier and what problem
-you faced? I haven't understand why oom_notifier is bad. probably my
-less knowledge of balloon is a reason.
+The current code had comments claiming that the probe error was not
+correctly propagated. Looking at the kernel side of the code, it was not clear
+if device_register() could succeed while the probe might fail. In any event,
+if you can guarantee that device_register() can return any probe related 
+errors, I agree with you that saving the probe error is an overkill. The current code
+saved the probe error and with new check I added with regards to the return 
+value of device_register, there is no correctness issue with this patch.
+> 
+> >
+> > -	if (ret)
+> > +	if (ret) {
+> >  		pr_err("Unable to register child device\n");
+> > +		device_unregister(&child_device_obj->device);
+> > +	}
+> >  	else
+> 
+> 	} else
+> is the preferred way.
+> 
+> Care to send a fixup patch to remove the probe_error field and fix this
+> formatting error up?
 
+I will fix up the formatting issue.
 
+Regards,
 
+K. Y
