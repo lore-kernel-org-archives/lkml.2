@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab1D0Mlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:41:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756952Ab1D0Mlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:41:44 -0400
-Date: Wed, 27 Apr 2011 15:41:41 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: RCU+KVM: making CPU guest mode a quiescent state.
-Message-ID: <20110427124141.GM2265@redhat.com>
-References: <20110426123824.GD22443@redhat.com>
- <20110426155528.GD2135@linux.vnet.ibm.com>
+	id S932253Ab1D0MnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:43:21 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53555 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753834Ab1D0MnU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 08:43:20 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110426155528.GD2135@linux.vnet.ibm.com>
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
+Date: Wed, 27 Apr 2011 13:42:30 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AD04@saturn3.aculab.com>
+In-Reply-To: <20110427121902.GA2936@mgebm.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
+Thread-Index: AcwE1TlhanNrGd06Q5mcue/9oB8W8QAAr++w
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Eric B Munson" <emunson@mgebm.net>
+Cc: <benh@kernel.crashing.org>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        <mingo@elte.hu>, <acme@ghostprotocols.net>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <anton@samba.org>, <stable@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 08:55:28AM -0700, Paul E. McKenney wrote:
-> On Tue, Apr 26, 2011 at 03:38:24PM +0300, Gleb Natapov wrote:
-> > Hello Paul,
-> > 
-> > I have a question about RCU + KVM. KVM does not hold any references to RCU
-> > protected data when it switches CPU into a guest mode. In fact switching
-> > to a guest mode is very similar to exiting to userspase from RCU point
-> > of view. In addition CPU may stay in a guest mode for quite a long time
-> > (up to one time slice). It looks like it will be beneficial to treat guest
-> > mode as quiescent state, just like user-mode execution. How can this be
-> > done? I was trying to find how RCU knows about cpu entering user-mode,
-> > but it seems that it does this by checking CPU mode in a timer interrupt
-> > (update_process_times()->rcu_check_callbacks()). This will not work for
-> > guest mode detection since timer interrupt will kick CPU out of a guest
-> > mode and timer interrupt will always see CPU in kernel mode. Do we have
-> > a simple function to call to notify RCU that CPU passed quiescent state
-> > which we can call just before entering guest?
-> 
-> Hello, Gleb,
-> 
-> You could call rcu_note_context_switch(), passing it the current
-> CPU.  Please note that preemption -must- be disabled when calling
-> this.  You could call this just after exiting the guest as well
-> as just before entering guest.
-> 
-x86 disable preemption and local interrupts before switching to guest
-mode. Some platforms only disable local interrupts. I assume disabling
-local irqs is as good as disabling preemption for rcu_note_context_switch()
-calling purpose, is this correct?
+ 
+> +	if (prev > val && (prev - val) < 256)
+> +		delta = 0;
+> +
+> +	return delta;
 
---
-			Gleb.
+Also, 'prev' is a true 64bit value, but 'val' is only ever 32bits.
+So once the 64bit 'prev' exceeds 2^32+256 both 'prev > val'
+and 'prev - val' are true regardless of the value of 'val'.
+This will lead to jumps in the value ....
+
+	David
+
+
