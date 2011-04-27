@@ -1,75 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab1D0KpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 06:45:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45588 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757653Ab1D0KpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 06:45:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=lcWyFPX9Bbti17fg3rannnFUC0wHozmFvx/LhNLpx+2aWXCVo4RPSaBJy8y3F2297o
-         6W3Wzzk2zVzC4XCM+Swas/hmQzHdUSOewhG0RAlblGR7lNP4TsvNAfZX/obbQ0gREE9C
-         4Z6uC5RidIVjGeTdn5n9JMFwzy/Q8NiACB1vg=
-Subject: Re: [PATCH] Applying inappropriate ioctl operation on socket
- should return ENOTTY
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Lifeng Sun <lifongsun@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <20110427104738.2bdbe228@lxorguk.ukuu.org.uk>
-References: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
-	 <1303883910.2699.53.camel@edumazet-laptop>
-	 <20110427104738.2bdbe228@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Apr 2011 12:45:03 +0200
-Message-ID: <1303901103.3166.30.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754599Ab1D0Kpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 06:45:44 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:64362 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757839Ab1D0Ko6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 06:44:58 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alexander Shishkin <virtuoso@slind.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH 4/4] timerfd: add cancellation
+Date: Wed, 27 Apr 2011 13:43:43 +0300
+Message-Id: <1303901023-11568-4-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1303901023-11568-1-git-send-email-virtuoso@slind.org>
+References: <alpine.LFD.2.00.1103102040190.2787@localhost6.localdomain6>
+ <1303901023-11568-1-git-send-email-virtuoso@slind.org>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 27 avril 2011 à 10:47 +0100, Alan Cox a écrit :
-> > EINVAL is ok too : Request or argp is not valid.
-> 
-> It confuses portable code in some situations
->  
-> > I would say, its not a bug as you claim. 
-> 
-> POSIX and SuS tend to disagree
-> 
-> > Its really too late to make such change and risk regressions.
-> 
-> We've been quietly doing it for hundreds of cases including the entire
-> tty driver. Almost nobody (you included) has actually noticed and in
-> doing so we fixed various porting funnies without any reported
-> regressions.
-> 
-> Networking may be a more tricky one (not that tty wasn't a large one we
-> fixed) but most of the other driver ones are clearly sensible.
-> 
+This patch implements conditional cancellation for timerfd timers.
+Similarly to clock_nanosleep, users who want to be woken up when
+system time changes have to use TFD_CANCEL_ON_CLOCK_SET flag and
+monotonic vs realtime offset, obtained from clock_rtoffset system
+call, in otmr.it_interval to timerfd_settime() call. This is only
+supported for absolute timers (TFD_TIMER_ABSTIME).
 
-Well, I wont argue the point, especially if you Ack the changes ;)
+If the provided monotonic offset is still effective, poll on the
+timerfd will sleep until either the requested time comes or somebody
+changes the system time, in which case the system call will return
+POLLHUP. If the monotonic offset has changed by the time of calling
+timerfd_settime(), it will return ECANCELLED straight away. This
+seems more straightforward than returning POLLIN from poll and only
+returning error from read.
 
-My only concern was to not break old applications, I dont know if it is
-going to break _any_ of them. Probably these old applications stick with
-old kernels.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Chris Friesen <chris.friesen@genband.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>
+CC: Kirill A. Shutemov <kirill@shutemov.name>
+CC: linux-kernel@vger.kernel.org
+---
+ fs/timerfd.c            |   40 +++++++++++++++++++++++++++++++++++++++-
+ include/linux/timerfd.h |    3 ++-
+ 2 files changed, 41 insertions(+), 2 deletions(-)
 
-If you ask me ENOTTY is plain wrong.
-ioctl() is not restricted to terminal devices at all.
-
-Any unknown ioctl command would return ENOTTY, regardless of fd being a
-tty or not...
-
-IF we add a new ioctl() to sockets in 2.6.42, using it on 2.6.41 would
-give ENOTTY status, and EINVAL status on 2.6.24
-
-Go figure...
-
-
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 8c4fc14..1955552 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -59,6 +59,16 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
+ 	return remaining.tv64 < 0 ? ktime_set(0, 0): remaining;
+ }
+ 
++static void timerfd_canceller(struct hrtimer *timer)
++{
++	struct timerfd_ctx *ctx = container_of(timer, struct timerfd_ctx, tmr);
++	unsigned long flags;
++
++	spin_lock_irqsave(&ctx->wqh.lock, flags);
++	wake_up_locked(&ctx->wqh);
++	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
++}
++
+ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
+ 			  const struct itimerspec *ktmr)
+ {
+@@ -99,6 +109,8 @@ static unsigned int timerfd_poll(struct file *file, poll_table *wait)
+ 	spin_lock_irqsave(&ctx->wqh.lock, flags);
+ 	if (ctx->ticks)
+ 		events |= POLLIN;
++	if (ctx->tmr.cancel.cancelled)
++		events |= POLLHUP;
+ 	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
+ 
+ 	return events;
+@@ -117,7 +129,15 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 	if (file->f_flags & O_NONBLOCK)
+ 		res = -EAGAIN;
+ 	else
+-		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
++		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks
++						 || ctx->tmr.cancel.cancelled);
++
++	/* if the timer is being cancelled, don't rearm it */
++	if (ctx->tmr.cancel.cancelled) {
++		spin_unlock_irq(&ctx->wqh.lock);
++		return -ECANCELED;
++	}
++
+ 	if (ctx->ticks) {
+ 		ticks = ctx->ticks;
+ 		if (ctx->expired && ctx->tintv.tv64) {
+@@ -197,6 +217,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 		struct itimerspec __user *, otmr)
+ {
+ 	struct file *file;
++	struct timespec offset;
+ 	struct timerfd_ctx *ctx;
+ 	struct itimerspec ktmr, kotmr;
+ 
+@@ -208,6 +229,14 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	    !timespec_valid(&ktmr.it_interval))
+ 		return -EINVAL;
+ 
++	if (flags & TFD_CANCEL_ON_CLOCK_SET) {
++		if (!otmr || !(flags & TFD_TIMER_ABSTIME))
++			return -EINVAL;
++		if (copy_from_user(&kotmr, otmr, sizeof(kotmr)))
++			return -EFAULT;
++		offset = kotmr.it_interval;
++	}
++
+ 	file = timerfd_fget(ufd);
+ 	if (IS_ERR(file))
+ 		return PTR_ERR(file);
+@@ -242,6 +271,15 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	 */
+ 	timerfd_setup(ctx, flags, &ktmr);
+ 
++	if ((flags & TFD_CANCEL_ON_CLOCK_SET) &&
++	    hrtimer_set_cancel_on_clock_set(&ctx->tmr, &offset,
++					    timerfd_canceller)) {
++		hrtimer_cancel(&ctx->tmr);
++		spin_unlock_irq(&ctx->wqh.lock);
++		fput(file);
++		return -ECANCELED;
++	}
++
+ 	spin_unlock_irq(&ctx->wqh.lock);
+ 	fput(file);
+ 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
+diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
+index 2d07929..f4cd638 100644
+--- a/include/linux/timerfd.h
++++ b/include/linux/timerfd.h
+@@ -19,6 +19,7 @@
+  * shared O_* flags.
+  */
+ #define TFD_TIMER_ABSTIME (1 << 0)
++#define TFD_CANCEL_ON_CLOCK_SET (1 << 1)
+ #define TFD_CLOEXEC O_CLOEXEC
+ #define TFD_NONBLOCK O_NONBLOCK
+ 
+@@ -26,6 +27,6 @@
+ /* Flags for timerfd_create.  */
+ #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
+ /* Flags for timerfd_settime.  */
+-#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
++#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_CANCEL_ON_CLOCK_SET)
+ 
+ #endif /* _LINUX_TIMERFD_H */
+-- 
+1.7.4.1
 
