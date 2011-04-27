@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab1D0DSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 23:18:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49930 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab1D0DSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 23:18:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZM4SN08CgXRvTySjK0FCx85zk4otOWgU/8tLm0HCfU70Gb0EE7dXbAeR4+bj2c0rve
-         f+xGKhEWnubEYpKuVgpFef22HOUwPJtRsSpGZ73dYcG1PvdLS2lXtpb02G7pxx8+K9fB
-         mCzJPZkWfBRKjnuliLh9O/YFfvnS+vAyQuu/U=
-Date: Wed, 27 Apr 2011 06:18:44 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Am??rico Wang <xiyou.wangcong@gmail.com>
-Cc: Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: How to export information larger than PROC_BLOCK_SIZE via /proc
- file system?
-Message-ID: <20110427031844.GA5595@p183>
-References: <BANLkTinQJ6wzOR++c-OSiCkf=MjOU=y=1A@mail.gmail.com>
- <BANLkTik+9oz9fbeTwS4qd32ukw6uPHtrWA@mail.gmail.com>
+	id S1754251Ab1D0Dad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 23:30:33 -0400
+Received: from csamuel.org ([74.50.50.137]:34352 "EHLO csamuel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab1D0Dac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 23:30:32 -0400
+Message-ID: <4DB78DC6.90706@csamuel.org>
+Date: Wed, 27 Apr 2011 13:30:14 +1000
+From: Chris Samuel <chris@csamuel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTik+9oz9fbeTwS4qd32ukw6uPHtrWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use
+ ax/bx as a pair
+References: <1303566747.12067.10.camel@localhost.localdomain> <tip-39b68976ac653cfdc7f872a293e8b7928de2dcc6@git.kernel.org> <201104261450.15786.chris@csamuel.org> <20110426081237.GD806@elte.hu>
+In-Reply-To: <20110426081237.GD806@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 11:00:32AM +0800, Am??rico Wang wrote:
-> On Wed, Apr 27, 2011 at 8:54 AM, Jidong Xiao <jidong.xiao@gmail.com> wrote:
-> > Hi,
-> >
-> > I am tracing some data inside the kernel, and I plan to export the
-> > tracing data through /proc file system. I created a file under /proc
-> > file system, and I use cat to display the tracing data. However, every
-> > time there is only 3072 bytes data displayed, which is the size
-> > defined by PROC_BLOCK_SIZE. And I wonder that how to export
-> > information more than that limit? Judging from the function
-> > fs/proc/generic.c/proc_file_read(), if the size returned by my
-> > read_proc function is large than a PAGE_SIZE, then I will get a
-> > KERN_ERR message which says "proc_file_read: Apparent buffer
-> > overflow!". Any help would be appreciated!
-> >
-> 
-> Why not switch to use debugfs?
+Hi Ingo,
 
-Or use seq_file/proc_create.
+On 26/04/11 18:12, Ingo Molnar wrote:
+
+> Just asking, does the box now boot to user-space, or are there other 
+> regressions left?
+
+Well I now have to boot the box with "noapic" otherwise I hit
+IRQ problems in the e100 and aic7xxx drivers, they report:
+
+can't find IRQ for PCI INT A; probably buggy MP table
+
+Even with "noapic" the user space seems to try and load the
+software RAID before the SCSI driver resulting in it timing
+out locating the root filesystem and resetting the box.  I
+suspect that may be an initramfs issue though..
+
+cheers,
+Chris
+-- 
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
