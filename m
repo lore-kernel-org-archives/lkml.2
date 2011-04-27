@@ -1,183 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab1D0HOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 03:14:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60284 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1D0HOi convert rfc822-to-8bit (ORCPT
+	id S1753920Ab1D0HaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 03:30:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51426 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763Ab1D0HaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 03:14:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wn1EDBYIZux3le+nB1eQenlYtwXU5w/jylgc1tDGUbPCRJnvYXEHoQw4+pJ/rU4BDU
-         0mf7xp4Vs4uN1XbIZvhJbqQ3//rYQssq9Wqk8UCMetR0uQHm8quY1TGtDZ2mnciqkL7r
-         3v16j3ELtAefnnOXXC2E/YgCybSiLi75K8dPk=
+	Wed, 27 Apr 2011 03:30:12 -0400
+Message-ID: <4DB7C5F7.3080103@pengutronix.de>
+Date: Wed, 27 Apr 2011 09:29:59 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=otVX5RS9zFEfTzbXyy1JeCUbZHQ@mail.gmail.com>
-References: <BANLkTi=UG0Xy2UEkNj2S_bS-PjOG5krNkQ@mail.gmail.com>
-	<BANLkTimfJXQdJHbG7J8frwPrBKOMxVjQUg@mail.gmail.com>
-	<BANLkTi=kQdvdUAA-RT-UVcpSx7E8domMJw@mail.gmail.com>
-	<BANLkTi=otVX5RS9zFEfTzbXyy1JeCUbZHQ@mail.gmail.com>
-Date: Wed, 27 Apr 2011 15:14:36 +0800
-Message-ID: <BANLkTim7Q3L+jw_FyNDevyqd4GbdsfP4oA@mail.gmail.com>
-Subject: Re: kernel panic after unplug usb bluetooth dongle
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: davinci-linux-open-source@linux.davincidsp.com, sachi@mistralsolutions.com,
+        Samuel Ortiz <sameo@linux.intel.com>, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A603.2090208@pengutronix.de> <EDC1056430EF4DA8A0D850CE1DEA28FC@subhasishg>
+In-Reply-To: <EDC1056430EF4DA8A0D850CE1DEA28FC@subhasishg>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig8EC2FB2A10FB96FBA90C2EF6"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 3:14 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Wed, Apr 27, 2011 at 3:11 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->> On Wed, Apr 27, 2011 at 2:41 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
->>> On Wed, Apr 27, 2011 at 2:35 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->>>> Hi,
->>>>
->>>> Unplug usb bluetooth dongle make kernel panic as below. Thomas, any
->>>> idea about it?
->>>>
->>>> usb 6-1: USB disconnect, device number 3
->>>> btusb_intr_complete: hci0 urb ffff8801275bb9c0 failed to resubmit (19)
->>>> btusb_bulk_complete: hci0 urb ffff8801275bb540 failed to resubmit (19)
->>>> btusb_bulk_complete: hci0 urb ffff8801275bb6c0 failed to resubmit (19)
->>>> btusb_send_frame: hci0 urb ffff8801275bb6c0 submission failed
->>>> BUG: unable to handle kernel NULL pointer dereference at           (null)
->>>> IP: [<ffffffff81048988>] get_next_timer_interrupt+0x13d/0x21d
->>>
->>> Seems a hrtimer is freed abnormaly.
->>>
->>> Could you try to build your kernel with CONFIG_DEBUG_OBJECTS_TIMERS=y
->>>
->>
->> Tried, did not see any new stuff in dmesg.
->
-> So this means you still got the PANIC, but don't see any additional output?
->
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig8EC2FB2A10FB96FBA90C2EF6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes
+On 04/27/2011 08:39 AM, Subhasish Ghosh wrote:
+> Hi Mark,
 
-> Thanks,
-> Yong
->
->>
->>> Thanks,
->>> Yong
->>>
->>>> PGD 12609c067 PUD 1260b5067 PMD 0
->>>> Oops: 0000 [#1] SMP
->>>> last sysfs file: /sys/devices/virtual/dmi/id/chassis_type
->>>> CPU 0
->>>> Modules linked in: tun rfcomm bnep snd_pcm_oss snd_mixer_oss kvm_intel
->>>> kvm btusb bluetooth snd_hda_codec_analog snd_hda_intel dell_wmi
->>>> sparse_keymap snd_hda_codec snd_hwdep e1000e snd_pcm wmi snd_timer
->>>> 8139too rfkill snd_page_alloc
->>>>
->>>> Pid: 0, comm: swapper Not tainted 2.6.39-rc5 #224 Dell Inc. OptiPlex
->>>> 780                 /0V4W66
->>>> RIP: 0010:[<ffffffff81048988>]  [<ffffffff81048988>]
->>>> get_next_timer_interrupt+0x13d/0x21d
->>>> RSP: 0018:ffffffff817dddf8  EFLAGS: 00010097
->>>> RAX: 0000000000000000 RBX: ffffffff819adb80 RCX: 000000000000003e
->>>> RDX: 0000000000000000 RSI: 000000000000003e RDI: 0000000000000000
->>>> RBP: ffffffff817dde58 R08: ffffffff817dde08 R09: 00000000010000fe
->>>> R10: 0000000000000000 R11: 0000000000000001 R12: 000000010000fdf7
->>>> R13: ffffffff819aefb0 R14: ffffffff819aebd0 R15: 0000000000000040
->>>> FS:  0000000000000000(0000) GS:ffff880127c00000(0000) knlGS:0000000000000000
->>>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>> CR2: 0000000000000000 CR3: 000000012605a000 CR4: 00000000000406b0
->>>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>>> Process swapper (pid: 0, threadinfo ffffffff817dc000, task ffffffff81800020)
->>>> Stack:
->>>>  ffffffff817dde28 ffffffff8105c769 ffffffff819aebd0 ffffffff819aefd0
->>>>  ffffffff819af3d0 ffffffff819af7d0 ffffffff817dde48 000000000000ccc0
->>>>  ffff880127c0e2a0 00000000a983c6e8 0000000000000000 000000010000fdf7
->>>> Call Trace:
->>>>  [<ffffffff8105c769>] ? sched_clock_local+0x1c/0x80
->>>>  [<ffffffff810652c4>] tick_nohz_stop_sched_tick+0x370/0x390
->>>>  [<ffffffff81001e77>] cpu_idle+0x2f/0x9a
->>>>  [<ffffffff814fd409>] rest_init+0xad/0xb1
->>>>  [<ffffffff814fd35c>] ? csum_partial_copy_generic+0x16c/0x16c
->>>>  [<ffffffff818b0c49>] start_kernel+0x399/0x3a4
->>>>  [<ffffffff818b0140>] ? early_idt_handlers+0x140/0x140
->>>>  [<ffffffff818b02af>] x86_64_start_reservations+0xb6/0xba
->>>>  [<ffffffff818b03b3>] x86_64_start_kernel+0x100/0x10f
->>>> Code: 04 4a 8b 14 30 4d 8d 2c 06 eb 20 4c 89 d0 f6 42 18 01 75 11 48
->>>> 8b 42 10 41 bb 01 00 00 00 4c 39 d0 49 0f 49 c2 48 89 fa 49 89 c2
->>>>  8b 3a 4c 39 ea 0f 18 0f 75 d5 45 85 db 74 10 85 f6 74 04 39
->>>> RIP  [<ffffffff81048988>] get_next_timer_interrupt+0x13d/0x21d
->>>>  RSP <ffffffff817dddf8>
->>>> CR2: 0000000000000000
->>>> ---[ end trace 5621bb82abfeb30f ]---
->>>> Kernel panic - not syncing: Attempted to kill the idle task!
->>>> Pid: 0, comm: swapper Tainted: G      D     2.6.39-rc5 #224
->>>> Call Trace:
->>>>  [<ffffffff8151a544>] panic+0xb7/0x1c9
->>>>  [<ffffffff8103ef48>] do_exit+0xb6/0x7b3
->>>>  [<ffffffff8103bd25>] ? kmsg_dump+0x120/0x12f
->>>>  [<ffffffff8103bc96>] ? kmsg_dump+0x91/0x12f
->>>>  [<ffffffff8151e23f>] oops_end+0xc1/0xc9
->>>>  [<ffffffff810228c3>] no_context+0x1f3/0x202
->>>>  [<ffffffff81022a8d>] __bad_area_nosemaphore+0x1bb/0x1e1
->>>>  [<ffffffff810685c8>] ? mark_lock+0x22/0x261
->>>>  [<ffffffff8106a49c>] ? __lock_acquire+0xe05/0xe14
->>>>  [<ffffffff81022ac1>] bad_area_nosemaphore+0xe/0x10
->>>>  [<ffffffff815202a3>] do_page_fault+0x20b/0x421
->>>>  [<ffffffff8106a49c>] ? __lock_acquire+0xe05/0xe14
->>>>  [<ffffffff8106a49c>] ? __lock_acquire+0xe05/0xe14
->>>>  [<ffffffff8151d020>] ? _raw_spin_unlock_irq+0x2b/0x37
->>>>  [<ffffffff812816fd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->>>>  [<ffffffff8151d5e5>] page_fault+0x25/0x30
->>>>  [<ffffffff81048988>] ? get_next_timer_interrupt+0x13d/0x21d
->>>>  [<ffffffff81048894>] ? get_next_timer_interrupt+0x49/0x21d
->>>>  [<ffffffff8105c769>] ? sched_clock_local+0x1c/0x80
->>>>  [<ffffffff810652c4>] tick_nohz_stop_sched_tick+0x370/0x390
->>>>  [<ffffffff81001e77>] cpu_idle+0x2f/0x9a
->>>>  [<ffffffff814fd409>] rest_init+0xad/0xb1
->>>>  [<ffffffff814fd35c>] ? csum_partial_copy_generic+0x16c/0x16c
->>>>  [<ffffffff818b0c49>] start_kernel+0x399/0x3a4
->>>>  [<ffffffff818b0140>] ? early_idt_handlers+0x140/0x140
->>>>  [<ffffffff818b02af>] x86_64_start_reservations+0xb6/0xba
->>>>  [<ffffffff818b03b3>] x86_64_start_kernel+0x100/0x10f
->>>>
->>>> --
->>>> Regards
->>>> dave
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
->>>
->>>
->>>
->>> --
->>> Only stand for myself
->>>
->>
->>
->>
->> --
->> Regards
->> dave
->>
->
->
->
-> --
-> Only stand for myself
->
+I'm Marc.
+
+> - Is it ok to have u32 etc for __iomem cookie ?
+
+no - "void __iomem *" is "void __iomem *"
 
 
+>> +s32 pruss_disable(struct device *dev, u8 pruss_num)
+> make it a int function
+>=20
+> SG -- Ok will do
+>=20
+>> +
+>> +    /* Reset PRU */
+>> +    iowrite32(PRUCORE_CONTROL_RESETVAL,
+>> +                &h_pruss->control);
+>> +    spin_unlock(&pruss->lock);
+>> +
+>> +    return 0;
+>=20
+> make it a void function?
+>=20
+> SG -- This should be int, in case of invalid pru num, we ret an error.
 
--- 
-Regards
-dave
+Yes - Sorry.
+
+>> +}
+>> +EXPORT_SYMBOL_GPL(pruss_disable);
+>> +
+>> +s32 pruss_enable(struct device *dev, u8 pruss_num)
+> int?
+>=20
+> SG -- Ok will do
+>=20
+>=20
+>> +
+>> +    if ((pruss_num !=3D PRUCORE_0) && (pruss_num !=3D PRUCORE_1))
+>> +        return -EINVAL;
+>> +
+>> +    h_pruss =3D &pruss_mmap->core[pruss_num];
+>> +
+>> +    /* Reset PRU  */
+>> +    spin_lock(&pruss->lock);
+>> +    iowrite32(PRUCORE_CONTROL_RESETVAL, &h_pruss->control);
+>=20
+> no need to lock the ram reset below?
+>=20
+> SG -- I don't think its required. We just reset the RAM during init and=
+
+> since each pru can only be attached to only one device, the access
+>        will be already serialized based upon the pru num.
+
+In the other function you lock the access to the ram, but not here.
+
+>> +    /* Reset any garbage in the ram */
+>> +    if (pruss_num =3D=3D PRUCORE_0)
+>> +        for (i =3D 0; i < PRUSS_PRU0_RAM_SZ; i++)
+>> +            iowrite32(0x0, &pruss_mmap->dram0[i]);
+>> +    else if (pruss_num =3D=3D PRUCORE_1)
+>> +        for (i =3D 0; i < PRUSS_PRU1_RAM_SZ; i++)
+>> +            iowrite32(0x0, &pruss_mmap->dram1[i]);
+> if you make a array for these
+> +struct pruss_map {
+> +    u8 dram0[512];
+> +    u8 res1[7680];
+>=20
+> +    u8 dram1[512];
+> +    u8 res2[7680];
+> ..}
+> you don't need the if..else..
+>=20
+> SG - The dram/iram is not contiguous, there is a reserved space in
+> between, how do I declare an array for it.
+
+This is the struct you have:
+
+struct pruss_map {
+	u8 dram0[512];
+	u8 res1[7680];
+
+	u8 dram1[512];
+	u8 res2[7680];
+=2E..
+}
+
+If you want to describe the ram with an array it translates to:
+
+struct pruss_dram {
+	u8 dram[512];
+	u8 res[7680];
+};
+
+struct pruss_map {
+	struct pruss_dram[2];
+=2E..
+};
+
+BTW: Why do you declare the dram as "u8" "u32" seems more natural to me.
+
+>> +/* Load the specified PRU with code */
+>> +s32 pruss_load(struct device *dev, u8 pruss_num,
+>> +            u32 *pruss_code, u32 code_size_in_words)
+>> +{
+>> +    struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
+>> +    struct pruss_map __iomem *pruss_mmap =3D pruss->ioaddr;
+>> +    u32 __iomem *pruss_iram;
+>> +    u32 i;
+>> +
+>> +    if (pruss_num =3D=3D PRUCORE_0)
+>> +        pruss_iram =3D (u32 __iomem *)&pruss_mmap->iram0;
+>> +    else if (pruss_num =3D=3D PRUCORE_1)
+>> +        pruss_iram =3D (u32 __iomem *)&pruss_mmap->iram1;
+>> +    else
+> same here
+>=20
+> SG - same here.
+
+same here :)
+
+>> +s32 pruss_run(struct device *dev, u8 pruss_num)
+> int?
+>=20
+> SG - Ok, Will do.
+>=20
+>=20
+>> +    while (cnt--) {
+>> +        temp_reg =3D ioread32(&h_pruss->control);
+>> +        if (((temp_reg & PRUCORE_CONTROL_RUNSTATE_MASK) >>
+>> +                PRUCORE_CONTROL_RUNSTATE_SHIFT) =3D=3D
+>> +                PRUCORE_CONTROL_RUNSTATE_HALT)
+>> +            break;
+> how long might this take? what about some delay, sleep, or reschedule?
+>=20
+> SG - This does not take more than 10 to 20 counts,
+
+Does it make sense, that the timeout is a parameter to that function?
+
+>=20
+>=20
+>> +s32 pruss_writeb(struct device *dev, u32 offset, u8 pdatatowrite)
+>> +{
+>> +    struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
+>> +    void __iomem *paddresstowrite;
+> we usually don't use "p" variable names for pointers
+>=20
+> SG - Ok, will remove.
+>=20
+>=20
+>> +s32 pruss_rmwb(struct device *dev, u32 offset, u8 mask, u8 val)
+> void function?
+>=20
+> SG - Ok, will do.
+>=20
+>> +
+>> +s32 pruss_readb(struct device *dev, u32 offset, u8 *pdatatoread)
+> void?
+>=20
+> SG - Ok, will do.
+>=20
+>> +{
+>> +    struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
+>> +    void __iomem *paddresstoread;
+>> +
+>> +    paddresstoread =3D pruss->ioaddr + offset ;
+>> +    *pdatatoread =3D ioread8(paddresstoread);
+>> +
+>> +    return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(pruss_readb);
+>> +
+>> +s32 pruss_readb_multi(struct device *dev, u32 offset,
+>> +        u8 *pdatatoread, u16 bytestoread)
+> viod?
+>=20
+> SG - Ok, will do.
+>=20
+>> +{
+>> +    struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
+>> +    u8 __iomem *paddresstoread;
+>> +    u16 i;
+> int?
+>=20
+> SG - Ok, will do.
+>=20
+>=20
+>=20
+>> +    return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(pruss_readb_multi);
+>> +
+>> +s32 pruss_writel(struct device *dev, u32 offset,
+>> +        u32 pdatatowrite)
+> void?
+>=20
+> SG - Ok, will do.
+>=20
+>=20
+>> +    return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(pruss_writel);
+>> +
+>> +s32 pruss_writel_multi(struct device *dev, u32 offset,
+>> +        u32 *pdatatowrite, u16 wordstowrite)
+> void?
+>=20
+> SG - Ok, will do.
+>=20
+>> +{
+>> +    struct pruss_priv *pruss =3D dev_get_drvdata(dev->parent);
+>> +    u32 __iomem *paddresstowrite;
+>> +    u16 i;
+>> +
+>> +    paddresstowrite =3D pruss->ioaddr + offset;
+>> +
+>> +    for (i =3D 0; i < wordstowrite; i++)
+>> +        iowrite32(*pdatatowrite++, paddresstowrite++);
+> memcopy_to_iomem?
+>=20
+> SG -- I did not understand, could you please elaborate.
+
+You could use memcpy_toio() - although it seems it does copy bytes
+internally.
+
+http://lxr.linux.no/linux+v2.6.38/arch/arm/include/asm/io.h#L222
+>=20
+>=20
+>> +
+>> +s32 pruss_rmwl(struct device *dev, u32 offset, u32 mask, u32 val)
+> void?
+>=20
+> SG - Ok, will do.
+>=20
+>=20
+>> +}
+>> +EXPORT_SYMBOL_GPL(pruss_rmwl);
+>> +
+>> +s32 pruss_readl(struct device *dev, u32 offset, u32 *pdatatoread)
+> void? or return the read value
+>=20
+> SG - Ok, will do.
+>=20
+>=20
+>=20
+
+regards,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig8EC2FB2A10FB96FBA90C2EF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk23xfoACgkQjTAFq1RaXHNd8ACcCb5IsUFvSUUaQEizv8y8fsU3
+TZ0An3FNINiiBltN1UhGuTvsHVUBQRmA
+=xiDC
+-----END PGP SIGNATURE-----
+
+--------------enig8EC2FB2A10FB96FBA90C2EF6--
