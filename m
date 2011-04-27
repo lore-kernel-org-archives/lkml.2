@@ -1,115 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab1D0W1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 18:27:34 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48635 "EHLO e4.ny.us.ibm.com"
+	id S1758948Ab1D0Wac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 18:30:32 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:49038 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab1D0W1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 18:27:33 -0400
-Date: Wed, 27 Apr 2011 15:27:27 -0700
+	id S1754941Ab1D0Waa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 18:30:30 -0400
+Date: Wed, 27 Apr 2011 15:30:26 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110427222727.GU2135@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: RCU+KVM: making CPU guest mode a quiescent state.
+Message-ID: <20110427223026.GV2135@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110425214933.GO2468@linux.vnet.ibm.com>
- <20110426081904.0d2b1494@pluto.restena.lu>
- <20110426112756.GF4308@linux.vnet.ibm.com>
- <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home>
- <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
- <alpine.LFD.2.02.1104262314110.3323@ionos>
- <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home>
- <alpine.LFD.2.02.1104272351290.3323@ionos>
+References: <20110426123824.GD22443@redhat.com>
+ <20110426155528.GD2135@linux.vnet.ibm.com>
+ <4DB7C9F8.5070906@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.02.1104272351290.3323@ionos>
+In-Reply-To: <4DB7C9F8.5070906@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 12:06:11AM +0200, Thomas Gleixner wrote:
-> On Wed, 27 Apr 2011, Bruno Prémont wrote:
-> > On Wed, 27 April 2011 Bruno Prémont wrote:
-> > Voluntary context switches stay constant from the time on SLABs pile up.
-> > (which makes sense as it doesn't run get CPU slices anymore)
-> > 
-> > > > Can you please enable CONFIG_SCHED_DEBUG and provide the output of
-> > > > /proc/sched_stat when the problem surfaces and a minute after the
-> > > > first snapshot?
-> > 
-> > hm, did you mean CONFIG_SCHEDSTAT or /proc/sched_debug?
-> > 
-> > I did use CONFIG_SCHED_DEBUG (and there is no /proc/sched_stat) so I took
-> > /proc/sched_debug which exists... (attached, taken about 7min and +1min
-> > after SLABs started piling up), though build processes were SIGSTOPped
-> > during first minute.
+On Wed, Apr 27, 2011 at 10:47:04AM +0300, Avi Kivity wrote:
+> On 04/26/2011 06:55 PM, Paul E. McKenney wrote:
+> >On Tue, Apr 26, 2011 at 03:38:24PM +0300, Gleb Natapov wrote:
+> >>  Hello Paul,
+> >>
+> >>  I have a question about RCU + KVM. KVM does not hold any references to RCU
+> >>  protected data when it switches CPU into a guest mode. In fact switching
+> >>  to a guest mode is very similar to exiting to userspase from RCU point
+> >>  of view. In addition CPU may stay in a guest mode for quite a long time
+> >>  (up to one time slice). It looks like it will be beneficial to treat guest
+> >>  mode as quiescent state, just like user-mode execution. How can this be
+> >>  done? I was trying to find how RCU knows about cpu entering user-mode,
+> >>  but it seems that it does this by checking CPU mode in a timer interrupt
+> >>  (update_process_times()->rcu_check_callbacks()). This will not work for
+> >>  guest mode detection since timer interrupt will kick CPU out of a guest
+> >>  mode and timer interrupt will always see CPU in kernel mode. Do we have
+> >>  a simple function to call to notify RCU that CPU passed quiescent state
+> >>  which we can call just before entering guest?
+> >
+> >Hello, Gleb,
+> >
+> >You could call rcu_note_context_switch(), passing it the current
+> >CPU.  Please note that preemption -must- be disabled when calling
+> >this.  You could call this just after exiting the guest as well
+> >as just before entering guest.
 > 
-> Oops. /proc/sched_debug is the right thing.
-> 
-> > printk wrote (in case its timestamp is useful, more below):
-> > [  518.480103] sched: RT throttling activated
-> 
-> Ok. Aside of the fact that the CPU time accounting is completely hosed
-> this is pointing to the root cause of the problem.
-> 
-> kthread_rcu seems to run in circles for whatever reason and the RT
-> throttler catches it. After that things go down the drain completely
-> as it should get on the CPU again after that 50ms throttling break.
+> It's expected that after exiting, we'd spend a very short time in
+> the kernel, and then either re-enter the guest, exit to userspace,
+> or switch to another task.  So I think calling it just before entry
+> should be sufficient.
 
-Ah.  This could happen if there was a huge number of callbacks, in
-which case blimit would be set very large and kthread_rcu could then
-go CPU-bound.  And this workload was generating large numbers of
-callbacks due to filesystem operations, right?
+Agreed, sorry for my confusion!
 
-So, perhaps I should kick kthread_rcu back to SCHED_NORMAL if blimit
-has been set high.  Or have some throttling of my own.  I must confess
-that throttling kthread_rcu for two hours seems a bit harsh.  ;-)
-
-If this was just throttling kthread_rcu for a few hundred milliseconds,
-or even for a second or two, things would be just fine.
-
-Left to myself, I will put together a patch that puts callback processing
-down to SCHED_NORMAL in the case where there are huge numbers of
-callbacks to be processed.
-
-> Though we should not ignore the fact, that the RT throttler hit, but
-> none of the RT tasks actually accumulated runtime.
+> Looking at the code, I see rcu_note_context_switch() calls
+> rcu_sched_qs(), which does
 > 
-> So there is a couple of questions:
+>     rdp->passed_quiesc_completed = rdp->gpnum - 1;
+>     barrier();
+>     rdp->passed_quiesc = 1;
 > 
->    - Why does the scheduler detect the 950 ms RT runtime, but does
->      not accumulate that runtime to any thread
+> and also calls rcu_preempt_note_context_switch(), which calls
+> rcu_preempt_qs(), which does
 > 
->    - Why is the runtime accounting totally hosed
+>     rdp->passed_quiesc_completed = rdp->gpnum - 1;
+>     barrier();
+>     rdp->passed_quiesc = 1;
+>     current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
 > 
->    - Why does that not happen (at least not reproducible) with 
->      TREE_RCU
+> the similarity is remarkable.  Is this intended?  Or did I get lost
+> in a maze of #ifdefs?
 
-This one I can answer -- In Linus's tree, TREE_RCU still uses softirq,
-so there is no RCU kthread, so there is nothing to throttle other
-than ksoftirqd itself.
+The "rdp" is different in the two cases.  In the first case, it is
+one of rcu_sched's per-CPU rcu_data structures, in the second case,
+it is one of rcu_preempt's per-CPU rcu_data structures.  I considered
+making the first three lines common code, but the extra function
+bloated more than the duplicate three lines.  Perhaps I should have
+tried harder.
 
 							Thanx, Paul
-
-> I need some sleep now, but I will try to come up with sensible
-> debugging tomorrow unless Paul or someone else beats me to it.
-> 
-> Thanks,
-> 
-> 	tglx
-
