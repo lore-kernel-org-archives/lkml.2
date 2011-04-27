@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759115Ab1D0Mgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:36:39 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54033 "EHLO
+	id S1759160Ab1D0Mgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 08:36:54 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60967 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756264Ab1D0Mgh (ORCPT
+	by vger.kernel.org with ESMTP id S1759119Ab1D0Mgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:36:37 -0400
-X-Sasl-enc: 57Gm8xRv9S4Q9Ue+ia1QlKRioR+QtLuYmlK3J082y3BS 1303907796
+	Wed, 27 Apr 2011 08:36:48 -0400
+X-Sasl-enc: xr27hFH3xm/qMr5Dvpy6OrfldlW66dFnZXVJLvbsoJk2 1303907807
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,40 +17,49 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         casey@schaufler-ca.com, eparis@redhat.com, sds@tycho.nsa.gov,
         selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 3/7] smack: assign the label set in file->f_cred to new file descriptors
-Date: Wed, 27 Apr 2011 14:34:11 +0200
-Message-Id: <1303907657-18366-4-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 5/7] smack: import the security label in smack_secctx_to_secid()
+Date: Wed, 27 Apr 2011 14:34:13 +0200
+Message-Id: <1303907657-18366-6-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----407D200EF0F1FB0266A909259758D15E"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----444DA078C8E5969A1974F7B53AE2189E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------407D200EF0F1FB0266A909259758D15E
+------444DA078C8E5969A1974F7B53AE2189E
 
-The SMACK label of new file descriptors is obtained from the credentials
-set in the 'f_cred' field of the same structure.
+The security label passed as argument in smack_secctx_to_secid() must be
+first imported in the 'smack_known_list' list before finding the security
+identifier associated to it. This allows the function
+set_security_override_from_ctx() to be performed successfully even if the
+label is not yet present in the smack list.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/smack/smack_lsm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ security/smack/smack_lsm.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index c6f8fca..e3c9e54 100644
+index 0e7ed31..6612ba1 100644
 --- a/security/smack/smack_lsm.c
 +++ b/security/smack/smack_lsm.c
-@@ -1011,7 +1011,7 @@ static int smack_file_permission(struct file *file, int mask)
+@@ -3346,7 +3346,13 @@ static int smack_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
   */
- static int smack_file_alloc_security(struct file *file)
+ static int smack_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid)
  {
--	file->f_security = smk_of_current();
-+	file->f_security = smk_of_task(file->f_cred->security);
+-	*secid = smack_to_secid(secdata);
++	char *smack;
++
++	smack = smk_import(secdata, seclen);
++	if (smack == NULL)
++		return -EINVAL;
++
++	*secid = smack_to_secid(smack);
  	return 0;
  }
  
@@ -58,7 +67,7 @@ index c6f8fca..e3c9e54 100644
 1.7.4.4
 
 
-------407D200EF0F1FB0266A909259758D15E
+------444DA078C8E5969A1974F7B53AE2189E
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -96,17 +105,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0NDVaMCMGCSqG
-SIb3DQEJBDEWBBRafRHiijy2A7Mgw04E3F3eMIctATB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjcxMjM0NTdaMCMGCSqG
+SIb3DQEJBDEWBBTd5qlWHtqtbs8d+Df/MjvL6WaRbDB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAwj5axXKR6MPt1qDaoPnD826OU
-DhjLmaZINIFqC5hMW4CNCIVp+WxWK1OJHexGPdY+alR414zQnnvfR+6fepTKw84a
-2RKwQlqsaSQsEvnjKsqqDIF7SP9JuLTcJIOhVSoRqqrPoiqrbvFb5AuAo5mb0Ksk
-HEURvSZWLoriqLeLGsJgx2x90FSMH4M42tWJo9FfQdmk4wHveu7FHj0NZekxmQXW
-j4y+d4q5czapJb17zPJ6zHP9Kt2APNDWxGckhZCx9i1giqTzn85hFxOGCxe292/h
-TqV44hbBigZ20E5wO0sYnPUTdU/HxX1CtxjXYDTLXHmqEd9LWMEr+XWjg6aw
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCZNToarAQUCmN8R9EnMH0V/B0q
+8vQEc/WP0CnoxvI9r7mmDxzeKbgb4FxudGgAPBXgxM0AoOVsbo3zIbp9l96gwUku
+XOmo5SzD49G2oofcdWkdPdLl/yDBop6Ki9kt//n0bRO4lbkKg+0kAJXr58PwTBnc
+mToOexjGMrKWiQgM7BIqeXsrtybKKKkl+JSsQwV+M/w/cYVj3D5rOmmLOV6TqCo2
+9GqWvEdikh6N6JDmG7Jl1zHqhFE2fnYejlhxeAoix6z5G1Gi6yP5rO6e4ScmuInr
+PwwwROGH8s3xVpL9y8il+jfzLbucCiYRwczPwVGHFGeN8XlD+g9JMBrCra3Q
 
-------407D200EF0F1FB0266A909259758D15E--
+------444DA078C8E5969A1974F7B53AE2189E--
 
 
