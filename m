@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab1D0Xgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:36:54 -0400
-Received: from mout.perfora.net ([74.208.4.194]:57338 "EHLO mout.perfora.net"
+	id S932252Ab1D0Xgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:36:36 -0400
+Received: from mout.perfora.net ([74.208.4.195]:49731 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760259Ab1D0Xgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:36:51 -0400
+	id S1757162Ab1D0Xgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 19:36:32 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] mm: make gather_stats() type-safe and remove forward declaration
-Date: Wed, 27 Apr 2011 19:35:45 -0400
-Message-Id: <1303947349-3620-5-git-send-email-wilsons@start.ca>
+Subject: [PATCH 1/8] mm: export get_vma_policy()
+Date: Wed, 27 Apr 2011 19:35:42 -0400
+Message-Id: <1303947349-3620-2-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1303947349-3620-1-git-send-email-wilsons@start.ca>
 References: <1303947349-3620-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:lF5y+yH5OggVj3QARr+82xmVPxa68GPY/y/tiuOUPHx
- GKtnbiBaICfXDhQHSHHsYbRD8LPLPRnMpqonXiJFBJG/Bj37gh
- RpK9oGRtO0XAi/iOENO+WR9OCYP0R/Rhqv0PqJdVMWal7j24E0
- VnWERY2a0/ChHC2n0+buEaTTTlwCVzVSCNMr3EgHng+WX9cZXH
- EV1zetecg1dnBSx97ZcgjQJGpMiS+ohoyoreG0rsmg=
+X-Provags-ID: V02:K0:lhVbGq7ENU1bPnhZ1bqPQiHBZXYv9PJi5ZlJRIgwglR
+ cHoW3Vqep/WBAmGkG+5rvr1soKlklvkLUow8iQVJqqVFkJn9Sy
+ nWlwElwfr3saM9lgwzM7z3Vnr2O2X9cgctNByxWtmyAxu4GhJT
+ ofMN105KuHqpSH398GAcrPFLNMgeA7qm6FLL1lXn2JVyQ6oMm4
+ aW3beBLZezmzsUVstjs74M2RzUJ0mLjGYaa1o2grCI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the prototype of gather_stats() to take a struct numa_maps as
-argument instead of a generic void *.  Update all callers to make the
-required type explicit.
+In commit 48fce3429df84a94766fbbc845fa8450d0715b48 get_vma_policy() was
+marked static as all clients were local to mempolicy.c.
 
-Since gather_stats() is not needed before its definition and is
-scheduled to be moved out of mempolicy.c the declaration is removed as
-well.
+However, the decision to generate /proc/pid/numa_maps in the numa memory
+policy code and outside the procfs subsystem introduces an artificial
+interdependency between the two systems.  Exporting get_vma_policy()
+once again is the first step to clean up this interdependency.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- mm/mempolicy.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ include/linux/mempolicy.h |    3 +++
+ mm/mempolicy.c            |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 31ac26c..c2f6032 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -199,6 +199,9 @@ void mpol_free_shared_policy(struct shared_policy *p);
+ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
+ 					    unsigned long idx);
+ 
++struct mempolicy *get_vma_policy(struct task_struct *tsk,
++		struct vm_area_struct *vma, unsigned long addr);
++
+ extern void numa_default_policy(void);
+ extern void numa_policy_init(void);
+ extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 63c0d69..d4c0b8d 100644
+index 959a8b8..5bfb03e 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -456,7 +456,6 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
- 	},
- };
- 
--static void gather_stats(struct page *, void *, int pte_dirty);
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
- 
-@@ -2538,9 +2537,8 @@ struct numa_maps {
- 	unsigned long node[MAX_NUMNODES];
- };
- 
--static void gather_stats(struct page *page, void *private, int pte_dirty)
-+static void gather_stats(struct page *page, struct numa_maps *md, int pte_dirty)
+@@ -1489,7 +1489,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+  * freeing by another task.  It is the caller's responsibility to free the
+  * extra reference for shared policies.
+  */
+-static struct mempolicy *get_vma_policy(struct task_struct *task,
++struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
  {
--	struct numa_maps *md = private;
- 	int count = page_mapcount(page);
- 
- 	md->pages++;
-@@ -2568,6 +2566,7 @@ static void gather_stats(struct page *page, void *private, int pte_dirty)
- static int gather_pte_stats(pte_t *pte, unsigned long addr,
- 		unsigned long pte_size, struct mm_walk *walk)
- {
-+	struct numa_maps *md;
- 	struct page *page;
- 	int nid;
- 
-@@ -2582,7 +2581,8 @@ static int gather_pte_stats(pte_t *pte, unsigned long addr,
- 	if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
- 		return 0;
- 
--	gather_stats(page, walk->private, pte_dirty(*pte));
-+	md = walk->private;
-+	gather_stats(page, md, pte_dirty(*pte));
- 	return 0;
- }
- 
-@@ -2619,6 +2619,7 @@ static void check_huge_range(struct vm_area_struct *vma,
- static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
- 		unsigned long addr, unsigned long end, struct mm_walk *walk)
- {
-+	struct numa_maps *md;
- 	struct page *page;
- 
- 	if (pte_none(*pte))
-@@ -2628,7 +2629,8 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
- 	if (!page)
- 		return 0;
- 
--	gather_stats(page, walk->private, pte_dirty(*pte));
-+	md = walk->private;
-+	gather_stats(page, md, pte_dirty(*pte));
- 	return 0;
- }
- 
+ 	struct mempolicy *pol = task->mempolicy;
 -- 
 1.7.3.5
 
