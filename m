@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760054Ab1D0VmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 17:42:23 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:57220
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759270Ab1D0VmW (ORCPT
+	id S1760045Ab1D0Vnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 17:43:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60336 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754601Ab1D0Vnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 17:42:22 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DB88DAF.2010504@freescale.com>
-Date: Wed, 27 Apr 2011 16:42:07 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110410 Fedora/2.0.13-1.fc13 SeaMonkey/2.0.13
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 2/3] make new alloc_pages_exact()
-References: <20110414200139.ABD98551@kernel>	 <20110414200140.CDE09A20@kernel>  <4DB88AF0.1050501@freescale.com> <1303940249.9516.366.camel@nimitz>
-In-Reply-To: <1303940249.9516.366.camel@nimitz>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 27 Apr 2011 17:43:52 -0400
+Date: Wed, 27 Apr 2011 22:43:49 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] signal: rename signandsets() to sigandnsets()
+Message-ID: <20110427224349.69e5f5f0@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110426195018.GG8520@redhat.com>
+References: <20110418134421.GA15951@redhat.com>
+	<BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+	<20110418173224.GA27918@redhat.com>
+	<BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+	<20110423175901.GA484@redhat.com>
+	<20110426194822.GA8520@redhat.com>
+	<20110426195018.GG8520@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
->> Is there an easy way to verify that alloc_pages_exact(5MB) really does allocate
->> > only 5MB and not 8MB?
+On Tue, 26 Apr 2011 21:50:18 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-> I'm not sure why you're asking.  How do we know that the _normal_
-> allocator only gives us 4k when we ask for 4k?  Well, that's just how it
-> works.  If alloc_pages_exact() returns success, you know it's got the
-> amount of memory that you asked for, and only that plus a bit of masking
-> for page alignment.
+> As Tejun and Linus pointed out, "nand" is the wrong name for "x & ~y",
+> it should be "andn". Rename signandsets() as suggested.
 > 
-> Have you seen alloc_pages_exact() behaving in some other way?
+> Suggested-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com> 
 
-I've never tested this part of alloc_pages_exact(), even when I wrote (the first
-version of) it.  I just took it on faith that it actually did what it was
-supposed to do.
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Matt Fleming, Intel Open Source Technology Center
