@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1D0Q3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:29:46 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4440 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1D0Q3o convert rfc822-to-8bit (ORCPT
+	id S1756478Ab1D0Qbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:31:49 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:32805 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1D0Qbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:29:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 27 Apr 2011 09:29:21 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Wei Ni <wni@nvidia.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "ccross@android.com" <ccross@android.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>
-Date: Wed, 27 Apr 2011 09:29:19 -0700
-Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-Thread-Topic: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-Thread-Index: Acv/U9peluMUOVgAQtuc8GIYvXxc8QFcZJpQAAyVSsA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0497F1AAC4@HQMAIL01.nvidia.com>
-References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
- <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
-In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Apr 2011 12:31:48 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJhy0PFl+z
+X-RZG-CLASS-ID: mo00
+Date: Wed, 27 Apr 2011 18:31:43 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: stable@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, dtor@mail.ru,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Igor Mammedov <imammedo@redhat.com>
+Subject: Re: [Xen-devel] [PATCH] [PV Xen] Mouse stuck after save/restore of
+ guest. - stable tree candidate.
+Message-ID: <20110427163143.GA32371@aepfle.de>
+References: <1302795907-321-1-git-send-email-imammedo@redhat.com>
+ <20110414155915.GA23629@dumpdata.com>
+ <20110414172649.GA7569@aepfle.de>
+ <20110414183804.GB1467@dumpdata.com>
+ <20110415093737.GA15122@aepfle.de>
+ <20110420182941.GA3148@dumpdata.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110420182941.GA3148@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wei Ni wrote at Wednesday, April 27, 2011 4:26 AM:
-> Hi, all
-> Could anyone review these changes?
+On Wed, Apr 20, Konrad Rzeszutek Wilk wrote:
 
-Wei,
-
-It looks like some of the patches I recently posted address the same
-issues as the patches you had already posted. Sorry for the potential
-conflicts.
-
-Can you please take a look at the patches I posted and comment on which
-of those are still relevant given your patches. Even for the cases where
-we both posted patches to address the same issue (e.g. use new slave
-mode), there are differences in the patches. I simply took the changes
-from the chromeos-2.6.37 kernel and cherry-picked them into the mainline
-kernel. Are the changes you posted re-written to address issues that
-weren't solved in the ChromeOS kernel?
-
-Thanks for any feedback on this.
-
+> Hello stable-tree maintainers.
 > 
-> Thanks
-> Wei.
+> Please apply the upstream git commit c36b58e8a9112017c2bcc322cc98e71241814303
+> (Input: xen-kbdfront - fix mouse getting stuck after save/restore)
+> which fixes a regression introduced by 8c3c283e6bf463ab498d6e7823aff6c4762314b6
+> (Input: xen-kbdfront - advertise either absolute or relative coordinates)
 > 
-> -----Original Message-----
-> From: Wei Ni
-> Sent: Wednesday, April 20, 2011 8:09 PM
-> To: khali@linux-fr.org; ben-linux@fluff.org;
-> lucas.demarchi@profusion.mobi; ccross@android.com; linux-
-> i2c@vger.kernel.org; linux-kernel@vger.kernel.org
-> Cc: Wei Ni
-> Subject: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-> 
-> From: Wei Ni <wni@nvidia.com>
-> 
-> *** BLURB HERE ***
-> 
-> Wei Ni (2):
->   i2c: tegra: Retry transfer when unexpected/no_ack status is detected
->   i2c: tegra: use new i2c slave controller
-> 
->  drivers/i2c/busses/i2c-tegra.c |   57
-> +++++++++++++++++++++++++++++++++++++--
->  include/linux/i2c-tegra.h      |    3 ++
->  2 files changed, 57 insertions(+), 3 deletions(-)
+> The 2.6.38 and 2.6.37 tree both contain the regression.
 
--- 
-nvpublic
+I checked which trees contain the broken commit from mainline:
 
+broken stable trees:
+2.6.38
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.38.y.git;a=commit;h=5ea5254aa0ad269cfbd2875c973ef25ab5b5e9db
+2.6.37
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commit;h=723517a796adf59f9ae628629fcb606c4cec8715
+2.6.35
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.35.y.git;a=commit;h=b88505e58ce6d36732cd15841cc821f97efca9bb
+2.6.33
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.33.y.git;a=commit;h=6997348a861d3540085bf9adf4166b86ac7a96e5
+2.6.32
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=commit;h=95e7148d08d0578687ea26cd3a8925aa5f7bc8fa
+2.6.27
+Does not have a variant of 8c3c283e6bf463ab498d6e7823aff6c4762314b6, yet.
+
+So please apply upstream commit c36b58e8a9112017c2bcc322cc98e71241814303
+to 2.6.38, 2.6.37, 2.6.35, 2.6.33 and 2.6.32 to fix the introduced
+regression.
+
+
+Thanks.
+
+Olaf
