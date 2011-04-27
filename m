@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab1D0Ju4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:50:56 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:52794 "EHLO slimlogic.co.uk"
+	id S1757150Ab1D0JvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:51:15 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:52793 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756034Ab1D0Jto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755991Ab1D0Jto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Apr 2011 05:49:44 -0400
+X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 05:49:43 EDT
 From: Graeme Gregory <gg@slimlogic.co.uk>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
         broonie@opensource.wolfsonmicro.com,
         Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH 3/4] REGULATOR: TWL6025: add support to twl-regulator
-Date: Wed, 27 Apr 2011 10:39:50 +0100
-Message-Id: <1303897191-14792-4-git-send-email-gg@slimlogic.co.uk>
+Subject: [PATCH 1/4] MFD: TWL6025: add phoenix lite support to twl6030
+Date: Wed, 27 Apr 2011 10:39:48 +0100
+Message-Id: <1303897191-14792-2-git-send-email-gg@slimlogic.co.uk>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
 References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
@@ -21,566 +22,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for the twl6025. Major difference in the twl6025 is the
-group functionality has been removed from the chip so this affects how
-regulators are enabled and disabled.
-
-The names of the regulators also changed.
-
-The DCDCs of the 6025 are software controllable as well.
+Phoenix Lite is based on the twl6030 family of PMICs. It has mostly the
+same feature set of twl6030 but with small changes. The codec block has
+also been removed. It also has a new charger block and new features in
+its ADC block. VUSB handling also differs.
 
 Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
 ---
- drivers/regulator/twl-regulator.c |  447 ++++++++++++++++++++++++++++++++++---
- 1 files changed, 412 insertions(+), 35 deletions(-)
+ drivers/mfd/twl-core.c  |  103 ++++++++++++++++++++++++++++++++++++++++++-----
+ include/linux/i2c/twl.h |   38 +++++++++++++++++-
+ 2 files changed, 130 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 2a808c2..c08a0de 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -51,6 +51,8 @@ struct twlreg_info {
- 	u16			min_mV;
- 	u16			max_mV;
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 960b5be..6b9562a 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -198,6 +198,7 @@
+ #define TWL6030_BASEADD_GASGAUGE	0x00C0
+ #define TWL6030_BASEADD_PIH		0x00D0
+ #define TWL6030_BASEADD_CHARGER		0x00E0
++#define TWL6025_BASEADD_CHARGER		0x00DA
  
-+	u8			flags;
-+
- 	/* used by regulator core */
- 	struct regulator_desc	desc;
- };
-@@ -70,6 +72,7 @@ struct twlreg_info {
- #define VREG_TRANS		1
- #define VREG_STATE		2
- #define VREG_VOLTAGE		3
-+#define VREG_VOLTAGE_DCDC	4
- /* TWL6030 Misc register offsets */
- #define VREG_BC_ALL		1
- #define VREG_BC_REF		2
-@@ -87,6 +90,17 @@ struct twlreg_info {
- #define TWL6030_CFG_STATE_APP(v)	(((v) & TWL6030_CFG_STATE_APP_MASK) >>\
- 						TWL6030_CFG_STATE_APP_SHIFT)
+ /* subchip/slave 2 0x4A - DFT */
+ #define TWL6030_BASEADD_DIEID		0x00C0
+@@ -236,6 +237,17 @@ unsigned int twl_rev(void)
+ }
+ EXPORT_SYMBOL(twl_rev);
  
-+/* Flags for DCDC Voltage reading */
-+#define DCDC_OFFSET_EN		BIT(0)
-+#define DCDC_EXTENDED_EN	BIT(1)
-+
-+/* twl6025 SMPS EPROM values */
-+#define TWL6030_SMPS_OFFSET		0xB0
-+#define TWL6030_SMPS_MULT		0xB3
-+#define SMPS_MULTOFFSET_SMPS4	BIT(0)
-+#define SMPS_MULTOFFSET_VIO	BIT(1)
-+#define SMPS_MULTOFFSET_SMPS3	BIT(6)
-+
- static inline int
- twlreg_read(struct twlreg_info *info, unsigned slave_subgp, unsigned offset)
- {
-@@ -144,11 +158,14 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
- 	int			grp, val;
- 
--	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
--	if (grp < 0)
--		return grp;
-+	if (!(twl_features() & TWL6025_SUBCLASS)) {
-+		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-+		if (grp < 0)
-+			return grp;
- 
--	grp &= P1_GRP_6030;
-+		grp &= P1_GRP_6030;
-+	} else
-+		grp = 1;
- 
- 	val = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_STATE);
- 	val = TWL6030_CFG_STATE_APP(val);
-@@ -159,19 +176,22 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
- static int twlreg_enable(struct regulator_dev *rdev)
- {
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
--	int			grp;
--	int			ret;
-+	int			grp = 0;
-+	int			ret = 0;
- 
--	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
--	if (grp < 0)
--		return grp;
-+	if (!(twl_class_is_6030() && (twl_features() & TWL6025_SUBCLASS))) {
-+		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-+		if (grp < 0)
-+			return grp;
- 
--	if (twl_class_is_4030())
--		grp |= P1_GRP_4030;
--	else
--		grp |= P1_GRP_6030;
-+		if (twl_class_is_4030())
-+			grp |= P1_GRP_4030;
-+		else
-+			grp |= P1_GRP_6030;
- 
--	ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_GRP, grp);
-+		ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-+					VREG_GRP, grp);
-+	}
- 
- 	if (!ret && twl_class_is_6030())
- 		ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_STATE,
-@@ -186,29 +206,34 @@ static int twlreg_enable(struct regulator_dev *rdev)
- static int twlreg_disable(struct regulator_dev *rdev)
- {
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
--	int			grp;
--	int			ret;
--
--	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
--	if (grp < 0)
--		return grp;
--
--	/* For 6030, set the off state for all grps enabled */
--	if (twl_class_is_6030()) {
--		ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_STATE,
--			(grp & (P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030)) <<
--				TWL6030_CFG_STATE_GRP_SHIFT |
--			TWL6030_CFG_STATE_OFF);
-+	int			grp = 0;
-+	int			ret = 0;
-+
-+	if (!(twl_class_is_6030() && (twl_features() & TWL6025_SUBCLASS))) {
-+		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-+		if (grp < 0)
-+			return grp;
-+
-+		/* For 6030, set the off state for all grps enabled */
-+		if (twl_class_is_6030()) {
-+			ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-+					VREG_STATE,
-+					(grp & (P1_GRP_6030 | P2_GRP_6030 |
-+					P3_GRP_6030)) <<
-+					TWL6030_CFG_STATE_GRP_SHIFT |
-+					TWL6030_CFG_STATE_OFF);
- 		if (ret)
- 			return ret;
--	}
-+		}
- 
--	if (twl_class_is_4030())
--		grp &= ~(P1_GRP_4030 | P2_GRP_4030 | P3_GRP_4030);
--	else
--		grp &= ~(P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030);
-+		if (twl_class_is_4030())
-+			grp &= ~(P1_GRP_4030 | P2_GRP_4030 | P3_GRP_4030);
-+		else
-+			grp &= ~(P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030);
- 
--	ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_GRP, grp);
-+		ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-+					VREG_GRP, grp);
-+	}
- 
- 	/* Next, associate cleared grp in state register */
- 	if (!ret && twl_class_is_6030())
-@@ -299,10 +324,11 @@ static int twl4030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
- static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
- {
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
--	int grp;
-+	int grp = 0;
- 	int val;
- 
--	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-+	if (!(twl_class_is_6030() && (twl_features() & TWL6025_SUBCLASS)))
-+		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
- 
- 	if (grp < 0)
- 		return grp;
-@@ -594,6 +620,270 @@ static struct regulator_ops twl6030_fixed_resource = {
- 	.get_status	= twl6030reg_get_status,
- };
- 
-+/*
-+ * DCDC status and control
++/* Export a function so child drivers of this mfd can tell which subclass
++ * of the chip is being used. eg regulator needs to know that it is a
++ * 6025 variant.
 + */
-+
-+static int twl6030dcdc_list_voltage(struct regulator_dev *rdev, unsigned index)
++static unsigned int twl_feat;
++unsigned int twl_features(void)
 +{
-+	struct twlreg_info	*info = rdev_get_drvdata(rdev);
-+
-+	int voltage = 0;
-+
-+	switch (info->flags) {
-+	case 0:
-+		if (index == 0)
-+			voltage = 0;
-+		else if (index < 58)
-+			voltage = (600000 + (12500 * (index - 1)));
-+		else if (index == 58)
-+			voltage = 1350 * 1000;
-+		else if (index == 59)
-+			voltage = 1500 * 1000;
-+		else if (index == 60)
-+			voltage = 1800 * 1000;
-+		else if (index == 61)
-+			voltage = 1900 * 1000;
-+		else if (index == 62)
-+			voltage = 2100 * 1000;
-+		break;
-+	case DCDC_OFFSET_EN:
-+		if (index == 0)
-+			voltage = 0;
-+		else if (index < 58)
-+			voltage = (700000 + (12500 * (index - 1)));
-+		else if (index == 58)
-+			voltage = 1350 * 1000;
-+		else if (index == 59)
-+			voltage = 1500 * 1000;
-+		else if (index == 60)
-+			voltage = 1800 * 1000;
-+		else if (index == 61)
-+			voltage = 1900 * 1000;
-+		else if (index == 62)
-+			voltage = 2100 * 1000;
-+		break;
-+	case DCDC_EXTENDED_EN:
-+		if (index == 0)
-+			voltage = 0;
-+		else if (index < 58)
-+			voltage = (1852000 + (38600 * (index - 1)));
-+		else if (index == 58)
-+			voltage = 2084 * 1000;
-+		else if (index == 59)
-+			voltage = 2315 * 1000;
-+		else if (index == 60)
-+			voltage = 2778 * 1000;
-+		else if (index == 61)
-+			voltage = 2932 * 1000;
-+		else if (index == 62)
-+			voltage = 3241 * 1000;
-+		break;
-+	case DCDC_OFFSET_EN|DCDC_EXTENDED_EN:
-+		if (index == 0)
-+			voltage = 0;
-+		else if (index < 58)
-+			voltage = (2161000 + (38600 * (index - 1)));
-+		else if (index == 58)
-+			voltage = 4167 * 1000;
-+		else if (index == 59)
-+			voltage = 2315 * 1000;
-+		else if (index == 60)
-+			voltage = 2778 * 1000;
-+		else if (index == 61)
-+			voltage = 2932 * 1000;
-+		else if (index == 62)
-+			voltage = 3241 * 1000;
-+		break;
-+	}
-+
-+	return voltage;
++	return twl_feat;
 +}
++EXPORT_SYMBOL(twl_features);
 +
-+static int
-+twl6030dcdc_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
-+			unsigned int *selector)
-+{
-+	struct twlreg_info	*info = rdev_get_drvdata(rdev);
-+	int	vsel = 0;
-+
-+	switch (info->flags) {
-+	case 0:
-+		if (min_uV == 0)
-+			vsel = 0;
-+		else if ((min_uV >= 600000) && (max_uV <= 1300000)) {
-+			vsel = (min_uV - 600000) / 125;
-+			if (vsel % 100)
-+				vsel += 100;
-+			vsel /= 100;
-+			vsel++;
-+		}
-+		/* Values 1..57 for vsel are linear and can be calculated
-+		 * values 58..62 are non linear.
-+		 */
-+		else if ((min_uV > 1900000) && (max_uV >= 2100000))
-+			vsel = 62;
-+		else if ((min_uV > 1800000) && (max_uV >= 1900000))
-+			vsel = 61;
-+		else if ((min_uV > 1500000) && (max_uV >= 1800000))
-+			vsel = 60;
-+		else if ((min_uV > 1350000) && (max_uV >= 1500000))
-+			vsel = 59;
-+		else if ((min_uV > 1300000) && (max_uV >= 1350000))
-+			vsel = 58;
-+		else
-+			return -EINVAL;
-+		break;
-+	case DCDC_OFFSET_EN:
-+		if (min_uV == 0)
-+			vsel = 0;
-+		else if ((min_uV >= 700000) && (max_uV <= 1420000)) {
-+			vsel = (min_uV - 600000) / 125;
-+			if (vsel % 100)
-+				vsel += 100;
-+			vsel /= 100;
-+			vsel++;
-+		}
-+		/* Values 1..57 for vsel are linear and can be calculated
-+		 * values 58..62 are non linear.
-+		 */
-+		else if ((min_uV > 1900000) && (max_uV >= 2100000))
-+			vsel = 62;
-+		else if ((min_uV > 1800000) && (max_uV >= 1900000))
-+			vsel = 61;
-+		else if ((min_uV > 1350000) && (max_uV >= 1800000))
-+			vsel = 60;
-+		else if ((min_uV > 1350000) && (max_uV >= 1500000))
-+			vsel = 59;
-+		else if ((min_uV > 1300000) && (max_uV >= 1350000))
-+			vsel = 58;
-+		else
-+			return -EINVAL;
-+		break;
-+	case DCDC_EXTENDED_EN:
-+		if (min_uV == 0)
-+			vsel = 0;
-+		else if ((min_uV >= 1852000) && (max_uV <= 4013600)) {
-+			vsel = (min_uV - 1852000) / 386;
-+			if (vsel % 100)
-+				vsel += 100;
-+			vsel /= 100;
-+			vsel++;
-+		}
-+		break;
-+	case DCDC_OFFSET_EN|DCDC_EXTENDED_EN:
-+		if (min_uV == 0)
-+			vsel = 0;
-+		else if ((min_uV >= 2161000) && (max_uV <= 4321000)) {
-+			vsel = (min_uV - 1852000) / 386;
-+			if (vsel % 100)
-+				vsel += 100;
-+			vsel /= 100;
-+			vsel++;
-+		}
-+		break;
-+	}
-+
-+	*selector = vsel;
-+
-+	return twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE_DCDC,
-+							vsel);
-+}
-+
-+static int twl6030dcdc_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct twlreg_info	*info = rdev_get_drvdata(rdev);
-+	int		vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER,
-+							VREG_VOLTAGE_DCDC);
-+	int voltage = 0;
-+
-+	if (vsel < 0)
-+		return vsel;
-+	switch (info->flags) {
-+	case 0:
-+		if (vsel == 0)
-+			voltage = 0;
-+		else if (vsel < 58)
-+			voltage = (600000 + (12500 * (vsel - 1)));
-+		else if (vsel == 58)
-+			voltage = 1350 * 1000;
-+		else if (vsel == 59)
-+			voltage = 1500 * 1000;
-+		else if (vsel == 60)
-+			voltage = 1800 * 1000;
-+		else if (vsel == 61)
-+			voltage = 1900 * 1000;
-+		else if (vsel == 62)
-+			voltage = 2100 * 1000;
-+		break;
-+	case DCDC_OFFSET_EN:
-+		if (vsel == 0)
-+			voltage = 0;
-+		else if (vsel < 58)
-+			voltage = (700000 + (12500 * (vsel - 1)));
-+		else if (vsel == 58)
-+			voltage = 1350 * 1000;
-+		else if (vsel == 59)
-+			voltage = 1500 * 1000;
-+		else if (vsel == 60)
-+			voltage = 1800 * 1000;
-+		else if (vsel == 61)
-+			voltage = 1900 * 1000;
-+		else if (vsel == 62)
-+			voltage = 2100 * 1000;
-+		break;
-+	case DCDC_EXTENDED_EN:
-+		if (vsel == 0)
-+			voltage = 0;
-+		else if (vsel < 58)
-+			voltage = (1852000 + (38600 * (vsel - 1)));
-+		else if (vsel == 58)
-+			voltage = 2084 * 1000;
-+		else if (vsel == 59)
-+			voltage = 2315 * 1000;
-+		else if (vsel == 60)
-+			voltage = 2778 * 1000;
-+		else if (vsel == 61)
-+			voltage = 2932 * 1000;
-+		else if (vsel == 62)
-+			voltage = 3241 * 1000;
-+		break;
-+	case DCDC_EXTENDED_EN|DCDC_OFFSET_EN:
-+		if (vsel == 0)
-+			voltage = 0;
-+		else if (vsel < 58)
-+			voltage = (2161000 + (38600 * (vsel - 1)));
-+		else if (vsel == 58)
-+			voltage = 4167 * 1000;
-+		else if (vsel == 59)
-+			voltage = 2315 * 1000;
-+		else if (vsel == 60)
-+			voltage = 2778 * 1000;
-+		else if (vsel == 61)
-+			voltage = 2932 * 1000;
-+		else if (vsel == 62)
-+			voltage = 3241 * 1000;
-+		break;
-+	}
-+
-+	return voltage;
-+}
-+
-+static struct regulator_ops twldcdc_ops = {
-+	.list_voltage	= twl6030dcdc_list_voltage,
-+
-+	.set_voltage	= twl6030dcdc_set_voltage,
-+	.get_voltage	= twl6030dcdc_get_voltage,
-+
-+	.enable		= twlreg_enable,
-+	.disable	= twlreg_disable,
-+	.is_enabled	= twl6030reg_is_enabled,
-+
-+	.set_mode	= twl6030reg_set_mode,
-+
-+	.get_status	= twl6030reg_get_status,
-+};
-+
+ /* Structure for each TWL4030/TWL6030 Slave */
+ struct twl_client {
+ 	struct i2c_client *client;
+@@ -328,6 +340,7 @@ static struct twl_mapping twl6030_map[] = {
+ 
+ 	{ SUB_CHIP_ID0, TWL6030_BASEADD_RTC },
+ 	{ SUB_CHIP_ID0, TWL6030_BASEADD_MEM },
++	{ SUB_CHIP_ID1, TWL6025_BASEADD_CHARGER },
+ };
+ 
  /*----------------------------------------------------------------------*/
+@@ -685,9 +698,8 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 	}
+ 	if (twl_has_usb() && pdata->usb && twl_class_is_6030()) {
  
- #define TWL4030_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
-@@ -636,6 +926,22 @@ static struct regulator_ops twl6030_fixed_resource = {
- 		}, \
+-		static struct regulator_consumer_supply usb3v3 = {
+-			.supply =	"vusb",
+-		};
++		static struct regulator_consumer_supply usb3v3;
++		int regulator;
+ 
+ 		if (twl_has_regulator()) {
+ 			/* this is a template that gets copied */
+@@ -700,8 +712,15 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 					| REGULATOR_CHANGE_STATUS,
+ 			};
+ 
+-			child = add_regulator_linked(TWL6030_REG_VUSB,
+-						      &usb_fixed, &usb3v3, 1);
++			if (features & TWL6025_SUBCLASS) {
++				usb3v3.supply =	"ldousb";
++				regulator = TWL6025_REG_LDOUSB;
++			} else {
++				usb3v3.supply = "vusb";
++				regulator = TWL6030_REG_VUSB;
++			}
++			child = add_regulator_linked(regulator, &usb_fixed,
++							&usb3v3, 1);
+ 			if (IS_ERR(child))
+ 				return PTR_ERR(child);
+ 		}
+@@ -718,7 +737,15 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 		/* we need to connect regulators to this transceiver */
+ 		if (twl_has_regulator() && child)
+ 			usb3v3.dev = child;
++	} else if (twl_has_regulator() && twl_class_is_6030()) {
++		if (features & TWL6025_SUBCLASS)
++			child = add_regulator(TWL6025_REG_LDOUSB,
++						pdata->ldousb);
++		else
++			child = add_regulator(TWL6030_REG_VUSB, pdata->vusb);
+ 
++			if (IS_ERR(child))
++					return PTR_ERR(child);
  	}
  
-+#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num, \
-+		remap_conf) { \
-+	.base = offset, \
-+	.id = num, \
-+	.min_mV = min_mVolts, \
-+	.max_mV = max_mVolts, \
-+	.remap = remap_conf, \
-+	.desc = { \
-+		.name = #label, \
-+		.id = TWL6025_REG_##label, \
-+		.n_voltages = ((max_mVolts - min_mVolts)/100) + 1, \
-+		.ops = &twl6030ldo_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		}, \
-+	}
- 
- #define TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, remap_conf, \
- 		family, operations) { \
-@@ -667,6 +973,23 @@ static struct regulator_ops twl6030_fixed_resource = {
- 		}, \
+ 	if (twl_has_watchdog() && twl_class_is_4030()) {
+@@ -828,7 +855,8 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
  	}
  
-+#define TWL6025_ADJUSTABLE_DCDC(label, offset, num, \
-+		remap_conf) { \
-+	.base = offset, \
-+	.id = num, \
-+	.min_mV = 600, \
-+	.max_mV = 2100, \
-+	.remap = remap_conf, \
-+	.desc = { \
-+		.name = #label, \
-+		.id = TWL6025_REG_##label, \
-+		.n_voltages = 63, \
-+		.ops = &twldcdc_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		}, \
+ 	/* twl6030 regulators */
+-	if (twl_has_regulator() && twl_class_is_6030()) {
++	if (twl_has_regulator() && twl_class_is_6030() &&
++			!(features & TWL6025_SUBCLASS)) {
+ 		child = add_regulator(TWL6030_REG_VMMC, pdata->vmmc);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+@@ -841,10 +869,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6030_REG_VANA, pdata->vana);
+-		if (IS_ERR(child))
+-			return PTR_ERR(child);
+-
+ 		child = add_regulator(TWL6030_REG_VCXIO, pdata->vcxio);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+@@ -870,6 +894,62 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 			return PTR_ERR(child);
+ 	}
+ 
++	/* 6030 and 6025 share this regulator */
++	if (twl_has_regulator() && twl_class_is_6030()) {
++		child = add_regulator(TWL6030_REG_VANA, pdata->vana);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
 +	}
++
++	/* twl6025 regulators */
++	if (twl_has_regulator() && twl_class_is_6030() &&
++			(features & TWL6025_SUBCLASS)) {
++		child = add_regulator(TWL6025_REG_LDO5, pdata->ldo5);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO1, pdata->ldo1);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO7, pdata->ldo7);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO6, pdata->ldo6);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDOLN, pdata->ldoln);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO2, pdata->ldo2);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO4, pdata->ldo4);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_LDO3, pdata->ldo3);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_SMPS3, pdata->smps3);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_SMPS4, pdata->smps4);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++		child = add_regulator(TWL6025_REG_VIO, pdata->vio6025);
++		if (IS_ERR(child))
++			return PTR_ERR(child);
++
++	}
++
+ 	if (twl_has_bci() && pdata->bci &&
+ 			!(features & (TPS_SUBSET | TWL5031))) {
+ 		child = add_child(3, "twl4030_bci",
+@@ -1093,6 +1173,8 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		twl_i2c_write_u8(TWL4030_MODULE_INTBR, temp, REG_GPPUPDCTR1);
+ 	}
+ 
++	twl_feat = id->driver_data;
++
+ 	status = add_children(pdata, id->driver_data);
+ fail:
+ 	if (status < 0)
+@@ -1108,6 +1190,7 @@ static const struct i2c_device_id twl_ids[] = {
+ 	{ "tps65930", TPS_SUBSET },	/* fewer LDOs and DACs; no charger */
+ 	{ "tps65920", TPS_SUBSET },	/* fewer LDOs; no codec or charger */
+ 	{ "twl6030", TWL6030_CLASS },	/* "Phoenix power chip" */
++	{ "twl6025", TWL6030_CLASS | TWL6025_SUBCLASS }, /* "Phoenix lite" */
+ 	{ /* end of list */ },
+ };
+ MODULE_DEVICE_TABLE(i2c, twl_ids);
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 0c0d1ae..f85f0ed 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -165,6 +165,11 @@ static inline int twl_class_is_ ##class(void)	\
+ TWL_CLASS_IS(4030, TWL4030_CLASS_ID)
+ TWL_CLASS_IS(6030, TWL6030_CLASS_ID)
+ 
++#define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
++
++/* So we can recover the features in other parts of twl stack */
++unsigned int twl_features(void);
 +
  /*
-  * We list regulators here if systems need some level of
-  * software control over them after boot.
-@@ -708,8 +1031,41 @@ static struct twlreg_info twl_regs[] = {
- 	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 17, 0),
- 	TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 18, 0),
- 	TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 48, 0),
-+
-+	/* 6025 are renamed compared to 6030 versions */
-+	TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300, 1, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300, 2, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300, 3, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300, 4, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300, 5, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300, 7, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300, 16, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300, 17, 0x21),
-+	TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300, 18, 0x21),
-+
-+	TWL6025_ADJUSTABLE_DCDC(SMPS3, 0x34, 1, 0x21),
-+	TWL6025_ADJUSTABLE_DCDC(SMPS4, 0x10, 2, 0x21),
-+	TWL6025_ADJUSTABLE_DCDC(VIO, 0x16, 3, 0x21),
+  * Read and write single 8-bit registers
+  */
+@@ -698,7 +703,21 @@ struct twl4030_platform_data {
+ 	struct regulator_init_data              *vana;
+ 	struct regulator_init_data              *vcxio;
+ 	struct regulator_init_data              *vusb;
+-	struct regulator_init_data		*clk32kg;
++	struct regulator_init_data              *clk32kg;
++	/* TWL6025 LDO regulators */
++	struct regulator_init_data		*ldo1;
++	struct regulator_init_data		*ldo2;
++	struct regulator_init_data		*ldo3;
++	struct regulator_init_data		*ldo4;
++	struct regulator_init_data		*ldo5;
++	struct regulator_init_data		*ldo6;
++	struct regulator_init_data		*ldo7;
++	struct regulator_init_data		*ldoln;
++	struct regulator_init_data		*ldousb;
++	/* TWL6025 DCDC regulators */
++	struct regulator_init_data		*smps3;
++	struct regulator_init_data		*smps4;
++	struct regulator_init_data		*vio6025;
  };
  
-+static u8 twl_get_smps_offset(void)
-+{
-+	u8 value;
-+
-+	twl_i2c_read_u8(TWL_MODULE_PM_RECEIVER, &value,
-+			TWL6030_SMPS_OFFSET);
-+	return value;
-+}
-+
-+static u8 twl_get_smps_mult(void)
-+{
-+	u8 value;
-+
-+	twl_i2c_read_u8(TWL_MODULE_PM_RECEIVER, &value,
-+			TWL6030_SMPS_MULT);
-+	return value;
-+}
-+
- static int __devinit twlreg_probe(struct platform_device *pdev)
- {
- 	int				i;
-@@ -753,6 +1109,27 @@ static int __devinit twlreg_probe(struct platform_device *pdev)
- 		break;
- 	}
+ /*----------------------------------------------------------------------*/
+@@ -780,4 +799,21 @@ static inline int twl4030charger_usb_en(int enable) { return 0; }
+ #define TWL6030_REG_VRTC	47
+ #define TWL6030_REG_CLK32KG	48
  
-+	switch (pdev->id) {
-+	case TWL6025_REG_SMPS3:
-+		if (twl_get_smps_mult() & SMPS_MULTOFFSET_SMPS3)
-+			info->flags |= DCDC_EXTENDED_EN;
-+		if (twl_get_smps_offset() & SMPS_MULTOFFSET_SMPS3)
-+			info->flags |= DCDC_OFFSET_EN;
-+		break;
-+	case TWL6025_REG_SMPS4:
-+		if (twl_get_smps_mult() & SMPS_MULTOFFSET_SMPS4)
-+			info->flags |= DCDC_EXTENDED_EN;
-+		if (twl_get_smps_offset() & SMPS_MULTOFFSET_SMPS4)
-+			info->flags |= DCDC_OFFSET_EN;
-+		break;
-+	case TWL6025_REG_VIO:
-+		if (twl_get_smps_mult() & SMPS_MULTOFFSET_VIO)
-+			info->flags |= DCDC_EXTENDED_EN;
-+		if (twl_get_smps_offset() & SMPS_MULTOFFSET_VIO)
-+			info->flags |= DCDC_OFFSET_EN;
-+		break;
-+	}
++/* LDOs on 6025 have different names */
++#define TWL6025_REG_LDO2	49
++#define TWL6025_REG_LDO4	50
++#define TWL6025_REG_LDO3	51
++#define TWL6025_REG_LDO5	52
++#define TWL6025_REG_LDO1	53
++#define TWL6025_REG_LDO7	54
++#define TWL6025_REG_LDO6	55
++#define TWL6025_REG_LDOLN	56
++#define TWL6025_REG_LDOUSB	57
 +
- 	rdev = regulator_register(&info->desc, &pdev->dev, initdata, info);
- 	if (IS_ERR(rdev)) {
- 		dev_err(&pdev->dev, "can't register %s, %ld\n",
++/* 6025 DCDC supplies */
++#define TWL6025_REG_SMPS3	58
++#define TWL6025_REG_SMPS4	59
++#define TWL6025_REG_VIO		60
++
++
+ #endif /* End of __TWL4030_H */
 -- 
 1.7.4.1
 
