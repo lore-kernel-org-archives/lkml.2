@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab1D0PXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 11:23:10 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:36016 "EHLO
+	id S932112Ab1D0PXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 11:23:40 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:36043 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759344Ab1D0PXI convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1759326Ab1D0PXh convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Wed, 27 Apr 2011 11:23:08 -0400
-Message-Id: <4DB85145020000780003E6AB@vpn.id2.novell.com>
+	Wed, 27 Apr 2011 11:23:37 -0400
+Message-Id: <4DB85162020000780003E6AE@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 27 Apr 2011 16:24:21 +0100
+Date: Wed, 27 Apr 2011 16:24:50 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] x86: unify rwlock assembly implementation
+Subject: [PATCH 2/3] x86: unify rwsem assembly implementation
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -25,234 +25,378 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
 ---
- arch/x86/include/asm/asm.h   |    3 +-
- arch/x86/include/asm/frame.h |   11 +++++-----
- arch/x86/lib/Makefile        |    6 +++--
- arch/x86/lib/rwlock.S        |   44 +++++++++++++++++++++++++++++++++++++++++++
- arch/x86/lib/rwlock_64.S     |   38 -------------------------------------
- arch/x86/lib/semaphore_32.S  |   44 -------------------------------------------
- 6 files changed, 56 insertions(+), 90 deletions(-)
+ arch/um/sys-i386/Makefile   |    2 
+ arch/um/sys-x86_64/Makefile |    2 
+ arch/x86/lib/Makefile       |    3 
+ arch/x86/lib/rwsem.S        |  136 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/lib/rwsem_64.S     |   93 ------------------------------
+ arch/x86/lib/semaphore_32.S |   80 -------------------------
+ 6 files changed, 139 insertions(+), 177 deletions(-)
 
---- 2.6.39-rc5-x86-rw.orig/arch/x86/include/asm/asm.h
-+++ 2.6.39-rc5-x86-rw/arch/x86/include/asm/asm.h
-@@ -15,7 +15,8 @@
- # define __ASM_SEL(a,b) __ASM_FORM(b)
- #endif
+--- 2.6.39-rc5-x86-rw.orig/arch/um/sys-i386/Makefile
++++ 2.6.39-rc5-x86-rw/arch/um/sys-i386/Makefile
+@@ -8,7 +8,7 @@ obj-y = bug.o bugs.o checksum.o delay.o 
  
--#define __ASM_SIZE(inst)	__ASM_SEL(inst##l, inst##q)
-+#define __ASM_SIZE(inst, ...)	__ASM_SEL(inst##l##__VA_ARGS__, \
-+					  inst##q##__VA_ARGS__)
- #define __ASM_REG(reg)		__ASM_SEL(e##reg, r##reg)
+ obj-$(CONFIG_BINFMT_ELF) += elfcore.o
  
- #define _ASM_PTR	__ASM_SEL(.long, .quad)
---- 2.6.39-rc5-x86-rw.orig/arch/x86/include/asm/frame.h
-+++ 2.6.39-rc5-x86-rw/arch/x86/include/asm/frame.h
-@@ -1,5 +1,6 @@
- #ifdef __ASSEMBLY__
+-subarch-obj-y = lib/semaphore_32.o lib/string_32.o
++subarch-obj-y = lib/rwsem.o lib/string_32.o
+ subarch-obj-$(CONFIG_HIGHMEM) += mm/highmem_32.o
+ subarch-obj-$(CONFIG_MODULES) += kernel/module.o
  
-+#include <asm/asm.h>
- #include <asm/dwarf2.h>
+--- 2.6.39-rc5-x86-rw.orig/arch/um/sys-x86_64/Makefile
++++ 2.6.39-rc5-x86-rw/arch/um/sys-x86_64/Makefile
+@@ -9,7 +9,7 @@ obj-y = bug.o bugs.o delay.o fault.o ldt
+ 	sysrq.o ksyms.o tls.o
  
- /* The annotation hides the frame from the unwinder and makes it look
-@@ -7,13 +8,13 @@
-    frame pointer later */
- #ifdef CONFIG_FRAME_POINTER
- 	.macro FRAME
--	pushl_cfi %ebp
--	CFI_REL_OFFSET ebp,0
--	movl %esp,%ebp
-+	__ASM_SIZE(push,_cfi)	%__ASM_REG(bp)
-+	CFI_REL_OFFSET		__ASM_REG(bp), 0
-+	__ASM_SIZE(mov)		%__ASM_REG(sp), %__ASM_REG(bp)
- 	.endm
- 	.macro ENDFRAME
--	popl_cfi %ebp
--	CFI_RESTORE ebp
-+	__ASM_SIZE(pop,_cfi)	%__ASM_REG(bp)
-+	CFI_RESTORE		__ASM_REG(bp)
- 	.endm
- #else
- 	.macro FRAME
+ subarch-obj-y = lib/csum-partial_64.o lib/memcpy_64.o lib/thunk_64.o \
+-		lib/rwsem_64.o
++		lib/rwsem.o
+ subarch-obj-$(CONFIG_MODULES) += kernel/module.o
+ 
+ ldt-y = ../sys-i386/ldt.o
 --- 2.6.39-rc5-x86-rw.orig/arch/x86/lib/Makefile
 +++ 2.6.39-rc5-x86-rw/arch/x86/lib/Makefile
-@@ -20,6 +20,7 @@ lib-y := delay.o
- lib-y += thunk_$(BITS).o
+@@ -21,6 +21,7 @@ lib-y += thunk_$(BITS).o
  lib-y += usercopy_$(BITS).o getuser.o putuser.o
  lib-y += memcpy_$(BITS).o
-+lib-$(CONFIG_SMP) += rwlock.o
+ lib-$(CONFIG_SMP) += rwlock.o
++lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
  lib-$(CONFIG_INSTRUCTION_DECODER) += insn.o inat.o
  
  obj-y += msr.o msr-reg.o msr-reg-export.o
-@@ -29,7 +30,8 @@ ifeq ($(CONFIG_X86_32),y)
+@@ -30,7 +31,6 @@ ifeq ($(CONFIG_X86_32),y)
          lib-y += atomic64_cx8_32.o
          lib-y += checksum_32.o
          lib-y += strstr_32.o
--        lib-y += semaphore_32.o string_32.o
-+        lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += semaphore_32.o
-+        lib-y += string_32.o
+-        lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += semaphore_32.o
+         lib-y += string_32.o
          lib-y += cmpxchg.o
  ifneq ($(CONFIG_X86_CMPXCHG64),y)
-         lib-y += cmpxchg8b_emu.o atomic64_386_32.o
-@@ -40,7 +42,7 @@ else
-         lib-y += csum-partial_64.o csum-copy_64.o csum-wrappers_64.o
+@@ -43,6 +43,5 @@ else
          lib-y += thunk_64.o clear_page_64.o copy_page_64.o
          lib-y += memmove_64.o memset_64.o
--        lib-y += copy_user_64.o rwlock_64.o copy_user_nocache_64.o
-+        lib-y += copy_user_64.o copy_user_nocache_64.o
- 	lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem_64.o
+         lib-y += copy_user_64.o copy_user_nocache_64.o
+-	lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem_64.o
  	lib-y += cmpxchg16b_emu.o
  endif
 --- /dev/null
-+++ 2.6.39-rc5-x86-rw/arch/x86/lib/rwlock.S
-@@ -0,0 +1,44 @@
-+/* Slow paths of read/write spinlocks. */
++++ 2.6.39-rc5-x86-rw/arch/x86/lib/rwsem.S
+@@ -0,0 +1,136 @@
++/*
++ * x86 semaphore implementation.
++ *
++ * (C) Copyright 1999 Linus Torvalds
++ *
++ * Portions Copyright 1999 Red Hat, Inc.
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; either version
++ *	2 of the License, or (at your option) any later version.
++ *
++ * rw semaphores implemented November 1999 by Benjamin LaHaise <bcrl@kvack.org>
++ */
 +
 +#include <linux/linkage.h>
 +#include <asm/alternative-asm.h>
-+#include <asm/frame.h>
-+#include <asm/rwlock.h>
++#include <asm/dwarf2.h>
++
++#define __ASM_HALF_REG(reg)	__ASM_SEL(reg, e##reg)
++#define __ASM_HALF_SIZE(inst)	__ASM_SEL(inst##w, inst##l)
 +
 +#ifdef CONFIG_X86_32
-+# define __lock_ptr eax
++
++/*
++ * The semaphore operations have a special calling sequence that
++ * allow us to do a simpler in-line version of them. These routines
++ * need to convert that sequence back into the C sequence when
++ * there is contention on the semaphore.
++ *
++ * %eax contains the semaphore pointer on entry. Save the C-clobbered
++ * registers (%eax, %edx and %ecx) except %eax whish is either a return
++ * value or just clobbered..
++ */
++
++#define save_common_regs \
++	pushl_cfi %ecx; CFI_REL_OFFSET ecx, 0
++
++#define restore_common_regs \
++	popl_cfi %ecx; CFI_RESTORE ecx
++
++	/* Avoid uglifying the argument copying x86-64 needs to do. */
++	.macro movq src, dst
++	.endm
++
 +#else
-+# define __lock_ptr rdi
++
++/*
++ * x86-64 rwsem wrappers
++ *
++ * This interfaces the inline asm code to the slow-path
++ * C routines. We need to save the call-clobbered regs
++ * that the asm does not mark as clobbered, and move the
++ * argument from %rax to %rdi.
++ *
++ * NOTE! We don't need to save %rax, because the functions
++ * will always return the semaphore pointer in %rax (which
++ * is also the input argument to these helpers)
++ *
++ * The following can clobber %rdx because the asm clobbers it:
++ *   call_rwsem_down_write_failed
++ *   call_rwsem_wake
++ * but %rdi, %rsi, %rcx, %r8-r11 always need saving.
++ */
++
++#define save_common_regs \
++	pushq_cfi %rdi; CFI_REL_OFFSET rdi, 0; \
++	pushq_cfi %rsi; CFI_REL_OFFSET rsi, 0; \
++	pushq_cfi %rcx; CFI_REL_OFFSET rcx, 0; \
++	pushq_cfi %r8;  CFI_REL_OFFSET r8,  0; \
++	pushq_cfi %r9;  CFI_REL_OFFSET r9,  0; \
++	pushq_cfi %r10; CFI_REL_OFFSET r10, 0; \
++	pushq_cfi %r11; CFI_REL_OFFSET r11, 0
++
++#define restore_common_regs \
++	popq_cfi %r11; CFI_RESTORE r11; \
++	popq_cfi %r10; CFI_RESTORE r10; \
++	popq_cfi %r9;  CFI_RESTORE r9; \
++	popq_cfi %r8;  CFI_RESTORE r8; \
++	popq_cfi %rcx; CFI_RESTORE rcx; \
++	popq_cfi %rsi; CFI_RESTORE rsi; \
++	popq_cfi %rdi; CFI_RESTORE rdi
++
 +#endif
 +
-+ENTRY(__write_lock_failed)
++/* Fix up special calling conventions */
++ENTRY(call_rwsem_down_read_failed)
 +	CFI_STARTPROC
-+	FRAME
-+0:	LOCK_PREFIX
-+	addl	$RW_LOCK_BIAS, (%__lock_ptr)
-+1:	rep; nop
-+	cmpl	$RW_LOCK_BIAS, (%__lock_ptr)
-+	jne	1b
-+	LOCK_PREFIX
-+	subl	$RW_LOCK_BIAS, (%__lock_ptr)
-+	jnz	0b
-+	ENDFRAME
++	save_common_regs
++	__ASM_SIZE(push,_cfi) %__ASM_REG(dx)
++	CFI_REL_OFFSET __ASM_REG(dx), 0
++	movq %rax,%rdi
++	call rwsem_down_read_failed
++	__ASM_SIZE(pop,_cfi) %__ASM_REG(dx)
++	CFI_RESTORE __ASM_REG(dx)
++	restore_common_regs
 +	ret
 +	CFI_ENDPROC
-+END(__write_lock_failed)
++ENDPROC(call_rwsem_down_read_failed)
 +
-+ENTRY(__read_lock_failed)
++ENTRY(call_rwsem_down_write_failed)
 +	CFI_STARTPROC
-+	FRAME
-+0:	LOCK_PREFIX
-+	incl	(%__lock_ptr)
-+1:	rep; nop
-+	cmpl	$1, (%__lock_ptr)
-+	js	1b
-+	LOCK_PREFIX
-+	decl	(%__lock_ptr)
-+	js	0b
-+	ENDFRAME
++	save_common_regs
++	movq %rax,%rdi
++	call rwsem_down_write_failed
++	restore_common_regs
 +	ret
 +	CFI_ENDPROC
-+END(__read_lock_failed)
---- 2.6.39-rc5-x86-rw.orig/arch/x86/lib/rwlock_64.S
++ENDPROC(call_rwsem_down_write_failed)
++
++ENTRY(call_rwsem_wake)
++	CFI_STARTPROC
++	/* do nothing if still outstanding active readers */
++	__ASM_HALF_SIZE(dec) %__ASM_HALF_REG(dx)
++	jnz 1f
++	save_common_regs
++	movq %rax,%rdi
++	call rwsem_wake
++	restore_common_regs
++1:	ret
++	CFI_ENDPROC
++ENDPROC(call_rwsem_wake)
++
++ENTRY(call_rwsem_downgrade_wake)
++	CFI_STARTPROC
++	save_common_regs
++	__ASM_SIZE(push,_cfi) %__ASM_REG(dx)
++	CFI_REL_OFFSET __ASM_REG(dx), 0
++	movq %rax,%rdi
++	call rwsem_downgrade_wake
++	__ASM_SIZE(pop,_cfi) %__ASM_REG(dx)
++	CFI_RESTORE __ASM_REG(dx)
++	restore_common_regs
++	ret
++	CFI_ENDPROC
++ENDPROC(call_rwsem_downgrade_wake)
+--- 2.6.39-rc5-x86-rw.orig/arch/x86/lib/rwsem_64.S
 +++ /dev/null
-@@ -1,38 +0,0 @@
--/* Slow paths of read/write spinlocks. */
+@@ -1,93 +0,0 @@
+-/*
+- * x86-64 rwsem wrappers
+- *
+- * This interfaces the inline asm code to the slow-path
+- * C routines. We need to save the call-clobbered regs
+- * that the asm does not mark as clobbered, and move the
+- * argument from %rax to %rdi.
+- *
+- * NOTE! We don't need to save %rax, because the functions
+- * will always return the semaphore pointer in %rax (which
+- * is also the input argument to these helpers)
+- *
+- * The following can clobber %rdx because the asm clobbers it:
+- *   call_rwsem_down_write_failed
+- *   call_rwsem_wake
+- * but %rdi, %rsi, %rcx, %r8-r11 always need saving.
+- */
 -
 -#include <linux/linkage.h>
 -#include <asm/rwlock.h>
 -#include <asm/alternative-asm.h>
+-#include <asm/frame.h>
 -#include <asm/dwarf2.h>
 -
--/* rdi:	pointer to rwlock_t */
--ENTRY(__write_lock_failed)
--	CFI_STARTPROC
--	LOCK_PREFIX
--	addl $RW_LOCK_BIAS,(%rdi)
--1:	rep
--	nop
--	cmpl $RW_LOCK_BIAS,(%rdi)
--	jne 1b
--	LOCK_PREFIX
--	subl $RW_LOCK_BIAS,(%rdi)
--	jnz  __write_lock_failed
--	ret
--	CFI_ENDPROC
--END(__write_lock_failed)
+-#define save_common_regs \
+-	pushq_cfi %rdi; CFI_REL_OFFSET rdi, 0; \
+-	pushq_cfi %rsi; CFI_REL_OFFSET rsi, 0; \
+-	pushq_cfi %rcx; CFI_REL_OFFSET rcx, 0; \
+-	pushq_cfi %r8;  CFI_REL_OFFSET r8,  0; \
+-	pushq_cfi %r9;  CFI_REL_OFFSET r9,  0; \
+-	pushq_cfi %r10; CFI_REL_OFFSET r10, 0; \
+-	pushq_cfi %r11; CFI_REL_OFFSET r11, 0
 -
--/* rdi:	pointer to rwlock_t */
--ENTRY(__read_lock_failed)
+-#define restore_common_regs \
+-	popq_cfi %r11; CFI_RESTORE r11; \
+-	popq_cfi %r10; CFI_RESTORE r10; \
+-	popq_cfi %r9;  CFI_RESTORE r9; \
+-	popq_cfi %r8;  CFI_RESTORE r8; \
+-	popq_cfi %rcx; CFI_RESTORE rcx; \
+-	popq_cfi %rsi; CFI_RESTORE rsi; \
+-	popq_cfi %rdi; CFI_RESTORE rdi
+-
+-/* Fix up special calling conventions */
+-ENTRY(call_rwsem_down_read_failed)
 -	CFI_STARTPROC
--	LOCK_PREFIX
--	incl (%rdi)
--1:	rep
--	nop
--	cmpl $1,(%rdi)
--	js 1b
--	LOCK_PREFIX
--	decl (%rdi)
--	js __read_lock_failed
+-	save_common_regs
+-	pushq_cfi %rdx
+-	CFI_REL_OFFSET rdx, 0
+-	movq %rax,%rdi
+-	call rwsem_down_read_failed
+-	popq_cfi %rdx
+-	CFI_RESTORE rdx
+-	restore_common_regs
 -	ret
 -	CFI_ENDPROC
--END(__read_lock_failed)
+-ENDPROC(call_rwsem_down_read_failed)
+-
+-ENTRY(call_rwsem_down_write_failed)
+-	CFI_STARTPROC
+-	save_common_regs
+-	movq %rax,%rdi
+-	call rwsem_down_write_failed
+-	restore_common_regs
+-	ret
+-	CFI_ENDPROC
+-ENDPROC(call_rwsem_down_write_failed)
+-
+-ENTRY(call_rwsem_wake)
+-	CFI_STARTPROC
+-	decl %edx	/* do nothing if still outstanding active readers */
+-	jnz 1f
+-	save_common_regs
+-	movq %rax,%rdi
+-	call rwsem_wake
+-	restore_common_regs
+-1:	ret
+-	CFI_ENDPROC
+-ENDPROC(call_rwsem_wake)
+-
+-/* Fix up special calling conventions */
+-ENTRY(call_rwsem_downgrade_wake)
+-	CFI_STARTPROC
+-	save_common_regs
+-	pushq_cfi %rdx
+-	CFI_REL_OFFSET rdx, 0
+-	movq %rax,%rdi
+-	call rwsem_downgrade_wake
+-	popq_cfi %rdx
+-	CFI_RESTORE rdx
+-	restore_common_regs
+-	ret
+-	CFI_ENDPROC
+-ENDPROC(call_rwsem_downgrade_wake)
 --- 2.6.39-rc5-x86-rw.orig/arch/x86/lib/semaphore_32.S
-+++ 2.6.39-rc5-x86-rw/arch/x86/lib/semaphore_32.S
-@@ -14,8 +14,6 @@
-  */
- 
- #include <linux/linkage.h>
--#include <asm/rwlock.h>
--#include <asm/alternative-asm.h>
- #include <asm/frame.h>
- #include <asm/dwarf2.h>
- 
-@@ -31,46 +29,6 @@
-  */
- 	.section .sched.text, "ax"
- 
++++ /dev/null
+@@ -1,80 +0,0 @@
 -/*
-- * rw spinlock fallbacks
+- * i386 semaphore implementation.
+- *
+- * (C) Copyright 1999 Linus Torvalds
+- *
+- * Portions Copyright 1999 Red Hat, Inc.
+- *
+- *	This program is free software; you can redistribute it and/or
+- *	modify it under the terms of the GNU General Public License
+- *	as published by the Free Software Foundation; either version
+- *	2 of the License, or (at your option) any later version.
+- *
+- * rw semaphores implemented November 1999 by Benjamin LaHaise <bcrl@kvack.org>
 - */
--#ifdef CONFIG_SMP
--ENTRY(__write_lock_failed)
+-
+-#include <linux/linkage.h>
+-#include <asm/frame.h>
+-#include <asm/dwarf2.h>
+-
+-/*
+- * The semaphore operations have a special calling sequence that
+- * allow us to do a simpler in-line version of them. These routines
+- * need to convert that sequence back into the C sequence when
+- * there is contention on the semaphore.
+- *
+- * %eax contains the semaphore pointer on entry. Save the C-clobbered
+- * registers (%eax, %edx and %ecx) except %eax whish is either a return
+- * value or just clobbered..
+- */
+-	.section .sched.text, "ax"
+-
+-/* Fix up special calling conventions */
+-ENTRY(call_rwsem_down_read_failed)
 -	CFI_STARTPROC
--	FRAME
--2: 	LOCK_PREFIX
--	addl	$ RW_LOCK_BIAS,(%eax)
--1:	rep; nop
--	cmpl	$ RW_LOCK_BIAS,(%eax)
--	jne	1b
--	LOCK_PREFIX
--	subl	$ RW_LOCK_BIAS,(%eax)
--	jnz	2b
--	ENDFRAME
+-	pushl_cfi %ecx
+-	CFI_REL_OFFSET ecx,0
+-	pushl_cfi %edx
+-	CFI_REL_OFFSET edx,0
+-	call rwsem_down_read_failed
+-	popl_cfi %edx
+-	popl_cfi %ecx
 -	ret
 -	CFI_ENDPROC
--	ENDPROC(__write_lock_failed)
+-	ENDPROC(call_rwsem_down_read_failed)
 -
--ENTRY(__read_lock_failed)
+-ENTRY(call_rwsem_down_write_failed)
 -	CFI_STARTPROC
--	FRAME
--2: 	LOCK_PREFIX
--	incl	(%eax)
--1:	rep; nop
--	cmpl	$1,(%eax)
--	js	1b
--	LOCK_PREFIX
--	decl	(%eax)
--	js	2b
--	ENDFRAME
+-	pushl_cfi %ecx
+-	CFI_REL_OFFSET ecx,0
+-	calll rwsem_down_write_failed
+-	popl_cfi %ecx
 -	ret
 -	CFI_ENDPROC
--	ENDPROC(__read_lock_failed)
+-	ENDPROC(call_rwsem_down_write_failed)
 -
--#endif
+-ENTRY(call_rwsem_wake)
+-	CFI_STARTPROC
+-	decw %dx    /* do nothing if still outstanding active readers */
+-	jnz 1f
+-	pushl_cfi %ecx
+-	CFI_REL_OFFSET ecx,0
+-	call rwsem_wake
+-	popl_cfi %ecx
+-1:	ret
+-	CFI_ENDPROC
+-	ENDPROC(call_rwsem_wake)
 -
--#ifdef CONFIG_RWSEM_XCHGADD_ALGORITHM
--
- /* Fix up special calling conventions */
- ENTRY(call_rwsem_down_read_failed)
- 	CFI_STARTPROC
-@@ -120,5 +78,3 @@ ENTRY(call_rwsem_downgrade_wake)
- 	ret
- 	CFI_ENDPROC
- 	ENDPROC(call_rwsem_downgrade_wake)
--
--#endif
+-/* Fix up special calling conventions */
+-ENTRY(call_rwsem_downgrade_wake)
+-	CFI_STARTPROC
+-	pushl_cfi %ecx
+-	CFI_REL_OFFSET ecx,0
+-	pushl_cfi %edx
+-	CFI_REL_OFFSET edx,0
+-	call rwsem_downgrade_wake
+-	popl_cfi %edx
+-	popl_cfi %ecx
+-	ret
+-	CFI_ENDPROC
+-	ENDPROC(call_rwsem_downgrade_wake)
 
 
