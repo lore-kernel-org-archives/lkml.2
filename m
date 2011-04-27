@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab1D0Nbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:31:39 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:52522 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab1D0Nbh (ORCPT
+	id S932601Ab1D0NcG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:32:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37275 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab1D0NcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:31:37 -0400
-X-Auth-Info: OEEgO0xeVId/JgtlNo/cbeYDZmI21vg1SUJgDxXRfwY=
-Message-ID: <4DB81B4C.9050404@grandegger.com>
-Date: Wed, 27 Apr 2011 15:34:04 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 27 Apr 2011 09:32:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=rutq9uogU1sNxHX2ESrXEKgigCok33FnpS1sA/6YxJbJGyT6/JTYxfzCyIdr7ROcfk
+         x1q40CwPkZD89RapUfNAov7bDWn2fyufQ90Wma2VE4a1IeVNHDIMfSR99Ee9AWsM/cMm
+         ERw3EX+th0sQ94YvtYfvmf3DUw/roPxPyWnAo=
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: sachi@mistralsolutions.com, davinci-linux-open-source@linux.davincidsp.com,
-        Netdev@vger.kernel.org, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<1303474267-6344-2-git-send-email-subhasish@mistralsolutions.com>	<4DB1A3B7.7060300@pengutronix.de> <4DB5D452.9050500@grandegger.com>	<46D523E49EFF489F9B088AE7B9CD7286@subhasishg> <4DB81A12.1000006@grandegger.com>
-In-Reply-To: <4DB81A12.1000006@grandegger.com>
-X-Enigmail-Version: 1.0.1
+Date: Wed, 27 Apr 2011 15:32:01 +0200
+Message-ID: <BANLkTikzQnUr=qjwXd1W6PU8o+MRS+1o=g@mail.gmail.com>
+Subject: home.scarlet.be request
+From: victoria anderson <consumerelectronicsguide.org@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 03:28 PM, Wolfgang Grandegger wrote:
-> On 04/27/2011 03:08 PM, Subhasish Ghosh wrote:
->>>
->>> - Use just *one* value per sysfs file
->>
->> SG - I felt adding entry for each mbx_id will clutter the sysfs.
->>        Is it ok to do that.
-> 
-> No, see:
-> 
-> http://lxr.linux.no/#linux+v2.6.38/Documentation/filesystems/sysfs.txt#L56
+Hello,
 
-s/No/Yes/
+While I was browsing around the web for some quality information
+websites, I landed on your website. I think you really put a lot of
+work into it, but it really pays off.
 
-Sorry for the confusion.
+My name is Victoria Anderson and I am the webmaster of
+ConsumerElectronicsGuide.org .
+Our site  aims to bring you the top headlines from around the world
+related to the consumer electronics, including gadgets news, articles,
+forum ,dictionary with every common electronics terms .
 
-Wolfgang.
+Would you be interested in exchanging links with us?
+http://www.consumerelectronicsGuide.org/
+
+
+I have seen that you already have in your site information and links
+regarding  electronics , for instance in this page:
+home.scarlet.be/eddy_de_greef/Sane/
+
+I would like to place a link to your website in our links page, and if
+you could please add a link to our website in your webpage.
+
+For your convenience here it is the code needed:
+<a href="http://www.consumerelectronicsguide.org">Consumer Electronics Guide</a>
+
+
+Please send me information about your site as you would want it to
+appear in our links page.
+
+
+Thank you for your time,
+Victoria Anderson
+
+
+P.S.  I almost forgot to tell you that we are a non profit organization.
+
+#########################################
+ConsumerElectronicsGuide - Consumer Electronics information for you
+consumerelectronicsguide.org@gmail.com
+348 East 23th Street, New York, NY 10028
