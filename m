@@ -1,49 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759122Ab1D0Udh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:33:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40963 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab1D0Udg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:33:36 -0400
-Message-ID: <4DB87D93.4060108@zytor.com>
-Date: Wed, 27 Apr 2011 13:33:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1759196Ab1D0UgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:36:12 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:58775 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753287Ab1D0UgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 16:36:10 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Hans Verkuil" <hverkuil@xs4all.nl>
+Subject: [PATCH 3/4] usbvision: remove broken testpattern
+Date: Wed, 27 Apr 2011 22:35:45 +0200
+User-Agent: KMail/1.9.10
+Cc: "Hans de Goede" <hdegoede@redhat.com>,
+        "Joerg Heckenbach" <joerg@heckenbach-aw.de>,
+        "Dwaine Garden" <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: Re: [PATCH][RESEND] Fix EDD3.0 data verification.
-References: <20110426082132.GG2265@redhat.com> <4DB74A6C.2080702@zytor.com> <20110427123213.GL2265@redhat.com>
-In-Reply-To: <20110427123213.GL2265@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201104272235.51076.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 05:32 AM, Gleb Natapov wrote:
-> 
-> This patch is only fixes obviously incorrect code in edd_has_edd30()
-> to do proper check instead of summing random memory and it should be
-> applied even if we decide that we want to support Phoenix spec too.
-> 
-> I looked into implementing support for Phoenix spec back then when I
-> wrote the patch and I decided against it. The main (and may be only)
-> use case for edd module is to provide OS installer with enough info
-> for it to decide where to install boot loader. Unfortunately Phoenix
-> EDD spec does not support most modern storage technologies and even for
-> legacy one such as ATA it does not provide enough info to determine boot
-> disk correctly (you can't tell the difference between two ATA channels,
-> T13 spec provides this info in interface path along with PCI address).
-> So even if we would have support for it the OS installer will have to
-> check if the information comes from T13 or Phoenix and ignore it if it's
-> the later.
-> 
+Enabling force_testpattern module parameter in usbvision causes kernel panic.
+Things like that does not belong to the kernel anyway so the fix is easy.
 
-I still think it would be a lot better to let userspace decide how it
-wants to handle things, but oh well.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-	-hpa
+diff -up linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-core.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c
+--- linux-2.6.39-rc2-/drivers/media/video/usbvision/usbvision-core.c	2011-04-27 22:08:32.000000000 +0200
++++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-core.c	2011-04-27 22:08:53.000000000 +0200
+@@ -49,10 +49,6 @@ static unsigned int core_debug;
+ module_param(core_debug, int, 0644);
+ MODULE_PARM_DESC(core_debug, "enable debug messages [core]");
+ 
+-static unsigned int force_testpattern;
+-module_param(force_testpattern, int, 0644);
+-MODULE_PARM_DESC(force_testpattern, "enable test pattern display [core]");
+-
+ static int adjust_compression = 1;	/* Set the compression to be adaptive */
+ module_param(adjust_compression, int, 0444);
+ MODULE_PARM_DESC(adjust_compression, " Set the ADPCM compression for the device.  Default: 1 (On)");
+@@ -388,90 +384,6 @@ void usbvision_scratch_free(struct usb_u
+ }
+ 
+ /*
+- * usbvision_testpattern()
+- *
+- * Procedure forms a test pattern (yellow grid on blue background).
+- *
+- * Parameters:
+- * fullframe:   if TRUE then entire frame is filled, otherwise the procedure
+- *		continues from the current scanline.
+- * pmode	0: fill the frame with solid blue color (like on VCR or TV)
+- *		1: Draw a colored grid
+- *
+- */
+-static void usbvision_testpattern(struct usb_usbvision *usbvision,
+-				  int fullframe, int pmode)
+-{
+-	static const char proc[] = "usbvision_testpattern";
+-	struct usbvision_frame *frame;
+-	unsigned char *f;
+-	int num_cell = 0;
+-	int scan_length = 0;
+-	static int num_pass;
+-
+-	if (usbvision == NULL) {
+-		printk(KERN_ERR "%s: usbvision == NULL\n", proc);
+-		return;
+-	}
+-	if (usbvision->cur_frame == NULL) {
+-		printk(KERN_ERR "%s: usbvision->cur_frame is NULL.\n", proc);
+-		return;
+-	}
+-
+-	/* Grab the current frame */
+-	frame = usbvision->cur_frame;
+-
+-	/* Optionally start at the beginning */
+-	if (fullframe) {
+-		frame->curline = 0;
+-		frame->scanlength = 0;
+-	}
+-
+-	/* Form every scan line */
+-	for (; frame->curline < frame->frmheight; frame->curline++) {
+-		int i;
+-
+-		f = frame->data + (usbvision->curwidth * 3 * frame->curline);
+-		for (i = 0; i < usbvision->curwidth; i++) {
+-			unsigned char cb = 0x80;
+-			unsigned char cg = 0;
+-			unsigned char cr = 0;
+-
+-			if (pmode == 1) {
+-				if (frame->curline % 32 == 0)
+-					cb = 0, cg = cr = 0xFF;
+-				else if (i % 32 == 0) {
+-					if (frame->curline % 32 == 1)
+-						num_cell++;
+-					cb = 0, cg = cr = 0xFF;
+-				} else {
+-					cb =
+-					    ((num_cell * 7) +
+-					     num_pass) & 0xFF;
+-					cg =
+-					    ((num_cell * 5) +
+-					     num_pass * 2) & 0xFF;
+-					cr =
+-					    ((num_cell * 3) +
+-					     num_pass * 3) & 0xFF;
+-				}
+-			} else {
+-				/* Just the blue screen */
+-			}
+-
+-			*f++ = cb;
+-			*f++ = cg;
+-			*f++ = cr;
+-			scan_length += 3;
+-		}
+-	}
+-
+-	frame->grabstate = frame_state_done;
+-	frame->scanlength += scan_length;
+-	++num_pass;
+-}
+-
+-/*
+  * usbvision_decompress_alloc()
+  *
+  * allocates intermediate buffer for decompression
+@@ -571,10 +483,6 @@ static enum parse_state usbvision_find_h
+ 	frame->scanstate = scan_state_lines;
+ 	frame->curline = 0;
+ 
+-	if (force_testpattern) {
+-		usbvision_testpattern(usbvision, 1, 1);
+-		return parse_state_next_frame;
+-	}
+ 	return parse_state_continue;
+ }
+ 
 
+
+-- 
+Ondrej Zary
