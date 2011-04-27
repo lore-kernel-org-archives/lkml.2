@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab1D0UYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:24:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48374 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1D0UYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:24:53 -0400
-Message-ID: <4DB87B74.80104@zytor.com>
-Date: Wed, 27 Apr 2011 13:24:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1757584Ab1D0U0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:26:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49590 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab1D0U0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 16:26:14 -0400
+Date: Wed, 27 Apr 2011 21:26:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110427202603.GY17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de> <201104271302.44249.arnd@arndb.de> <20110427201605.GW17290@n2100.arm.linux.org.uk> <201104272221.48601.arnd@arndb.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Pekka Enberg <penberg@kernel.org>, Thiago Farina <tfransosi@gmail.com>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>	 <e8a554f881a199107afd37795adb0d11e70fdbcc.1303846852.git.tfransosi@gmail.com>	 <1303926576.18763.75.camel@gandalf.stny.rr.com>	 <4DB86163.2070201@zytor.com>	 <BANLkTikQiA9iwSs1qX7-76GKUN23GV=8Uw@mail.gmail.com>	 <1303931761.18763.101.camel@gandalf.stny.rr.com>	 <BANLkTi=xRJ+rRRpYWuLxtRiLfYZwsBU0vQ@mail.gmail.com> <1303934694.18763.112.camel@gandalf.stny.rr.com>
-In-Reply-To: <1303934694.18763.112.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104272221.48601.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 01:04 PM, Steven Rostedt wrote:
-> It's no different than having printk() instead of printf().
+On Wed, Apr 27, 2011 at 10:21:48PM +0200, Arnd Bergmann wrote:
+> On Wednesday 27 April 2011 22:16:05 Russell King - ARM Linux wrote:
+> > > As for making the default being to do cache handling, I'm not completely
+> > > sure how that would work on architectures where most devices are coherent.
+> > > If I understood the DRM people correctly, some x86 machine have noncoherent
+> > > DMA in their GPUs while everything else is coherent.
+> > 
+> > Well, it sounds like struct device needs a flag to indicate whether it is
+> > coherent or not - but exactly how this gets set seems to be architecture
+> > dependent.  I don't see bus or driver code being able to make the necessary
+> > decisions - eg, tulip driver on x86 would be coherent, but tulip driver on
+> > ARM would be non-coherent.
+> > 
+> > Nevertheless, doing it on a per-device basis is definitely the right
+> > answer.
+> 
+> The flag would not get set by the driver that uses the device but
+> the driver that found it, e.g. the PCI bus or the platform code,
+> which should know about these things and also install the appropriate
+> iommu or mapping operations.
 
-Which IMO was a mistake in Linux.  It would be different if the priority
-argument had been explicit (although these days it's functionally
-required, which sort-of justifies a different name.)
+As I said above, I don't think bus code can do it.  Take my example
+above of a tulip pci device on x86 and a tulip pci device on ARM.  Both
+use the same PCI code.
 
-kmalloc(), kstrdup() etc. have different names because they're different
-interfaces, which don't duplicate the malloc(), strdup() etc. semantics.
+Maybe something in asm/pci.h - but that invites having lots of bus
+specific header files in asm/.
 
-	-hpa
+A better solution imho would be to have an architecture callback for
+struct device which gets registered, which can inspect the type of
+the device, and set the flag depending on where it appears in the
+tree.
