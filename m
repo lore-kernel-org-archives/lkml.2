@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759616Ab1D0ROa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 13:14:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59216 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759517Ab1D0RO3 (ORCPT
+	id S1759640Ab1D0RQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 13:16:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38160 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759588Ab1D0RQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 13:14:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=iYm8TH/SaOeFaJtwjUOYKrQYkEsTpIcyS4uJFgQ84WJuaaAujkr61ZiiWAmBQ96Bxq
-         vq81ZdwdXqU0CtCOqwDYTzW4sXm+QHLuLrrTE8tDQdRaq1J2po1IhcSh9bls2amWzQOP
-         3QJoMxBrGso/F7pK3cRn+u+Kzk196LUBeS2g8=
+	Wed, 27 Apr 2011 13:16:07 -0400
+Date: Wed, 27 Apr 2011 13:16:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Tanya Brokhman <tlinder@codeaurora.org>, <gregkh@suse.de>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "'Matthew Wilcox'" <matthew.r.wilcox@intel.com>
+Subject: Re: [RFC/PATCH v3 2/5] uas: MS UAS Gadget driver - Infrastructure
+In-Reply-To: <20110426200625.GB5405@xanatos>
+Message-ID: <Pine.LNX.4.44L0.1104271304460.2239-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1303903592-20820-1-git-send-email-j.weitzel@phytec.de>
-References: <20110419161452.4c1fd674.akpm@linux-foundation.org>
-	<1303903592-20820-1-git-send-email-j.weitzel@phytec.de>
-Date: Wed, 27 Apr 2011 19:14:27 +0200
-Message-ID: <BANLkTikb2N4AQ8SJqAr7sb54w=KM3Xe89w@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: leds-pca9532 add support pca9530, pca9531 and pca9533
-From: Joachim Eastwood <manabian@gmail.com>
-To: Jan Weitzel <j.weitzel@phytec.de>
-Cc: akpm@linux-foundation.org, riku.voipio@iki.fi, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, joachim.eastwood@jotron.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jan,
+On Tue, 26 Apr 2011, Sarah Sharp wrote:
 
-On 4/27/11, Jan Weitzel <j.weitzel@phytec.de> wrote:
-> pca953x family are only different in number of leds and register layout
-> Adding chipinfo to use driver with whole pca953x family
-> Rename driver to pca953x, but left files and platformflags named pca9532
->
-> Tested with pca9530 and pca9533
->
-> Tested-by: Juergen Kilb <j.kilb@phytec.de>
-> Signed-off-by: Jan Weitzel <j.weitzel@phytec.de>
-> ---
-> v2: works on top off "pca9532c add gpio capability" patch
+> I meant that during enumeration, configuration 1 would be installed, and
+> because the USB core doesn't try to install a particular alternate
+> interface setting, alt setting 0 would be active by default.
 
-I did a short test run with 39-rc5 plus all the pca9532 patches,
-including this one, and it works with PCA9532 on my custom board.
-Tested both LED and GPIO functionality.
+Unless the driver changed it.
 
-Acked-and-tested-by: Joachim Eastwood <joachim.eastwood@jotron.com>
+> How would the usb-storage driver reject a bind by the USB core?  By
+> returning an error from the probe function?  Would the USB core go and
+> search for the next driver after the BOT driver rejected the bind?  It
+> looks like usb_probe_interface will just return an error if the first
+> driver's probe function fails.
 
-regards
-Joachim Eastwood
+If a driver's or subsystem's probe routine returns an error then the
+driver core continues looking for another driver.  If the error code is
+-ENODEV or -ENXIO then it doesn't even put a warning in the kernel log;  
+the driver core takes this to mean that the driver detected it couldn't
+handle the device.  See drivers/base/dd.c:really_probe().
+
+> > Which reminds me...  Fallbacks are always a good idea.  If usb-storage 
+> > did decide not to bind to combined BOT/UAS devices, we should have a 
+> > mechanism for overriding this choice (i.e., forcing usb-storage to bind 
+> > regardless).
+> 
+> Sure, maybe a module parameter like "own_uas"?  Or do we want something
+> fancier, like a way to specify a list of VID:PIDs that the usb-storage
+> driver should own?  (I think the list parsing might be a bit hard to
+> implement though.)
+
+The VID:PID thing would work; usb-storage already has a "quirks" 
+parameter that accepts such things.  We could add a quirk for binding
+to a BOT/UAS interface.
+
+> > Likewise, Sarah, you should consider adding a mechanism to xhci-hcd for 
+> > forcing individual root-hub ports not to run at SuperSpeed (rather like 
+> > the "companion" attribute file in ehci-hcd, although I'm sure you can 
+> > come up with a better name).
+> 
+> I'm not entirely sure I can force a port down to USB 2.0 speeds, because
+> I'm not sure I can disable the port or turn off SuperSpeed terminations
+> from the xHCI driver.  I'd have to look into it.
+
+This sounds like the problem we encountered while trying to disable a
+SuperSpeed port.  It merely forced the device to switch over to the
+USB-2 bus.  That wasn't what we wanted then, but it is what we're
+interested in now.
+
+Getting things to switch back might be harder -- re-enabling the 
+SuperSpeed terminations won't force the device to stop using the USB-2 
+bus.  It might be necessary to reset the USB-2 port.
+
+Alan Stern
+
