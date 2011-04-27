@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760223Ab1D0Xgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:36:47 -0400
-Received: from kroah.org ([198.145.64.141]:51363 "EHLO coco.kroah.org"
+	id S1760278Ab1D0XhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:37:11 -0400
+Received: from mout.perfora.net ([74.208.4.194]:64631 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722Ab1D0Xgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:36:43 -0400
-Date: Wed, 27 Apr 2011 16:32:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: stable@kernel.org, dtor@mail.ru, Igor Mammedov <imammedo@redhat.com>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [stable] [Xen-devel] [PATCH] [PV Xen] Mouse stuck after
- save/restore of guest. - stable tree candidate.
-Message-ID: <20110427233238.GA1319@kroah.com>
-References: <1302795907-321-1-git-send-email-imammedo@redhat.com>
- <20110414155915.GA23629@dumpdata.com>
- <20110414172649.GA7569@aepfle.de>
- <20110414183804.GB1467@dumpdata.com>
- <20110415093737.GA15122@aepfle.de>
- <20110420182941.GA3148@dumpdata.com>
- <20110427163143.GA32371@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110427163143.GA32371@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760257Ab1D0XhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 19:37:06 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] mm: remove check_huge_range()
+Date: Wed, 27 Apr 2011 19:35:46 -0400
+Message-Id: <1303947349-3620-6-git-send-email-wilsons@start.ca>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1303947349-3620-1-git-send-email-wilsons@start.ca>
+References: <1303947349-3620-1-git-send-email-wilsons@start.ca>
+X-Provags-ID: V02:K0:7vh2g4YDfeDg2fpgphjyJqSrjFNShTFaMntjtkwmvVT
+ a1W6hNWNybomt08SEhZ0YPmk4HSHj89ZWqmd7mqxHSAvV2M8EW
+ 2AnJHBFL9qxBGUABKo+bRrysKdtk7gosK20CIqQIlT2LMCYsQ4
+ iwuKMzs42n05wAtKpx5RuIbQZ0bzBiodYvIbxySsqGTE5kZGxs
+ 0pYEiYkIoDYgp6wSd4zbYJDQIpzPhZzxT3lWNi7Ka4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 06:31:43PM +0200, Olaf Hering wrote:
-> On Wed, Apr 20, Konrad Rzeszutek Wilk wrote:
-> 
-> > Hello stable-tree maintainers.
-> > 
-> > Please apply the upstream git commit c36b58e8a9112017c2bcc322cc98e71241814303
-> > (Input: xen-kbdfront - fix mouse getting stuck after save/restore)
-> > which fixes a regression introduced by 8c3c283e6bf463ab498d6e7823aff6c4762314b6
-> > (Input: xen-kbdfront - advertise either absolute or relative coordinates)
-> > 
-> > The 2.6.38 and 2.6.37 tree both contain the regression.
-> 
-> I checked which trees contain the broken commit from mainline:
-> 
-> broken stable trees:
-> 2.6.38
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.38.y.git;a=commit;h=5ea5254aa0ad269cfbd2875c973ef25ab5b5e9db
-> 2.6.37
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commit;h=723517a796adf59f9ae628629fcb606c4cec8715
-> 2.6.35
-> http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.35.y.git;a=commit;h=b88505e58ce6d36732cd15841cc821f97efca9bb
-> 2.6.33
-> http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.33.y.git;a=commit;h=6997348a861d3540085bf9adf4166b86ac7a96e5
-> 2.6.32
-> http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=commit;h=95e7148d08d0578687ea26cd3a8925aa5f7bc8fa
-> 2.6.27
-> Does not have a variant of 8c3c283e6bf463ab498d6e7823aff6c4762314b6, yet.
-> 
-> So please apply upstream commit c36b58e8a9112017c2bcc322cc98e71241814303
-> to 2.6.38, 2.6.37, 2.6.35, 2.6.33 and 2.6.32 to fix the introduced
-> regression.
+This function has been superseded by gather_hugetbl_stats() and is no
+longer needed.
 
-That commit fails to apply on the .38-stable tree, or anything else I
-tried.  Please provide a backported version if you wish to have it
-applied.
+Signed-off-by: Stephen Wilson <wilsons@start.ca>
+---
+ mm/mempolicy.c |   35 -----------------------------------
+ 1 files changed, 0 insertions(+), 35 deletions(-)
 
-Note that the .37-stable tree is now closed, so that doesn't matter
-anymore.
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d4c0b8d..c5a4342 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2587,35 +2587,6 @@ static int gather_pte_stats(pte_t *pte, unsigned long addr,
+ }
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+-static void check_huge_range(struct vm_area_struct *vma,
+-		unsigned long start, unsigned long end,
+-		struct numa_maps *md)
+-{
+-	unsigned long addr;
+-	struct page *page;
+-	struct hstate *h = hstate_vma(vma);
+-	unsigned long sz = huge_page_size(h);
+-
+-	for (addr = start; addr < end; addr += sz) {
+-		pte_t *ptep = huge_pte_offset(vma->vm_mm,
+-						addr & huge_page_mask(h));
+-		pte_t pte;
+-
+-		if (!ptep)
+-			continue;
+-
+-		pte = *ptep;
+-		if (pte_none(pte))
+-			continue;
+-
+-		page = pte_page(pte);
+-		if (!page)
+-			continue;
+-
+-		gather_stats(page, md, pte_dirty(*ptep));
+-	}
+-}
+-
+ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+@@ -2635,12 +2606,6 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
+ }
+ 
+ #else
+-static inline void check_huge_range(struct vm_area_struct *vma,
+-		unsigned long start, unsigned long end,
+-		struct numa_maps *md)
+-{
+-}
+-
+ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+-- 
+1.7.3.5
 
-thanks,
-
-greg k-h
