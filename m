@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1D0DE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 23:04:56 -0400
-Received: from home.ambisys.com ([61.215.192.134]:35958 "EHLO home.ambisys.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab1D0DEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 23:04:55 -0400
-X-Greylist: delayed 1863 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Apr 2011 23:04:54 EDT
-Message-ID: <4DB7808C.9030005@variosecure.net>
-Date: Wed, 27 Apr 2011 11:33:48 +0900
-From: Tim Burress <tim@variosecure.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Kernel 2.6.34-2.6.38.4: Intermittently hang on boot in kernel/irq/autoprobe?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam-Flag: No, SpamSonar (level 0.1)
-X-Ambisys-VC: 20731@d7f013f8a41a33a326105ce05f20e8ba
+	id S1753390Ab1D0DIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 23:08:42 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60370 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab1D0DIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Apr 2011 23:08:40 -0400
+Date: Wed, 27 Apr 2011 05:08:39 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Chuck Ebbert <cebbert@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [stable] [PATCH] [0/106] 2.6.35.13 longterm review
+Message-ID: <20110427030839.GO16484@one.firstfloor.org>
+References: <20110426212.641772347@firstfloor.org> <20110426202150.1bec600d@katamari>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426202150.1bec600d@katamari>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Apr 26, 2011 at 08:21:50PM -0400, Chuck Ebbert wrote:
+> On Tue, 26 Apr 2011 14:12:37 -0700 (PDT)
+> Andi Kleen <andi@firstfloor.org> wrote:
+> 
+> > 
+> 
+> Also please revert the patch "fix-cred-leak-in-af_netlink" from 2.6.35.12.
+> The proper fix was "af_netlink-add-needed-scm_destroy-after-scm_send" which
+> was also added in that release. Here's a revert patch:
 
-I've been seeing an occasional problem in which the kernel hangs very 
-early in the boot process. Just inserting printk()'s it seems that this 
-occurs in kernel/irq/autoprobe.c, function probe_irq_on() in the loop 
-immediately after the comment
-
-         /*
-          * enable any unassigned irqs
-          * (we must startup again here because if a longstanding irq
-          * happened in the previous stage, it may have masked itself)
-          */
-
-This occurs the first time the function is called during boot. I first 
-noticed it in 2.6.34 but then it seemed to disappear after upgrading to 
-the (then current) 2.6.37.2. But then after a while I started seeing it 
-again, perhaps once every 15 reboots. I've since rebuild with 2.6.38.4 
-and some of the lock debugging options turned on:
-
-CONFIG_LOCKUP_DETECTOR=y
-CONFIG_HARDLOCKUP_DETECTOR=y
-# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
-CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
-CONFIG_DEBUG_SPINLOCK=y
-CONFIG_DEBUG_LOCK_ALLOC=y
-CONFIG_PROVE_LOCKING=y
-CONFIG_LOCKDEP=y
-# CONFIG_LOCK_STAT is not set
-# CONFIG_DEBUG_LOCKDEP is not set
-CONFIG_DEBUG_SPINLOCK_SLEEP=y
-
-but the problem remains (and I get no lock debugging output), so I 
-thought I would post something.
-
-The kernel is compiled with CONFIG_SMP but the hardware I'm testing on 
-has a single, single-core (VIA Nehemiah) CPU. The hardware appears to 
-have no NMI support, so that watchdog seems to be disabled on boot, and 
-when the system hangs, it hangs forever. What's the best way to track 
-this down? Or if there's information/tests that would be helpful, just 
-let me know. Puzzling...
-
-Thanks!
-
-Tim
-
+Done.
+-Andi
