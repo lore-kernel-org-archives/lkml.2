@@ -1,45 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab1D0NxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 09:53:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53540 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758293Ab1D0NxH (ORCPT
+	id S932790Ab1D0NyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:54:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61002 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab1D0NyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 09:53:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Oren Weil <oren.jer.weil@intel.com>
-Subject: Re: [PATCH 7/8] staging/mei: AMT Watchdog
-Date: Wed, 27 Apr 2011 15:53:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, david@woodhou.se
-References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com> <1303900057-21694-8-git-send-email-oren.jer.weil@intel.com>
-In-Reply-To: <1303900057-21694-8-git-send-email-oren.jer.weil@intel.com>
+	Wed, 27 Apr 2011 09:54:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CFDAfijDg983qIXoLlwPOvVkVp1EejGuUZarx78/bhagSsJrjeitR0J3NbCdnIExp2
+         vBL9PkxyhoV3qrd/ZaAkzMfNcNTvDeCxi4kH6DEP7CgYLlJsvgOzr0i2GUXmMHuoSIIM
+         2kjp3Uk1tvZ6Sruf5b1lXoYdejkXF9j0PjYfA=
+Date: Wed, 27 Apr 2011 21:54:00 +0800
+From: Lifeng Sun <lifongsun@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] Applying inappropriate ioctl operation on socket should
+ return ENOTTY
+Message-ID: <20110427135400.GA2373@localhost>
+References: <1303882625-28115-1-git-send-email-lifongsun@gmail.com>
+ <20110427130904.47331a9f@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104271553.01464.arnd@arndb.de>
-X-Provags-ID: V02:K0:9B8+mIvbxTRHb4zJj20ygVNtgByDp2Nv1Js6Ghz7ECZ
- NO0hsDv2kDmGFspvkb8V3TtIqME6ieFiY96hwon0NxGrpp1TFl
- 8oBWJQToKQCj7nOZtqNelJNjnms4qeXC3VIL7kGF+Q/fdmB28O
- pTx5DP60VieE/Y+C4c/aT2/r1gX9AtHPVhsqSKFYejpeFkC1MD
- G9P06XNRyRrDSu0hhapRA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427130904.47331a9f@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 April 2011, Oren Weil wrote:
+On 13:09 Wed 04/27/11 Apr, Alan Cox wrote:
+> > diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+> > index 25373df..50c09e4 100644
+> > --- a/drivers/char/applicom.c
+> > +++ b/drivers/char/applicom.c
+> > @@ -838,6 +838,6 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+> >  	Dummy = readb(apbs[IndexCard].RamIO + VERS);
+> >  	kfree(adgl);
+> >  	mutex_unlock(&ac_mutex);
+> > -	return 0;
+> > +	return ret;
+> >  }
 > 
-> code that open connection and invoke
-> heartbeats to the AMT Watchdog client/feature, if exists
+> This one in fact is a bug fix where 0 gets returned not an error code it
+> ought to be submitted separately and described as such.
+
+Will do.
+
 > 
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> Signed-off-by: Itzhak Tzeel-Krupp <itzhak.tzeel-krupp@intel.com>
-> Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
+> > diff --git a/drivers/char/dtlk.c b/drivers/char/dtlk.c
+> > index 85156dd..2d116d5 100644
+> > --- a/drivers/char/dtlk.c
+> > +++ b/drivers/char/dtlk.c
+> > @@ -289,7 +289,7 @@ static long dtlk_ioctl(struct file *file,
+> >  		return put_user(portval, argp);
+> >  
+> >  	default:
+> > -		return -EINVAL;
+> > +		return -ENOTTY;
+> >  	}
+> >  }
+> 
+> This one looks good (and the driver has another error in the ioctl
+> handler too that wants fixing where it returnds -EINVAL not -EFAULT)
 
-I still think this should be a regular watchdog driver using
-the drivers/watchdog user interface.
+Will fix.
 
-	Arnd
+> > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+> > index d72433f..4ba9b9f 100644
+> > --- a/drivers/char/i8k.c
+> > +++ b/drivers/char/i8k.c
+> > @@ -370,7 +370,7 @@ i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
+> >  		break;
+> >  
+> >  	default:
+> > -		return -EINVAL;
+> > +		return -ENOTTY;
+> 
+> This one is incomplete - the driver also has a bogus check for arg being
+> non zero. That means ioctl(fd, BOGUS, 0) will return the wrong error code
+> still.
+
+Will fix.
+
+> > diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+> > index 2aa3977..bc8af5a 100644
+> > --- a/drivers/char/ipmi/ipmi_devintf.c
+> > +++ b/drivers/char/ipmi/ipmi_devintf.c
+> > @@ -232,7 +232,7 @@ static int ipmi_ioctl(struct file   *file,
+> >  		      unsigned int  cmd,
+> >  		      unsigned long data)
+> >  {
+> > -	int                      rv = -EINVAL;
+> > +	int                      rv = -ENOTTY;
+> >  	struct ipmi_file_private *priv = file->private_data;
+> >  	void __user *arg = (void __user *)data;
+> 
+> No - there are cases that should return -EINVAL that this will break - a
+> default case needs adding
+
+All execution paths overwrite the return value except those should
+return -ENOTTY, but it's more clear to add a default case.
+
+Will do.
+
+> > diff --git a/drivers/char/viotape.c b/drivers/char/viotape.c
+> > index ad6e64a..a427d40 100644
+> > --- a/drivers/char/viotape.c
+> > +++ b/drivers/char/viotape.c
+> > @@ -529,7 +529,7 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
+> >  
+> >  	down(&reqSem);
+> >  
+> > -	ret = -EINVAL;
+> > +	ret = -ENOTTY;
+> 
+> Again this messes up the returns because code assumes the initial
+> default.
+
+Likewise, except the unsupported MTIOCPOS command. SuSv4 has two
+appropriate errno's for this unsupported case and the one below
+returns EOPNOTSUPP,
+
+ [ENOTSUP]
+     Not supported (may be the same value as [EOPNOTSUPP]).
+
+ [EOPNOTSUPP]
+     Operation not supported on socket (may be the same value as
+     [ENOTSUP]).
+
+but the manpage of ioctl disagree. I am wondering how to handle
+unsupported ioctl operations. Maybe following the manpage is a better
+choice though it's not exact.
+
+
+> The original code also has bugs too (wrong error off copy_*_user()
+> again)
+
+Will fix.
+
+> > diff --git a/fs/pipe.c b/fs/pipe.c
+> > index da42f7d..fe7ffe4 100644
+> > --- a/fs/pipe.c
+> > +++ b/fs/pipe.c
+> > @@ -665,7 +665,7 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> >  
+> >  			return put_user(count, (int __user *)arg);
+> >  		default:
+> > -			return -EINVAL;
+> > +			return -ENOTTY;
+> >  	}
+> 
+> Looks good - but this one really does want to be a patch on its own as if
+> anything causes compatibility funnies it will be this, and we need to be
+> sure we can bisect nicely to it should this occur.
+
+will submit serparately.
+
+> > @@ -5041,7 +5041,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
+> >  		/* Set the per device memory buffer space.
+> >  		 * Not applicable in our case */
+> >  	case SIOCSIFLINK:
+> > -		return -EINVAL;
+> > +		return -EOPNOTSUPP;
+> 
+> This change seems unrelated to anything in your description and outside
+> of anything SuS cares about or demands.
+
+As stated above. I would submit separately.
+
+
+- Lifeng
+
+-- 
