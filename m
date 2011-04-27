@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1D0I57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 04:57:59 -0400
-Received: from rackplans.net ([209.44.101.17]:43239 "EHLO mtl.rackplans.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755168Ab1D0I55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 04:57:57 -0400
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 04:57:57 EDT
-Date: Wed, 27 Apr 2011 04:47:40 -0400 (EDT)
-From: gmack@innerfire.net
-X-X-Sender: gmack@mtl.rackplans.net
-To: Christoph Hellwig <hch@infradead.org>
-cc: "Ted Ts'o" <tytso@mit.edu>, Thiago Farina <tfransosi@gmail.com>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-In-Reply-To: <20110427064719.GB597@infradead.org>
-Message-ID: <alpine.DEB.2.00.1104270445210.7570@mtl.rackplans.net>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com> <20110427005243.GI9486@thunk.org> <20110427064719.GB597@infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755471Ab1D0JBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:01:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60957 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab1D0JBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 05:01:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nUOaemJhjP9OjJlR8UBx4NTlvUqwQezOThLjaNJ4K5y/Ry7RmOvDwTGKsjIQNdJfxp
+         HyeZKWPOjGBU7Gu/fPYUjZY+C2NkJqaYgmetMjKkf/KXp0LfK1f5KISFOXoKbXUJAyEM
+         fv59CKYEvOFaF4Ukv8WnZzn+K3bUkCJS9BXX8=
+Date: Wed, 27 Apr 2011 11:01:28 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] drop_pagecache syscall
+Message-ID: <20110427085910.GA1749@linux.betterlinux.com>
+References: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
+ <20110427001453.GD12436@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427001453.GD12436@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011, Christoph Hellwig wrote:
-
-> Date: Wed, 27 Apr 2011 02:47:19 -0400
-> From: Christoph Hellwig <hch@infradead.org>
-> To: Ted Ts'o <tytso@mit.edu>, Thiago Farina <tfransosi@gmail.com>,
->     linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-> Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-> 
-> On Tue, Apr 26, 2011 at 08:52:43PM -0400, Ted Ts'o wrote:
-> > I don't think this is not a good idea.
+On Wed, Apr 27, 2011 at 10:14:53AM +1000, Dave Chinner wrote:
+> On Tue, Apr 26, 2011 at 11:35:27PM +0200, Andrea Righi wrote:
+> > Introduce sys_drop_pagecache() system call to drop the page cache pages of
+> > a single filesystem.
 > > 
-> > First of all, changing 2800 instances of strcmp will induce a huge
-> > amount of code churn, that will cause patches to break, etc.  And
-> > whether streq() looks better is going to be very much a case of
-> > personal preference.  I'm so used to !strcmp(a, b) that streq(a, b)
-> > would be harder for me, just because I'm not used to it.
+> > This new system call takes a file descriptor as argument and drops only
+> > the page cache pages of the file system it references.
 > > 
-> > So I'd NACK a change like this to any parts of the kernel that I'm
-> > maintaining.  If another people feel that way, it's not clear that
-> > having two different conventions in the kernel would necessarily help...
+> > At the moment it is possible to drop page cache pages via
+> > /proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+> > 
+> > The first method drops the whole page cache while the second can be used
+> > to drop page cache pages of a single file descriptor. But there's not a
+> > simple way to drop all the pages of a filesystem (we could scan all the
+> > file descriptors and use posix_fadvise(), but this solution doesn't scale
+> > very well in some cases).
 > 
-> Same here.  Diverging from standard ANSI C just for the sake of being
-> different is an utterly bad idea.  strcmp might not be the most natural
-> calling convention, but it's been in the wild for 30 years, and everyone
-> taking a C 101 course should know about it.
+> Why not just add a new posix_fadvise() command? e.g.
+> POSIX_FADV_DONTNEED_FS. Simpler than adding a new syscall...
+
+Agreed.
+
 > 
-> And if you get it wrong and don't notice it just means your testing
-> coverage sucks badly.
+> > This functionality can be used by all the applications that want to have a
+> > better control over the page cache management (for example to immediately drop
+> > pages that for sure will not be reused in the near future, without calling
+> > posix_fadvise() for all the files they've touched), or to provide a more fine
+> > grained debugging feature usable by the filesystem benchmarks.
+> > 
+> > The system call does not require root privileges and it can be called by any
+> > unprivileged application. For example, we can write a userspace tool to run
+> > something like this:
+> > 
+> >   $ drop-pagecache /path/file_or_dir
+> 
+> That's a potential DOS vector, I think. Drop the pagecache in a hard
+> loop on the root fs of a busy server and watch it crawl...
 
-Knowing about it and not screwing it up are two different things. I was 
-working on a project a few years ago and we made this exact change thanks 
-to the backwards logic of strcmp constantly screwing people up and the bug 
-count went down considerably.
+Yes, probably we could allow only the CAP_SYS_ADMIN tasks to execute
+this syscall.
 
+> 
+> > +/*
+> > + * Drop page cache of a single superblock
+> > + */
+> > +SYSCALL_DEFINE1(drop_pagecache, int, fd)
+> > +{
+> > +	struct file *file;
+> > +	struct super_block *sb;
+> > +	int fput_needed;
+> > +
+> > +	file = fget_light(fd, &fput_needed);
+> > +	if (!file)
+> > +		return -EBADF;
+> > +	sb = file->f_dentry->d_sb;
+> > +
+> > +	down_read(&sb->s_umount);
+> > +	drop_pagecache_sb(sb, NULL);
+> > +	up_read(&sb->s_umount);
+> > +
+> > +	fput_light(file, fput_needed);
+> > +	return 0;
+> 
+> You're holding an open reference to a file/dir on the fs so it can't
+> be unmounted from under you. Hence I don't think you need the
+> s_umount locking.
 
-	Gerhard
+Yes, you're right. The fs can't be unmounted, so I also think we can do
+it without the s_umount locking.
 
+I'll apply your suggestions, do some tests and post a new version of the
+patch.
 
---
-Gerhard Mack
+Thanks for the review.
 
-gmack@innerfire.net
-
-<>< As a computer I find your faith in technology amusing.
+-Andrea
