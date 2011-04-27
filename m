@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759993Ab1D0Upk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:45:40 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:39962 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759980Ab1D0Upi (ORCPT
+	id S1760014Ab1D0UqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:46:12 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:53098 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759979Ab1D0UqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:45:38 -0400
-Date: Wed, 27 Apr 2011 22:36:40 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Realtek linux nic maintainers <nic_swsd@realtek.com>
-Subject: [PATCH net-next] r8169: fix merge conflict fix.
-Message-ID: <20110427203640.GC19708@electric-eye.fr.zoreil.com>
-Mime-Version: 1.0
+	Wed, 27 Apr 2011 16:46:08 -0400
+Date: Wed, 27 Apr 2011 22:46:07 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Joe Perches <joe@perches.com>
+Cc: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH v3.2] kbuild: implement several W= levels
+Message-ID: <20110427204607.GA9005@merkur.ravnborg.org>
+References: <20110427113513.GB18112@eferding.osrc.amd.com> <1303935327-5154-1-git-send-email-bp@alien8.de> <1303935660.24299.76.camel@Joe-Laptop>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <1303935660.24299.76.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- use adequate MAC_VER id
-  (see 01dc7fec4025f6bb72b6b98ec88b375346b6dbbb)
-- remove duplicate rtl_firmware_info record
-- remove duplicate functions
+On Wed, Apr 27, 2011 at 01:21:00PM -0700, Joe Perches wrote:
+> On Wed, 2011-04-27 at 22:15 +0200, Borislav Petkov wrote:
+> > From: Sam Ravnborg <sam@ravnborg.org>
+> []
+> > +warning-1 += -Wold-style-definition
+> > +warning-1 += $(call cc-option, -Wmissing-include-dirs)
+> 
+> Only thing I would suggest is a comment describing why
+> some entries use $(call cc-option, -Wfoo) and others don't.
+> 
+> Something akin to:
+> 
+> # Use call cc-option when the minimum supported gcc version does not
+> # support a specific option but a later gcc version does.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Realtek linux nic maintainers <nic_swsd@realtek.com>
----
- drivers/net/r8169.c |   25 +++++--------------------
- 1 files changed, 5 insertions(+), 20 deletions(-)
+>From the patch:
++# $(call cc-option, -W...) handles gcc -W.. options which
+ # are not supported by all versions of the compiler
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 025dedd..6364e0b 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -191,9 +191,8 @@ static const struct rtl_firmware_info {
- 	{ .mac_version = RTL_GIGA_MAC_VER_26, .fw_name = FIRMWARE_8168D_2 },
- 	{ .mac_version = RTL_GIGA_MAC_VER_29, .fw_name = FIRMWARE_8105E_1 },
- 	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 },
--	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 },
--	{ .mac_version = RTL_GIGA_MAC_VER_31, .fw_name = FIRMWARE_8168E_1 },
--	{ .mac_version = RTL_GIGA_MAC_VER_32, .fw_name = FIRMWARE_8168E_2 }
-+	{ .mac_version = RTL_GIGA_MAC_VER_32, .fw_name = FIRMWARE_8168E_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_33, .fw_name = FIRMWARE_8168E_2 }
- };
- 
- enum cfg_version {
-@@ -2535,6 +2534,8 @@ static void rtl8168e_hw_phy_config(struct rtl8169_private *tp)
- 		{ 0x1f, 0x0000 }
- 	};
- 
-+	rtl_apply_firmware(tp);
-+
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- 
- 	/* DCO enable for 10M IDLE Power */
-@@ -2576,20 +2577,6 @@ static void rtl8168e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x0d, 0x0000);
- }
- 
--static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
--{
--	rtl_apply_firmware(tp);
--
--	rtl8168e_hw_phy_config(tp);
--}
--
--static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
--{
--	rtl_apply_firmware(tp);
--
--	rtl8168e_hw_phy_config(tp);
--}
--
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -2705,10 +2692,8 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 		rtl8105e_hw_phy_config(tp);
- 		break;
- 	case RTL_GIGA_MAC_VER_32:
--		rtl8168e_1_hw_phy_config(tp);
--		break;
- 	case RTL_GIGA_MAC_VER_33:
--		rtl8168e_2_hw_phy_config(tp);
-+		rtl8168e_hw_phy_config(tp);
- 		break;
- 
- 	default:
--- 
-1.7.4.4
+So it is already included.
 
+	Sam
