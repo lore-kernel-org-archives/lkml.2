@@ -1,84 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab1D0H45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 03:56:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab1D0H44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 03:56:56 -0400
-Date: Wed, 27 Apr 2011 10:56:47 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: RCU+KVM: making CPU guest mode a quiescent state.
-Message-ID: <20110427075647.GJ2265@redhat.com>
-References: <20110426123824.GD22443@redhat.com>
- <20110426155528.GD2135@linux.vnet.ibm.com>
- <4DB7C9F8.5070906@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB7C9F8.5070906@redhat.com>
+	id S1754532Ab1D0H56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 03:57:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36442 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab1D0H54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 03:57:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 27 Apr 2011 16:51:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Ying Han <yinghan@google.com>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: [PATCHv2] memcg: reclaim memory from node in round-robin
+Message-Id: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 10:47:04AM +0300, Avi Kivity wrote:
-> On 04/26/2011 06:55 PM, Paul E. McKenney wrote:
-> >On Tue, Apr 26, 2011 at 03:38:24PM +0300, Gleb Natapov wrote:
-> >>  Hello Paul,
-> >>
-> >>  I have a question about RCU + KVM. KVM does not hold any references to RCU
-> >>  protected data when it switches CPU into a guest mode. In fact switching
-> >>  to a guest mode is very similar to exiting to userspase from RCU point
-> >>  of view. In addition CPU may stay in a guest mode for quite a long time
-> >>  (up to one time slice). It looks like it will be beneficial to treat guest
-> >>  mode as quiescent state, just like user-mode execution. How can this be
-> >>  done? I was trying to find how RCU knows about cpu entering user-mode,
-> >>  but it seems that it does this by checking CPU mode in a timer interrupt
-> >>  (update_process_times()->rcu_check_callbacks()). This will not work for
-> >>  guest mode detection since timer interrupt will kick CPU out of a guest
-> >>  mode and timer interrupt will always see CPU in kernel mode. Do we have
-> >>  a simple function to call to notify RCU that CPU passed quiescent state
-> >>  which we can call just before entering guest?
-> >
-> >Hello, Gleb,
-> >
-> >You could call rcu_note_context_switch(), passing it the current
-> >CPU.  Please note that preemption -must- be disabled when calling
-> >this.  You could call this just after exiting the guest as well
-> >as just before entering guest.
-> >
-> 
-> It's expected that after exiting, we'd spend a very short time in
-> the kernel, and then either re-enter the guest, exit to userspace,
-> or switch to another task.  So I think calling it just before entry
-> should be sufficient.
-Definitely. This will allow other CPUs to complete rcu barrier much
-earlier.
+I changed the logic a little and add a filter for skipping nodes.
+With large NUMA, tasks may under cpuset or mempolicy and the usage of memory
+can be unbalanced. So, I think a filter is required.
 
-> 
-> Looking at the code, I see rcu_note_context_switch() calls
-> rcu_sched_qs(), which does
-> 
->     rdp->passed_quiesc_completed = rdp->gpnum - 1;
->     barrier();
->     rdp->passed_quiesc = 1;
-> 
-> and also calls rcu_preempt_note_context_switch(), which calls
-> rcu_preempt_qs(), which does
-> 
->     rdp->passed_quiesc_completed = rdp->gpnum - 1;
->     barrier();
->     rdp->passed_quiesc = 1;
->     current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-> 
-> the similarity is remarkable.  Is this intended?  Or did I get lost
-> in a maze of #ifdefs?
-> 
-One of them works on rcu_sched_data another on rcu_preempt_data as far
-as I see.
+==
+Now, memory cgroup's direct reclaim frees memory from the current node.
+But this has some troubles. In usual, when a set of threads works in
+cooperative way, they are tend to on the same node. So, if they hit
+limits under memcg, it will reclaim memory from themselves, it may be
+active working set.
 
---
-			Gleb.
+For example, assume 2 node system which has Node 0 and Node 1
+and a memcg which has 1G limit. After some work, file cacne remains and
+and usages are
+   Node 0:  1M
+   Node 1:  998M.
+
+and run an application on Node 0, it will eats its foot before freeing
+unnecessary file caches.
+
+This patch adds round-robin for NUMA and adds equal pressure to each
+node. When using cpuset's spread memory feature, this will work very well.
+
+
+From: Ying Han <yinghan@google.com>
+Signed-off-by: Ying Han <yinghan@google.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Changelog v1->v2:
+  - fixed comments.
+  - added a logic to avoid scanning unused node.
+
+---
+ include/linux/memcontrol.h |    1 
+ mm/memcontrol.c            |   98 ++++++++++++++++++++++++++++++++++++++++++---
+ mm/vmscan.c                |    9 +++-
+ 3 files changed, 101 insertions(+), 7 deletions(-)
+
+Index: memcg/include/linux/memcontrol.h
+===================================================================
+--- memcg.orig/include/linux/memcontrol.h
++++ memcg/include/linux/memcontrol.h
+@@ -108,6 +108,7 @@ extern void mem_cgroup_end_migration(str
+  */
+ int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
+ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
++int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
+ 				       struct zone *zone,
+ 				       enum lru_list lru);
+Index: memcg/mm/memcontrol.c
+===================================================================
+--- memcg.orig/mm/memcontrol.c
++++ memcg/mm/memcontrol.c
+@@ -237,6 +237,11 @@ struct mem_cgroup {
+ 	 * reclaimed from.
+ 	 */
+ 	int last_scanned_child;
++	int last_scanned_node;
++#if MAX_NUMNODES > 1
++	nodemask_t	scan_nodes;
++	unsigned long   next_scan_node_update;
++#endif
+ 	/*
+ 	 * Should the accounting and control be hierarchical, per subtree?
+ 	 */
+@@ -650,18 +655,27 @@ static void mem_cgroup_soft_scan(struct 
+ 	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_SCAN], val);
+ }
+ 
++static unsigned long
++mem_cgroup_get_zonestat_node(struct mem_cgroup *mem, int nid, enum lru_list idx)
++{
++	struct mem_cgroup_per_zone *mz;
++	u64 total;
++	int zid;
++
++	for (zid = 0; zid < MAX_NR_ZONES; zid++) {
++		mz = mem_cgroup_zoneinfo(mem, nid, zid);
++		total += MEM_CGROUP_ZSTAT(mz, idx);
++	}
++	return total;
++}
+ static unsigned long mem_cgroup_get_local_zonestat(struct mem_cgroup *mem,
+ 					enum lru_list idx)
+ {
+-	int nid, zid;
+-	struct mem_cgroup_per_zone *mz;
++	int nid;
+ 	u64 total = 0;
+ 
+ 	for_each_online_node(nid)
+-		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+-			mz = mem_cgroup_zoneinfo(mem, nid, zid);
+-			total += MEM_CGROUP_ZSTAT(mz, idx);
+-		}
++		total += mem_cgroup_get_zonestat_node(mem, nid, idx);
+ 	return total;
+ }
+ 
+@@ -1471,6 +1485,77 @@ mem_cgroup_select_victim(struct mem_cgro
+ 	return ret;
+ }
+ 
++#if MAX_NUMNODES > 1
++
++/*
++ * Update nodemask always is not very good. Even if we have empty
++ * list, or wrong list here, we can start from some node and traverse all nodes
++ * based on zonelist. So, update the list loosely once in 10 secs.
++ *
++ */
++static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
++{
++	int nid;
++
++	if (time_after(mem->next_scan_node_update, jiffies))
++		return;
++
++	mem->next_scan_node_update = jiffies + 10*HZ;
++	/* make a nodemask where this memcg uses memory from */
++	mem->scan_nodes = node_states[N_HIGH_MEMORY];
++
++	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
++
++		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
++		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
++			continue;
++
++		if (total_swap_pages &&
++		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
++		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
++			continue;
++		node_clear(nid, mem->scan_nodes);
++	}
++
++}
++
++/*
++ * Selecting a node where we start reclaim from. Because what we need is just
++ * reducing usage counter, start from anywhere is O,K. Considering
++ * memory reclaim from current node, there are pros. and cons.
++ *
++ * Freeing memory from current node means freeing memory from a node which
++ * we'll use or we've used. So, it may make LRU bad. And if several threads
++ * hit limits, it will see a contention on a node. But freeing from remote
++ * node means more costs for memory reclaim because of memory latency.
++ *
++ * Now, we use round-robin. Better algorithm is welcomed.
++ */
++int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
++{
++	int node;
++
++	mem_cgroup_may_update_nodemask(mem);
++	node = mem->last_scanned_node;
++
++	node = next_node(node, mem->scan_nodes);
++	if (node == MAX_NUMNODES) {
++		node = first_node(mem->scan_nodes);
++		if (unlikely(node == MAX_NUMNODES))
++			node = numa_node_id();
++	}
++
++	mem->last_scanned_node = node;
++	return node;
++}
++
++#else
++int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
++{
++	return 0;
++}
++#endif
++
+ /*
+  * Scan the hierarchy if needed to reclaim memory. We remember the last child
+  * we reclaimed from, so that we don't end up penalizing one child extensively
+@@ -4678,6 +4763,7 @@ mem_cgroup_create(struct cgroup_subsys *
+ 		res_counter_init(&mem->memsw, NULL);
+ 	}
+ 	mem->last_scanned_child = 0;
++	mem->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&mem->oom_notify);
+ 
+ 	if (parent)
+Index: memcg/mm/vmscan.c
+===================================================================
+--- memcg.orig/mm/vmscan.c
++++ memcg/mm/vmscan.c
+@@ -2198,6 +2198,7 @@ unsigned long try_to_free_mem_cgroup_pag
+ {
+ 	struct zonelist *zonelist;
+ 	unsigned long nr_reclaimed;
++	int nid;
+ 	struct scan_control sc = {
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+@@ -2208,10 +2209,16 @@ unsigned long try_to_free_mem_cgroup_pag
+ 		.mem_cgroup = mem_cont,
+ 		.nodemask = NULL, /* we don't care the placement */
+ 	};
++	/*
++	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim
++	 * don't take care of from where we get pages . So, the node where
++	 * we start scan is not needed to be current node.
++	 */
++	nid = mem_cgroup_select_victim_node(mem_cont);
+ 
+ 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+ 			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
+-	zonelist = NODE_DATA(numa_node_id())->node_zonelists;
++	zonelist = NODE_DATA(nid)->node_zonelists;
+ 
+ 	trace_mm_vmscan_memcg_reclaim_begin(0,
+ 					    sc.may_writepage,
+
