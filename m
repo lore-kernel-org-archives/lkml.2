@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab1D0SfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:35:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:9712 "EHLO
+	id S1759855Ab1D0Sgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:36:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:11002 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab1D0SfK (ORCPT
+	with ESMTP id S1759837Ab1D0Sgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:35:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:organization;
-	b=ZcKdUD65rXtwrbyqSjP57ZFD7BE4UoTY3oUeOkLEiG58dUiiXG+3qJ8hjJdoGuPKa
-	pgB0H2MmJL4J/yBzp/LgA==
-From: David Decotigny <decot@google.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <bhutchings@solarflare.com>, mirq-linux@rere.qmqm.pl,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: David Decotigny <decot@google.com>
-Subject: [PATCHv2] acenic: Fix using the specified speed when configuring NIC
-Date: Wed, 27 Apr 2011 11:34:50 -0700
-Message-Id: <1303929290-21037-6-git-send-email-decot@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303001651-4074-1-git-send-email-decot@google.com>
-References: <1303001651-4074-1-git-send-email-decot@google.com>
-Organization: Google, Inc.
+	Wed, 27 Apr 2011 14:36:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=LryUSoKpj6+QZuolgKsP1CnZYsDYwwCn8Ka7nPiaX+8QnNeLvPIwsxe0/zPPdq0xaM
+         GzQTAPfniFZIdxWkEdQQ==
+Date: Wed, 27 Apr 2011 11:36:16 -0700
+From: Mandeep Singh Baines <msb@google.com>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] hung_task_timeout: configurable default
+Message-ID: <20110427183616.GL6027@google.com>
+References: <4DB8600C.8080000@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB8600C.8080000@suse.com>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tells the NIC to take the speed specified by ethtool into account
-when configuring the NIC, instead of keeping the previous speed.
+Jeff Mahoney (jeffm@suse.com) wrote:
+>  This patch allows the default value for sysctl_hung_task_timeout_secs
+>  to be set at build time. The feature carries virtually no overhead,
+>  so it makes sense to keep it enabled. On heavily loaded systems, though,
+>  it can end up triggering stack traces when there is no bug other than
+>  the system being underprovisioned. We use this patch to keep the hung task
+>  facility available but disabled at boot-time.
+> 
 
-Signed-off-by: David Decotigny <decot@google.com>
----
- drivers/net/acenic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Clever.
 
-diff --git a/drivers/net/acenic.c b/drivers/net/acenic.c
-index a579899..82260ca 100644
---- a/drivers/net/acenic.c
-+++ b/drivers/net/acenic.c
-@@ -2720,7 +2720,7 @@ static int ace_set_settings(struct net_device *dev, struct ethtool_cmd *ecmd)
- 		link |= LNK_NEGOTIATE;
- 	if (ethtool_cmd_speed(ecmd) != speed) {
- 		link &= ~(LNK_1000MB | LNK_100MB | LNK_10MB);
--		switch (speed) {
-+		switch (ethtool_cmd_speed(ecmd)) {
- 		case SPEED_1000:
- 			link |= LNK_1000MB;
- 			break;
--- 
-1.7.3.1
+>  The default of 120 seconds is preserved. As a note, commit e162b39a may
+>  have accidentally reverted commit fb822db4, which raised the default from
+>  120 seconds to 480 seconds.
+> 
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 
+Acked-by: Mandeep Singh Baines <msb@google.com>
+
+> ---
+>  kernel/hung_task.c |    3 ++-
+>  lib/Kconfig.debug  |   14 ++++++++++++++
+>  2 files changed, 16 insertions(+), 1 deletion(-)
+> 
+> --- a/kernel/hung_task.c
+> +++ b/kernel/hung_task.c
+> @@ -33,7 +33,8 @@ unsigned long __read_mostly sysctl_hung_
+>  /*
+>   * Zero means infinite timeout - no checking done:
+>   */
+> -unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
+> +unsigned long __read_mostly sysctl_hung_task_timeout_secs =
+> +					CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
+>  
+>  unsigned long __read_mostly sysctl_hung_task_warnings = 10;
+>  
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -214,6 +214,20 @@ config DETECT_HUNG_TASK
+>  	  enabled then all held locks will also be reported. This
+>  	  feature has negligible overhead.
+>  
+> +config DEFAULT_HUNG_TASK_TIMEOUT
+> +	int "Default timeout for hung task detection (in seconds)"
+> +	depends on DETECT_HUNG_TASK
+> +	default 120
+> +	help
+> +	  This option controls the default timeout (in seconds) used
+> +	  to determine when a task has become non-responsive and should
+> +	  be considered hung.
+> +
+> +	  It can be adjusted at runtime via the kernel.hung_task_timeout
+> +	  sysctl or by writing a value to /proc/sys/kernel/hung_task_timeout.
+> +
+> +	  A timeout of 0 disables the check.  The default is 120 seconds.
+> +
+>  config BOOTPARAM_HUNG_TASK_PANIC
+>  	bool "Panic (Reboot) On Hung Tasks"
+>  	depends on DETECT_HUNG_TASK
+> -- 
+> Jeff Mahoney
+> SUSE Labs
