@@ -1,108 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759762Ab1D0R4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 13:56:15 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:30078 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756660Ab1D0R4O convert rfc822-to-8bit (ORCPT
+	id S932102Ab1D0SN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:13:58 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:55108 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab1D0SN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 13:56:14 -0400
+	Wed, 27 Apr 2011 14:13:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uGQusMcThwiI1sObbELWpJ16FVkPiyL5xjXSTe5xK2q6tWL9wpNK6YFB9zT9XbAWw9
-         9HKkL+kVDS86fP0MuZbg==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTim-U3MTnToFPL11NcVnOCig4zJMAQ@mail.gmail.com>
-References: <20110427164708.1143395e.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTin+rDOWGYq9dg-XcCWs+yT8Yw-VMw@mail.gmail.com>
-	<20110427174813.8b34df90.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTim-U3MTnToFPL11NcVnOCig4zJMAQ@mail.gmail.com>
-Date: Wed, 27 Apr 2011 10:56:11 -0700
-Message-ID: <BANLkTi=zoFK2HVC64qqeHVO_kq4KOBLOrA@mail.gmail.com>
-Subject: Re: [PATCHv3] memcg: fix get_scan_count for small targets
-From: Ying Han <yinghan@google.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=tqWbUjSWCxl5zmwftPhlNZnoVV9bzKY2I6YSjYUZ46/I87VoY3Gidev98y8oUTiZS5
+         216A4+yqfCgFVavvpDlIW5+ei8J6fK5aJiKvRsADa2fNXzLkNqW6EfdosudPY6Azsf/I
+         bjlFYgsg4My0wKOeTBe0z5MHO9RzuTDpvsqIM=
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Date: Wed, 27 Apr 2011 20:13:47 +0200
+Message-Id: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Ying Han <yinghan@google.com>
+Introduce a new fadvise flag to drop page cache pages of a single
+filesystem.
 
---Ying
-On Wed, Apr 27, 2011 at 2:14 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Wed, Apr 27, 2011 at 5:48 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> On Wed, 27 Apr 2011 17:48:18 +0900
->> Minchan Kim <minchan.kim@gmail.com> wrote:
->>
->>> On Wed, Apr 27, 2011 at 4:47 PM, KAMEZAWA Hiroyuki
->>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>> > At memory reclaim, we determine the number of pages to be scanned
->>> > per zone as
->>> >        (anon + file) >> priority.
->>> > Assume
->>> >        scan = (anon + file) >> priority.
->>> >
->>> > If scan < SWAP_CLUSTER_MAX, the scan will be skipped for this time
->>> > and priority gets higher. This has some problems.
->>> >
->>> >  1. This increases priority as 1 without any scan.
->>> >     To do scan in this priority, amount of pages should be larger than 512M.
->>> >     If pages>>priority < SWAP_CLUSTER_MAX, it's recorded and scan will be
->>> >     batched, later. (But we lose 1 priority.)
->>> >     If memory size is below 16M, pages >> priority is 0 and no scan in
->>> >     DEF_PRIORITY forever.
->>> >
->>> >  2. If zone->all_unreclaimabe==true, it's scanned only when priority==0.
->>> >     So, x86's ZONE_DMA will never be recoverred until the user of pages
->>> >     frees memory by itself.
->>> >
->>> >  3. With memcg, the limit of memory can be small. When using small memcg,
->>> >     it gets priority < DEF_PRIORITY-2 very easily and need to call
->>> >     wait_iff_congested().
->>> >     For doing scan before priorty=9, 64MB of memory should be used.
->>> >
->>> > Then, this patch tries to scan SWAP_CLUSTER_MAX of pages in force...when
->>> >
->>> >  1. the target is enough small.
->>> >  2. it's kswapd or memcg reclaim.
->>> >
->>> > Then we can avoid rapid priority drop and may be able to recover
->>> > all_unreclaimable in a small zones. And this patch removes nr_saved_scan.
->>> > This will allow scanning in this priority even when pages >> priority
->>> > is very small.
->>> >
->>> > Changelog v2->v3
->>> >  - removed nr_saved_scan completely.
->>> >
->>> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
->>>
->>> The patch looks good to me but I have a nitpick about just coding style.
->>> How about this? I think below looks better but it's just my private
->>> opinion and I can't insist on my style. If you don't mind it, ignore.
->>>
->>
->> I did this at the 1st try and got bug.....a variable 'file' here is
->> reused and now broken. Renaming it with new variable will be ok, but it
->
-> Right you are. I missed that. :)
-> Thanks.
->
->
-> --
-> Kind regards,
-> Minchan Kim
->
+At the moment it is possible to drop page cache pages via
+/proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+
+The first method drops the whole page cache while the second can be used
+to drop page cache pages of a single file descriptor. However, there's
+not a simple way to drop all the pages of a filesystem (we could scan
+all the file descriptors and use posix_fadvise(POSIX_FADV_DONTNEED), but
+this solution obviously doesn't scale well).
+
+This functionality requires root privilege to avoid potential DoS in the
+system (i.e., a hard loop of posix_fadvise(POSIX_FADV_DONTNEED_FS) on
+the root filesystem).
+
+A practical example:
+
+  # ls -lh /mnt/sda/zero /mnt/sdb/zero
+  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sda/zero
+  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sdb/zero
+
+  $ grep ^Cached /proc/meminfo
+  Cached:             5660 kB
+  $ md5sum /mnt/sda/zero /mnt/sdb/zero
+  2c7ab85a893283e98c931e9511add182  /mnt/sda/zero
+  2c7ab85a893283e98c931e9511add182  /mnt/sdb/zero
+  $ grep ^Cached /proc/meminfo
+  Cached:            38544 kB
+  $ sudo ./drop-pagecache /mnt/sda/
+  $ grep ^Cached /proc/meminfo
+  Cached:            22440 kB
+  $ sudo ./drop-pagecache /mnt/sdb/
+  $ grep ^Cached /proc/meminfo
+  Cached:             5056 kB
+
+A previous RFC about this topic can be found here:
+  http://marc.info/?l=linux-kernel&m=130385374902114&w=2
+
+ChangeLog (v1 -> v2):
+
+ * use the same value for POSIX_FADV_DONTNEED_FS on all architectures
+ * check CAP_SYS_ADMIN capability instead of checking the EUID value
+
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ fs/drop_caches.c        |    2 +-
+ include/linux/fadvise.h |    1 +
+ include/linux/mm.h      |    2 ++
+ mm/fadvise.c            |    7 +++++++
+ 4 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 98b77c8..59d6caa 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -13,7 +13,7 @@
+ /* A global variable is a bit ugly, but it keeps the code simple */
+ int sysctl_drop_caches;
+ 
+-static void drop_pagecache_sb(struct super_block *sb, void *unused)
++void drop_pagecache_sb(struct super_block *sb, void *unused)
+ {
+ 	struct inode *inode, *toput_inode = NULL;
+ 
+diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
+index e8e7471..ab39117 100644
+--- a/include/linux/fadvise.h
++++ b/include/linux/fadvise.h
+@@ -17,5 +17,6 @@
+ #define POSIX_FADV_DONTNEED	4 /* Don't need these pages.  */
+ #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
+ #endif
++#define POSIX_FADV_DONTNEED_FS	8 /* Don't need these filesystem pages.  */
+ 
+ #endif	/* FADVISE_H_INCLUDED */
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 692dbae..004cdbc 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -21,6 +21,7 @@ struct anon_vma;
+ struct file_ra_state;
+ struct user_struct;
+ struct writeback_control;
++struct super_block;
+ 
+ #ifndef CONFIG_DISCONTIGMEM          /* Don't use mapnrs, do it properly */
+ extern unsigned long max_mapnr;
+@@ -1602,6 +1603,7 @@ int in_gate_area_no_mm(unsigned long addr);
+ #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
+ #endif	/* __HAVE_ARCH_GATE_AREA */
+ 
++void drop_pagecache_sb(struct super_block *sb, void *unused);
+ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 8d723c9..15155e7 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -57,6 +57,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		case POSIX_FADV_WILLNEED:
+ 		case POSIX_FADV_NOREUSE:
+ 		case POSIX_FADV_DONTNEED:
++		case POSIX_FADV_DONTNEED_FS:
+ 			/* no bad return value, but ignore advice */
+ 			break;
+ 		default:
+@@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 			invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
+ 		break;
++	case POSIX_FADV_DONTNEED_FS:
++		if (capable(CAP_SYS_ADMIN))
++			drop_pagecache_sb(file->f_dentry->d_sb, NULL);
++		else
++			ret = -EPERM;
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+-- 
+1.7.1
+
