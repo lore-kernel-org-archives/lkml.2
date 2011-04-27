@@ -1,153 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1D0O3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 10:29:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58377 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab1D0O3N (ORCPT
+	id S1756446Ab1D0O3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 10:29:40 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:53190 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753369Ab1D0O3i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 10:29:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=ZO/+HmlEmlG3Va+B5rJP1bx+EfkEDE3gu4GqivH+cdQf1O4le57nHC1FkNooVf30WJ
-         8W3HYPTZUAmtY1PskyS/UabT1ZyuPWvUYrj2h1z67WWZN60COpn1pagHn6mzcvk87UO/
-         BZqFEL6Jf5yQ5+RHKDxFqP+NlqoEQ1Y9rdO/4=
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fadvise: introduce POSIX_FADV_DONTNEED_FS
-Date: Wed, 27 Apr 2011 16:29:05 +0200
-Message-Id: <1303914545-15642-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 27 Apr 2011 10:29:38 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: arnd@arndb.de, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110427230344I.fujita.tomonori@lab.ntt.co.jp>
+References: <201104212129.17013.arnd@arndb.de>
+	 <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
+	 <20110427230344I.fujita.tomonori@lab.ntt.co.jp>
+Organization: ARM Limited
+Date: Wed, 27 Apr 2011 15:29:30 +0100
+Message-ID: <1303914570.15101.33.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 27 Apr 2011 14:29:31.0456 (UTC) FILETIME=[85BC2C00:01CC04E7]
+X-MC-Unique: 111042715293500801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new fadvise flag to drop page cache pages of a single
-filesystem.
+On Wed, 2011-04-27 at 15:06 +0100, FUJITA Tomonori wrote:
+> On Wed, 27 Apr 2011 10:52:25 +0100
+> Catalin Marinas <catalin.marinas@arm.com> wrote:
+> 
+> > Anyway, we end up with different DMA ops per device via dev_archdata.
+> 
+> Several architectures already do. What's wrong with the approach for
+> arm?
 
-At the moment it is possible to drop page cache pages via
-/proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+Nothing wrong IMHO but it depends on how you group the DMA ops as it may
+not be feasible to have all the combinations dmabounce/iommu/coherency
+combinations. I think the main combinations would be:
 
-The first method drops the whole page cache while the second can be used
-to drop page cache pages of a single file descriptor. However, there's
-not a simple way to drop all the pages of a filesystem (we could scan
-all the file descriptors and use posix_fadvise(POSIX_FADV_DONTNEED), but
-this solution obviously doesn't scale well).
+1. standard (no-iommu) + non-coherent
+2. standard (no-iommu) + coherent
+3. iommu + non-coherent
+4. iommu + coherent
+5. dmabounce + non-coherent
+6. dmabounce + coherent
 
-This functionality requires root privilege to avoid potential DoS in the
-system (i.e., a hard loop of posix_fadvise(POSIX_FADV_DONTNEED_FS) on
-the root filesystem).
+I think dmabounce and iommu can be exclusive (unless the iommu cannot
+access the whole RAM). If that's the case, we can have three type of DMA
+ops:
 
-A practical example:
+1. standard
+2. iommu
+3. dmabounce
 
-  # ls -lh /mnt/sda/zero /mnt/sdb/zero
-  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sda/zero
-  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sdb/zero
+with an additional flag via dev_archdata for cache coherency level (a
+device may be able to snoop the L1 or L2 cache etc.)
 
-  $ grep ^Cached /proc/meminfo
-  Cached:             5660 kB
-  $ md5sum /mnt/sda/zero /mnt/sdb/zero
-  2c7ab85a893283e98c931e9511add182  /mnt/sda/zero
-  2c7ab85a893283e98c931e9511add182  /mnt/sdb/zero
-  $ grep ^Cached /proc/meminfo
-  Cached:            38544 kB
-  $ sudo ./drop-pagecache /mnt/sda/
-  $ grep ^Cached /proc/meminfo
-  Cached:            22440 kB
-  $ sudo ./drop-pagecache /mnt/sdb/
-  $ grep ^Cached /proc/meminfo
-  Cached:             5056 kB
-
-A previous RFC about this topic can be found here:
-  http://marc.info/?l=linux-kernel&m=130385374902114&w=2
-
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- fs/drop_caches.c        |    2 +-
- include/linux/fadvise.h |    2 ++
- include/linux/mm.h      |    2 ++
- mm/fadvise.c            |    7 +++++++
- 4 files changed, 12 insertions(+), 1 deletions(-)
-
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 98b77c8..59d6caa 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -13,7 +13,7 @@
- /* A global variable is a bit ugly, but it keeps the code simple */
- int sysctl_drop_caches;
- 
--static void drop_pagecache_sb(struct super_block *sb, void *unused)
-+void drop_pagecache_sb(struct super_block *sb, void *unused)
- {
- 	struct inode *inode, *toput_inode = NULL;
- 
-diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
-index e8e7471..dc9ce98 100644
---- a/include/linux/fadvise.h
-+++ b/include/linux/fadvise.h
-@@ -13,9 +13,11 @@
- #if defined(__s390x__)
- #define POSIX_FADV_DONTNEED	6 /* Don't need these pages.  */
- #define POSIX_FADV_NOREUSE	7 /* Data will be accessed once.  */
-+#define POSIX_FADV_DONTNEED_FS	8 /* Don't need these filesystem pages.  */
- #else
- #define POSIX_FADV_DONTNEED	4 /* Don't need these pages.  */
- #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
-+#define POSIX_FADV_DONTNEED_FS	6 /* Don't need these filesystem pages.  */
- #endif
- 
- #endif	/* FADVISE_H_INCLUDED */
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 692dbae..004cdbc 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -21,6 +21,7 @@ struct anon_vma;
- struct file_ra_state;
- struct user_struct;
- struct writeback_control;
-+struct super_block;
- 
- #ifndef CONFIG_DISCONTIGMEM          /* Don't use mapnrs, do it properly */
- extern unsigned long max_mapnr;
-@@ -1602,6 +1603,7 @@ int in_gate_area_no_mm(unsigned long addr);
- #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
-+void drop_pagecache_sb(struct super_block *sb, void *unused);
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
- unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 8d723c9..4e31fe1 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -57,6 +57,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		case POSIX_FADV_WILLNEED:
- 		case POSIX_FADV_NOREUSE:
- 		case POSIX_FADV_DONTNEED:
-+		case POSIX_FADV_DONTNEED_FS:
- 			/* no bad return value, but ignore advice */
- 			break;
- 		default:
-@@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 			invalidate_mapping_pages(mapping, start_index,
- 						end_index);
- 		break;
-+	case POSIX_FADV_DONTNEED_FS:
-+		if (!current_euid())
-+			drop_pagecache_sb(file->f_dentry->d_sb, NULL);
-+		else
-+			ret = -EPERM;
-+		break;
- 	default:
- 		ret = -EINVAL;
- 	}
 -- 
-1.7.1
+Catalin
+
 
