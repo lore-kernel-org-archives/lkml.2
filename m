@@ -1,153 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab1D0SN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:13:58 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:55108 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab1D0SN4 (ORCPT
+	id S933098Ab1D0SOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:14:44 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:48346 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754260Ab1D0SOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:13:56 -0400
+	Wed, 27 Apr 2011 14:14:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=tqWbUjSWCxl5zmwftPhlNZnoVV9bzKY2I6YSjYUZ46/I87VoY3Gidev98y8oUTiZS5
-         216A4+yqfCgFVavvpDlIW5+ei8J6fK5aJiKvRsADa2fNXzLkNqW6EfdosudPY6Azsf/I
-         bjlFYgsg4My0wKOeTBe0z5MHO9RzuTDpvsqIM=
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
-Date: Wed, 27 Apr 2011 20:13:47 +0200
-Message-Id: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+        d=nanometrics.ca; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=MLVa1foS4oSGaeKpcXj4zqL4ygrQ9lC7KYA+l7EAbVdNyIpr6Xs4CDJROhG5yV5vbY
+         qqg2/tdek93ib7PiI+wO/mp3IXrdV0AKCUHabaQUtg+8xq9pvQNMR8daQiLK3EfCk+Qe
+         GeELUzppPBDbRLLS3qqy5qCsi+KA3kGVq5Uxk=
+From: James Nuss <jamesnuss@nanometrics.ca>
+To: Rodolfo Giometti <rodolfo.giometti@enneenne.com>,
+        Ricardo Martins <rasm@fe.up.pt>
+Cc: Ben Gardiner <bengardiner@nanometrics.ca>, linux-kernel@vger.kernel.org,
+        linuxpps@ml.enneenne.com, James Nuss <jamesnuss@nanometrics.ca>
+Subject: [PATCH 0/2] New PPS client driver for IRQs
+Date: Wed, 27 Apr 2011 14:14:12 -0400
+Message-Id: <1303928054-14662-1-git-send-email-jamesnuss@nanometrics.ca>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new fadvise flag to drop page cache pages of a single
-filesystem.
+This patchset contains 2 patches.  It is based on the work done by
+Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
+of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010. Most
+of the work was in removing the platform device registration from the
+driver itself as this is not the standard way of platform driver/device
+registration.
 
-At the moment it is possible to drop page cache pages via
-/proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+[1] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
 
-The first method drops the whole page cache while the second can be used
-to drop page cache pages of a single file descriptor. However, there's
-not a simple way to drop all the pages of a filesystem (we could scan
-all the file descriptors and use posix_fadvise(POSIX_FADV_DONTNEED), but
-this solution obviously doesn't scale well).
+[PATCH 1/2] is mostly a cleanup and contains refactoring of the echo 
+function definition interface. A default echo function has been defined 
+so all you need to do is set one of the ECHO flags and this function will 
+be used. Alternatively, don't set the ECHO flags or override the echo 
+function as required.
 
-This functionality requires root privilege to avoid potential DoS in the
-system (i.e., a hard loop of posix_fadvise(POSIX_FADV_DONTNEED_FS) on
-the root filesystem).
+[PATCH 2/2] adds a new PPS client driver for use with IRQs. The module is
+implemented as a platform driver therefore it is necessary to register
+platform device(s) to make use of it. Usually this is performed
+in your specific board setup.
 
-A practical example:
+TESTING:
+Testing was performed using the Texas Instruments OMAP-L138 based DA850
+evaluation board. GPIO6.6 was configured as an input and registered as
+an IRQ resource and platform device in the board setup - 
+arch/arm/mach-davinci/board-da850-evm.c.
+This GPIO was connected to a Trimble Lassen IQ generating real PPS signals.
+The dmesg output with PPS debugging enabled is as follows:
 
-  # ls -lh /mnt/sda/zero /mnt/sdb/zero
-  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sda/zero
-  -rw-r--r-- 1 root   root   16M 2011-04-20 10:20 /mnt/sdb/zero
+pps_core: LinuxPPS API ver. 1 registered
+pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+pps-irq: registering IRQ 203 as PPS source
+pps_core: source pps-irq.-1 got cdev (253:0)
+pps pps0: new PPS source pps-irq.-1
+pps-irq: requesting IRQ 203
+pps pps0: Registered IRQ 203 as PPS source
+pps pps0: PPS event at 946684801.344852542
+pps pps0: capture assert seq #1
+pps pps0: PPS event at 946684802.344817167
+pps pps0: capture assert seq #2
+pps pps0: PPS event at 946684803.344781959
+pps pps0: capture assert seq #3
+...
 
-  $ grep ^Cached /proc/meminfo
-  Cached:             5660 kB
-  $ md5sum /mnt/sda/zero /mnt/sdb/zero
-  2c7ab85a893283e98c931e9511add182  /mnt/sda/zero
-  2c7ab85a893283e98c931e9511add182  /mnt/sdb/zero
-  $ grep ^Cached /proc/meminfo
-  Cached:            38544 kB
-  $ sudo ./drop-pagecache /mnt/sda/
-  $ grep ^Cached /proc/meminfo
-  Cached:            22440 kB
-  $ sudo ./drop-pagecache /mnt/sdb/
-  $ grep ^Cached /proc/meminfo
-  Cached:             5056 kB
+This patchset applies cleanly (using 'git am') against v2.6.38.
+After applying to v2.6.39-rc5, a manual 'patch --merge' is also required to
+resolve the conflict.
 
-A previous RFC about this topic can be found here:
-  http://marc.info/?l=linux-kernel&m=130385374902114&w=2
+James Nuss (2):
+  pps: default echo function
+  pps: new client driver using IRQs
 
-ChangeLog (v1 -> v2):
-
- * use the same value for POSIX_FADV_DONTNEED_FS on all architectures
- * check CAP_SYS_ADMIN capability instead of checking the EUID value
-
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- fs/drop_caches.c        |    2 +-
- include/linux/fadvise.h |    1 +
- include/linux/mm.h      |    2 ++
- mm/fadvise.c            |    7 +++++++
- 4 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 98b77c8..59d6caa 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -13,7 +13,7 @@
- /* A global variable is a bit ugly, but it keeps the code simple */
- int sysctl_drop_caches;
- 
--static void drop_pagecache_sb(struct super_block *sb, void *unused)
-+void drop_pagecache_sb(struct super_block *sb, void *unused)
- {
- 	struct inode *inode, *toput_inode = NULL;
- 
-diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
-index e8e7471..ab39117 100644
---- a/include/linux/fadvise.h
-+++ b/include/linux/fadvise.h
-@@ -17,5 +17,6 @@
- #define POSIX_FADV_DONTNEED	4 /* Don't need these pages.  */
- #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
- #endif
-+#define POSIX_FADV_DONTNEED_FS	8 /* Don't need these filesystem pages.  */
- 
- #endif	/* FADVISE_H_INCLUDED */
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 692dbae..004cdbc 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -21,6 +21,7 @@ struct anon_vma;
- struct file_ra_state;
- struct user_struct;
- struct writeback_control;
-+struct super_block;
- 
- #ifndef CONFIG_DISCONTIGMEM          /* Don't use mapnrs, do it properly */
- extern unsigned long max_mapnr;
-@@ -1602,6 +1603,7 @@ int in_gate_area_no_mm(unsigned long addr);
- #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
-+void drop_pagecache_sb(struct super_block *sb, void *unused);
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
- unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 8d723c9..15155e7 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -57,6 +57,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		case POSIX_FADV_WILLNEED:
- 		case POSIX_FADV_NOREUSE:
- 		case POSIX_FADV_DONTNEED:
-+		case POSIX_FADV_DONTNEED_FS:
- 			/* no bad return value, but ignore advice */
- 			break;
- 		default:
-@@ -127,6 +128,12 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 			invalidate_mapping_pages(mapping, start_index,
- 						end_index);
- 		break;
-+	case POSIX_FADV_DONTNEED_FS:
-+		if (capable(CAP_SYS_ADMIN))
-+			drop_pagecache_sb(file->f_dentry->d_sb, NULL);
-+		else
-+			ret = -EPERM;
-+		break;
- 	default:
- 		ret = -EINVAL;
- 	}
--- 
-1.7.1
+ drivers/pps/clients/Kconfig       |    8 ++
+ drivers/pps/clients/Makefile      |    1 +
+ drivers/pps/clients/pps-irq.c     |  169 +++++++++++++++++++++++++++++++++++++
+ drivers/pps/clients/pps-ktimer.c  |   12 ---
+ drivers/pps/clients/pps_parport.c |    9 --
+ drivers/pps/kapi.c                |   20 +++--
+ 6 files changed, 191 insertions(+), 28 deletions(-)
+ create mode 100644 drivers/pps/clients/pps-irq.c
 
