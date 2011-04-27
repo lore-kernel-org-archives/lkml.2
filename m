@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759829Ab1D0TF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 15:05:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35188 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab1D0TFZ (ORCPT
+	id S1759874Ab1D0TKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 15:10:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43629 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab1D0TKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 15:05:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ToucBlj0LY/3ohmnTyAVV/OafCDByB9uD8AbiuCa+NrlldYoD95EFNlWJIq5qP6V9q
-         9f2S5DiRChpza/LZFDbu7RceCvyinKrTvbavZY7M/4ELwNu/r9piB8j+kC71oS4868U6
-         Zp+k+gYLUpJ5KJWlt9uBFuoPNPFOM9Wqgpndg=
+	Wed, 27 Apr 2011 15:10:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6329"; a="87985665"
+Message-ID: <4DB86A2D.3030406@codeaurora.org>
+Date: Wed, 27 Apr 2011 12:10:37 -0700
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110427162711.GA29460@elte.hu>
-References: <20110422092322.GA1948@elte.hu>
-	<BANLkTi=G7-v3ysxK2wY_3f8TecbD6ZjKog@mail.gmail.com>
-	<20110422105211.GB1948@elte.hu>
-	<20110422165007.GA18401@vps.sharma-home.net>
-	<20110422203022.GA20573@elte.hu>
-	<20110423201409.GA20072@elte.hu>
-	<20110424061645.GA12013@radium.snc4.facebook.com>
-	<20110427111141.GB28993@elte.hu>
-	<BANLkTimz-KevvqmxxUPp73GEaAC5PTGWWw@mail.gmail.com>
-	<20110427154805.GB23494@elte.hu>
-	<20110427162711.GA29460@elte.hu>
-Date: Wed, 27 Apr 2011 12:05:24 -0700
-X-Google-Sender-Auth: 8PAo8P7BwgbH2jutGBJlHKMQCCQ
-Message-ID: <BANLkTinA_PN_8nGDz_4SJcVZbagPndca+Q@mail.gmail.com>
-Subject: Re: [PATCH] perf events: Add stalled cycles generic event - PERF_COUNT_HW_STALLED_CYCLES
-From: Arun Sharma <arun@sharma-home.net>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arun Sharma <asharma@fb.com>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
+References: <1303923602-2923-1-git-send-email-fweisbec@gmail.com> <1303923602-2923-4-git-send-email-fweisbec@gmail.com> <4DB854AA.6070101@zytor.com> <20110427182633.GB1753@nowhere>
+In-Reply-To: <20110427182633.GB1753@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 9:27 AM, Ingo Molnar <mingo@elte.hu> wrote:
-
+On 4/27/2011 11:26 AM, Frederic Weisbecker wrote:
+> On Wed, Apr 27, 2011 at 10:38:50AM -0700, H. Peter Anvin wrote:
+>>
+>> How big of a win, if any, is this, really?
 >
-> That way we get a 'hidden overhead' profile: a profile of frequently executed
-> code which executes in the CPU in a suboptimal way.
->
-> So we should probably offer both events.
->
+> That's pretty significant, because if you can disable breakpoints,
+> then you can disable perf. Together they make quite a chunk.
 
-Yes - certainly.
+Another advantage is the ability to disable these features for kernel 
+bringup on new targets and kernel versions. Recently in v2.6.38 
+hw_breakpoints were broken in ARM. A change like this would have saved 
+me a hack to the Kconfig at the least.
 
- -Arun
+Mike
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
