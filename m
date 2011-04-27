@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab1D0KIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 06:08:15 -0400
-Received: from hall.aurel32.net ([88.191.126.93]:46734 "EHLO hall.aurel32.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757524Ab1D0KIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 06:08:13 -0400
-Date: Wed, 27 Apr 2011 12:08:06 +0200
-From: Aurelien Jarno <aurelien@aurel32.net>
-To: Dave Airlie <airlied@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drm/radeon: Use pci_dma_mapping_error()
-Message-ID: <20110427100806.GA20115@volta.aurel32.net>
-Mail-Followup-To: Aurelien Jarno <aurelien@aurel32.net>,
-	Dave Airlie <airlied@gmail.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1303882443-7613-1-git-send-email-aurelien@aurel32.net>
- <BANLkTim4LruS4VH4f_VguEr3p6OQrEn3Cg@mail.gmail.com>
+	id S1757679Ab1D0KJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 06:09:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45556 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab1D0KJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 06:09:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=A9+JUgc5Jy7u2UZPEud13JwxpKYRI1EJB7jWbwMfgj/Ty4Jmq6cc/MVBBeT2cWDv3v
+         8fbNXhS8Yv7vMWEIkUTit6KUujzySiX47sSm9rcGLBocVcXG8wrJ3cQhTHXgLVmHIMwJ
+         zpCHkC0xscl8xgNTGyJWktV45cRuzABAbCwBM=
+Date: Wed, 27 Apr 2011 12:09:44 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/6] signal: introduce do_sigtimedwait() to factor
+ out compat/native code
+Message-ID: <20110427100944.GB31015@htj.dyndns.org>
+References: <20110418134421.GA15951@redhat.com>
+ <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+ <20110418173224.GA27918@redhat.com>
+ <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+ <20110423175901.GA484@redhat.com>
+ <20110426194822.GA8520@redhat.com>
+ <20110426194904.GC8520@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTim4LruS4VH4f_VguEr3p6OQrEn3Cg@mail.gmail.com>
-X-Mailer: Mutt 1.5.20 (2009-06-14)
+In-Reply-To: <20110426194904.GC8520@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 05:49:50PM +1000, Dave Airlie wrote:
-> On Wed, Apr 27, 2011 at 3:34 PM, Aurelien Jarno <aurelien@aurel32.net> wrote:
-> > ... instead of comparing with DMA_ERROR_CODE, which will only work on
-> > powerpc/sparc/x86.
-> >
+On Tue, Apr 26, 2011 at 09:49:04PM +0200, Oleg Nesterov wrote:
+> Factor out the common code in sys_rt_sigtimedwait/compat_sys_rt_sigtimedwait
+> to the new helper, do_sigtimedwait().
 > 
-> So you wrote a patch that breaks it everwhere?
+> Add the comment to document the extra tick we add to timespec_to_jiffies(ts),
+> thanks to Linus who explained this to me.
+> 
+> Perhaps it would be better to move compat_sys_rt_sigtimedwait() into
+> signal.c under CONFIG_COMPAT, then we can make do_sigtimedwait() static.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-It seems I inverted the condition yes.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-> You might want to actually boot this sort of thing before I do, or
-> read the interface for pci_dma_mapping_error, it doesn't seem to
-> return what you seem to think it does.
+But please do consider adding docbook function comment to the new
+helper function.
 
-I tried, but I don't have such a card, so it doesn't trigger the bug.
-I'll send a v2 soon.
+Thanks.
 
 -- 
-Aurelien Jarno                          GPG: 1024D/F1BCDB73
-aurelien@aurel32.net                 http://www.aurel32.net
+tejun
