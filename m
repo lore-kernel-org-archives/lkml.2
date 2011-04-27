@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab1D0M7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 08:59:37 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41728 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab1D0M7g (ORCPT
+	id S932327Ab1D0NEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 09:04:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61689 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab1D0NEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 08:59:36 -0400
-Date: Wed, 27 Apr 2011 08:59:31 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: benh@kernel.crashing.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@elte.hu, acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org
-Subject: Re: [PATCH V4] POWER: perf_event: Skip updating kernel counters if
- register value shrinks
-Message-ID: <20110427125930.GB2936@mgebm.net>
-References: <20110427121902.GA2936@mgebm.net>
- <AE90C24D6B3A694183C094C60CF0A2F6D8AD03@saturn3.aculab.com>
+	Wed, 27 Apr 2011 09:04:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sU4B+QKbmJjWj3wzoOWkpqKZctEB0qUV6RcsbV8NUvex4gbkdqrqnnMOOHYS6iDZOp
+         YsSDjExErQQ4PHW90CR+KEG3M64c1UfRR9ECl82xohI2H+x3Ri0ZC1buFEdn9Gy248cG
+         TzBG5iyoCQ+hTJPiIMbmigzJkEZlUDgMMZLLg=
+Date: Wed, 27 Apr 2011 15:04:06 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/6] signal: sys_sigprocmask() needs
+ retarget_shared_pending()
+Message-ID: <20110427130406.GG31015@htj.dyndns.org>
+References: <20110418134421.GA15951@redhat.com>
+ <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+ <20110418173224.GA27918@redhat.com>
+ <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+ <20110423175901.GA484@redhat.com>
+ <20110426194822.GA8520@redhat.com>
+ <20110426195002.GF8520@redhat.com>
+ <BANLkTinp8FGQu2D1NVVc7xfEsqopook7Hg@mail.gmail.com>
+ <20110427125710.GA21281@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AD03@saturn3.aculab.com>
+In-Reply-To: <20110427125710.GA21281@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---bCsyhTFzCvuiizWE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just my 5 cents.
 
-On Wed, 27 Apr 2011, David Laight wrote:
+On Wed, Apr 27, 2011 at 02:57:10PM +0200, Oleg Nesterov wrote:
+> Yes, sigprocmask(how) is ugly, but there are sys_rt_sigprocmask() and
+> sys_sigprocmask() which have to handle these SIG_* operations anyway.
+> So, I think we should do:
+> 
+> 	1. Almost all callers of sigprocmask() use SIG_SETMASK, we can
+> 	   simply change them to use set_current_blocked().
 
-> > But it isn't, and it doesn't have trouble with 2^32 - 1. =20
->=20
-> what about:
-> prev =3D 0x00000001
-> val  =3D 0xffffffff
+I agree.  We don't need to worry about atomicity here, so there's no
+reason to encode bitops (be it and/or or andn/xor) when the
+determination of the new value can be simply done in the caller.
 
-Result is 0xfffffffe and we are fine.
->=20
-> 	David
->=20
->=20
+Thanks.
 
---bCsyhTFzCvuiizWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNuBMyAAoJEH65iIruGRnNPtwH/3T5/zvmHE2lShhDQxFFqP+R
-mLxZZERXWvuFK/ZTK6dAfrtUJTzPcYjtcnHWJV6xaFekMpk7WST3N9aXUu6RMHIC
-JnLrieUbi64dWymjVSjLU5wJRvvLUDCqoKIaR6/zu9QBUiucfWOV4RhAbJh+zqKz
-mNWYrObmcjWrdwYsql7or1olXsjCWIr28bFO29Ep3xOKS+oXlLUh2Kt4ktsYDtg1
-Fppbl1XrpKq0ZkH+LLNU+D6QEzrcyqK2VBrzjSE6UukXc712iW8AQePf5u1TXQE4
-NhNrY39WMDmDalXjdLJdbGaTRsVbD0PBOOeqCepmlS1F6bk4goRmaI9zTLOg2yQ=
-=cH+J
------END PGP SIGNATURE-----
-
---bCsyhTFzCvuiizWE--
+-- 
+tejun
