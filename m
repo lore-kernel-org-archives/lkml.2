@@ -1,166 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab1D0Qcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 12:32:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44854 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1D0Qce (ORCPT
+	id S1759271Ab1D0Qdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 12:33:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58176 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1D0Qdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 12:32:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=gPlZGBahdUrEqLdS2OBzJ5+QsaSR7WVXNsqnIyC2RBvAQpwPfz7LJ/67jgYaDupkRo
-         p7myD/wJ2jVwRSyLk/IwByBMQriVrrxIkFnBVxAZfL92QIieIGDm6hQZ3YtMXYmL8L5B
-         J7xaIt6hD+S/rLlRnCqPIivDlVSzs+7tOEerk=
-Subject: Re: [RFC][PATCH 1/4] clock_rtoffset: new syscall
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davide Libenzi <davidel@xmailserver.org>
-In-Reply-To: <alpine.LFD.2.02.1104271359580.3323@ionos>
-References: <alpine.LFD.2.00.1103102040190.2787@localhost6.localdomain6>
-	 <1303901023-11568-1-git-send-email-virtuoso@slind.org>
-	 <alpine.LFD.2.02.1104271359580.3323@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 27 Apr 2011 22:55:55 +0200
-Message-ID: <1303937755.1065.8.camel@zag>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 12:33:52 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: James Bottomley <james.bottomley@hansenpartnership.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+In-reply-to: <1303920553.2583.7.camel@mulgrave.site>
+References: <1303920553.2583.7.camel@mulgrave.site>
+Date: Wed, 27 Apr 2011 12:33:37 -0400
+Message-Id: <1303921583-sup-4021@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DB8456E.0005:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 16:02 +0200, Thomas Gleixner wrote:
-> On Wed, 27 Apr 2011, Alexander Shishkin wrote:
+Excerpts from James Bottomley's message of 2011-04-27 12:09:13 -0400:
+> The bug manifests as a soft lockup in kswapd:
 > 
-> > In order to keep track of system time changes, we introduce a new
-> > syscall which returns the offset of CLOCK_MONOTONIC clock against
-> > CLOCK_REALTIME. The caller is to store this value and use it in
-> > system calls (like clock_nanosleep or timerfd_settime) that will
-> > compare it against the effective offset in order to ensure that
-> > the caller's notion of the system time corresponds to the effective
-> > system time at the moment of the action being carried out. If it
-> > has changed, these system calls will return an error and the caller
-> > will have to obtain this offset again.
-> 
-> No, we do not expose kernel internals like this to user space. The
-> kernel internal representation of time is subject to change.
+> [  155.759084] netconsole: network logging started
+> [  598.920430] BUG: soft lockup - CPU#1 stuck for 67s! [kswapd0:46]
+> [  598.920472] Modules linked in: netconsole configfs fuse sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_seq snd_seq_device snd_pcm iwlagn mac80211 snd_timer uvcvideo btusb bluetooth snd cfg80211 videodev soundcore v4l2_compat_ioctl32 iTCO_wdt xhci_hcd e1000e snd_page_alloc rfkill i2c_i801 wmi iTCO_vendor_support microcode pcspkr joydev uinput ipv6 sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: netconsole]
+> [  598.920834] CPU 1 
+> [  598.920843] Modules linked in: netconsole configfs fuse sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_seq snd_seq_device snd_pcm iwlagn mac80211 snd_timer uvcvideo btusb bluetooth snd cfg80211 videodev soundcore v4l2_compat_ioctl32 iTCO_wdt xhci_hcd e1000e snd_page_alloc rfkill i2c_i801 wmi iTCO_vendor_support microcode pcspkr joydev uinput ipv6 sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: netconsole]
+> [  598.926818] 
 
-> The completely untested patch below should solve the same problem in a
-> sane way. Restricted to timerfd, but that really should be sufficient.
+Probably easier to debug with a sysrq-l and sysrq-w.  If you get stuck
+on the filesystem, it is probably waiting on ram, which it probably
+can't get because kswapd is spinning.  Eventually everyone backs up
+waiting for the transaction that never ends.  If we're really lucky it
+is just GFP_KERNEL where it should NOFS.
 
-> Subject: timerfd: Allow timers to be cancelled when clock was set
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Wed, 27 Apr 2011 14:16:42 +0200
+Since you're often stuck in different spots inside shrink_slab, we're
+probably not stuck on a lock.  But, trying with lock debugging, lockdep
+enabled and preempt on is a good idea to rule out locking mistakes.
 
-Seems to work fine for me here for the weird "cron timer" case, or the
-simple "desktop clock" use-case -- where we want to rely on the timer to
-let the process sleep as long as possible, but wake it up to recalculate
-the next wakeup in case anything has changed in the meantime.
+Does the fedora debug kernel enable preempt?
 
-Tested-By: Kay Sievers <kay.sievers@vrfy.org>
-
-The simple test program, that has two timerfds, and watches them is
-below. Changing the system time from wakes up only the timerfd with
-TFD_TIMER_CANCELON_SET set.
-
-Thanks,
-Kay
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <stdint.h>
-#include <sys/poll.h>
-#include <sys/timerfd.h>
-
-#ifndef TFD_TIMER_CANCELON_SET
-#define TFD_TIMER_CANCELON_SET (1 << 1)
-#endif
-
-int main(int argc, char *argv[])
-{
-	struct itimerspec its;
-	struct pollfd pollfd[2];
-
-	pollfd[0].fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK|TFD_CLOEXEC);
-	if (pollfd[0].fd < 0) {
-		printf("create error 1: %m\n");
-		_exit(2);
-	}
-	pollfd[0].events = POLLIN;
-
-	pollfd[1].fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK|TFD_CLOEXEC);
-	if (pollfd[1].fd < 0) {
-		printf("create error 2: %m\n");
-		_exit(2);
-	}
-	pollfd[1].events = POLLIN;
-
-	for (;;) {
-		printf("\n");
-
-		memset(&its, 0, sizeof(struct itimerspec));
-		clock_gettime(CLOCK_REALTIME, &its.it_value);
-		its.it_value.tv_sec += 10;
-
-		if (timerfd_settime(pollfd[0].fd, TFD_TIMER_ABSTIME, &its, NULL) < 0) {
-			printf("settime error 1: %m\n");
-			_exit(3);
-		} else {
-			printf("settime +10s 1\n");
-		}
-
-		if (timerfd_settime(pollfd[1].fd, TFD_TIMER_ABSTIME|TFD_TIMER_CANCELON_SET, &its, NULL) < 0) {
-			printf("settime error: 2: %m\n");
-			_exit(3);
-		} else {
-			printf("settime +10s 2\n");
-		}
-
-		printf("poll\n");
-		if (poll(pollfd, 2, -1) < 0) {
-			if (errno == EAGAIN || errno == EINTR)
-				continue;
-			_exit(4);
-		}
-
-		if (pollfd[0].revents) {
-			uint64_t count;
-
-			if (read(pollfd[0].fd, &count, sizeof(uint64_t)) < 0)
-				printf("read error 1: %m\n");
-			else
-				printf("read 1: %u\n", (unsigned int)count);
-
-			printf("wakeup 1\n");
-		}
-
-		if (pollfd[1].revents) {
-			uint64_t count;
-
-			if (read(pollfd[1].fd, &count, sizeof(uint64_t)) < 0)
-				printf("read error 2: %m\n");
-			else
-				printf("read 2: %u\n", (unsigned int)count);
-
-			printf("wakeup 2\n");
-		}
-	}
-
-	return EXIT_SUCCESS;
-}
-
-
+-chris
