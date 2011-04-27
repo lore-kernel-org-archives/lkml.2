@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab1D0Svv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 14:51:51 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63544 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab1D0Svt convert rfc822-to-8bit (ORCPT
+	id S1759764Ab1D0Sx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 14:53:29 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:24585 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab1D0Sx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 14:51:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Kbscz/zd+MViMz52Q7oEBSyb4O56ixe+jNBRw8X9XL/dTbro0kaKchiWTaza/yY8cg
-         Uzho6JznmbpSUYnKQbJ3Y3SzflbdH5PYAImzsab+peycvIA4R1xAtkN/pRx0uPXEvHsl
-         xC/54OI+8o1VDjql9h/AqqaqlTv/b10w+sVMY=
-MIME-Version: 1.0
-In-Reply-To: <4DB86163.2070201@zytor.com>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	<e8a554f881a199107afd37795adb0d11e70fdbcc.1303846852.git.tfransosi@gmail.com>
-	<1303926576.18763.75.camel@gandalf.stny.rr.com>
-	<4DB86163.2070201@zytor.com>
-Date: Wed, 27 Apr 2011 21:51:48 +0300
-X-Google-Sender-Auth: y4MIA238SE_449mNuRuhwAF-nE0
-Message-ID: <BANLkTikQiA9iwSs1qX7-76GKUN23GV=8Uw@mail.gmail.com>
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Pekka Enberg <penberg@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thiago Farina <tfransosi@gmail.com>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Apr 2011 14:53:28 -0400
+Subject: Re: [PATCHv2 1/4] ethtool: cosmetics: enforce const-ness in
+ ethtool_cmd_speed
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Decotigny <decot@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <1303929290-21037-2-git-send-email-decot@google.com>
+References: <1303001651-4074-1-git-send-email-decot@google.com>
+	 <1303929290-21037-2-git-send-email-decot@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Wed, 27 Apr 2011 19:41:03 +0100
+Message-ID: <1303929663.2875.97.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Apr 2011 18:41:07.0002 (UTC) FILETIME=[AB61B1A0:01CC050A]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18098.005
+X-TM-AS-Result: No--8.454500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 9:33 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Because !strcmp() is idiomatic C.
->
-> This is the same kind of stupidity as
->
-> #define BEGIN {
-> #define END   }
+On Wed, 2011-04-27 at 11:34 -0700, David Decotigny wrote:
+> The 'ep' argument of ethtool_cmd_speed is not altered: advertise it in
+> protoype. +Indentation fix. Also add comments to advise using the
+> ethtool_cmd_speed API to get/set the link speed.
+> 
+> Signed-off-by: David Decotigny <decot@google.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
 
-No it's not.
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-It's the same kind of API extension kstrdup(), for example, is.
-Whether or not we should it do it is a separate matter and I think the
-only reasonable argument for and against is whether it (a) reduces the
-number of bugs, (b) improves code readability significantly, or (c)
-generates better code.
-
-                        Pekka
