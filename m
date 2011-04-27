@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab1D0APL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 20:15:11 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:42252 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754588Ab1D0APJ (ORCPT
+	id S1755206Ab1D0ARi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 20:17:38 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:18879
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752561Ab1D0ARh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 20:15:09 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnYEAFFdt015LHHJgWdsb2JhbAClZxUBARYmJYhwvkEOhWgElSSHTw
-Date: Wed, 27 Apr 2011 10:14:53 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] drop_pagecache syscall
-Message-ID: <20110427001453.GD12436@dastard>
-References: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
+	Tue, 26 Apr 2011 20:17:37 -0400
+X-SpamScore: -29
+X-BigFish: VPS-29(z21eRzbb2dK9371O1432N98dKzz1202hzz8275dhz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4DB76088.2070306@am.sony.com>
+Date: Tue, 26 Apr 2011 17:17:12 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH] [0/106] 2.6.35.13 longterm review
+References: <20110426212.641772347@firstfloor.org>
+In-Reply-To: <20110426212.641772347@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 11:35:27PM +0200, Andrea Righi wrote:
-> Introduce sys_drop_pagecache() system call to drop the page cache pages of
-> a single filesystem.
+On 04/26/2011 02:12 PM, Andi Kleen wrote:
 > 
-> This new system call takes a file descriptor as argument and drops only
-> the page cache pages of the file system it references.
+> This is the start of the longterm review cycle for the 2.6.35.12 release.
+> There are a large number of patches in this series, all will be posted as a 
+> response to this one.  If anyone has any issues with these being applied, 
+> please let me know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
 > 
-> At the moment it is possible to drop page cache pages via
-> /proc/sys/vm/drop_pagecache or via posix_fadvise(POSIX_FADV_DONTNEED).
+> The full quilt queue can be found at
+> git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.35
 > 
-> The first method drops the whole page cache while the second can be used
-> to drop page cache pages of a single file descriptor. But there's not a
-> simple way to drop all the pages of a filesystem (we could scan all the
-> file descriptors and use posix_fadvise(), but this solution doesn't scale
-> very well in some cases).
+> Responses should be made within 48 hours.
 
-Why not just add a new posix_fadvise() command? e.g.
-POSIX_FADV_DONTNEED_FS. Simpler than adding a new syscall...
+I tested the 2.6.35.13 patches on 4 development boards (on 4 architectures: x86,
+ppc, mips and ARM), and found no problems.
+ -- Tim
 
-> This functionality can be used by all the applications that want to have a
-> better control over the page cache management (for example to immediately drop
-> pages that for sure will not be reused in the near future, without calling
-> posix_fadvise() for all the files they've touched), or to provide a more fine
-> grained debugging feature usable by the filesystem benchmarks.
-> 
-> The system call does not require root privileges and it can be called by any
-> unprivileged application. For example, we can write a userspace tool to run
-> something like this:
-> 
->   $ drop-pagecache /path/file_or_dir
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
-That's a potential DOS vector, I think. Drop the pagecache in a hard
-loop on the root fs of a busy server and watch it crawl...
-
-> +/*
-> + * Drop page cache of a single superblock
-> + */
-> +SYSCALL_DEFINE1(drop_pagecache, int, fd)
-> +{
-> +	struct file *file;
-> +	struct super_block *sb;
-> +	int fput_needed;
-> +
-> +	file = fget_light(fd, &fput_needed);
-> +	if (!file)
-> +		return -EBADF;
-> +	sb = file->f_dentry->d_sb;
-> +
-> +	down_read(&sb->s_umount);
-> +	drop_pagecache_sb(sb, NULL);
-> +	up_read(&sb->s_umount);
-> +
-> +	fput_light(file, fput_needed);
-> +	return 0;
-
-You're holding an open reference to a file/dir on the fs so it can't
-be unmounted from under you. Hence I don't think you need the
-s_umount locking.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
