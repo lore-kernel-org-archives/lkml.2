@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab1D0Jw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:52:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45706 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab1D0JwZ convert rfc822-to-8bit (ORCPT
+	id S1756474Ab1D0J5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:57:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54369 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1D0J5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:52:25 -0400
+	Wed, 27 Apr 2011 05:57:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=tSCbHm/21ePDqovDma7rxSltPomn/LQKEIEdf9cqilHjTYsapkfz4kFlcBoS1Qcm32
-         70F3gRnbaYKN7ZzkW3wkueof/wehzOuTyfxEFk+GwxQhQQOIlnjt+ORbuAvfCcL5xvLl
-         fdUjgmsVAhuF1qSTowlmB91ZerWDgBjUVCAd8=
-MIME-Version: 1.0
-In-Reply-To: <201104212129.17013.arnd@arndb.de>
-References: <201104212129.17013.arnd@arndb.de>
-Date: Wed, 27 Apr 2011 10:52:25 +0100
-X-Google-Sender-Auth: NlS8oCyL3liU2ZnqI-FwyaF1vcw
-Message-ID: <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
-Subject: Re: [RFC] ARM DMA mapping TODO, v1
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=enCik2Mr64PWW/J2RDifmsXv7PYUlXPa8LE5UFgmmHGnZg3683bwlKUVqMvUz4TuxG
+         DNlgGc1VV6cnuKlSrYC/uvCXsre8O1ZEdLFC9d3wcd9oFZq50NKkSXOHUTLDFpp4+I0Z
+         ulZFXhmtRujhzh1nuVCxEOfq27AA97B0s6lEQ=
+Date: Wed, 27 Apr 2011 11:57:10 +0200
+From: Andrea Righi <righi.andrea@gmail.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Andrea Righi <andrea@betterlinux.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [RFC] [PATCH] drop_pagecache syscall
+Message-ID: <20110427095709.GA1687@linux.develer.com>
+References: <1303853727-21444-1-git-send-email-andrea@betterlinux.com>
+ <20110427001453.GD12436@dastard>
+ <20110427085910.GA1749@linux.betterlinux.com>
+ <BANLkTimrpNOHVfnund7uc=thf-c3_HxyYQ@mail.gmail.com>
+ <20110427094717.GB1749@linux.betterlinux.com>
+ <BANLkTi=ZNq4Yp3U5jVspsJixu4ckbdVjtQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=ZNq4Yp3U5jVspsJixu4ckbdVjtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+On Wed, Apr 27, 2011 at 05:50:04AM -0400, Mike Frysinger wrote:
+> On Wed, Apr 27, 2011 at 05:47, Andrea Righi wrote:
+> > On Wed, Apr 27, 2011 at 05:10:41AM -0400, Mike Frysinger wrote:
+> >> On Wed, Apr 27, 2011 at 05:01, Andrea Righi wrote:
+> >> > On Wed, Apr 27, 2011 at 10:14:53AM +1000, Dave Chinner wrote:
+> >> >> On Tue, Apr 26, 2011 at 11:35:27PM +0200, Andrea Righi wrote:
+> >> >> > This functionality can be used by all the applications that want to have a
+> >> >> > better control over the page cache management (for example to immediately drop
+> >> >> > pages that for sure will not be reused in the near future, without calling
+> >> >> > posix_fadvise() for all the files they've touched), or to provide a more fine
+> >> >> > grained debugging feature usable by the filesystem benchmarks.
+> >> >> >
+> >> >> > The system call does not require root privileges and it can be called by any
+> >> >> > unprivileged application. For example, we can write a userspace tool to run
+> >> >> > something like this:
+> >> >> >
+> >> >> > � $ drop-pagecache /path/file_or_dir
+> >> >>
+> >> >> That's a potential DOS vector, I think. Drop the pagecache in a hard
+> >> >> loop on the root fs of a busy server and watch it crawl...
+> >> >
+> >> > Yes, probably we could allow only the CAP_SYS_ADMIN tasks to execute
+> >> > this syscall.
+> >>
+> >> if /proc/sys/vm/drop_caches has any checks other than file permission
+> >> checks (i.e. UID==0), it'd probably be better to copy those rather
+> >> than picking something different.
+> >
+> > ok, what about checking current_euid() == 0?
+> 
+> that's not what i meant.  if the drop_caches file already has certain
+> cap checks/whatever in place, let's use those.  if it doesnt, then
+> picking a cap level as you proposed makes sense.
 
-On 21 April 2011 20:29, Arnd Bergmann <arnd@arndb.de> wrote:
-> I think the recent discussions on linaro-mm-sig and the BoF last week
-> at ELC have been quite productive, and at least my understanding
-> of the missing pieces has improved quite a bit. This is a list of
-> things that I think need to be done in the kernel. Please complain
-> if any of these still seem controversial:
->
-> 1. Fix the arm version of dma_alloc_coherent. It's in use today and
->   is broken on modern CPUs because it results in both cached and
->   uncached mappings. Rebecca suggested different approaches how to
->   get there.
+mmh, drop_caches has a file ownership (root:root) and a permission mask
+(0644), how to apply the same checks to a system call? The most similar
+thing seems to check the current euid. Am I missing something?
 
-It's not broken since we moved to using Normal non-cacheable memory
-for the coherent DMA buffers (as long as you flush the cacheable alias
-before using the buffer, as we already do). The ARM ARM currently says
-unpredictable for such situations but this is being clarified in
-future updates and the Normal non-cacheable vs cacheable aliases can
-be used (given correct cache maintenance before using the buffer).
-
-> 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
->   that this is needed, and it currently is not implemented, with
->   an outdated comment explaining why it used to not be possible
->   to do it.
-
-As Russell pointed out, there are 4 main combinations with iommu and
-some coherency support (i.e. being able to snoop the CPU caches). But
-in an SoC you can have different devices with different iommu and
-coherency configurations. Some of them may even be able to see the L2
-cache but not the L1 (in which case it would help if we can get an
-inner non-cacheable outer cacheable mapping).
-
-Anyway, we end up with different DMA ops per device via dev_archdata.
-
--- 
-Catalin
+-Andrea
