@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab1D0CCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Apr 2011 22:02:36 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:56111 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756447Ab1D0CCe convert rfc822-to-8bit (ORCPT
+	id S1756458Ab1D0CGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Apr 2011 22:06:49 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36564 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab1D0CGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Apr 2011 22:02:34 -0400
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: <pefoley2@verizon.net>,
-        "=?ISO-8859-1?Q?'Am=E9rico_Wang'?=" <xiyou.wangcong@gmail.com>,
-        "Sam Ravnborg" <sam@ravnborg.org>
-Cc: "'Arnaud Lacombe'" <lacombar@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>
-References: <4DB4AEF7.3090607@verizon.net>	<BANLkTi=K3OEumicFMCT_Dh=xhpzfpa3JBw@mail.gmail.com> <BANLkTikFUhiDSEM_yLtbzmhfdUWBDv71ww@mail.gmail.com> <4DB73357.5020403@verizon.net>
-In-Reply-To: <4DB73357.5020403@verizon.net>
-Subject: RE: [PATCH] kbuild: mark unicore32 header export as broken
-Date: Wed, 27 Apr 2011 10:02:01 +0800
-Message-ID: <009f01cc047f$1b20bdb0$51623910$@mprc.pku.edu.cn>
+	Tue, 26 Apr 2011 22:06:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Subject: Re: [PATCH v2] virtio_balloon: disable oom killer when fill balloon
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <BANLkTikfyi2FBykk1D1H-tdrSjmRYEh6ug@mail.gmail.com>
+References: <BANLkTi=8ySUPP6_GUL9CTFh98J1PH0a4=g@mail.gmail.com> <BANLkTikfyi2FBykk1D1H-tdrSjmRYEh6ug@mail.gmail.com>
+Message-Id: <20110427110838.D178.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQG7in9qt1Kz4Qu/szr3STkj03XELQEVt+D2Ap3JWLUCLEG2XZRi6YZQ
-Content-Language: zh-cn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Wed, 27 Apr 2011 11:06:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Peter Foley [mailto:pefoley2@verizon.net]
-> Sent: Wednesday, April 27, 2011 5:04 AM
-> To: Américo Wang
-> Cc: Arnaud Lacombe; linux-kernel@vger.kernel.org; linux-kbuild@vger.kernel.org; mmarek@suse.cz; gxt@mprc.pku.edu.cn
-> Subject: Re: [PATCH] kbuild: mark unicore32 header export as broken
-> 
-> On 4/26/2011 1:07 PM, Américo Wang wrote:
-> > On Tue, Apr 26, 2011 at 2:48 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> >> Hi,
-> >>
-> >> On Sun, Apr 24, 2011 at 7:15 PM, Peter Foley <pefoley2@verizon.net> wrote:
-> >>> This patch marks userspace header export for unicore32 as broken so that
-> >>> it is skipped when running make headers_install_all.
+> On Wed, Apr 27, 2011 at 9:37 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > On Wed, Apr 27, 2011 at 7:33 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> >> On Tue, Apr 26, 2011 at 6:39 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> >>> On Tue, Apr 26, 2011 at 5:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> >>>> Please resend this with [2/2] to linux-mm.
+> >>>>
+> >>>> On Tue, Apr 26, 2011 at 5:59 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> >>>>> When memory pressure is high, virtio ballooning will probably cause oom killing.
+> >>>>> Even if alloc_page with GFP_NORETRY itself does not directly trigger oom it
+> >>>>> will make memory becoming low then memory alloc of other processes will trigger
+> >>>>> oom killing. It is not desired behaviour.
+> >>>>
+> >>>> I can't understand why it is undesirable.
+> >>>> Why do we have to handle it specially?
+> >>>>
 > >>>
-> >> Why ?
+> >>> Suppose user run some random memory hogging process while ballooning
+> >>> it will be undesirable.
 > >>
-> >> I would expect you to send this to arch/unicore32 maintainer too, he
-> >> is not in the CC: list.
+> >>
+> >> In VM POV, kvm and random memory hogging processes are customers.
+> >> If we handle ballooning specially with disable OOM, what happens other
+> >> processes requires memory at same time? Should they wait for balloon
+> >> driver to release memory?
+> >>
+> >> I don't know your point. Sorry.
+> >> Could you explain your scenario in detail for justify your idea?
 > >
-> > +1
+> > What you said make sense I understand what you said now. Lets ignore
+> > my above argue and see what I'm actually doing.
 > >
-> > If you see errors when install kernel headers on unicore32, fix them instead
-> > of marking it as broken.
+> > I'm hacking with balloon driver to fit to short the vm migration time.
+> >
+> > while migrating host tell guest to balloon as much memory as it can, then start
+> > migrate, just skip the ballooned pages, after migration done tell
+> > guest to release the memory.
+> >
+> > In migration case oom is not I want to see and disable oom will be good.
 > 
-> The problem with unicore32 is that it generates various stub headers at compile time in include/generated/asm.
-> I believe the unicore32 maintainer is already aware of headers_install not working (see https://lkml.org/lkml/2011/1/8/11).
-Yes, thanks.
-I am waiting for the generic-y patch by Sam. (also CC to Sam)
-Sorry to broke the rule of headers_install_all.
+> BTW, if oom_killer_disabled is really not recommended to use I can
+> switch back to oom_notifier way.
 
-Thanks Peter. The patch not applied since I do need headers_install.
+Could you please explain why you dislike oom_notifier and what problem
+you faced? I haven't understand why oom_notifier is bad. probably my
+less knowledge of balloon is a reason.
 
-Thanks & Regards,
 
-Guan Xuetao
 
