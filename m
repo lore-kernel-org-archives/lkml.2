@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab1D0Jcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 05:32:46 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56188 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752001Ab1D0Jcp (ORCPT
+	id S1756576Ab1D0JhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 05:37:15 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:36165 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755564Ab1D0JhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 05:32:45 -0400
-Date: Wed, 27 Apr 2011 10:33:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: johnlinn@comcast.net
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        michal.simek@petalogix.com, joe@perches.com, grant.likely@secretlab.ca,
-        greg@kroah.com
-Subject: Re: [PATCH V3] tty/serial: add support for Xilinx PS UART
-Message-ID: <20110427103340.2554df83@lxorguk.ukuu.org.uk>
-In-Reply-To: <549692800.1907368.1303859758362.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-References: <381805170.1906645.1303859011392.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-	<549692800.1907368.1303859758362.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 05:37:13 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
+        <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V3 0/7] dmaengine/dw_dmac updates
+Date: Wed, 27 Apr 2011 15:06:42 +0530
+Message-ID: <cover.1303896566.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I thought I was improving but now as I look at it further, that seems like it 
-> was better and I should have stuck to that method.
-> 
-> Thoughts?
+This patchset fixes few issues and extends its support.
 
-Go for nearest is the right behaviour. The whole tty layer works on that
-basis as do soem other things. It means you don't have to have a set of
-calls to do things like "enumerate valid data rates" instead you ask and
-compare.
+Changes in V3:
+ - lflags is removed from dw_dma_chan and local flag variables are created.
+ - An extra argument is added to routines calling dwc_descriptor_complete()
+   directly or indirectly
+ - spin_lock() in tasklet is also changed to irqsave variants.
 
-> > > +	uart_update_timeout(port, termios->c_cflag, baud);
-> > 
-> > [which would also fix this timeout!]
-> 
-> Maybe you were meaning that if the baud rate was not really set because of the
-> error this timeout would be wrong also, and if so that makes sense.
+Changes in V2:
+ - lflags added in dw_dma_chan instead of dw_dma
+ - Patch from Linus Walleij added for pause and resume functionality.
 
-Correct
+Linus Walleij (1):
+  dmaengine/dw_dmac: implement pause and resume in dwc_control
 
-Alan
+Viresh Kumar (6):
+  dmaengine/dw_dmac: call dwc_descriptor_complete from dwc_control with
+    lock held
+  dmaengine/dw_dmac: Replace spin_lock* with irqsave variants
+  dmaengine/dw_dmac: don't call callback routine in case
+    dmaengine_terminate_all() is called
+  dmaengine/dw_dmac: Enable resubmission from callback routine.
+  dmaengine/dw_dmac: set residue as total len in dwc_tx_status if
+    status is !DMA_SUCCESS
+  dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater
+    than DWC_MAX_COUNT
+
+ drivers/dma/dw_dmac.c      |  260 ++++++++++++++++++++++++++++----------------
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 165 insertions(+), 96 deletions(-)
+
+-- 
+1.7.3.4
+
