@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179Ab1D0XPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:15:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44927 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760166Ab1D0XP3 (ORCPT
+	id S1760184Ab1D0XQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 19:16:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48178 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154Ab1D0XQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:15:29 -0400
-Date: Wed, 27 Apr 2011 16:14:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        Peter Foley <pefoley2@verizon.net>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] init/Kconfig: use if/endif to surround the EXPERT
- menu kconfig symbols
-Message-Id: <20110427161451.26a74fec.akpm@linux-foundation.org>
-In-Reply-To: <20110426130036.997a05fc.rdunlap@xenotime.net>
-References: <20110426130036.997a05fc.rdunlap@xenotime.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 19:16:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=e1fUr2DGEx3DPl3OiHYOKcxrKqSKSNsWWXs5r1dbqiRgV1k9SXR9ubsdswPoMx9JRq
+         AaygkunUSB18dIdZInQXcjuJsmqwB14l3JtUT6tFZgqLITDRvo5VWUz+BXXAK8dQak9B
+         HZ6leon2lB/Jlb3fmIPIF7zWT/+KG7RACfL3M=
+MIME-Version: 1.0
+In-Reply-To: <20110427102824.GI12436@dastard>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
+	<20110424234655.GC12436@dastard>
+	<alpine.DEB.2.01.1104242245090.18728@trent.utfs.org>
+	<alpine.DEB.2.01.1104250015480.18728@trent.utfs.org>
+	<20110427022655.GE12436@dastard>
+	<alpine.DEB.2.01.1104270042510.18728@trent.utfs.org>
+	<20110427102824.GI12436@dastard>
+Date: Thu, 28 Apr 2011 08:16:29 +0900
+Message-ID: <BANLkTimDoZueDWqB_LBndqPorCnTOZkNYQ@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Apr 2011 13:00:36 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Wed, Apr 27, 2011 at 7:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Apr 27, 2011 at 12:46:51AM -0700, Christian Kujau wrote:
+>> On Wed, 27 Apr 2011 at 12:26, Dave Chinner wrote:
+>> > What this shows is that VFS inode cache memory usage increases until
+>> > about the 550 sample mark before the VM starts to reclaim it with
+>> > extreme prejudice. At that point, I'd expect the XFS inode cache to
+>> > then shrink, and it doesn't. I've got no idea why the either the
+>>
+>> Do you remember any XFS changes past 2.6.38 that could be related to
+>> something like this?
+>
+> There's plenty of changes that coul dbe the cause - we've changed
+> the inode reclaim to run in the background out of a workqueue as
+> well as via the shrinker, so it could even be workqueue starvation
+> causing the the problem...
 
-> Surround the EXPERT menu with "if EXPERT" and "endif" so that it
-> is forced to stay as one unit.  Hopefully this will help to prevent
-> it being broken in the future.
+RCU free starvation is another possibility?
+https://lkml.org/lkml/2011/4/25/124
 
-With this patch applied, a `make oldconfig' unsets CONFIG_PRINTK,
-producing a less-than-previously-useful kernel!
-
-Config: http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
+-- 
+Kind regards,
+Minchan Kim
