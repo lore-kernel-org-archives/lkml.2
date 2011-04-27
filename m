@@ -1,176 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1D0UPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 16:15:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32816 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913Ab1D0UPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 16:15:33 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Dave Jones <davej@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v3.2] kbuild: implement several W= levels
-Date: Wed, 27 Apr 2011 22:15:27 +0200
-Message-Id: <1303935327-5154-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.7.5.rc1.16.g9db1
-In-Reply-To: <20110427113513.GB18112@eferding.osrc.amd.com>
-References: <20110427113513.GB18112@eferding.osrc.amd.com>
+	id S1756169Ab1D0UQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 16:16:23 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56896 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab1D0UQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 16:16:22 -0400
+Date: Wed, 27 Apr 2011 21:16:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110427201605.GW17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de> <201104271056.49920.arnd@arndb.de> <20110427090923.GO17290@n2100.arm.linux.org.uk> <201104271302.44249.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104271302.44249.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
+On Wed, Apr 27, 2011 at 01:02:43PM +0200, Arnd Bergmann wrote:
+> On Wednesday 27 April 2011, Russell King - ARM Linux wrote:
+> > On Wed, Apr 27, 2011 at 10:56:49AM +0200, Arnd Bergmann wrote:
+> > > We probably still need to handle both the coherent and noncoherent case
+> > > in each dma_map_ops implementation, at least for those combinations where
+> > > they matter (definitely the linear mapping). However, I think that using
+> > > dma_mapping_common.h would let us use an architecture-independent dma_map_ops
+> > > for the generic iommu code that Marek wants to introduce now.
+> > 
+> > The 'do we have an iommu or not' question and the 'do we need to do cache
+> > coherency' question are two independent questions which are unrelated to
+> > each other.  There are four unique but equally valid combinations.
+> > 
+> > Pushing the cache coherency question down into the iommu stuff will mean
+> > that we'll constantly be fighting against the 'but this iommu works on x86'
+> > shite that we've fought with over block device crap for years.  I have
+> > no desire to go there.
+> 
+> Ok, I see. I believe we could avoid having to fight with the people that
+> only care about coherent architectures if we just have two separate
+> implementations of dma_map_ops in the iommu code, one for coherent
+> and one for noncoherent DMA. Any architecture that only needs one
+> of them would then only enable the Kconfig options for that implementation
+> and not care about the other one.
 
-Building a kernel with "make W=1" produces far too much noise to be
-useful.
+But then we have to invent yet another whole new API to deal with the
+cache coherency issues - which makes for more documentation, and eventually
+more abuse because it won't quite do what architectures want it to do,
+etc.
 
-Divide the warning options in three groups:
+> Yes, that sounds definitely possible. I guess it could be as simple
+> as having a flag somewhere in struct device if we want to make it
+> architecture independent.
 
-    W=1 - warnings that may be relevant and does not occur too often
-    W=2 - warnings that occur quite often but may still be relevant
-    W=3 - the more obscure warnings, can most likely be ignored
+I was referring to a flag in the dma_ops to say whether the DMA ops
+implementation requires DMA cache coherency.  In the case of swiotlb,
+performing full DMA cache coherency is a pure waste of CPU cycles -
+and probably makes DMA much more expensive than merely switching back
+to using PIO.
 
-When building the whole kernel, those levels produce:
+I'm really not interested in producing "generic" interfaces which end up
+throwing the baby out with the bath water when we already have a better
+implementation in place - even if the hardware sucks.  That's not
+forward progress as far as I'm concerned.
 
-W=1 - 4859 warnings
-W=2 - 1394 warnings
-W=3 - 86666 warnings
+> As for making the default being to do cache handling, I'm not completely
+> sure how that would work on architectures where most devices are coherent.
+> If I understood the DRM people correctly, some x86 machine have noncoherent
+> DMA in their GPUs while everything else is coherent.
 
-respectively. Warnings have been counted with Geert's script at
+Well, it sounds like struct device needs a flag to indicate whether it is
+coherent or not - but exactly how this gets set seems to be architecture
+dependent.  I don't see bus or driver code being able to make the necessary
+decisions - eg, tulip driver on x86 would be coherent, but tulip driver on
+ARM would be non-coherent.
 
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/linux-log-summary.pl
-
-Many warnings occur from .h files so fixing one file may have a nice
-effect on the total number of warnings.
-
-With these changes I am actually tempted to try W=1 now and then.
-Previously there was just too much noise.
-
-Borislav:
-
-- make the W= levels exclusive
-- move very noisy and making little sense for the kernel warnings to W=3
-- drop -Woverlength-strings due to useless warning message
-- copy explanatory text for the different warning levels to 'make help'
-- recount warnings per level
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
----
- Makefile               |    8 ++++-
- scripts/Makefile.build |   65 ++++++++++++++++++++++++++++--------------------
- 2 files changed, 44 insertions(+), 29 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 5a7a2e4..b2a6808 100644
---- a/Makefile
-+++ b/Makefile
-@@ -103,7 +103,7 @@ ifeq ("$(origin O)", "command line")
- endif
- 
- ifeq ("$(origin W)", "command line")
--  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := 1
-+  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
- endif
- 
- # That's our default target when none is given on the command line
-@@ -1267,7 +1267,11 @@ help:
- 	@echo  '  make O=dir [targets] Locate all output files in "dir", including .config'
- 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
- 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
--	@echo  '  make W=1   [targets] Enable extra gcc checks'
-+	@echo  '  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where'
-+	@echo  '		1: warnings which may be relevant and do not occur too often'
-+	@echo  '		2: warnings which occur quite often but may still be relevant'
-+	@echo  '		3: more obscure warnings, can most likely be ignored'
-+
- 	@echo  ''
- 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
- 	@echo  'For further info see the ./README file'
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index d5f925a..ffb383c 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -51,36 +51,47 @@ ifeq ($(KBUILD_NOPEDANTIC),)
- endif
- 
- #
--# make W=1 settings
-+# make W=... settings
- #
--# $(call cc-option... ) handles gcc -W.. options which
-+# W=1 - warnings that may be relevant and does not occur too often
-+# W=2 - warnings that occur quite often but may still be relevant
-+# W=3 - the more obscure warnings, can most likely be ignored
-+#
-+# $(call cc-option, -W...) handles gcc -W.. options which
- # are not supported by all versions of the compiler
- ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
--KBUILD_EXTRA_WARNINGS := -Wextra
--KBUILD_EXTRA_WARNINGS += -Wunused -Wno-unused-parameter
--KBUILD_EXTRA_WARNINGS += -Waggregate-return
--KBUILD_EXTRA_WARNINGS += -Wbad-function-cast
--KBUILD_EXTRA_WARNINGS += -Wcast-qual
--KBUILD_EXTRA_WARNINGS += -Wcast-align
--KBUILD_EXTRA_WARNINGS += -Wconversion
--KBUILD_EXTRA_WARNINGS += -Wdisabled-optimization
--KBUILD_EXTRA_WARNINGS += -Wlogical-op
--KBUILD_EXTRA_WARNINGS += -Wmissing-declarations
--KBUILD_EXTRA_WARNINGS += -Wmissing-format-attribute
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wmissing-include-dirs,)
--KBUILD_EXTRA_WARNINGS += -Wmissing-prototypes
--KBUILD_EXTRA_WARNINGS += -Wnested-externs
--KBUILD_EXTRA_WARNINGS += -Wold-style-definition
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Woverlength-strings,)
--KBUILD_EXTRA_WARNINGS += -Wpacked
--KBUILD_EXTRA_WARNINGS += -Wpacked-bitfield-compat
--KBUILD_EXTRA_WARNINGS += -Wpadded
--KBUILD_EXTRA_WARNINGS += -Wpointer-arith
--KBUILD_EXTRA_WARNINGS += -Wredundant-decls
--KBUILD_EXTRA_WARNINGS += -Wshadow
--KBUILD_EXTRA_WARNINGS += -Wswitch-default
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wvla,)
--KBUILD_CFLAGS += $(KBUILD_EXTRA_WARNINGS)
-+warning-1 := -Wextra -Wunused -Wno-unused-parameter
-+warning-1 += -Wmissing-declarations
-+warning-1 += -Wmissing-format-attribute
-+warning-1 += -Wmissing-prototypes
-+warning-1 += -Wold-style-definition
-+warning-1 += $(call cc-option, -Wmissing-include-dirs)
-+
-+warning-2 := -Waggregate-return
-+warning-2 += -Wcast-align
-+warning-2 += -Wdisabled-optimization
-+warning-2 += -Wnested-externs
-+warning-2 += -Wshadow
-+warning-2 += $(call cc-option, -Wlogical-op)
-+
-+warning-3 := -Wbad-function-cast
-+warning-3 += -Wcast-qual
-+warning-3 += -Wconversion
-+warning-3 += -Wpacked
-+warning-3 += -Wpadded
-+warning-3 += -Wpointer-arith
-+warning-3 += -Wredundant-decls
-+warning-3 += -Wswitch-default
-+warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
-+warning-3 += $(call cc-option, -Wvla)
-+
-+warning := $(warning-$(KBUILD_ENABLE_EXTRA_GCC_CHECKS))
-+
-+ifeq ("$(warning)","")
-+        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
-+endif
-+
-+KBUILD_CFLAGS += $(warning)
- endif
- 
- include scripts/Makefile.lib
--- 
-1.7.5.rc1.16.g9db1
-
+Nevertheless, doing it on a per-device basis is definitely the right
+answer.
