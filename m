@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759685Ab1D0R0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 13:26:48 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44910 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab1D0R0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 13:26:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=chj1eo+HQnc6f82y7ZSguVHHRYLEIYyY+tSUIGIweaRiF4j+tXPPxx6r6Iz9Oy0T8b
-         gPiuBbdecQiSChYus+WnBMhZJhQzyubW2hX9TOQKtayI8syIfAHahTIq5kVcjgPFQWMY
-         jlsD63upfMFxUNj3MisDw0tmfKTZO07VloUEM=
-Message-ID: <4DB851CE.7090503@gmail.com>
-Date: Wed, 27 Apr 2011 21:26:38 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1759731Ab1D0R1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 13:27:22 -0400
+Received: from mx.treblig.org ([80.68.94.177]:45009 "EHLO mx.treblig.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759687Ab1D0R1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 13:27:20 -0400
+Date: Wed, 27 Apr 2011 18:27:18 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: Wonkiness with keyboard adapter - not sure if it's in USB or
+	input systems
+Message-ID: <20110427172718.GA16118@gallifrey>
+References: <11501.1303832820@localhost>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
-References: <1303900353-10242-1-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1303900353-10242-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11501.1303832820@localhost>
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 18:25:22 up 68 days, 18:58,  1 user,  load average: 0.00, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 02:32 PM, Don Zickus wrote:
-> It was noticed that P4 machines were generating double NMIs for each
-> perf event.  These extra NMIs lead to 'Dazed and confused' messages on
-> the screen.
+* Valdis.Kletnieks@vt.edu (Valdis.Kletnieks@vt.edu) wrote:
+> Running 2.6.39-rc1-mmotm at the moment on a Dell Latitude E6500, that wants an
+> external USB keyboard/mouse and monitor when it's in its docking station in the
+> office. I have an old Microsoft Natural keyboard that has a PS/2 connector, but
+> I like the tactile feel so I didn't want to get rid of it.  So we recently got
+> some PS2->USB adapters, which appear in lsusb as follows:
 > 
-> I tracked this down to a P4 quirk that said the overflow bit had to be
-> cleared before re-enabling the apic LVT mask.  My first attempt was
-> to move the un-masking inside the perf nmi handler from before the
-> chipset NMI handler to after.
+> Bus 001 Device 006: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
 > 
-> This broke Nehalem boxes that seem to like the unmasking before the
-> counters themselves are re-enabled.
+> Now, when I first power up the laptop in the docking station, it *does* see the
+> keyboard just fine, and Grub is able to talk to it, and everything works (this
+> particular boot, I was able to hit the space bar to get to the Grub menu, use
+> arrow up/down to move between entries, all looked good).  So it isn't like the
+> device needs any initialization above and beyond what the BIOS is doing at
+> initial power-on.
 > 
-> In order to keep this change simple for 2.6.39, I decided to just
-> simply move the apic LVT un-masking to the beginning of all the
-> chipset NMI handlers, with the exception of Pentium4's to fix the
-> double NMI issue.
-> 
-> Later on we can move the un-masking to later in the handlers to save
-> a number of 'extra' NMIs on those particular chipsets.
-> 
-> I tested this change on a P4 machine, an AMD machine, a Nehalem box,
-> and a core2quad box.  'perf top' worked correctly along with various
-> other small 'perf record' runs.  Anything high stress breaks all the
-> machines but that is a different problem.
-> 
-> Thanks to various people for testing different versions of this patch.
-> 
-> Reported-and-tested-by: Shaun Ruffell <sruffell@digium.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> CC: Cyrill Gorcunov <gorcunov@gmail.com>
-> 
-> ---
-> Originally I was going to bundle this with Cyrill's P4 alias patch but that
-> may take awhile, so I am posting this stand alone for now.  Sorry for the
-> delay.
-> 
+> However, when the Linux kernel starts up, it sees the adapter, but doesn't
+> recognize key presses until I disconnect and then reconnect the keyboard:
 
-Looks good to me, thanks a lot Don! I'll send you updated alternate events
-patch.
+I've experienced the same behaviour on at least two very different machines
+(one a Tosh laptop, the other a Dell desktop), in both cases using a Model M
+PS/2 keyboard connected to two different USB<->PS/2 converters (one a 
+really ancient Belkin one and the other a recent no-name soap-on-a-rope type
+thing).
+
+Dave
 
 -- 
-    Cyrill
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
