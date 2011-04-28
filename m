@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1D1Edk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 00:33:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:34619 "EHLO
+	id S1753002Ab1D1EiY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 00:38:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53450 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab1D1EdT (ORCPT
+	with ESMTP id S1751884Ab1D1EiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 00:33:19 -0400
+	Thu, 28 Apr 2011 00:38:22 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:organization;
-	b=yoCFeaa+HDaki9SSinSpRQfZQjLorXvjY+yPusLcI8d6q/vJpNhzTi4xpF80xssmn
-	wzkFG9CRr5LBXzoLgYaog==
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
+	references:organization;
+	b=TqttkZaUB5sPsrJBr6scDPYPDaegYLJZt71TRidSUcNxnwDzQvMgwhZahmpjelHM7
+	7tPDCTcTcXIxzj9YzYZzQ==
 From: David Decotigny <decot@google.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <bhutchings@solarflare.com>, mirq-linux@rere.qmqm.pl,
@@ -21,267 +22,291 @@ To: "David S. Miller" <davem@davemloft.net>,
         e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: David Decotigny <decot@google.com>
-Subject: [PATCHv4 0/7] ethtool: generalize use of ethtool_cmd_speed API
-Date: Wed, 27 Apr 2011 21:32:36 -0700
-Message-Id: <1303965163-8198-1-git-send-email-decot@google.com>
+Subject: [PATCHv4 7/7] net/igb/e1000/e1000e: more robust ethtool duplex/speed configuration
+Date: Wed, 27 Apr 2011 21:32:43 -0700
+Message-Id: <1303965163-8198-8-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1303965163-8198-1-git-send-email-decot@google.com>
+References: <1303965163-8198-1-git-send-email-decot@google.com>
 Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This makes sure that one cannot request a 99Mbps full-duplex and get a
+100Mbps half-duplex configuration in return due to the way the
+speed/duplex parameters are handled internally.
 
-Version 4 of the patch set. Fixes a potential bug appearing if patch 3
-were to be applied without 4: pch_gbe hunk from patch 4 moved to patch
-3. No other change wrt PATCHv3, all other patches should be equivalent
-(only differences: subject/description typo updates).
+Tested: e1000 works
+Signed-off-by: David Decotigny <decot@google.com>
+---
+ drivers/net/e1000/e1000.h         |    2 +-
+ drivers/net/e1000/e1000_ethtool.c |    2 +-
+ drivers/net/e1000/e1000_main.c    |   42 +++++++++++++++++++++---------------
+ drivers/net/e1000e/ethtool.c      |   24 ++++++++++++++-------
+ drivers/net/igb/igb.h             |    2 +-
+ drivers/net/igb/igb_ethtool.c     |    2 +-
+ drivers/net/igb/igb_main.c        |   23 +++++++++++++-------
+ 7 files changed, 59 insertions(+), 38 deletions(-)
 
-Regards,
-
-David Decotigny (7):
-  ethtool: cosmetics: enforce const-ness in ethtool_cmd_speed
-  ethtool: Call ethtool's get/set_settings callbacks with cleaned data
-  ethtool: Use full 32 bit speed range in ethtool's set_settings
-  ethtool: cosmetic: Use ethtool ethtool_cmd_speed API
-  acenic: Fix using the specified speed when configuring NIC
-  tulip/de2104x: don't report different speeds depending on port type
-  net/igb/e1000/e1000e: more robust ethtool duplex/speed configuration
-
- arch/mips/txx9/generic/setup_tx4939.c   |   21 ++++++---------
- drivers/infiniband/hw/nes/nes_nic.c     |    4 +-
- drivers/net/3c509.c                     |    2 +-
- drivers/net/acenic.c                    |   12 ++++----
- drivers/net/arm/etherh.c                |    5 ++-
- drivers/net/arm/ks8695net.c             |    7 +++--
- drivers/net/atl1c/atl1c_ethtool.c       |    9 +++---
- drivers/net/atl1e/atl1e_ethtool.c       |    4 +-
- drivers/net/atlx/atl1.c                 |    9 +++---
- drivers/net/atlx/atl2.c                 |    4 +-
- drivers/net/b44.c                       |   13 +++++----
- drivers/net/bcm63xx_enet.c              |    3 +-
- drivers/net/benet/be_ethtool.c          |   16 ++++++------
- drivers/net/bna/bnad_ethtool.c          |    7 +++--
- drivers/net/bnx2.c                      |   19 ++++++-------
- drivers/net/cassini.c                   |   37 ++++++++++++++-------------
- drivers/net/chelsio/cxgb2.c             |   11 ++++---
- drivers/net/cxgb3/cxgb3_main.c          |   14 ++++++----
- drivers/net/cxgb4/cxgb4_main.c          |   14 ++++++----
- drivers/net/cxgb4vf/cxgb4vf_main.c      |    3 +-
- drivers/net/dl2k.c                      |   29 ++++++--------------
- drivers/net/e100.c                      |   10 ++++---
- drivers/net/e1000/e1000.h               |    2 +-
- drivers/net/e1000/e1000_ethtool.c       |   10 ++++---
- drivers/net/e1000/e1000_main.c          |   42 +++++++++++++++++-------------
- drivers/net/e1000e/ethtool.c            |   37 +++++++++++++++++---------
- drivers/net/eepro.c                     |    2 +-
- drivers/net/ehea/ehea_ethtool.c         |   23 +++++++++++++---
- drivers/net/enc28j60.c                  |    5 ++-
- drivers/net/enic/enic_main.c            |    4 +-
- drivers/net/ewrk3.c                     |    2 +-
- drivers/net/forcedeth.c                 |   25 +++++++++++-------
- drivers/net/ibmveth.c                   |    2 +-
- drivers/net/igb/igb.h                   |    2 +-
- drivers/net/igb/igb_ethtool.c           |   11 ++++---
- drivers/net/igb/igb_main.c              |   23 +++++++++++------
- drivers/net/igbvf/ethtool.c             |    8 +++---
- drivers/net/ixgb/ixgb_ethtool.c         |    7 +++--
- drivers/net/ixgbe/ixgbe_ethtool.c       |   11 ++++---
- drivers/net/ixgbevf/ethtool.c           |    8 +++--
- drivers/net/jme.c                       |    3 +-
- drivers/net/ksz884x.c                   |    9 +++---
- drivers/net/mdio.c                      |   23 +++++++++++------
- drivers/net/mii.c                       |   31 ++++++++++++++---------
- drivers/net/mlx4/en_ethtool.c           |    7 +++--
- drivers/net/mv643xx_eth.c               |    6 ++--
- drivers/net/myri10ge/myri10ge.c         |    2 +-
- drivers/net/natsemi.c                   |   11 ++++---
- drivers/net/netxen/netxen_nic_ethtool.c |   15 ++++++-----
- drivers/net/niu.c                       |    4 +-
- drivers/net/ns83820.c                   |    8 +++---
- drivers/net/pch_gbe/pch_gbe_ethtool.c   |   11 +++++---
- drivers/net/pch_gbe/pch_gbe_main.c      |    6 ++--
- drivers/net/pch_gbe/pch_gbe_phy.c       |    4 +-
- drivers/net/pcmcia/smc91c92_cs.c        |    6 ++--
- drivers/net/pcnet32.c                   |   16 ++++++------
- drivers/net/phy/phy.c                   |   12 +++++---
- drivers/net/ps3_gelic_net.c             |    8 +++---
- drivers/net/qla3xxx.c                   |    2 +-
- drivers/net/qlcnic/qlcnic_ethtool.c     |   12 ++++----
- drivers/net/qlge/qlge_ethtool.c         |    2 +-
- drivers/net/r8169.c                     |    5 ++-
- drivers/net/s2io.c                      |    6 ++--
- drivers/net/sc92031.c                   |    8 +++--
- drivers/net/sfc/ethtool.c               |    5 ++-
- drivers/net/sfc/mcdi_phy.c              |    6 ++--
- drivers/net/sfc/mdio_10g.c              |    4 +-
- drivers/net/sfc/tenxpress.c             |    2 +-
- drivers/net/skge.c                      |    7 +++--
- drivers/net/sky2.c                      |    9 +++---
- drivers/net/smc911x.c                   |    4 +-
- drivers/net/smc91x.c                    |    4 +-
- drivers/net/spider_net_ethtool.c        |    2 +-
- drivers/net/stmmac/stmmac_ethtool.c     |    5 +--
- drivers/net/sungem.c                    |   15 ++++++-----
- drivers/net/sunhme.c                    |   19 ++++++-------
- drivers/net/tehuti.c                    |    2 +-
- drivers/net/tg3.c                       |   13 +++++----
- drivers/net/tulip/de2104x.c             |    9 ++----
- drivers/net/tulip/uli526x.c             |    6 ++--
- drivers/net/tun.c                       |    2 +-
- drivers/net/typhoon.c                   |   19 +++++++------
- drivers/net/usb/asix.c                  |   28 +++++++++++---------
- drivers/net/usb/catc.c                  |    2 +-
- drivers/net/usb/dm9601.c                |    6 ++--
- drivers/net/usb/rtl8150.c               |   11 ++++---
- drivers/net/usb/smsc75xx.c              |    7 +++--
- drivers/net/usb/smsc95xx.c              |    7 +++--
- drivers/net/veth.c                      |    2 +-
- drivers/net/via-velocity.c              |   21 +++++++++------
- drivers/net/vmxnet3/vmxnet3_ethtool.c   |    4 +-
- drivers/net/vxge/vxge-ethtool.c         |    7 +++--
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c       |   11 +++++---
- drivers/scsi/fcoe/fcoe.c                |   11 +++++---
- include/linux/ethtool.h                 |   18 +++++++++---
- include/linux/netdevice.h               |    9 +-----
- include/rdma/ib_addr.h                  |   13 +++++----
- net/batman-adv/soft-interface.c         |    2 +-
- net/bridge/br_if.c                      |    4 +-
- net/core/dev.c                          |   24 +++++++++++++++++
- net/core/net-sysfs.c                    |   24 +++++++----------
- 101 files changed, 578 insertions(+), 460 deletions(-)
-
--- 
-1.7.3.1
-
->From 9e2d8a2e2d267acd8230b64a6ff0e1d9f2688037 Mon Sep 17 00:00:00 2001
-From: David Decotigny <decot@google.com>
-Date: Wed, 27 Apr 2011 17:52:34 -0700
-Subject: [PATCHv3 0/7] ethtool: generalize use of ethtool_cmd_speed API
-Organization: Google, Inc.
-
-Hi,
-
-Third version of the patch series ensuring ethtool_cmd::speed/_hi
-fields are accessed using ethtool_cmd_speed/_set API. Thanks to Ben
-and Stephen for their feedbacks that have been integrated here,
-including some from Ben suggested in PATCHv1 and added here (intel GbE
-drivers: last patch in the series).
-
-Regards,
-
-David Decotigny (7):
-  ethtool: cosmetics: enforce const-ness in ethtool_cmd_speed
-  ethtool: Call ethtool's get/set_settings callbacks with cleaned data
-  ethtool: Use the full 32 bit speed range in ethtool's set_settings
-  ethtool: cosmetic: Use ethtool ethtool_cmd_speed API
-  acenic: Fix using the specified speed when configuring NIC
-  tulip/de2104x: don't report different speeds depending on port type
-  net/igb/e1000/e1000e: more robust ethtool duplex/speed configuration
-
- arch/mips/txx9/generic/setup_tx4939.c   |   21 ++++++---------
- drivers/infiniband/hw/nes/nes_nic.c     |    4 +-
- drivers/net/3c509.c                     |    2 +-
- drivers/net/acenic.c                    |   12 ++++----
- drivers/net/arm/etherh.c                |    5 ++-
- drivers/net/arm/ks8695net.c             |    7 +++--
- drivers/net/atl1c/atl1c_ethtool.c       |    9 +++---
- drivers/net/atl1e/atl1e_ethtool.c       |    4 +-
- drivers/net/atlx/atl1.c                 |    9 +++---
- drivers/net/atlx/atl2.c                 |    4 +-
- drivers/net/b44.c                       |   13 +++++----
- drivers/net/bcm63xx_enet.c              |    3 +-
- drivers/net/benet/be_ethtool.c          |   16 ++++++------
- drivers/net/bna/bnad_ethtool.c          |    7 +++--
- drivers/net/bnx2.c                      |   19 ++++++-------
- drivers/net/cassini.c                   |   37 ++++++++++++++-------------
- drivers/net/chelsio/cxgb2.c             |   11 ++++---
- drivers/net/cxgb3/cxgb3_main.c          |   14 ++++++----
- drivers/net/cxgb4/cxgb4_main.c          |   14 ++++++----
- drivers/net/cxgb4vf/cxgb4vf_main.c      |    3 +-
- drivers/net/dl2k.c                      |   29 ++++++--------------
- drivers/net/e100.c                      |   10 ++++---
- drivers/net/e1000/e1000.h               |    2 +-
- drivers/net/e1000/e1000_ethtool.c       |   10 ++++---
- drivers/net/e1000/e1000_main.c          |   42 +++++++++++++++++-------------
- drivers/net/e1000e/ethtool.c            |   37 +++++++++++++++++---------
- drivers/net/eepro.c                     |    2 +-
- drivers/net/ehea/ehea_ethtool.c         |   23 +++++++++++++---
- drivers/net/enc28j60.c                  |    5 ++-
- drivers/net/enic/enic_main.c            |    4 +-
- drivers/net/ewrk3.c                     |    2 +-
- drivers/net/forcedeth.c                 |   25 +++++++++++-------
- drivers/net/ibmveth.c                   |    2 +-
- drivers/net/igb/igb.h                   |    2 +-
- drivers/net/igb/igb_ethtool.c           |   11 ++++---
- drivers/net/igb/igb_main.c              |   23 +++++++++++------
- drivers/net/igbvf/ethtool.c             |    8 +++---
- drivers/net/ixgb/ixgb_ethtool.c         |    7 +++--
- drivers/net/ixgbe/ixgbe_ethtool.c       |   11 ++++---
- drivers/net/ixgbevf/ethtool.c           |    8 +++--
- drivers/net/jme.c                       |    3 +-
- drivers/net/ksz884x.c                   |    9 +++---
- drivers/net/mdio.c                      |   23 +++++++++++------
- drivers/net/mii.c                       |   31 ++++++++++++++---------
- drivers/net/mlx4/en_ethtool.c           |    7 +++--
- drivers/net/mv643xx_eth.c               |    6 ++--
- drivers/net/myri10ge/myri10ge.c         |    2 +-
- drivers/net/natsemi.c                   |   11 ++++---
- drivers/net/netxen/netxen_nic_ethtool.c |   15 ++++++-----
- drivers/net/niu.c                       |    4 +-
- drivers/net/ns83820.c                   |    8 +++---
- drivers/net/pch_gbe/pch_gbe_ethtool.c   |   11 +++++---
- drivers/net/pch_gbe/pch_gbe_main.c      |    6 ++--
- drivers/net/pch_gbe/pch_gbe_phy.c       |    4 +-
- drivers/net/pcmcia/smc91c92_cs.c        |    6 ++--
- drivers/net/pcnet32.c                   |   16 ++++++------
- drivers/net/phy/phy.c                   |   12 +++++---
- drivers/net/ps3_gelic_net.c             |    8 +++---
- drivers/net/qla3xxx.c                   |    2 +-
- drivers/net/qlcnic/qlcnic_ethtool.c     |   12 ++++----
- drivers/net/qlge/qlge_ethtool.c         |    2 +-
- drivers/net/r8169.c                     |    5 ++-
- drivers/net/s2io.c                      |    6 ++--
- drivers/net/sc92031.c                   |    8 +++--
- drivers/net/sfc/ethtool.c               |    5 ++-
- drivers/net/sfc/mcdi_phy.c              |    6 ++--
- drivers/net/sfc/mdio_10g.c              |    4 +-
- drivers/net/sfc/tenxpress.c             |    2 +-
- drivers/net/skge.c                      |    7 +++--
- drivers/net/sky2.c                      |    9 +++---
- drivers/net/smc911x.c                   |    4 +-
- drivers/net/smc91x.c                    |    4 +-
- drivers/net/spider_net_ethtool.c        |    2 +-
- drivers/net/stmmac/stmmac_ethtool.c     |    5 +--
- drivers/net/sungem.c                    |   15 ++++++-----
- drivers/net/sunhme.c                    |   19 ++++++-------
- drivers/net/tehuti.c                    |    2 +-
- drivers/net/tg3.c                       |   13 +++++----
- drivers/net/tulip/de2104x.c             |    9 ++----
- drivers/net/tulip/uli526x.c             |    6 ++--
- drivers/net/tun.c                       |    2 +-
- drivers/net/typhoon.c                   |   19 +++++++------
- drivers/net/usb/asix.c                  |   28 +++++++++++---------
- drivers/net/usb/catc.c                  |    2 +-
- drivers/net/usb/dm9601.c                |    6 ++--
- drivers/net/usb/rtl8150.c               |   11 ++++---
- drivers/net/usb/smsc75xx.c              |    7 +++--
- drivers/net/usb/smsc95xx.c              |    7 +++--
- drivers/net/veth.c                      |    2 +-
- drivers/net/via-velocity.c              |   21 +++++++++------
- drivers/net/vmxnet3/vmxnet3_ethtool.c   |    4 +-
- drivers/net/vxge/vxge-ethtool.c         |    7 +++--
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c       |   11 +++++---
- drivers/scsi/fcoe/fcoe.c                |   11 +++++---
- include/linux/ethtool.h                 |   18 +++++++++---
- include/linux/netdevice.h               |    9 +-----
- include/rdma/ib_addr.h                  |   13 +++++----
- net/batman-adv/soft-interface.c         |    2 +-
- net/bridge/br_if.c                      |    4 +-
- net/core/dev.c                          |   24 +++++++++++++++++
- net/core/net-sysfs.c                    |   24 +++++++----------
- 101 files changed, 578 insertions(+), 460 deletions(-)
-
+diff --git a/drivers/net/e1000/e1000.h b/drivers/net/e1000/e1000.h
+index a881dd0..b1b23dd 100644
+--- a/drivers/net/e1000/e1000.h
++++ b/drivers/net/e1000/e1000.h
+@@ -349,7 +349,7 @@ extern int e1000_up(struct e1000_adapter *adapter);
+ extern void e1000_down(struct e1000_adapter *adapter);
+ extern void e1000_reinit_locked(struct e1000_adapter *adapter);
+ extern void e1000_reset(struct e1000_adapter *adapter);
+-extern int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx);
++extern int e1000_set_spd_dplx(struct e1000_adapter *adapter, u32 spd, u8 dplx);
+ extern int e1000_setup_all_rx_resources(struct e1000_adapter *adapter);
+ extern int e1000_setup_all_tx_resources(struct e1000_adapter *adapter);
+ extern void e1000_free_all_rx_resources(struct e1000_adapter *adapter);
+diff --git a/drivers/net/e1000/e1000_ethtool.c b/drivers/net/e1000/e1000_ethtool.c
+index 127fef4..4fa727c 100644
+--- a/drivers/net/e1000/e1000_ethtool.c
++++ b/drivers/net/e1000/e1000_ethtool.c
+@@ -199,7 +199,7 @@ static int e1000_set_settings(struct net_device *netdev,
+ 		ecmd->advertising = hw->autoneg_advertised;
+ 	} else {
+ 		u32 speed = ethtool_cmd_speed(ecmd);
+-		if (e1000_set_spd_dplx(adapter, speed + ecmd->duplex)) {
++		if (e1000_set_spd_dplx(adapter, speed, ecmd->duplex)) {
+ 			clear_bit(__E1000_RESETTING, &adapter->flags);
+ 			return -EINVAL;
+ 		}
+diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
+index 477e066..c18cb8e 100644
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -96,7 +96,6 @@ int e1000_up(struct e1000_adapter *adapter);
+ void e1000_down(struct e1000_adapter *adapter);
+ void e1000_reinit_locked(struct e1000_adapter *adapter);
+ void e1000_reset(struct e1000_adapter *adapter);
+-int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx);
+ int e1000_setup_all_tx_resources(struct e1000_adapter *adapter);
+ int e1000_setup_all_rx_resources(struct e1000_adapter *adapter);
+ void e1000_free_all_tx_resources(struct e1000_adapter *adapter);
+@@ -4385,7 +4384,6 @@ static int e1000_mii_ioctl(struct net_device *netdev, struct ifreq *ifr,
+ 	struct mii_ioctl_data *data = if_mii(ifr);
+ 	int retval;
+ 	u16 mii_reg;
+-	u16 spddplx;
+ 	unsigned long flags;
+ 
+ 	if (hw->media_type != e1000_media_type_copper)
+@@ -4424,17 +4422,18 @@ static int e1000_mii_ioctl(struct net_device *netdev, struct ifreq *ifr,
+ 					hw->autoneg = 1;
+ 					hw->autoneg_advertised = 0x2F;
+ 				} else {
++					u32 speed;
+ 					if (mii_reg & 0x40)
+-						spddplx = SPEED_1000;
++						speed = SPEED_1000;
+ 					else if (mii_reg & 0x2000)
+-						spddplx = SPEED_100;
++						speed = SPEED_100;
+ 					else
+-						spddplx = SPEED_10;
+-					spddplx += (mii_reg & 0x100)
+-						   ? DUPLEX_FULL :
+-						   DUPLEX_HALF;
+-					retval = e1000_set_spd_dplx(adapter,
+-								    spddplx);
++						speed = SPEED_10;
++					retval = e1000_set_spd_dplx(
++						adapter, speed,
++						((mii_reg & 0x100)
++						 ? DUPLEX_FULL :
++						 DUPLEX_HALF));
+ 					if (retval)
+ 						return retval;
+ 				}
+@@ -4596,20 +4595,24 @@ static void e1000_restore_vlan(struct e1000_adapter *adapter)
+ 	}
+ }
+ 
+-int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx)
++int e1000_set_spd_dplx(struct e1000_adapter *adapter, u32 spd, u8 dplx)
+ {
+ 	struct e1000_hw *hw = &adapter->hw;
+ 
+ 	hw->autoneg = 0;
+ 
++	/* Make sure dplx is at most 1 bit and lsb of speed is not set
++	 * for the switch() below to work */
++	if ((spd & 1) || (dplx & ~1))
++		goto err_inval;
++
+ 	/* Fiber NICs only allow 1000 gbps Full duplex */
+ 	if ((hw->media_type == e1000_media_type_fiber) &&
+-		spddplx != (SPEED_1000 + DUPLEX_FULL)) {
+-		e_err(probe, "Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
+-	}
++	    spd != SPEED_1000 &&
++	    dplx != DUPLEX_FULL)
++		goto err_inval;
+ 
+-	switch (spddplx) {
++	switch (spd + dplx) {
+ 	case SPEED_10 + DUPLEX_HALF:
+ 		hw->forced_speed_duplex = e1000_10_half;
+ 		break;
+@@ -4628,10 +4631,13 @@ int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx)
+ 		break;
+ 	case SPEED_1000 + DUPLEX_HALF: /* not supported */
+ 	default:
+-		e_err(probe, "Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
++		goto err_inval;
+ 	}
+ 	return 0;
++
++err_inval:
++	e_err(probe, "Unsupported Speed/Duplex configuration\n");
++	return -EINVAL;
+ }
+ 
+ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+diff --git a/drivers/net/e1000e/ethtool.c b/drivers/net/e1000e/ethtool.c
+index 12f1ee2..859d0d3 100644
+--- a/drivers/net/e1000e/ethtool.c
++++ b/drivers/net/e1000e/ethtool.c
+@@ -200,20 +200,25 @@ static int e1000_get_settings(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-static int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx)
++static int e1000_set_spd_dplx(struct e1000_adapter *adapter, u32 spd, u8 dplx)
+ {
+ 	struct e1000_mac_info *mac = &adapter->hw.mac;
+ 
+ 	mac->autoneg = 0;
+ 
++	/* Make sure dplx is at most 1 bit and lsb of speed is not set
++	 * for the switch() below to work */
++	if ((spd & 1) || (dplx & ~1))
++		goto err_inval;
++
+ 	/* Fiber NICs only allow 1000 gbps Full duplex */
+ 	if ((adapter->hw.phy.media_type == e1000_media_type_fiber) &&
+-		spddplx != (SPEED_1000 + DUPLEX_FULL)) {
+-		e_err("Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
++	    spd != SPEED_1000 &&
++	    dplx != DUPLEX_FULL) {
++		goto err_inval;
+ 	}
+ 
+-	switch (spddplx) {
++	switch (spd + dplx) {
+ 	case SPEED_10 + DUPLEX_HALF:
+ 		mac->forced_speed_duplex = ADVERTISE_10_HALF;
+ 		break;
+@@ -232,10 +237,13 @@ static int e1000_set_spd_dplx(struct e1000_adapter *adapter, u16 spddplx)
+ 		break;
+ 	case SPEED_1000 + DUPLEX_HALF: /* not supported */
+ 	default:
+-		e_err("Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
++		goto err_inval;
+ 	}
+ 	return 0;
++
++err_inval:
++	e_err("Unsupported Speed/Duplex configuration\n");
++	return -EINVAL;
+ }
+ 
+ static int e1000_set_settings(struct net_device *netdev,
+@@ -272,7 +280,7 @@ static int e1000_set_settings(struct net_device *netdev,
+ 			hw->fc.requested_mode = e1000_fc_default;
+ 	} else {
+ 		u32 speed = ethtool_cmd_speed(ecmd);
+-		if (e1000_set_spd_dplx(adapter, speed + ecmd->duplex)) {
++		if (e1000_set_spd_dplx(adapter, speed, ecmd->duplex)) {
+ 			clear_bit(__E1000_RESETTING, &adapter->state);
+ 			return -EINVAL;
+ 		}
+diff --git a/drivers/net/igb/igb.h b/drivers/net/igb/igb.h
+index 1c687e2..f4fa4b1 100644
+--- a/drivers/net/igb/igb.h
++++ b/drivers/net/igb/igb.h
+@@ -360,7 +360,7 @@ extern int igb_up(struct igb_adapter *);
+ extern void igb_down(struct igb_adapter *);
+ extern void igb_reinit_locked(struct igb_adapter *);
+ extern void igb_reset(struct igb_adapter *);
+-extern int igb_set_spd_dplx(struct igb_adapter *, u16);
++extern int igb_set_spd_dplx(struct igb_adapter *, u32, u8);
+ extern int igb_setup_tx_resources(struct igb_ring *);
+ extern int igb_setup_rx_resources(struct igb_ring *);
+ extern void igb_free_tx_resources(struct igb_ring *);
+diff --git a/drivers/net/igb/igb_ethtool.c b/drivers/net/igb/igb_ethtool.c
+index 023aa9b..6e29634 100644
+--- a/drivers/net/igb/igb_ethtool.c
++++ b/drivers/net/igb/igb_ethtool.c
+@@ -224,7 +224,7 @@ static int igb_set_settings(struct net_device *netdev, struct ethtool_cmd *ecmd)
+ 			hw->fc.requested_mode = e1000_fc_default;
+ 	} else {
+ 		u32 speed = ethtool_cmd_speed(ecmd);
+-		if (igb_set_spd_dplx(adapter, speed + ecmd->duplex)) {
++		if (igb_set_spd_dplx(adapter, speed, ecmd->duplex)) {
+ 			clear_bit(__IGB_RESETTING, &adapter->state);
+ 			return -EINVAL;
+ 		}
+diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
+index cdfd572..ce7838e 100644
+--- a/drivers/net/igb/igb_main.c
++++ b/drivers/net/igb/igb_main.c
+@@ -6349,21 +6349,25 @@ static void igb_restore_vlan(struct igb_adapter *adapter)
+ 	}
+ }
+ 
+-int igb_set_spd_dplx(struct igb_adapter *adapter, u16 spddplx)
++int igb_set_spd_dplx(struct igb_adapter *adapter, u32 spd, u8 dplx)
+ {
+ 	struct pci_dev *pdev = adapter->pdev;
+ 	struct e1000_mac_info *mac = &adapter->hw.mac;
+ 
+ 	mac->autoneg = 0;
+ 
++	/* Make sure dplx is at most 1 bit and lsb of speed is not set
++	 * for the switch() below to work */
++	if ((spd & 1) || (dplx & ~1))
++		goto err_inval;
++
+ 	/* Fiber NIC's only allow 1000 Gbps Full duplex */
+ 	if ((adapter->hw.phy.media_type == e1000_media_type_internal_serdes) &&
+-		spddplx != (SPEED_1000 + DUPLEX_FULL)) {
+-		dev_err(&pdev->dev, "Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
+-	}
++	    spd != SPEED_1000 &&
++	    dplx != DUPLEX_FULL)
++		goto err_inval;
+ 
+-	switch (spddplx) {
++	switch (spd + dplx) {
+ 	case SPEED_10 + DUPLEX_HALF:
+ 		mac->forced_speed_duplex = ADVERTISE_10_HALF;
+ 		break;
+@@ -6382,10 +6386,13 @@ int igb_set_spd_dplx(struct igb_adapter *adapter, u16 spddplx)
+ 		break;
+ 	case SPEED_1000 + DUPLEX_HALF: /* not supported */
+ 	default:
+-		dev_err(&pdev->dev, "Unsupported Speed/Duplex configuration\n");
+-		return -EINVAL;
++		goto err_inval;
+ 	}
+ 	return 0;
++
++err_inval:
++	dev_err(&pdev->dev, "Unsupported Speed/Duplex configuration\n");
++	return -EINVAL;
+ }
+ 
+ static int __igb_shutdown(struct pci_dev *pdev, bool *enable_wake)
 -- 
 1.7.3.1
 
