@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1D1VMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:12:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42696 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab1D1VMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:12:32 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-In-Reply-To: <1304020767.2598.21.camel@mulgrave.site>
-References: <1303990590.2081.9.camel@lenovo>
-	 <20110428135228.GC1696@quack.suse.cz> <20110428140725.GX4658@suse.de>
-	 <1304000714.2598.0.camel@mulgrave.site> <20110428150827.GY4658@suse.de>
-	 <1304006499.2598.5.camel@mulgrave.site>
-	 <1304009438.2598.9.camel@mulgrave.site>
-	 <1304009778.2598.10.camel@mulgrave.site> <20110428171826.GZ4658@suse.de>
-	 <1304015436.2598.19.camel@mulgrave.site>  <20110428192104.GA4658@suse.de>
-	 <1304020767.2598.21.camel@mulgrave.site>
+	id S1755164Ab1D1VOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 17:14:12 -0400
+Received: from amavis-outgoing2.knology.net ([24.214.64.231]:35536 "EHLO
+	amavis-outgoing2.knology.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751149Ab1D1VOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 17:14:11 -0400
+Subject: Re: [PATCHv3 3/7] ethtool: Use the full 32 bit speed range in
+ ethtool's set_settings
+From: David Dillow <dave@thedillows.org>
+To: David Decotigny <decot@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <1303954043-17440-4-git-send-email-decot@google.com>
+References: <1303954043-17440-1-git-send-email-decot@google.com>
+	 <1303954043-17440-4-git-send-email-decot@google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 16:12:24 -0500
-Message-ID: <1304025145.2598.24.camel@mulgrave.site>
+Date: Thu, 28 Apr 2011 17:14:09 -0400
+Message-ID: <1304025249.16087.2.camel@obelisk.thedillows.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 14:59 -0500, James Bottomley wrote:
-> Actually, talking to Chris, I think I can get the system up using
-> init=/bin/bash without systemd, so I can try the no cgroup config.
+On Wed, 2011-04-27 at 18:27 -0700, David Decotigny wrote:
+> This makes sure the ethtool's set_settings() callback of network
+> drivers don't ignore the 16 most significant bits when ethtool calls
+> their set_settings().
+> 
+> All drivers compiled with make allyesconfig on x86_64 have been
+> updated.
+> 
+> Tested: make allyesconfig compiles + e1000e and bnx2x work
+> Signed-off-by: David Decotigny <decot@google.com>
 
-OK, so a non-PREEMPT non-CGROUP kernel has survived three back to back
-runs of untar without locking or getting kswapd pegged, so I'm pretty
-certain this is cgroups related.  The next steps are to turn cgroups
-back on but try disabling the memory and IO controllers.
+For what it's worth, the typhoon changes are
 
-James
-
+Acked-by: David Dillow <dave@thedillows.org>
 
