@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab1D1AHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:07:00 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53491 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab1D1AG4 (ORCPT
+	id S1752234Ab1D1APl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:15:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38727 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab1D1APk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:06:56 -0400
-Date: Wed, 27 Apr 2011 19:06:46 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Roberto Sassu <roberto.sassu@polito.it>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-Message-ID: <20110428000646.GH30854@boyd.l.tihix.com>
-References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
- <4DB87A6B.7060805@schaufler-ca.com>
- <20110427232718.GG30854@boyd.l.tihix.com>
- <4DB8AD76.3020405@schaufler-ca.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB8AD76.3020405@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Apr 2011 20:15:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 28 Apr 2011 09:08:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [PATCH] mm: Delete non-atomic mm counter implementation
+Message-Id: <20110428090857.24de6532.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1303914965-868-1-git-send-email-matt@console-pimps.org>
+References: <1303914965-868-1-git-send-email-matt@console-pimps.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Apr 27, 2011 at 04:57:42PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> On 4/27/2011 4:27 PM, Tyler Hicks wrote:
-> > On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> >> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
-> >>> File descriptor labeling issue
-> >>>
-> >>> Actually SELinux and SMACK assign to file descriptors the same label of the
-> >>> opening process and use it in LSM hooks security_file_permission(),
-> >>> security_file_fcntl() and others to verify if the 'current' process has the
-> >>> rights to perform the requested operation.
-> >>>
-> >>> Using the credentials of the 'current' process may be not appropriate in
-> >>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
-> >>> and made shared among user processes. For instance, in a system with
-> >>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
-> >>> obtains a file descriptor to access the correspondent inode in the lower
-> >>> filesystem, labeled with the A's label.
-> >>>
-> >>> If the process B accesses the same encrypted file, it needs the 'use'
-> >>> permission on the A's label other than permissions for the lower inode.
-> >>> However, if B is the first accessing process, A needs the 'use' permission
-> >>> on the B's label.
-> >> I am having trouble understanding the argument. I will pose my
-> >> question in Smack terms, as I can speak most definitively in them.
-> >>
-> >> A process running with a Smack label "A" creates a file, and that
-> >> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
-> >> this ought not change. If eCryptfs in encrypting the label it needs
-> >> to do so in such a way as to be able to decrypt it prior to
-> >> presentation to the vfs layer, where it will be used in an access
-> >> check. When the process running with a Smack label "B" comes along
-> >> the vfs code will check the fetched and possibly decrypted "A"
-> >> against "B" and, unless there is an explicit Smack rule in place
-> >> granting "B" access to "A", fail.
-> >>
-> >> What is the problem? What is eCryptfs doing that prevents this
-> >> from working?
-> > Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
-> > only one lower file per eCryptfs inode. Imagine that there are 5
-> > files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
-> > to be open in the lower filesystem and all eCryptfs file operations will
-> > be multiplexed through it.
-> >
-> > To make things more complicated, if the eCryptfs file is opened for
-> > writing, the lower file must be opened for reading and writing. This is
-> > because a write operation requires eCryptfs to vfs_read() from the lower
-> > filesystem, decrypt that data and then vfs_write() the new data.
-> >
-> > If the lower file can't be opened O_RDWR by the calling process, the
-> > request is handed off to a kernel thread to open the lower file on
-> > behalf of the calling process. It is definitely ugly.
+On Wed, 27 Apr 2011 15:36:05 +0100
+Matt Fleming <matt@console-pimps.org> wrote:
+
+> From: Matt Fleming <matt.fleming@linux.intel.com>
 > 
-> Is eCryptfs handling xattrs? It needs to be if it isn't.
-
-Yes - we pass the calls to the lower filesystem and return the result.
-
-The only catch would be that users can opt to have eCryptfs store the
-crypto metadata in user.ecryptfs instead of the first 8k of the file.
-
-Tyler
-
+> The problem with having two different types of counters is that
+> developers adding new code need to keep in mind whether it's safe to
+> use both the atomic and non-atomic implementations. For example, when
+> adding new callers of the *_mm_counter() functions a developer needs
+> to ensure that those paths are always executed with page_table_lock
+> held, in case we're using the non-atomic implementation of mm
+> counters.
 > 
-> > Roberto, I hope I correctly described the situation that you're trying
-> > to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
-> > files to lower files?
-> >
-> > Instead of having just one lower file attached to the eCryptfs inode, we
-> > could have a list of opened files. There would be one for each eCryptfs
-> > file that was opened. ecryptfs_writepage() would have to pick, in a
-> > somewhat random fashion, one of the lower files to use. Of course, we
-> > would still need to solve the problem of opening the lower file O_RDWR
-> > when the calling process is only allowed write access (I may have just
-> > answered my own question of why the 1:1 mapping technique won't solve
-> > this problem).
-> >
-> > Tyler
-> >
-> >
+> Hugh Dickins introduced the atomic mm counters in commit f412ac08c986
+> ("[PATCH] mm: fix rss and mmlist locking"). When asked why he left the
+> non-atomic counters around he said,
 > 
+>   | The only reason was to avoid adding costly atomic operations into a
+>   | configuration that had no need for them there: the page_table_lock
+>   | sufficed.
+>   |
+>   | Certainly it would be simpler just to delete the non-atomic variant.
+>   |
+>   | And I think it's fair to say that any configuration on which we're
+>   | measuring performance to that degree (rather than "does it boot fast?"
+>   | type measurements), would already be going the split ptlocks route.
+> 
+> Removing the non-atomic counters eases the maintenance burden because
+> developers no longer have to mindful of the two implementations when
+> using *_mm_counter().
+> 
+> Note that all architectures provide a means of atomically updating
+> atomic_long_t variables, even if they have to revert to the generic
+> spinlock implementation because they don't support 64-bit atomic
+> instructions (see lib/atomic64.c).
+> 
+> Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
+
+now mm_counters are update in per-thread and removing non-atomic
+will not have big impact in performance, I hope. 
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
