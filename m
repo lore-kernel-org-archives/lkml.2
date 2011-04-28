@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab1D1Gqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 02:46:44 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37169 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab1D1Gqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 02:46:43 -0400
-Date: Thu, 28 Apr 2011 15:46:06 +0900
-To: arnd@arndb.de
-Cc: linaro-mm-sig@lists.linaro.org, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <201104280840.09206.arnd@arndb.de>
-References: <20110427073514.GH17290@n2100.arm.linux.org.uk>
-	<1303940271.2513.187.camel@pasglop>
-	<201104280840.09206.arnd@arndb.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110428154347Z.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 28 Apr 2011 15:46:08 +0900 (JST)
+	id S1754039Ab1D1GyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 02:54:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57332 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab1D1GyE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 02:54:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=pi5aH85DAsUMu/2eCk2cgJWtm3J6NZXAzvlhU9cqKgBIveGmGNjO32lQzyOMobViTD
+         M/cPXpsZGNovdrnpPjhr5htQT+vLlr+Orbs4Yt+DPwprXicVplDP7vbxz3lIqYQqMUut
+         +ClKNC64oQQTNP6b+LD4S9Yb8xQZGhWuty4Hs=
+MIME-Version: 1.0
+In-Reply-To: <20110428105634.7a98c094.sfr@canb.auug.org.au>
+References: <20110428105634.7a98c094.sfr@canb.auug.org.au>
+Date: Thu, 28 Apr 2011 08:54:04 +0200
+X-Google-Sender-Auth: XIm2PpYHHm8vnQpG-RM7VPZbkkY
+Message-ID: <BANLkTinJZSh5y3gAa9ZkY1giPwzA7Nni6w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the ux500-core tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011 08:40:08 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
+2011/4/28 Stephen Rothwell <sfr@canb.auug.org.au>:
 
-> On Wednesday 27 April 2011 23:37:51 Benjamin Herrenschmidt wrote:
-> > On Wed, 2011-04-27 at 08:35 +0100, Russell King - ARM Linux wrote:
-> > > On Thu, Apr 21, 2011 at 09:29:16PM +0200, Arnd Bergmann wrote:
-> > > > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
-> > > >    that this is needed, and it currently is not implemented, with
-> > > >    an outdated comment explaining why it used to not be possible
-> > > >    to do it.
-> > > 
-> > > dma_alloc_noncoherent is an entirely pointless API afaics.
-> > 
-> > I was about to ask what the point is ... (what is the expected
-> > semantic ? Memory that is reachable but not necessarily cache
-> > coherent ?)
-> 
-> Drivers use this when they explicitly want to manage the caching
-> themselves.
+> After merging the ux500-core tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> drivers/video/via/via-gpio.c:148: error: 'gpio_config' redeclared as different kind of symbol
+> include/asm-generic/gpio.h:164: note: previous declaration of 'gpio_config' was here
+>
+> Caused by commit cf451708d300 ("gpio: add a custom configuration
+> mechanism to gpiolib").
 
-Not "want to manage". The API is for drivers that "have to" manage the
-cache because of architectures that can't allocate coherent memory.
+Hm! How typical. I will push a patch that renames gpio_config in the
+via driver to via_gpio_config so we don't get this namespace clash.
 
-> I think this is most interesting on big NUMA systems,
-> where you really want to use fast (local cached) memory and
-> then flush it explicitly to do dma. Very few drivers use this:
+Yours,
+Linus Walleij
