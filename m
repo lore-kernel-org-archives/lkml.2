@@ -1,84 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1D1N3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:29:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab1D1N3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:29:37 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, jaxboe@fusionio.com
-Subject: Re: [PATCH 1/2] blkdev: Submit discard bio in batches in blkdev_issue_discard()
-References: <1303303172-22404-1-git-send-email-lczerner@redhat.com>
-	<x49aafb4x1k.fsf@segfault.boston.devel.redhat.com>
-	<alpine.LFD.2.00.1104280950380.31735@dhcp-27-109.brq.redhat.com>
-	<alpine.LFD.2.00.1104281007530.31735@dhcp-27-109.brq.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 28 Apr 2011 09:29:29 -0400
-In-Reply-To: <alpine.LFD.2.00.1104281007530.31735@dhcp-27-109.brq.redhat.com>
-	(Lukas Czerner's message of "Thu, 28 Apr 2011 10:09:18 +0200 (CEST)")
-Message-ID: <x49sjt2ld1i.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754141Ab1D1NaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:30:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38519 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751031Ab1D1NaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 09:30:11 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18zw3h99Kkz85DRUY68irR1rLaEGOJYB5NymXZ8R6
+	ZxlKVonixoJpk1
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: sedat.dilek@gmail.com,
+        Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+In-Reply-To: <20110428102609.GJ2135@linux.vnet.ibm.com>
+References: <20110426112756.GF4308@linux.vnet.ibm.com>
+	 <20110426183859.6ff6279b@neptune.home>
+	 <20110426190918.01660ccf@neptune.home>
+	 <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+	 <alpine.LFD.2.02.1104262314110.3323@ionos>
+	 <20110427081501.5ba28155@pluto.restena.lu>
+	 <20110427204139.1b0ea23b@neptune.home>
+	 <alpine.LFD.2.02.1104272351290.3323@ionos>
+	 <alpine.LFD.2.02.1104281051090.19095@ionos>
+	 <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+	 <20110428102609.GJ2135@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 15:30:01 +0200
+Message-ID: <1303997401.7819.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On Thu, 2011-04-28 at 03:26 -0700, Paul E. McKenney wrote:
+> On Thu, Apr 28, 2011 at 11:45:03AM +0200, Sedat Dilek wrote:
+> > Hi,
+> > 
+> > not sure if my problem from linux-2.6-rcu.git#sedat.2011.04.23a is
+> > related to the issue here.
+> > 
+> > Just FYI:
+> > I am here on a Pentium-M (uniprocessor aka UP) and still unsure if I
+> > have the correct (optimal?) kernel-configs set.
+> > 
+> > Paul gave me a script to collect RCU data and I enhanced it with
+> > collecting SCHED data.
+> > 
+> > In the above mentionned GIT branch I applied these two extra commits
+> > (0001 requested by Paul and 0002 proposed by Thomas):
+> > 
+> > patches/0001-Revert-rcu-restrict-TREE_RCU-to-SMP-builds-with-PREE.patch
+> > patches/0002-sched-Add-warning-when-RT-throttling-is-activated.patch
+> > 
+> > Furthermore, I have added my kernel-config file, scripts, patches and
+> > logs (also output of 'cat /proc/cpuinfo').
+> > 
+> > Hope this helps the experts to narrow down the problem.
+> 
+> Yow!!!
+> 
+> Now this one might well be able to hit the 950 millisecond limit.
+> There are no fewer than 1,314,958 RCU callbacks queued up at the end of
+> the test.  And RCU has indeed noticed this and cranked up the number
+> of callbacks to be handled by each invocation of rcu_do_batch() to
+> 2,147,483,647.  And only 15 seconds earlier, there were zero callbacks
+> queued and the rcu_do_batch() limit was at the default of 10 callbacks
+> per invocation.
 
-> On Thu, 28 Apr 2011, Lukas Czerner wrote:
->
->> On Wed, 27 Apr 2011, Jeff Moyer wrote:
->> 
->> > Lukas Czerner <lczerner@redhat.com> writes:
->> > 
->> > > Currently we are waiting for every submitted REQ_DISCARD bio separately,
->> > > but it can have unwanted consequences of repeatedly flushing the queue,
->> > > so we rather submit bios in batches and wait for the entire batch, hence
->> > > narrowing the window of other ios going in.
->> > >
->> > > Use bio_batch_end_io() and struct bio_batch for that purpose, the same
->> > > is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
->> > > always set !BIO_UPTODATE in the case of error and remove the check for
->> > > bb, since we are the only user of this function and we always set this.
->> > >
->> > > Remove bio_get()/bio_put() from the blkdev_issue_discard() since
->> > > bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
->> > > not needed anymore.
->> > >
->> > > I have done simple dd testing with surprising results. The script I have
->> > > used is:
->> > >
->> > > for i in $(seq 10); do
->> > >         echo $i
->> > >         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
->> > >         sleep 5
->> > > done
->> > > /usr/bin/time -f %e ./blkdiscard /dev/sdc1
->> > >
->> > > Running time of BLKDISCARD on the whole device:
->> > > with patch              without patch
->> > > 0.95                    15.58
->> > >
->> > > So we can see that in this artificial test the kernel with the patch
->> > > applied is approx 16x faster in discarding the device.
->> > 
->> > I don't see any major problems here.  I would like you to test
->> > explicitly for queue_flag_discard before submitting any bios, though.
->
-> Btw, this is already in there:
->
-> 	if (!blk_queue_discard(q))
-> 		return -EOPNOTSUPP;
->
-> at the top of the function.
+Yeah, yow.  Once the RT throttle hit, it stuck.
 
-Boy, how did I miss that?  ;-)
+  .clock                         : 1386824.201768
+  .rt_nr_running                 : 2
+  .rt_throttled                  : 1
+  .rt_time                       : 950.132427
+  .rt_runtime                    : 950.000000
+           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
+FF    1      1 R    R 0 [rcuc0]
+  .clock                         : 1402450.997994
+  .rt_nr_running                 : 2
+  .rt_throttled                  : 1
+  .rt_time                       : 950.132427
+  .rt_runtime                    : 950.000000
+           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
+FF    1      1 R    R 0 [rcuc0]
 
-Cheers,
-Jeff
+...
+
+  .clock                         : 2707432.862374
+  .rt_nr_running                 : 2
+  .rt_throttled                  : 1
+  .rt_time                       : 950.132427
+  .rt_runtime                    : 950.000000                                                                                              
+           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /                               
+FF    1      1 R    R 0 [rcuc0]
+  .clock                         : 2722572.958381                                                                                          
+  .rt_nr_running                 : 2
+  .rt_throttled                  : 1
+  .rt_time                       : 950.132427
+  .rt_runtime                    : 950.000000                                                                                              
+           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
+FF    1      1 R    R 0 [rcuc0]                                                                                                            
+
+
