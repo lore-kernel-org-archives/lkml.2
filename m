@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab1D1WCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 18:02:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59253 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352Ab1D1WCY (ORCPT
+	id S933414Ab1D1WKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 18:10:50 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:47111 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab1D1WKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 18:02:24 -0400
-Date: Fri, 29 Apr 2011 00:02:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <1304027480.2971.121.camel@work-vm>
-Message-ID: <alpine.LFD.2.02.1104282353140.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com>  <20110426183859.6ff6279b@neptune.home>  <20110426190918.01660ccf@neptune.home>  <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>  <alpine.LFD.2.02.1104262314110.3323@ionos>  <20110427081501.5ba28155@pluto.restena.lu>
-  <20110427204139.1b0ea23b@neptune.home>  <alpine.LFD.2.02.1104272351290.3323@ionos>  <alpine.LFD.2.02.1104281051090.19095@ionos>  <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>  <20110428102609.GJ2135@linux.vnet.ibm.com>  <1303997401.7819.5.camel@marge.simson.net>
-  <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>  <alpine.LFD.2.02.1104282044120.3005@ionos>  <20110428222301.0b745a0a@neptune.home>  <alpine.LFD.2.02.1104282227340.3005@ionos>  <20110428224444.43107883@neptune.home>  <alpine.LFD.2.02.1104282251080.3005@ionos>
- <1304027480.2971.121.camel@work-vm>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 28 Apr 2011 18:10:49 -0400
+Date: Thu, 28 Apr 2011 18:10:13 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+In-Reply-To: <20110427064342.GE17079@elte.hu>
+Message-ID: <alpine.DEB.2.00.1104281801350.25779@cl320.eecs.utk.edu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org> <1303407662-15564-2-git-send-email-acme@infradead.org> <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu> <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <1303809958.20212.219.camel@twins> <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu> <20110427064342.GE17079@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011, john stultz wrote:
-> On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
-> > /me suspects hrtimer changes to be the real culprit.
+On Wed, 27 Apr 2011, Ingo Molnar wrote:
+
 > 
-> I'm not seeing anything on right off, but it does smell like
-> e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
-> would crop up.
+> Erm, that assumes you already know that magic incantation. Most of the users 
+> who want to do measurements and profiling do not know that. So there's little 
+> difference between:
 > 
-> Bruno, could you try checking out e06383db9ec, confirming it still
-> occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
+>  - someone shows them the 0x53cf28 magic code
+>  - someone shows them the L2_IFETCH:BOTH_CORES magic symbol
 > 
-> I'll keep digging in the meantime.
+> So you while hexa values have like 10% utility, the stupid, vendor-specific 
+> event names you are pushing here have like 15% utility.
+> 
+> In perf we are aiming for 100% utility, where if someone knows something about 
+> CPUs and can type 'cycles', 'instructions' or 'branches', will get the obvious 
+> result.
+> 
+> This is not a difficult usability concept really.
 
-I found the bug already. The problem is that sched_init() calls
-init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
-hrtimers_init() is called.
+yes, and this functionality belongs in the perf tool itself (or some other 
+user tool, like libpfm4, or PAPI).  Not in the kernel.
 
-That was unnoticed so far as the CLOCK id to hrtimer base conversion
-was hardcoded. Now we use a table which is set up at hrtimers_init(),
-so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
-in the bss.
+How much larger are you willing to make the kernel to hold your 
+generalized events?  PAPI has at least 128 that people have found useful 
+enough to add over the years.  There are probably more.
 
-The patch below fixes this, by providing the table statically rather
-than runtime initialized. Though that whole ordering wants to be
-revisited.
+I notice the kernel doesn't have any FP or SSE/Vector counts yet.  Or 
+uops.  Or hw-interrupt counts.  Fused multiply-add?  
+How about GPU counters (PAPI is starting to support these)?  Network 
+counters?  Infiniband?
 
-Thanks,
+You're being lazy and pushing "perf" functionality into the kernel.  It 
+belongs in userspace.  
 
-	tglx
+It's not the kernel's job to make things easy for users.  Its job is to 
+make things possible, and get out of the way.
 
---- linux-2.6.orig/kernel/hrtimer.c
-+++ linux-2.6/kernel/hrtimer.c
-@@ -81,7 +81,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, 
- 	}
- };
- 
--static int hrtimer_clock_to_base_table[MAX_CLOCKS];
-+static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
-+	[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
-+	[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
-+	[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
-+};
- 
- static inline int hrtimer_clockid_to_base(clockid_t clock_id)
- {
-@@ -1722,10 +1726,6 @@ static struct notifier_block __cpuinitda
- 
- void __init hrtimers_init(void)
- {
--	hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
--	hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
--	hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
--
- 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
- 			  (void *)(long)smp_processor_id());
- 	register_cpu_notifier(&hrtimers_nb);
+It's already bad enough that your generalized events can change from 
+kernel version to kernel version without warning.  By being in the kernel, 
+aren't they a stable ABI that can't be changed?
 
-
+Vince
