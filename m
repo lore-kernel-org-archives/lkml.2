@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab1D1LOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 07:14:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41899 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755817Ab1D1LOk (ORCPT
+	id S1758945Ab1D1LRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 07:17:07 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48330 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab1D1LRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 07:14:40 -0400
-Date: Thu, 28 Apr 2011 12:14:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: kalle.jokiniemi@nokia.com
-Cc: lrg@slimlogic.co.uk, mchehab@infradead.org, svarbatov@mm-sol.com,
-        saaguirre@ti.com, grosikopulos@mm-sol.com, vimarsh.zutshi@nokia.com,
-        Sakari.Ailus@nokia.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC] Regulator state after regulator_get
-Message-ID: <20110428111447.GA19484@opensource.wolfsonmicro.com>
-References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
- <20110428100629.GA14494@opensource.wolfsonmicro.com>
- <9D0D31AA57AAF5499AFDC63D6472631B09C858@008-AM1MPN1-036.mgdnok.nokia.com>
+	Thu, 28 Apr 2011 07:17:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=RT4sAhahSfSfPDDR/tPTh+FkYLLa6q5dsKcc8JU9jquJJ51JE5Rf6FwMNJuys2436Y
+         g64nL1PvMNbDJT/eMFuvbXbtddVHUjlJ1hOg314m6P5bp6Ed0wUEZwTf1c5tI3miATZE
+         oIlu7W/O74mw6UJAhuz4hJeHFlSJx2nJ9HXDY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9D0D31AA57AAF5499AFDC63D6472631B09C858@008-AM1MPN1-036.mgdnok.nokia.com>
-X-Cookie: Don't feed the bats tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 28 Apr 2011 13:17:04 +0200
+Message-ID: <BANLkTikoT4vHDjeNpoVWzefqMRBFAC0unA@mail.gmail.com>
+Subject: Re: Patchwork [-rcu,1/1] rcu: fix rcu CONFIG logic
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 11:08:08AM +0000, kalle.jokiniemi@nokia.com wrote:
+Hi Lai Jiangshan,
 
-> I don't have a full set of regulators described, that's why things broke when
-> I tried the regulator_full_constraints call earlier. But I don't think it would be too
-> big issue to check the current after boot configuration and define all the
-> regulators as you suggest. I will try this approach.
+I like this patch (with explanations) and would test it, against which
+(GIT) tree is this for?
 
-As I said in my previous mail if you've got a reagulator you don't know
-about which is on you can give it an always_on constraint until you
-figure out what (if anything) should be controlling it.
+Regards,
+- Sedat -
+
+
+[1] https://patchwork.kernel.org/patch/735291/
