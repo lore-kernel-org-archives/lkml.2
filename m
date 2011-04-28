@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab1D1VEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:04:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34083 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1D1VET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:04:19 -0400
-Date: Thu, 28 Apr 2011 23:04:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <20110428224444.43107883@neptune.home>
-Message-ID: <alpine.LFD.2.02.1104282251080.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
- <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos> <20110428224444.43107883@neptune.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-929818264-1304024642=:3005"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753673Ab1D1VHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 17:07:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45737 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab1D1VHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 17:07:39 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110428093039.GU17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de>
+	 <201104271302.44249.arnd@arndb.de>
+	 <20110427201605.GW17290@n2100.arm.linux.org.uk>
+	 <201104272221.48601.arnd@arndb.de>
+	 <20110427202603.GY17290@n2100.arm.linux.org.uk>
+	 <1303940467.2513.188.camel@pasglop>
+	 <20110428093039.GU17290@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Apr 2011 07:07:16 +1000
+Message-ID: <1304024836.2513.198.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-929818264-1304024642=:3005
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 28 Apr 2011, Bruno Prémont wrote:
-> Timer List Version: v0.6
-> HRTIMER_MAX_CLOCK_BASES: 3
-> now at 1150126155286 nsecs
+On Thu, 2011-04-28 at 10:30 +0100, Russell King - ARM Linux wrote:
+> On Thu, Apr 28, 2011 at 07:41:07AM +1000, Benjamin Herrenschmidt wrote:
+> > 
+> > > As I said above, I don't think bus code can do it.  Take my example
+> > > above of a tulip pci device on x86 and a tulip pci device on ARM.  Both
+> > > use the same PCI code.
+> > > 
+> > > Maybe something in asm/pci.h - but that invites having lots of bus
+> > > specific header files in asm/.
+> > > 
+> > > A better solution imho would be to have an architecture callback for
+> > > struct device which gets registered, which can inspect the type of
+> > > the device, and set the flag depending on where it appears in the
+> > > tree.
+> > 
+> > Now -that's gross :-)
+> > 
+> > For PCI you can have the flag propagate from the PHB down, for busses
+> > without a bus type (platform) then whoever instanciate them (the
+> > platform code) can set that appropriately.
 > 
-> cpu: 0
->  clock 0:
->   .base:       c1559360
->   .index:      0
->   .resolution: 1 nsecs
->   .get_time:   ktime_get_real
->   .offset:     1304021489280954699 nsecs
-> active timers:
->  #0: def_rt_bandwidth, sched_rt_period_timer, S:01, enqueue_task_rt, swapper/1
->  # expires at 1304028703000000000-1304028703000000000 nsecs [in 1304027552873844714 to 1304027552873844714 nsecs]
+> How can you do that when it changes mid-bus heirarchy?  I'm thinking
+> of the situation where the DRM stuff is on a child bus below the
+> root bus, and the root bus has DMA coherent devices on it but the DRM
+> stuff doesn't.
 
-Ok, that expiry time is obviously bogus as it does not account the offset:
+But that's not PCI right ? IE. with PCI, coherency is a property of the
+PHB... 
 
-So in reality it's: expires in: 6063592890015ns 
+> Your solution doesn't allow that - and I believe that's what Arnd is
+> talking about.
 
-Which is still completely wrong. The timer should expire at max a
-second from now. But it's going to expire in 6063.592890015 seconds
-from now, which is pretty much explaining the after 2hrs stuff got
-going again.
+Well, for the rest I'm thinking just bolt it into the platform until you
+can put the property in the DT :-)
 
-But the real interesting question is why he heck is that timer on
-CLOCK_REALTIME ???? It is initalized for CLOCK_MONOTONIC.
+Cheers,
+Ben.
 
-/me suspects hrtimer changes to be the real culprit.
-
-John ????
-
-Thanks,
-
-	tglx
-
-
-
-
---8323328-929818264-1304024642=:3005--
