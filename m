@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab1D1THZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 15:07:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58712 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab1D1THU (ORCPT
+	id S1757959Ab1D1TKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 15:10:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34868 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab1D1TKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 15:07:20 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=0i_OOtiXEx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=cm27Pg_UAAAA:8 a=Onhg2s7Uw6P4liCpctwA:9 a=PUjeQqilurYA:10 a=zv9_9hqRWm8A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>
-In-Reply-To: <20110428185416.GB13071@hallyn.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	 <1303960136-14298-2-git-send-email-wad@chromium.org>
-	 <20110428165525.GB1927@hallyn.com>
-	 <1304010981.18763.192.camel@gandalf.stny.rr.com>
-	 <20110428173957.GA25940@hallyn.com>
-	 <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
-	 <1304014874.18763.201.camel@gandalf.stny.rr.com>
-	 <BANLkTimg==qTO2=1VaeXFM8Gt5R_VFYLCA@mail.gmail.com>
-	 <20110428185416.GB13071@hallyn.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Apr 2011 15:07:18 -0400
-Message-ID: <1304017638.18763.205.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Apr 2011 15:10:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ksplice.com; s=google;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dZjBRs6l0/RY10KJtbLUXMXJFCjPnhKJrDEu5gmpz4kPyH68Pvi7HX79gpN1OnAGek
+         GhdXVec50E9EDIlzf5fV6sPJpVVWzDqoTgbExz9BvYEvE/C1oipwe7vfii+8ka5QwfNx
+         rlrach1F5g7UrCx5/rnjvJK7jNmUjrAvYabsM=
+MIME-Version: 1.0
+In-Reply-To: <20110428184234.GB2559@redhat.com>
+References: <alpine.DEB.2.02.1104281346060.14343@dr-wily.mit.edu>
+	<20110428184234.GB2559@redhat.com>
+Date: Thu, 28 Apr 2011 15:10:27 -0400
+Message-ID: <BANLkTikG6atUB1mE8UF8Ew4ustb1gfFEjA@mail.gmail.com>
+Subject: Re: [PATCH] jump label: Fix jump_label_text_reserved
+From: Anders Kaseorg <andersk@ksplice.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 13:54 -0500, Serge E. Hallyn wrote:
-> Quoting Will Drewry (wad@chromium.org):
-> > My intent was to make them available for use by seccomp.c during state
-> > teardown/dup.  I don't think there's benefit to exposing them outside
-> > of that.  Would dropping the export, and adding an local seccomp.h
-> > with the shared functions in them resolve that more cleanly?
-> 
-> And add a clear comment explaining :)
+On Thu, Apr 28, 2011 at 14:42, Jason Baron <jbaron@redhat.com> wrote:
+> This is fixed in the jump label re-write patch, which is queued for
+> 2.6.40 in the -tip tree. See: http://marc.info/?l=linux-kernel&m=130391786701337&w=2
 
-Yes that always helps.
+Okay.  It would be nice if the bug fixes had been separated out into
+commits that could be picked onto the -stable kernels.  Should I send
+my patch to stable@kernel.org?
 
-> 
-> > > Your code would have been correct if you could call kzalloc under
-> > > rcu_read_lock() (which you can on some kernel configurations but not
-> > > all). The issue is that you need to pull out that allocation from the
-> > > rcu_read_lock() because rcu_read_lock assumes you can't preempt, and
-> > > that allocation can schedule out. The access to the filters must be done
-> > > under rcu_read_lock(), other than that, you're fine.
-> > 
-> > That makes sense.  I think I'd prefer to not share those functions
-> > rather than guard the list just in case a future consumer of the
-> > interface comes along.  Would that make sense to you?  Since I don't
-> > see any other users right now other than seccomp.c, it might make
-> > sense to tackle the impact when an actual need arises.
-> > 
-> > I'll go whichever way pointed on this, though.
-> 
-> Complicating the locking for nonexistent users doesn't seem like the
-> right way.
+> I believe only kprobes is relying on this check. Did you hit this in
+> practive using kprobes?
 
-I agree.
+Ksplice needs this check too.
 
--- Steve
-
-
+Anders
