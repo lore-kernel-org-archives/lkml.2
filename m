@@ -1,113 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab1D1KOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:14:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46866 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab1D1KOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:14:49 -0400
-Date: Thu, 28 Apr 2011 11:14:46 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
- reserves are low and swap is backed by network storage
-Message-ID: <20110428101446.GP4658@suse.de>
-References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
- <1303920491-25302-13-git-send-email-mgorman@suse.de>
- <20110428102244.6e1113e9@notabene.brown>
+	id S1758910Ab1D1KUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:20:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40922 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758169Ab1D1KUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:20:03 -0400
+Date: Thu, 28 Apr 2011 11:20:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: kalle.jokiniemi@nokia.com
+Cc: Sakari.Ailus@nokia.com, lrg@slimlogic.co.uk, mchehab@infradead.org,
+        svarbatov@mm-sol.com, saaguirre@ti.com, grosikopulos@mm-sol.com,
+        vimarsh.zutshi@nokia.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, laurent.pinchart@ideasonboard.com
+Subject: Re: [RFC] Regulator state after regulator_get
+Message-ID: <20110428102009.GB14494@opensource.wolfsonmicro.com>
+References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
+ <4DB9348D.7000501@nokia.com>
+ <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110428102244.6e1113e9@notabene.brown>
+In-Reply-To: <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 10:22:44AM +1000, NeilBrown wrote:
-> On Wed, 27 Apr 2011 17:08:10 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> 
-> 
-> > +/*
-> > + * Throttle direct reclaimers if backing storage is backed by the network
-> > + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-> > + * depleted. kswapd will continue to make progress and wake the processes
-> > + * when the low watermark is reached
-> > + */
-> > +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-> > +					nodemask_t *nodemask)
-> > +{
-> > +	struct zone *zone;
-> > +	int high_zoneidx = gfp_zone(gfp_mask);
-> > +	DEFINE_WAIT(wait);
-> > +
-> > +	/* Check if the pfmemalloc reserves are ok */
-> > +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-> > +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
-> > +		return;
-> 
-> As the first thing that 'wait_event_interruptible" does is test the condition
-> and return if it is true, this "if () return;" is pointless.
->  
+On Thu, Apr 28, 2011 at 09:44:10AM +0000, kalle.jokiniemi@nokia.com wrote:
 
-In patch 13, we count the number of times we got throttled. In this
-patch, the check is pointless but it makes sense in the context of
-the following patch.
+>  > Another alternative to the first option you proposed could be to add a
+>  > flags field to regulator_consumer_supply, and use a flag to recognise
+>  > regulators which need to be disabled during initialisation. The flag
+>  > could be set by using a new macro e.g. REGULATOR_SUPPLY_NASTY() when
+>  > defining the regulator.
 
-> > +
-> > +	/* Throttle */
-> > +	wait_event_interruptible(zone->zone_pgdat->pfmemalloc_wait,
-> > +		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
-> > +}
-> 
-> I was surprised that you chose wait_event_interruptible as your previous code
-> was almost exactly "wait_event_killable".
-> 
-> Is there some justification for not throttling processes which happen to have
-> a (non-fatal) signal pending?
-> 
+> This sounds like a good option actually. Liam, Mark, any opinions?
 
-No justification, wait_event_killable() is indeed a better fit.
-
-> > +
-> >  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
-> >  				gfp_t gfp_mask, nodemask_t *nodemask)
-> >  {
-> > @@ -2133,6 +2172,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
-> >  		.nodemask = nodemask,
-> >  	};
-> >  
-> > +	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
-> > +
-> > +	/*
-> > +	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
-> > +	 * that the page allocator does not consider triggering OOM
-> > +	 */
-> > +	if (fatal_signal_pending(current))
-> > +		return 1;
-> > +
-> >  	trace_mm_vmscan_direct_reclaim_begin(order,
-> >  				sc.may_writepage,
-> >  				gfp_mask);
-> > @@ -2488,6 +2536,12 @@ loop_again:
-> >  			}
-> >  
-> >  		}
-> > +
-> > +		/* Wake throttled direct reclaimers if low watermark is met */
-> > +		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
-> > +				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
-> > +			wake_up_interruptible(&pgdat->pfmemalloc_wait);
-> > +
-> >  		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-> >  			break;		/* kswapd: all done */
-> >  		/*
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+I'm not sure what "supply_nasty" would mean?  This also doesn't seem
+like something that we can set up per supply - it's going to affect the
+whole regulator state, it's not something that only affects a single
+supply.
