@@ -1,175 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab1D1Rhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 13:37:37 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:22104 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755793Ab1D1Rhf (ORCPT
+	id S1756548Ab1D1RkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:40:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46784 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755658Ab1D1Rj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 13:37:35 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: dSVA_zAVM1kngdBhE1GheZiINz7RU1Mz6l82vaBKBAGu.A0
- eu3aRFa23h_pBj1ekDrlOh8OtJxQg6..WCgJKWXNTLx_KGeTmbBSv3qBQwVa
- mu61qkK9H8mPQ8AEenhc6GDm5RjMdEO61V0qixIVHet4PK5gcto9brlOzhvx
- xhCqxPamk4d44v3a8286LtwI_O2EGj.ZDRq6QGZOtUiJiUCL8.luGBs_giHD
- Gk4Sfon2KfPHg7TUX5fSoBDmYEiO3tYGpdj.XvlpQ0feMmpZ2ZWnqtoAXUnU
- QLoUePt_3XZEigCw_2BcygkxivUL8ZrsXKKj_P7T1BWRDjZqJ0y_QIXa8Ajg
- VrS_4X99lKJJ38lGFlNlHEe8X9KsmQSwOlMg3WNtK
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DB9A5D9.7030607@schaufler-ca.com>
-Date: Thu, 28 Apr 2011 10:37:29 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Thu, 28 Apr 2011 13:39:59 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=wom5GMh1gUkA:10 a=0i_OOtiXEx8A:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=meVymXHHAAAA:8 a=cTvucikNTqgjaz63bmEA:9 a=5XMGY5EyMitKCQOqUEAA:7 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Thu, 28 Apr 2011 12:39:57 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
+        mingo@elte.hu, jmorris@namei.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
+ filtering
+Message-ID: <20110428173957.GA25940@hallyn.com>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-2-git-send-email-wad@chromium.org>
+ <20110428165525.GB1927@hallyn.com>
+ <1304010981.18763.192.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>
-CC: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk, john.johansen@canonical.com,
-        apparmor@lists.ubuntu.com, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it> <4DB87A6B.7060805@schaufler-ca.com> <20110427232718.GG30854@boyd.l.tihix.com> <201104281435.08273.roberto.sassu@polito.it>
-In-Reply-To: <201104281435.08273.roberto.sassu@polito.it>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304010981.18763.192.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/2011 5:35 AM, Roberto Sassu wrote:
-> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
->> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
->>>> File descriptor labeling issue
->>>>
->>>> Actually SELinux and SMACK assign to file descriptors the same label of the
->>>> opening process and use it in LSM hooks security_file_permission(),
->>>> security_file_fcntl() and others to verify if the 'current' process has the
->>>> rights to perform the requested operation.
->>>>
->>>> Using the credentials of the 'current' process may be not appropriate in
->>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
->>>> and made shared among user processes. For instance, in a system with
->>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
->>>> obtains a file descriptor to access the correspondent inode in the lower
->>>> filesystem, labeled with the A's label.
->>>>
->>>> If the process B accesses the same encrypted file, it needs the 'use'
->>>> permission on the A's label other than permissions for the lower inode.
->>>> However, if B is the first accessing process, A needs the 'use' permission
->>>> on the B's label.
->>> I am having trouble understanding the argument. I will pose my
->>> question in Smack terms, as I can speak most definitively in them.
->>>
->>> A process running with a Smack label "A" creates a file, and that
->>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
->>> this ought not change. If eCryptfs in encrypting the label it needs
->>> to do so in such a way as to be able to decrypt it prior to
->>> presentation to the vfs layer, where it will be used in an access
->>> check. When the process running with a Smack label "B" comes along
->>> the vfs code will check the fetched and possibly decrypted "A"
->>> against "B" and, unless there is an explicit Smack rule in place
->>> granting "B" access to "A", fail.
->>>
->>> What is the problem? What is eCryptfs doing that prevents this
->>> from working?
->> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
->> only one lower file per eCryptfs inode. Imagine that there are 5
->> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
->> to be open in the lower filesystem and all eCryptfs file operations will
->> be multiplexed through it.
->>
->> To make things more complicated, if the eCryptfs file is opened for
->> writing, the lower file must be opened for reading and writing. This is
->> because a write operation requires eCryptfs to vfs_read() from the lower
->> filesystem, decrypt that data and then vfs_write() the new data.
->>
->> If the lower file can't be opened O_RDWR by the calling process, the
->> request is handed off to a kernel thread to open the lower file on
->> behalf of the calling process. It is definitely ugly.
->>
->> Roberto, I hope I correctly described the situation that you're trying
->> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
->> files to lower files?
->>
->> Instead of having just one lower file attached to the eCryptfs inode, we
->> could have a list of opened files. There would be one for each eCryptfs
->> file that was opened. ecryptfs_writepage() would have to pick, in a
->> somewhat random fashion, one of the lower files to use. Of course, we
->> would still need to solve the problem of opening the lower file O_RDWR
->> when the calling process is only allowed write access (I may have just
->> answered my own question of why the 1:1 mapping technique won't solve
->> this problem).
->>
-> Hi Tyler
->
-> i think the 1:1 mapping isn't necessary at least from the security perspective.
-> Since eCryptfs is a stacked filesystem access control is performed on
-> both the upper and the lower layer.
-> ECryptfs relies on the lower filesystem for the management of extended
-> attributes, so this means that the security label of both the upper and
-> the lower inodes is the same (however this is not the current behavior
-> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
+Quoting Steven Rostedt (rostedt@goodmis.org):
+> On Thu, 2011-04-28 at 11:55 -0500, Serge E. Hallyn wrote:
+> 
+> > ...
+> > 
+> > >  void __secure_computing(int this_syscall)
+> > >  {
+> > > -	int mode = current->seccomp.mode;
+> > > +	int mode = -1;
+> > >  	int * syscall;
+> > > -
+> > > +	/* Do we need an RCU read lock to access current's state? */
+> > 
+> > Nope.
+> 
+> Correct.
+> 
+> > > - out:
+> > > +	rcu_assign_pointer(current->seccomp.state, state);
+> > > +	synchronize_rcu();
+> > > +	put_seccomp_state(orig_state);  /* for the get */
+> > > +
+> > > +out:
+> > > +	put_seccomp_state(orig_state);  /* for the task */
+> > > +	return ret;
+> > > +
+> > > +free_state:
+> > > +	put_seccomp_state(orig_state);  /* for the get */
+> > > +	put_seccomp_state(state);  /* drop the dup */
+> > >  	return ret;
+> > >  }
+> > 
+> > This looks exactly right.  The only case where put_seccomp_state()
+> > might actually lead to freeing the state is where the current's
+> > state gets reassigned.  So you need to synchronize_rcu() before
+> > that (as you do).  The other cases will only decrement the usage
+> > counter, can race with a reader doing (inc; get) but not with a
+> > final free, which can only be done here.
+> 
+> Technically incorrect ;)
+> 
+> "final free, which can only be done here."
+> 
+> This is not the only place that a free will happen. But the code is
+> correct none-the-less.
+> 
+> Reader on another CPU ups the orig_state refcount under rcu_readlock,
+> but after it ups the refcount it releases the rcu_readlock and continues
+> to read this state.
+> 
+> Current on this CPU calls this function does the synchronize_rcu() and
+> calls put on the state. But since the reader still has a ref count on
+> it, it does not get freed here.
+> 
+> When the reader is finally done with the state it calls the put() which
+> does the final free on it.
+> 
+> The code still looks correct, I'm just nitpicking your analysis.
 
-Where does this assignment occur?
+:)  I appreciate the precision.
 
-> In my view, for this reason the access control checks can be performed
-> only at the upper layer, letting eCryptfs full privileges to access inodes
-> in the lower filesystem.
+> > (Rambling above is just me pursuading myself)
+> 
+> Me rambling too.
+> 
+> > 
+> > > diff --git a/kernel/seccomp_filter.c b/kernel/seccomp_filter.c
+> > 
+> > Unfortunately your use of filters doesn't seem exactly right.
+> > 
+> > > +/* seccomp_copy_all_filters - copies all filters from src to dst.
+> > > + *
+> > > + * @dst: the list_head for seccomp_filters to populate.
+> > > + * @src: the list_head for seccomp_filters to copy from.
+> > > + * Returns non-zero on failure.
+> > > + */
+> > > +int seccomp_copy_all_filters(struct list_head *dst,
+> > > +			     const struct list_head *src)
+> > > +{
+> > > +	struct seccomp_filter *filter;
+> > > +	int ret = 0;
+> > > +	BUG_ON(!dst || !src);
+> > > +	if (list_empty(src))
+> > > +		goto done;
+> > > +	rcu_read_lock();
+> > > +	list_for_each_entry(filter, src, list) {
+> > > +		struct seccomp_filter *new_filter = copy_seccomp_filter(filter);
+> > 
+> > copy_seccomp_filter() causes kzalloc to be called.  You can't do that under
+> > rcu_read_lock().
+> 
+> Unless you change the kzalloc to do GFP_ATOMIC. Not sure I'd recommend
+> doing that.
+> 
+> > 
+> > I actually thought you were going to be more extreme about the seccomp
+> > state than you are:  I thought you were going to tie a filter list to
+> > seccomp state.  So adding or removing a filter would have required
+> > duping the seccomp state, duping all the filters, making the change in
+> > the copy, and then swapping the new state into place.  Slow in the
+> > hopefully rare update case, but safe.
+> > 
+> > You don't have to do that, but then I'm pretty sure you'll need to add
+> > reference counts to each filter and use rcu cycles to a reader from
+> > having the filter disappear mid-read.
+> 
+> Or you can preallocate the new filters, call rcu_read_lock(), check if
+> the number of old filters is the same or less, if more, call
+> rcu_read_unlock, and try allocating more, and then call rcu_read_lock()
+> again and repeat. Then just copy the filters to the preallocate ones.
+> rcu_read_unlock() and then free any unused allocated filters.
+> 
+> Maybe a bit messy, but not that bad.
 
-On this point I most strongly disagree.
+Sounds good.
 
-The behavior of a filesystem and the data that it uses to determine
-that behavior is wrought with complex interactions which may include
-but are not limited to caching, read-aheads, garbage collection,
-and various side effects of access control. If eCryptfs needs to go
-mucking about with the data used by the underlying filesystem it is
-not stacking properly. A stacked filesystem has no business whatever
-changing the data of the underlying filesystem.
-
-> This solves the problem of opening the lower file in r/w mode even if only
-> the read is requested, because at the upper layer the subject is the
-> accessing process with its own credentials which needs the read permission
-> and at the lower layer the subject is the eCryptfs kernel module with
-> unlimited privileges.
-
-Excuse my ignorance for a moment. Is eCryptfs a user mode filesystem,
-or in the kernel properly? The behavior makes it sound like the former
-while the interfaces you're requesting make it seem like the latter.
-
-> The issue i described in the cover letter is related to the label assigned
-> to the file descriptor obtained by eCryptfs (or another kernel service) when
-> opening an inode in the lower filesystem, which actually depends on the
-> first accessing process.
-> This label is checked against the credentials of the 'current' process in the
-> hook security_file_permission(), which is triggered by vfs calls (read, write,
-> readdir) performed on both the upper and the lower inodes.
-> In SELinux, a process needs the permission to 'use' a opened file descriptor.
-> So, having a fixed label helps in defining the rule that must be added in the
-> policy for eCryptfs to ensure it works properly.
-
-I'm afraid to suggest this, but it looks as if you may be
-able to solve your problems with some SELinux policy. I am
-of course not an expert on SELinux policy, but it looks as
-if not specifying an appropriate policy for the user space
-component is what is in the way here.
-
-> PS: i'm adding in CC the Apparmor's mantainer and the mailing list to have
-> their opinion about the protection offered for the eCryptfs filesystem and
-> other kernel services. The overall thread is available at the url:
->
-> https://lkml.org/lkml/2011/4/27/201
->
-> Thanks
->
-> Roberto Sassu
->
->
->> Tyler
->>
->
-
+thanks,
+-serge
