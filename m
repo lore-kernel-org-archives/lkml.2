@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab1D1NLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:11:23 -0400
-Received: from sx003.ddc-nl0105.slb.com ([199.6.154.22]:48226 "EHLO
-	nl0105mta01.mail.slb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab1D1NLV convert rfc822-to-8bit (ORCPT
+	id S1756313Ab1D1NQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:16:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40298 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1D1NQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:11:21 -0400
-X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Apr 2011 09:11:21 EDT
-From: John Frankish <j-frankish@slb.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: ipheth kernel oops
-Thread-Topic: ipheth kernel oops
-Thread-Index: AcwFozjsz9t5ro9xSKe0AeC68rTH8w==
-Date: Thu, 28 Apr 2011 13:00:59 +0000
-Message-ID: <654DF80AD31A344E93DBCC6280BD6DEF19339262@NL0230MBX08N1.DIR.slb.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [199.6.132.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 28 Apr 2011 09:16:09 -0400
+Date: Thu, 28 Apr 2011 14:15:31 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110428131531.GK17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de> <003e01cc058f$94beb490$be3c1db0$%szyprowski@samsung.com> <20110428105131.GD17290@n2100.arm.linux.org.uk> <201104281428.56780.arnd@arndb.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104281428.56780.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please cc my email address as I am not subscribed to the list.
+On Thu, Apr 28, 2011 at 02:28:56PM +0200, Arnd Bergmann wrote:
+> On Thursday 28 April 2011, Russell King - ARM Linux wrote:
+> > What I'd suggest is that dma_alloc_noncoherent() should be architecture
+> > independent, and should call into whatever iommu support the device has
+> > to setup an approprite iommu mapping.  IOW, I don't see any need for
+> > every architecture to provide its own dma_alloc_noncoherent() allocation
+> > function - or indeed every iommu implementation to deal with the
+> > allocation issues either.
+> 
+> Almost all architectures today define dma_alloc_noncoherent to
+> dma_alloc_coherent, which is totally fine on architectures
+> where cacheable coherent mappings are the default or where
+> we don't need to flush individual cache lines for dma_sync_*.
 
-Using ipheth from git://github.com/dgiagio/ipheth.git with:
+However, dma_alloc_coherent() memory can't be used with the dma_sync_*
+API as its return address (unlike other architectures) is not in the
+kernel direct mapped memory range.
 
-libimobiledevice-1.0.6
-usbmuxd-1.0.7
-libplist-1.3 
-iPhone 3GS using OS4.3.2
+The only thing valid for dma_sync_* are buffers which have been passed
+to the dma_map_* APIs.
 
-after connecting via usb cable, verifying usbmuxd is running and the device is paired:
+Instead, I think what you're referring to is dma_cache_sync(), which is
+the API to be used with dma_alloc_noncoherent(), which we don't
+implement.
 
-$ sudo udhcpc -i eth1
+As we have problems with some SMP implementations, and the noncoherent
+API doesn't have the idea of buffer ownership, it's rather hard to deal
+with the DMA cache implications with the existing API, especially with
+the issues of speculative prefetching.  The current usage (looking at
+drivers/scsi/53c700.c) doesn't cater for speculative prefetch as the
+dma_cache_sync(,,,DMA_FROM_DEVICE) is done well in advance of the DMA
+actually happening.
 
-ipheth 1-7:4.2: Apple iPhone USB Ethernet device attached
-usbcore: registered new interface driver ipheth
- ------------[ cut here ]------------
-WARNING: at net/sched/sch_generic.c:255 0xc034f714()
-Hardware name: Latitude D430                   
-NETDEV WATCHDOG: eth1 (ipheth): transmit queue 0 timed out Modules linked in: ipheth squashfs scsi_wait_scan ramzswap loop pcmcia
-yenta_socket sdhci_pci dell_wmi video sdhci rsrc_nonstatic backlight wmi battery pcmcia_core ac output mmc_core tg3 ssb libphy
-Pid: 0, comm: swapper Not tainted 2.6.33.3-tinycore #2012 Call Trace:
- [<c0128285>] ? 0xc0128285
- [<c034f64d>] ? 0xc034f64d
- [<c01282ca>] ? 0xc01282ca
- [<c034f714>] ? 0xc034f714
- [<c013a661>] ? 0xc013a661
- [<c01242b2>] ? 0xc01242b2
- [<c01138e2>] ? 0xc01138e2
- [<c0113ab5>] ? 0xc0113ab5
- [<c01402ff>] ? 0xc01402ff
- [<c012faa4>] ? 0xc012faa4
- [<c012fbb4>] ? 0xc012fbb4
- [<c012c1af>] ? 0xc012c1af
- [<c012c252>] ? 0xc012c252
- [<c012c5d4>] ? 0xc012c5d4
- [<c0114204>] ? 0xc0114204
- [<c03bd06a>] ? 0xc03bd06a
- [<c026ce02>] ? 0xc026ce02
- [<c032a7bd>] ? 0xc032a7bd
- [<c01017e9>] ? 0xc01017e9
----[ end trace debb96b4aa274556 ]---
-ipheth: ipheth_tx_timeout: TX timeout
+So all in all, I think the noncoherent API is broken as currently
+designed - and until we have devices on ARM which use it, I don't see
+much point into trying to fix the current thing especially as we'd be
+unable to test.
