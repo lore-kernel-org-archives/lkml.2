@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab1D1M3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:29:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46460 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab1D1M3r (ORCPT
+	id S1755038Ab1D1MgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:36:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54536 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab1D1MgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:29:47 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Colin Ian King <colin.king.lkml@gmail.com>
-Cc: James Bottomley <james.bottomley@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-In-reply-to: <1303990590.2081.9.camel@lenovo>
-References: <1303920553.2583.7.camel@mulgrave.site> <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site> <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site> <1303925374-sup-7968@think> <1303926637.2583.17.camel@mulgrave.site> <1303934716.2583.22.camel@mulgrave.site> <1303990590.2081.9.camel@lenovo>
-Date: Thu, 28 Apr 2011 08:29:29 -0400
-Message-Id: <1303993705-sup-5213@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DB95DB7.0004:SCFMA922111,ss=1,fgs=0
+	Thu, 28 Apr 2011 08:36:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: re-use kernel/syscall_table_32.S in ia32/ia32entry.S
+Date: Thu, 28 Apr 2011 14:35:33 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Jan Beulich <JBeulich@novell.com>, mingo@elte.hu, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+References: <4DB85376020000780003E6C9@vpn.id2.novell.com> <201104271840.32015.arnd@arndb.de> <4DB847BF.1060307@zytor.com>
+In-Reply-To: <4DB847BF.1060307@zytor.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104281435.33344.arnd@arndb.de>
+X-Provags-ID: V02:K0:VwbHVSXcrLq6CM1praW3Ob/kkJgX2ySvAfLLGhkl2gi
+ bdXNN4XF9BlIl1HrjUid14EJpUq9b6KwDZlEHHUFswN7263poM
+ r2HQOXGkUr4m7t95SENGxXas/7TbugakLiPSMfksfUgsZtioHs
+ NltlOIJa2RQv3Yu3jbODMBXSmw3tDsWPrIX4hJ7rGeSPpDXpAT
+ Iz04rqCa75i2A78UxPNpw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Colin Ian King's message of 2011-04-28 07:36:30 -0400:
-> One more data point to add, I've been looking at an identical issue when
-> copying large amounts of data.  I bisected this - and the lockups occur
-> with commit 
-> 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
-> issue. With this commit, my file copy test locks up after ~8-10
-> iterations, before this commit I can copy > 100 times and don't see the
-> lockup.
+On Wednesday 27 April 2011, H. Peter Anvin wrote:
+> On 04/27/2011 09:40 AM, Arnd Bergmann wrote:
+> >>
+> >> Yes, that's certainly an alternative.
+> > 
+> > How about following the same style as asm-generic/unistd.h? It's
+> > originally derived from the x86 version, but has added support for
+> > compat syscalls for the tile architecture.
+> > 
+> 
+> Yep, something like that (although I have to say the __SC_3264 syntax
+> makes me want to barf.)
 
-Well, that's really interesting.  I tried with compaction on here and
-couldn't trigger it, but this (very very lightly) tested patch might
-help.
+If you have a suggestion for a better syntax, I'd hope we can do
+that in asm-generic as well. My goal is to have those files set
+an example of how to best write architecture specific versions if
+they have to be different.
 
-It moves the writeout throttle before the goto restart, and also makes
-sure we do at least one cond_resched before we loop.
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6771ea7..cb08b41 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1934,12 +1934,14 @@ restart:
- 	if (inactive_anon_is_low(zone, sc))
- 		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
- 
-+	throttle_vm_writeout(sc->gfp_mask);
-+
- 	/* reclaim/compaction might need reclaim to continue */
- 	if (should_continue_reclaim(zone, nr_reclaimed,
--					sc->nr_scanned - nr_scanned, sc))
-+					sc->nr_scanned - nr_scanned, sc)) {
-+		cond_resched();
- 		goto restart;
--
--	throttle_vm_writeout(sc->gfp_mask);
-+	}
- }
- 
- /*
+	Arnd
