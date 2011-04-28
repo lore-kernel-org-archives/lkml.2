@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab1D1VBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:01:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33616 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab1D1VBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:01:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: netdev@vger.kernel.org
-Subject: [PATCH] tg3: Fix failure to enable WoL by default when possible
-Date: Thu, 28 Apr 2011 23:02:15 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>
+	id S1752987Ab1D1VEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 17:04:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34083 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1D1VET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 17:04:19 -0400
+Date: Thu, 28 Apr 2011 23:04:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+cc: sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+In-Reply-To: <20110428224444.43107883@neptune.home>
+Message-ID: <alpine.LFD.2.02.1104282251080.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
+ <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
+ <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos> <20110428224444.43107883@neptune.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104282302.15502.rjw@sisk.pl>
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-929818264-1304024642=:3005"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-tg3 is supposed to enable WoL by default on adapters which support
-that, but it fails to do so unless the adapter's
-/sys/devices/.../power/wakeup file contains 'enabled' during the
-initialization of the adapter.  Fix that by making tg3 use
-device_set_wakeup_enable() to enable wakeup automatically whenever
-WoL should be enabled by default.
+--8323328-929818264-1304024642=:3005
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/net/tg3.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+On Thu, 28 Apr 2011, Bruno Prémont wrote:
+> Timer List Version: v0.6
+> HRTIMER_MAX_CLOCK_BASES: 3
+> now at 1150126155286 nsecs
+> 
+> cpu: 0
+>  clock 0:
+>   .base:       c1559360
+>   .index:      0
+>   .resolution: 1 nsecs
+>   .get_time:   ktime_get_real
+>   .offset:     1304021489280954699 nsecs
+> active timers:
+>  #0: def_rt_bandwidth, sched_rt_period_timer, S:01, enqueue_task_rt, swapper/1
+>  # expires at 1304028703000000000-1304028703000000000 nsecs [in 1304027552873844714 to 1304027552873844714 nsecs]
 
-Index: linux-2.6/drivers/net/tg3.c
-===================================================================
---- linux-2.6.orig/drivers/net/tg3.c
-+++ linux-2.6/drivers/net/tg3.c
-@@ -12327,8 +12327,10 @@ static void __devinit tg3_get_eeprom_hw_
- 		if (val & VCPU_CFGSHDW_ASPM_DBNC)
- 			tp->tg3_flags |= TG3_FLAG_ASPM_WORKAROUND;
- 		if ((val & VCPU_CFGSHDW_WOL_ENABLE) &&
--		    (val & VCPU_CFGSHDW_WOL_MAGPKT))
-+		    (val & VCPU_CFGSHDW_WOL_MAGPKT)) {
- 			tp->tg3_flags |= TG3_FLAG_WOL_ENABLE;
-+			device_set_wakeup_enable(&tp->pdev->dev, true);
-+		}
- 		goto done;
- 	}
- 
-@@ -12461,8 +12463,10 @@ static void __devinit tg3_get_eeprom_hw_
- 			tp->tg3_flags &= ~TG3_FLAG_WOL_CAP;
- 
- 		if ((tp->tg3_flags & TG3_FLAG_WOL_CAP) &&
--		    (nic_cfg & NIC_SRAM_DATA_CFG_WOL_ENABLE))
-+		    (nic_cfg & NIC_SRAM_DATA_CFG_WOL_ENABLE)) {
- 			tp->tg3_flags |= TG3_FLAG_WOL_ENABLE;
-+			device_set_wakeup_enable(&tp->pdev->dev, true);
-+		}
- 
- 		if (cfg2 & (1 << 17))
- 			tp->phy_flags |= TG3_PHYFLG_CAPACITIVE_COUPLING;
+Ok, that expiry time is obviously bogus as it does not account the offset:
+
+So in reality it's: expires in: 6063592890015ns 
+
+Which is still completely wrong. The timer should expire at max a
+second from now. But it's going to expire in 6063.592890015 seconds
+from now, which is pretty much explaining the after 2hrs stuff got
+going again.
+
+But the real interesting question is why he heck is that timer on
+CLOCK_REALTIME ???? It is initalized for CLOCK_MONOTONIC.
+
+/me suspects hrtimer changes to be the real culprit.
+
+John ????
+
+Thanks,
+
+	tglx
+
+
+
+
+--8323328-929818264-1304024642=:3005--
