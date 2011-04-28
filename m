@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab1D1UBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:01:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34135 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab1D1UBq (ORCPT
+	id S933453Ab1D1UB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:01:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42238 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933419Ab1D1UB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:01:46 -0400
-Subject: [PATCH 0/6] General device tree irq domain infrastructure
+	Thu, 28 Apr 2011 16:01:56 -0400
+Subject: [PATCH 2/6] powerpc: make irq_{alloc,
+ free}_virt private and remove count argument
 To: Michal Simek <monstr@monstr.eu>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
@@ -17,8 +18,10 @@ To: Michal Simek <monstr@monstr.eu>,
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
         linuxppc-dev@lists.ozlabs.org
-Date: Thu, 28 Apr 2011 14:01:43 -0600
-Message-ID: <20110428192227.8979.49181.stgit@ponder>
+Date: Thu, 28 Apr 2011 14:01:53 -0600
+Message-ID: <20110428200153.8979.23873.stgit@ponder>
+In-Reply-To: <20110428192227.8979.49181.stgit@ponder>
+References: <20110428192227.8979.49181.stgit@ponder>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,97 +30,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A lot of this series ends up being fixups to powerpc code; but the 4th
-patch is of importance to every architecture using CONFIG_OF (except
-SPARC, which has its own solution).
+irq_alloc_virt() and irq_free_virt() aren't called anywhere but from
+arch/powerpc/kernel/irq.c, and they are only ever called with count=1.
+This patch removes the prototypes from the header file, removes the
+count arguments, and cuts out the dead code.
 
-This series (finally!) factors out device tree irq domain decoding
-from arch/powerpc and makes it generic for all architectures.  The
-infrastructure is quite simple.  Any interrupt controller can embed
-the of_irq_domain structure and register it with the core code.  After
-that, device nodes referencing interrupts on that device tree node
-will trigger a call to the domain's map function.
+Also removes obsolete references to irq_early_init()
 
-PowerPC and x86 have been converted to use of_irq_domain.  MIPS and
-Microblaze have it enabled, but nothing actually registers domains
-yet, so a workaround is in place to preserve the current behaviour
-until it is fixed.
-
-I'd really like to get patches 1-4 merged into 2.6.40.  Please test.
-I'm also running through build testing here, and when it's complete
-I'll push it out to a 'devicetree/irq-domain' branch on
-git://git.secretlab.ca/git/linux-2.6
-
-It needs testing.  I've booted it on a powerpc board here without any
-apparent regressions, but that isn't a very big sample.  I've also
-build tested on everything I think is affected.
-
-I'd also like to get it into linux-next.  Ben, if things checkout okay
-over the next few days, would you be okay with me adding it to
-linux-next, say around Wednesday next week?  As for merging, I think
-this should probably go via your powerpc tree since the that's where
-the bulk of the changes are, but I'm open to other suggestions).
-
-Patches 5 & 6 are follow-on cleanup work to powerpc, but patch 6 is
-RFC only since there is a locking problem that I haven't fixed yet.
-
-Cheers,
-g.
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
+ arch/microblaze/kernel/setup.c |    2 -
+ arch/powerpc/include/asm/irq.h |   32 ----------------
+ arch/powerpc/kernel/irq.c      |   82 ++++++++++++++++++++--------------------
+ 3 files changed, 40 insertions(+), 76 deletions(-)
 
-Grant Likely (6):
-      powerpc: stop exporting irq_map
-      powerpc: make irq_{alloc,free}_virt private and remove count argument
-      powerpc: Make struct irq_host semi-private by moving into irqhost.h
-      dt: generalize of_irq_parse_and_map()
-      powerpc: move irq_alloc_descs_at() call into irq_alloc_virt()
-      powerpc: use irq_alloc_desc() to manage irq allocations
-
-
- arch/microblaze/kernel/irq.c                     |    7 -
- arch/microblaze/kernel/setup.c                   |    2 
- arch/mips/kernel/prom.c                          |   14 -
- arch/powerpc/include/asm/irq.h                   |   88 +------
- arch/powerpc/include/asm/irqhost.h               |   27 ++
- arch/powerpc/kernel/irq.c                        |  260 ++++++++++++----------
- arch/powerpc/platforms/512x/mpc5121_ads_cpld.c   |    5 
- arch/powerpc/platforms/52xx/media5200.c          |    5 
- arch/powerpc/platforms/52xx/mpc52xx_gpt.c        |    1 
- arch/powerpc/platforms/52xx/mpc52xx_pic.c        |   80 +------
- arch/powerpc/platforms/82xx/pq2ads-pci-pic.c     |    5 
- arch/powerpc/platforms/85xx/socrates_fpga_pic.c  |   26 +-
- arch/powerpc/platforms/86xx/gef_pic.c            |   10 -
- arch/powerpc/platforms/8xx/m8xx_setup.c          |    2 
- arch/powerpc/platforms/cell/axon_msi.c           |   15 +
- arch/powerpc/platforms/cell/spider-pic.c         |   19 +-
- arch/powerpc/platforms/embedded6xx/flipper-pic.c |    9 -
- arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |    9 -
- arch/powerpc/platforms/embedded6xx/wii.c         |    6 -
- arch/powerpc/platforms/iseries/irq.c             |   10 -
- arch/powerpc/platforms/powermac/pic.c            |   12 +
- arch/powerpc/platforms/pseries/ras.c             |    4 
- arch/powerpc/platforms/pseries/xics.c            |   14 +
- arch/powerpc/sysdev/cpm1.c                       |    8 -
- arch/powerpc/sysdev/cpm2_pic.c                   |   10 -
- arch/powerpc/sysdev/fsl_msi.c                    |    3 
- arch/powerpc/sysdev/i8259.c                      |    3 
- arch/powerpc/sysdev/ipic.c                       |   19 +-
- arch/powerpc/sysdev/mpc8xx_pic.c                 |   10 -
- arch/powerpc/sysdev/mpc8xxx_gpio.c               |   13 +
- arch/powerpc/sysdev/mpic.c                       |   33 +--
- arch/powerpc/sysdev/mpic_msi.c                   |    3 
- arch/powerpc/sysdev/mpic_pasemi_msi.c            |    5 
- arch/powerpc/sysdev/mv64x60_pic.c                |   14 +
- arch/powerpc/sysdev/qe_lib/qe_ic.c               |    9 -
- arch/powerpc/sysdev/uic.c                        |   13 +
- arch/powerpc/sysdev/xilinx_intc.c                |    9 -
- arch/x86/include/asm/irq_controller.h            |   12 -
- arch/x86/include/asm/prom.h                      |    1 
- arch/x86/kernel/devicetree.c                     |   77 +------
- drivers/of/irq.c                                 |  118 ++++++++++
- include/linux/of_irq.h                           |   31 +++
- 42 files changed, 504 insertions(+), 517 deletions(-)
- create mode 100644 arch/powerpc/include/asm/irqhost.h
- delete mode 100644 arch/x86/include/asm/irq_controller.h
+diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
+index 8e2c09b..19d3ab7 100644
+--- a/arch/microblaze/kernel/setup.c
++++ b/arch/microblaze/kernel/setup.c
+@@ -51,8 +51,6 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	unflatten_device_tree();
+ 
+-	/* NOTE I think that this function is not necessary to call */
+-	/* irq_early_init(); */
+ 	setup_cpuinfo();
+ 
+ 	microblaze_cache_init();
+diff --git a/arch/powerpc/include/asm/irq.h b/arch/powerpc/include/asm/irq.h
+index e1983d5..4d2cc6f 100644
+--- a/arch/powerpc/include/asm/irq.h
++++ b/arch/powerpc/include/asm/irq.h
+@@ -264,38 +264,6 @@ extern unsigned int irq_linear_revmap(struct irq_host *host,
+ 				      irq_hw_number_t hwirq);
+ 
+ 
+-
+-/**
+- * irq_alloc_virt - Allocate virtual irq numbers
+- * @host: host owning these new virtual irqs
+- * @count: number of consecutive numbers to allocate
+- * @hint: pass a hint number, the allocator will try to use a 1:1 mapping
+- *
+- * This is a low level function that is used internally by irq_create_mapping()
+- * and that can be used by some irq controllers implementations for things
+- * like allocating ranges of numbers for MSIs. The revmaps are left untouched.
+- */
+-extern unsigned int irq_alloc_virt(struct irq_host *host,
+-				   unsigned int count,
+-				   unsigned int hint);
+-
+-/**
+- * irq_free_virt - Free virtual irq numbers
+- * @virq: virtual irq number of the first interrupt to free
+- * @count: number of interrupts to free
+- *
+- * This function is the opposite of irq_alloc_virt. It will not clear reverse
+- * maps, this should be done previously by unmap'ing the interrupt. In fact,
+- * all interrupts covered by the range being freed should have been unmapped
+- * prior to calling this.
+- */
+-extern void irq_free_virt(unsigned int virq, unsigned int count);
+-
+-/**
+- * irq_early_init - Init irq remapping subsystem
+- */
+-extern void irq_early_init(void);
+-
+ static __inline__ int irq_canonicalize(int irq)
+ {
+ 	return irq;
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 422672b..5ccf38f 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -647,6 +647,9 @@ void irq_set_virq_count(unsigned int count)
+ 		irq_virq_count = count;
+ }
+ 
++static unsigned int irq_alloc_virt(struct irq_host *host, unsigned int hint);
++static void irq_free_virt(unsigned int virq);
++
+ static int irq_setup_virq(struct irq_host *host, unsigned int virq,
+ 			    irq_hw_number_t hwirq)
+ {
+@@ -675,7 +678,7 @@ static int irq_setup_virq(struct irq_host *host, unsigned int virq,
+ errdesc:
+ 	irq_free_descs(virq, 1);
+ error:
+-	irq_free_virt(virq, 1);
++	irq_free_virt(virq);
+ 	return -1;
+ }
+ 
+@@ -689,7 +692,7 @@ unsigned int irq_create_direct_mapping(struct irq_host *host)
+ 	BUG_ON(host == NULL);
+ 	WARN_ON(host->revmap_type != IRQ_HOST_MAP_NOMAP);
+ 
+-	virq = irq_alloc_virt(host, 1, 0);
++	virq = irq_alloc_virt(host, 0);
+ 	if (virq == NO_IRQ) {
+ 		pr_debug("irq: create_direct virq allocation failed\n");
+ 		return NO_IRQ;
+@@ -742,7 +745,7 @@ unsigned int irq_create_mapping(struct irq_host *host,
+ 	} else {
+ 		/* Allocate a virtual interrupt number */
+ 		hint = hwirq % irq_virq_count;
+-		virq = irq_alloc_virt(host, 1, hint);
++		virq = irq_alloc_virt(host, hint);
+ 		if (virq == NO_IRQ) {
+ 			pr_debug("irq: -> virq allocation failed\n");
+ 			return NO_IRQ;
+@@ -856,7 +859,7 @@ void irq_dispose_mapping(unsigned int virq)
+ 
+ 	irq_free_descs(virq, 1);
+ 	/* Free it */
+-	irq_free_virt(virq, 1);
++	irq_free_virt(virq);
+ }
+ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+ 
+@@ -974,36 +977,31 @@ unsigned int irq_linear_revmap(struct irq_host *host,
+ 	return revmap[hwirq];
+ }
+ 
+-unsigned int irq_alloc_virt(struct irq_host *host,
+-			    unsigned int count,
+-			    unsigned int hint)
++/**
++ * irq_alloc_virt() - Allocate virtual irq numbers
++ * @host: host owning these new virtual irqs
++ * @hint: pass a hint number, the allocator will try to use a 1:1 mapping
++ *
++ * This is a low level function that is used internally by irq_create_mapping()
++ */
++static unsigned int irq_alloc_virt(struct irq_host *host, unsigned int hint)
+ {
+ 	unsigned long flags;
+ 	unsigned int i, j, found = NO_IRQ;
+ 
+-	if (count == 0 || count > (irq_virq_count - NUM_ISA_INTERRUPTS))
+-		return NO_IRQ;
+-
+ 	raw_spin_lock_irqsave(&irq_big_lock, flags);
+ 
+ 	/* Use hint for 1 interrupt if any */
+-	if (count == 1 && hint >= NUM_ISA_INTERRUPTS &&
++	if (hint >= NUM_ISA_INTERRUPTS &&
+ 	    hint < irq_virq_count && irq_map[hint].host == NULL) {
+ 		found = hint;
+ 		goto hint_found;
+ 	}
+ 
+-	/* Look for count consecutive numbers in the allocatable
+-	 * (non-legacy) space
+-	 */
++	/* Look for a free virq in the allocatable (non-legacy) space */
+ 	for (i = NUM_ISA_INTERRUPTS, j = 0; i < irq_virq_count; i++) {
+-		if (irq_map[i].host != NULL)
+-			j = 0;
+-		else
+-			j++;
+-
+-		if (j == count) {
+-			found = i - count + 1;
++		if (irq_map[i].host == NULL) {
++			found = i;
+ 			break;
+ 		}
+ 	}
+@@ -1012,36 +1010,36 @@ unsigned int irq_alloc_virt(struct irq_host *host,
+ 		return NO_IRQ;
+ 	}
+  hint_found:
+-	for (i = found; i < (found + count); i++) {
+-		irq_map[i].hwirq = host->inval_irq;
+-		smp_wmb();
+-		irq_map[i].host = host;
+-	}
++	irq_map[found].hwirq = host->inval_irq;
++	smp_wmb();
++	irq_map[found].host = host;
+ 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
+ 	return found;
+ }
+ 
+-void irq_free_virt(unsigned int virq, unsigned int count)
++/**
++ * irq_free_virt() - Free virtual irq numbers
++ * @virq: virtual irq number of the first interrupt to free
++ *
++ * This function is the opposite of irq_alloc_virt. It will not clear reverse
++ * maps, this should be done previously by unmap'ing the interrupt. In fact,
++ * the interrupts being freed should have been unmapped prior to calling this.
++ */
++static void irq_free_virt(unsigned int virq)
+ {
+ 	unsigned long flags;
+-	unsigned int i;
++	struct irq_host *host;
+ 
+-	WARN_ON (virq < NUM_ISA_INTERRUPTS);
+-	WARN_ON (count == 0 || (virq + count) > irq_virq_count);
++	if ((virq < NUM_ISA_INTERRUPTS) || (virq >= irq_virq_count)) {
++		WARN_ON(1);
++		return;
++	}
+ 
+ 	raw_spin_lock_irqsave(&irq_big_lock, flags);
+-	for (i = virq; i < (virq + count); i++) {
+-		struct irq_host *host;
+-
+-		if (i < NUM_ISA_INTERRUPTS ||
+-		    (virq + count) > irq_virq_count)
+-			continue;
+-
+-		host = irq_map[i].host;
+-		irq_map[i].hwirq = host->inval_irq;
+-		smp_wmb();
+-		irq_map[i].host = NULL;
+-	}
++	host = irq_map[virq].host;
++	irq_map[virq].hwirq = host->inval_irq;
++	smp_wmb();
++	irq_map[virq].host = NULL;
+ 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
+ }
+ 
 
