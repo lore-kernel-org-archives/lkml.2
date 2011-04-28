@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760477Ab1D1OTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 10:19:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47534 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1D1OTS (ORCPT
+	id S1760470Ab1D1OUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 10:20:53 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52688 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760010Ab1D1OUw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 10:19:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FJOLoa+SYv0sYR8BjxHR7clVSSxDaFrKbpa1BiWZcqN2KZl/E74XuxFsS0+7gGEaJd
-         xnUPq5XUFituJ5saEMPqMO5glEl0cZRJKGFLawOZzkvA8Vdbuxz/YjcAryRIZwoW4B9S
-         jX+NhBuGiK8lwTOh9ypxWTMFwAcRzZBzMvmvQ=
+	Thu, 28 Apr 2011 10:20:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: [RFC PATCH] cpuset: fix cpuset_cpus_allowed_fallback() don't update tsk->rt.nr_cpus_allowed
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110428232228.3D57.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin6jguQue_0Y74jGPnmhCcvWLBjHg@mail.gmail.com>
-References: <1303963358-4652-1-git-send-email-haojian.zhuang@gmail.com>
-	<20110428102212.2d8d607c@endymion.delvare>
-	<BANLkTin6jguQue_0Y74jGPnmhCcvWLBjHg@mail.gmail.com>
-Date: Thu, 28 Apr 2011 22:19:15 +0800
-Message-ID: <BANLkTikV1QdQO90DAyy045B38z9W7+bTLw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, ben-linux@fluff.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 28 Apr 2011 23:20:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 4:36 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
-> On Thu, Apr 28, 2011 at 4:22 PM, Jean Delvare <khali@linux-fr.org> wrote:
->> Hi Haojian,
->>
->> On Thu, 28 Apr 2011 12:02:36 +0800, Haojian Zhuang wrote:
->>> Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
->>> cores are sharing one pair of I2C pins.
->>>
->>> In order to keep I2C transaction operated with atomic, hardware lock
->>> (RIPC) is required. Because of this, bus lock in AP side can't afford
->>> this requirement. Now hardware lock is appended.
->>
->> I have no objection to the idea, but one question: when using the
->> hardware lock, isn't the software mutex redundant? I would expect that
->> you call the hardware_lock/unlock functions _instead_ of
->> rt_mutex_lock/unlock, rather than in addition to it. Or do you still
->> need the rt_mutex to prevent priority inversion?
->>
->
-> Jean,
->
-> It's actually not redundant. The hardware lock is used to protect
-> access to the same register regions between two processors (AP
-> and CP so called), while the software lock is used to protect
-> access from within the AP side.
->
+Oleg, Peter,
 
-Jean,
+I apologize if I misunderstand a code. I'm afraid we need following
+patch. Is there any gurantte that cpusets user task is not RT task?
 
-It's not redundant. Reading RIPC register will try to get the lock. We're always
-using __raw_readl() API to read register. I think the read operation
-couldn't be
-atomic and finished in one instruction cycle. If two processes in AP
-side try to
-get the RIPC lock with __raw_readl(), it may result dead lock. If we fetch the
-RIPC lock behind software bus lock, it's safe.
 
-If process on AP try to get the RIPC lock and compete with CP, it won't be an
-issue. It should always be atomic.
+
+>From 400e24f7b6e15d1397dc82d74fdd1e0a631493ef Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 28 Apr 2011 16:14:16 +0900
+Subject: [PATCH] cpuset: fix cpuset_cpus_allowed_fallback() don't update tsk->rt.nr_cpus_allowed
+
+The rule is, we have to update tsk->rt.nr_cpus_allowed too if we change
+tsk->cpus_allowed.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/cpuset.h |    1 +
+ kernel/cpuset.c        |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index f20eb8f..42dcbdc 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -147,6 +147,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+ static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
+ {
+ 	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
++	p->rt.nr_cpus_allowed = cpumask_weight(&p->cpus_allowed);
+ 	return cpumask_any(cpu_active_mask);
+ }
+ 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 1ceeb04..6e5bbe8 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2220,6 +2220,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ 		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
+ 		cpu = cpumask_any(cpu_active_mask);
+ 	}
++	tsk->rt.nr_cpus_allowed = cpumask_weight(&tsk->cpus_allowed);
+ 
+ 	return cpu;
+ }
+-- 
+1.7.3.1
+
+
+
