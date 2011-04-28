@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760256Ab1D1TxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 15:53:12 -0400
-Received: from kroah.org ([198.145.64.141]:34068 "EHLO coco.kroah.org"
+	id S933399Ab1D1TyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 15:54:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756370Ab1D1TxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 15:53:08 -0400
-Date: Thu, 28 Apr 2011 12:47:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Sutharsan <sutharsan.tech@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
-Subject: Re: [PATCH] Staging: Westbridge: replace custom debug macros with
- pr_...() macros
-Message-ID: <20110428194725.GB25302@kroah.com>
-References: <1304016521.3749.13.camel@sutharsan-laptop>
+	id S1756370Ab1D1TyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 15:54:21 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH -v2] flex_arrays: allow zero length flex arrays
+To: dave@linux.vnet.ibm.com
+Cc: steffen.klassert@secunet.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
+Date: Thu, 28 Apr 2011 15:54:02 -0400
+Message-ID: <20110428195402.6677.80147.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304016521.3749.13.camel@sutharsan-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 11:48:41AM -0700, Sutharsan wrote:
-> >From Sutharsan Ramamoorthy <srmt@cypress.com>
-> 
-> This patch replaces custom debug macros with Linux kernel's pr_...() macros.
+Just like kmalloc will allow one to allocate a 0 length segment of memory
+flex arrays should do the same thing.  It should bomb if you try to use
+something, but it should at least allow the allocation.
 
-Why not use the dev_dbg() and other macros instead of these?  You do
-have access to a struct device for all of these places in the code,
-right?
+This is needed because when SELinux switched to using flex_arrays in 2.6.38
+the inability to allocate a 0 length array resulted in SELinux policy load
+returning -ENOSPC when previously it worked.
 
-thanks,
+Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Tested-by: Chris Richards <gizmo@giz-works.com>
+Cc: stable@kernel.org [2.6.38+]
+---
 
-greg k-h
+ lib/flex_array.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/lib/flex_array.c b/lib/flex_array.c
+index 0c33b24..854b57b 100644
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -253,9 +253,16 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+ 	unsigned int end;
+ 	struct flex_array_part *part;
+ 
++	if (!start && !nr_elements)
++		return 0;
++	if (start >= fa->total_nr_elements)
++		return -ENOSPC;
++	if (!nr_elements)
++		return 0;
++
+ 	end = start + nr_elements - 1;
+ 
+-	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
++	if (end >= fa->total_nr_elements)
+ 		return -ENOSPC;
+ 	if (elements_fit_in_base(fa))
+ 		return 0;
+@@ -346,6 +353,8 @@ int flex_array_shrink(struct flex_array *fa)
+ 	int part_nr;
+ 	int ret = 0;
+ 
++	if (!fa->total_nr_elements)
++		return 0;
+ 	if (elements_fit_in_base(fa))
+ 		return ret;
+ 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++) {
+
