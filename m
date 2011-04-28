@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab1D1Xsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 19:48:33 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39734 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab1D1Xsc (ORCPT
+	id S933603Ab1D1Xlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 19:41:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55883 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932693Ab1D1Xlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 19:48:32 -0400
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-From: john stultz <johnstul@us.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1104281545590.24536@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
-	 <1303331695.2796.159.camel@work-vm>
-	 <20110421103009.731B.A69D9226@jp.fujitsu.com>
-	 <1303846026.2816.117.camel@work-vm>
-	 <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
-	 <1303950728.2971.35.camel@work-vm> <1303954193.2971.43.camel@work-vm>
-	 <alpine.DEB.2.00.1104281545590.24536@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 16:48:20 -0700
-Message-ID: <1304034500.2971.160.camel@work-vm>
+	Thu, 28 Apr 2011 19:41:52 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=fWhlP9NuFqEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=nE8fds9vAavfEeKKWeQA:9 a=6rUcbc9chKbRg81sk1UA:7 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace: Add special x86 irq entry/exit tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+In-Reply-To: <1303774907-13099-1-git-send-email-vnagarnaik@google.com>
+References: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
+	 <1303774907-13099-1-git-send-email-vnagarnaik@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 28 Apr 2011 19:41:50 -0400
+Message-ID: <1304034110.18763.218.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -33,52 +30,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 15:48 -0700, David Rientjes wrote:
-> On Wed, 27 Apr 2011, john stultz wrote:
+On Mon, 2011-04-25 at 16:41 -0700, Vaibhav Nagarnaik wrote:
+> From: Jiaying Zhang <jiayingz@google.com>
 > 
-> > So thinking further, this can be simplified by adding the seqlock first,
-> > and then retaining the task_locking only in the set_task_comm path until
-> > all comm accessors are converted to using get_task_comm.
-> > 
-> 
-> On second thought, I think it would be better to just retain using a 
-> spinlock but instead of using alloc_lock, introduce a new spinlock to 
-> task_struct for the sole purpose of protecting comm.
-> 
-> And, instead, of using get_task_comm() to write into a preallocated 
-> buffer, I think it would be easier in the vast majority of cases that 
-> you'll need to convert to just provide task_comm_lock(p) and 
-> task_comm_unlock(p) so that p->comm can be dereferenced safely.  
+> Apart from the normal interrupts, we often also need to trace
+> architecture special interrupts. The following patch adds the event
+> definition and trace instrumentation for some x86 special interrupts. We
+> hope the similar approach can also be used to trace special interrupts
+> on other architectures. However, the patch only supports x86 at this
+> point.
 
-So my concern with this is that it means one more lock that could be
-mis-nested. By keeping the locking isolated to the get/set_task_comm, we
-can be sure that won't happen. 
+Again, this requires an acked-by from Ingo or Thomas.
 
-Also tracking new current->comm references will be easier if we just
-don't allow new ones. Validating that all the comm references are
-correctly locked becomes more difficult if we need locking at each use
-site.
+-- Steve
 
-Further, since I'm not convinced that we never reference current->comm
-from irq context, if we go with spinlocks, we're going to have to
-disable irqs in the read path as well. seqlocks were nice for that
-aspect.
-
-> get_task_comm() could use that interface itself and then write into a 
-> preallocated buffer.
-> 
-> The problem with using get_task_comm() everywhere is it requires 16 
-> additional bytes to be allocated on the stack in hundreds of locations 
-> around the kernel which may or may not be safe.
-
-True. Although is this maybe a bit overzealous?
-
-Maybe I can make sure not to add any mid-layer stack nesting by limiting
-the scope of the 16bytes to just around where it is used.  This would
-ensure we're only adding 16bytes to any current usage.
-
-Other ideas?
-
-thanks
--john
 
