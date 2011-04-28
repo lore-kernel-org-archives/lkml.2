@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab1D1QSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 12:18:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49233 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab1D1QSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 12:18:13 -0400
-Date: Thu, 28 Apr 2011 18:18:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH v3.2] kbuild: implement several W= levels
-Message-ID: <20110428161807.GB1619@sepie.suse.cz>
-References: <20110427113513.GB18112@eferding.osrc.amd.com>
- <1303935327-5154-1-git-send-email-bp@alien8.de>
+	id S1759643Ab1D1QUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 12:20:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34003 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1D1QUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 12:20:17 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=0i_OOtiXEx8A:10 a=Rj1_iGo3bfgA:10 a=8nJEP1OIZ-IA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=cm27Pg_UAAAA:8 a=ns7_q2kFr6Bo1dlllzUA:9 a=x8N9Q-lMftX-A-7Z64MA:7 a=wPNLvfGTeEIA:10 a=zv9_9hqRWm8A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Thu, 28 Apr 2011 11:20:15 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Will Drewry <wad@chromium.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
+        mingo@elte.hu, jmorris@namei.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
+ filtering
+Message-ID: <20110428162015.GA1927@hallyn.com>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-2-git-send-email-wad@chromium.org>
+ <1303998629.18763.149.camel@gandalf.stny.rr.com>
+ <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1303935327-5154-1-git-send-email-bp@alien8.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 10:15:27PM +0200, Borislav Petkov wrote:
-> From: Sam Ravnborg <sam@ravnborg.org>
+Quoting Will Drewry (wad@chromium.org):
+> >>  void __secure_computing(int this_syscall)
+> >>  {
+> >> -     int mode = current->seccomp.mode;
+> >> +     int mode = -1;
+> >>       int * syscall;
+> >> -
+> >> +     /* Do we need an RCU read lock to access current's state? */
+> >
+> > I'm actually confused to why you are using RCU. What are you protecting.
+> > Currently, I see the state is always accessed from current->seccomp. But
+> > current should not be fighting with itself.
+> >
+> > Maybe I'm missing something.
 > 
-> Building a kernel with "make W=1" produces far too much noise to be
-> useful.
+> I'm sure it's me that's missing something.  I believe the seccomp
+> pointer can be accessed from:
+> - current
+> - via /proc/<pid>/seccomp_filter (read-only)
 > 
-> Divide the warning options in three groups:
-> 
->     W=1 - warnings that may be relevant and does not occur too often
->     W=2 - warnings that occur quite often but may still be relevant
->     W=3 - the more obscure warnings, can most likely be ignored
-> 
-> When building the whole kernel, those levels produce:
-> 
-> W=1 - 4859 warnings
-> W=2 - 1394 warnings
-> W=3 - 86666 warnings
-> 
-> respectively. Warnings have been counted with Geert's script at
-> 
-> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/linux-log-summary.pl
-> 
-> Many warnings occur from .h files so fixing one file may have a nice
-> effect on the total number of warnings.
-> 
-> With these changes I am actually tempted to try W=1 now and then.
-> Previously there was just too much noise.
-> 
-> Borislav:
-> 
-> - make the W= levels exclusive
-> - move very noisy and making little sense for the kernel warnings to W=3
-> - drop -Woverlength-strings due to useless warning message
-> - copy explanatory text for the different warning levels to 'make help'
-> - recount warnings per level
-> 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Given those cases, would it make sense to ditch the RCU interface for it?
 
-Applied to kbuild-2.6.git#kbuild, thanks!
+ISTM you need them to protect the reader.
 
-Michal
+-serge
