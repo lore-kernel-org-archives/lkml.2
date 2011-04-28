@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1D1HWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 03:22:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51042 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab1D1HWK (ORCPT
+	id S1754630Ab1D1HYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 03:24:32 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:34927 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab1D1HYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 03:22:10 -0400
-Message-ID: <8430D2C750334C98B8E8D1469F2023C7@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        <sachi@mistralsolutions.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A603.2090208@pengutronix.de> <EDC1056430EF4DA8A0D850CE1DEA28FC@subhasishg> <4DB7C5F7.3080103@pengutronix.de> <20110427091252.GP17290@n2100.arm.linux.org.uk> <5BAE2D6F9E6047C19B6BE8FF26F7270B@subhasishg> <4DB81B9E.3000401@pengutronix.de>
-In-Reply-To: <4DB81B9E.3000401@pengutronix.de>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
-Date: Thu, 28 Apr 2011 12:52:49 +0530
-Organization: Mistral Solutions
+	Thu, 28 Apr 2011 03:24:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Zc4Qj1tLUbP38oqZKwKDPQtpeeLcGab5+rVcxwcJ1HmOPdIMEspr9S7mOjNGrRtW9H
+         geY/ua436vBwjH/d0gvnBAeQq4lR73jjJ0TbnADeVNTKxG42JhlzEfOouyKb76Nv08DN
+         acHLsULwYKFJw60CeCC8anRZ9qPa+PWssJtao=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+In-Reply-To: <1303940737.2513.190.camel@pasglop>
+References: <201104212129.17013.arnd@arndb.de>
+	<BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com>
+	<1303940737.2513.190.camel@pasglop>
+Date: Thu, 28 Apr 2011 16:24:30 +0900
+X-Google-Sender-Auth: VB2Q7FAAwJ1FL-ZOcs4D_hHBjDo
+Message-ID: <BANLkTi=8fh97S00HwcCvXe84v=0i+BQ74Q@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Apr 28, 2011 at 6:45 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> Don't you have a risk where speculative loads or prefetches might bring
+> back some stuff into the cache via the cachable mapping ? Is that an
+> issue ? As long as it's non-dirty and the cachable mapping isn't
+> otherwise used, I suppose it might be a non-issue, tho I've seen in
+> powerpc land cases of processors that can checkstop if a subsequent non
+> cachable access "hits" the stuff that was loaded in the cache.
+>
+> Cheers,
+> Ben.
+>
+As far as I know, ARM processors does not have the capability
+to detect non-cacheable access hits the stuff in  the cache.
 
-On 04/27/2011 03:18 PM, Subhasish Ghosh wrote:
-> My problem is, I am doing something like this:
->
-> s32 pruss_writel_multi(struct device *dev, u32 offset,
->                u32 *pdatatowrite, u16 wordstowrite)
-> {
->        struct pruss_priv *pruss = dev_get_drvdata(dev->parent);
->        u32 __iomem *paddresstowrite;
->        u16 i;
->
->        paddresstowrite = pruss->ioaddr + offset;
->
->        for (i = 0; i < wordstowrite; i++)
->                iowrite32(*pdatatowrite++, paddresstowrite++);
->
->        return 0;
-> }
->
-> So, if I make paddresstowrite as void, it will not work. The above
-> implementation does not generate any sparse errors though.
+IMHO, speculative prefetch becomes a problem
+when a coherent buffer (that is not-cacheable in ARM) is modified by a
+DMA transaction
+while old data is already loaded in the cache via another cacheable
+mapping onto the buffer
+even though it is never touched by CPU.
+We can avoid this problem if the kernel removes 'executable' property
+from the cacheable mapping.
+But it is not able to modify page table entries in the direct mapping area.
 
-Yes, that why I can work with readb_multi even if I have void __iomen *.
-
-But, how do I solve this problem. In the above function, I must use u32 
-__iomem * 
-
+Regards,
+KyongHo
