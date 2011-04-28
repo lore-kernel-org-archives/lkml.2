@@ -1,267 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab1D1Bz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 21:55:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52903 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1D1Bz4 (ORCPT
+	id S1752967Ab1D1CDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 22:03:09 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:5397 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1D1CDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 21:55:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 28 Apr 2011 10:49:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Ying Han <yinghan@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [PATCHv4] memcg: reclaim memory from node in round-robin
-Message-Id: <20110428104912.6f86b2ee.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110428103705.a284df87.nishimura@mxp.nes.nec.co.jp>
-References: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTinx+4zXaO3rhHRUzr3m-K-2_NMTQw@mail.gmail.com>
-	<20110428093513.5a6970c0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110428103705.a284df87.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 27 Apr 2011 22:03:07 -0400
+Subject: Re: [PATCHv3 1/7] ethtool: cosmetics: enforce const-ness in
+ ethtool_cmd_speed
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Decotigny <decot@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <1303954043-17440-2-git-send-email-decot@google.com>
+References: <1303954043-17440-1-git-send-email-decot@google.com>
+	 <1303954043-17440-2-git-send-email-decot@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare
+Date: Thu, 28 Apr 2011 03:03:02 +0100
+Message-ID: <1303956182.3032.422.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Apr 2011 02:03:06.0562 (UTC) FILETIME=[6A456A20:01CC0548]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18098.005
+X-TM-AS-Result: No--8.454500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011 10:37:05 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > +	if (time_after(mem->next_scan_node_update, jiffies))
-> > +		return;
-> > +
-> Shouldn't it be time_before() or time_after(jiffies, next_scan_node_update) ?
+On Wed, 2011-04-27 at 18:27 -0700, David Decotigny wrote:
+> The 'ep' argument of ethtool_cmd_speed is not altered: advertise it in
+> protoype. +Indentation fix. Also add comments to advise using the
+> ethtool_cmd_speed API to get/set the link speed.
 > 
-> Looks good to me, otherwise.
-> 
+> Signed-off-by: David Decotigny <decot@google.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
 
-time_after(a, b) returns true when a is after b.....you're right.
-==
-Now, memory cgroup's direct reclaim frees memory from the current node.
-But this has some troubles. In usual, when a set of threads works in
-cooperative way, they are tend to on the same node. So, if they hit
-limits under memcg, it will reclaim memory from themselves, it may be
-active working set.
-
-For example, assume 2 node system which has Node 0 and Node 1
-and a memcg which has 1G limit. After some work, file cacne remains and
-and usages are
-   Node 0:  1M
-   Node 1:  998M.
-
-and run an application on Node 0, it will eats its foot before freeing
-unnecessary file caches.
-
-This patch adds round-robin for NUMA and adds equal pressure to each
-node. When using cpuset's spread memory feature, this will work very well.
-
-But yes, better algorithm is appreciated.
-
-From: Ying Han <yinghan@google.com>
-Signed-off-by: Ying Han <yinghan@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Changelog v3->v4
-  - fixed time_after() bug. using time_before() instead.
-Changelog v2->v3
-  - added comments.
-
-Changelog v1->v2:
-  - fixed comments.
-  - added a logic to avoid scanning unused node.
-
----
- include/linux/memcontrol.h |    1 
- mm/memcontrol.c            |  102 ++++++++++++++++++++++++++++++++++++++++++---
- mm/vmscan.c                |    9 +++
- 3 files changed, 105 insertions(+), 7 deletions(-)
-
-Index: memcg/include/linux/memcontrol.h
-===================================================================
---- memcg.orig/include/linux/memcontrol.h
-+++ memcg/include/linux/memcontrol.h
-@@ -108,6 +108,7 @@ extern void mem_cgroup_end_migration(str
-  */
- int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
- int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
-+int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
- 				       struct zone *zone,
- 				       enum lru_list lru);
-Index: memcg/mm/memcontrol.c
-===================================================================
---- memcg.orig/mm/memcontrol.c
-+++ memcg/mm/memcontrol.c
-@@ -237,6 +237,11 @@ struct mem_cgroup {
- 	 * reclaimed from.
- 	 */
- 	int last_scanned_child;
-+	int last_scanned_node;
-+#if MAX_NUMNODES > 1
-+	nodemask_t	scan_nodes;
-+	unsigned long   next_scan_node_update;
-+#endif
- 	/*
- 	 * Should the accounting and control be hierarchical, per subtree?
- 	 */
-@@ -650,18 +655,27 @@ static void mem_cgroup_soft_scan(struct 
- 	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_SCAN], val);
- }
- 
-+static unsigned long
-+mem_cgroup_get_zonestat_node(struct mem_cgroup *mem, int nid, enum lru_list idx)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	u64 total;
-+	int zid;
-+
-+	for (zid = 0; zid < MAX_NR_ZONES; zid++) {
-+		mz = mem_cgroup_zoneinfo(mem, nid, zid);
-+		total += MEM_CGROUP_ZSTAT(mz, idx);
-+	}
-+	return total;
-+}
- static unsigned long mem_cgroup_get_local_zonestat(struct mem_cgroup *mem,
- 					enum lru_list idx)
- {
--	int nid, zid;
--	struct mem_cgroup_per_zone *mz;
-+	int nid;
- 	u64 total = 0;
- 
- 	for_each_online_node(nid)
--		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
--			mz = mem_cgroup_zoneinfo(mem, nid, zid);
--			total += MEM_CGROUP_ZSTAT(mz, idx);
--		}
-+		total += mem_cgroup_get_zonestat_node(mem, nid, idx);
- 	return total;
- }
- 
-@@ -1471,6 +1485,81 @@ mem_cgroup_select_victim(struct mem_cgro
- 	return ret;
- }
- 
-+#if MAX_NUMNODES > 1
-+
-+/*
-+ * Update nodemask always is not very good. Even if we have empty
-+ * list, or wrong list here, we can start from some node and traverse all nodes
-+ * based on zonelist. So, update the list loosely once in 10 secs.
-+ *
-+ */
-+static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
-+{
-+	int nid;
-+
-+	if (time_before(mem->next_scan_node_update, jiffies))
-+		return;
-+
-+	mem->next_scan_node_update = jiffies + 10*HZ;
-+	/* make a nodemask where this memcg uses memory from */
-+	mem->scan_nodes = node_states[N_HIGH_MEMORY];
-+
-+	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+
-+		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
-+		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
-+			continue;
-+
-+		if (total_swap_pages &&
-+		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
-+		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
-+			continue;
-+		node_clear(nid, mem->scan_nodes);
-+	}
-+}
-+
-+/*
-+ * Selecting a node where we start reclaim from. Because what we need is just
-+ * reducing usage counter, start from anywhere is O,K. Considering
-+ * memory reclaim from current node, there are pros. and cons.
-+ *
-+ * Freeing memory from current node means freeing memory from a node which
-+ * we'll use or we've used. So, it may make LRU bad. And if several threads
-+ * hit limits, it will see a contention on a node. But freeing from remote
-+ * node means more costs for memory reclaim because of memory latency.
-+ *
-+ * Now, we use round-robin. Better algorithm is welcomed.
-+ */
-+int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-+{
-+	int node;
-+
-+	mem_cgroup_may_update_nodemask(mem);
-+	node = mem->last_scanned_node;
-+
-+	node = next_node(node, mem->scan_nodes);
-+	if (node == MAX_NUMNODES)
-+		node = first_node(mem->scan_nodes);
-+	/*
-+	 * We call this when we hit limit, not when pages are added to LRU.
-+	 * No LRU may hold pages because all pages are UNEVICTABLE or
-+	 * memcg is too small and all pages are not on LRU. In that case,
-+	 * we use curret node.
-+	 */
-+	if (unlikely(node == MAX_NUMNODES))
-+		node = numa_node_id();
-+
-+	mem->last_scanned_node = node;
-+	return node;
-+}
-+
-+#else
-+int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Scan the hierarchy if needed to reclaim memory. We remember the last child
-  * we reclaimed from, so that we don't end up penalizing one child extensively
-@@ -4678,6 +4767,7 @@ mem_cgroup_create(struct cgroup_subsys *
- 		res_counter_init(&mem->memsw, NULL);
- 	}
- 	mem->last_scanned_child = 0;
-+	mem->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&mem->oom_notify);
- 
- 	if (parent)
-Index: memcg/mm/vmscan.c
-===================================================================
---- memcg.orig/mm/vmscan.c
-+++ memcg/mm/vmscan.c
-@@ -2198,6 +2198,7 @@ unsigned long try_to_free_mem_cgroup_pag
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-+	int nid;
- 	struct scan_control sc = {
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
-@@ -2208,10 +2209,16 @@ unsigned long try_to_free_mem_cgroup_pag
- 		.mem_cgroup = mem_cont,
- 		.nodemask = NULL, /* we don't care the placement */
- 	};
-+	/*
-+	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim
-+	 * don't take care of from where we get pages . So, the node where
-+	 * we start scan is not needed to be current node.
-+	 */
-+	nid = mem_cgroup_select_victim_node(mem_cont);
- 
- 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
--	zonelist = NODE_DATA(numa_node_id())->node_zonelists;
-+	zonelist = NODE_DATA(nid)->node_zonelists;
- 
- 	trace_mm_vmscan_memcg_reclaim_begin(0,
- 					    sc.may_writepage,
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
