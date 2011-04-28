@@ -1,148 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1D1G7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 02:59:23 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:42266 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752575Ab1D1G7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 02:59:22 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpio: rename VIA local config struct
-Date: Thu, 28 Apr 2011 08:59:00 +0200
-Message-ID: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754234Ab1D1HAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 03:00:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39794 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753957Ab1D1HAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 03:00:30 -0400
+Date: Thu, 28 Apr 2011 06:54:56 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-7y40wib8n1eqio7hjpn2dsrm@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/stat] perf event, x86: Use better stalled cycles metric
+Git-Commit-ID: 8a850cadca0e387c87a0911a61e99fd66aeb57ec
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Apr 2011 06:54:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Commit-ID:  8a850cadca0e387c87a0911a61e99fd66aeb57ec
+Gitweb:     http://git.kernel.org/tip/8a850cadca0e387c87a0911a61e99fd66aeb57ec
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Thu, 28 Apr 2011 11:16:44 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 28 Apr 2011 08:39:33 +0200
 
-The local VIA GPIO config struct "gpio_config" collides with my
-extension to the gpio_chip struct, so rename it to via_gpio_config
-so we don't get this clash.
+perf event, x86: Use better stalled cycles metric
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Use the UOPS_EXECUTED.*,c=1,i=1 event on Intel CPUs - it is a rather
+good indicator of CPU execution stalls, more sensitive and more inclusive
+than the 0xa2 resource stalls event (which does not count nearly as many
+stall types).
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/n/tip-7y40wib8n1eqio7hjpn2dsrm@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/video/via/via-gpio.c |   49 +++++++++++++++++++++--------------------
- 1 files changed, 25 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/via/via-gpio.c b/drivers/video/via/via-gpio.c
-index c2a0a1c..4b26f3f 100644
---- a/drivers/video/via/via-gpio.c
-+++ b/drivers/video/via/via-gpio.c
-@@ -145,7 +145,7 @@ static int via_gpio_get(struct gpio_chip *chip, unsigned int nr)
- }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 067a48b..1ea9422 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1413,8 +1413,8 @@ static __init int intel_pmu_init(void)
+ 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+ 		x86_pmu.extra_regs = intel_nehalem_extra_regs;
  
+-		/* Install the stalled-cycles event: 0xff: All reasons, 0xa2: Resource stalls */
+-		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES] = 0xffa2;
++		/* Install the stalled-cycles event: UOPS_EXECUTED.CORE_ACTIVE_CYCLES,c=1,i=1 */
++		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES] = 0x1803fb1;
  
--static struct viafb_gpio_cfg gpio_config = {
-+static struct viafb_gpio_cfg via_gpio_config = {
- 	.gpio_chip = {
- 		.label = "VIAFB onboard GPIO",
- 		.owner = THIS_MODULE,
-@@ -183,8 +183,8 @@ static int viafb_gpio_resume(void *private)
- {
- 	int i;
- 
--	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
--		viafb_gpio_enable(gpio_config.active_gpios[i]);
-+	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
-+		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
- 	return 0;
- }
- 
-@@ -201,9 +201,9 @@ int viafb_gpio_lookup(const char *name)
- {
- 	int i;
- 
--	for (i = 0; i < gpio_config.gpio_chip.ngpio; i++)
--		if (!strcmp(name, gpio_config.active_gpios[i]->vg_name))
--			return gpio_config.gpio_chip.base + i;
-+	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i++)
-+		if (!strcmp(name, via_gpio_config.active_gpios[i]->vg_name))
-+			return via_gpio_config.gpio_chip.base + i;
- 	return -1;
- }
- EXPORT_SYMBOL_GPL(viafb_gpio_lookup);
-@@ -229,14 +229,15 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
- 		for (gpio = viafb_all_gpios;
- 		     gpio < viafb_all_gpios + VIAFB_NUM_GPIOS; gpio++)
- 			if (gpio->vg_port_index == port_cfg[i].ioport_index) {
--				gpio_config.active_gpios[ngpio] = gpio;
--				gpio_config.gpio_names[ngpio] = gpio->vg_name;
-+				via_gpio_config.active_gpios[ngpio] = gpio;
-+				via_gpio_config.gpio_names[ngpio] =
-+					gpio->vg_name;
- 				ngpio++;
- 			}
- 	}
--	gpio_config.gpio_chip.ngpio = ngpio;
--	gpio_config.gpio_chip.names = gpio_config.gpio_names;
--	gpio_config.vdev = vdev;
-+	via_gpio_config.gpio_chip.ngpio = ngpio;
-+	via_gpio_config.gpio_chip.names = via_gpio_config.gpio_names;
-+	via_gpio_config.vdev = vdev;
- 	if (ngpio == 0) {
- 		printk(KERN_INFO "viafb: no GPIOs configured\n");
- 		return 0;
-@@ -245,18 +246,18 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
- 	 * Enable the ports.  They come in pairs, with a single
- 	 * enable bit for both.
- 	 */
--	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
-+	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
- 	for (i = 0; i < ngpio; i += 2)
--		viafb_gpio_enable(gpio_config.active_gpios[i]);
--	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
-+		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
-+	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
- 	/*
- 	 * Get registered.
- 	 */
--	gpio_config.gpio_chip.base = -1;  /* Dynamic */
--	ret = gpiochip_add(&gpio_config.gpio_chip);
-+	via_gpio_config.gpio_chip.base = -1;  /* Dynamic */
-+	ret = gpiochip_add(&via_gpio_config.gpio_chip);
- 	if (ret) {
- 		printk(KERN_ERR "viafb: failed to add gpios (%d)\n", ret);
--		gpio_config.gpio_chip.ngpio = 0;
-+		via_gpio_config.gpio_chip.ngpio = 0;
- 	}
- #ifdef CONFIG_PM
- 	viafb_pm_register(&viafb_gpio_pm_hooks);
-@@ -277,8 +278,8 @@ static int viafb_gpio_remove(struct platform_device *platdev)
- 	/*
- 	 * Get unregistered.
- 	 */
--	if (gpio_config.gpio_chip.ngpio > 0) {
--		ret = gpiochip_remove(&gpio_config.gpio_chip);
-+	if (via_gpio_config.gpio_chip.ngpio > 0) {
-+		ret = gpiochip_remove(&via_gpio_config.gpio_chip);
- 		if (ret) { /* Somebody still using it? */
- 			printk(KERN_ERR "Viafb: GPIO remove failed\n");
- 			return ret;
-@@ -287,11 +288,11 @@ static int viafb_gpio_remove(struct platform_device *platdev)
- 	/*
- 	 * Disable the ports.
- 	 */
--	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
--	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
--		viafb_gpio_disable(gpio_config.active_gpios[i]);
--	gpio_config.gpio_chip.ngpio = 0;
--	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
-+	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
-+	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
-+		viafb_gpio_disable(via_gpio_config.active_gpios[i]);
-+	via_gpio_config.gpio_chip.ngpio = 0;
-+	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
- 	return ret;
- }
- 
--- 
-1.7.3.2
-
+ 		if (ebx & 0x40) {
+ 			/*
