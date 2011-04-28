@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760326Ab1D1UHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:07:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51364 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab1D1UHP (ORCPT
+	id S933462Ab1D1UHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:07:23 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42923 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab1D1UHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:07:15 -0400
-Subject: [PATCH 4/6] dt: generalize irq_of_create_mapping()
+	Thu, 28 Apr 2011 16:07:18 -0400
+Subject: [PATCH 1/6] powerpc: stop exporting irq_map
 To: Michal Simek <monstr@monstr.eu>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
@@ -17,8 +17,8 @@ To: Michal Simek <monstr@monstr.eu>,
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
         linuxppc-dev@lists.ozlabs.org
-Date: Thu, 28 Apr 2011 14:02:04 -0600
-Message-ID: <20110428200203.8979.3569.stgit@ponder>
+Date: Thu, 28 Apr 2011 14:01:48 -0600
+Message-ID: <20110428200148.8979.66709.stgit@ponder>
 In-Reply-To: <20110428192227.8979.49181.stgit@ponder>
 References: <20110428192227.8979.49181.stgit@ponder>
 User-Agent: StGit/0.15
@@ -29,859 +29,1403 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates a common implementation of irq_of_create_mapping()
-and factors out the interrupt domain translation code from powerpc to
-make it available for all architectures.
-
-It creates a new structure, struct of_irq_domain, which can be
-embedded into the private data structure of an interrupt controller.
-Any interrupt controller can call of_irq_domain_add() to register a
-structure with a .map() hook that can translate irq specifiers from
-the device tree into linux irq numbers.
-
-The patch also modifies the powerpc irq_host to embed the
-of_irq_domain structure and use the new common infrastructure for
-registering domains.  This separates the reverse mapping and irq
-allocation infrastructure of irq_host from the domain registration
-infrastructure.  I elected to split the functionality this way for
-several reasons.  First, with the major irq cleanup done by Thomas
-Gleixner, dynamic allocation of irqs can be handled gracefully with
-irq_alloc_desc*() and interrupt controllers may not need or want an
-irq_host layer to manage it for them.  For example, the new
-irq_chip_generic() already has a method for mapping between hwirq and
-Linux irq.
-
-Second, the irq_host code currently has a lot of complexity to handle
-all the different reverse mapping types from a single structure.  The
-radix mapping in particular has a lot of support code, but only one
-user.  I didn't want to bring that complexity into the common code
-as-is.  Instead, I'd prefer to create a separate encapsulating
-structure for each revmap, and each type would have a separate .map
-hook.
-
-For now, the mapping code remains powerpc-specific and further
-generalization will happen in subsequent patches.
+First step in eliminating irq_map[] table entirely
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/microblaze/kernel/irq.c             |    7 --
- arch/mips/kernel/prom.c                  |   14 ----
- arch/powerpc/include/asm/irq.h           |   21 +++--
- arch/powerpc/include/asm/irqhost.h       |    4 -
- arch/powerpc/kernel/irq.c                |   99 ++++++++++++++-----------
- arch/powerpc/platforms/cell/axon_msi.c   |   12 ++-
- arch/powerpc/platforms/cell/spider-pic.c |    8 +-
- arch/powerpc/sysdev/fsl_msi.c            |    2 -
- arch/powerpc/sysdev/i8259.c              |    2 -
- arch/powerpc/sysdev/ipic.c               |    2 -
- arch/powerpc/sysdev/mpic.c               |    4 +
- arch/powerpc/sysdev/mpic_msi.c           |    2 -
- arch/powerpc/sysdev/mpic_pasemi_msi.c    |    4 +
- arch/powerpc/sysdev/qe_lib/qe_ic.c       |    2 -
- arch/x86/include/asm/irq_controller.h    |   12 ---
- arch/x86/include/asm/prom.h              |    1 
- arch/x86/kernel/devicetree.c             |   77 ++++----------------
- drivers/of/irq.c                         |  118 ++++++++++++++++++++++++++++++
- include/linux/of_irq.h                   |   31 ++++++++
- 19 files changed, 248 insertions(+), 174 deletions(-)
- delete mode 100644 arch/x86/include/asm/irq_controller.h
+ arch/powerpc/include/asm/irq.h                   |   15 +---
+ arch/powerpc/kernel/irq.c                        |   26 +++++++
+ arch/powerpc/platforms/512x/mpc5121_ads_cpld.c   |    4 +
+ arch/powerpc/platforms/52xx/media5200.c          |    4 +
+ arch/powerpc/platforms/52xx/mpc52xx_pic.c        |   79 ++++------------------
+ arch/powerpc/platforms/82xx/pq2ads-pci-pic.c     |    4 +
+ arch/powerpc/platforms/85xx/socrates_fpga_pic.c  |   26 ++-----
+ arch/powerpc/platforms/86xx/gef_pic.c            |   10 +--
+ arch/powerpc/platforms/8xx/m8xx_setup.c          |    2 -
+ arch/powerpc/platforms/cell/axon_msi.c           |    2 -
+ arch/powerpc/platforms/cell/spider-pic.c         |   10 +--
+ arch/powerpc/platforms/embedded6xx/flipper-pic.c |    8 +-
+ arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |    8 +-
+ arch/powerpc/platforms/iseries/irq.c             |   10 +--
+ arch/powerpc/platforms/powermac/pic.c            |   12 ++-
+ arch/powerpc/platforms/pseries/ras.c             |    4 +
+ arch/powerpc/platforms/pseries/xics.c            |   14 ++--
+ arch/powerpc/sysdev/cpm1.c                       |    8 +-
+ arch/powerpc/sysdev/cpm2_pic.c                   |   10 +--
+ arch/powerpc/sysdev/ipic.c                       |   16 ++--
+ arch/powerpc/sysdev/mpc8xx_pic.c                 |   10 +--
+ arch/powerpc/sysdev/mpc8xxx_gpio.c               |   12 ++-
+ arch/powerpc/sysdev/mpic.c                       |   28 ++++----
+ arch/powerpc/sysdev/mv64x60_pic.c                |   14 ++--
+ arch/powerpc/sysdev/qe_lib/qe_ic.c               |    6 +-
+ arch/powerpc/sysdev/uic.c                        |   12 +--
+ arch/powerpc/sysdev/xilinx_intc.c                |    8 +-
+ 27 files changed, 147 insertions(+), 215 deletions(-)
 
-diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
-index ce7ac84..59bb560 100644
---- a/arch/microblaze/kernel/irq.c
-+++ b/arch/microblaze/kernel/irq.c
-@@ -54,10 +54,3 @@ unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
- 	return hwirq;
- }
- EXPORT_SYMBOL_GPL(irq_create_mapping);
--
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	return intspec[0];
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index a19811e9..0b82f98 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -60,20 +60,6 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
- }
- #endif
- 
--/*
-- * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
-- *
-- * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
-- * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
-- * supported.
-- */
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	return intspec[0];
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
--
- void __init early_init_devtree(void *params)
- {
- 	/* Setup flat device-tree pointer */
 diff --git a/arch/powerpc/include/asm/irq.h b/arch/powerpc/include/asm/irq.h
-index a44be93..ccefc8c 100644
+index 67ab5fb..e1983d5 100644
 --- a/arch/powerpc/include/asm/irq.h
 +++ b/arch/powerpc/include/asm/irq.h
-@@ -55,11 +55,18 @@ typedef unsigned long irq_hw_number_t;
-  * model). It's the host callbacks that are responsible for setting the
-  * irq_chip on a given irq_desc after it's been mapped.
-  *
-+ * irq_host builds upon the of_irq_domain code in drivers/of/irq.c.
-+ * of_irq_domain provides all of the translation hooks for registering irq
-+ * controllers. irq_host add mapping infrastructure to and from hardware
-+ * irq numbers. IRQ controllers that don't need the mapping infrastructure
-+ * can use irq_domain directly.
-+ *
-  * The host code and data structures are fairly agnostic to the fact that
-  * we use an open firmware device-tree. We do have references to struct
-- * device_node in two places: in irq_find_host() to find the host matching
-- * a given interrupt controller node, and of course as an argument to its
-- * counterpart host->ops->match() callback. However, those are treated as
-+ * device_node in two places: in of_irq_domain_find() to find the host matching
-+ * a given interrupt controller node (which is actually common of_irq_domain
-+ * code), and of course as an argument to its counterpart host->ops->match()
-+ * and host->domain->match() callbacks. However, those are treated as
-  * generic pointers by the core and the fact that it's actually a device-node
-  * pointer is purely a convention between callers and implementation. This
-  * code could thus be used on other architectures by replacing those two
-@@ -137,14 +144,6 @@ extern struct irq_host *irq_alloc_host(struct device_node *of_node,
- 				       struct irq_host_ops *ops,
- 				       irq_hw_number_t inval_irq);
- 
--
--/**
-- * irq_find_host - Locates a host for a given device node
-- * @node: device-tree node of the interrupt controller
-- */
--extern struct irq_host *irq_find_host(struct device_node *node);
--
--
- /**
-  * irq_set_default_host - Set a "default" host
-  * @host: default host pointer
-diff --git a/arch/powerpc/include/asm/irqhost.h b/arch/powerpc/include/asm/irqhost.h
-index 958e6c1..a97a513 100644
---- a/arch/powerpc/include/asm/irqhost.h
-+++ b/arch/powerpc/include/asm/irqhost.h
-@@ -8,6 +8,7 @@
- 
- struct irq_host {
- 	struct list_head	link;
-+	struct of_irq_domain	domain;
- 
- 	/* type of reverse mapping technique */
- 	unsigned int		revmap_type;
-@@ -21,9 +22,6 @@ struct irq_host {
- 	struct irq_host_ops	*ops;
- 	void			*host_data;
- 	irq_hw_number_t		inval_irq;
--
--	/* Optional device node pointer */
--	struct device_node	*of_node;
+@@ -128,19 +128,10 @@ struct irq_host {
+ 	struct device_node	*of_node;
  };
  
- #endif /* _ASM_POWERPC_IRQHOST_H */
-diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-index b961b19..9300e1c 100644
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -514,11 +514,40 @@ struct irq_host *virq_to_host(unsigned int virq)
- }
- EXPORT_SYMBOL_GPL(virq_to_host);
- 
--static int default_irq_host_match(struct irq_host *h, struct device_node *np)
-+/**
-+ * irq_host_domain_match() - irq_domain hook to call irq_host match ops.
-+ *
-+ * This functions gets set as the irq domain match function for irq_host
-+ * instances *if* the ->ops->match() hook is populated.  If ->match() is
-+ * not populated, then the default irq_domain matching behaviour is used
-+ * instead.
-+ */
-+static bool irq_host_domain_match(struct of_irq_domain *domain,
-+				  struct device_node *controller)
- {
--	return h->of_node != NULL && h->of_node == np;
-+	struct irq_host *host = container_of(domain, struct irq_host, domain);
-+	return host->ops->match(host, controller);
- }
- 
-+static unsigned int irq_host_domain_map(struct of_irq_domain *domain,
-+					struct device_node *controller,
-+					const u32 *intspec,
-+					unsigned int intsize);
-+
-+/**
-+ * irq_alloc_host() - Allocate and register an irq_host
-+ * @of_node: Device node of the irq controller; this is used mainly as an
-+ *           anonymouns context pointer.
-+ * @revmap_type: One of IRQ_HOST_MAP_* defined in arch/powerpc/include/asm/irq.h
-+ *               Defines the type of reverse map to be used by the irq_host.
-+ * @revmap_arg: Currently only used by the IRQ_HOST_MAP_LINEAR which uses it
-+ *              to define the size of the reverse map.
-+ * @ops: irq_host ops structure for match/map/unmap/remap/xlate operations.
-+ * @inval_irq: Value used by irq controller to indicate an invalid irq.
-+ *
-+ * irq_host implements mapping between hardware irq numbers and the linux
-+ * virq number space.  This function allocates and registers an irq_host.
-+ */
- struct irq_host *irq_alloc_host(struct device_node *of_node,
- 				unsigned int revmap_type,
- 				unsigned int revmap_arg,
-@@ -542,10 +571,10 @@ struct irq_host *irq_alloc_host(struct device_node *of_node,
- 	host->revmap_type = revmap_type;
- 	host->inval_irq = inval_irq;
- 	host->ops = ops;
--	host->of_node = of_node_get(of_node);
--
--	if (host->ops->match == NULL)
--		host->ops->match = default_irq_host_match;
-+	host->domain.controller = of_node_get(of_node);
-+	host->domain.map = irq_host_domain_map;
-+	if (host->ops->match != NULL)
-+		host->domain.match = irq_host_domain_match;
- 
- 	raw_spin_lock_irqsave(&irq_big_lock, flags);
- 
-@@ -561,7 +590,7 @@ struct irq_host *irq_alloc_host(struct device_node *of_node,
- 			 * instead of the current cruft
- 			 */
- 			if (mem_init_done) {
--				of_node_put(host->of_node);
-+				of_node_put(host->domain.controller);
- 				kfree(host);
- 			}
- 			return NULL;
-@@ -572,6 +601,8 @@ struct irq_host *irq_alloc_host(struct device_node *of_node,
- 	list_add(&host->link, &irq_hosts);
- 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
- 
-+	of_irq_domain_add(&host->domain);
-+
- 	/* Additional setups per revmap type */
- 	switch(revmap_type) {
- 	case IRQ_HOST_MAP_LEGACY:
-@@ -611,32 +642,12 @@ struct irq_host *irq_alloc_host(struct device_node *of_node,
- 	return host;
- }
- 
--struct irq_host *irq_find_host(struct device_node *node)
--{
--	struct irq_host *h, *found = NULL;
--	unsigned long flags;
--
--	/* We might want to match the legacy controller last since
--	 * it might potentially be set to match all interrupts in
--	 * the absence of a device node. This isn't a problem so far
--	 * yet though...
--	 */
--	raw_spin_lock_irqsave(&irq_big_lock, flags);
--	list_for_each_entry(h, &irq_hosts, link)
--		if (h->ops->match(h, node)) {
--			found = h;
--			break;
--		}
--	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
--	return found;
--}
--EXPORT_SYMBOL_GPL(irq_find_host);
--
- void irq_set_default_host(struct irq_host *host)
- {
- 	pr_debug("irq: Default host set to @0x%p\n", host);
- 
- 	irq_default_host = host;
-+	of_irq_set_default_domain(&host->domain);
- }
- 
- void irq_set_virq_count(unsigned int count)
-@@ -757,30 +768,29 @@ unsigned int irq_create_mapping(struct irq_host *host,
- 		return NO_IRQ;
- 
- 	printk(KERN_DEBUG "irq: irq %lu on host %s mapped to virtual irq %u\n",
--		hwirq, host->of_node ? host->of_node->full_name : "null", virq);
-+		hwirq, host->domain.controller ? host->domain.controller->full_name : "null", virq);
- 
- 	return virq;
- }
- EXPORT_SYMBOL_GPL(irq_create_mapping);
- 
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
-+/**
-+ * irq_host_domain_map() - Map device tree irq to linux irq number
-+ * This hook implements all of the powerpc 'irq_host' behaviour, which means
-+ * - calling the ->ops->xlate hook to get the hardware irq number,
-+ * - calling of_create_mapping to translate/allocate a linux virq number
-+ * - calling irq_set_irq_type() if necessary
-+ */
-+static unsigned int irq_host_domain_map(struct of_irq_domain *domain,
-+					struct device_node *controller,
-+					const u32 *intspec,
-+					unsigned int intsize)
- {
--	struct irq_host *host;
-+	struct irq_host *host = container_of(domain, struct irq_host, domain);
- 	irq_hw_number_t hwirq;
- 	unsigned int type = IRQ_TYPE_NONE;
- 	unsigned int virq;
- 
--	if (controller == NULL)
--		host = irq_default_host;
--	else
--		host = irq_find_host(controller);
--	if (host == NULL) {
--		printk(KERN_WARNING "irq: no irq host found for %s !\n",
--		       controller->full_name);
--		return NO_IRQ;
--	}
--
- 	/* If host has no translation, then we assume interrupt line */
- 	if (host->ops->xlate == NULL)
- 		hwirq = intspec[0];
-@@ -801,7 +811,6 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 		irq_set_irq_type(virq, type);
- 	return virq;
- }
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
- 
- void irq_dispose_mapping(unsigned int virq)
- {
-@@ -1128,8 +1137,8 @@ static int virq_debug_show(struct seq_file *m, void *private)
- 				p = none;
- 			seq_printf(m, "%-15s  ", p);
- 
--			if (irq_map[i].host && irq_map[i].host->of_node)
--				p = irq_map[i].host->of_node->full_name;
-+			if (irq_map[i].host && irq_map[i].host->domain.controller)
-+				p = irq_map[i].host->domain.controller->full_name;
- 			else
- 				p = none;
- 			seq_printf(m, "%s\n", p);
-diff --git a/arch/powerpc/platforms/cell/axon_msi.c b/arch/powerpc/platforms/cell/axon_msi.c
-index e1469ae..f125673 100644
---- a/arch/powerpc/platforms/cell/axon_msi.c
-+++ b/arch/powerpc/platforms/cell/axon_msi.c
-@@ -152,7 +152,7 @@ static void axon_msi_cascade(unsigned int irq, struct irq_desc *desc)
- 
- static struct axon_msic *find_msi_translator(struct pci_dev *dev)
- {
--	struct irq_host *irq_host;
-+	struct of_irq_domain *irq_domain;
- 	struct device_node *dn, *tmp;
- 	const phandle *ph;
- 	struct axon_msic *msic = NULL;
-@@ -184,14 +184,14 @@ static struct axon_msic *find_msi_translator(struct pci_dev *dev)
- 		goto out_error;
- 	}
- 
--	irq_host = irq_find_host(dn);
--	if (!irq_host) {
-+	irq_domain = of_irq_domain_find(dn);
-+	if (!irq_domain) {
- 		dev_dbg(&dev->dev, "axon_msi: no irq_host found for node %s\n",
- 			dn->full_name);
- 		goto out_error;
- 	}
- 
--	msic = irq_host->host_data;
-+	msic = irq_domain->priv;
- 
- out_error:
- 	of_node_put(dn);
-@@ -336,7 +336,7 @@ static void axon_msi_shutdown(struct platform_device *device)
- 	u32 tmp;
- 
- 	pr_devel("axon_msi: disabling %s\n",
--		  msic->irq_host->of_node->full_name);
-+		  msic->irq_host->domain.controller->full_name);
- 	tmp  = dcr_read(msic->dcr_host, MSIC_CTRL_REG);
- 	tmp &= ~MSIC_CTRL_ENABLE & ~MSIC_CTRL_IRQ_ENABLE;
- 	msic_dcr_write(msic, MSIC_CTRL_REG, tmp);
-@@ -399,7 +399,7 @@ static int axon_msi_probe(struct platform_device *device)
- 		goto out_free_fifo;
- 	}
- 
--	msic->irq_host->host_data = msic;
-+	msic->irq_host->domain.priv = msic;
- 
- 	irq_set_handler_data(virq, msic);
- 	irq_set_chained_handler(virq, axon_msi_cascade);
-diff --git a/arch/powerpc/platforms/cell/spider-pic.c b/arch/powerpc/platforms/cell/spider-pic.c
-index 73a5494..5bf36ab 100644
---- a/arch/powerpc/platforms/cell/spider-pic.c
-+++ b/arch/powerpc/platforms/cell/spider-pic.c
-@@ -236,18 +236,20 @@ static unsigned int __init spider_find_cascade_and_node(struct spider_pic *pic)
- 	 * tree in case the device-tree is ever fixed
- 	 */
- 	struct of_irq oirq;
--	if (of_irq_map_one(pic->host->of_node, 0, &oirq) == 0) {
-+	if (of_irq_map_one(pic->host->domain.controller, 0, &oirq) == 0) {
- 		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
- 					     oirq.size);
- 		return virq;
- 	}
- 
- 	/* Now do the horrible hacks */
--	tmp = of_get_property(pic->host->of_node, "#interrupt-cells", NULL);
-+	tmp = of_get_property(pic->host->domain.controller,
-+				"#interrupt-cells", NULL);
- 	if (tmp == NULL)
- 		return NO_IRQ;
- 	intsize = *tmp;
--	imap = of_get_property(pic->host->of_node, "interrupt-map", &imaplen);
-+	imap = of_get_property(pic->host->domain.controller,
-+				"interrupt-map", &imaplen);
- 	if (imap == NULL || imaplen < (intsize + 1))
- 		return NO_IRQ;
- 	iic = of_find_node_by_phandle(imap[intsize]);
-diff --git a/arch/powerpc/sysdev/fsl_msi.c b/arch/powerpc/sysdev/fsl_msi.c
-index 2c11b3e..b45a25a 100644
---- a/arch/powerpc/sysdev/fsl_msi.c
-+++ b/arch/powerpc/sysdev/fsl_msi.c
-@@ -82,7 +82,7 @@ static int fsl_msi_init_allocator(struct fsl_msi *msi_data)
- 	int rc;
- 
- 	rc = msi_bitmap_alloc(&msi_data->bitmap, NR_MSI_IRQS,
--			      msi_data->irqhost->of_node);
-+			      msi_data->irqhost->domain.controller);
- 	if (rc)
- 		return rc;
- 
-diff --git a/arch/powerpc/sysdev/i8259.c b/arch/powerpc/sysdev/i8259.c
-index 30869f0..a6f78fb 100644
---- a/arch/powerpc/sysdev/i8259.c
-+++ b/arch/powerpc/sysdev/i8259.c
-@@ -166,7 +166,7 @@ static struct resource pic_edgectrl_iores = {
- 
- static int i8259_host_match(struct irq_host *h, struct device_node *node)
- {
--	return h->of_node == NULL || h->of_node == node;
-+	return h->domain.controller == NULL || h->domain.controller == node;
- }
- 
- static int i8259_host_map(struct irq_host *h, unsigned int virq,
-diff --git a/arch/powerpc/sysdev/ipic.c b/arch/powerpc/sysdev/ipic.c
-index fc3751f..5805c7b 100644
---- a/arch/powerpc/sysdev/ipic.c
-+++ b/arch/powerpc/sysdev/ipic.c
-@@ -676,7 +676,7 @@ static struct irq_chip ipic_edge_irq_chip = {
- static int ipic_host_match(struct irq_host *h, struct device_node *node)
- {
- 	/* Exact match, unless ipic node is NULL */
--	return h->of_node == NULL || h->of_node == node;
-+	return h->domain.controller == NULL || h->domain.controller == node;
- }
- 
- static int ipic_host_map(struct irq_host *h, unsigned int virq,
-diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
-index 6e9e594..cafc364 100644
---- a/arch/powerpc/sysdev/mpic.c
-+++ b/arch/powerpc/sysdev/mpic.c
-@@ -956,7 +956,7 @@ static struct irq_chip mpic_irq_ht_chip = {
- static int mpic_host_match(struct irq_host *h, struct device_node *node)
- {
- 	/* Exact match, unless mpic node is NULL */
--	return h->of_node == NULL || h->of_node == node;
-+	return h->domain.controller == NULL || h->domain.controller == node;
- }
- 
- static int mpic_host_map(struct irq_host *h, unsigned int virq,
-@@ -1296,7 +1296,7 @@ void __init mpic_assign_isu(struct mpic *mpic, unsigned int isu_num,
- 
- 	BUG_ON(isu_num >= MPIC_MAX_ISU);
- 
--	mpic_map(mpic, mpic->irqhost->of_node,
-+	mpic_map(mpic, mpic->irqhost->domain.controller,
- 		 paddr, &mpic->isus[isu_num], 0,
- 		 MPIC_INFO(IRQ_STRIDE) * mpic->isu_size);
- 
-diff --git a/arch/powerpc/sysdev/mpic_msi.c b/arch/powerpc/sysdev/mpic_msi.c
-index 50176ed..ddf79c7 100644
---- a/arch/powerpc/sysdev/mpic_msi.c
-+++ b/arch/powerpc/sysdev/mpic_msi.c
-@@ -85,7 +85,7 @@ int mpic_msi_init_allocator(struct mpic *mpic)
- 	int rc;
- 
- 	rc = msi_bitmap_alloc(&mpic->msi_bitmap, mpic->irq_count,
--			      mpic->irqhost->of_node);
-+			      mpic->irqhost->domain.controller);
- 	if (rc)
- 		return rc;
- 
-diff --git a/arch/powerpc/sysdev/mpic_pasemi_msi.c b/arch/powerpc/sysdev/mpic_pasemi_msi.c
-index 6b11a89..857be51 100644
---- a/arch/powerpc/sysdev/mpic_pasemi_msi.c
-+++ b/arch/powerpc/sysdev/mpic_pasemi_msi.c
-@@ -153,8 +153,8 @@ int mpic_pasemi_msi_init(struct mpic *mpic)
- {
- 	int rc;
- 
--	if (!mpic->irqhost->of_node ||
--	    !of_device_is_compatible(mpic->irqhost->of_node,
-+	if (!mpic->irqhost->domain.controller ||
-+	    !of_device_is_compatible(mpic->irqhost->domain.controller,
- 				     "pasemi,pwrficient-openpic"))
- 		return -ENODEV;
- 
-diff --git a/arch/powerpc/sysdev/qe_lib/qe_ic.c b/arch/powerpc/sysdev/qe_lib/qe_ic.c
-index 9dd7746..c2ccafa 100644
---- a/arch/powerpc/sysdev/qe_lib/qe_ic.c
-+++ b/arch/powerpc/sysdev/qe_lib/qe_ic.c
-@@ -250,7 +250,7 @@ static struct irq_chip qe_ic_irq_chip = {
- static int qe_ic_host_match(struct irq_host *h, struct device_node *node)
- {
- 	/* Exact match, unless qe_ic node is NULL */
--	return h->of_node == NULL || h->of_node == node;
-+	return h->domain.controller == NULL || h->domain.controller == node;
- }
- 
- static int qe_ic_host_map(struct irq_host *h, unsigned int virq,
-diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
-deleted file mode 100644
-index 423bbbd..0000000
---- a/arch/x86/include/asm/irq_controller.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#ifndef __IRQ_CONTROLLER__
--#define __IRQ_CONTROLLER__
--
--struct irq_domain {
--	int (*xlate)(struct irq_domain *h, const u32 *intspec, u32 intsize,
--			u32 *out_hwirq, u32 *out_type);
--	void *priv;
--	struct device_node *controller;
--	struct list_head l;
+-/* The main irq map itself is an array of NR_IRQ entries containing the
+- * associate host and irq number. An entry with a host of NULL is free.
+- * An entry can be allocated if it's free, the allocator always then sets
+- * hwirq first to the host's invalid irq number and then fills ops.
+- */
+-struct irq_map_entry {
+-	irq_hw_number_t	hwirq;
+-	struct irq_host	*host;
 -};
 -
--#endif
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index 971e0b4..eb9d5ab 100644
---- a/arch/x86/include/asm/prom.h
-+++ b/arch/x86/include/asm/prom.h
-@@ -21,7 +21,6 @@
- #include <asm/irq.h>
- #include <asm/atomic.h>
- #include <asm/setup.h>
--#include <asm/irq_controller.h>
- 
- #ifdef CONFIG_OF
- extern int of_ioapic;
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index 706a9fb..651e724 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -15,64 +15,14 @@
- #include <linux/of_pci.h>
- 
- #include <asm/hpet.h>
--#include <asm/irq_controller.h>
- #include <asm/apic.h>
- #include <asm/pci_x86.h>
- 
- __initdata u64 initial_dtb;
- char __initdata cmd_line[COMMAND_LINE_SIZE];
--static LIST_HEAD(irq_domains);
--static DEFINE_RAW_SPINLOCK(big_irq_lock);
- 
- int __initdata of_ioapic;
- 
--#ifdef CONFIG_X86_IO_APIC
--static void add_interrupt_host(struct irq_domain *ih)
--{
--	unsigned long flags;
+-extern struct irq_map_entry irq_map[NR_IRQS];
 -
--	raw_spin_lock_irqsave(&big_irq_lock, flags);
--	list_add(&ih->l, &irq_domains);
--	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
--}
--#endif
--
--static struct irq_domain *get_ih_from_node(struct device_node *controller)
--{
--	struct irq_domain *ih, *found = NULL;
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&big_irq_lock, flags);
--	list_for_each_entry(ih, &irq_domains, l) {
--		if (ih->controller ==  controller) {
--			found = ih;
--			break;
--		}
--	}
--	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
--	return found;
--}
--
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	struct irq_domain *ih;
--	u32 virq, type;
--	int ret;
--
--	ih = get_ih_from_node(controller);
--	if (!ih)
--		return 0;
--	ret = ih->xlate(ih, intspec, intsize, &virq, &type);
--	if (ret)
--		return 0;
--	if (type == IRQ_TYPE_NONE)
--		return virq;
--	irq_set_irq_type(virq, type);
--	return virq;
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
--
- unsigned long pci_address_to_pio(phys_addr_t address)
- {
- 	/*
-@@ -366,32 +316,33 @@ static struct of_ioapic_type of_ioapic_type[] =
- 	},
- };
++struct irq_data;
++extern irq_hw_number_t irqd_to_hwirq(struct irq_data *d);
+ extern irq_hw_number_t virq_to_hw(unsigned int virq);
++extern struct irq_host *virq_to_host(unsigned int virq);
  
--static int ioapic_xlate(struct irq_domain *id, const u32 *intspec, u32 intsize,
--			u32 *out_hwirq, u32 *out_type)
-+static unsigned int ioapic_of_irq_map(struct of_irq_domain *id,
-+				      struct device_node *np,
-+				      const u32 *intspec, u32 intsize)
- {
- 	struct io_apic_irq_attr attr;
- 	struct of_ioapic_type *it;
--	u32 line, idx, type;
-+	u32 line, idx, type, hwirq;
- 
- 	if (intsize < 2)
--		return -EINVAL;
-+		return 0;
- 
- 	line = *intspec;
- 	idx = (u32) id->priv;
--	*out_hwirq = line + mp_gsi_routing[idx].gsi_base;
-+	hwirq = line + mp_gsi_routing[idx].gsi_base;
- 
- 	intspec++;
- 	type = *intspec;
- 
- 	if (type >= ARRAY_SIZE(of_ioapic_type))
--		return -EINVAL;
-+		return 0;
- 
- 	it = of_ioapic_type + type;
--	*out_type = it->out_type;
--
- 	set_io_apic_irq_attr(&attr, idx, line, it->trigger, it->polarity);
- 
--	return io_apic_setup_irq_pin(*out_hwirq, cpu_to_node(0), &attr);
-+	if (io_apic_setup_irq_pin(hwirq, cpu_to_node(0), &attr))
-+		return 0;
-+	return hwirq;
- }
- 
- static void __init ioapic_add_ofnode(struct device_node *np)
-@@ -408,14 +359,14 @@ static void __init ioapic_add_ofnode(struct device_node *np)
- 
- 	for (i = 0; i < nr_ioapics; i++) {
- 		if (r.start == mp_ioapics[i].apicaddr) {
--			struct irq_domain *id;
-+			struct of_irq_domain *id;
- 
- 			id = kzalloc(sizeof(*id), GFP_KERNEL);
- 			BUG_ON(!id);
--			id->controller = np;
--			id->xlate = ioapic_xlate;
-+			id->controller = of_node_get(np);
-+			id->map = ioapic_of_irq_map;
- 			id->priv = (void *)i;
--			add_interrupt_host(id);
-+			of_irq_domain_add(id);
- 			return;
- 		}
- 	}
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 75b0d3c..6da0964 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -19,6 +19,7 @@
+ /**
+  * irq_alloc_host - Allocate a new irq_host data structure
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index f621b7d..422672b 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -477,20 +477,42 @@ void do_softirq(void)
+  * IRQ controller and virtual interrupts
   */
  
- #include <linux/errno.h>
-+#include <linux/list.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_irq.h>
-@@ -29,6 +30,123 @@
- #define NO_IRQ 0
- #endif
- 
-+/*
-+ * Device Tree IRQ domains
-+ *
-+ * IRQ domains provide translation from device tree irq controller nodes to
-+ * linux IRQ numbers.  IRQ controllers register an irq_domain with a .map()
-+ * hook that performs everything needed to decode and configure a device
-+ * tree specified interrupt.
++/* The main irq map itself is an array of NR_IRQ entries containing the
++ * associate host and irq number. An entry with a host of NULL is free.
++ * An entry can be allocated if it's free, the allocator always then sets
++ * hwirq first to the host's invalid irq number and then fills ops.
 + */
-+static LIST_HEAD(of_irq_domains);
-+static DEFINE_RAW_SPINLOCK(of_irq_lock);
-+static struct of_irq_domain *of_irq_default_domain;
-+
-+/**
-+ * of_irq_domain_default_match() - Return true if the controller pointers match
-+ *
-+ * Default match behaviour for of_irq_domains.  If the device tree node pointer
-+ * matches the value stored in the domain structure, then return true.
-+ */
-+static bool of_irq_domain_default_match(struct of_irq_domain *domain,
-+					struct device_node *controller)
-+{
-+	return domain->controller == controller;
-+}
-+
-+/**
-+ * of_irq_domain_add() - Register a device tree irq domain
-+ * @domain: pointer to domain structure to be registered.
-+ *
-+ * Adds an of_irq_domain to the global list of domains.
-+ */
-+void of_irq_domain_add(struct of_irq_domain *domain)
-+{
-+	unsigned long flags;
-+
-+	if (!domain->match)
-+		domain->match = of_irq_domain_default_match;
-+	if (!domain->map) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	raw_spin_lock_irqsave(&of_irq_lock, flags);
-+	list_add(&domain->list, &of_irq_domains);
-+	raw_spin_unlock_irqrestore(&of_irq_lock, flags);
-+}
-+
-+/**
-+ * of_irq_domain_find() - Find the domain that handles a given device tree node
-+ *
-+ * Returns the pointer to an of_irq_domain capable of translating irq specifiers
-+ * for the given irq controller device tree node.  Returns NULL if a suitable
-+ * domain could not be found.
-+ */
-+struct of_irq_domain *of_irq_domain_find(struct device_node *controller)
-+{
-+	struct of_irq_domain *domain, *found = NULL;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&of_irq_lock, flags);
-+	list_for_each_entry(domain, &of_irq_domains, list) {
-+		if (domain->match(domain, controller)) {
-+			found = domain;
-+			break;
-+		}
-+	}
-+	raw_spin_unlock_irqrestore(&of_irq_lock, flags);
-+	return found;
-+}
-+
-+/**
-+ * of_irq_set_default_domain() - Set a "default" host
-+ * @domain: default domain pointer
-+ *
-+ * For convenience, it's possible to set a "default" host that will be used
-+ * whenever NULL is passed to irq_of_create_mapping(). It makes life easier
-+ * for platforms that want to manipulate a few hard coded interrupt numbers
-+ * that aren't properly represented in the device-tree.
-+ */
-+void of_irq_set_default_domain(struct of_irq_domain *domain)
-+{
-+	pr_debug("irq: Default host set to @0x%p\n", domain);
-+	of_irq_default_domain = domain;
-+}
-+
-+/**
-+ * irq_create_of_mapping() - Map a linux irq # from a device tree specifier
-+ * @controller - interrupt-controller node in the device tree
-+ * @intspec - array of interrupt specifier data.  Points to an array of u32
-+ *            values.  Data is *cpu-native* endian u32 values.
-+ * @intsize - size of intspec array.
-+ *
-+ * Given an interrupt controller node pointer and an interrupt specifier, this
-+ * function looks up the linux irq number.
-+ */
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+				   const u32 *intspec, unsigned int intsize)
-+{
-+	struct of_irq_domain *domain;
-+
-+	domain = of_irq_domain_find(controller);
-+	if (!domain)
-+		domain = of_irq_default_domain;
-+	if (!domain) {
-+		pr_warn("error: no irq host found for %s !\n",
-+			controller->full_name);
-+#if defined(CONFIG_MIPS) || defined(CONFIG_MICROBLAZE)
-+		/* FIXME: make Microblaze and MIPS register irq domains */
-+		return intspec[0];
-+#else /* defined(CONFIG_MIPS) || defined(CONFIG_MICROBLAZE) */
-+		return NO_IRQ;
-+#endif /* defined(CONFIG_MIPS) || defined(CONFIG_MICROBLAZE) */
-+	}
-+
-+	return domain->map(domain, controller, intspec, intsize);
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+
- /**
-  * irq_of_parse_and_map - Parse and map an interrupt into linux virq space
-  * @device: Device node of the device whose interrupt is to be mapped
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 109e013..511dbc3 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -33,6 +33,37 @@ struct of_irq {
- 	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
- };
- 
-+/**
-+ * struct of_irq_domain - Translation domain from device tree to linux irq
-+ * @list: Linked list node entry
-+ * @match: (optional) Called to determine if the passed device_node
-+ *         interrupt-controller can be translated by this irq domain.
-+ *         Returns 'true' if it can.
-+ * @decode: Translation callback; returns virq, or NO_IRQ if this irq
-+ *          domain cannot translate it.
-+ * @controller: (optional) pointer to OF node.  By default, if
-+ *              'match' is not set, then this of_irq_domain will only
-+ *              be used if the device tree node passed in matches the
-+ *              controller pointer.
-+ * @priv: Private data pointer, not touched by core of_irq_domain code.
-+ */
-+struct of_irq_domain {
-+	struct list_head list;
-+	bool (*match)(struct of_irq_domain *d, struct device_node *np);
-+	unsigned int (*map)(struct of_irq_domain *d, struct device_node *np,
-+			    const u32 *intspec, u32 intsize);
-+	struct device_node *controller;
-+	void *priv;
++struct irq_map_entry {
++	irq_hw_number_t	hwirq;
++	struct irq_host	*host;
 +};
 +
-+/**
-+ * of_irq_domain_add() - Add a device tree interrupt translation domain
-+ * @domain: interrupt domain to add.
-+ */
-+extern void of_irq_domain_add(struct of_irq_domain *domain);
-+extern void of_irq_set_default_domain(struct of_irq_domain *host);
-+extern struct of_irq_domain *of_irq_domain_find(struct device_node *controller);
+ static LIST_HEAD(irq_hosts);
+ static DEFINE_RAW_SPINLOCK(irq_big_lock);
+ static unsigned int revmap_trees_allocated;
+ static DEFINE_MUTEX(revmap_trees_mutex);
+-struct irq_map_entry irq_map[NR_IRQS];
++static struct irq_map_entry irq_map[NR_IRQS];
+ static unsigned int irq_virq_count = NR_IRQS;
+ static struct irq_host *irq_default_host;
+ 
++irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
++{
++	return irq_map[d->irq].hwirq;
++}
++EXPORT_SYMBOL_GPL(irqd_to_hwirq);
 +
- /*
-  * Workarounds only applied to 32bit powermac machines
+ irq_hw_number_t virq_to_hw(unsigned int virq)
+ {
+ 	return irq_map[virq].hwirq;
+ }
+ EXPORT_SYMBOL_GPL(virq_to_hw);
+ 
++struct irq_host *virq_to_host(unsigned int virq)
++{
++	return irq_map[virq].host;
++}
++EXPORT_SYMBOL_GPL(virq_to_host);
++
+ static int default_irq_host_match(struct irq_host *h, struct device_node *np)
+ {
+ 	return h->of_node != NULL && h->of_node == np;
+@@ -1098,7 +1120,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
+ 			struct irq_chip *chip;
+ 
+ 			seq_printf(m, "%5d  ", i);
+-			seq_printf(m, "0x%05lx  ", virq_to_hw(i));
++			seq_printf(m, "0x%05lx  ", irq_map[i].hwirq);
+ 
+ 			chip = irq_desc_get_chip(desc);
+ 			if (chip && chip->name)
+diff --git a/arch/powerpc/platforms/512x/mpc5121_ads_cpld.c b/arch/powerpc/platforms/512x/mpc5121_ads_cpld.c
+index cfc4b20..a8bc0d4 100644
+--- a/arch/powerpc/platforms/512x/mpc5121_ads_cpld.c
++++ b/arch/powerpc/platforms/512x/mpc5121_ads_cpld.c
+@@ -61,7 +61,7 @@ irq_to_pic_bit(unsigned int irq)
+ static void
+ cpld_mask_irq(struct irq_data *d)
+ {
+-	unsigned int cpld_irq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int cpld_irq = (unsigned int)irqd_to_hwirq(d);
+ 	void __iomem *pic_mask = irq_to_pic_mask(cpld_irq);
+ 
+ 	out_8(pic_mask,
+@@ -71,7 +71,7 @@ cpld_mask_irq(struct irq_data *d)
+ static void
+ cpld_unmask_irq(struct irq_data *d)
+ {
+-	unsigned int cpld_irq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int cpld_irq = (unsigned int)irqd_to_hwirq(d);
+ 	void __iomem *pic_mask = irq_to_pic_mask(cpld_irq);
+ 
+ 	out_8(pic_mask,
+diff --git a/arch/powerpc/platforms/52xx/media5200.c b/arch/powerpc/platforms/52xx/media5200.c
+index 57a6a34..96f85e5 100644
+--- a/arch/powerpc/platforms/52xx/media5200.c
++++ b/arch/powerpc/platforms/52xx/media5200.c
+@@ -56,7 +56,7 @@ static void media5200_irq_unmask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&media5200_irq.lock, flags);
+ 	val = in_be32(media5200_irq.regs + MEDIA5200_IRQ_ENABLE);
+-	val |= 1 << (MEDIA5200_IRQ_SHIFT + irq_map[d->irq].hwirq);
++	val |= 1 << (MEDIA5200_IRQ_SHIFT + irqd_to_hwirq(d));
+ 	out_be32(media5200_irq.regs + MEDIA5200_IRQ_ENABLE, val);
+ 	spin_unlock_irqrestore(&media5200_irq.lock, flags);
+ }
+@@ -68,7 +68,7 @@ static void media5200_irq_mask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&media5200_irq.lock, flags);
+ 	val = in_be32(media5200_irq.regs + MEDIA5200_IRQ_ENABLE);
+-	val &= ~(1 << (MEDIA5200_IRQ_SHIFT + irq_map[d->irq].hwirq));
++	val &= ~(1 << (MEDIA5200_IRQ_SHIFT + irqd_to_hwirq(d)));
+ 	out_be32(media5200_irq.regs + MEDIA5200_IRQ_ENABLE, val);
+ 	spin_unlock_irqrestore(&media5200_irq.lock, flags);
+ }
+diff --git a/arch/powerpc/platforms/52xx/mpc52xx_pic.c b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
+index 1dd1540..bb61181 100644
+--- a/arch/powerpc/platforms/52xx/mpc52xx_pic.c
++++ b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
+@@ -157,48 +157,30 @@ static inline void io_be_clrbit(u32 __iomem *addr, int bitno)
   */
+ static void mpc52xx_extirq_mask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_clrbit(&intr->ctrl, 11 - l2irq);
+ }
+ 
+ static void mpc52xx_extirq_unmask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_setbit(&intr->ctrl, 11 - l2irq);
+ }
+ 
+ static void mpc52xx_extirq_ack(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_setbit(&intr->ctrl, 27-l2irq);
+ }
+ 
+ static int mpc52xx_extirq_set_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	u32 ctrl_reg, type;
+-	int irq;
+-	int l2irq;
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	void *handler = handle_level_irq;
+ 
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
+-	pr_debug("%s: irq=%x. l2=%d flow_type=%d\n", __func__, irq, l2irq, flow_type);
++	pr_debug("%s: irq=%x. l2=%d flow_type=%d\n", __func__,
++		(int) irqd_to_hwirq(d), l2irq, flow_type);
+ 
+ 	switch (flow_type) {
+ 	case IRQF_TRIGGER_HIGH: type = 0; break;
+@@ -237,23 +219,13 @@ static int mpc52xx_null_set_type(struct irq_data *d, unsigned int flow_type)
+ 
+ static void mpc52xx_main_mask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_setbit(&intr->main_mask, 16 - l2irq);
+ }
+ 
+ static void mpc52xx_main_unmask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_clrbit(&intr->main_mask, 16 - l2irq);
+ }
+ 
+@@ -270,23 +242,13 @@ static struct irq_chip mpc52xx_main_irqchip = {
+  */
+ static void mpc52xx_periph_mask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_setbit(&intr->per_mask, 31 - l2irq);
+ }
+ 
+ static void mpc52xx_periph_unmask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_clrbit(&intr->per_mask, 31 - l2irq);
+ }
+ 
+@@ -303,34 +265,19 @@ static struct irq_chip mpc52xx_periph_irqchip = {
+  */
+ static void mpc52xx_sdma_mask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_setbit(&sdma->IntMask, l2irq);
+ }
+ 
+ static void mpc52xx_sdma_unmask(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	io_be_clrbit(&sdma->IntMask, l2irq);
+ }
+ 
+ static void mpc52xx_sdma_ack(struct irq_data *d)
+ {
+-	int irq;
+-	int l2irq;
+-
+-	irq = irq_map[d->irq].hwirq;
+-	l2irq = irq & MPC52xx_IRQ_L2_MASK;
+-
++	int l2irq = irqd_to_hwirq(d) & MPC52xx_IRQ_L2_MASK;
+ 	out_be32(&sdma->IntPend, 1 << l2irq);
+ }
+ 
+diff --git a/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c b/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
+index 4a4eb6f..5d6c34c 100644
+--- a/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
++++ b/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
+@@ -42,7 +42,7 @@ struct pq2ads_pci_pic {
+ static void pq2ads_pci_mask_irq(struct irq_data *d)
+ {
+ 	struct pq2ads_pci_pic *priv = irq_data_get_irq_chip_data(d);
+-	int irq = NUM_IRQS - virq_to_hw(d->irq) - 1;
++	int irq = NUM_IRQS - irqd_to_hwirq(d) - 1;
+ 
+ 	if (irq != -1) {
+ 		unsigned long flags;
+@@ -58,7 +58,7 @@ static void pq2ads_pci_mask_irq(struct irq_data *d)
+ static void pq2ads_pci_unmask_irq(struct irq_data *d)
+ {
+ 	struct pq2ads_pci_pic *priv = irq_data_get_irq_chip_data(d);
+-	int irq = NUM_IRQS - virq_to_hw(d->irq) - 1;
++	int irq = NUM_IRQS - irqd_to_hwirq(d) - 1;
+ 
+ 	if (irq != -1) {
+ 		unsigned long flags;
+diff --git a/arch/powerpc/platforms/85xx/socrates_fpga_pic.c b/arch/powerpc/platforms/85xx/socrates_fpga_pic.c
+index db86462..12cb9bb 100644
+--- a/arch/powerpc/platforms/85xx/socrates_fpga_pic.c
++++ b/arch/powerpc/platforms/85xx/socrates_fpga_pic.c
+@@ -48,8 +48,6 @@ static struct socrates_fpga_irq_info fpga_irqs[SOCRATES_FPGA_NUM_IRQS] = {
+ 	[8] = {0, IRQ_TYPE_LEVEL_HIGH},
+ };
+ 
+-#define socrates_fpga_irq_to_hw(virq)    ((unsigned int)irq_map[virq].hwirq)
+-
+ static DEFINE_RAW_SPINLOCK(socrates_fpga_pic_lock);
+ 
+ static void __iomem *socrates_fpga_pic_iobase;
+@@ -110,11 +108,9 @@ void socrates_fpga_pic_cascade(unsigned int irq, struct irq_desc *desc)
+ static void socrates_fpga_pic_ack(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq, irq_line;
++	unsigned int irq_line, hwirq = irqd_to_hwirq(d);
+ 	uint32_t mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	irq_line = fpga_irqs[hwirq].irq_line;
+ 	raw_spin_lock_irqsave(&socrates_fpga_pic_lock, flags);
+ 	mask = socrates_fpga_pic_read(FPGA_PIC_IRQMASK(irq_line))
+@@ -127,12 +123,10 @@ static void socrates_fpga_pic_ack(struct irq_data *d)
+ static void socrates_fpga_pic_mask(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	int irq_line;
+ 	u32 mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	irq_line = fpga_irqs[hwirq].irq_line;
+ 	raw_spin_lock_irqsave(&socrates_fpga_pic_lock, flags);
+ 	mask = socrates_fpga_pic_read(FPGA_PIC_IRQMASK(irq_line))
+@@ -145,12 +139,10 @@ static void socrates_fpga_pic_mask(struct irq_data *d)
+ static void socrates_fpga_pic_mask_ack(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	int irq_line;
+ 	u32 mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	irq_line = fpga_irqs[hwirq].irq_line;
+ 	raw_spin_lock_irqsave(&socrates_fpga_pic_lock, flags);
+ 	mask = socrates_fpga_pic_read(FPGA_PIC_IRQMASK(irq_line))
+@@ -164,12 +156,10 @@ static void socrates_fpga_pic_mask_ack(struct irq_data *d)
+ static void socrates_fpga_pic_unmask(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	int irq_line;
+ 	u32 mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	irq_line = fpga_irqs[hwirq].irq_line;
+ 	raw_spin_lock_irqsave(&socrates_fpga_pic_lock, flags);
+ 	mask = socrates_fpga_pic_read(FPGA_PIC_IRQMASK(irq_line))
+@@ -182,12 +172,10 @@ static void socrates_fpga_pic_unmask(struct irq_data *d)
+ static void socrates_fpga_pic_eoi(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	int irq_line;
+ 	u32 mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	irq_line = fpga_irqs[hwirq].irq_line;
+ 	raw_spin_lock_irqsave(&socrates_fpga_pic_lock, flags);
+ 	mask = socrates_fpga_pic_read(FPGA_PIC_IRQMASK(irq_line))
+@@ -201,12 +189,10 @@ static int socrates_fpga_pic_set_type(struct irq_data *d,
+ 		unsigned int flow_type)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	int polarity;
+ 	u32 mask;
+ 
+-	hwirq = socrates_fpga_irq_to_hw(d->irq);
+-
+ 	if (fpga_irqs[hwirq].type != IRQ_TYPE_NONE)
+ 		return -EINVAL;
+ 
+diff --git a/arch/powerpc/platforms/86xx/gef_pic.c b/arch/powerpc/platforms/86xx/gef_pic.c
+index 0beec7d..94594e5 100644
+--- a/arch/powerpc/platforms/86xx/gef_pic.c
++++ b/arch/powerpc/platforms/86xx/gef_pic.c
+@@ -46,8 +46,6 @@
+ #define GEF_PIC_CPU0_MCP_MASK	GEF_PIC_MCP_MASK(0)
+ #define GEF_PIC_CPU1_MCP_MASK	GEF_PIC_MCP_MASK(1)
+ 
+-#define gef_irq_to_hw(virq)    ((unsigned int)irq_map[virq].hwirq)
+-
+ 
+ static DEFINE_RAW_SPINLOCK(gef_pic_lock);
+ 
+@@ -113,11 +111,9 @@ void gef_pic_cascade(unsigned int irq, struct irq_desc *desc)
+ static void gef_pic_mask(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	u32 mask;
+ 
+-	hwirq = gef_irq_to_hw(d->irq);
+-
+ 	raw_spin_lock_irqsave(&gef_pic_lock, flags);
+ 	mask = in_be32(gef_pic_irq_reg_base + GEF_PIC_INTR_MASK(0));
+ 	mask &= ~(1 << hwirq);
+@@ -136,11 +132,9 @@ static void gef_pic_mask_ack(struct irq_data *d)
+ static void gef_pic_unmask(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int hwirq;
++	unsigned int hwirq = irqd_to_hwirq(d);
+ 	u32 mask;
+ 
+-	hwirq = gef_irq_to_hw(d->irq);
+-
+ 	raw_spin_lock_irqsave(&gef_pic_lock, flags);
+ 	mask = in_be32(gef_pic_irq_reg_base + GEF_PIC_INTR_MASK(0));
+ 	mask |= (1 << hwirq);
+diff --git a/arch/powerpc/platforms/8xx/m8xx_setup.c b/arch/powerpc/platforms/8xx/m8xx_setup.c
+index 9ecce99..1e12108 100644
+--- a/arch/powerpc/platforms/8xx/m8xx_setup.c
++++ b/arch/powerpc/platforms/8xx/m8xx_setup.c
+@@ -150,7 +150,7 @@ void __init mpc8xx_calibrate_decr(void)
+ 	 */
+ 	cpu = of_find_node_by_type(NULL, "cpu");
+ 	virq= irq_of_parse_and_map(cpu, 0);
+-	irq = irq_map[virq].hwirq;
++	irq = virq_to_hw(virq);
+ 
+ 	sys_tmr2 = immr_map(im_sit);
+ 	out_be16(&sys_tmr2->sit_tbscr, ((1 << (7 - (irq/2))) << 8) |
+diff --git a/arch/powerpc/platforms/cell/axon_msi.c b/arch/powerpc/platforms/cell/axon_msi.c
+index bb5ebf8..1e3329e 100644
+--- a/arch/powerpc/platforms/cell/axon_msi.c
++++ b/arch/powerpc/platforms/cell/axon_msi.c
+@@ -113,7 +113,7 @@ static void axon_msi_cascade(unsigned int irq, struct irq_desc *desc)
+ 		pr_devel("axon_msi: woff %x roff %x msi %x\n",
+ 			  write_offset, msic->read_offset, msi);
+ 
+-		if (msi < NR_IRQS && irq_map[msi].host == msic->irq_host) {
++		if (msi < NR_IRQS && virq_to_host(msi) == msic->irq_host) {
+ 			generic_handle_irq(msi);
+ 			msic->fifo_virt[idx] = cpu_to_le32(0xffffffff);
+ 		} else {
+diff --git a/arch/powerpc/platforms/cell/spider-pic.c b/arch/powerpc/platforms/cell/spider-pic.c
+index c5cf50e..34d2b99 100644
+--- a/arch/powerpc/platforms/cell/spider-pic.c
++++ b/arch/powerpc/platforms/cell/spider-pic.c
+@@ -70,7 +70,7 @@ static struct spider_pic spider_pics[SPIDER_CHIP_COUNT];
+ 
+ static struct spider_pic *spider_virq_to_pic(unsigned int virq)
+ {
+-	return irq_map[virq].host->host_data;
++	return virq_to_host(virq)->host_data;
+ }
+ 
+ static void __iomem *spider_get_irq_config(struct spider_pic *pic,
+@@ -82,7 +82,7 @@ static void __iomem *spider_get_irq_config(struct spider_pic *pic,
+ static void spider_unmask_irq(struct irq_data *d)
+ {
+ 	struct spider_pic *pic = spider_virq_to_pic(d->irq);
+-	void __iomem *cfg = spider_get_irq_config(pic, irq_map[d->irq].hwirq);
++	void __iomem *cfg = spider_get_irq_config(pic, irqd_to_hwirq(d));
+ 
+ 	out_be32(cfg, in_be32(cfg) | 0x30000000u);
+ }
+@@ -90,7 +90,7 @@ static void spider_unmask_irq(struct irq_data *d)
+ static void spider_mask_irq(struct irq_data *d)
+ {
+ 	struct spider_pic *pic = spider_virq_to_pic(d->irq);
+-	void __iomem *cfg = spider_get_irq_config(pic, irq_map[d->irq].hwirq);
++	void __iomem *cfg = spider_get_irq_config(pic, irqd_to_hwirq(d));
+ 
+ 	out_be32(cfg, in_be32(cfg) & ~0x30000000u);
+ }
+@@ -98,7 +98,7 @@ static void spider_mask_irq(struct irq_data *d)
+ static void spider_ack_irq(struct irq_data *d)
+ {
+ 	struct spider_pic *pic = spider_virq_to_pic(d->irq);
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	/* Reset edge detection logic if necessary
+ 	 */
+@@ -117,7 +117,7 @@ static int spider_set_irq_type(struct irq_data *d, unsigned int type)
+ {
+ 	unsigned int sense = type & IRQ_TYPE_SENSE_MASK;
+ 	struct spider_pic *pic = spider_virq_to_pic(d->irq);
+-	unsigned int hw = irq_map[d->irq].hwirq;
++	unsigned int hw = irqd_to_hwirq(d);
+ 	void __iomem *cfg = spider_get_irq_config(pic, hw);
+ 	u32 old_mask;
+ 	u32 ic;
+diff --git a/arch/powerpc/platforms/embedded6xx/flipper-pic.c b/arch/powerpc/platforms/embedded6xx/flipper-pic.c
+index 12aa62b..77cbe4c 100644
+--- a/arch/powerpc/platforms/embedded6xx/flipper-pic.c
++++ b/arch/powerpc/platforms/embedded6xx/flipper-pic.c
+@@ -48,7 +48,7 @@
+ 
+ static void flipper_pic_mask_and_ack(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 	u32 mask = 1 << irq;
+ 
+@@ -59,7 +59,7 @@ static void flipper_pic_mask_and_ack(struct irq_data *d)
+ 
+ static void flipper_pic_ack(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	/* this is at least needed for RSW */
+@@ -68,7 +68,7 @@ static void flipper_pic_ack(struct irq_data *d)
+ 
+ static void flipper_pic_mask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	clrbits32(io_base + FLIPPER_IMR, 1 << irq);
+@@ -76,7 +76,7 @@ static void flipper_pic_mask(struct irq_data *d)
+ 
+ static void flipper_pic_unmask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	setbits32(io_base + FLIPPER_IMR, 1 << irq);
+diff --git a/arch/powerpc/platforms/embedded6xx/hlwd-pic.c b/arch/powerpc/platforms/embedded6xx/hlwd-pic.c
+index 2bdddfc..44b398b 100644
+--- a/arch/powerpc/platforms/embedded6xx/hlwd-pic.c
++++ b/arch/powerpc/platforms/embedded6xx/hlwd-pic.c
+@@ -43,7 +43,7 @@
+ 
+ static void hlwd_pic_mask_and_ack(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 	u32 mask = 1 << irq;
+ 
+@@ -53,7 +53,7 @@ static void hlwd_pic_mask_and_ack(struct irq_data *d)
+ 
+ static void hlwd_pic_ack(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	out_be32(io_base + HW_BROADWAY_ICR, 1 << irq);
+@@ -61,7 +61,7 @@ static void hlwd_pic_ack(struct irq_data *d)
+ 
+ static void hlwd_pic_mask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	clrbits32(io_base + HW_BROADWAY_IMR, 1 << irq);
+@@ -69,7 +69,7 @@ static void hlwd_pic_mask(struct irq_data *d)
+ 
+ static void hlwd_pic_unmask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void __iomem *io_base = irq_data_get_irq_chip_data(d);
+ 
+ 	setbits32(io_base + HW_BROADWAY_IMR, 1 << irq);
+diff --git a/arch/powerpc/platforms/iseries/irq.c b/arch/powerpc/platforms/iseries/irq.c
+index 52a6889..375c21c 100644
+--- a/arch/powerpc/platforms/iseries/irq.c
++++ b/arch/powerpc/platforms/iseries/irq.c
+@@ -171,7 +171,7 @@ static void iseries_enable_IRQ(struct irq_data *d)
+ {
+ 	u32 bus, dev_id, function, mask;
+ 	const u32 sub_bus = 0;
+-	unsigned int rirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int rirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	/* The IRQ has already been locked by the caller */
+ 	bus = REAL_IRQ_TO_BUS(rirq);
+@@ -188,7 +188,7 @@ static unsigned int iseries_startup_IRQ(struct irq_data *d)
+ {
+ 	u32 bus, dev_id, function, mask;
+ 	const u32 sub_bus = 0;
+-	unsigned int rirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int rirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	bus = REAL_IRQ_TO_BUS(rirq);
+ 	function = REAL_IRQ_TO_FUNC(rirq);
+@@ -234,7 +234,7 @@ static void iseries_shutdown_IRQ(struct irq_data *d)
+ {
+ 	u32 bus, dev_id, function, mask;
+ 	const u32 sub_bus = 0;
+-	unsigned int rirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int rirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	/* irq should be locked by the caller */
+ 	bus = REAL_IRQ_TO_BUS(rirq);
+@@ -257,7 +257,7 @@ static void iseries_disable_IRQ(struct irq_data *d)
+ {
+ 	u32 bus, dev_id, function, mask;
+ 	const u32 sub_bus = 0;
+-	unsigned int rirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int rirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	/* The IRQ has already been locked by the caller */
+ 	bus = REAL_IRQ_TO_BUS(rirq);
+@@ -271,7 +271,7 @@ static void iseries_disable_IRQ(struct irq_data *d)
+ 
+ static void iseries_end_IRQ(struct irq_data *d)
+ {
+-	unsigned int rirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int rirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	HvCallPci_eoi(REAL_IRQ_TO_BUS(rirq), REAL_IRQ_TO_SUBBUS(rirq),
+ 		(REAL_IRQ_TO_IDSEL(rirq) << 4) + REAL_IRQ_TO_FUNC(rirq));
+diff --git a/arch/powerpc/platforms/powermac/pic.c b/arch/powerpc/platforms/powermac/pic.c
+index 023f240..2f34ad0 100644
+--- a/arch/powerpc/platforms/powermac/pic.c
++++ b/arch/powerpc/platforms/powermac/pic.c
+@@ -84,7 +84,7 @@ static void __pmac_retrigger(unsigned int irq_nr)
+ 
+ static void pmac_mask_and_ack_irq(struct irq_data *d)
+ {
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+         unsigned long bit = 1UL << (src & 0x1f);
+         int i = src >> 5;
+         unsigned long flags;
+@@ -106,7 +106,7 @@ static void pmac_mask_and_ack_irq(struct irq_data *d)
+ 
+ static void pmac_ack_irq(struct irq_data *d)
+ {
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+         unsigned long bit = 1UL << (src & 0x1f);
+         int i = src >> 5;
+         unsigned long flags;
+@@ -152,7 +152,7 @@ static void __pmac_set_irq_mask(unsigned int irq_nr, int nokicklost)
+ static unsigned int pmac_startup_irq(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+         unsigned long bit = 1UL << (src & 0x1f);
+         int i = src >> 5;
+ 
+@@ -169,7 +169,7 @@ static unsigned int pmac_startup_irq(struct irq_data *d)
+ static void pmac_mask_irq(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	raw_spin_lock_irqsave(&pmac_pic_lock, flags);
+         __clear_bit(src, ppc_cached_irq_mask);
+@@ -180,7 +180,7 @@ static void pmac_mask_irq(struct irq_data *d)
+ static void pmac_unmask_irq(struct irq_data *d)
+ {
+ 	unsigned long flags;
+-	unsigned int src = irq_map[d->irq].hwirq;
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	raw_spin_lock_irqsave(&pmac_pic_lock, flags);
+ 	__set_bit(src, ppc_cached_irq_mask);
+@@ -193,7 +193,7 @@ static int pmac_retrigger(struct irq_data *d)
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&pmac_pic_lock, flags);
+-	__pmac_retrigger(irq_map[d->irq].hwirq);
++	__pmac_retrigger(irqd_to_hwirq(d));
+ 	raw_spin_unlock_irqrestore(&pmac_pic_lock, flags);
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
+index c55d7ad..164a8eb 100644
+--- a/arch/powerpc/platforms/pseries/ras.c
++++ b/arch/powerpc/platforms/pseries/ras.c
+@@ -122,7 +122,7 @@ static irqreturn_t ras_epow_interrupt(int irq, void *dev_id)
+ 
+ 	status = rtas_call(ras_check_exception_token, 6, 1, NULL,
+ 			   RTAS_VECTOR_EXTERNAL_INTERRUPT,
+-			   irq_map[irq].hwirq,
++			   virq_to_hw(irq),
+ 			   RTAS_EPOW_WARNING | RTAS_POWERMGM_EVENTS,
+ 			   critical, __pa(&ras_log_buf),
+ 				rtas_get_error_log_max());
+@@ -157,7 +157,7 @@ static irqreturn_t ras_error_interrupt(int irq, void *dev_id)
+ 
+ 	status = rtas_call(ras_check_exception_token, 6, 1, NULL,
+ 			   RTAS_VECTOR_EXTERNAL_INTERRUPT,
+-			   irq_map[irq].hwirq,
++			   virq_to_hw(irq),
+ 			   RTAS_INTERNAL_ERROR, 1 /*Time Critical */,
+ 			   __pa(&ras_log_buf),
+ 				rtas_get_error_log_max());
+diff --git a/arch/powerpc/platforms/pseries/xics.c b/arch/powerpc/platforms/pseries/xics.c
+index d690133..784e614 100644
+--- a/arch/powerpc/platforms/pseries/xics.c
++++ b/arch/powerpc/platforms/pseries/xics.c
+@@ -210,7 +210,7 @@ static void xics_unmask_irq(struct irq_data *d)
+ 
+ 	pr_devel("xics: unmask virq %d\n", d->irq);
+ 
+-	hwirq = (unsigned int)irq_map[d->irq].hwirq;
++	hwirq = (unsigned int)irqd_to_hwirq(d);
+ 	pr_devel(" -> map to hwirq 0x%x\n", hwirq);
+ 	if (hwirq == XICS_IPI || hwirq == XICS_IRQ_SPURIOUS)
+ 		return;
+@@ -280,7 +280,7 @@ static void xics_mask_irq(struct irq_data *d)
+ 
+ 	pr_devel("xics: mask virq %d\n", d->irq);
+ 
+-	hwirq = (unsigned int)irq_map[d->irq].hwirq;
++	hwirq = (unsigned int)irqd_to_hwirq(d);
+ 	if (hwirq == XICS_IPI || hwirq == XICS_IRQ_SPURIOUS)
+ 		return;
+ 	xics_mask_real_irq(hwirq);
+@@ -373,7 +373,7 @@ static unsigned char pop_cppr(void)
+ 
+ static void xics_eoi_direct(struct irq_data *d)
+ {
+-	unsigned int hwirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int hwirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	iosync();
+ 	direct_xirr_info_set((pop_cppr() << 24) | hwirq);
+@@ -381,7 +381,7 @@ static void xics_eoi_direct(struct irq_data *d)
+ 
+ static void xics_eoi_lpar(struct irq_data *d)
+ {
+-	unsigned int hwirq = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int hwirq = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	iosync();
+ 	lpar_xirr_info_set((pop_cppr() << 24) | hwirq);
+@@ -395,7 +395,7 @@ xics_set_affinity(struct irq_data *d, const struct cpumask *cpumask, bool force)
+ 	int xics_status[2];
+ 	int irq_server;
+ 
+-	hwirq = (unsigned int)irq_map[d->irq].hwirq;
++	hwirq = (unsigned int)irqd_to_hwirq(d);
+ 	if (hwirq == XICS_IPI || hwirq == XICS_IRQ_SPURIOUS)
+ 		return -1;
+ 
+@@ -900,9 +900,9 @@ void xics_migrate_irqs_away(void)
+ 		/* We can't set affinity on ISA interrupts */
+ 		if (virq < NUM_ISA_INTERRUPTS)
+ 			continue;
+-		if (irq_map[virq].host != xics_host)
++		if (virq_to_host(virq) != xics_host)
+ 			continue;
+-		hwirq = (unsigned int)irq_map[virq].hwirq;
++		hwirq = (unsigned int)virq_to_hw(virq);
+ 		/* We need to get IPIs still. */
+ 		if (hwirq == XICS_IPI || hwirq == XICS_IRQ_SPURIOUS)
+ 			continue;
+diff --git a/arch/powerpc/sysdev/cpm1.c b/arch/powerpc/sysdev/cpm1.c
+index e0bc944..350787c 100644
+--- a/arch/powerpc/sysdev/cpm1.c
++++ b/arch/powerpc/sysdev/cpm1.c
+@@ -58,21 +58,21 @@ static struct irq_host *cpm_pic_host;
+ 
+ static void cpm_mask_irq(struct irq_data *d)
+ {
+-	unsigned int cpm_vec = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int cpm_vec = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	clrbits32(&cpic_reg->cpic_cimr, (1 << cpm_vec));
+ }
+ 
+ static void cpm_unmask_irq(struct irq_data *d)
+ {
+-	unsigned int cpm_vec = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int cpm_vec = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	setbits32(&cpic_reg->cpic_cimr, (1 << cpm_vec));
+ }
+ 
+ static void cpm_end_irq(struct irq_data *d)
+ {
+-	unsigned int cpm_vec = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int cpm_vec = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	out_be32(&cpic_reg->cpic_cisr, (1 << cpm_vec));
+ }
+@@ -157,7 +157,7 @@ unsigned int cpm_pic_init(void)
+ 		goto end;
+ 
+ 	/* Initialize the CPM interrupt controller. */
+-	hwirq = (unsigned int)irq_map[sirq].hwirq;
++	hwirq = (unsigned int)virq_to_hw(sirq);
+ 	out_be32(&cpic_reg->cpic_cicr,
+ 	    (CICR_SCD_SCC4 | CICR_SCC_SCC3 | CICR_SCB_SCC2 | CICR_SCA_SCC1) |
+ 		((hwirq/2) << 13) | CICR_HP_MASK);
+diff --git a/arch/powerpc/sysdev/cpm2_pic.c b/arch/powerpc/sysdev/cpm2_pic.c
+index 5495c1b..bcab50e 100644
+--- a/arch/powerpc/sysdev/cpm2_pic.c
++++ b/arch/powerpc/sysdev/cpm2_pic.c
+@@ -81,7 +81,7 @@ static const u_char irq_to_siubit[] = {
+ static void cpm2_mask_irq(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = virq_to_hw(d->irq);
++	unsigned int irq_nr = irqd_to_hwirq(d);
+ 
+ 	bit = irq_to_siubit[irq_nr];
+ 	word = irq_to_siureg[irq_nr];
+@@ -93,7 +93,7 @@ static void cpm2_mask_irq(struct irq_data *d)
+ static void cpm2_unmask_irq(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = virq_to_hw(d->irq);
++	unsigned int irq_nr = irqd_to_hwirq(d);
+ 
+ 	bit = irq_to_siubit[irq_nr];
+ 	word = irq_to_siureg[irq_nr];
+@@ -105,7 +105,7 @@ static void cpm2_unmask_irq(struct irq_data *d)
+ static void cpm2_ack(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = virq_to_hw(d->irq);
++	unsigned int irq_nr = irqd_to_hwirq(d);
+ 
+ 	bit = irq_to_siubit[irq_nr];
+ 	word = irq_to_siureg[irq_nr];
+@@ -116,7 +116,7 @@ static void cpm2_ack(struct irq_data *d)
+ static void cpm2_end_irq(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = virq_to_hw(d->irq);
++	unsigned int irq_nr = irqd_to_hwirq(d);
+ 
+ 	bit = irq_to_siubit[irq_nr];
+ 	word = irq_to_siureg[irq_nr];
+@@ -133,7 +133,7 @@ static void cpm2_end_irq(struct irq_data *d)
+ 
+ static int cpm2_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+-	unsigned int src = virq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned int vold, vnew, edibit;
+ 
+ 	/* Port C interrupts are either IRQ_TYPE_EDGE_FALLING or
+diff --git a/arch/powerpc/sysdev/ipic.c b/arch/powerpc/sysdev/ipic.c
+index fa438be..f0ece79 100644
+--- a/arch/powerpc/sysdev/ipic.c
++++ b/arch/powerpc/sysdev/ipic.c
+@@ -521,12 +521,10 @@ static inline struct ipic * ipic_from_irq(unsigned int virq)
+ 	return primary_ipic;
+ }
+ 
+-#define ipic_irq_to_hw(virq)	((unsigned int)irq_map[virq].hwirq)
+-
+ static void ipic_unmask_irq(struct irq_data *d)
+ {
+ 	struct ipic *ipic = ipic_from_irq(d->irq);
+-	unsigned int src = ipic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+@@ -542,7 +540,7 @@ static void ipic_unmask_irq(struct irq_data *d)
+ static void ipic_mask_irq(struct irq_data *d)
+ {
+ 	struct ipic *ipic = ipic_from_irq(d->irq);
+-	unsigned int src = ipic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+@@ -562,7 +560,7 @@ static void ipic_mask_irq(struct irq_data *d)
+ static void ipic_ack_irq(struct irq_data *d)
+ {
+ 	struct ipic *ipic = ipic_from_irq(d->irq);
+-	unsigned int src = ipic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+@@ -581,7 +579,7 @@ static void ipic_ack_irq(struct irq_data *d)
+ static void ipic_mask_irq_and_ack(struct irq_data *d)
+ {
+ 	struct ipic *ipic = ipic_from_irq(d->irq);
+-	unsigned int src = ipic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+@@ -604,7 +602,7 @@ static void ipic_mask_irq_and_ack(struct irq_data *d)
+ static int ipic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	struct ipic *ipic = ipic_from_irq(d->irq);
+-	unsigned int src = ipic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned int vold, vnew, edibit;
+ 
+ 	if (flow_type == IRQ_TYPE_NONE)
+@@ -793,7 +791,7 @@ struct ipic * __init ipic_init(struct device_node *node, unsigned int flags)
+ int ipic_set_priority(unsigned int virq, unsigned int priority)
+ {
+ 	struct ipic *ipic = ipic_from_irq(virq);
+-	unsigned int src = ipic_irq_to_hw(virq);
++	unsigned int src = virq_to_hw(virq);
+ 	u32 temp;
+ 
+ 	if (priority > 7)
+@@ -821,7 +819,7 @@ int ipic_set_priority(unsigned int virq, unsigned int priority)
+ void ipic_set_highest_priority(unsigned int virq)
+ {
+ 	struct ipic *ipic = ipic_from_irq(virq);
+-	unsigned int src = ipic_irq_to_hw(virq);
++	unsigned int src = virq_to_hw(virq);
+ 	u32 temp;
+ 
+ 	temp = ipic_read(ipic->regs, IPIC_SICFR);
+diff --git a/arch/powerpc/sysdev/mpc8xx_pic.c b/arch/powerpc/sysdev/mpc8xx_pic.c
+index a88800f..20924f2 100644
+--- a/arch/powerpc/sysdev/mpc8xx_pic.c
++++ b/arch/powerpc/sysdev/mpc8xx_pic.c
+@@ -28,7 +28,7 @@ int cpm_get_irq(struct pt_regs *regs);
+ static void mpc8xx_unmask_irq(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	bit = irq_nr & 0x1f;
+ 	word = irq_nr >> 5;
+@@ -40,7 +40,7 @@ static void mpc8xx_unmask_irq(struct irq_data *d)
+ static void mpc8xx_mask_irq(struct irq_data *d)
+ {
+ 	int	bit, word;
+-	unsigned int irq_nr = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	bit = irq_nr & 0x1f;
+ 	word = irq_nr >> 5;
+@@ -52,7 +52,7 @@ static void mpc8xx_mask_irq(struct irq_data *d)
+ static void mpc8xx_ack(struct irq_data *d)
+ {
+ 	int	bit;
+-	unsigned int irq_nr = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	bit = irq_nr & 0x1f;
+ 	out_be32(&siu_reg->sc_sipend, 1 << (31-bit));
+@@ -61,7 +61,7 @@ static void mpc8xx_ack(struct irq_data *d)
+ static void mpc8xx_end_irq(struct irq_data *d)
+ {
+ 	int bit, word;
+-	unsigned int irq_nr = (unsigned int)irq_map[d->irq].hwirq;
++	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
+ 
+ 	bit = irq_nr & 0x1f;
+ 	word = irq_nr >> 5;
+@@ -73,7 +73,7 @@ static void mpc8xx_end_irq(struct irq_data *d)
+ static int mpc8xx_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	if (flow_type & IRQ_TYPE_EDGE_FALLING) {
+-		irq_hw_number_t hw = (unsigned int)irq_map[d->irq].hwirq;
++		irq_hw_number_t hw = (unsigned int)irqd_to_hwirq(d);
+ 		unsigned int siel = in_be32(&siu_reg->sc_siel);
+ 
+ 		/* only external IRQ senses are programmable */
+diff --git a/arch/powerpc/sysdev/mpc8xxx_gpio.c b/arch/powerpc/sysdev/mpc8xxx_gpio.c
+index 0892a28..fb4963a 100644
+--- a/arch/powerpc/sysdev/mpc8xxx_gpio.c
++++ b/arch/powerpc/sysdev/mpc8xxx_gpio.c
+@@ -163,7 +163,7 @@ static void mpc8xxx_irq_unmask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&mpc8xxx_gc->lock, flags);
+ 
+-	setbits32(mm->regs + GPIO_IMR, mpc8xxx_gpio2mask(virq_to_hw(d->irq)));
++	setbits32(mm->regs + GPIO_IMR, mpc8xxx_gpio2mask(irqd_to_hwirq(d)));
+ 
+ 	spin_unlock_irqrestore(&mpc8xxx_gc->lock, flags);
+ }
+@@ -176,7 +176,7 @@ static void mpc8xxx_irq_mask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&mpc8xxx_gc->lock, flags);
+ 
+-	clrbits32(mm->regs + GPIO_IMR, mpc8xxx_gpio2mask(virq_to_hw(d->irq)));
++	clrbits32(mm->regs + GPIO_IMR, mpc8xxx_gpio2mask(irqd_to_hwirq(d)));
+ 
+ 	spin_unlock_irqrestore(&mpc8xxx_gc->lock, flags);
+ }
+@@ -186,7 +186,7 @@ static void mpc8xxx_irq_ack(struct irq_data *d)
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = irq_data_get_irq_chip_data(d);
+ 	struct of_mm_gpio_chip *mm = &mpc8xxx_gc->mm_gc;
+ 
+-	out_be32(mm->regs + GPIO_IER, mpc8xxx_gpio2mask(virq_to_hw(d->irq)));
++	out_be32(mm->regs + GPIO_IER, mpc8xxx_gpio2mask(irqd_to_hwirq(d)));
+ }
+ 
+ static int mpc8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
+@@ -199,14 +199,14 @@ static int mpc8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
+ 	case IRQ_TYPE_EDGE_FALLING:
+ 		spin_lock_irqsave(&mpc8xxx_gc->lock, flags);
+ 		setbits32(mm->regs + GPIO_ICR,
+-			  mpc8xxx_gpio2mask(virq_to_hw(d->irq)));
++			  mpc8xxx_gpio2mask(irqd_to_hwirq(d)));
+ 		spin_unlock_irqrestore(&mpc8xxx_gc->lock, flags);
+ 		break;
+ 
+ 	case IRQ_TYPE_EDGE_BOTH:
+ 		spin_lock_irqsave(&mpc8xxx_gc->lock, flags);
+ 		clrbits32(mm->regs + GPIO_ICR,
+-			  mpc8xxx_gpio2mask(virq_to_hw(d->irq)));
++			  mpc8xxx_gpio2mask(irqd_to_hwirq(d)));
+ 		spin_unlock_irqrestore(&mpc8xxx_gc->lock, flags);
+ 		break;
+ 
+@@ -221,7 +221,7 @@ static int mpc512x_irq_set_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = irq_data_get_irq_chip_data(d);
+ 	struct of_mm_gpio_chip *mm = &mpc8xxx_gc->mm_gc;
+-	unsigned long gpio = virq_to_hw(d->irq);
++	unsigned long gpio = irqd_to_hwirq(d);
+ 	void __iomem *reg;
+ 	unsigned int shift;
+ 	unsigned long flags;
+diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
+index f91c065..824a94f 100644
+--- a/arch/powerpc/sysdev/mpic.c
++++ b/arch/powerpc/sysdev/mpic.c
+@@ -607,8 +607,6 @@ static int irq_choose_cpu(const struct cpumask *mask)
+ }
+ #endif
+ 
+-#define mpic_irq_to_hw(virq)	((unsigned int)irq_map[virq].hwirq)
+-
+ /* Find an mpic associated with a given linux interrupt */
+ static struct mpic *mpic_find(unsigned int irq)
+ {
+@@ -621,7 +619,7 @@ static struct mpic *mpic_find(unsigned int irq)
+ /* Determine if the linux irq is an IPI */
+ static unsigned int mpic_is_ipi(struct mpic *mpic, unsigned int irq)
+ {
+-	unsigned int src = mpic_irq_to_hw(irq);
++	unsigned int src = virq_to_hw(irq);
+ 
+ 	return (src >= mpic->ipi_vecs[0] && src <= mpic->ipi_vecs[3]);
+ }
+@@ -674,7 +672,7 @@ void mpic_unmask_irq(struct irq_data *d)
+ {
+ 	unsigned int loops = 100000;
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	DBG("%p: %s: enable_irq: %d (src %d)\n", mpic, mpic->name, d->irq, src);
+ 
+@@ -695,7 +693,7 @@ void mpic_mask_irq(struct irq_data *d)
+ {
+ 	unsigned int loops = 100000;
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	DBG("%s: disable_irq: %d (src %d)\n", mpic->name, d->irq, src);
+ 
+@@ -733,7 +731,7 @@ void mpic_end_irq(struct irq_data *d)
+ static void mpic_unmask_ht_irq(struct irq_data *d)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	mpic_unmask_irq(d);
+ 
+@@ -744,7 +742,7 @@ static void mpic_unmask_ht_irq(struct irq_data *d)
+ static unsigned int mpic_startup_ht_irq(struct irq_data *d)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	mpic_unmask_irq(d);
+ 	mpic_startup_ht_interrupt(mpic, src, irqd_is_level_type(d));
+@@ -755,7 +753,7 @@ static unsigned int mpic_startup_ht_irq(struct irq_data *d)
+ static void mpic_shutdown_ht_irq(struct irq_data *d)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	mpic_shutdown_ht_interrupt(mpic, src);
+ 	mpic_mask_irq(d);
+@@ -764,7 +762,7 @@ static void mpic_shutdown_ht_irq(struct irq_data *d)
+ static void mpic_end_ht_irq(struct irq_data *d)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ #ifdef DEBUG_IRQ
+ 	DBG("%s: end_irq: %d\n", mpic->name, d->irq);
+@@ -785,7 +783,7 @@ static void mpic_end_ht_irq(struct irq_data *d)
+ static void mpic_unmask_ipi(struct irq_data *d)
+ {
+ 	struct mpic *mpic = mpic_from_ipi(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq) - mpic->ipi_vecs[0];
++	unsigned int src = virq_to_hw(d->irq) - mpic->ipi_vecs[0];
+ 
+ 	DBG("%s: enable_ipi: %d (ipi %d)\n", mpic->name, d->irq, src);
+ 	mpic_ipi_write(src, mpic_ipi_read(src) & ~MPIC_VECPRI_MASK);
+@@ -816,7 +814,7 @@ int mpic_set_affinity(struct irq_data *d, const struct cpumask *cpumask,
+ 		      bool force)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 
+ 	if (mpic->flags & MPIC_SINGLE_DEST_CPU) {
+ 		int cpuid = irq_choose_cpu(cpumask);
+@@ -862,7 +860,7 @@ static unsigned int mpic_type_to_vecpri(struct mpic *mpic, unsigned int type)
+ int mpic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	struct mpic *mpic = mpic_from_irq_data(d);
+-	unsigned int src = mpic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned int vecpri, vold, vnew;
+ 
+ 	DBG("mpic: set_irq_type(mpic:@%p,virq:%d,src:0x%x,type:0x%x)\n",
+@@ -898,7 +896,7 @@ int mpic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ void mpic_set_vector(unsigned int virq, unsigned int vector)
+ {
+ 	struct mpic *mpic = mpic_from_irq(virq);
+-	unsigned int src = mpic_irq_to_hw(virq);
++	unsigned int src = virq_to_hw(virq);
+ 	unsigned int vecpri;
+ 
+ 	DBG("mpic: set_vector(mpic:@%p,virq:%d,src:%d,vector:0x%x)\n",
+@@ -916,7 +914,7 @@ void mpic_set_vector(unsigned int virq, unsigned int vector)
+ void mpic_set_destination(unsigned int virq, unsigned int cpuid)
+ {
+ 	struct mpic *mpic = mpic_from_irq(virq);
+-	unsigned int src = mpic_irq_to_hw(virq);
++	unsigned int src = virq_to_hw(virq);
+ 
+ 	DBG("mpic: set_destination(mpic:@%p,virq:%d,src:%d,cpuid:0x%x)\n",
+ 	    mpic, virq, src, cpuid);
+@@ -1427,7 +1425,7 @@ void __init mpic_set_serial_int(struct mpic *mpic, int enable)
+ void mpic_irq_set_priority(unsigned int irq, unsigned int pri)
+ {
+ 	struct mpic *mpic = mpic_find(irq);
+-	unsigned int src = mpic_irq_to_hw(irq);
++	unsigned int src = virq_to_hw(irq);
+ 	unsigned long flags;
+ 	u32 reg;
+ 
+diff --git a/arch/powerpc/sysdev/mv64x60_pic.c b/arch/powerpc/sysdev/mv64x60_pic.c
+index e9c633c..14d1302 100644
+--- a/arch/powerpc/sysdev/mv64x60_pic.c
++++ b/arch/powerpc/sysdev/mv64x60_pic.c
+@@ -78,7 +78,7 @@ static struct irq_host *mv64x60_irq_host;
+ 
+ static void mv64x60_mask_low(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -91,7 +91,7 @@ static void mv64x60_mask_low(struct irq_data *d)
+ 
+ static void mv64x60_unmask_low(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -115,7 +115,7 @@ static struct irq_chip mv64x60_chip_low = {
+ 
+ static void mv64x60_mask_high(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -128,7 +128,7 @@ static void mv64x60_mask_high(struct irq_data *d)
+ 
+ static void mv64x60_unmask_high(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -152,7 +152,7 @@ static struct irq_chip mv64x60_chip_high = {
+ 
+ static void mv64x60_mask_gpp(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -165,7 +165,7 @@ static void mv64x60_mask_gpp(struct irq_data *d)
+ 
+ static void mv64x60_mask_ack_gpp(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+@@ -180,7 +180,7 @@ static void mv64x60_mask_ack_gpp(struct irq_data *d)
+ 
+ static void mv64x60_unmask_gpp(struct irq_data *d)
+ {
+-	int level2 = irq_map[d->irq].hwirq & MV64x60_LEVEL2_MASK;
++	int level2 = irqd_to_hwirq(d) & MV64x60_LEVEL2_MASK;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&mv64x60_lock, flags);
+diff --git a/arch/powerpc/sysdev/qe_lib/qe_ic.c b/arch/powerpc/sysdev/qe_lib/qe_ic.c
+index 832d692..b2acda0 100644
+--- a/arch/powerpc/sysdev/qe_lib/qe_ic.c
++++ b/arch/powerpc/sysdev/qe_lib/qe_ic.c
+@@ -197,12 +197,10 @@ static inline struct qe_ic *qe_ic_from_irq_data(struct irq_data *d)
+ 	return irq_data_get_irq_chip_data(d);
+ }
+ 
+-#define virq_to_hw(virq)	((unsigned int)irq_map[virq].hwirq)
+-
+ static void qe_ic_unmask_irq(struct irq_data *d)
+ {
+ 	struct qe_ic *qe_ic = qe_ic_from_irq_data(d);
+-	unsigned int src = virq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+@@ -218,7 +216,7 @@ static void qe_ic_unmask_irq(struct irq_data *d)
+ static void qe_ic_mask_irq(struct irq_data *d)
+ {
+ 	struct qe_ic *qe_ic = qe_ic_from_irq_data(d);
+-	unsigned int src = virq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 temp;
+ 
+diff --git a/arch/powerpc/sysdev/uic.c b/arch/powerpc/sysdev/uic.c
+index 5d91385..984cd20 100644
+--- a/arch/powerpc/sysdev/uic.c
++++ b/arch/powerpc/sysdev/uic.c
+@@ -41,8 +41,6 @@
+ #define UIC_VR		0x7
+ #define UIC_VCR		0x8
+ 
+-#define uic_irq_to_hw(virq)	(irq_map[virq].hwirq)
+-
+ struct uic *primary_uic;
+ 
+ struct uic {
+@@ -58,7 +56,7 @@ struct uic {
+ static void uic_unmask_irq(struct irq_data *d)
+ {
+ 	struct uic *uic = irq_data_get_irq_chip_data(d);
+-	unsigned int src = uic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 er, sr;
+ 
+@@ -76,7 +74,7 @@ static void uic_unmask_irq(struct irq_data *d)
+ static void uic_mask_irq(struct irq_data *d)
+ {
+ 	struct uic *uic = irq_data_get_irq_chip_data(d);
+-	unsigned int src = uic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 er;
+ 
+@@ -90,7 +88,7 @@ static void uic_mask_irq(struct irq_data *d)
+ static void uic_ack_irq(struct irq_data *d)
+ {
+ 	struct uic *uic = irq_data_get_irq_chip_data(d);
+-	unsigned int src = uic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&uic->lock, flags);
+@@ -101,7 +99,7 @@ static void uic_ack_irq(struct irq_data *d)
+ static void uic_mask_ack_irq(struct irq_data *d)
+ {
+ 	struct uic *uic = irq_data_get_irq_chip_data(d);
+-	unsigned int src = uic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u32 er, sr;
+ 
+@@ -126,7 +124,7 @@ static void uic_mask_ack_irq(struct irq_data *d)
+ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	struct uic *uic = irq_data_get_irq_chip_data(d);
+-	unsigned int src = uic_irq_to_hw(d->irq);
++	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	int trigger, polarity;
+ 	u32 tr, pr, mask;
+diff --git a/arch/powerpc/sysdev/xilinx_intc.c b/arch/powerpc/sysdev/xilinx_intc.c
+index 0a13fc1..6183799 100644
+--- a/arch/powerpc/sysdev/xilinx_intc.c
++++ b/arch/powerpc/sysdev/xilinx_intc.c
+@@ -71,7 +71,7 @@ static unsigned char xilinx_intc_map_senses[] = {
+  */
+ static void xilinx_intc_mask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void * regs = irq_data_get_irq_chip_data(d);
+ 	pr_debug("mask: %d\n", irq);
+ 	out_be32(regs + XINTC_CIE, 1 << irq);
+@@ -87,7 +87,7 @@ static int xilinx_intc_set_type(struct irq_data *d, unsigned int flow_type)
+  */
+ static void xilinx_intc_level_unmask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void * regs = irq_data_get_irq_chip_data(d);
+ 	pr_debug("unmask: %d\n", irq);
+ 	out_be32(regs + XINTC_SIE, 1 << irq);
+@@ -112,7 +112,7 @@ static struct irq_chip xilinx_intc_level_irqchip = {
+  */
+ static void xilinx_intc_edge_unmask(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void *regs = irq_data_get_irq_chip_data(d);
+ 	pr_debug("unmask: %d\n", irq);
+ 	out_be32(regs + XINTC_SIE, 1 << irq);
+@@ -120,7 +120,7 @@ static void xilinx_intc_edge_unmask(struct irq_data *d)
+ 
+ static void xilinx_intc_edge_ack(struct irq_data *d)
+ {
+-	int irq = virq_to_hw(d->irq);
++	int irq = irqd_to_hwirq(d);
+ 	void * regs = irq_data_get_irq_chip_data(d);
+ 	pr_debug("ack: %d\n", irq);
+ 	out_be32(regs + XINTC_IAR, 1 << irq);
 
