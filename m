@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1D1Lrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 07:47:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40890 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab1D1Lrf convert rfc822-to-8bit (ORCPT
+	id S1752662Ab1D1Lsf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 07:48:35 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:39213 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab1D1Lsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 07:47:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Kz2v/rzRSTH/CUT3AxvfswuK36F9r+K/6sUQhJA+5kMQJVvHCIlXFmTdlkExD2ElES
-         yVvNjPsSWS2W5Fryn0lVUQRqqNCX5e4+AC2GkyDL1xCNjSuBHMMfTa62j16gkU/Os3Ev
-         zTKyiC3pD5wYgVqI1Ib7EL+AimEvCmnA3kle4=
+	Thu, 28 Apr 2011 07:48:33 -0400
+From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+To: Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
+In-Reply-To: <m3tydi6ehc.fsf@IBM-009124035060.in.ibm.com>
+References: <1303332697-16426-1-git-send-email-ncrao@google.com> <m3tydi6ehc.fsf@IBM-009124035060.in.ibm.com>
+User-Agent: Notmuch/0.3.1-59-g676d251 (http://notmuchmail.org) Emacs/23.2.1 (x86_64-redhat-linux-gnu)
+Date: Thu, 28 Apr 2011 17:18:27 +0530
+Message-ID: <m3wriey4tw.fsf@IBM-009124035060.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
-References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
-	<20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
-	<4DB96E6A020000780003E9EB@vpn.id2.novell.com>
-Date: Thu, 28 Apr 2011 13:47:33 +0200
-X-Google-Sender-Auth: 8yCN0JeH8guemEKKt-S5WK42qeY
-Message-ID: <BANLkTikJN92ogUfxAc+SgzvX1Q8r48ughw@mail.gmail.com>
-Subject: Re: [PATCH] allow placing exception table in .rodata (and do so on x86)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, mingo@elte.hu,
-        tglx@linutronix.de, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 13:40, Jan Beulich <JBeulich@novell.com> wrote:
->>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
->> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
->>> This is since the table is really a set of pointers, i.e. misplaced in
->>> .text.
->>>
->>> Quite likely other architectures would want to follow.
->>>
->>> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->>>
->>
->> [...]
->>
->>> --- 2.6.39-rc5/include/asm-generic/vmlinux.lds.h
->>> +++ 2.6.39-rc5-extable-in-rodata/include/asm-generic/vmlinux.lds.h
->>> @@ -226,6 +226,7 @@
->>>              *(.rodata1)                                             \
->>>      }                                                               \
->>>                                                                      \
->>> +    EXCEPTION_TABLE_RO                                              \
->>
->> That's odd. The kernel actually writes to it (sort_main_extable()), so
->> it shouldn't be in the ro data section, but the data section.
->
-> This area does get written, but only at boot time, before read-only
-> data gets set to r/o (on x86 at least). With this in mind, it's better
-> to place it in .rodata, as that way run-time protection will be in place
-> (and I think you agree that it was misplaced in .text in any case).
+On Thu, 28 Apr 2011 12:37:27 +0530, "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com> wrote:
+> On Wed, 20 Apr 2011 13:51:19 -0700, Nikhil Rao <ncrao@google.com> wrote:
+> > Hi All,
+> > 
+> > I have attached an early version of a RFC patchset to increase resolution of
+> > sched entity load weights. This RFC introduces SCHED_LOAD_RESOLUTION which
+> > scales NICE_0_LOAD by a factor of 1024. The scaling is done internally and should
+> > be completely invisible to the user.
+> > 
+> > Why do we need this?
+> > This extra resolution allows us to scale on two dimensions - number of cpus and
+> > the depth of hierarchies. It also allows for proper load balancing of low weight
+> > task groups (for eg., nice+19 on autogroup).
+> > 
+> > One of the big roadblocks for increasing resolution is the use of unsigned long
+> > for load.weight, which on 32-bit architectures can overflow with ~48 max-weight
+> > sched entities. In this RFC we convert all uses of load.weight to u64. This is
+> > still a work-in-progress and I have listed some of the issues I am still
+> > investigating below.
+> > 
+> > I would like to get some feedback on the direction of this patchset. Please let
+> > me know if there are alternative ways of doing this, and I'll be happy to
+> > explore them as well.
+> > 
+> > The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
+> > x86_64. Beyond the basic checks, it has not been well tested yet.
+> > 
+> > Major TODOs:
+> > - Detect overflow in update shares calculations (time * load), and set load_avg
+> >   to maximum possible value (~0ULL).
+> > - tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
+> >   machines. Might need to add a lock to protect this instead of atomic ops.
+> > - Check wake-affine math and effective load calculations for overflows.
+> > - Needs more testing and need to ensure fairness/balancing is not broken.
+> > 
+> Hi Nikhil,
+> 
+> I did a quick test for creating 600 cpu hog tasks with and without this
+> patches on a 16cpu machine(x86_64) and I am seeing some mis-behaviour:
+> 
+> Base kernel - 2.6.39-rc4
+> 
+> [root@krm1 ~]# time -p ./test
+> real 43.54
+> user 0.12
+> sys 1.05
+> [root@krm1 ~]# 
+> 
+> Base + patches
+> 
+> [root@krm1 ~]# time -p ./test
+> 
+> Takes almost infinity, after 2 minutes I see only 16 tasks created
+> viewed from another ssh session to the machine:
+> 
+I could get this working using following patch, not sure if it has other
+implications though. With this, I am back to saner time values for
+creating 600 cpu hog tasks:
 
-Which means it may be in ROM (which is really read-only) on some embedded
-devices, so it cannot be sorted?
+[root@ ~]# time -p ./test
+real 45.02
+user 0.13
+sys 1.07
+[root@ ~]# 
 
-Gr{oetje,eeting}s,
+===================================================================
+    From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
-                        Geert
+    sched: calc_delta_mine - fix calculation
+ 
+    All the calculations of inv_weight takes scaled down weight, while
+    calculating the tmp, weight is not scaled down by
+    SCHED_LOAD_RESOLUTION, which then will return big values because of
+    which the sched_slice thinks that its not time to preempt the
+    current running task
+    
+    Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Index: kernel/sched.c
+===================================================================
+--- kernel/sched.c.orig	2011-04-28 16:34:24.000000000 +0530
++++ kernel/sched.c	2011-04-28 16:36:29.000000000 +0530
+@@ -1336,7 +1336,7 @@ calc_delta_mine(unsigned long delta_exec
+ 			lw->inv_weight = 1 + (WMULT_CONST - w/2) / (w + 1);
+ 	}
+ 
+-	tmp = (u64)delta_exec * weight;
++	tmp = (u64)delta_exec * (weight >> SCHED_LOAD_RESOLUTION);
+ 	/*
+ 	 * Check whether we'd overflow the 64-bit multiplication:
+ 	 */
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
