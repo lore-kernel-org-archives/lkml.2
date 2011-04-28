@@ -1,155 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664Ab1D1RQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 13:16:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59466 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759018Ab1D1RQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 13:16:23 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=0i_OOtiXEx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=f_d2Ry2UyVAnpITyYKYA:9 a=npGfpl5fwnIkFrliw6IA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>
-In-Reply-To: <20110428165525.GB1927@hallyn.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	 <1303960136-14298-2-git-send-email-wad@chromium.org>
-	 <20110428165525.GB1927@hallyn.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Apr 2011 13:16:20 -0400
-Message-ID: <1304010981.18763.192.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754418Ab1D1RSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:18:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35722 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab1D1RSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 13:18:30 -0400
+Date: Thu, 28 Apr 2011 18:18:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110428171826.GZ4658@suse.de>
+References: <1303926637.2583.17.camel@mulgrave.site>
+ <1303934716.2583.22.camel@mulgrave.site>
+ <1303990590.2081.9.camel@lenovo>
+ <20110428135228.GC1696@quack.suse.cz>
+ <20110428140725.GX4658@suse.de>
+ <1304000714.2598.0.camel@mulgrave.site>
+ <20110428150827.GY4658@suse.de>
+ <1304006499.2598.5.camel@mulgrave.site>
+ <1304009438.2598.9.camel@mulgrave.site>
+ <1304009778.2598.10.camel@mulgrave.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1304009778.2598.10.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 11:55 -0500, Serge E. Hallyn wrote:
-
-> ...
+On Thu, Apr 28, 2011 at 11:56:17AM -0500, James Bottomley wrote:
+> On Thu, 2011-04-28 at 11:50 -0500, James Bottomley wrote:
+> > This is the output of perf record -g -a -f sleep 5
+> > 
+> > (hopefully the list won't choke)
 > 
-> >  void __secure_computing(int this_syscall)
-> >  {
-> > -	int mode = current->seccomp.mode;
-> > +	int mode = -1;
-> >  	int * syscall;
-> > -
-> > +	/* Do we need an RCU read lock to access current's state? */
+> Um, this one actually shows kswapd
 > 
-> Nope.
-
-Correct.
-
-> > - out:
-> > +	rcu_assign_pointer(current->seccomp.state, state);
-> > +	synchronize_rcu();
-> > +	put_seccomp_state(orig_state);  /* for the get */
-> > +
-> > +out:
-> > +	put_seccomp_state(orig_state);  /* for the task */
-> > +	return ret;
-> > +
-> > +free_state:
-> > +	put_seccomp_state(orig_state);  /* for the get */
-> > +	put_seccomp_state(state);  /* drop the dup */
-> >  	return ret;
-> >  }
+> James
 > 
-> This looks exactly right.  The only case where put_seccomp_state()
-> might actually lead to freeing the state is where the current's
-> state gets reassigned.  So you need to synchronize_rcu() before
-> that (as you do).  The other cases will only decrement the usage
-> counter, can race with a reader doing (inc; get) but not with a
-> final free, which can only be done here.
-
-Technically incorrect ;)
-
-"final free, which can only be done here."
-
-This is not the only place that a free will happen. But the code is
-correct none-the-less.
-
-Reader on another CPU ups the orig_state refcount under rcu_readlock,
-but after it ups the refcount it releases the rcu_readlock and continues
-to read this state.
-
-Current on this CPU calls this function does the synchronize_rcu() and
-calls put on the state. But since the reader still has a ref count on
-it, it does not get freed here.
-
-When the reader is finally done with the state it calls the put() which
-does the final free on it.
-
-The code still looks correct, I'm just nitpicking your analysis.
-
+> ---
 > 
-> (Rambling above is just me pursuading myself)
-
-Me rambling too.
-
+> # Events: 6K cycles
+> #
+> # Overhead      Command        Shared Object                                   Symbol
+> # ........  ...........  ...................  .......................................
+> #
+>     20.41%      kswapd0  [kernel.kallsyms]    [k] shrink_slab
+>                 |
+>                 --- shrink_slab
+>                    |          
+>                    |--99.91%-- kswapd
+>                    |          kthread
+>                    |          kernel_thread_helper
+>                     --0.09%-- [...]
 > 
-> > diff --git a/kernel/seccomp_filter.c b/kernel/seccomp_filter.c
+
+Ok. I can't see how the patch "mm: vmscan: reclaim order-0 and use
+compaction instead of lumpy reclaim" is related unless we are seeing
+two problems that happen to manifest in a similar manner.
+
+However, there were a number of changes made to dcache in particular
+for 2.6.38. Specifically thinks like dentry_kill use trylock and is
+happy to loop around if it fails to acquire anything. See things like
+this for example;
+
+static void try_prune_one_dentry(struct dentry *dentry)
+        __releases(dentry->d_lock)
+{
+        struct dentry *parent;
+
+        parent = dentry_kill(dentry, 0);
+        /*
+         * If dentry_kill returns NULL, we have nothing more to do.
+         * if it returns the same dentry, trylocks failed. In either
+         * case, just loop again.
+
+
+If this in combination with many inodes being locked for whatever
+reason (writeback locking them maybe?) is causing the shrinker to
+return after zero progress, it could in turn cause kswapd to enter
+into a loop for longish periods of time in shrink_slab here;
+
+                while (total_scan >= SHRINK_BATCH) {
+                        long this_scan = SHRINK_BATCH;
+                        int shrink_ret;
+                        int nr_before;
+
+                        nr_before = (*shrinker->shrink)(shrinker, 0, gfp_mask);
+                        shrink_ret = (*shrinker->shrink)(shrinker, this_scan,
+                                                                gfp_mask);
+                        if (shrink_ret == -1)
+                                break;
+                        if (shrink_ret < nr_before)
+                                ret += nr_before - shrink_ret;
+                        count_vm_events(SLABS_SCANNED, this_scan);
+                        total_scan -= this_scan;
+
+                        cond_resched();
+                }
+
+That would explain this trace.
+
+>      9.98%      kswapd0  [kernel.kallsyms]    [k] shrink_zone
+>                 |
+>                 --- shrink_zone
+>                    |          
+>                    |--99.46%-- kswapd
+>                    |          kthread
+>                    |          kernel_thread_helper
+>                    |          
+>                     --0.54%-- kthread
+>                               kernel_thread_helper
 > 
-> Unfortunately your use of filters doesn't seem exactly right.
+>      7.70%      kswapd0  [kernel.kallsyms]    [k] kswapd
+>                 |
+>                 --- kswapd
+>                     kthread
+>                     kernel_thread_helper
 > 
-> > +/* seccomp_copy_all_filters - copies all filters from src to dst.
-> > + *
-> > + * @dst: the list_head for seccomp_filters to populate.
-> > + * @src: the list_head for seccomp_filters to copy from.
-> > + * Returns non-zero on failure.
-> > + */
-> > +int seccomp_copy_all_filters(struct list_head *dst,
-> > +			     const struct list_head *src)
-> > +{
-> > +	struct seccomp_filter *filter;
-> > +	int ret = 0;
-> > +	BUG_ON(!dst || !src);
-> > +	if (list_empty(src))
-> > +		goto done;
-> > +	rcu_read_lock();
-> > +	list_for_each_entry(filter, src, list) {
-> > +		struct seccomp_filter *new_filter = copy_seccomp_filter(filter);
+>      5.40%      kswapd0  [kernel.kallsyms]    [k] zone_watermark_ok_safe
+>                 |
+>                 --- zone_watermark_ok_safe
+>                    |          
+>                    |--72.66%-- kswapd
+>                    |          kthread
+>                    |          kernel_thread_helper
+>                    |          
+>                    |--20.88%-- sleeping_prematurely.part.12
+>                    |          kswapd
+>                    |          kthread
+>                    |          kernel_thread_helper
+>                    |          
+>                     --6.46%-- kthread
+>                               kernel_thread_helper
 > 
-> copy_seccomp_filter() causes kzalloc to be called.  You can't do that under
-> rcu_read_lock().
 
-Unless you change the kzalloc to do GFP_ATOMIC. Not sure I'd recommend
-doing that.
+We are also spending an astonishing amount of time in
+sleeping_prematurely leading me to believe we are failing to balance the
+zones and are continually under the min watermark for one of the zones.
+We are never going to sleep because of this check;
 
-> 
-> I actually thought you were going to be more extreme about the seccomp
-> state than you are:  I thought you were going to tie a filter list to
-> seccomp state.  So adding or removing a filter would have required
-> duping the seccomp state, duping all the filters, making the change in
-> the copy, and then swapping the new state into place.  Slow in the
-> hopefully rare update case, but safe.
-> 
-> You don't have to do that, but then I'm pretty sure you'll need to add
-> reference counts to each filter and use rcu cycles to a reader from
-> having the filter disappear mid-read.
+                if (total_scanned && (priority < DEF_PRIORITY - 2)) {
+                        if (has_under_min_watermark_zone)
+                                count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+                        else
+                                congestion_wait(BLK_RW_ASYNC, HZ/10);
+                }
 
-Or you can preallocate the new filters, call rcu_read_lock(), check if
-the number of old filters is the same or less, if more, call
-rcu_read_unlock, and try allocating more, and then call rcu_read_lock()
-again and repeat. Then just copy the filters to the preallocate ones.
-rcu_read_unlock() and then free any unused allocated filters.
+However, I think this is a secondary effect to the failure of shrinkers
+to do their work. If slabs were being shrunk, one would expect us to
+be getting over the min watermark.
 
-Maybe a bit messy, but not that bad.
+>      4.25%      kswapd0  [kernel.kallsyms]    [k] do_raw_spin_lock
+>                 |
+>                 --- do_raw_spin_lock
+>                    |          
+>                    |--77.49%-- _raw_spin_lock
+>                    |          |          
+>                    |          |--51.85%-- mb_cache_shrink_fn
+>                    |          |          shrink_slab
+>                    |          |          kswapd
+>                    |          |          kthread
+>                    |          |          kernel_thread_helper
+>                    |          |          
+>                    |           --48.15%-- mem_cgroup_soft_limit_reclaim
+>                    |                     kswapd
+>                    |                     kthread
+>                    |                     kernel_thread_helper
+>                    |          
 
--- Steve
+Way hey, cgroups are also in the mix. How jolly.
 
+Is systemd a common element of the machines hitting this bug by any
+chance?
 
+The remaining traces seem to be follow-on damage related to the three
+issues of "shrinkers are bust in some manner" causing "we are not
+getting over the min watermark" and as a side-show "we are spending lots
+of time doing something unspecified but unhelpful in cgroups".
+
+> <SNIP>
+
+-- 
+Mel Gorman
+SUSE Labs
