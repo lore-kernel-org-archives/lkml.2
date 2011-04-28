@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab1D1RTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 13:19:20 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:33175 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755034Ab1D1RTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 13:19:18 -0400
-Date: Thu, 28 Apr 2011 17:19:10 +0000
-From: Pavel Machek <pavel@ucw.cz>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Daniel Walker <dwalker@fifo99.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Subject: Re: [PATCH] msm: watchdog: support watchdog on 8x60 and 8960
-Message-ID: <20110428171909.GC7345@localhost.ucw.cz>
-References: <1301105894-22835-1-git-send-email-johlstei@codeaurora.org> <1301426560.4049.0.camel@m0nster> <4D92B43B.5050101@codeaurora.org> <1301501006.5346.2.camel@m0nster> <20110330161419.GB28252@pulham.picochip.com>
+	id S1756092Ab1D1Rav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:30:51 -0400
+Received: from trent.utfs.org ([194.246.123.103]:44795 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310Ab1D1Rat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 13:30:49 -0400
+Date: Thu, 28 Apr 2011 10:30:47 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110427102824.GI12436@dastard>
+Message-ID: <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
+ <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330161419.GB28252@pulham.picochip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It doesn't sound too different that all the other watchdogs in
-> > drivers/watchdog/ .. Your just detecting lockups right?
-> 
-> There are some watchdogs in there such as 
-> drivers/watchdog/at91sam9_wdt.c that can't be stopped once enabled so 
-> the driver sets up a soft timer in the kernel that kicks the watchdog to 
-> prevent the system rebooting.
-> 
-> With this approach you could have the watchdog always enabled and being 
-> kicked even if the userspace daemon wasn't running, but with the 
-> flexibility of kicking it from userspace if you wanted.
+Hi David,
 
-sounds like a way to do it.
+sorry for the late response:
 
+On Wed, 27 Apr 2011 at 20:28, Dave Chinner wrote:
+> hmmmm. Speaking of which - have you changed any of the XFS tunables
+> in /proc/sys/fs/xfs/ on your machine (specifically
+> xfssyncd_centisecs)?
+
+No, I did not change anything underneath /proc/sys/fs/xfs.
+ 
+> Not easy because there are tree-wide changes that need to be
+> preserved (e.g. block layer plugging changes) while others around it
+> would need to be reverted....
+
+Yeah, I noticed. I wanted to do something like this:
+
+  $ for c in `git log --pretty=oneline --no-merges v2.6.38..v2.6.39-rc2 fs/xfs | awk '{print $1}'`; do
+       git revert $c
+    done
+
+...but this broke on the 1st or 2nd commit because of unresolved changes.
+
+Now I'm in the middle of another bisect attempt, trying to reproduce but 
+Im getting (probably totally unrelated) warnings here:
+
+BUG: sleeping function called from invalid context at /usr/local/src/linux-2.6-git/drivers/ide/ide-io.c:447
+in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper
+INFO: lockdep is turned off.
+[...]
+ 
+> Can you check if there are any blocked tasks nearing OOM (i.e. "echo
+> w > /proc/sysrq-trigger") so we can see if XFS inode reclaim is
+> stuck somewhere?
+
+In one instance when I mounted with "noatime", no log messages made it to 
+the disk, but I could see "hung tasks":
+
+   http://nerdbynature.de/bits/2.6.39-rc4/oom/oom-6.JPG
+
+I will try sysrq-w later on.
+
+FWIW, a regression bug has been opened:
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=34012
+
+Thanks,
+Christian.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+BOFH excuse #284:
+
+Electrons on a bender
