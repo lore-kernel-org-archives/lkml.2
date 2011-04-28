@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab1D1DLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 23:11:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40415 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab1D1DLo (ORCPT
+	id S1755798Ab1D1DOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 23:14:39 -0400
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:48159 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab1D1DOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 23:11:44 -0400
+	Wed, 27 Apr 2011 23:14:38 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Apr 2011 23:14:38 EDT
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org, rostedt@goodmis.org,
-        Will Drewry <wad@chromium.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 7/7] arch/x86: hook int returning system calls
-Date: Wed, 27 Apr 2011 22:08:51 -0500
-Message-Id: <1303960136-14298-6-git-send-email-wad@chromium.org>
+        mingo@elte.hu, jmorris@namei.org, rostedt@goodmis.org
+Subject: [PATCH 0/7] Revisiting expanded seccomp functionality
+Date: Wed, 27 Apr 2011 22:04:02 -0500
+Message-Id: <1303959855-13830-1-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1303960136-14298-1-git-send-email-wad@chromium.org>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the newly specified __SYSCALL_DEFINEx helpers, redefine
-int-returning system calls with the macro to enable ftrace access.
+I'd like to revisit the past discussions around extending seccomp
+functionality:
+1. http://lwn.net/Articles/332438/
+2. http://thread.gmane.org/gmane.linux.kernel/1086816/focus=1096626
 
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- arch/x86/kernel/ldt.c |    5 +++--
- arch/x86/kernel/tls.c |    7 +++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+First, some background and motivation, feel free to skip straight to the
+patches!
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index ea69726..3f1160c 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -10,6 +10,7 @@
- #include <linux/gfp.h>
- #include <linux/sched.h>
- #include <linux/string.h>
-+#include <linux/syscalls.h>
- #include <linux/mm.h>
- #include <linux/smp.h>
- #include <linux/vmalloc.h>
-@@ -245,8 +246,8 @@ out:
- 	return error;
- }
- 
--asmlinkage int sys_modify_ldt(int func, void __user *ptr,
--			      unsigned long bytecount)
-+__SYSCALL_DEFINEx(asmlinkage, int, 3, _modify_ldt,
-+		  int, func, void __user *, ptr, unsigned long, bytecount)
- {
- 	int ret = -ENOSYS;
- 
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 6bb7b85..0f27a6b 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -1,6 +1,7 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/sched.h>
-+#include <linux/syscalls.h>
- #include <linux/user.h>
- #include <linux/regset.h>
- 
-@@ -90,7 +91,8 @@ int do_set_thread_area(struct task_struct *p, int idx,
- 	return 0;
- }
- 
--asmlinkage int sys_set_thread_area(struct user_desc __user *u_info)
-+__SYSCALL_DEFINEx(asmlinkage, int, 1, _set_thread_area,
-+		  struct user_desc __user *, u_info)
- {
- 	int ret = do_set_thread_area(current, -1, u_info, 1);
- 	asmlinkage_protect(1, ret, u_info);
-@@ -140,7 +142,8 @@ int do_get_thread_area(struct task_struct *p, int idx,
- 	return 0;
- }
- 
--asmlinkage int sys_get_thread_area(struct user_desc __user *u_info)
-+__SYSCALL_DEFINEx(asmlinkage, int, 1, _get_thread_area,
-+		  struct user_desc __user *, u_info)
- {
- 	int ret = do_get_thread_area(current, -1, u_info);
- 	asmlinkage_protect(1, ret, u_info);
--- 
-1.7.0.4
+kernel/seccomp.c provides early system call interception hooks which
+have been used for reducing the kernel attack surface for a given
+user-level task. Normally, seccomp limits the kernel interfaces to read,
+write, sigreturn, and exit. These restrictions have proved effective,
+but for many common uses, the model is too draconion.  That reality
+doesn't mean that a less aggressive reduction of the attack surface
+wouldn't still have beneficial effects.
 
+To accomodate the lack of flexibility, there are several out-of-tree
+patches for system call interception (with and without farther reaching
+"policy" enforcements) and even a complex pure-assembly trusted
+supervisor-thread to broker the requests of seccomp-guarded threads
+(http://code.google.com/p/seccompsandbox). The latter requires severe
+contortions with a high chance of accidental attack surface exposure
+while out-of-tree patches are just that.  (This ignores the handful of
+userspace solutions, like plash and systrace, which jump through their
+own hurdles and suffer not only from complexity but from a heavy
+performance penalty. Of course, those approaches often include policy
+enforcement work in addition to pure attack surface reduction, but
+that's tangential.)
+
+In general, attack surface reduction is applicable in most
+circumstances, but it is especially true when handling untrusted data
+(which seccomp was originally meant to help with!).
+
+Some simple motivating examples are as follows:
+- disallowing perf system calls inside a selinux sandbox (before parsing
+  occursm such that true policy logic can be applied when appropriate.)
+- minimizing kernel attack surface during untrusted JIT execution
+  (Actionscript, Javascript, etc).
+- ...
+
+This patchset provides a flexible means to perform kernel attack surface
+reduction using the early seccomp system call hooks and the ftrace
+filter engine for system call name to number translation along with
+limited argument-based filtering decision making.
+
+Patches 1 through 5 cover the meat of this change.  Patch 3 contains the
+more controversial pieces, I suspect.  Patches 6 and 7 show some of the
+work that is needed to make this system even more effective.  (Even
+without those patches, it is still quite useful.)
+
+Core changes as part of this proposal:
+[PATCH 1/7] tracing: split out filter init, access, tear down.
+[PATCH 2/7] tracing: split out syscall_trace_enter construction
+[PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
+[PATCH 4/7] seccomp_filter: add process state reporting
+[PATCH 5/7] seccomp_filter: Document what seccomp_filter is and how it works.
+
+Nice-to-haves, imo, for ftrace and this proposal:
+[PATCH 6/7] include/linux/syscalls.h: add __ layer of macros with return types.
+[PATCH 7/7] arch/x86: hook int returning system calls
+
+Any and all commentary will be appreciated!
+
+I feel that the approach of this patch series addresses both the
+continued need for attack surface reduction when handling untrusted
+content, as well as the need to reuse the developing ftrace
+infrastructure.  I'm certain there are bugs, style-issues, etc, but I
+hope that the general design leaves everyone else feeling that this
+approach also addresses those needs too.  I will happily address any
+issues if it means we might make progress on this iteration of the
+exposed-kernel-surface-discussion!
+
+Thanks!
+will
