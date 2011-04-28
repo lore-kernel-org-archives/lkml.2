@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab1D1PI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:08:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38495 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab1D1PI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-pgp-id:x-archive
-         :user-agent;
-        b=Sk0e5xQI8WkpvLbMmFAYq+dE7HCdJhkvCKPT+TZLqUH7IUPN4t7Sz+y+l9LtKVGIf6
-         w5SwHG97/mVmMSPD7DyYLVpj7vFRb3/A5nLudt81N6S4DSNXQoYVE3oRYQiHNiDqMF53
-         utidU/s6uF2YAbL7X+1HqsnN0/XIyTrS62vdM=
-Date: Thu, 28 Apr 2011 17:08:20 +0200
-From: clemens fischer <ino-news@spotteswoode.dnsalias.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, jeff.chua.linux@gmail.com,
-        wlanfae@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
-Message-ID: <20110428150819.GA3713@spotteswoode.de.eu.org>
-References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
+	id S933163Ab1D1PIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:08:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58590 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933055Ab1D1PIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 11:08:32 -0400
+Date: Thu, 28 Apr 2011 16:08:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110428150827.GY4658@suse.de>
+References: <1303923000.2583.8.camel@mulgrave.site>
+ <1303923177-sup-2603@think>
+ <1303924902.2583.13.camel@mulgrave.site>
+ <1303925374-sup-7968@think>
+ <1303926637.2583.17.camel@mulgrave.site>
+ <1303934716.2583.22.camel@mulgrave.site>
+ <1303990590.2081.9.camel@lenovo>
+ <20110428135228.GC1696@quack.suse.cz>
+ <20110428140725.GX4658@suse.de>
+ <1304000714.2598.0.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
-X-PGP-ID: 0x214190AF
-X-Archive: encrypt=none
+In-Reply-To: <1304000714.2598.0.camel@mulgrave.site>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Larry Finger:
+On Thu, Apr 28, 2011 at 09:25:14AM -0500, James Bottomley wrote:
+> On Thu, 2011-04-28 at 15:07 +0100, Mel Gorman wrote:
+> > On Thu, Apr 28, 2011 at 03:52:28PM +0200, Jan Kara wrote:
+> > > On Thu 28-04-11 12:36:30, Colin Ian King wrote:
+> > > > One more data point to add, I've been looking at an identical issue when
+> > > > copying large amounts of data.  I bisected this - and the lockups occur
+> > > > with commit 
+> > > > 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
+> > > > issue. With this commit, my file copy test locks up after ~8-10
+> > > > iterations, before this commit I can copy > 100 times and don't see the
+> > > > lockup.
+> > >   Adding Mel to CC, I guess he'll be interested. Mel, it seems this commit
+> > > of yours causes kswapd on non-preempt kernels spin for a *long* time...
+> > > 
+> > 
+> > I'm still thinking about the traces which do not point the finger
+> > directly at compaction per-se but it's possible that the change means
+> > kswapd is not reclaiming like it should be.
+> > 
+> > To test this theory, does applying
+> > [d527caf2: mm: compaction: prevent kswapd compacting memory to reduce
+> > CPU usage] help?
+> 
+> I can answer definitively no to this.  The upstream kernel I reproduced
+> this on has that patch included.
+> 
 
-> From: Jeff Chua <jeff.chua.linux@gmail.com>
->
-> Driver r8712u is unable to handle ad-hoc mode. The issue is that when
-> the driver first starts, there will not be an SSID for association.
-> The fix is to always call the "select and join from scan" routine when
-> in ad-hoc mode.
->
-> Note: Ad-hoc mode worked intermittently before. If the driver had
-> previously been associated, then things were OK.
->
-> Signed-off-by: Jeff Chua <jeff.chua.linux@gmail.com>
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> Cc: Stable <stable@kernel.org>
-> ---
->
-> Index: linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> +++ linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> @@ -68,7 +68,10 @@ static u8 do_join(struct _adapter *padap
->  	pmlmepriv->fw_state |= _FW_UNDER_LINKING;
->  	pmlmepriv->pscanned = plist;
->  	pmlmepriv->to_join = true;
-> -	if (_queue_empty(queue) == true) {
-> +
-> +	/* adhoc mode will start with an empty queue, but skip checking */
-> +	if (!check_fwstate(pmlmepriv, WIFI_ADHOC_STATE) &&
-> +	    _queue_empty(queue)) {
->  		if (pmlmepriv->fw_state & _FW_UNDER_LINKING)
->  			pmlmepriv->fw_state ^= _FW_UNDER_LINKING;
->  		/* when set_ssid/set_bssid for do_join(), but scanning queue
+So it is.
 
-Thanks for CC'ing me.
+Another consequence of this patch is that when high order allocations
+are in progress (is the test case fork heavy in any way for
+example? alternatively, it might be something in the storage stack
+that requires high-order allocs) we are no longer necessarily going
+to sleep because of should_reclaim_continue() check. This could
+explain kswapd-at-99% but would only apply if CONFIG_COMPACTION is
+set (does unsetting CONFIG_COMPACTION help). If the bug only triggers
+for CONFIG_COMPACTION, does the following *untested* patch help any?
 
-This patch doesn't solve my problem[1], unfortunately.  I am using
-iwconfig(8) to setup things, and it is still impossible to set the ESSID
-and the power saving mode.  In my case it was even possible to get into
-Ad-hoc mode without the patch and without ever beeing associated.
+(as a warning, I'm offline Friday until Tuesday morning. I'll try
+check mail over the weekend but it's unlikely I'll find a terminal
+or be allowed to use it without an ass kicking)
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=33352
-
-
-regards, clemens fischer
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 148c6e6..c74a501 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1842,15 +1842,22 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ 		return false;
+ 
+ 	/*
+-	 * If we failed to reclaim and have scanned the full list, stop.
+-	 * NOTE: Checking just nr_reclaimed would exit reclaim/compaction far
+-	 *       faster but obviously would be less likely to succeed
+-	 *       allocation. If this is desirable, use GFP_REPEAT to decide
+-	 *       if both reclaimed and scanned should be checked or just
+-	 *       reclaimed
++	 * For direct reclaimers
++	 *   If we failed to reclaim and have scanned the full list, stop.
++	 *   The caller will check congestion and sleep if necessary until
++	 *   some IO completes.
++	 * For kswapd
++	 *   Check just nr_reclaimed. If we are failing to reclaim, we
++	 *   want to stop this reclaim loop, increase the priority and
++	 *   go to sleep if necessary to allow IO a change to complete.
++	 *   This avoids kswapd going into a busy loop in shrink_zone()
+ 	 */
+-	if (!nr_reclaimed && !nr_scanned)
+-		return false;
++	if (!nr_reclaimed) {
++		if (current_is_kswapd())
++			return false;
++		else if (!nr_scanned)
++			return false;
++	}
+ 
+ 	/*
+ 	 * If we have not reclaimed enough pages for compaction and the
+@@ -1924,8 +1931,13 @@ restart:
+ 
+ 	/* reclaim/compaction might need reclaim to continue */
+ 	if (should_continue_reclaim(zone, nr_reclaimed,
+-					sc->nr_scanned - nr_scanned, sc))
++					sc->nr_scanned - nr_scanned, sc)) {
++		/* Throttle direct reclaimers if congested */
++		if (!current_is_kswapd())
++			wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
++
+ 		goto restart;
++	}
+ 
+ 	throttle_vm_writeout(sc->gfp_mask);
+ }
