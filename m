@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab1D1EEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 00:04:20 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33022 "EHLO e3.ny.us.ibm.com"
+	id S1752808Ab1D1EE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 00:04:28 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59606 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab1D1EEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 00:04:16 -0400
+	id S1750984Ab1D1EEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 00:04:23 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -13,108 +13,71 @@ Cc: John Stultz <john.stultz@linaro.org>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 3/3] comm: ext4: Protect task->comm access by using get_task_comm()
-Date: Wed, 27 Apr 2011 21:03:31 -0700
-Message-Id: <1303963411-2064-4-git-send-email-john.stultz@linaro.org>
+Subject: [RFC][PATCH 0/3] Improve task->comm locking situation.
+Date: Wed, 27 Apr 2011 21:03:28 -0700
+Message-Id: <1303963411-2064-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1303963411-2064-1-git-send-email-john.stultz@linaro.org>
-References: <1303963411-2064-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converts ext4 comm access to use the safe get_task_comm accessor.
+Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the
+current->comm value could be changed by other threads.
+
+This changed the comm locking rules, which previously allowed for
+unlocked current->comm access, since only the thread itself could
+change its comm.
+
+While this was brought up at the time, it was not considered
+problematic, as the comm writing was done in such a way that
+only null or incomplete comms could be read. However, recently
+folks have made it clear they want to see this issue resolved.
+
+So fair enough, as I opened this can of worms, I should work
+to resolve it and this patchset is my initial attempt.
+
+The proposed solution here is to introduce a new seqlock that
+exclusively protects the comm value. We use it to serialize
+access via get_task_comm() and set_task_comm(). Since some 
+comm access is open-coded using the task lock, we preserve
+the task locking in set_task_comm for now. Once all comm 
+access is converted to using get_task_comm, we can clean that
+up as well.
+
+Hopefully this will allow for a smooth transition, where we can
+slowly fix up the unlocked current->comm access bit by bit,
+reducing the race window with each patch, while not making the
+situation any worse then it was yesterday.
+
+Also in this patch set I have a few examples of how I've
+converted comm access to use get_task_comm. I've got quite 
+a number of similar patches queued, but wanted to get some
+feedback on the approach before I start patchbombing everyone.
+
+Comments/feedback would be appreciated.
+
+thanks
+-john
 
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 CC: David Rientjes <rientjes@google.com>
 CC: Dave Hansen <dave@linux.vnet.ibm.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: linux-mm@kvack.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- fs/ext4/file.c  |    8 ++++++--
- fs/ext4/super.c |   13 ++++++++++---
- 2 files changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 7b80d54..d37414e 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -124,11 +124,15 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- 		static unsigned long unaligned_warn_time;
- 
- 		/* Warn about this once per day */
--		if (printk_timed_ratelimit(&unaligned_warn_time, 60*60*24*HZ))
-+		if (printk_timed_ratelimit(&unaligned_warn_time, 60*60*24*HZ)) {
-+			char comm[TASK_COMM_LEN];
-+
-+			get_task_comm(comm, current);
- 			ext4_msg(inode->i_sb, KERN_WARNING,
- 				 "Unaligned AIO/DIO on inode %ld by %s; "
- 				 "performance will be poor.",
--				 inode->i_ino, current->comm);
-+				 inode->i_ino, comm);
-+		}
- 		mutex_lock(ext4_aio_mutex(inode));
- 		ext4_aiodio_wait(inode);
- 	}
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 8553dfb..6c9151f 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -409,12 +409,15 @@ void __ext4_error(struct super_block *sb, const char *function,
- {
- 	struct va_format vaf;
- 	va_list args;
-+	char comm[TASK_COMM_LEN];
- 
- 	va_start(args, fmt);
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
-+
-+	get_task_comm(comm, current);
- 	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
--	       sb->s_id, function, line, current->comm, &vaf);
-+	       sb->s_id, function, line, comm, &vaf);
- 	va_end(args);
- 
- 	ext4_handle_error(sb);
-@@ -427,6 +430,7 @@ void ext4_error_inode(struct inode *inode, const char *function,
- 	va_list args;
- 	struct va_format vaf;
- 	struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
-+	char comm[TASK_COMM_LEN];
- 
- 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
- 	es->s_last_error_block = cpu_to_le64(block);
-@@ -438,7 +442,8 @@ void ext4_error_inode(struct inode *inode, const char *function,
- 	       inode->i_sb->s_id, function, line, inode->i_ino);
- 	if (block)
- 		printk(KERN_CONT "block %llu: ", block);
--	printk(KERN_CONT "comm %s: %pV\n", current->comm, &vaf);
-+	get_task_comm(comm, current);
-+	printk(KERN_CONT "comm %s: %pV\n", comm, &vaf);
- 	va_end(args);
- 
- 	ext4_handle_error(inode->i_sb);
-@@ -453,6 +458,7 @@ void ext4_error_file(struct file *file, const char *function,
- 	struct ext4_super_block *es;
- 	struct inode *inode = file->f_dentry->d_inode;
- 	char pathname[80], *path;
-+	char comm[TASK_COMM_LEN];
- 
- 	es = EXT4_SB(inode->i_sb)->s_es;
- 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
-@@ -468,7 +474,8 @@ void ext4_error_file(struct file *file, const char *function,
- 	va_start(args, fmt);
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	printk(KERN_CONT "comm %s: path %s: %pV\n", current->comm, path, &vaf);
-+	get_task_comm(comm, current);
-+	printk(KERN_CONT "comm %s: path %s: %pV\n", comm, path, &vaf);
- 	va_end(args);
- 
- 	ext4_handle_error(inode->i_sb);
+John Stultz (3):
+  comm: Introduce comm_lock seqlock to protect task->comm access
+  comm: timerstats: Protect task->comm access by using get_task_comm()
+  comm: ext4: Protect task->comm access by using get_task_comm()
+
+ fs/exec.c                 |   25 ++++++++++++++++++++-----
+ fs/ext4/file.c            |    8 ++++++--
+ fs/ext4/super.c           |   13 ++++++++++---
+ include/linux/init_task.h |    1 +
+ include/linux/sched.h     |    5 ++---
+ kernel/timer.c            |    2 +-
+ 6 files changed, 40 insertions(+), 14 deletions(-)
+
 -- 
 1.7.3.2.146.gca209
 
