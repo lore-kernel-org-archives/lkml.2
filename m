@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab1D1Nio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:38:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19215 "EHLO mga02.intel.com"
+	id S1759503Ab1D1Nk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:40:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55699 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab1D1Nim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:38:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,280,1301900400"; 
-   d="scan'208";a="635324290"
-Date: Thu, 28 Apr 2011 21:38:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [patch] vmstat: account page allocation failures
-Message-ID: <20110428133838.GA12573@localhost>
-References: <20110426055521.GA18473@localhost>
- <BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
- <BANLkTim0MNgqeh1KTfvpVFuAvebKyQV8Hg@mail.gmail.com>
- <20110426062535.GB19717@localhost>
- <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
- <20110426063421.GC19717@localhost>
- <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
- <20110426092029.GA27053@localhost>
- <20110426124743.e58d9746.akpm@linux-foundation.org>
- <20110428133644.GA12400@localhost>
+	id S1752479Ab1D1NkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 09:40:25 -0400
+Date: Thu, 28 Apr 2011 06:37:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Weil, Oren jer" <oren.jer.weil@intel.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "david@woodhou.se" <david@woodhou.se>
+Subject: Re: [PATCH 1/8] staging/mei: PCI device and char driver support.
+Message-ID: <20110428133745.GA4861@suse.de>
+References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
+ <1303900057-21694-2-git-send-email-oren.jer.weil@intel.com>
+ <20110427150507.GC24596@suse.de>
+ <F28B59AD52D84B479DCA469824475335065AF92EB9@hasmsx503.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110428133644.GA12400@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <F28B59AD52D84B479DCA469824475335065AF92EB9@hasmsx503.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just for your reference.
+On Thu, Apr 28, 2011 at 08:47:04AM +0300, Weil, Oren jer wrote:
+> >On Wed, Apr 27, 2011 at 01:27:30PM +0300, Oren Weil wrote:
+> >> contains module entries and PCI driver and char device definitions
+> >> (using file_operations, pci_driver structs).
+> >
+> >That's a very lame description.  Please be more verbous, like you did on
+> the
+> >0/8 patch, that explains what this code is and how it is accessed.
+> >
+> >Same goes for the other patches in this series, you need to explain things
+> >more.
+> 
+> No problem, should I got into details in the patch description? 
 
-It seems not necessary given that page allocation failure rate is no long high.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/mmzone.h |    1 +
- mm/page_alloc.c        |    2 ++
- mm/vmstat.c            |    1 +
- 3 files changed, 4 insertions(+)
-
---- linux-next.orig/include/linux/mmzone.h	2011-04-28 21:34:30.000000000 +0800
-+++ linux-next/include/linux/mmzone.h	2011-04-28 21:34:35.000000000 +0800
-@@ -106,6 +106,7 @@ enum zone_stat_item {
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
- 	NR_DIRTIED,		/* page dirtyings since bootup */
- 	NR_WRITTEN,		/* page writings since bootup */
-+	NR_ALLOC_FAIL,
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
---- linux-next.orig/mm/page_alloc.c	2011-04-28 21:34:34.000000000 +0800
-+++ linux-next/mm/page_alloc.c	2011-04-28 21:34:35.000000000 +0800
-@@ -2165,6 +2165,8 @@ rebalance:
- 	}
- 
- nopage:
-+	inc_zone_state(preferred_zone, NR_ALLOC_FAIL);
-+	/* count_zone_vm_events(PGALLOCFAIL, preferred_zone, 1 << order); */
- 	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
- 		unsigned int filter = SHOW_MEM_FILTER_NODES;
- 
---- linux-next.orig/mm/vmstat.c	2011-04-28 21:34:30.000000000 +0800
-+++ linux-next/mm/vmstat.c	2011-04-28 21:34:35.000000000 +0800
-@@ -879,6 +879,7 @@ static const char * const vmstat_text[] 
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_written",
-+	"nr_alloc_fail",
- 
- #ifdef CONFIG_NUMA
- 	"numa_hit",
+Yes.
