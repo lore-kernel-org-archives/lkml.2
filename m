@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1D1CNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 22:13:51 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:6120 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab1D1CNu (ORCPT
+	id S1753442Ab1D1CPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 22:15:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50663 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab1D1CPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 22:13:50 -0400
-Subject: Re: [PATCHv3 6/7] tulip/de2104x: don't report different speeds
- depending on port type
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Decotigny <decot@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <1303954043-17440-7-git-send-email-decot@google.com>
-References: <1303954043-17440-1-git-send-email-decot@google.com>
-	 <1303954043-17440-7-git-send-email-decot@google.com>
+	Wed, 27 Apr 2011 22:15:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=T4l0oTzOJKECTRVj7mg+rqYQhCUxBZKXspozZ+4hi5QtYW4tWY9NCTNqYOVkGTCVwg
+         H5DHj/Dqdrx1ZHx/IXyUqRHPP/AiL584vzemIbHQarbcQkG8fQI/DP4SaMfUN6pjXenG
+         HmrrzVrSCQDmyCPszc0sPGFOwDHF5SNVB33jk=
+Subject: [PATCH 2.6.38.4] mii: add support of pause frames in mii_get_an
+From: artpol <artpol84@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, bhutchings@solarflare.com, netdev@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Thu, 28 Apr 2011 03:13:45 +0100
-Message-ID: <1303956825.3032.428.camel@localhost>
+Date: Thu, 28 Apr 2011 09:15:11 +0700
+Message-ID: <1303956911.2205.12.camel@artpol-thinkpad>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Apr 2011 02:13:49.0488 (UTC) FILETIME=[E97C2300:01CC0549]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18098.005
-X-TM-AS-Result: No--10.510000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 18:27 -0700, David Decotigny wrote:
-> Initial driver reports different speeds depending on the port being
-> used. This patch advertises the speed to be 10Mbps in any case, which
-> is what it actually is on the wire.
-> 
-> Signed-off-by: David Decotigny <decot@google.com>
-Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
+Add support of pause frames advertise in mii_get_an. This provides all
+drivers that use mii_ethtool_gset to represent their own and Link
+partner flow control abilities in ethtool.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+ Signed-off-by: Artem Polyakov <artpol84@gmail.com>
+
+---
+
+--- linux-2.6.38.4/drivers/net/mii.c.orig	2011-04-28 08:46:13.000000000
++0700
++++ linux-2.6.38.4/drivers/net/mii.c	2011-04-25 23:04:20.694981968 +0700
+@@ -49,6 +49,10 @@ static u32 mii_get_an(struct mii_if_info
+ 		result |= ADVERTISED_100baseT_Half;
+ 	if (advert & ADVERTISE_100FULL)
+ 		result |= ADVERTISED_100baseT_Full;
++	if (advert & ADVERTISE_PAUSE_CAP)
++		result |= ADVERTISED_Pause;
++	if (advert & ADVERTISE_PAUSE_ASYM)
++		result |= ADVERTISED_Asym_Pause;
+ 
+ 	return result;
+ }
 
