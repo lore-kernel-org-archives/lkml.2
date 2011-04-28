@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab1D1Mly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:41:54 -0400
-Received: from glenfiddich.ikibiki.org ([88.191.124.82]:39267 "EHLO
-	glenfiddich.ikibiki.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab1D1Mlx (ORCPT
+	id S1759414Ab1D1Mmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:42:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37299 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463Ab1D1Mmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:41:53 -0400
-Date: Thu, 28 Apr 2011 14:41:50 +0200
-From: Cyril Brulebois <kibi@debian.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, trivial@kernel.org
-Subject: Re: [PATCH 3/4] Documentation/00-INDEX.sh: add script to help
- keeping the index up-to-date
-Message-ID: <20110428124150.GG9517@debian.org>
-References: <1303575344-10403-1-git-send-email-kibi@debian.org>
- <1303575344-10403-3-git-send-email-kibi@debian.org>
- <20110423093304.8a31e512.rdunlap@xenotime.net>
- <20110423210537.GI32680@debian.org>
- <20110424115811.e96c121f.rdunlap@xenotime.net>
- <20110426162007.13929384.rdunlap@xenotime.net>
+	Thu, 28 Apr 2011 08:42:49 -0400
+Date: Thu, 28 Apr 2011 13:42:42 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110428124242.GJ17290@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de> <20110427073514.GH17290@n2100.arm.linux.org.uk> <20110428104143.GB13402@8bytes.org> <20110428110129.GE17290@n2100.arm.linux.org.uk> <20110428122508.GC13402@8bytes.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="APlYHCtpeOhspHkB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110426162007.13929384.rdunlap@xenotime.net>
-Organization: Debian
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110428122508.GC13402@8bytes.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 28, 2011 at 02:25:09PM +0200, Joerg Roedel wrote:
+> On Thu, Apr 28, 2011 at 12:01:29PM +0100, Russell King - ARM Linux wrote:
+> 
+> > dma_addr_t dma_map_page(struct device *dev, struct page *page, size_t offset,
+> >                         size_t size, enum dma_data_direction dir)
+> > {
+> > 	struct dma_map_ops *ops = get_dma_ops(dev);
+> > 	dma_addr_t addr;
+> > 
+> > 	BUG_ON(!valid_dma_direction(dir));
+> > 	if (ops->flags & DMA_MANAGE_CACHE || !dev->dma_cache_coherent)
+> > 		__dma_page_cpu_to_dev(page, offset, size, dir);
+> > 	addr = ops->map_page(dev, page, offset, size, dir, NULL);
+> > 	debug_dma_map_page(dev, page, offset, size, dir, addr, false);
+> > 
+> > 	return addr;
+> > }
+> > 
+> > Things like swiotlb and dmabounce would not set DMA_MANAGE_CACHE in
+> > ops->flags, but real iommus and the standard no-iommu implementations
+> > would be required to set it to ensure that data is visible in memory
+> > for CPUs which have DMA incoherent caches.
+> 
+> Do we need flags for that? A flag is necessary if the cache-management
+> differs between IOMMU implementations on the same platform. If
+> cache-management is only specific to the platform (or architecture) then
+> it does make more sense to just call the function without flag checking
+> and every platform with coherent DMA just implements these as static
+> inline noops.
 
---APlYHCtpeOhspHkB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sigh.  You're not seeing the point.
 
-Randy Dunlap <rdunlap@xenotime.net> (26/04/2011):
-> ad I don't see any environment variables that would affect grep either.
->=20
-> Anyway, using this line instead of any one of the lines above works for m=
-e:
->=20
-> documented=3D$(sed '1,/^00-INDEX$/d' 00-INDEX|grep -G -v ^[[:space:]]|sed=
- 's:/$::')
->=20
-> i.e., use ^[[:space:]] instead of the (original) '^\s'.
+There is _no_ point doing the cache management _if_ we're using something
+like dmabounce or swiotlb, as we'll be using memcpy() at some point with
+the buffer.  Moreover, dmabounce or swiotlb may have to do its own cache
+management _after_ that memcpy() to ensure that the page cache requirements
+are met.
 
-Hm, I still can't reproduce your original issue, even with a Fedora 11
-system; but anyway, using [[:space:]] looks good. In the upcoming
-patch I'm also dropping -G: It's the default for GNU grep, and it's
-not POSIX-documented[1] anyway.
+Doing DMA cache management for dmabounce or swiotlb will result in
+unnecessary overhead - and as we can see from the MMC discussions,
+it has a _significant_ performance impact.
 
- 1. http://pubs.opengroup.org/onlinepubs/009695399/utilities/grep.html
+Think about it.  If you're using dmabounce, but still do the cache
+management:
 
-Thanks, and sorry for the extra round-trips for such a simple patch.
+1. you flush the data out of the CPU cache back to memory.
+2. you allocate new memory using dma_alloc_coherent() for the DMA buffer
+   which is accessible to the device.
+3. you memcpy() the data out of the buffer you just flushed into the
+   DMA buffer - this re-fills the cache, evicting entries which may
+   otherwise be hot due to the cache fill policy.
 
-KiBi.
-
---APlYHCtpeOhspHkB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk25YI4ACgkQeGfVPHR5Nd3t2wCfXsQYHv2prc3itAYF46LMp+0o
-x/UAoJgSApotf6m8+Q9TJfxBoo19zJSe
-=KHJS
------END PGP SIGNATURE-----
-
---APlYHCtpeOhspHkB--
+Step 1 is entirely unnecessary and is just a complete and utter waste of
+CPU resources.
