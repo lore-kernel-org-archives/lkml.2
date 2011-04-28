@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1D1HAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 03:00:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39794 "EHLO hera.kernel.org"
+	id S1754301Ab1D1HHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 03:07:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44982 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab1D1HAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 03:00:30 -0400
-Date: Thu, 28 Apr 2011 06:54:56 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-7y40wib8n1eqio7hjpn2dsrm@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/stat] perf event, x86: Use better stalled cycles metric
-Git-Commit-ID: 8a850cadca0e387c87a0911a61e99fd66aeb57ec
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753467Ab1D1HHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 03:07:10 -0400
+Date: Thu, 28 Apr 2011 09:06:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
+        agl@chromium.org, jmorris@namei.org, rostedt@goodmis.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
+ how it works.
+Message-ID: <20110428070636.GC952@elte.hu>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-4-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Apr 2011 06:54:57 +0000 (UTC)
+In-Reply-To: <1303960136-14298-4-git-send-email-wad@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8a850cadca0e387c87a0911a61e99fd66aeb57ec
-Gitweb:     http://git.kernel.org/tip/8a850cadca0e387c87a0911a61e99fd66aeb57ec
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Thu, 28 Apr 2011 11:16:44 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 28 Apr 2011 08:39:33 +0200
 
-perf event, x86: Use better stalled cycles metric
+* Will Drewry <wad@chromium.org> wrote:
 
-Use the UOPS_EXECUTED.*,c=1,i=1 event on Intel CPUs - it is a rather
-good indicator of CPU execution stalls, more sensitive and more inclusive
-than the 0xa2 resource stalls event (which does not count nearly as many
-stall types).
+> +A collection of filters may be supplied via prctl, and the current set of
+> +filters is exposed in /proc/<pid>/seccomp_filter.
+> +
+> +For instance,
+> +  const char filters[] =
+> +    "sys_read: (fd == 1) || (fd == 2)\n"
+> +    "sys_write: (fd == 0)\n"
+> +    "sys_exit: 1\n"
+> +    "sys_exit_group: 1\n"
+> +    "on_next_syscall: 1";
+> +  prctl(PR_SET_SECCOMP, 2, filters);
+> +
+> +This will setup system call filters for read, write, and exit where reading can
+> +be done only from fds 1 and 2 and writing to fd 0.  The "on_next_syscall" directive tells
+> +seccomp to not enforce the ruleset until after the next system call is run.  This allows
+> +for launchers to apply system call filters to a binary before executing it.
+> +
+> +Once enabled, the access may only be reduced.  For example, a set of filters may be:
+> +
+> +  sys_read: 1
+> +  sys_write: 1
+> +  sys_mmap: 1
+> +  sys_prctl: 1
+> +
+> +Then it may call the following to drop mmap access:
+> +  prctl(PR_SET_SECCOMP, 2, "sys_mmap: 0");
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-7y40wib8n1eqio7hjpn2dsrm@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Ok, color me thoroughly impressed - AFAICS you implemented my suggestions in:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 067a48b..1ea9422 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1413,8 +1413,8 @@ static __init int intel_pmu_init(void)
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
- 		x86_pmu.extra_regs = intel_nehalem_extra_regs;
- 
--		/* Install the stalled-cycles event: 0xff: All reasons, 0xa2: Resource stalls */
--		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES] = 0xffa2;
-+		/* Install the stalled-cycles event: UOPS_EXECUTED.CORE_ACTIVE_CYCLES,c=1,i=1 */
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES] = 0x1803fb1;
- 
- 		if (ebx & 0x40) {
- 			/*
+  http://lwn.net/Articles/332974/
+
+and you made it work in practice!
+
+We could split out the ftrace filter engine some more and make it more 
+independent of ftrace. It's basically an in-kernel interpreter able to run off 
+tracepoints.
+
+I've Cc:-ed Linus and Andrew: are you guys opposed to such flexible, dynamic 
+filters conceptually? I think we should really think hard about the actual ABI 
+as this could easily spread to more applications than Chrome/Chromium.
+
+Btw., i also think that such an approach is actually the sane(r) design to 
+implement security modules: using such filters is far more flexible than the 
+typical LSM approach of privileged user-space uploading various nasty objects 
+into kernel space and implementing silly (and limited and intrusive) hooks 
+there, like SElinux and the other security modules do.
+
+This approach also has the ability to become recursive (gets inherited by child 
+tasks, which could add their own filters) and unprivileged - unlike LSMs.
+
+I like this *a lot* more than any security sandboxing approach i've seen 
+before.
+
+Thanks,
+
+	Ingo
