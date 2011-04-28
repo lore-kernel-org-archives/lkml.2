@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1D1Muy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:50:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51943 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab1D1Mux (ORCPT
+	id S1759525Ab1D1MxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:53:08 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:37841 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab1D1MxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:50:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Weil, Oren jer" <oren.jer.weil@intel.com>
-Subject: Re: [PATCH 7/8] staging/mei: AMT Watchdog
-Date: Thu, 28 Apr 2011 14:50:42 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "david@woodhou.se" <david@woodhou.se>
-References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com> <20110427150738.GE24596@suse.de> <F28B59AD52D84B479DCA469824475335065AF92EC7@hasmsx503.ger.corp.intel.com>
-In-Reply-To: <F28B59AD52D84B479DCA469824475335065AF92EC7@hasmsx503.ger.corp.intel.com>
+	Thu, 28 Apr 2011 08:53:05 -0400
+Date: Thu, 28 Apr 2011 14:53:02 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, mingo@elte.hu,
+        tglx@linutronix.de, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH] allow placing exception table in .rodata (and do	 so
+ on x86)
+Message-ID: <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
+References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
+ <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
+ <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
+ <BANLkTikJN92ogUfxAc+SgzvX1Q8r48ughw@mail.gmail.com>
+ <4DB9748B020000780003EA01@vpn.id2.novell.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104281450.42451.arnd@arndb.de>
-X-Provags-ID: V02:K0:rJaxDHxhyefqU4uiKLUo9qMEowNtv5KWVcFSJu66xJo
- nIKvguWuF4t+KpfY+9rVUXmcZiKH9XY6yadzOyKnjWHmC5Zd8H
- YJYA0wbqLKWChzWahw2tCsXTK6POURbV3Zq8YSpNf+Yx0XBMYg
- gQwF+vx4T3fygv8HodzBnqTrix5poYZ5BBJhwzeSKGbvV4oOE5
- /V1PO3fxKG/2XikscX9WA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB9748B020000780003EA01@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 April 2011, Weil, Oren jer wrote:
+On Thu, Apr 28, 2011 at 01:07:07PM +0100, Jan Beulich wrote:
+> >>> On 28.04.11 at 13:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> > On Thu, Apr 28, 2011 at 13:40, Jan Beulich <JBeulich@novell.com> wrote:
+> >>>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> >>> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
+> >>> That's odd. The kernel actually writes to it (sort_main_extable()), so
+> >>> it shouldn't be in the ro data section, but the data section.
+> >>
+> >> This area does get written, but only at boot time, before read-only
+> >> data gets set to r/o (on x86 at least). With this in mind, it's better
+> >> to place it in .rodata, as that way run-time protection will be in place
+> >> (and I think you agree that it was misplaced in .text in any case).
+> > 
+> > Which means it may be in ROM (which is really read-only) on some embedded
+> > devices, so it cannot be sorted?
 > 
-> >On Wed, Apr 27, 2011 at 03:53:01PM +0200, Arnd Bergmann wrote:
-> >> I still think this should be a regular watchdog driver using the
-> >> drivers/watchdog user interface.
-> >
-> >I agree, Oren, if you are going to insist on doing things this way, you had
-> >better describe why you are ignoring the existing kernel interfaces
-> >provided.
-> 
-> we are not going to ignore the existing interfaces, it is one of our items
-> in the TODO list.
-> You can see the we move all of the Watchdog code to a single file so it
-> would easy to us to take it later to other driver.
-> Another Item on our TODO list is to expose Kernel function that equivalent
-> to user interface so kernel clients 
-> can access FW features/clients.
+> Perhaps - but since sorting is a requirement, people building such
+> systems must have found a way... Anyway, I don't see where both
 
-Ok, fair enough. Please put important information like this into the
-changelog next time.
+Yes, we found a way on s390: we put the exception table in the data section.
 
-Also, your TODO file seems to be missing form the submission.
+> your and Heiko's comment are heading, since the situation is even
+> worse without the patch afaics (since .text gets marked read-only
+> as much as .rodata does, and could equally be placed in ROM).
 
-	Arnd
+My point is that your default is wrong. If it makes sense to put the extable
+into the rodata section then an architecture could do so. However making the
+default to put data into the rodata section that is actually written to is
+the wrong approach.
+It just asks for breakage.
