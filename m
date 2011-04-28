@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab1D1NaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:30:14 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:38519 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751031Ab1D1NaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:30:11 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18zw3h99Kkz85DRUY68irR1rLaEGOJYB5NymXZ8R6
-	ZxlKVonixoJpk1
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: sedat.dilek@gmail.com,
-        Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-In-Reply-To: <20110428102609.GJ2135@linux.vnet.ibm.com>
-References: <20110426112756.GF4308@linux.vnet.ibm.com>
-	 <20110426183859.6ff6279b@neptune.home>
-	 <20110426190918.01660ccf@neptune.home>
-	 <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-	 <alpine.LFD.2.02.1104262314110.3323@ionos>
-	 <20110427081501.5ba28155@pluto.restena.lu>
-	 <20110427204139.1b0ea23b@neptune.home>
-	 <alpine.LFD.2.02.1104272351290.3323@ionos>
-	 <alpine.LFD.2.02.1104281051090.19095@ionos>
-	 <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
-	 <20110428102609.GJ2135@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 15:30:01 +0200
-Message-ID: <1303997401.7819.5.camel@marge.simson.net>
+	id S1756486Ab1D1NaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:30:25 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:54823 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1D1NaU convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:3>);
+	Thu, 28 Apr 2011 09:30:20 -0400
+Message-Id: <4DB98854020000780003EA4D@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 28 Apr 2011 14:31:32 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Heiko Carstens" <heiko.carstens@de.ibm.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        <linux-arch@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] allow placing exception table in .rodata (and do
+	 so on x86)
+References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
+ <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
+ <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
+ <BANLkTikJN92ogUfxAc+SgzvX1Q8r48ughw@mail.gmail.com>
+ <4DB9748B020000780003EA01@vpn.id2.novell.com>
+ <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 03:26 -0700, Paul E. McKenney wrote:
-> On Thu, Apr 28, 2011 at 11:45:03AM +0200, Sedat Dilek wrote:
-> > Hi,
-> > 
-> > not sure if my problem from linux-2.6-rcu.git#sedat.2011.04.23a is
-> > related to the issue here.
-> > 
-> > Just FYI:
-> > I am here on a Pentium-M (uniprocessor aka UP) and still unsure if I
-> > have the correct (optimal?) kernel-configs set.
-> > 
-> > Paul gave me a script to collect RCU data and I enhanced it with
-> > collecting SCHED data.
-> > 
-> > In the above mentionned GIT branch I applied these two extra commits
-> > (0001 requested by Paul and 0002 proposed by Thomas):
-> > 
-> > patches/0001-Revert-rcu-restrict-TREE_RCU-to-SMP-builds-with-PREE.patch
-> > patches/0002-sched-Add-warning-when-RT-throttling-is-activated.patch
-> > 
-> > Furthermore, I have added my kernel-config file, scripts, patches and
-> > logs (also output of 'cat /proc/cpuinfo').
-> > 
-> > Hope this helps the experts to narrow down the problem.
+>>> On 28.04.11 at 14:53, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> On Thu, Apr 28, 2011 at 01:07:07PM +0100, Jan Beulich wrote:
+>> >>> On 28.04.11 at 13:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> > On Thu, Apr 28, 2011 at 13:40, Jan Beulich <JBeulich@novell.com> wrote:
+>> >>>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+>> >>> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
+>> >>> That's odd. The kernel actually writes to it (sort_main_extable()), so
+>> >>> it shouldn't be in the ro data section, but the data section.
+>> >>
+>> >> This area does get written, but only at boot time, before read-only
+>> >> data gets set to r/o (on x86 at least). With this in mind, it's better
+>> >> to place it in .rodata, as that way run-time protection will be in place
+>> >> (and I think you agree that it was misplaced in .text in any case).
+>> > 
+>> > Which means it may be in ROM (which is really read-only) on some embedded
+>> > devices, so it cannot be sorted?
+>> 
+>> Perhaps - but since sorting is a requirement, people building such
+>> systems must have found a way... Anyway, I don't see where both
 > 
-> Yow!!!
+> Yes, we found a way on s390: we put the exception table in the data section.
 > 
-> Now this one might well be able to hit the 950 millisecond limit.
-> There are no fewer than 1,314,958 RCU callbacks queued up at the end of
-> the test.  And RCU has indeed noticed this and cranked up the number
-> of callbacks to be handled by each invocation of rcu_do_batch() to
-> 2,147,483,647.  And only 15 seconds earlier, there were zero callbacks
-> queued and the rcu_do_batch() limit was at the default of 10 callbacks
-> per invocation.
+>> your and Heiko's comment are heading, since the situation is even
+>> worse without the patch afaics (since .text gets marked read-only
+>> as much as .rodata does, and could equally be placed in ROM).
+> 
+> My point is that your default is wrong. If it makes sense to put the extable
+> into the rodata section then an architecture could do so. However making the
+> default to put data into the rodata section that is actually written to is
+> the wrong approach.
+> It just asks for breakage.
 
-Yeah, yow.  Once the RT throttle hit, it stuck.
+The patch doesn't make this the default - it just makes it possible
+for an architecture to do so.
 
-  .clock                         : 1386824.201768
-  .rt_nr_running                 : 2
-  .rt_throttled                  : 1
-  .rt_time                       : 950.132427
-  .rt_runtime                    : 950.000000
-           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
-FF    1      1 R    R 0 [rcuc0]
-  .clock                         : 1402450.997994
-  .rt_nr_running                 : 2
-  .rt_throttled                  : 1
-  .rt_time                       : 950.132427
-  .rt_runtime                    : 950.000000
-           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
-FF    1      1 R    R 0 [rcuc0]
-
-...
-
-  .clock                         : 2707432.862374
-  .rt_nr_running                 : 2
-  .rt_throttled                  : 1
-  .rt_time                       : 950.132427
-  .rt_runtime                    : 950.000000                                                                                              
-           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /                               
-FF    1      1 R    R 0 [rcuc0]
-  .clock                         : 2722572.958381                                                                                          
-  .rt_nr_running                 : 2
-  .rt_throttled                  : 1
-  .rt_time                       : 950.132427
-  .rt_runtime                    : 950.000000                                                                                              
-           rcuc0     7         0.034118     10857    98         0.034118      1472.309646         0.000000 /
-FF    1      1 R    R 0 [rcuc0]                                                                                                            
-
+Jan
 
