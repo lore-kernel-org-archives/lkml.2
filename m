@@ -1,124 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab1D1O6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 10:58:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58722 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932978Ab1D1O6h (ORCPT
+	id S933149Ab1D1O7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 10:59:30 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59311 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932882Ab1D1O72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 10:58:37 -0400
-Date: Thu, 28 Apr 2011 15:58:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Message-ID: <20110428145816.GR17290@n2100.arm.linux.org.uk>
-References: <201104212129.17013.arnd@arndb.de> <201104281629.52863.arnd@arndb.de> <20110428143440.GP17290@n2100.arm.linux.org.uk> <201104281640.00107.arnd@arndb.de>
+	Thu, 28 Apr 2011 10:59:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ursula Braun <ursula.braun@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] s390, net: convert into new cpumask api
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110429000104.3D5D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104281640.00107.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 28 Apr 2011 23:59:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 04:39:59PM +0200, Arnd Bergmann wrote:
-> On Thursday 28 April 2011, Russell King - ARM Linux wrote:
-> > On Thu, Apr 28, 2011 at 04:29:52PM +0200, Arnd Bergmann wrote:
-> > > Given that people still want to have an interface that does what I
-> > > though this one did, I guess we have two options:
-> > > 
-> > > * Kill off dma_cache_sync and replace it with calls to dma_sync_*
-> > >   so we can start using dma_alloc_noncoherent on ARM
-> > 
-> > I don't think this is an option as dma_sync_*() is part of the streaming
-> > DMA mapping API (dma_map_*) which participates in the idea of buffer
-> > ownership, which the noncoherent API doesn't appear to.
-> 
-> I thought the problem was in fact that the noncoherent API cannot be
-> implemented on architectures like ARM specifically because there is
-> no concept of buffer ownership. The obvious way to fix that would
-> be to redefine the API. What am I missing?
+Adapt new api.
 
-You are partially correct.  With the streaming interface, we're fairly
-strict with the buffer ownership stuff, as the most effective way to
-implement it across all our CPUs is to deal with the mapping, sync and
-unmapping in terms of buffers being passed from CPU control to DMA device
-control and back again.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ net/iucv/iucv.c |   70 +++++++++++++++++++++++++++---------------------------
+ 1 files changed, 35 insertions(+), 35 deletions(-)
 
-With the noncoherent interface, there is less of a buffer ownership idea.
-For instance, to read from a noncoherent buffer, the following is required
-(in order, I'm not considering the effects of weakly ordered stuff):
+diff --git a/net/iucv/iucv.c b/net/iucv/iucv.c
+index 8f156bd..79f2caf 100644
+--- a/net/iucv/iucv.c
++++ b/net/iucv/iucv.c
+@@ -128,8 +128,8 @@ struct iucv_irq_list {
+ };
+ 
+ static struct iucv_irq_data *iucv_irq_data[NR_CPUS];
+-static cpumask_t iucv_buffer_cpumask = CPU_MASK_NONE;
+-static cpumask_t iucv_irq_cpumask = CPU_MASK_NONE;
++static cpumask_t iucv_buffer_cpumask = { CPU_BITS_NONE };
++static cpumask_t iucv_irq_cpumask = { CPU_BITS_NONE };
+ 
+ /*
+  * Queue of interrupt buffers lock for delivery via the tasklet
+@@ -406,7 +406,7 @@ static void iucv_allow_cpu(void *data)
+ 	parm->set_mask.ipmask = 0xf8;
+ 	iucv_call_b2f0(IUCV_SETCONTROLMASK, parm);
+ 	/* Set indication that iucv interrupts are allowed for this cpu. */
+-	cpu_set(cpu, iucv_irq_cpumask);
++	cpumask_set_cpu(cpu, &iucv_irq_cpumask);
+ }
+ 
+ /**
+@@ -426,7 +426,7 @@ static void iucv_block_cpu(void *data)
+ 	iucv_call_b2f0(IUCV_SETMASK, parm);
+ 
+ 	/* Clear indication that iucv interrupts are allowed for this cpu. */
+-	cpu_clear(cpu, iucv_irq_cpumask);
++	cpumask_clear_cpu(cpu, &iucv_irq_cpumask);
+ }
+ 
+ /**
+@@ -451,7 +451,7 @@ static void iucv_block_cpu_almost(void *data)
+ 	iucv_call_b2f0(IUCV_SETCONTROLMASK, parm);
+ 
+ 	/* Clear indication that iucv interrupts are allowed for this cpu. */
+-	cpu_clear(cpu, iucv_irq_cpumask);
++	cpumask_clear_cpu(cpu, &iucv_irq_cpumask);
+ }
+ 
+ /**
+@@ -466,7 +466,7 @@ static void iucv_declare_cpu(void *data)
+ 	union iucv_param *parm;
+ 	int rc;
+ 
+-	if (cpu_isset(cpu, iucv_buffer_cpumask))
++	if (cpumask_test_cpu(cpu, &iucv_buffer_cpumask))
+ 		return;
+ 
+ 	/* Declare interrupt buffer. */
+@@ -499,9 +499,9 @@ static void iucv_declare_cpu(void *data)
+ 	}
+ 
+ 	/* Set indication that an iucv buffer exists for this cpu. */
+-	cpu_set(cpu, iucv_buffer_cpumask);
++	cpumask_set_cpu(cpu, &iucv_buffer_cpumask);
+ 
+-	if (iucv_nonsmp_handler == 0 || cpus_empty(iucv_irq_cpumask))
++	if (iucv_nonsmp_handler == 0 || cpumask_empty(&iucv_irq_cpumask))
+ 		/* Enable iucv interrupts on this cpu. */
+ 		iucv_allow_cpu(NULL);
+ 	else
+@@ -520,7 +520,7 @@ static void iucv_retrieve_cpu(void *data)
+ 	int cpu = smp_processor_id();
+ 	union iucv_param *parm;
+ 
+-	if (!cpu_isset(cpu, iucv_buffer_cpumask))
++	if (!cpumask_test_cpu(cpu, &iucv_buffer_cpumask))
+ 		return;
+ 
+ 	/* Block iucv interrupts. */
+@@ -531,7 +531,7 @@ static void iucv_retrieve_cpu(void *data)
+ 	iucv_call_b2f0(IUCV_RETRIEVE_BUFFER, parm);
+ 
+ 	/* Clear indication that an iucv buffer exists for this cpu. */
+-	cpu_clear(cpu, iucv_buffer_cpumask);
++	cpumask_clear_cpu(cpu, &iucv_buffer_cpumask);
+ }
+ 
+ /**
+@@ -546,8 +546,8 @@ static void iucv_setmask_mp(void)
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+ 		/* Enable all cpus with a declared buffer. */
+-		if (cpu_isset(cpu, iucv_buffer_cpumask) &&
+-		    !cpu_isset(cpu, iucv_irq_cpumask))
++		if (cpumask_test_cpu(cpu, &iucv_buffer_cpumask) &&
++		    !cpumask_test_cpu(cpu, &iucv_irq_cpumask))
+ 			smp_call_function_single(cpu, iucv_allow_cpu,
+ 						 NULL, 1);
+ 	put_online_cpus();
+@@ -564,9 +564,9 @@ static void iucv_setmask_up(void)
+ 	int cpu;
+ 
+ 	/* Disable all cpu but the first in cpu_irq_cpumask. */
+-	cpumask = iucv_irq_cpumask;
+-	cpu_clear(first_cpu(iucv_irq_cpumask), cpumask);
+-	for_each_cpu_mask_nr(cpu, cpumask)
++	cpumask_copy(&cpumask, &iucv_irq_cpumask);
++	cpumask_clear_cpu(cpumask_first(&iucv_irq_cpumask), &cpumask);
++	for_each_cpu(cpu, &cpumask)
+ 		smp_call_function_single(cpu, iucv_block_cpu, NULL, 1);
+ }
+ 
+@@ -593,7 +593,7 @@ static int iucv_enable(void)
+ 	rc = -EIO;
+ 	for_each_online_cpu(cpu)
+ 		smp_call_function_single(cpu, iucv_declare_cpu, NULL, 1);
+-	if (cpus_empty(iucv_buffer_cpumask))
++	if (cpumask_empty(&iucv_buffer_cpumask))
+ 		/* No cpu could declare an iucv buffer. */
+ 		goto out;
+ 	put_online_cpus();
+@@ -675,14 +675,14 @@ static int __cpuinit iucv_cpu_notify(struct notifier_block *self,
+ 	case CPU_DOWN_PREPARE_FROZEN:
+ 		if (!iucv_path_table)
+ 			break;
+-		cpumask = iucv_buffer_cpumask;
+-		cpu_clear(cpu, cpumask);
+-		if (cpus_empty(cpumask))
++		cpumask_copy(&cpumask, &iucv_buffer_cpumask);
++		cpumask_clear_cpu(cpu, &cpumask);
++		if (cpumask_empty(&cpumask))
+ 			/* Can't offline last IUCV enabled cpu. */
+ 			return notifier_from_errno(-EINVAL);
+ 		smp_call_function_single(cpu, iucv_retrieve_cpu, NULL, 1);
+-		if (cpus_empty(iucv_irq_cpumask))
+-			smp_call_function_single(first_cpu(iucv_buffer_cpumask),
++		if (cpumask_empty(&iucv_irq_cpumask))
++			smp_call_function_single(cpumask_first(&iucv_buffer_cpumask),
+ 						 iucv_allow_cpu, NULL, 1);
+ 		break;
+ 	}
+@@ -866,7 +866,7 @@ int iucv_path_accept(struct iucv_path *path, struct iucv_handler *handler,
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -915,7 +915,7 @@ int iucv_path_connect(struct iucv_path *path, struct iucv_handler *handler,
+ 
+ 	spin_lock_bh(&iucv_table_lock);
+ 	iucv_cleanup_queue();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -975,7 +975,7 @@ int iucv_path_quiesce(struct iucv_path *path, u8 userdata[16])
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1007,7 +1007,7 @@ int iucv_path_resume(struct iucv_path *path, u8 userdata[16])
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1036,7 +1036,7 @@ int iucv_path_sever(struct iucv_path *path, u8 userdata[16])
+ 	int rc;
+ 
+ 	preempt_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1070,7 +1070,7 @@ int iucv_message_purge(struct iucv_path *path, struct iucv_message *msg,
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1162,7 +1162,7 @@ int __iucv_message_receive(struct iucv_path *path, struct iucv_message *msg,
+ 	if (msg->flags & IUCV_IPRMDATA)
+ 		return iucv_message_receive_iprmdata(path, msg, flags,
+ 						     buffer, size, residual);
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1235,7 +1235,7 @@ int iucv_message_reject(struct iucv_path *path, struct iucv_message *msg)
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1274,7 +1274,7 @@ int iucv_message_reply(struct iucv_path *path, struct iucv_message *msg,
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1324,7 +1324,7 @@ int __iucv_message_send(struct iucv_path *path, struct iucv_message *msg,
+ 	union iucv_param *parm;
+ 	int rc;
+ 
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1411,7 +1411,7 @@ int iucv_message_send2way(struct iucv_path *path, struct iucv_message *msg,
+ 	int rc;
+ 
+ 	local_bh_disable();
+-	if (cpus_empty(iucv_buffer_cpumask)) {
++	if (cpumask_empty(&iucv_buffer_cpumask)) {
+ 		rc = -EIO;
+ 		goto out;
+ 	}
+@@ -1888,7 +1888,7 @@ static int iucv_pm_freeze(struct device *dev)
+ 	printk(KERN_WARNING "iucv_pm_freeze\n");
+ #endif
+ 	if (iucv_pm_state != IUCV_PM_FREEZING) {
+-		for_each_cpu_mask_nr(cpu, iucv_irq_cpumask)
++		for_each_cpu(cpu, &iucv_irq_cpumask)
+ 			smp_call_function_single(cpu, iucv_block_cpu_almost,
+ 						 NULL, 1);
+ 		cancel_work_sync(&iucv_work);
+@@ -1928,7 +1928,7 @@ static int iucv_pm_thaw(struct device *dev)
+ 		if (rc)
+ 			goto out;
+ 	}
+-	if (cpus_empty(iucv_irq_cpumask)) {
++	if (cpumask_empty(&iucv_irq_cpumask)) {
+ 		if (iucv_nonsmp_handler)
+ 			/* enable interrupts on one cpu */
+ 			iucv_allow_cpu(NULL);
+@@ -1961,7 +1961,7 @@ static int iucv_pm_restore(struct device *dev)
+ 		pr_warning("Suspending Linux did not completely close all IUCV "
+ 			"connections\n");
+ 	iucv_pm_state = IUCV_PM_RESTORING;
+-	if (cpus_empty(iucv_irq_cpumask)) {
++	if (cpumask_empty(&iucv_irq_cpumask)) {
+ 		rc = iucv_query_maxconn();
+ 		rc = iucv_enable();
+ 		if (rc)
+-- 
+1.7.3.1
 
-	/* dma happens, signalled complete */
-	dma_cache_invalidate(buffer, size);
-	/* cpu can now see up to date data */
-	message = *buffer;
 
-Unlike the streaming API, we don't need to hand the buffer back to the
-device before the CPU can repeat the above code sequence.
 
-If we want to write to a noncoherent buffer, then we need:
-
-	*buffer = value;
-	dma_cache_writeback(buffer, size);
-	/* dma can only now see new value */
-
-and again, the same thing applies.
-
-There is an additional problem lurking in amongst this though - a buffer
-which is both read and written by the CPU has to be extremely careful of
-cache writebacks - this for instance would not be legal:
-
-	*buffer = value;
-	...
-	/* dma from device */
-	dma_cache_invalidate(buffer, size);
-	message = *buffer;
-
-as it is not predictable whether we'll see 'value' or the DMA data - that
-depends on the relative ordering of the DMA writing to RAM vs the cache
-eviction of the CPU write.
-
-So, there is a kind of buffer ownership here:
-
-	/* cpu owns */
-	dma_cache_writeback(buffer, size);
-	/* dma owns */
-	dma_cache_invalidate(buffer, size);
-	/* cpu owns */
-
-but as shown above it doesn't need to be as strict as the streaming API.
-
-Also note that there's a problem lurking here with DMA cache line size:
-
-| int
-| dma_get_cache_alignment(void)
-| 
-| Returns the processor cache alignment.  This is the absolute minimum
-| alignment *and* width that you must observe when either mapping
-| memory or doing partial flushes.
-| 
-| Notes: This API may return a number *larger* than the actual cache
-| line, but it will guarantee that one or more cache lines fit exactly
-| into the width returned by this call.  It will also always be a power
-| of two for easy alignment.
-
-$ grep -L dma_get_cache_alignment $(grep dma_alloc_noncoherent drivers/ -lr)
-drivers/base/dma-mapping.c
-drivers/scsi/sgiwd93.c
-drivers/scsi/53c700.c
-drivers/net/au1000_eth.c
-drivers/net/sgiseeq.c
-drivers/net/lasi_82596.c
-drivers/video/au1200fb.c
-
-so we have a bunch of drivers which presumably don't take any notice of
-the DMA cache line size, which may be very important.  53c700 for instance
-aligns its buffers using L1_CACHE_ALIGN(), which may be smaller than
-what's actually required...
