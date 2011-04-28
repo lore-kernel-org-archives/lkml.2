@@ -1,90 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab1D1K0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:26:38 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47969 "EHLO e9.ny.us.ibm.com"
+	id S1759031Ab1D1K0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:26:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47111 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758937Ab1D1K00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:26:26 -0400
-Date: Thu, 28 Apr 2011 03:26:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
+	id S1758987Ab1D1K0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:26:45 -0400
+Date: Thu, 28 Apr 2011 11:26:40 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110428102609.GJ2135@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110426112756.GF4308@linux.vnet.ibm.com>
- <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home>
- <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
- <alpine.LFD.2.02.1104262314110.3323@ionos>
- <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home>
- <alpine.LFD.2.02.1104272351290.3323@ionos>
- <alpine.LFD.2.02.1104281051090.19095@ionos>
- <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC 1/8] Only isolate page we can handle
+Message-ID: <20110428102640.GQ4658@suse.de>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+ <1d9791f27df2341cb6750f5d6279b804151f57f9.1303833417.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1d9791f27df2341cb6750f5d6279b804151f57f9.1303833417.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 11:45:03AM +0200, Sedat Dilek wrote:
-> Hi,
+On Wed, Apr 27, 2011 at 01:25:18AM +0900, Minchan Kim wrote:
+> There are some places to isolate lru page and I believe
+> users of isolate_lru_page will be growing.
+> The purpose of them is each different so part of isolated pages
+> should put back to LRU, again.
 > 
-> not sure if my problem from linux-2.6-rcu.git#sedat.2011.04.23a is
-> related to the issue here.
+> The problem is when we put back the page into LRU,
+> we lose LRU ordering and the page is inserted at head of LRU list.
+> It makes unnecessary LRU churning so that vm can evict working set pages
+> rather than idle pages.
 > 
-> Just FYI:
-> I am here on a Pentium-M (uniprocessor aka UP) and still unsure if I
-> have the correct (optimal?) kernel-configs set.
+> This patch adds new filter mask when we isolate page in LRU.
+> So, we don't isolate pages if we can't handle it.
+> It could reduce LRU churning.
 > 
-> Paul gave me a script to collect RCU data and I enhanced it with
-> collecting SCHED data.
+> This patch shouldn't change old behavior.
+> It's just used by next patches.
 > 
-> In the above mentionned GIT branch I applied these two extra commits
-> (0001 requested by Paul and 0002 proposed by Thomas):
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/swap.h |    3 ++-
+>  mm/compaction.c      |    2 +-
+>  mm/memcontrol.c      |    2 +-
+>  mm/vmscan.c          |   26 ++++++++++++++++++++------
+>  4 files changed, 24 insertions(+), 9 deletions(-)
 > 
-> patches/0001-Revert-rcu-restrict-TREE_RCU-to-SMP-builds-with-PREE.patch
-> patches/0002-sched-Add-warning-when-RT-throttling-is-activated.patch
-> 
-> Furthermore, I have added my kernel-config file, scripts, patches and
-> logs (also output of 'cat /proc/cpuinfo').
-> 
-> Hope this helps the experts to narrow down the problem.
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 384eb5f..baef4ad 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -259,7 +259,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>  						unsigned int swappiness,
+>  						struct zone *zone,
+>  						unsigned long *nr_scanned);
+> -extern int __isolate_lru_page(struct page *page, int mode, int file);
+> +extern int __isolate_lru_page(struct page *page, int mode, int file,
+> +				int not_dirty, int not_mapped);
 
-Yow!!!
+bool? If you use bitmask later, it's not important though.
 
-Now this one might well be able to hit the 950 millisecond limit.
-There are no fewer than 1,314,958 RCU callbacks queued up at the end of
-the test.  And RCU has indeed noticed this and cranked up the number
-of callbacks to be handled by each invocation of rcu_do_batch() to
-2,147,483,647.  And only 15 seconds earlier, there were zero callbacks
-queued and the rcu_do_batch() limit was at the default of 10 callbacks
-per invocation.
-
-							Thanx, Paul
-
-> Regards,
-> - Sedat -
+>  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+>  extern int vm_swappiness;
+>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 021a296..dea32e3 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -335,7 +335,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  		}
+>  
+>  		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
+> +		if (__isolate_lru_page(page, ISOLATE_BOTH, 0, 0, 0) != 0)
+>  			continue;
+>  
+>  		VM_BUG_ON(PageTransCompound(page));
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c2776f1..471e7fd 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1193,7 +1193,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  			continue;
+>  
+>  		scan++;
+> -		ret = __isolate_lru_page(page, mode, file);
+> +		ret = __isolate_lru_page(page, mode, file, 0, 0);
+>  		switch (ret) {
+>  		case 0:
+>  			list_move(&page->lru, dst);
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index b3a569f..71d2da9 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -954,10 +954,13 @@ keep_lumpy:
+>   *
+>   * page:	page to consider
+>   * mode:	one of the LRU isolation modes defined above
+> - *
+> + * file:	page be on a file LRU
+> + * not_dirty:	page should be not dirty or not writeback
+> + * not_mapped:	page should be not mapped
+>   * returns 0 on success, -ve errno on failure.
+>   */
+> -int __isolate_lru_page(struct page *page, int mode, int file)
+> +int __isolate_lru_page(struct page *page, int mode, int file,
+> +				int not_dirty, int not_mapped)
+>  {
+>  	int ret = -EINVAL;
+>  
+> @@ -976,6 +979,12 @@ int __isolate_lru_page(struct page *page, int mode, int file)
+>  	if (mode != ISOLATE_BOTH && page_is_file_cache(page) != file)
+>  		return ret;
+>  
+> +	if (not_dirty)
+> +		if (PageDirty(page) || PageWriteback(page))
+> +			return ret;
+> +	if (not_mapped)
+> +		if (page_mapped(page))
+> +			return ret;
+>  	/*
+>  	 * When this function is being called for lumpy reclaim, we
+>  	 * initially look into all LRU pages, active, inactive and
+> @@ -1016,12 +1025,15 @@ int __isolate_lru_page(struct page *page, int mode, int file)
+>   * @order:	The caller's attempted allocation order
+>   * @mode:	One of the LRU isolation modes
+>   * @file:	True [1] if isolating file [!anon] pages
+> + * @not_dirty:	True [1] if isolating file [!dirty] pages
+> + * @not_mapped:	True [1] if isolating file [!mapped] pages
+>   *
+>   * returns how many pages were moved onto *@dst.
+>   */
+>  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  		struct list_head *src, struct list_head *dst,
+> -		unsigned long *scanned, int order, int mode, int file)
+> +		unsigned long *scanned, int order, int mode, int file,
+> +		int not_dirty, int not_mapped)
+>  {
+>  	unsigned long nr_taken = 0;
+>  	unsigned long nr_lumpy_taken = 0;
+> @@ -1041,7 +1053,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  
+>  		VM_BUG_ON(!PageLRU(page));
+>  
+> -		switch (__isolate_lru_page(page, mode, file)) {
+> +		switch (__isolate_lru_page(page, mode, file,
+> +					not_dirty, not_mapped)) {
+>  		case 0:
+>  			list_move(&page->lru, dst);
+>  			mem_cgroup_del_lru(page);
+> @@ -1100,7 +1113,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  			    !PageSwapCache(cursor_page))
+>  				break;
+>  
+> -			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> +			if (__isolate_lru_page(cursor_page, mode, file,
+> +					not_dirty, not_mapped) == 0) {
+>  				list_move(&cursor_page->lru, dst);
+>  				mem_cgroup_del_lru(cursor_page);
+>  				nr_taken += hpage_nr_pages(page);
+> @@ -1143,7 +1157,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
+>  	if (file)
+>  		lru += LRU_FILE;
+>  	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
+> -								mode, file);
+> +					mode, file, 0, 0);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.1
 > 
-> P.S.: I adapted the patch from [1] against
-> linux-2.6-rcu.git#sedat.2011.04.23a, but did not help here.
-> 
-> [1] http://lkml.org/lkml/2011/4/22/35
 
-
-
+-- 
+Mel Gorman
+SUSE Labs
