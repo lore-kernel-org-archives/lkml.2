@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068Ab1D1KfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:35:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34347 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab1D1KfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:35:10 -0400
-Date: Thu, 28 Apr 2011 11:35:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
-Message-ID: <20110428103505.GS4658@suse.de>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
- <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+	id S1759262Ab1D1Kfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:35:37 -0400
+Received: from mail-iy0-f198.google.com ([209.85.210.198]:46151 "EHLO
+	mail-iy0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab1D1Kfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:35:36 -0400
+X-Greylist: delayed 1882 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Apr 2011 06:35:36 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: dudl@cypress.com, rubini@cvml.unipv.it, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@google.com, micahc@google.com, dso@cypress.com,
+        chromium-os-reviews@chromium.org, vb+kernel@google.com,
+        msb@chromium.org, olofj@chromium.org
+X-Google-Appengine-App-Id: chromiumcodereview
+Message-ID: <90e6ba6e8adee93df104a1f7ad35@google.com>
+Date: Thu, 28 Apr 2011 10:04:13 +0000
+Subject: Update cyapa driver support MT type-A protocol, add cyapa_misc_dev
+ interface (issue6905092)
+From: dudl@cypress.com
+To: rubini@cvml.unipv.it, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@google.com, micahc@google.com, dudl@cypress.com, dso@cypress.com
+Cc: chromium-os-reviews@chromium.org, vb+kernel@google.com, msb@chromium.org,
+        olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 01:25:20AM +0900, Minchan Kim wrote:
-> In some __zone_reclaim case, we don't want to shrink mapped page.
-> Nonetheless, we have isolated mapped page and re-add it into
-> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
-> 
-> Of course, when we isolate the page, the page might be mapped but
-> when we try to migrate the page, the page would be not mapped.
-> So it could be migrated. But race is rare and although it happens,
-> it's no big deal.
-> 
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewers: rubini_ipvvis.unipv.it, dmitry.torokhov_gmail.com,  
+linux-input_vger.kernel.org, linux-kernel_vger.kernel.org,  
+olofj_dontusethisaddress, Micah C, dudl, dso_cypress.com,
 
-> index 71d2da9..e8d6190 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1147,7 +1147,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  
->  static unsigned long isolate_pages_global(unsigned long nr,
->  					struct list_head *dst,
-> -					unsigned long *scanned, int order,
-> +					unsigned long *scanned,
-> +					struct scan_control *sc,
->  					int mode, struct zone *z,
->  					int active, int file)
->  {
-> @@ -1156,8 +1157,8 @@ static unsigned long isolate_pages_global(unsigned long nr,
->  		lru += LRU_ACTIVE;
->  	if (file)
->  		lru += LRU_FILE;
-> -	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
-> -					mode, file, 0, 0);
-> +	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, sc->order,
-> +					mode, file, 0, !sc->may_unmap);
->  }
->  
+Description:
+Update cyapa driver support MT type-A protocol, add cyapa_misc_dev interface
 
-Why not take may_writepage into account for dirty pages?
 
->  /*
-> @@ -1407,7 +1408,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_to_scan,
-> -			&page_list, &nr_scanned, sc->order,
-> +			&page_list, &nr_scanned, sc,
->  			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
->  					ISOLATE_BOTH : ISOLATE_INACTIVE,
->  			zone, 0, file);
-> @@ -1531,7 +1532,7 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
->  	spin_lock_irq(&zone->lru_lock);
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_pages, &l_hold,
-> -						&pgscanned, sc->order,
-> +						&pgscanned, sc,
->  						ISOLATE_ACTIVE, zone,
->  						1, file);
->  		zone->pages_scanned += pgscanned;
-> -- 
-> 1.7.1
-> 
+Change-Id: I8c70391a581bd1f62803f25fe3a52589b56aeed7
+Signed-off-by: Du, Dudley <dudl@cypress.com>
 
--- 
-Mel Gorman
-SUSE Labs
+R=rubini@ipvvis.unipv.it,dmitry.torokhov@gmail.com,linux-input@vger.kernel.org,linux-kernel@vger.kernel.org,olofj@google.com,micahc@google.com,dudl@cypress.com,dso@cypress.com
+BUG=3220 6902105
+TEST=test on kaen board
+
+1. Remove codes that support relative report data, this mode is not  
+required for
+trackpad any more;
+2. Modify cyapa driver support MT type-A protocol working with multitouch X
+driver;
+3. Add cyapa_misc_dev interface, so applications can get driver, firmware  
+and
+hardware version of the trackpad device.
+
+
+Please review this at http://codereview.chromium.org/6905092/
+
+SVN Base: http://git.chromium.org/git/kernel-next.git@chromeos-2.6.38
+
+Affected files:
+   M drivers/input/mouse/cypress_i2c.c
+   M include/linux/cyapa.h
+
+
