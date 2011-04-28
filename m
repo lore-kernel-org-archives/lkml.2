@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab1D1Lgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 07:36:36 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33407 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab1D1Lgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 07:36:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=lZoWu1b90s8euT3HTyMqxmURq1O2/kb/Pds+c1L3uO//p5pg/VAy0f8nIKw0+ZTr3j
-         qXoquL2n4JhvWy3TqHq6gdQSgQqhQtF61M0PuqxhH0SFP+Coe9Zt4S4FiDn4raVOzEyL
-         l3uCHah5LNxBUGXZFP+uBII9UR/4Q9obh7RUM=
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: Colin Ian King <colin.king.lkml@gmail.com>
-Reply-To: colin.king@canonical.com
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1303934716.2583.22.camel@mulgrave.site>
-References: <1303920553.2583.7.camel@mulgrave.site>
-	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
-	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
-	 <1303925374-sup-7968@think>  <1303926637.2583.17.camel@mulgrave.site>
-	 <1303934716.2583.22.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Canonical
-Date: Thu, 28 Apr 2011 12:36:30 +0100
-Message-ID: <1303990590.2081.9.camel@lenovo>
+	id S1759491Ab1D1Ljr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 07:39:47 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:59164 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab1D1Ljq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:3>);
+	Thu, 28 Apr 2011 07:39:46 -0400
+Message-Id: <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 28 Apr 2011 12:40:58 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Heiko Carstens" <heiko.carstens@de.ibm.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-arch@vger.kernel.org>,
+        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] allow placing exception table in .rodata (and do
+	 so on  x86)
+References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
+ <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more data point to add, I've been looking at an identical issue when
-copying large amounts of data.  I bisected this - and the lockups occur
-with commit 
-3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
-issue. With this commit, my file copy test locks up after ~8-10
-iterations, before this commit I can copy > 100 times and don't see the
-lockup.
+>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
+>> This is since the table is really a set of pointers, i.e. misplaced in
+>> .text.
+>> 
+>> Quite likely other architectures would want to follow.
+>> 
+>> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+>> 
+> 
+> [...]
+> 
+>> --- 2.6.39-rc5/include/asm-generic/vmlinux.lds.h
+>> +++ 2.6.39-rc5-extable-in-rodata/include/asm-generic/vmlinux.lds.h
+>> @@ -226,6 +226,7 @@
+>>  		*(.rodata1)						\
+>>  	}								\
+>>  									\
+>> +	EXCEPTION_TABLE_RO						\
+> 
+> That's odd. The kernel actually writes to it (sort_main_extable()), so
+> it shouldn't be in the ro data section, but the data section.
 
-On Wed, 2011-04-27 at 15:05 -0500, James Bottomley wrote:
-> On Wed, 2011-04-27 at 12:50 -0500, James Bottomley wrote:
-> > To test the theory, Chris asked me to try with data=ordered.
-> > Unfortunately, the deadlock still shows up.  This is what I get.
+This area does get written, but only at boot time, before read-only
+data gets set to r/o (on x86 at least). With this in mind, it's better
+to place it in .rodata, as that way run-time protection will be in place
+(and I think you agree that it was misplaced in .text in any case).
+
+Jan
+
+>>  	JUMP_TABLE							\
 > 
-> As another data point: I'm trying the same kernel with CONFIG_PREEMPT
-> enabled.  This time the deadlock doesn't happen.  Instead, kswapd0 gets
-> pegged at 99% CPU for much of the untar, but it does eventually
-> complete.
-> 
-> James
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> same here.
+
 
 
