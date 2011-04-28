@@ -1,122 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992Ab1D1SfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:35:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35483 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab1D1SfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:35:11 -0400
-Date: Thu, 28 Apr 2011 20:34:34 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        linux-stable mlist <stable@kernel.org>,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>
-Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
-Message-ID: <20110428183434.GG30645@1wt.eu>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110428082625.GA23293@pcnci.linuxbox.cz>
-User-Agent: Mutt/1.4.2.3i
+	id S933339Ab1D1Shg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:37:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57011 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846Ab1D1She convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 14:37:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <1304002571.2101.38.camel@localhost.localdomain>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	<1303960136-14298-4-git-send-email-wad@chromium.org>
+	<20110428070636.GC952@elte.hu>
+	<1304002571.2101.38.camel@localhost.localdomain>
+Date: Thu, 28 Apr 2011 13:37:33 -0500
+Message-ID: <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
+Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
+ how it works.
+From: Will Drewry <wad@chromium.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
+        rostedt@goodmis.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nikola,
+On Thu, Apr 28, 2011 at 9:56 AM, Eric Paris <eparis@redhat.com> wrote:
+> On Thu, 2011-04-28 at 09:06 +0200, Ingo Molnar wrote:
+>> * Will Drewry <wad@chromium.org> wrote:
+>>
+>> > +A collection of filters may be supplied via prctl, and the current set of
+>> > +filters is exposed in /proc/<pid>/seccomp_filter.
+>> > +
+>> > +For instance,
+>> > +  const char filters[] =
+>> > +    "sys_read: (fd == 1) || (fd == 2)\n"
+>> > +    "sys_write: (fd == 0)\n"
+>> > +    "sys_exit: 1\n"
+>> > +    "sys_exit_group: 1\n"
+>> > +    "on_next_syscall: 1";
+>> > +  prctl(PR_SET_SECCOMP, 2, filters);
+>> > +
+>> > +This will setup system call filters for read, write, and exit where reading can
+>> > +be done only from fds 1 and 2 and writing to fd 0.  The "on_next_syscall" directive tells
+>> > +seccomp to not enforce the ruleset until after the next system call is run.  This allows
+>> > +for launchers to apply system call filters to a binary before executing it.
+>> > +
+>> > +Once enabled, the access may only be reduced.  For example, a set of filters may be:
+>> > +
+>> > +  sys_read: 1
+>> > +  sys_write: 1
+>> > +  sys_mmap: 1
+>> > +  sys_prctl: 1
+>> > +
+>> > +Then it may call the following to drop mmap access:
+>> > +  prctl(PR_SET_SECCOMP, 2, "sys_mmap: 0");
+>>
+>> Ok, color me thoroughly impressed
+>
+> Me too!
+>
+>> I've Cc:-ed Linus and Andrew: are you guys opposed to such flexible, dynamic
+>> filters conceptually? I think we should really think hard about the actual ABI
+>> as this could easily spread to more applications than Chrome/Chromium.
 
-On Thu, Apr 28, 2011 at 10:26:25AM +0200, Nikola Ciprich wrote:
-> Hello everybody,
-> 
-> I'm trying to solve strange issue, today, my fourth machine running 2.6.32.21 just crashed. What makes the cases similar, apart fromn same kernel version is that all boxes had very similar uptimes: 214, 216, 216, and 224 days. This might just be a coincidence, but I think this might be important.
+Would it make sense to start, as Frederic has pointed out, by using
+the existing ABI - system call numbers - and not system call names?
+We could leave name resolution to userspace as it is for all other
+system call consumers now.  It might leave the interface for this
+support looking more like:
+  prctl(PR_SET_SECCOMP, 2, _NR_mmap, "fd == 1");
+  prctl(PR_SET_SECCOMP_FILTER_APPLY, now|on_exec);
 
-Interestingly, one of our customers just had two machines who crashed
-yesterday after 212 days and 212+20h respectively. They were running
-debian's 2.6.32-bpo.5-amd64 which is based on 2.6.32.23 AIUI.
+which may be less of a dramatic ABI change to start with.
 
-The crash looks very similar to the following bug which we have updated :
+> I'll definitely port QEMU to use this new interface rather than my more
+> rigid flexible (haha "rigid flexible") seccomp.  I'll see if I run into
+> any issues with this ABI in that porting...
 
-   https://bugzilla.kernel.org/show_bug.cgi?id=16991
+Great - also let me know if you have a preference on the interface
+Frederic proposed, as it might reduce the parsing footprint and
+overall kernel-side complexity but add a little bit more burden on the
+userspace side.
 
-(bugzilla doesn't appear to respond as I'm posting this mail).
+>> Btw., i also think that such an approach is actually the sane(r) design to
+>> implement security modules: using such filters is far more flexible than the
+>> typical LSM approach of privileged user-space uploading various nasty objects
+>> into kernel space and implementing silly (and limited and intrusive) hooks
+>> there, like SElinux and the other security modules do.
+>
+> Then you are wrong.  There's no question that this interface can provide
+> great extensions to the current discretionary functionality provided by
+> legacy security controls but if you actually want to mediate what tasks
+> can do to other tasks or can do to arbitrary objects on the system this
+> doesn't cut it.  Every system call that takes or uses a structure as an
+> argument or that uses copy_from_user (for something other than just
+> unparsed data) is uncontrollable.
 
-The top of your ouput is missing. In our case as in the reports on the bug
-above, there was a divide by zero error. Did you happen to spot this one
-too, or do you just not know ? I observe "divide_error+0x15/0x20" in one
-of your reports, so it's possible that it matches the same pattern at least
-for one trace. Just in case, it would be nice to feed the bugzilla entry
-above.
+I think it'd take a fair amount of additional work to turn pure system
+call filtering into a robust policy engine (like systrace).  It seems
+to me that right now, it would just be a great addition to the
+existing LSM model by providing infrastructure the LSMs can use with
+their higher level logic.  (Plumbing in all the bits to understand the
+system call arguments completely and avoid time-of-check-time-of-use
+attacks would be a sizable undertaking - and that's without making
+sure the existing LSMs could live happily on top of it .)
 
-> Unfortunately I only have backtraces of two crashes (and those are trimmed, sorry), and they do not look as similar as I'd like, but still maybe there is something in common:
-> 
-> [<ffffffff81120cc7>] pollwake+0x57/0x60 
-> [<ffffffff81046720>] ? default_wake_function+0x0/0x10 
-> [<ffffffff8103683a>] __wake_up_common+0x5a/0x90 
-> [<ffffffff8103a313>] __wake_up+0x43/0x70 
-> [<ffffffffa0321573>] process_masterspan+0x643/0x670 [dahdi] 
-> [<ffffffffa0326595>] coretimer_func+0x135/0x1d0 [dahdi] 
-> [<ffffffff8105d74d>] run_timer_softirq+0x15d/0x320 
-> [<ffffffffa0326460>] ? coretimer_func+0x0/0x1d0 [dahdi] 
-> [<ffffffff8105690c>] __do_softirq+0xcc/0x220 
-> [<ffffffff8100c40c>] call_softirq+0x1c/0x30 
-> [<ffffffff8100e3ba>] do_softirq+0x4a/0x80 
-> [<ffffffff810567c7>] irq_exit+0x87/0x90 
-> [<ffffffff8100d7b7>] do_IRQ+0x77/0xf0 
-> [<ffffffff8100bc53>] ret_from_intr+0x0/Oxa 
-> <EUI> [<ffffffffa019e556>] ? acpi_idle_enter_bm+0x273/0x2a1 [processor] 
-> [<ffffffffa019e54c>] ? acpi_idle_enter_bm+0x269/0x2a1 [processor] 
-> [<ffffffff81280095>] ? cpuidle_idle_call+0xa5/0x150 
-> [<ffffffff8100a18f>] ? cpu_idle+0x4f/0x90 
-> [<ffffffff81323c95>] ? rest_init+0x75/0x80 
-> [<ffffffff81582d7f>] ? start_kernel+0x2ef/0x390 
-> [<ffffffff81582271>] ? x86_64_start_reservations+0x81/0xc0 
-> [<ffffffff81582386>] ? x86_64_start_kernel+0xd6/0x100 
-> 
-> this box (actually two of the crashed ones) is using dahdi_dummy module to generate timing for asterisk SW pbx, so maybe it's related to it.
-> 
-> 
-> [<ffffffff810a5063>] handle_IRQ_event+0x63/0x1c0
-> [<ffffffff810a71ae>] handle_edge_irq+0xce/0x160
-> [<ffffffff8100e1bf>] handle_irq+0x1f/0x30                                                                                                                                              
-> [<ffffffff8100d7ae>] do_IRQ+0x6e/0xf0
-> [<ffffffff8100bc53>] ret_from_intr+0x0/Oxa
-> <EUI> [<ffffffff8133?f?f>] ? _spin_un1ock_irq+0xf/0x40
-> [<ffffffff81337f79>] ? _spin_un1ock_irq+0x9/0x40
-> [<ffffffff81064b9a>] ? exit_signals+0x8a/0x130
-> [<ffffffff8105372e>] ? do_exit+0x7e/0x7d0
-> [<ffffffff8100f8a7>] ? oops_end+0xa7/0xb0
-> [<ffffffff8100faa6>] ? die+0x56/0x90
-> [<ffffffff8100c810>] ? do_trap+0x130/0x150
-> [<ffffffff8100ccca>] ? do_divide_error+0x8a/0xa0
-> [<ffffffff8103d227>] ? find_busiest_group+0x3d7/0xa00
-> [<ffffffff8104400b>] ? cpuacct_charge+0x6b/0x90
-> [<ffffffff8100c045>] ? divide_error+0x15/0x20
-> [<ffffffff8103d227>] ? find_busiest_group+0x3d7/0xa00
-> [<ffffffff8103cfff>] ? find_busiest_group+0x1af/0xa00
-> [<ffffffff81335483>] ? thread_return+0x4ce/0x7bb
-> [<ffffffff8133bec5>] ? do_nanosleep+0x75/0x30
-> [<ffffffff810?1?4e>] ? hrtimer_nanosleep+0x9e/0x120
-> [<ffffffff810?08f0>] ? hrtimer_wakeup+0x0/0x30
-> [<ffffffff810?183f>] ? sys_nanosleep+0x6f/0x80
-> 
-> another two don't use it. only similarity I see here is that it seems to be IRQ handling related, but both issues don't have anything in common.
-> Does anybody have an idea on where should I look? Of course I should update all those boxes to (at least) latest 2.6.32.x, and I'll do it for sure, but still I'd first like to know where the problem was, and if it has been fixed, or how to fix it...
-> I'd be gratefull for any help...
+> This approach is great and with careful coding of userspace apps can be
+> made very useful in constraining those apps, but a replacement for
+> mandatory access control it is not.
+>
+>> This approach also has the ability to become recursive (gets inherited by child
+>> tasks, which could add their own filters) and unprivileged - unlike LSMs.
+>
+> LSMs have that ability.  There's nothing to prevent a module loading
+> service to allow unpriv applications to further constrain themselves.
+> It's just the different between DAC and MAC.  You are clearly a DAC guy,
+> and there is no question this change is great in that mindset,  but you
+> don't seem to understand either the flexibility of the LSM or the
+> purpose of some of the modules implemented on top of the LSM.
+>
+>> I like this *a lot* more than any security sandboxing approach i've seen
+>> before.
+>
+> I like this *a lot*.  It will be a HUGE addition to the security
+> sandboxing approaches I've seen before.
 
-There were quite a bunch of scheduler updates recently. We may be lucky and
-hope for the bug to have vanished with the changes, but we may as well see
-the same crash in 7 months :-/
-
-My coworker Hervé (CC'd) who worked on the issue suggests that we might have
-something which goes wrong past a certain uptime (eg: 212 days), which needs
-a special event to be triggered (I/O, process exiting, etc...). I think this
-makes quite some sense.
-
-Could you check your CONFIG_HZ so that we could convert those uptimes to
-jiffies ? Maybe this will ring a bell in someone's head :-/
-
-Best regards,
-Willy
-
+Thanks!
+will
