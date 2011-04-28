@@ -1,73 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab1D1WKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 18:10:50 -0400
-Received: from leopard.mail.utk.edu ([160.36.0.85]:47111 "EHLO
-	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab1D1WKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 18:10:49 -0400
-Date: Thu, 28 Apr 2011 18:10:13 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-In-Reply-To: <20110427064342.GE17079@elte.hu>
-Message-ID: <alpine.DEB.2.00.1104281801350.25779@cl320.eecs.utk.edu>
-References: <1303407662-15564-1-git-send-email-acme@infradead.org> <1303407662-15564-2-git-send-email-acme@infradead.org> <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu> <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
- <1303809958.20212.219.camel@twins> <alpine.DEB.2.00.1104261617320.32482@cl320.eecs.utk.edu> <20110427064342.GE17079@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933530Ab1D1WM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 18:12:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33704 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932294Ab1D1WM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 18:12:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] [PATCH/RFC] MMC: remove unbalanced pm_runtime_suspend()
+Date: Fri, 29 Apr 2011 00:12:48 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
+        Magnus Damm <damm@opensource.se>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1104221709030.1791-100000@iolanthe.rowland.org> <201104230011.48073.rjw@sisk.pl> <201104251229.27263.rjw@sisk.pl>
+In-Reply-To: <201104251229.27263.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104290012.48800.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011, Ingo Molnar wrote:
-
+On Monday, April 25, 2011, Rafael J. Wysocki wrote:
+> On Saturday, April 23, 2011, Rafael J. Wysocki wrote:
+> > On Friday, April 22, 2011, Alan Stern wrote:
+> > > On Fri, 22 Apr 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > > The barrier would not prevent the race between the notifier and runtie PM
+> > > > > from taking place.  Why don't we do something like this instead:
+> > > > > 
+> > > > > ---
+> > > > >  drivers/base/dd.c |    3 ++-
+> > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > > > 
+> > > > > Index: linux-2.6/drivers/base/dd.c
+> > > > > ===================================================================
+> > > > > --- linux-2.6.orig/drivers/base/dd.c
+> > > > > +++ linux-2.6/drivers/base/dd.c
+> > > > > @@ -326,6 +326,8 @@ static void __device_release_driver(stru
+> > > > >  						     BUS_NOTIFY_UNBIND_DRIVER,
+> > > > >  						     dev);
+> > > > >  
+> > > > > +		pm_runtime_put_sync(dev);
+> > > > > +
+> > > > 
+> > > > In fact, I think this one may be _noidle.  If we allow the bus/driver
+> > > > to do what they wont, we might as well let them handle the "device idle"
+> > > > case from ->remove().
+> > > 
+> > > Maybe...  But keeping it put_sync doesn't do any harm.  In Guennadi's 
+> > > case, it might allow him to get rid of the pm_runtime_suspend() call in 
+> > > the remove routine.
+> > > 
+> > > > >  		if (dev->bus && dev->bus->remove)
+> > > > >  			dev->bus->remove(dev);
+> > > > >  		else if (drv->remove)
+> > > > > @@ -338,7 +340,6 @@ static void __device_release_driver(stru
+> > > > >  						     BUS_NOTIFY_UNBOUND_DRIVER,
+> > > > >  						     dev);
+> > > > >  
+> > > > > -		pm_runtime_put_sync(dev);
+> > > > >  	}
+> > > > >  }
+> > > 
+> > > Basically this is okay with me, and it should allow Guennadi to avoid
+> > > the extra put/get pair.
+> > 
+> > OK, so I'm going to put the appended patch into my linux-next branch
+> > (hopefully, the problem is explained sufficiently in the changelog).
 > 
-> Erm, that assumes you already know that magic incantation. Most of the users 
-> who want to do measurements and profiling do not know that. So there's little 
-> difference between:
+> I thought about that a bit more and came to the conclusion that we should
+> do things a bit differently in __device_release_driver().  Namely, the fact
+> that the device can be resumed (either synchronously or asynchronously) after
+> the pm_runtime_barrier() has returned may be problematic too, because it
+> may race with the bus notifier in some cases.  For this reason, I think it
+> would be better to do pm_runtime_get_sync() instead of the
+> pm_runtime_get_noresume() and pm_runtime_barrier().
 > 
->  - someone shows them the 0x53cf28 magic code
->  - someone shows them the L2_IFETCH:BOTH_CORES magic symbol
+> So, I think the appended patch would be better than the previous one.
+
+Well, there haven't been any objections, so I'm adding the patch below
+to my linux-next branch.
+
+Thanks,
+Rafael
+
+
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Runtime: Rework runtime PM handling during driver removal
 > 
-> So you while hexa values have like 10% utility, the stupid, vendor-specific 
-> event names you are pushing here have like 15% utility.
+> The driver core tries to prevent race conditions between runtime PM
+> and driver removal from happening by incrementing the runtime PM
+> usage counter of the device and executing pm_runtime_barrier() before
+> running the bus notifier and the ->remove() callbacks provided by the
+> device's subsystem or driver.  This guarantees that, if a future
+> runtime suspend of the device has been scheduled or a runtime resume
+> or idle request has been queued up right before the driver removal,
+> it will be canceled or waited for to complete and no other
+> asynchronous runtime suspend or idle requests for the device will be
+> put into the PM workqueue until the ->remove() callback returns.
+> However, it doesn't prevent resume requests from being queued up
+> after pm_runtime_barrier() has been called and it doesn't prevent
+> pm_runtime_resume() from executing the device subsystem's runtime
+> resume callback.  Morever, it prevents the device's subsystem or
+> driver from putting the device into the suspended state by calling
+> pm_runtime_suspend() from its ->remove() routine.  This turns out to
+> be a major inconvenience for some subsystems and drivers that want to
+> leave the devices they handle in the suspended state.
 > 
-> In perf we are aiming for 100% utility, where if someone knows something about 
-> CPUs and can type 'cycles', 'instructions' or 'branches', will get the obvious 
-> result.
+> To really prevent runtime PM callbacks from racing with the bus
+> notifier callback in __device_release_driver(), which is necessary,
+> because the notifier is used by some subsystems to carry out
+> operations affecting the runtime PM functionality, use
+> pm_runtime_get_sync() instead of the combination of
+> pm_runtime_get_noresume() and pm_runtime_barrier().  This will resume
+> the device if it's in the suspended state and will prevent it from
+> being suspended again until pm_runtime_put_*() is called.
 > 
-> This is not a difficult usability concept really.
-
-yes, and this functionality belongs in the perf tool itself (or some other 
-user tool, like libpfm4, or PAPI).  Not in the kernel.
-
-How much larger are you willing to make the kernel to hold your 
-generalized events?  PAPI has at least 128 that people have found useful 
-enough to add over the years.  There are probably more.
-
-I notice the kernel doesn't have any FP or SSE/Vector counts yet.  Or 
-uops.  Or hw-interrupt counts.  Fused multiply-add?  
-How about GPU counters (PAPI is starting to support these)?  Network 
-counters?  Infiniband?
-
-You're being lazy and pushing "perf" functionality into the kernel.  It 
-belongs in userspace.  
-
-It's not the kernel's job to make things easy for users.  Its job is to 
-make things possible, and get out of the way.
-
-It's already bad enough that your generalized events can change from 
-kernel version to kernel version without warning.  By being in the kernel, 
-aren't they a stable ABI that can't be changed?
-
-Vince
+> To allow subsystems and drivers to put devices into the suspended
+> state by calling pm_runtime_suspend() from their ->remove() routines,
+> execute pm_runtime_put_sync() after running the bus notifier in
+> __device_release_driver().  This will require subsystems and drivers
+> to make their ->remove() callbacks avoid races with runtime PM
+> directly, but it will allow of more flexibility in the handling of
+> devices during the removal of their drivers.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/dd.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/drivers/base/dd.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/dd.c
+> +++ linux-2.6/drivers/base/dd.c
+> @@ -316,8 +316,7 @@ static void __device_release_driver(stru
+>  
+>  	drv = dev->driver;
+>  	if (drv) {
+> -		pm_runtime_get_noresume(dev);
+> -		pm_runtime_barrier(dev);
+> +		pm_runtime_get_sync(dev);
+>  
+>  		driver_sysfs_remove(dev);
+>  
+> @@ -326,6 +325,8 @@ static void __device_release_driver(stru
+>  						     BUS_NOTIFY_UNBIND_DRIVER,
+>  						     dev);
+>  
+> +		pm_runtime_put_sync(dev);
+> +
+>  		if (dev->bus && dev->bus->remove)
+>  			dev->bus->remove(dev);
+>  		else if (drv->remove)
+> @@ -338,7 +339,6 @@ static void __device_release_driver(stru
+>  						     BUS_NOTIFY_UNBOUND_DRIVER,
+>  						     dev);
+>  
+> -		pm_runtime_put_sync(dev);
+>  	}
+>  }
+>  
