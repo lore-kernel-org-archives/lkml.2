@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760428Ab1D1OHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 10:07:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56550 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760397Ab1D1OH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 10:07:29 -0400
-Date: Thu, 28 Apr 2011 15:07:25 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: colin.king@canonical.com, James Bottomley <James.Bottomley@suse.de>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-Message-ID: <20110428140725.GX4658@suse.de>
-References: <1303920553.2583.7.camel@mulgrave.site>
- <1303921583-sup-4021@think>
- <1303923000.2583.8.camel@mulgrave.site>
- <1303923177-sup-2603@think>
- <1303924902.2583.13.camel@mulgrave.site>
- <1303925374-sup-7968@think>
- <1303926637.2583.17.camel@mulgrave.site>
- <1303934716.2583.22.camel@mulgrave.site>
- <1303990590.2081.9.camel@lenovo>
- <20110428135228.GC1696@quack.suse.cz>
+	id S1760425Ab1D1ONl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 10:13:41 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58284 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759730Ab1D1ONk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 10:13:40 -0400
+Date: Thu, 28 Apr 2011 10:13:39 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, <gregkh@suse.de>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        <balbi@ti.com>, "'USB list'" <linux-usb@vger.kernel.org>,
+        "'Kernel development list'" <linux-kernel@vger.kernel.org>,
+        "'Matthew Wilcox'" <matthew.r.wilcox@intel.com>
+Subject: RE: [RFC/PATCH v3 2/5] uas: MS UAS Gadget driver - Infrastructure
+In-Reply-To: <002701cc0568$cac33470$60499d50$@org>
+Message-ID: <Pine.LNX.4.44L0.1104281007120.2108-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110428135228.GC1696@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 03:52:28PM +0200, Jan Kara wrote:
-> On Thu 28-04-11 12:36:30, Colin Ian King wrote:
-> > One more data point to add, I've been looking at an identical issue when
-> > copying large amounts of data.  I bisected this - and the lockups occur
-> > with commit 
-> > 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
-> > issue. With this commit, my file copy test locks up after ~8-10
-> > iterations, before this commit I can copy > 100 times and don't see the
-> > lockup.
->   Adding Mel to CC, I guess he'll be interested. Mel, it seems this commit
-> of yours causes kswapd on non-preempt kernels spin for a *long* time...
-> 
+On Thu, 28 Apr 2011, Tanya Brokhman wrote:
 
-I'm still thinking about the traces which do not point the finger
-directly at compaction per-se but it's possible that the change means
-kswapd is not reclaiming like it should be.
+> Thank you very much for you inputs and help! I'm not familiar with the SCSI
+> Target framework Christoph referred me too so I postponed looking into that
+> until the driver is stable. Well, I guess that time has come so I'll switch
+> over to studying that and applying it to the UAS gadget driver.
 
-To test this theory, does applying
-[d527caf2: mm: compaction: prevent kswapd compacting memory to reduce
-CPU usage] help?
+I'm not familiar with that framework either, so if you find any good
+introductory documentation (other than the files in
+Documentation/target) please post a link to it.  Nicholas Bellinger is
+very willing to answer questions.
 
--- 
-Mel Gorman
-SUSE Labs
+Alan Stern
+
