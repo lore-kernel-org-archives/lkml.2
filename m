@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab1D1Asr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:48:47 -0400
-Received: from kroah.org ([198.145.64.141]:59241 "EHLO coco.kroah.org"
+	id S1756794Ab1D1A5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:57:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36090 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab1D1Asf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:48:35 -0400
-Date: Wed, 27 Apr 2011 17:28:17 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-Message-ID: <20110428002817.GE14294@kroah.com>
-References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <20110426232843.GA31184@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751574Ab1D1A5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 20:57:22 -0400
+Date: Thu, 28 Apr 2011 10:56:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the ux500-core tree
+Message-Id: <20110428105634.7a98c094.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__28_Apr_2011_10_56_34_+1000_kOV_.WGjVOvQbJ/z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 01:54:02AM +0000, KY Srinivasan wrote:
-> > After that, do you want another round of review of the code, or do
-> > you have more things you want to send in (like the name[64] removal?)
-> 
-> I would prefer that we go through the  review process. What is the process for
-> this review?
+--Signature=_Thu__28_Apr_2011_10_56_34_+1000_kOV_.WGjVOvQbJ/z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The same as always, just ask.
+Hi Linus,
 
-> Is there a time window for people to respond.
+After merging the ux500-core tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-No.  We don't have time limits here, this is a community, we don't have
-deadlines, you know that.
+drivers/video/via/via-gpio.c:148: error: 'gpio_config' redeclared as differ=
+ent kind of symbol
+include/asm-generic/gpio.h:164: note: previous declaration of 'gpio_config'=
+ was here
 
-> I am hoping I will be able to address all the review comments well in
-> advance of the  next closing of the tree, with the hope of taking the
-> vmbus driver out of staging this go around (hope springs eternal in
-> the human breast ...)! 
+Caused by commit cf451708d300 ("gpio: add a custom configuration
+mechanism to gpiolib").
 
-Yes, it would be nice, and I understand your the corporate pressures you
-are under to get this done, and I am doing my best to fit the patch
-review and apply cycle into my very-very-limited-at-the-moment spare
-time.
+I have used the ux500-core tree from next-20110427 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-As always, if you miss this kernel release, there's always another one 3
-months away, so it's no big deal in the long-run.
+--Signature=_Thu__28_Apr_2011_10_56_34_+1000_kOV_.WGjVOvQbJ/z
+Content-Type: application/pgp-signature
 
-thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-greg k-h
+iQEcBAEBAgAGBQJNuLtCAAoJEDMEi1NhKgbsq/QH+wU8lM1GMcKpnyKn4ym10lK8
+OPfCXiW7ToFFwDYPF/QbXMVWfMKoQnJTh5ZrpNOlkb5KhHB8R1QmKhsg5JsPuuyr
+9fAUhHa7Z4iplOpCNCbdK9X1x1OM9bCd+adHPp8oL10PXoIH3M7e/O9zr5lvVptu
++DF3ksMXCZeCjTWW4xq+Wz5tmA01g6WdCBctL5Ldk/krwatZsE+YUgemab4HTudf
+siASe+sK4i6UWdvtfpQj1xKa9UtsS28iHFvPmgREABHDl6HdeJ2Qn2doh24TIuth
+a1WDpYEC2SENzsdq2Iq6D8ggFlYCmD8RJBDnxfuiYWoMfp5jftHzzizYVVURZIE=
+=Pg0x
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Apr_2011_10_56_34_+1000_kOV_.WGjVOvQbJ/z--
