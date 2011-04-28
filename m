@@ -1,47 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959Ab1D1TKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 15:10:31 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34868 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab1D1TKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 15:10:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ksplice.com; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dZjBRs6l0/RY10KJtbLUXMXJFCjPnhKJrDEu5gmpz4kPyH68Pvi7HX79gpN1OnAGek
-         GhdXVec50E9EDIlzf5fV6sPJpVVWzDqoTgbExz9BvYEvE/C1oipwe7vfii+8ka5QwfNx
-         rlrach1F5g7UrCx5/rnjvJK7jNmUjrAvYabsM=
+	id S933425Ab1D1TVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 15:21:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39456 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932780Ab1D1TVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 15:21:08 -0400
+Date: Thu, 28 Apr 2011 20:21:04 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110428192104.GA4658@suse.de>
+References: <1303990590.2081.9.camel@lenovo>
+ <20110428135228.GC1696@quack.suse.cz>
+ <20110428140725.GX4658@suse.de>
+ <1304000714.2598.0.camel@mulgrave.site>
+ <20110428150827.GY4658@suse.de>
+ <1304006499.2598.5.camel@mulgrave.site>
+ <1304009438.2598.9.camel@mulgrave.site>
+ <1304009778.2598.10.camel@mulgrave.site>
+ <20110428171826.GZ4658@suse.de>
+ <1304015436.2598.19.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <20110428184234.GB2559@redhat.com>
-References: <alpine.DEB.2.02.1104281346060.14343@dr-wily.mit.edu>
-	<20110428184234.GB2559@redhat.com>
-Date: Thu, 28 Apr 2011 15:10:27 -0400
-Message-ID: <BANLkTikG6atUB1mE8UF8Ew4ustb1gfFEjA@mail.gmail.com>
-Subject: Re: [PATCH] jump label: Fix jump_label_text_reserved
-From: Anders Kaseorg <andersk@ksplice.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1304015436.2598.19.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 14:42, Jason Baron <jbaron@redhat.com> wrote:
-> This is fixed in the jump label re-write patch, which is queued for
-> 2.6.40 in the -tip tree. See: http://marc.info/?l=linux-kernel&m=130391786701337&w=2
+On Thu, Apr 28, 2011 at 01:30:36PM -0500, James Bottomley wrote:
+> On Thu, 2011-04-28 at 18:18 +0100, Mel Gorman wrote:
+> > On Thu, Apr 28, 2011 at 11:56:17AM -0500, James Bottomley wrote:
+> > > # Events: 6K cycles
+> > > #
+> > > # Overhead      Command        Shared Object                                   Symbol
+> > > # ........  ...........  ...................  .......................................
+> > > #
+> > >     20.41%      kswapd0  [kernel.kallsyms]    [k] shrink_slab
+> > >                 |
+> > >                 --- shrink_slab
+> > >                    |          
+> > >                    |--99.91%-- kswapd
+> > >                    |          kthread
+> > >                    |          kernel_thread_helper
+> > >                     --0.09%-- [...]
+> > > 
+> > 
+> > Ok. I can't see how the patch "mm: vmscan: reclaim order-0 and use
+> > compaction instead of lumpy reclaim" is related unless we are seeing
+> > two problems that happen to manifest in a similar manner.
+> > 
+> > However, there were a number of changes made to dcache in particular
+> > for 2.6.38. Specifically thinks like dentry_kill use trylock and is
+> > happy to loop around if it fails to acquire anything. See things like
+> > this for example;
+> 
+> OK, so for this, I tried a 2.6.37 kernel.  It doesn't work very well,
+> networking is hosed for no reason I can see (probably systemd / cgroups
+> problems).
+> 
+> However, it runs enough for me to say that the tar proceeds to
+> completion in a non-PREEMPT kernel.  (I tried several times for good
+> measure).  That makes this definitely a regression of some sort, but it
+> doesn't definitively identify the dcache code ... it could be an ext4
+> bug that got introduced in 2.6.38 either.
+> 
 
-Okay.  It would be nice if the bug fixes had been separated out into
-commits that could be picked onto the -stable kernels.  Should I send
-my patch to stable@kernel.org?
+True, it could be any shrinker and dcache is just a guess.
 
-> I believe only kprobes is relying on this check. Did you hit this in
-> practive using kprobes?
+> > <SNIP>
+> > 
+> > Way hey, cgroups are also in the mix. How jolly.
+> > 
+> > Is systemd a common element of the machines hitting this bug by any
+> > chance?
+> 
+> Well, yes, the bug report is against FC15, which needs cgroups for
+> systemd.
+> 
 
-Ksplice needs this check too.
+Ok although we do not have direct evidence that it's the problem yet. A
+broken shrinker could just mean we are also trying to aggressively
+reclaim in cgroups.
 
-Anders
+> > The remaining traces seem to be follow-on damage related to the three
+> > issues of "shrinkers are bust in some manner" causing "we are not
+> > getting over the min watermark" and as a side-show "we are spending lots
+> > of time doing something unspecified but unhelpful in cgroups".
+> 
+> Heh, well find a way for me to verify this: I can't turn off cgroups
+> because systemd then won't work and the machine won't boot ...
+> 
+
+Same testcase, same kernel but a distro that is not using systemd to
+verify if cgroups are the problem. Not ideal I know. When I'm back
+online Tuesday, I'll try reproducing this on a !Fedora distribution. In
+the meantime, the following untested hatchet job might spit out
+which shrinker we are getting stuck in. It is also breaking out of
+the shrink_slab loop so it'd even be interesting to see if the bug
+is mitigated in any way.
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c74a501..ed99104 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -225,6 +225,7 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ {
+ 	struct shrinker *shrinker;
+ 	unsigned long ret = 0;
++	unsigned long shrink_expired = jiffies + HZ;
+ 
+ 	if (scanned == 0)
+ 		scanned = SWAP_CLUSTER_MAX;
+@@ -270,6 +271,14 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 								gfp_mask);
+ 			if (shrink_ret == -1)
+ 				break;
++			if (time_after(jiffies, shrink_expired)) {
++				printk(KERN_WARNING "Slab shrinker %p gone mental"
++						" comm=%s nr=%ld\n",
++					shrinker->shrink,
++					current->comm,
++					shrinker->nr);
++				break;
++			}
+ 			if (shrink_ret < nr_before)
+ 				ret += nr_before - shrink_ret;
+ 			count_vm_events(SLABS_SCANNED, this_scan);
