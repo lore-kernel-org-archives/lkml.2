@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab1D1K2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:28:25 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:39861 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754886Ab1D1K2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:28:24 -0400
-Message-ID: <4DB94122.9010203@nokia.com>
-Date: Thu, 28 Apr 2011 13:27:46 +0300
-From: Sakari Ailus <sakari.ailus@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.18) Gecko/20110320 SeaMonkey/2.0.13
+	id S1759043Ab1D1Kao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:30:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59506 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1D1Kam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:30:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=dkjpwKdCjmEn3QLsb6KSP1BnL37iuVyZvZzY1aad+L6sFWBvsCAsfCPxKA3m6ny63N
+         lV43GwWE78gbIt0DLmHK/jIj1U0ieyFoH3zQ2O+uxc7wvOr4Q0+LY+EAGI39KnETXvEO
+         pv8l7TH2NvSBRvZfPQ/aPOVa7dh5I7OFO9URw=
+Date: Thu, 28 Apr 2011 12:30:36 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
+Message-ID: <20110428103036.GB10721@htj.dyndns.org>
+References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
+ <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com>
+ <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
+ <201104172135.40189.arnd@arndb.de>
+ <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
+ <20110426131132.GG878@htj.dyndns.org>
+ <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: kalle.jokiniemi@nokia.com, lrg@slimlogic.co.uk, mchehab@infradead.org,
-        svarbatov@mm-sol.com, saaguirre@ti.com, grosikopulos@mm-sol.com,
-        vimarsh.zutshi@nokia.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, laurent.pinchart@ideasonboard.com
-Subject: Re: [RFC] Regulator state after regulator_get
-References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com> <4DB9348D.7000501@nokia.com> <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com> <20110428102009.GB14494@opensource.wolfsonmicro.com>
-In-Reply-To: <20110428102009.GB14494@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Thu, Apr 28, 2011 at 09:44:10AM +0000, kalle.jokiniemi@nokia.com wrote:
+Hello,
+
+On Thu, Apr 28, 2011 at 01:51:34AM +0200, Thilo-Alexander Ginkel wrote:
+> Well, I get your point. ;-) Maybe this fact can help as a motivator: I
+> ran some further tests and while -rc3 seems to be ok (and survived 100
+> suspend/resume cycles), the issue strangely seems to be back with -rc4
+> (the softlockup call stack that I can see is identical to the photos
+> below; the lockup happened after only two cycles).
 > 
->>  > Another alternative to the first option you proposed could be to add a
->>  > flags field to regulator_consumer_supply, and use a flag to recognise
->>  > regulators which need to be disabled during initialisation. The flag
->>  > could be set by using a new macro e.g. REGULATOR_SUPPLY_NASTY() when
->>  > defining the regulator.
+> > Before I go ahead and try that, do you happen to have softlockup dump?
+> > ie. stack traces of the stuck tasks?  I can't find the original
+> > posting.
 > 
->> This sounds like a good option actually. Liam, Mark, any opinions?
+> Sure:
 > 
-> I'm not sure what "supply_nasty" would mean?  This also doesn't seem
-> like something that we can set up per supply - it's going to affect the
-> whole regulator state, it's not something that only affects a single
-> supply.
+> From <BANLkTi=n4jLsjOYCd0L3hYb30sgPmdv_WA@mail.gmail.com>:
+> > Unfortunately, the output via a serial console becomes garbled after
+> > "Entering mem sleep", so I went for patching dumpstack_64.c and a
+> > couple of other source files to reduce the verbosity. I hope not to
+> > have stripped any essential information. The result is available in
+> > these pictures:
+> >   https://secure.tgbyte.de/dropbox/IeZalo4t-1.jpg
+> >   https://secure.tgbyte.de/dropbox/IeZalo4t-2.jpg
+> >
+> > For both traces, the printed error message reads: "BUG: soft lockup -
+> > CPU#3 stuck for 67s! [kblockd:28]"
 
-supply_nasty() would be used to define a regulator which is enabled by
-the boot loader when it shouldn't be, which is the actual problem.
+Does your kernel have preemption enabled?  If not, does the following
+patch fix the problem?
 
-We have a regulator which is enabled by the boot loader. However, this
-regulator shouldn't be on at boot since it's not needed by any devices
---- the drivers for those devices will use proper regulator framework
-calls to use the regulator when it's needed. There's no chance to have
-the boot loader fixed, as stated by Kalle.
+Thanks.
 
-How should this regulator be turned off in the boot by the kernel?
-
-Regards,
-
--- 
-Sakari Ailus
-sakari.ailus@maxwell.research.nokia.com
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 04ef830..08c7334 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1293,6 +1293,7 @@ __acquires(&gcwq->lock)
+ 
+ 		/* CPU has come up inbetween, retry migration */
+ 		cpu_relax();
++		cond_resched();
+ 	}
+ }
