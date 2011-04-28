@@ -1,147 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab1D1UIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:08:48 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:63569 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1D1UIr (ORCPT
+	id S1760559Ab1D1UKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:10:46 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:47622 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750950Ab1D1UKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:08:47 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Apr 2011 16:08:47 EDT
-Subject: [PATCH 5/6] powerpc: move irq_alloc_descs_at() call into
- irq_alloc_virt()
-To: Michal Simek <monstr@monstr.eu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 28 Apr 2011 14:02:09 -0600
-Message-ID: <20110428200209.8979.85021.stgit@ponder>
-In-Reply-To: <20110428192227.8979.49181.stgit@ponder>
-References: <20110428192227.8979.49181.stgit@ponder>
-User-Agent: StGit/0.15
+	Thu, 28 Apr 2011 16:10:45 -0400
+X-Greylist: delayed 2446 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Apr 2011 16:10:44 EDT
+X-Originating-Ip: [194.89.68.22]
+Date: Thu, 28 Apr 2011 22:29:56 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        alyssar@google.com, "konrad@kernel.org" <konrad@kernel.org>,
+        vgoyal@redhat.com
+Subject: Re: [Xen-devel] Re: [PATCH v3] xen block backend.
+Message-ID: <20110428192955.GI32595@reaktio.net>
+References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com> <20110421033735.GA11501@infradead.org> <1303370925.5997.322.camel@zakaz.uk.xensource.com> <20110421080411.GA8969@infradead.org> <20110427220634.GA26316@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427220634.GA26316@dumpdata.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a stepping stone to using core code for allocating virqs
-instead of the powerpc architecture specific code.  A subsequent patch
-will drop the algorithm that searches for a free irq and replaces it
-with irq_alloc_desc()
+On Wed, Apr 27, 2011 at 06:06:34PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, Apr 21, 2011 at 04:04:12AM -0400, Christoph Hellwig wrote:
+> > On Thu, Apr 21, 2011 at 08:28:45AM +0100, Ian Campbell wrote:
+> > > On Thu, 2011-04-21 at 04:37 +0100, Christoph Hellwig wrote:
+> > > > This should sit in userspace.  And last time was discussed the issue
+> > > > Stefano said the qemu Xen disk backend is just as fast as this kernel
+> > > > code.  And that's with an not even very optimized codebase yet.
+> > > 
+> > > Stefano was comparing qdisk to blktap. This patch is blkback which is a
+> > > completely in-kernel driver which exports raw block devices to guests,
+> > > e.g. it's very useful in conjunction with LVM, iSCSI, etc. The last
+> > > measurements I heard was that qdisk was around 15% down compared to
+> > > blkback.
+> > 
+> > Please show real numbers on why adding this to kernel space is required.
+> 
+> First off, many thanks go out to Alyssa Wilk and Vivek Goyal.
+> 
+> Alyssa for cluing me on the CPU banding problem (on the first machine I was
+> doing the testing  I hit the CPU ceiling and had quite skewed results).
+> Vivek for helping me figure out why the kernel blkback was sucking when a READ
+> request got added on the stream of WRITEs with CFQ scheduler (I did not the
+> REQ_SYNC on the WRITE request).
+>   
+> The setup is as follow:
+> 
+> iSCSI target - running Linux v2.6.39-rc4 with TCM LIO-4.1 patches (which
+> provide iSCSI and Fibre target support) [1]. I export this 10GB RAMdisk over
+> a 1GB network connection.
+> 
+> iSCSI initiator - Sandy Bridge i3-2100 3.1GHz w/8GB, runs v2.6.39-rc4
+>  with pv-ops patches [2]. Either 32-bit or 64-bit, and with Xen-unstable
+>  (c/s 23246), Xen QEMU (e073e69457b4d99b6da0b6536296e3498f7f6599) with
+>  one patch to enable aio [3]. Upstream QEMU version is quite close to this
+>  one (it has a bug-fix in it). Memory limited to Dom0/DomU to 2GB.
+>  I boot of PXE and run everything from the ramdisk.
+> 
+> The kernel/initramfs that I am using for this testing is the same
+> throughout and is based off VirtualIron's build system [4].
+> 
+> There are two tests, each test is run three times.
+> 
+> The first is random writes of 64K across the disk with four threads
+> doing this pounding. The results are in the 'randw-bw.png' file.
+> 
+> The second is based off IOMeter - it does random reads (20%) and writes
+> (80%), with various byte sizes : from 512 bytes up to 64K - two threads
+> doing it. The results are in the 'iometer-bw.png' file.
+> 
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- arch/powerpc/kernel/irq.c |   49 ++++++++++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 21 deletions(-)
+A summary for those who don't bother checking the attachments :)
 
-diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-index 9300e1c..0fb90ab 100644
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -665,16 +665,6 @@ static void irq_free_virt(unsigned int virq);
- static int irq_setup_virq(struct irq_host *host, unsigned int virq,
- 			    irq_hw_number_t hwirq)
- {
--	int res;
--
--	res = irq_alloc_desc_at(virq, 0);
--	if (res != virq) {
--		pr_debug("irq: -> allocating desc failed\n");
--		goto error;
--	}
--
--	irq_clear_status_flags(virq, IRQ_NOREQUEST);
--
- 	/* map it */
- 	smp_wmb();
- 	irq_map[virq].hwirq = hwirq;
-@@ -688,8 +678,6 @@ static int irq_setup_virq(struct irq_host *host, unsigned int virq,
- 	return 0;
- 
- errdesc:
--	irq_free_descs(virq, 1);
--error:
- 	irq_free_virt(virq);
- 	return -1;
- }
-@@ -754,14 +742,14 @@ unsigned int irq_create_mapping(struct irq_host *host,
- 		if (virq == 0 || virq >= NUM_ISA_INTERRUPTS)
- 			return NO_IRQ;
- 		return virq;
--	} else {
--		/* Allocate a virtual interrupt number */
--		hint = hwirq % irq_virq_count;
--		virq = irq_alloc_virt(host, hint);
--		if (virq == NO_IRQ) {
--			pr_debug("irq: -> virq allocation failed\n");
--			return NO_IRQ;
--		}
-+	}
-+
-+	/* Allocate a virtual interrupt number */
-+	hint = hwirq % irq_virq_count;
-+	virq = irq_alloc_virt(host, hint);
-+	if (virq == NO_IRQ) {
-+		pr_debug("irq: -> virq allocation failed\n");
-+		return NO_IRQ;
- 	}
- 
- 	if (irq_setup_virq(host, virq, hwirq))
-@@ -867,7 +855,6 @@ void irq_dispose_mapping(unsigned int virq)
- 
- 	irq_set_status_flags(virq, IRQ_NOREQUEST);
- 
--	irq_free_descs(virq, 1);
- 	/* Free it */
- 	irq_free_virt(virq);
- }
-@@ -998,6 +985,7 @@ static unsigned int irq_alloc_virt(struct irq_host *host, unsigned int hint)
- {
- 	unsigned long flags;
- 	unsigned int i, j, found = NO_IRQ;
-+	int res;
- 
- 	raw_spin_lock_irqsave(&irq_big_lock, flags);
- 
-@@ -1024,7 +1012,25 @@ static unsigned int irq_alloc_virt(struct irq_host *host, unsigned int hint)
- 	smp_wmb();
- 	irq_map[found].host = host;
- 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
-+
-+	res = irq_alloc_desc_at(found, 0);
-+	if (res != found) {
-+		pr_debug("irq: -> allocating desc failed\n");
-+		goto error_desc;
-+	}
-+
-+	irq_clear_status_flags(found, IRQ_NOREQUEST);
-+
- 	return found;
-+
-+ error_desc:
-+	raw_spin_lock_irqsave(&irq_big_lock, flags);
-+	host = irq_map[found].host;
-+	irq_map[found].hwirq = host->inval_irq;
-+	smp_wmb();
-+	irq_map[found].host = NULL;
-+	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
-+	return NO_IRQ;
- }
- 
- /**
-@@ -1045,6 +1051,7 @@ static void irq_free_virt(unsigned int virq)
- 		return;
- 	}
- 
-+	irq_free_descs(virq, 1);
- 	raw_spin_lock_irqsave(&irq_big_lock, flags);
- 	host = irq_map[virq].host;
- 	irq_map[virq].hwirq = host->inval_irq;
+xen-blkback (kernel) backend seems to perform a lot better
+than qemu qdisc (usermode) backend.
+
+Also cpu-usage is smaller with the kernel-backend driver.
+Detailed numbers in the attachments in Konrad's previous email.
+
+-- Pasi
 
