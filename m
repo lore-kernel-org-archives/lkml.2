@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1D1CPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 22:15:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50663 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab1D1CPQ (ORCPT
+	id S1752596Ab1D1Cgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 22:36:55 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:48244 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751836Ab1D1Cgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 22:15:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=T4l0oTzOJKECTRVj7mg+rqYQhCUxBZKXspozZ+4hi5QtYW4tWY9NCTNqYOVkGTCVwg
-         H5DHj/Dqdrx1ZHx/IXyUqRHPP/AiL584vzemIbHQarbcQkG8fQI/DP4SaMfUN6pjXenG
-         HmrrzVrSCQDmyCPszc0sPGFOwDHF5SNVB33jk=
-Subject: [PATCH 2.6.38.4] mii: add support of pause frames in mii_get_an
-From: artpol <artpol84@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net, bhutchings@solarflare.com, netdev@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 09:15:11 +0700
-Message-ID: <1303956911.2205.12.camel@artpol-thinkpad>
+	Wed, 27 Apr 2011 22:36:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=vPBWX4gsttAuVdo4LXp5JScn8zv9X1gRir+UcL0z1YrFL0s/ZbKed/yOkDM1vujuGCcXLjgyawsmbIury/uIpnC3NRAC5IJ1lQ9WRo9T2U18h0M/irRFqZdPDb9nvNTx;
+Date: Wed, 27 Apr 2011 19:36:51 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Peter Foley <pefoley2@verizon.net>,
+        torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] init/Kconfig: use if/endif to surround the EXPERT
+ menu kconfig symbols
+Message-Id: <20110427193651.1d279d29.rdunlap@xenotime.net>
+In-Reply-To: <20110427161451.26a74fec.akpm@linux-foundation.org>
+References: <20110426130036.997a05fc.rdunlap@xenotime.net>
+	<20110427161451.26a74fec.akpm@linux-foundation.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support of pause frames advertise in mii_get_an. This provides all
-drivers that use mii_ethtool_gset to represent their own and Link
-partner flow control abilities in ethtool.
+On Wed, 27 Apr 2011 16:14:51 -0700 Andrew Morton wrote:
 
- Signed-off-by: Artem Polyakov <artpol84@gmail.com>
+> On Tue, 26 Apr 2011 13:00:36 -0700
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
+> 
+> > Surround the EXPERT menu with "if EXPERT" and "endif" so that it
+> > is forced to stay as one unit.  Hopefully this will help to prevent
+> > it being broken in the future.
+> 
+> With this patch applied, a `make oldconfig' unsets CONFIG_PRINTK,
+> producing a less-than-previously-useful kernel!
+> 
+> Config: http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
+
+Yep, that's a problem.  Thanks.
 
 ---
-
---- linux-2.6.38.4/drivers/net/mii.c.orig	2011-04-28 08:46:13.000000000
-+0700
-+++ linux-2.6.38.4/drivers/net/mii.c	2011-04-25 23:04:20.694981968 +0700
-@@ -49,6 +49,10 @@ static u32 mii_get_an(struct mii_if_info
- 		result |= ADVERTISED_100baseT_Half;
- 	if (advert & ADVERTISE_100FULL)
- 		result |= ADVERTISED_100baseT_Full;
-+	if (advert & ADVERTISE_PAUSE_CAP)
-+		result |= ADVERTISED_Pause;
-+	if (advert & ADVERTISE_PAUSE_ASYM)
-+		result |= ADVERTISED_Asym_Pause;
- 
- 	return result;
- }
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
