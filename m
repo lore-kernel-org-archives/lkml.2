@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab1D1Rav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 13:30:51 -0400
-Received: from trent.utfs.org ([194.246.123.103]:44795 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab1D1Rat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 13:30:49 -0400
-Date: Thu, 28 Apr 2011 10:30:47 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110427102824.GI12436@dastard>
-Message-ID: <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
- <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1756845Ab1D1Rg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:36:29 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55712 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756164Ab1D1Rg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 13:36:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=TQDYd8Y3lLQEjXzrkIssa3EauLVHa+uNbhV9SlCbmL9odokqCk/2uWMzx9oj/6Jnhu
+         t1Bob0/XOKHSzF+i9mRnqDagL086fUX0QVtZ2oSk5ywBfdG/cyOKxU1/UW+0fagaOA0M
+         L2TOOGTIrrzw9/m/XnoKz31RYiDJ/qO34Jtw4=
+Date: Thu, 28 Apr 2011 19:36:17 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
+        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
+        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
+ filtering
+Message-ID: <20110428173614.GH1798@nowhere>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-2-git-send-email-wad@chromium.org>
+ <20110428151241.GD1798@nowhere>
+ <BANLkTika4xn5SajxGbRtszqyA4R=4y8M6Q@mail.gmail.com>
+ <20110428161304.GG1798@nowhere>
+ <BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Thu, Apr 28, 2011 at 11:48:47AM -0500, Will Drewry wrote:
+> On Thu, Apr 28, 2011 at 11:13 AM, Frederic Weisbecker
+> <fweisbec@gmail.com> wrote:
+> > On Thu, Apr 28, 2011 at 10:29:11AM -0500, Will Drewry wrote:
+> >> On Thu, Apr 28, 2011 at 10:12 AM, Frederic Weisbecker
+> >> <fweisbec@gmail.com> wrote:
+> >> > Instead of having such multiline filter definition with syscall
+> >> > names prepended, it would be nicer to make the parsing simplier.
+> >> >
+> >> > You could have either:
+> >> >
+> >> >        prctl(PR_SET_SECCOMP, mode);
+> >> >        /* Works only if we are in mode 2 */
+> >> >        prctl(PR_SET_SECCOMP_FILTER, syscall_nr, filter);
+> >>
+> >> It'd need to be syscall_name instead of syscall_nr.  Otherwise we're
+> >> right back to where Adam's patch was 2+ years ago :)  Using the event
+> >> names from the syscalls infrastructure means the consumer of the
+> >> interface doesn't need to be confident of the syscall number.
+> >
+> > Is it really a problem?
+> 
+> I'd prefer using numbers myself since it gives more flexibility around
+> filtering entries that haven't yet made it into ftrace syscalls hooks.
+> However, I think there's some complexity in ensuring it matches the
+> host kernel.  (It would also allow compat_task support which doesn't
+> seem to be possible now.)
 
-sorry for the late response:
+You'd have some problems with compat and syscall naming, I think some
+of them are not the same between compat architectures.
 
-On Wed, 27 Apr 2011 at 20:28, Dave Chinner wrote:
-> hmmmm. Speaking of which - have you changed any of the XFS tunables
-> in /proc/sys/fs/xfs/ on your machine (specifically
-> xfssyncd_centisecs)?
+Note that your new prctl() request is turning syscall handler names (in-kernel API)
+into a user ABI. We won't be able to change the name of those kernel handlers
+after that. I'm not sure that's desired.
 
-No, I did not change anything underneath /proc/sys/fs/xfs.
- 
-> Not easy because there are tree-wide changes that need to be
-> preserved (e.g. block layer plugging changes) while others around it
-> would need to be reverted....
+OTOH, syscall numbers are a user ABI, 
 
-Yeah, I noticed. I wanted to do something like this:
 
-  $ for c in `git log --pretty=oneline --no-merges v2.6.38..v2.6.39-rc2 fs/xfs | awk '{print $1}'`; do
-       git revert $c
-    done
+> 
+> > There are libraries that can resolve that. Of course I can't recall their name.
+> 
+> asm-generic/unistd.h will provide the mapping, if available. It would
+> mean that any helper libraries would need to be matched to the locally
+> running kernel.
 
-...but this broke on the 1st or 2nd commit because of unresolved changes.
+Yeah. But syscall numbers don't move inside a given architecture (could they?)
+Or if so then you'd a dynamic library.
 
-Now I'm in the middle of another bisect attempt, trying to reproduce but 
-Im getting (probably totally unrelated) warnings here:
 
-BUG: sleeping function called from invalid context at /usr/local/src/linux-2.6-git/drivers/ide/ide-io.c:447
-in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper
-INFO: lockdep is turned off.
-[...]
- 
-> Can you check if there are any blocked tasks nearing OOM (i.e. "echo
-> w > /proc/sysrq-trigger") so we can see if XFS inode reclaim is
-> stuck somewhere?
+> >> > or:
+> >> >        /*
+> >> >         * If mode == 2, set the filter to syscall_nr
+> >> >         * Recall this for each syscall that need a filter.
+> >> >         * If a filter was previously set on the targeted syscall,
+> >> >         * it will be overwritten.
+> >> >         */
+> >> >        prctl(PR_SET_SECCOMP, mode, syscall_nr, filter);
+> >> >
+> >> > One can erase a previous filter by setting the new filter "1".
+> >> >
+> >> > Also, instead of having a bitmap of syscall to accept. You could
+> >> > simply set "0" as a filter to those you want to deactivate:
+> >> >
+> >> > prctl(PR_SET_SECCOMP, 2, 1, 0); <- deactivate the syscall_nr 1
+> >> >
+> >> > Hm?
+> >>
+> >> I like the simplicity in not needing to parse anything extra, but it
+> >> does add the need for extra state - either a bit or a new field - to
+> >> represent "enabled/enforcing".
+> >
+> > And by the way I'm really puzzled about these. I don't understand
+> > well why we need this.
+> 
+> Right now, if you are in seccomp mode !=0 , your system calls will be
+> hooked (if TIF_SECCOMP is set too). The current patch begins filtering
+> immediately.  And once filtering is enabled, the process is not
+> allowed to expand its access to the kernel system cals - only shrink
+> it.  An "enabled" bit would be needed to tell it that even though it
+> is running in mode=2, it should/shouldn't kill the process for system
+> call filter violations and it should allow filters to be added, not
+> just dropped.  It's why the current patch does it in one step: set the
+> filters and the mode.  While an enabled bit could be hidden behind
+> whether TIF_SECCOMP is applied, I'm not sure if that would just be
+> confusing.  There'd still be a need to APPLY_FILTERS to get the
+> TIF_SECCOMP flag set to start hooking the system calls.
 
-In one instance when I mounted with "noatime", no log messages made it to 
-the disk, but I could see "hung tasks":
+It seems the filter is only ever needed for the childs, right?
+And moreover when they exec. So Steve's suggestion to apply
+the filters only after the next exec makes sense.
 
-   http://nerdbynature.de/bits/2.6.39-rc4/oom/oom-6.JPG
+That would solve the problem of both ON_NEXT_SYSCALL and APPLY_FILTER.
 
-I will try sysrq-w later on.
+I may be missing something obvious though. Do you see a limitation there?
 
-FWIW, a regression bug has been opened:
+> 
+> > As for the enable_on_next_syscall. The documentation says
+> > it's useful if you want the filter to only apply to the
+> > child. So if fork immediately follows, you will be able to fork
+> > but if the child doesn't have the right to exec, it won't be able
+> > to do so. Same for the mmap() that involves...
+> >
+> > So I'm a bit confused about that.
+> 
+> Here's an example:
+>   http://static.dataspill.org/seccomp_filter/v1/seccomp_launcher.c
+> 
+> You'd use it by calling fork() ... prctl(..., ON_NEXT_SYSCALL) then
+> execve since you'll already have fork()d.  It seems to work, but maybe
+> I'm missing something :)
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=34012
+Nope, I see.
 
-Thanks,
-Christian.
--- 
-BOFH excuse #284:
-
-Electrons on a bender
+> 
+> > But yeah if that's really needed, it looks to me better to
+> > reduce the parsing and cut it that way:
+> >
+> >        prctl(PR_SET_SECCOMP, 2, syscall_name_or_nr, filter);
+> >        prctl(PR_SECCOMP_APPLY_FILTERS, enable_on_next_syscall?)
+> >
+> > or something...
+> 
+> Cool - if there are any other flags, it could be something like:
+>   prctl(PR_SECCOMP_SET_FLAGS, SECCOMP_ENFORCE|SECCOMP_DELAYED_ENFORCEMENT);
+> 
+> But only if there are other flags worth considering. I had a few
+> others in mind, but now I've completely forgotten :/
