@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740Ab1D1Svd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:51:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64537 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab1D1Svc (ORCPT
+	id S933403Ab1D1Swd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:52:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:40500 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933239Ab1D1Swb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:51:32 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=0i_OOtiXEx8A:10 a=Rj1_iGo3bfgA:10 a=8nJEP1OIZ-IA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=cm27Pg_UAAAA:8 a=hBqU3vQJAAAA:8 a=meVymXHHAAAA:8 a=pm-Xp3uwzmuoAF5_Tz4A:9 a=qgl54K_mniezyl01c-gA:7 a=wPNLvfGTeEIA:10 a=zv9_9hqRWm8A:10 a=4gZ4WExUoD4A:10 a=jeBq3FmKZ4MA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Thu, 28 Apr 2011 13:51:30 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-Message-ID: <20110428185130.GA13071@hallyn.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
- <1303960136-14298-2-git-send-email-wad@chromium.org>
- <20110428165525.GB1927@hallyn.com>
- <1304010981.18763.192.camel@gandalf.stny.rr.com>
- <20110428173957.GA25940@hallyn.com>
- <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
+	Thu, 28 Apr 2011 14:52:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=MSJwrXIpCSXqKYvsXoLU8HFNl4Xtm3DDwntpOKw2QnFgG4KWtb1KJHZcGSsEHCQ/XQ
+         OuO+ayCScp1TNJTnqcJw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTimKUSGU_8YzBMQcf2tH4tJ7-o6eBg@mail.gmail.com>
+References: <1303332697-16426-1-git-send-email-ncrao@google.com>
+ <m3tydi6ehc.fsf@IBM-009124035060.in.ibm.com> <m3wriey4tw.fsf@IBM-009124035060.in.ibm.com>
+ <20110428121244.GA26851@linux.vnet.ibm.com> <BANLkTimKUSGU_8YzBMQcf2tH4tJ7-o6eBg@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 28 Apr 2011 11:51:59 -0700
+Message-ID: <BANLkTikhAF=nzJA4qg_8By=CL6t9iFPQwg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
+To: Nikhil Rao <ncrao@google.com>
+Cc: vatsa@linux.vnet.ibm.com, "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Will Drewry (wad@chromium.org):
-> On Thu, Apr 28, 2011 at 12:39 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Steven Rostedt (rostedt@goodmis.org):
-> >> On Thu, 2011-04-28 at 11:55 -0500, Serge E. Hallyn wrote:
-> >> > I actually thought you were going to be more extreme about the seccomp
-> >> > state than you are:  I thought you were going to tie a filter list to
-> >> > seccomp state.  So adding or removing a filter would have required
-> >> > duping the seccomp state, duping all the filters, making the change in
-> >> > the copy, and then swapping the new state into place.  Slow in the
-> >> > hopefully rare update case, but safe.
-> 
-> Hrm, I think I'm confused now!  This is exactly what I *thought* the
-> code was doing.
-> 
-> At present, seccomp_state can be shared across predecessor/ancestor
-> relationships using refcounting in fork.c  (get/put). However, the
-> only way to change a given seccomp_state or its filters is either
-> through the one-bit on_next_syscall change or through
-> prctl_set_seccomp.  In prctl_set_seccomp, it does:
-> state = (orig_state ? seccomp_state_dup(orig_state) :
->                               seccomp_state_new());
-> operates on the new state and then rcu_assign_pointer()s it to the
-> task.  I didn't intentionally provide any way to drop filters from an
-> existing state object nor change the filtered syscalls on an in-use
-> object.  That _dup call should hit the impromperly rcu_locked
-> copy_all_filters returning duplicates of the original filters by
-> reparsing the filter_string.
-> 
-> Did I accidentally provide a means to mutate a state object or filter
-> list without dup()ing? :/
+On Thu, Apr 28, 2011 at 11:33 AM, Nikhil Rao <ncrao@google.com> wrote:
+> On Thu, Apr 28, 2011 at 5:12 AM, Srivatsa Vaddagiri
+> <vatsa@linux.vnet.ibm.com> wrote:
+>> On Thu, Apr 28, 2011 at 05:18:27PM +0530, Nikunj A. Dadhania wrote:
+>>> --- kernel/sched.c.orig       2011-04-28 16:34:24.000000000 +0530
+>>> +++ kernel/sched.c    2011-04-28 16:36:29.000000000 +0530
+>>> @@ -1336,7 +1336,7 @@ calc_delta_mine(unsigned long delta_exec
+>>>                       lw->inv_weight = 1 + (WMULT_CONST - w/2) / (w + 1);
+>>>       }
+>>>
+>>> -     tmp = (u64)delta_exec * weight;
+>>> +     tmp = (u64)delta_exec * (weight >> SCHED_LOAD_RESOLUTION);
+>>
+>> Should we be fixing inv_weight rather to account for SCHED_LOAD_RESOLUTION here?
+>>
+>
+> Yes, I have been looking into fixing inv_weight and calc_delta_mine()
+> calculations based on the assumption that we have u64 weights. IMO the
+> function is complicated because the return value needs to be
+> calculated to fit into unsigned long. I would like to update users of
+> calc_delta_mine() to use u64 instead of unsigned longs and I think
+> this can be easily done (quick inspection of the code shows two call
+> sites that need to be updated - update_curr() and wakeup_gran()).
+> Without the restriction to fit into unsigned long, I think we can make
+> calc_delta_mine() and the inv_weight calculations simpler.
+>
 
-Ah - probably not, I probably misread your intent for the helpers.
+I don't think you have much room to maneuver here, the calculations in
+c_d_m() are already u64 based, even on 32bit.  Changing the external
+load factors to 64 bit doesn't change this.
 
-So in that case you don't need to rcu-protect the filters at all
-when copying.  You just need to inc the seccomp struct refcount
-under rcu lock, to make sure it all stays put.  Drop rcu lock, take
-your time copying, then when you dec the refcount the whole seccomp
-struct either gets freed or not.
+We lose fairness in cdm beyond 32 bits, at the old LOAD_SCALE=10
+you've got 22 bits with which you can maintain fairness. This gives
+total accuracy in total curr on any delta <= ~4ms (for a NICE_0 task).
+ If you bump this up (and don't downshift before computing the inverse
+as you are) then you start introducing rounding errors beyond ~4us.
 
-Excellent.
+This would also be further exacerbated in sched_period() since that's
+using the total cfs_rq weight.
 
--serge
+> -Thanks,
+> Nikhil
+>
