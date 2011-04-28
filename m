@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab1D1Q45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 12:56:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54742 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759018Ab1D1Q4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 12:56:52 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=0i_OOtiXEx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=613vidxq9YffZqG2LH0A:9 a=oeY5rGo8PYwunHxhHs0A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
-        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-In-Reply-To: <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	 <1303960136-14298-2-git-send-email-wad@chromium.org>
-	 <1303998629.18763.149.camel@gandalf.stny.rr.com>
-	 <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Apr 2011 12:56:50 -0400
-Message-ID: <1304009810.18763.179.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758298Ab1D1RBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:01:16 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1968 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753956Ab1D1RBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 13:01:15 -0400
+Message-ID: <4DB99D2E.9080106@canonical.com>
+Date: Thu, 28 Apr 2011 11:00:30 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        suresh.b.siddha@intel.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Subject: [PATCH 2.6.39-rc5] ioremap: Delay sanity check until after a successful
+ mapping
+Content-Type: multipart/mixed;
+ boundary="------------080009090200040602050302"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 10:30 -0500, Will Drewry wrote:
+This is a multi-part message in MIME format.
+--------------080009090200040602050302
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> >> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> >> index 57d4b13..1bee87c 100644
-> >> --- a/kernel/seccomp.c
-> >> +++ b/kernel/seccomp.c
-> >> @@ -8,10 +8,11 @@
-> >>
-> >>  #include <linux/seccomp.h>
-> >>  #include <linux/sched.h>
-> >> +#include <linux/slab.h>
-> >>  #include <linux/compat.h>
-> >>
-> >>  /* #define SECCOMP_DEBUG 1 */
-> >> -#define NR_SECCOMP_MODES 1
-> >> +#define NR_SECCOMP_MODES 2
-> >>
-> >>  /*
-> >>   * Secure computing mode 1 allows only read/write/exit/sigreturn.
-> >> @@ -32,9 +33,11 @@ static int mode1_syscalls_32[] = {
-> >>
-> >>  void __secure_computing(int this_syscall)
-> >>  {
-> >> -     int mode = current->seccomp.mode;
-> >> +     int mode = -1;
-> >>       int * syscall;
-> >> -
-> >> +     /* Do we need an RCU read lock to access current's state? */
-> >
-> > I'm actually confused to why you are using RCU. What are you protecting.
-> > Currently, I see the state is always accessed from current->seccomp. But
-> > current should not be fighting with itself.
-> >
-> > Maybe I'm missing something.
-> 
-> I'm sure it's me that's missing something.  I believe the seccomp
-> pointer can be accessed from:
-> - current
-> - via /proc/<pid>/seccomp_filter (read-only)
-> 
-> Given those cases, would it make sense to ditch the RCU interface for it?
+While tracking down the reason for an ioremap() failure I was distracted 
+by the WARN_ONCE() in __ioremap_caller(). Can we move the sanity check 
+later in the function until _after_ the mapping has been performed?
 
-Looking at this in a bit more detail. I think you can ditch the
-rcu_readlocks where current accesses its own seccomp state. As current
-is the one that duplicates it (and ups the refcount) on fork, and
-current wont free it until after it performs a rcu_synchronization. No
-one else can free current's seccomp state while current has a reference
-to it.
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
 
-You still need the rcu_readlocks on the readers for the proc system.
-Otherwise the handle can be freed while its still in use. With the
-rcu_readlocks, these readers will always get the refcount before current
-frees it. And then the dec_and_test should work as expected when the
-readers do the put.
+--------------080009090200040602050302
+Content-Type: text/x-patch;
+ name="0001-ioremap-Delay-sanity-check-until-after-a-successful-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ioremap-Delay-sanity-check-until-after-a-successful-.pa";
+ filename*1="tch"
 
--- Steve
+>From 31dec327a254888fcd0b6aa963414b09626d3168 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Thu, 28 Apr 2011 10:07:51 -0600
+Subject: [PATCH] ioremap: Delay sanity check until after a successful mapping
+
+Performing a WARN_ONCE() sanity check before the mapping
+is successful seems pointless if the caller sends bad values.
+A case in point is when the BIOS provides erroneous screen_info values
+causing vesafb_probe() to request an outrageuous size. The
+WARN_ONCE is then wasted on bogosity. Move the warning to a
+point where the mapping has been successfully allocated.
+
+http://bugs.launchpad.net/bugs/772042
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ arch/x86/mm/ioremap.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 0369843..be1ef57 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -91,13 +91,6 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		return (__force void __iomem *)phys_to_virt(phys_addr);
+ 
+ 	/*
+-	 * Check if the request spans more than any BAR in the iomem resource
+-	 * tree.
+-	 */
+-	WARN_ONCE(iomem_map_sanity_check(phys_addr, size),
+-		  KERN_INFO "Info: mapping multiple BARs. Your kernel is fine.");
+-
+-	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
+ 	last_pfn = last_addr >> PAGE_SHIFT;
+@@ -170,6 +163,13 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	ret_addr = (void __iomem *) (vaddr + offset);
+ 	mmiotrace_ioremap(unaligned_phys_addr, unaligned_size, ret_addr);
+ 
++	/*
++	 * Check if the request spans more than any BAR in the iomem resource
++	 * tree.
++	 */
++	WARN_ONCE(iomem_map_sanity_check(unaligned_phys_addr, unaligned_size),
++		  KERN_INFO "Info: mapping multiple BARs. Your kernel is fine.");
++
+ 	return ret_addr;
+ err_free_area:
+ 	free_vm_area(area);
+-- 
+1.7.0.4
 
 
+--------------080009090200040602050302--
