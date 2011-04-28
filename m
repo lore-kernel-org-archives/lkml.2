@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831Ab1D1Nms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:42:48 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:42680 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759730Ab1D1Nmq (ORCPT
+	id S1760174Ab1D1Nne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:43:34 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:33744 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759500Ab1D1Nnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:42:46 -0400
-Subject: Re: End of FAT directories
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        dosfstools <daniel@debian.org>, mtools <Alain@linux.lu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110428132551.GA5701@ucw.cz>
-References: <1303498136.8485.128.camel@localhost>
-	 <87hb9qnho4.fsf@devron.myhome.or.jp> <1303509408.8485.146.camel@localhost>
-	 <87bozxomqd.fsf@devron.myhome.or.jp> <1303558711.8485.166.camel@localhost>
-	 <20110428132551.GA5701@ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 15:43:05 +0200
-Message-ID: <1303998185.8188.18.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 160.45.35.69
+	Thu, 28 Apr 2011 09:43:32 -0400
+Date: Thu, 28 Apr 2011 15:43:21 +0200
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, sliakh.lkml@gmail.com, jiang@cs.ncsu.edu,
+        mingo@elte.hu
+Subject: Re: Undoing module RONX protection fix
+Message-ID: <20110428134321.GA10759@hal>
+References: <20110418092348.GB7786@hal>
+ <20110418092801.GC3837@infradead.org>
+ <874o5v6drb.fsf@rustcorp.com.au>
+ <20110421141949.GA10675@hal>
+ <87ipu0l1kt.fsf@rustcorp.com.au>
+ <1303985300.3495.93.camel@localhost.localdomain>
+ <87tyditxo8.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tyditxo8.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 28.04.2011, 15:25 +0200 schrieb Pavel Machek:
-> > >  For overwriting the
-> > > zeroed entry, why we have to check all entries until see next zeroed
-> > > (yeah, now, we allowed the crappy data after zeroed)?
-> > My point was not about checking all entries until the next zeroed entry,
-> > which is overcomplicating stuff. I meant that if we hit the end (i.e.
-> > the first zeroed entry) when searching for free slots, in that case we
-> > just clear the one entry directly following the inserted entries. This
-> > makes sure that no files magically appear. I *do* understand that
-> This sounds like a good idea, and costs nothing. I hope we can
-> convince Ogawa...
-
-I am going to implement that and publish a patch. If the patch is clean
-enough, maybe we can convince him. But the freedom of open source can't
-prevent me from using a patch like that, of course. And maybe it also
-helps when the patch gets some testing.
-
-> > I think the *most* important fact is to have at least dosfsck and linux
-> > consistent about directories with trailing garbage. So I won't even try
-> > to submit a patch to the Linux kernel that stops reading at the first
-> > unused directory entry if dosfsck will not accept to stop reading at the
-> > first unused directory entry.
-> They should *not* be consistent.
+On Thu, Apr 28, 2011 at 09:06:39PM +0930, Rusty Russell wrote:
+> On Thu, 28 Apr 2011 12:08:20 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
+> > How about this?
+> > 
+> > To be honest I don't like the inverse naming like in unset no-execute
+> > too much, it makes me feel dizzy. But I wanted to keep the changes
+> > minimal.
 > 
-> Kernel should stop at zero invalid entry.
+> Yes, it should probably just be called protect_module_pages and
+> unprotect_module_pages.  The current names provide far too much
+> information.
 > 
-> fsck should consider any garbage past zero entry as an error, and zero
-> it out. (Complaining about duplicate blocks is unhelpful but better
-> than nothing.  It should really zero the garbage out.)
+> But going back a bit, how did we end up with a NULL mod->module_init and
+> yet module->init_text_size, mod->init_size or mod->init_ro_size
+> non-zero?
 
-In fact, what you describe is something I would call "consistent". I was
-not implying that kernel and dosfsck should do exactly the same thing,
-but I was implying that the kernel and dosfsck should either both or
-none consider entries past the gap as existing file. Current state is:
-both consider past-gap entries valid. Your described state will be: none
-consider past-gap entries valid. The behaviour you describe is exactly
-what I would imagine as best way to go. Maybe fsck should ask for "shift
-post-gap entries/create a dummy deleted entry" vs. "clear post-gap
-entries".
+printk'ing this reveals that mod->init_ro_size is not 0 but 0x1000.
+Therefore the first page was modified.
 
-Regards,
-  Michael Karcher
+Looks like init_ro_size is missing the reset to zero at the end of the init_module
+syscall. Next patch ? ;-
 
+> Because if start == end, set_page_attributes() is a noop, right?
 
+Right.
+
+> Confused,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
