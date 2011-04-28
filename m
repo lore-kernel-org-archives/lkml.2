@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1D1HSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 03:18:55 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:46068 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753963Ab1D1HSy (ORCPT
+	id S1754579Ab1D1HWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 03:22:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51042 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab1D1HWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 03:18:54 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+	Thu, 28 Apr 2011 03:22:10 -0400
+Message-ID: <8430D2C750334C98B8E8D1469F2023C7@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        <sachi@mistralsolutions.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
         <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpio: remove some legacy comments in build files
-Date: Thu, 28 Apr 2011 09:18:37 +0200
-Message-ID: <1303975117-20651-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-2-git-send-email-subhasish@mistralsolutions.com> <4DB1A603.2090208@pengutronix.de> <EDC1056430EF4DA8A0D850CE1DEA28FC@subhasishg> <4DB7C5F7.3080103@pengutronix.de> <20110427091252.GP17290@n2100.arm.linux.org.uk> <5BAE2D6F9E6047C19B6BE8FF26F7270B@subhasishg> <4DB81B9E.3000401@pengutronix.de>
+In-Reply-To: <4DB81B9E.3000401@pengutronix.de>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Date: Thu, 28 Apr 2011 12:52:49 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Hi,
 
-The build files for drivers/gpio has some wording and comments
-about the directory being reserved exclusively for GPIO expanders
-(according to the gpio.txt file these are on external busses) and
-this has been false for some time. We already have PL061 and
-Xilinx drivers which are in silicon and now I'm moving more
-silicon drivers here, so delete this and reword it a bit.
+On 04/27/2011 03:18 PM, Subhasish Ghosh wrote:
+> My problem is, I am doing something like this:
+>
+> s32 pruss_writel_multi(struct device *dev, u32 offset,
+>                u32 *pdatatowrite, u16 wordstowrite)
+> {
+>        struct pruss_priv *pruss = dev_get_drvdata(dev->parent);
+>        u32 __iomem *paddresstowrite;
+>        u16 i;
+>
+>        paddresstowrite = pruss->ioaddr + offset;
+>
+>        for (i = 0; i < wordstowrite; i++)
+>                iowrite32(*pdatatowrite++, paddresstowrite++);
+>
+>        return 0;
+> }
+>
+> So, if I make paddresstowrite as void, it will not work. The above
+> implementation does not generate any sparse errors though.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/Kconfig  |    8 ++++----
- drivers/gpio/Makefile |    6 +-----
- 2 files changed, 5 insertions(+), 9 deletions(-)
+Yes, that why I can work with readb_multi even if I have void __iomen *.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index c23401f..b7fac15 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -1,5 +1,5 @@
- #
--# platform-neutral GPIO infrastructure and expanders
-+# GPIO infrastructure and drivers
- #
- 
- config ARCH_WANT_OPTIONAL_GPIOLIB
-@@ -31,7 +31,7 @@ menuconfig GPIOLIB
- 	help
- 	  This enables GPIO support through the generic GPIO library.
- 	  You only need to enable this, if you also want to enable
--	  one or more of the GPIO expansion card drivers below.
-+	  one or more of the GPIO drivers below.
- 
- 	  If unsure, say N.
- 
-@@ -63,12 +63,12 @@ config GPIO_SYSFS
- 	  Kernel drivers may also request that a particular GPIO be
- 	  exported to userspace; this can be useful when debugging.
- 
--# put expanders in the right section, in alphabetical order
-+# put drivers in the right section, in alphabetical order
- 
- config GPIO_MAX730X
- 	tristate
- 
--comment "Memory mapped GPIO expanders:"
-+comment "Memory mapped GPIO drivers:"
- 
- config GPIO_BASIC_MMIO
- 	tristate "Basic memory-mapped GPIO controllers support"
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index e4851c5..cfbdef1 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -1,8 +1,4 @@
--# generic gpio support: dedicated expander chips, etc
--#
--# NOTE: platform-specific GPIO drivers don't belong in the
--# drivers/gpio directory; put them with other platform setup
--# code, IRQ controllers, board init, etc.
-+# generic gpio support: platform drivers, dedicated expander chips, etc
- 
- ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
- 
--- 
-1.7.3.2
+But, how do I solve this problem. In the above function, I must use u32 
+__iomem * 
 
