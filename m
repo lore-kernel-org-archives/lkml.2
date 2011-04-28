@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1D1Asc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:48:32 -0400
-Received: from kroah.org ([198.145.64.141]:59220 "EHLO coco.kroah.org"
+	id S1757670Ab1D1Asu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:48:50 -0400
+Received: from kroah.org ([198.145.64.141]:59236 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab1D1Asb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:48:31 -0400
-Date: Wed, 27 Apr 2011 17:09:34 -0700
+	id S1754601Ab1D1Ase (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 20:48:34 -0400
+Date: Wed, 27 Apr 2011 17:25:52 -0700
 From: Greg KH <greg@kroah.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Milton Miller <miltonm@bga.com>,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: hvc_console: Don't access hvc_task if not initialised
-Message-ID: <20110428000934.GA14294@kroah.com>
-References: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
- <hvc-kick-notask@mdm.bga.com>
- <20110325084714.GA28356@amit-x200.redhat.com>
- <hvc-kick-notask-2@mdm.bga.com>
- <20110420123330.GB3519@amit-x200.redhat.com>
- <20110420143435.GB22436@kroah.com>
- <20110420170610.GA6013@amit-x200.redhat.com>
- <87oc3sl23a.fsf@rustcorp.com.au>
- <20110427063147.GA28328@amit-x200.redhat.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: Re: [PATCH 12/25] Staging: hv: Cleanup error handling in
+ vmbus_child_device_register()
+Message-ID: <20110428002552.GD14294@kroah.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-12-git-send-email-kys@microsoft.com>
+ <20110426225059.GA12897@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD1AF@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110427063147.GA28328@amit-x200.redhat.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD1AF@TK5EX14MBXC124.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 12:01:47PM +0530, Amit Shah wrote:
-> On (Wed) 27 Apr 2011 [14:31:29], Rusty Russell wrote:
-> > On Wed, 20 Apr 2011 22:36:10 +0530, Amit Shah <amit.shah@redhat.com> wrote:
-> > > On (Wed) 20 Apr 2011 [07:34:35], Greg KH wrote:
-> > > > Care to either create this patch, or resend your original one, if you
-> > > > want it applied?
-> > > 
-> > > Rusty has the other one queued.  I pinged him about status.
-> > 
-> > It's merged, but I don't think it had the requisite cc:stable, did it?
+On Wed, Apr 27, 2011 at 02:11:48AM +0000, KY Srinivasan wrote:
 > 
-> No, because at the point of submitting I didn't know it would solve
-> this bug as well.  Greg, can you pick
-> afa2689e19073cd2e762d0f2c1358fab1ab9f18c for stable?
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Tuesday, April 26, 2011 6:51 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> > Abhishek Kane (Mindtree Consulting PVT LTD)
+> > Subject: Re: [PATCH 12/25] Staging: hv: Cleanup error handling in
+> > vmbus_child_device_register()
+> > 
+> > On Tue, Apr 26, 2011 at 09:20:29AM -0700, K. Y. Srinivasan wrote:
+> > > Cleanup error handling in vmbus_child_device_register().
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > ---
+> > >  drivers/staging/hv/vmbus_drv.c |    7 ++++++-
+> > >  1 files changed, 6 insertions(+), 1 deletions(-)
+> > >
+> > > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > > index d597dd4..4d569ad 100644
+> > > --- a/drivers/staging/hv/vmbus_drv.c
+> > > +++ b/drivers/staging/hv/vmbus_drv.c
+> > > @@ -720,11 +720,16 @@ int vmbus_child_device_register(struct hv_device
+> > *child_device_obj)
+> > >  	 */
+> > >  	ret = device_register(&child_device_obj->device);
+> > >
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > >  	/* vmbus_probe() error does not get propergate to device_register(). */
+> > >  	ret = child_device_obj->probe_error;
+> > 
+> > Wait, why not?  Why is the probe_error have to be saved off like this?
+> > That seems like something is wrong here, this patch should not be
+> > needed.
+> > 
+> > Well, you should check the return value of device_register, that is
+> > needed, but this seems broken somehow.
+> 
+> The current code had comments claiming that the probe error was not
+> correctly propagated. Looking at the kernel side of the code, it was not clear
+> if device_register() could succeed while the probe might fail.
 
-Yes, but in the future, this is NOT the way to get patches into the
-stable tree.  Please read Documentation/stable_kernel_rules.txt for how
-to do it properly.
+Of course it can, device_register() has nothing to do with the probe
+callback of the device itself.  To think otherwise is to not understand
+the driver model and assume things that you should never be caring
+about.
+
+Think about it, if you register a device, you don't know at that point
+in time if a driver is currently loaded for it, and that it will be
+bound to that device.  Nor do you care, as any needed notifications for
+new drivers will be sent to userspace, and they will be loaded at some
+random time in the future.  So a probe() call might never be called for
+this device until some other time, running on some other processor, in
+some other thread.
+
+Drivers are allowed to return errors from their probe functions for
+valid reasons (i.e. this driver shouldn't bind to this device for a
+variety of good reasons.)  No one cares about this, as the driver core
+handles it properly and will pass on to the next driver in the list that
+might be able to be bound to this device.
+
+So why do you care about the return value of the probe() call?  It gets
+properly handled already by the driver core, why would your bus ever
+care about it?  (Hint, no other bus does, as it makes no sense.)
+
+> In any event, if you can guarantee that device_register() can return
+> any probe related errors, I agree with you that saving the probe error
+> is an overkill. The current code saved the probe error and with new
+> check I added with regards to the return value of device_register,
+> there is no correctness issue with this patch.
+
+As explained above, no, it will not return a probe error, as that makes
+no sense.  If the code is wanting to rely on this, it is broken and must
+be fixed.
 
 thanks,
 
