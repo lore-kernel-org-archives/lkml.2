@@ -1,180 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab1D1IRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 04:17:00 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:43013 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab1D1IQy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:2>);
-	Thu, 28 Apr 2011 04:16:54 -0400
-Message-Id: <4DB93EE0020000780003E962@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 28 Apr 2011 09:18:08 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tony.luck@intel.com>, <tglx@linutronix.de>,
-        <hpa@zytor.com>
-Cc: <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH, v2 3/3, resend] ia64: drop custom exception table
-	 implementation
+	id S1755145Ab1D1IWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 04:22:44 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:33796 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab1D1IWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 04:22:41 -0400
+Date: Thu, 28 Apr 2011 10:22:12 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: eric.y.miao@gmail.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
+Message-ID: <20110428102212.2d8d607c@endymion.delvare>
+In-Reply-To: <1303963358-4652-1-git-send-email-haojian.zhuang@gmail.com>
+References: <2011042801>
+	<1303963358-4652-1-git-send-email-haojian.zhuang@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the common extable implementation can deal with the needs
-ia64 has, drop its custom implementation.
+Hi Haojian,
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Acked-by: Tony Luck <tony.luck@intel.com>
+On Thu, 28 Apr 2011 12:02:36 +0800, Haojian Zhuang wrote:
+> Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+> cores are sharing one pair of I2C pins.
+> 
+> In order to keep I2C transaction operated with atomic, hardware lock
+> (RIPC) is required. Because of this, bus lock in AP side can't afford
+> this requirement. Now hardware lock is appended.
 
----
- arch/ia64/Kconfig               |    1 
- arch/ia64/include/asm/uaccess.h |    9 ---
- arch/ia64/mm/extable.c          |   98 ----------------------------------------
- 3 files changed, 4 insertions(+), 104 deletions(-)
+I have no objection to the idea, but one question: when using the
+hardware lock, isn't the software mutex redundant? I would expect that
+you call the hardware_lock/unlock functions _instead_ of
+rt_mutex_lock/unlock, rather than in addition to it. Or do you still
+need the rt_mutex to prevent priority inversion?
 
---- 2.6.39-rc5-extable.orig/arch/ia64/Kconfig
-+++ 2.6.39-rc5-extable/arch/ia64/Kconfig
-@@ -12,6 +12,7 @@ config IA64
- 	select ARCH_SUPPORTS_MSI
- 	select HAVE_UNSTABLE_SCHED_CLOCK
- 	select HAVE_IDE
-+	select EXTABLE_RELATIVE_POINTERS
- 	select HAVE_OPROFILE
- 	select HAVE_KPROBES
- 	select HAVE_KRETPROBES
---- 2.6.39-rc5-extable.orig/arch/ia64/include/asm/uaccess.h
-+++ 2.6.39-rc5-extable/arch/ia64/include/asm/uaccess.h
-@@ -340,14 +340,7 @@ extern unsigned long __strnlen_user (con
- 	__su_ret;						\
- })
- 
--/* Generic code can't deal with the location-relative format that we use for compactness.  */
--#define ARCH_HAS_SORT_EXTABLE
--#define ARCH_HAS_SEARCH_EXTABLE
--
--struct exception_table_entry {
--	int addr;	/* location-relative address of insn this fixup is for */
--	int cont;	/* location-relative continuation addr.; if bit 2 is set, r9 is set to 0 */
--};
-+#include <asm-generic/extable.h>
- 
- extern void ia64_handle_exception (struct pt_regs *regs, const struct exception_table_entry *e);
- extern const struct exception_table_entry *search_exception_tables (unsigned long addr);
---- 2.6.39-rc5-extable.orig/arch/ia64/mm/extable.c
-+++ 2.6.39-rc5-extable/arch/ia64/mm/extable.c
-@@ -5,107 +5,13 @@
-  *	David Mosberger-Tang <davidm@hpl.hp.com>
-  */
- 
--#include <linux/sort.h>
--
-+#include <asm/ptrace.h>
- #include <asm/uaccess.h>
--#include <linux/module.h>
--
--static int cmp_ex(const void *a, const void *b)
--{
--	const struct exception_table_entry *l = a, *r = b;
--	u64 lip = (u64) &l->addr + l->addr;
--	u64 rip = (u64) &r->addr + r->addr;
--
--	/* avoid overflow */
--	if (lip > rip)
--		return 1;
--	if (lip < rip)
--		return -1;
--	return 0;
--}
--
--static void swap_ex(void *a, void *b, int size)
--{
--	struct exception_table_entry *l = a, *r = b, tmp;
--	u64 delta = (u64) r - (u64) l;
--
--	tmp = *l;
--	l->addr = r->addr + delta;
--	l->cont = r->cont + delta;
--	r->addr = tmp.addr - delta;
--	r->cont = tmp.cont - delta;
--}
--
--/*
-- * Sort the exception table. It's usually already sorted, but there
-- * may be unordered entries due to multiple text sections (such as the
-- * .init text section). Note that the exception-table-entries contain
-- * location-relative addresses, which requires a bit of care during
-- * sorting to avoid overflows in the offset members (e.g., it would
-- * not be safe to make a temporary copy of an exception-table entry on
-- * the stack, because the stack may be more than 2GB away from the
-- * exception-table).
-- */
--void sort_extable (struct exception_table_entry *start,
--		   struct exception_table_entry *finish)
--{
--	sort(start, finish - start, sizeof(struct exception_table_entry),
--	     cmp_ex, swap_ex);
--}
--
--static inline unsigned long ex_to_addr(const struct exception_table_entry *x)
--{
--	return (unsigned long)&x->addr + x->addr;
--}
--
--#ifdef CONFIG_MODULES
--/*
-- * Any entry referring to the module init will be at the beginning or
-- * the end.
-- */
--void trim_init_extable(struct module *m)
--{
--	/*trim the beginning*/
--	while (m->num_exentries &&
--	       within_module_init(ex_to_addr(&m->extable[0]), m)) {
--		m->extable++;
--		m->num_exentries--;
--	}
--	/*trim the end*/
--	while (m->num_exentries &&
--	       within_module_init(ex_to_addr(&m->extable[m->num_exentries-1]),
--				  m))
--		m->num_exentries--;
--}
--#endif /* CONFIG_MODULES */
--
--const struct exception_table_entry *
--search_extable (const struct exception_table_entry *first,
--		const struct exception_table_entry *last,
--		unsigned long ip)
--{
--	const struct exception_table_entry *mid;
--	unsigned long mid_ip;
--	long diff;
--
--        while (first <= last) {
--		mid = &first[(last - first)/2];
--		mid_ip = (u64) &mid->addr + mid->addr;
--		diff = mid_ip - ip;
--                if (diff == 0)
--                        return mid;
--                else if (diff < 0)
--                        first = mid + 1;
--                else
--                        last = mid - 1;
--        }
--        return NULL;
--}
- 
- void
- ia64_handle_exception (struct pt_regs *regs, const struct exception_table_entry *e)
- {
--	long fix = (u64) &e->cont + e->cont;
-+	unsigned long fix = ex_fixup(e);
- 
- 	regs->r8 = -EFAULT;
- 	if (fix & 4)
+> 
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> ---
+>  drivers/i2c/i2c-core.c |   22 ++++++++++++++++++----
+>  include/linux/i2c.h    |    3 +++
+>  2 files changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 045ba6e..412c7a5 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -448,8 +448,11 @@ void i2c_lock_adapter(struct i2c_adapter *adapter)
+>  
+>  	if (parent)
+>  		i2c_lock_adapter(parent);
+> -	else
+> +	else {
+>  		rt_mutex_lock(&adapter->bus_lock);
+> +		if (adapter->hardware_lock)
+> +			adapter->hardware_lock();
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>  
+> @@ -460,11 +463,19 @@ EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>  static int i2c_trylock_adapter(struct i2c_adapter *adapter)
+>  {
+>  	struct i2c_adapter *parent = i2c_parent_is_i2c_adapter(adapter);
+> +	int ret = 0;
+>  
+>  	if (parent)
+>  		return i2c_trylock_adapter(parent);
+> -	else
+> -		return rt_mutex_trylock(&adapter->bus_lock);
+> +	else {
+> +		ret = rt_mutex_trylock(&adapter->bus_lock);
+> +		if (ret && adapter->hardware_trylock) {
+> +			ret = adapter->hardware_trylock();
+> +			if (!ret)
+> +				i2c_unlock_adapter(adapter);
+> +		}
+> +		return ret;
+> +	}
+>  }
+>  
+>  /**
+> @@ -477,8 +488,11 @@ void i2c_unlock_adapter(struct i2c_adapter *adapter)
+>  
+>  	if (parent)
+>  		i2c_unlock_adapter(parent);
+> -	else
+> +	else {
+> +		if (adapter->hardware_unlock)
+> +			adapter->hardware_unlock();
+>  		rt_mutex_unlock(&adapter->bus_lock);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(i2c_unlock_adapter);
+>  
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 06a8d9c..b283b4e 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -361,6 +361,9 @@ struct i2c_adapter {
+>  
+>  	/* data fields that are valid for all devices	*/
+>  	struct rt_mutex bus_lock;
+> +	void (*hardware_lock)(void);
+> +	void (*hardware_unlock)(void);
+> +	int (*hardware_trylock)(void);
+>  
+>  	int timeout;			/* in jiffies */
+>  	int retries;
 
 
+-- 
+Jean Delvare
