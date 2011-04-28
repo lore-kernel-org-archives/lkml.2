@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758820Ab1D1KFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:05:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46591 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758244Ab1D1KFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:05:10 -0400
-Date: Thu, 28 Apr 2011 11:05:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 08/13] netvm: Allow skb allocation to use PFMEMALLOC
- reserves
-Message-ID: <20110428100035.GO4658@suse.de>
-References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
- <1303920491-25302-9-git-send-email-mgorman@suse.de>
- <20110428161933.1f1266e6@notabene.brown>
+	id S1758837Ab1D1KGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:06:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40840 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754256Ab1D1KGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:06:21 -0400
+Date: Thu, 28 Apr 2011 11:06:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: kalle.jokiniemi@nokia.com
+Cc: lrg@slimlogic.co.uk, mchehab@infradead.org, svarbatov@mm-sol.com,
+        saaguirre@ti.com, grosikopulos@mm-sol.com, vimarsh.zutshi@nokia.com,
+        Sakari.Ailus@nokia.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [RFC] Regulator state after regulator_get
+Message-ID: <20110428100629.GA14494@opensource.wolfsonmicro.com>
+References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110428161933.1f1266e6@notabene.brown>
+In-Reply-To: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 04:19:33PM +1000, NeilBrown wrote:
-> On Wed, 27 Apr 2011 17:08:06 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> 
-> 
-> > @@ -1578,7 +1589,7 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
-> >   */
-> >  static inline struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
-> >  {
-> > -	return alloc_pages_node(NUMA_NO_NODE, gfp_mask, 0);
-> > +	return alloc_pages_node(NUMA_NO_NODE, gfp_mask | __GFP_MEMALLOC, 0);
-> >  }
-> >  
-> 
-> I'm puzzling a bit over this change.
-> __netdev_alloc_page appears to be used to get pages to put in ring buffer
-> for a network card to DMA received packets into.  So it is OK to use
-> __GFP_MEMALLOC for these allocations providing we mark the resulting skb as
-> 'pfmemalloc' if a reserved page was used.
-> 
-> However I don't see where that marking is done.
-> I think it should be in skb_fill_page_desc, something like:
-> 
->   if (page->pfmemalloc)
-> 	skb->pfmemalloc = true;
-> 
-> Is this covered somewhere else that I am missing?
-> 
+On Thu, Apr 28, 2011 at 09:01:03AM +0000, kalle.jokiniemi@nokia.com wrote:
 
-You're not missing anything.
+> If the device driver using the regulator does not enable and disable the
+> regulator after regulator_get, the regulator is left in the state that it was
+> after bootloader. In case of N900 this is a problem as the regulator is left
+> on to leak current. Of course there is the option to let regulator FW disable
+> all unused regulators, but this will break the N900 functionality, as the
+> regulator handling is not in place for many drivers. 
 
->From the context of __netdev_alloc_page, we do not know if the skb
-is suitable for marking pfmemalloc or not (we don't have SKB_ALLOC_RX
-flag for example that __alloc_skb has). The reserves are potentially
-being dipped into for an unsuitable packet but it gets dropped in
-__netif_receive_skb() and the memory is returned. If we mark the skb
-pfmemalloc as a result of __netdev_alloc_page using a reserve page, the
-packets would not get dropped as expected.
+You should use regulator_full_constraints() if your board has a fully
+described set of regulators.  This will cause the framework to power
+down any regulators which aren't in use after init has completed.  If
+you have some regulators with no consumers or missing consumers you need
+to mark them as always_on in their constraints.
 
--- 
-Mel Gorman
-SUSE Labs
+> So reset the regulator on first regulator_get call to make
+> sure that any regulator that has users is not left active
+> needlessly.
+
+This would cause lots of breakage, it would mean that all regulators
+that aren't always_on would get bounced off at least once during startup
+- that's not going to be great for things like the backlight.
