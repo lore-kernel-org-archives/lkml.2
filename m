@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab1D1D5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 23:57:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49665 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab1D1D5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 23:57:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=YU/BRx+WMNLFILi10QxTmzVBXOiflaxEMUrSbKOAzDnZGAWxFQNgwP5aWnh+/neAd3
-         ZtA/ta8+Dex0FhdsOTaPqzIxF/CLiPtmA6u3aBLDTYMS7Z234jRJvXxf+Vx7XLC+F0My
-         4chBMN0VY6WDTfhyUY6vq8JagW7ywEah548Nw=
-Subject: [PATCH] Input: twl4030-pwrbutton - fix a leak of the IRQ during
- init failure
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter De Schrijver <peter.de-schrijver@nokia.com>,
-        Felipe Balbi <felipe.balbi@nokia.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 11:57:21 +0800
-Message-ID: <1303963041.2588.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751165Ab1D1EAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 00:00:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740Ab1D1EAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 00:00:17 -0400
+Date: Thu, 28 Apr 2011 09:30:00 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Milton Miller <miltonm@bga.com>,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: hvc_console: Don't access hvc_task if not initialised
+Message-ID: <20110428040000.GA16167@amit-x200.redhat.com>
+References: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
+ <hvc-kick-notask@mdm.bga.com>
+ <20110325084714.GA28356@amit-x200.redhat.com>
+ <hvc-kick-notask-2@mdm.bga.com>
+ <20110420123330.GB3519@amit-x200.redhat.com>
+ <20110420143435.GB22436@kroah.com>
+ <20110420170610.GA6013@amit-x200.redhat.com>
+ <87oc3sl23a.fsf@rustcorp.com.au>
+ <20110427063147.GA28328@amit-x200.redhat.com>
+ <20110428000934.GA14294@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110428000934.GA14294@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In twl4030_pwrbutton_probe error path, free_irq() was using NULL rather than
-the driver data as the data pointer so free_irq() wouldn't have matched.
+On (Wed) 27 Apr 2011 [17:09:34], Greg KH wrote:
+> On Wed, Apr 27, 2011 at 12:01:47PM +0530, Amit Shah wrote:
+> > On (Wed) 27 Apr 2011 [14:31:29], Rusty Russell wrote:
+> > > On Wed, 20 Apr 2011 22:36:10 +0530, Amit Shah <amit.shah@redhat.com> wrote:
+> > > > On (Wed) 20 Apr 2011 [07:34:35], Greg KH wrote:
+> > > > > Care to either create this patch, or resend your original one, if you
+> > > > > want it applied?
+> > > > 
+> > > > Rusty has the other one queued.  I pinged him about status.
+> > > 
+> > > It's merged, but I don't think it had the requisite cc:stable, did it?
+> > 
+> > No, because at the point of submitting I didn't know it would solve
+> > this bug as well.  Greg, can you pick
+> > afa2689e19073cd2e762d0f2c1358fab1ab9f18c for stable?
+> 
+> Yes, but in the future, this is NOT the way to get patches into the
+> stable tree.  Please read Documentation/stable_kernel_rules.txt for how
+> to do it properly.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/input/misc/twl4030-pwrbutton.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Got it, thanks!
 
-diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index f16972b..38e4b50 100644
---- a/drivers/input/misc/twl4030-pwrbutton.c
-+++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -89,7 +89,7 @@ static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
- 	return 0;
- 
- free_irq:
--	free_irq(irq, NULL);
-+	free_irq(irq, pwr);
- free_input_dev:
- 	input_free_device(pwr);
- 	return err;
--- 
-1.7.1
-
-
-
+		Amit
