@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab1D1Nwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:52:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56072 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759654Ab1D1Nwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 09:52:30 -0400
-Date: Thu, 28 Apr 2011 15:52:28 +0200
-From: Jan Kara <jack@suse.cz>
-To: colin.king@canonical.com
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-Message-ID: <20110428135228.GC1696@quack.suse.cz>
-References: <1303920553.2583.7.camel@mulgrave.site>
- <1303921583-sup-4021@think>
- <1303923000.2583.8.camel@mulgrave.site>
- <1303923177-sup-2603@think>
- <1303924902.2583.13.camel@mulgrave.site>
- <1303925374-sup-7968@think>
- <1303926637.2583.17.camel@mulgrave.site>
- <1303934716.2583.22.camel@mulgrave.site>
- <1303990590.2081.9.camel@lenovo>
+	id S932588Ab1D1Nwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:52:36 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39611 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932429Ab1D1Nwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 09:52:33 -0400
+Date: Thu, 28 Apr 2011 14:51:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Holger Freyther <zecke@openmoko.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 1/2] MTD: s3c2410_nand: Add option to disable hw ECC at
+	runtime
+Message-ID: <20110428135153.GB19709@n2100.arm.linux.org.uk>
+References: <1302637672-25339-1-git-send-email-lars@metafoo.de> <1302782911.2796.21.camel@localhost> <4DA7094D.9070002@metafoo.de> <1302876071.3220.60.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303990590.2081.9.camel@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1302876071.3220.60.camel@localhost>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-04-11 12:36:30, Colin Ian King wrote:
-> One more data point to add, I've been looking at an identical issue when
-> copying large amounts of data.  I bisected this - and the lockups occur
-> with commit 
-> 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
-> issue. With this commit, my file copy test locks up after ~8-10
-> iterations, before this commit I can copy > 100 times and don't see the
-> lockup.
-  Adding Mel to CC, I guess he'll be interested. Mel, it seems this commit
-of yours causes kswapd on non-preempt kernels spin for a *long* time...
+On Fri, Apr 15, 2011 at 05:01:11PM +0300, Artem Bityutskiy wrote:
+> Well, I got this understanding by talking to the OMAP maintainer and by
+> chatting with rmk. But I might be wrong. So the understanding is that
+> board data extending is banned, at least for a while. And the arm world
+> has to consolidate and probably switch to the DT tree approach. This
+> would be painful, this would make some vendors to return to behind the
+> curtains, so this would be a step back in the short run.
 
-								Honza
-> On Wed, 2011-04-27 at 15:05 -0500, James Bottomley wrote:
-> > On Wed, 2011-04-27 at 12:50 -0500, James Bottomley wrote:
-> > > To test the theory, Chris asked me to try with data=ordered.
-> > > Unfortunately, the deadlock still shows up.  This is what I get.
-> > 
-> > As another data point: I'm trying the same kernel with CONFIG_PREEMPT
-> > enabled.  This time the deadlock doesn't happen.  Instead, kswapd0 gets
-> > pegged at 99% CPU for much of the untar, but it does eventually
-> > complete.
-> > 
-> > James
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Well, what Linus desires from ARM folk is a concerted effort to get the
+ARM tree 'under control' and stop the thing forever increasing without
+any apparant control.
+
+Linus has said is that if arch/arm/mach* show up with significant numbers
+of net additional lines of code in the diffstat, he'll refuse to pull the
+git tree.  (See various mails from Linus on linux-arm-kernel.)
+
+My preference is to limit this merge window to just consolidation and
+bug fixes so that we can show that we're taking the issue seriously and
+are putting a decent amount of effort into addressing the problem.
+However, the problem with adding new stuff is that it dilutes the
+diffstat, and makes it much harder to show that we're doing what's
+required.
+
+Eg, lets say we end up removing 1000 LOC, but end up adding 1000 LOC of
+new platform data via other trees.  I don't think Linus will be pleased
+when he comes to the end of the merge window and arch/arm/ again shows
+up heavily in the statistics without a significant reduction.  I suspect
+if that were to happen, things will get much harder for us.
+
+When you bear in mind that in total, arch/arm was pusing 60k lines of
+new code into the kernel _each_ merge window.  If we manage to reduce
+the size of arch/arm by only 10k, it is really just a small drop in the
+ocean in comparison - we need much more effort than that...
