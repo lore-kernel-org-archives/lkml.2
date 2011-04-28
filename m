@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1D1M3O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:29:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53130 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab1D1M3M (ORCPT
+	id S1757514Ab1D1M3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:29:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46460 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab1D1M3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:29:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Date: Thu, 28 Apr 2011 14:28:56 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <201104212129.17013.arnd@arndb.de> <003e01cc058f$94beb490$be3c1db0$%szyprowski@samsung.com> <20110428105131.GD17290@n2100.arm.linux.org.uk>
-In-Reply-To: <20110428105131.GD17290@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104281428.56780.arnd@arndb.de>
-X-Provags-ID: V02:K0:vTBAgDVOy2jRI0CEk4Tl2OtuCII8peZsKmN375wX3i8
- AoMSdlqH4JtZtEB/N4akj3X0j189bB5gyX7vkJcJPZpOei6zKV
- Fe/KF0JeP4B9045LzopSVU7Zwdq3S0kSBbr0t15+iw2OljvRWR
- PqWHodf/kRoJIRHtSpwaLfIuZIPpKCdnSGTFRDl0iMnFhphtjn
- BIixWk76FFayWBaDz3b1w==
+	Thu, 28 Apr 2011 08:29:47 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Colin Ian King <colin.king.lkml@gmail.com>
+Cc: James Bottomley <james.bottomley@suse.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+In-reply-to: <1303990590.2081.9.camel@lenovo>
+References: <1303920553.2583.7.camel@mulgrave.site> <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site> <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site> <1303925374-sup-7968@think> <1303926637.2583.17.camel@mulgrave.site> <1303934716.2583.22.camel@mulgrave.site> <1303990590.2081.9.camel@lenovo>
+Date: Thu, 28 Apr 2011 08:29:29 -0400
+Message-Id: <1303993705-sup-5213@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DB95DB7.0004:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 April 2011, Russell King - ARM Linux wrote:
-> What I'd suggest is that dma_alloc_noncoherent() should be architecture
-> independent, and should call into whatever iommu support the device has
-> to setup an approprite iommu mapping.  IOW, I don't see any need for
-> every architecture to provide its own dma_alloc_noncoherent() allocation
-> function - or indeed every iommu implementation to deal with the
-> allocation issues either.
+Excerpts from Colin Ian King's message of 2011-04-28 07:36:30 -0400:
+> One more data point to add, I've been looking at an identical issue when
+> copying large amounts of data.  I bisected this - and the lockups occur
+> with commit 
+> 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
+> issue. With this commit, my file copy test locks up after ~8-10
+> iterations, before this commit I can copy > 100 times and don't see the
+> lockup.
 
-Almost all architectures today define dma_alloc_noncoherent to
-dma_alloc_coherent, which is totally fine on architectures
-where cacheable coherent mappings are the default or where
-we don't need to flush individual cache lines for dma_sync_*.
+Well, that's really interesting.  I tried with compaction on here and
+couldn't trigger it, but this (very very lightly) tested patch might
+help.
 
-The problem with backing either of the two with alloc_pages or
-alloc_pages_exact is that you cannot do large allocation when
-physical memory is fragmented, even if you have an IOMMU.
+It moves the writeout throttle before the goto restart, and also makes
+sure we do at least one cond_resched before we loop.
 
-IMHO the allocation for both dma_alloc_coherent and
-dma_alloc_noncoherent should therefore depend on whether you
-have an IOMMU. If you do, you can easily allocate megabytes,
-e.g. for use as a frame buffer.
-
-	Arnd
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6771ea7..cb08b41 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1934,12 +1934,14 @@ restart:
+ 	if (inactive_anon_is_low(zone, sc))
+ 		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+ 
++	throttle_vm_writeout(sc->gfp_mask);
++
+ 	/* reclaim/compaction might need reclaim to continue */
+ 	if (should_continue_reclaim(zone, nr_reclaimed,
+-					sc->nr_scanned - nr_scanned, sc))
++					sc->nr_scanned - nr_scanned, sc)) {
++		cond_resched();
+ 		goto restart;
+-
+-	throttle_vm_writeout(sc->gfp_mask);
++	}
+ }
+ 
+ /*
