@@ -1,137 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350Ab1D1SVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:21:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37875 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760686Ab1D1SVR (ORCPT
+	id S933379Ab1D1SV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:21:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62042 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933356Ab1D1SVX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:21:17 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=0i_OOtiXEx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8X0srE0SAArvNrBGM9oA:9 a=bZ-Zs8dRdDovd1m85GMA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Drewry <wad@chromium.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
+	Thu, 28 Apr 2011 14:21:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110428173614.GH1798@nowhere>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	<1303960136-14298-2-git-send-email-wad@chromium.org>
+	<20110428151241.GD1798@nowhere>
+	<BANLkTika4xn5SajxGbRtszqyA4R=4y8M6Q@mail.gmail.com>
+	<20110428161304.GG1798@nowhere>
+	<BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
+	<20110428173614.GH1798@nowhere>
+Date: Thu, 28 Apr 2011 13:21:18 -0500
+Message-ID: <BANLkTinchyMvwgc=PjMV7k_jt6extmjB_A@mail.gmail.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
+        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
+        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
         Roland McGrath <roland@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>
-In-Reply-To: <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	 <1303960136-14298-2-git-send-email-wad@chromium.org>
-	 <20110428165525.GB1927@hallyn.com>
-	 <1304010981.18763.192.camel@gandalf.stny.rr.com>
-	 <20110428173957.GA25940@hallyn.com>
-	 <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Apr 2011 14:21:14 -0400
-Message-ID: <1304014874.18763.201.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 13:01 -0500, Will Drewry wrote:
+On Thu, Apr 28, 2011 at 12:36 PM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Thu, Apr 28, 2011 at 11:48:47AM -0500, Will Drewry wrote:
+>> On Thu, Apr 28, 2011 at 11:13 AM, Frederic Weisbecker
+>> <fweisbec@gmail.com> wrote:
+>> > On Thu, Apr 28, 2011 at 10:29:11AM -0500, Will Drewry wrote:
+>> >> On Thu, Apr 28, 2011 at 10:12 AM, Frederic Weisbecker
+>> >> <fweisbec@gmail.com> wrote:
+>> >> > Instead of having such multiline filter definition with syscall
+>> >> > names prepended, it would be nicer to make the parsing simplier.
+>> >> >
+>> >> > You could have either:
+>> >> >
+>> >> >        prctl(PR_SET_SECCOMP, mode);
+>> >> >        /* Works only if we are in mode 2 */
+>> >> >        prctl(PR_SET_SECCOMP_FILTER, syscall_nr, filter);
+>> >>
+>> >> It'd need to be syscall_name instead of syscall_nr.  Otherwise we're
+>> >> right back to where Adam's patch was 2+ years ago :)  Using the event
+>> >> names from the syscalls infrastructure means the consumer of the
+>> >> interface doesn't need to be confident of the syscall number.
+>> >
+>> > Is it really a problem?
+>>
+>> I'd prefer using numbers myself since it gives more flexibility around
+>> filtering entries that haven't yet made it into ftrace syscalls hooks.
+>> However, I think there's some complexity in ensuring it matches the
+>> host kernel.  (It would also allow compat_task support which doesn't
+>> seem to be possible now.)
+>
+> You'd have some problems with compat and syscall naming, I think some
+> of them are not the same between compat architectures.
+>
+> Note that your new prctl() request is turning syscall handler names (in-kernel API)
+> into a user ABI. We won't be able to change the name of those kernel handlers
+> after that. I'm not sure that's desired.
+>
+> OTOH, syscall numbers are a user ABI,
 
-> Good to know! My question (below) is if I should even be using an RCU
-> guard at all. I may have been a bit too overzealous.
-> 
-> >> >
-> >> > I actually thought you were going to be more extreme about the seccomp
-> >> > state than you are:  I thought you were going to tie a filter list to
-> >> > seccomp state.  So adding or removing a filter would have required
-> >> > duping the seccomp state, duping all the filters, making the change in
-> >> > the copy, and then swapping the new state into place.  Slow in the
-> >> > hopefully rare update case, but safe.
-> 
-> Hrm, I think I'm confused now!  This is exactly what I *thought* the
-> code was doing.
+Makes sense.  I don't mind going the syscall nr route and using a
+library for name resolution in userspace, but other users could just
+include the libc provided names.  If it doesn't work, the SIGKILL will
+make it apparent pretty quickly :p   I don't think it would be a
+problem and it makes the kernel side even simpler again.
 
-I guess my thought by looking at the code is the call_rcu() to free the
-filters in drop_matching_filters().
+>
+>
+>>
+>> > There are libraries that can resolve that. Of course I can't recall their name.
+>>
+>> asm-generic/unistd.h will provide the mapping, if available. It would
+>> mean that any helper libraries would need to be matched to the locally
+>> running kernel.
+>
+> Yeah. But syscall numbers don't move inside a given architecture (could they?)
+> Or if so then you'd a dynamic library.
 
-Also, you have seccomp_drop_all_filters() as a standalone function that
-is even exported to modules.
+Works for me.
 
-This to me, seems that the filters can disappear at any time. Because
-the freeing is done with a rcu_call() the access to the filters needs a
-ref count.
-
-> 
-> At present, seccomp_state can be shared across predecessor/ancestor
-> relationships using refcounting in fork.c  (get/put). However, the
-> only way to change a given seccomp_state or its filters is either
-> through the one-bit on_next_syscall change or through
-> prctl_set_seccomp.  In prctl_set_seccomp, it does:
-> state = (orig_state ? seccomp_state_dup(orig_state) :
->                               seccomp_state_new());
-> operates on the new state and then rcu_assign_pointer()s it to the
-> task.  I didn't intentionally provide any way to drop filters from an
-> existing state object nor change the filtered syscalls on an in-use
-> object.  That _dup call should hit the impromperly rcu_locked
-> copy_all_filters returning duplicates of the original filters by
-> reparsing the filter_string.
-> 
-> Did I accidentally provide a means to mutate a state object or filter
-> list without dup()ing? :/
-
-That seccomp_drop_all_filters() looks like you can.
-
-> 
-> >> > You don't have to do that, but then I'm pretty sure you'll need to add
-> >> > reference counts to each filter and use rcu cycles to a reader from
-> >> > having the filter disappear mid-read.
-> 
-> Right now, I don't think it is possible for seccomp_copy_all_filters()
-> to be called with a src list that changes since every change is
-> guarded by a seccomp_state_dup(). If that's not true, then I violated
-> my own invariant :/  If that is the case, should I not treat the list
-> as an RCU list?  There should never be any simultaneous
-> reader/writers, just a single reader/writer or multiple readers.
-
-Again, that seccomp_copy_all_filters() is called free standing (exported
-to modules). Which to me means that it can be called by anyone at
-anytime. There is no protection of this src list.
-
-> 
-> >>
-> >> Or you can preallocate the new filters, call rcu_read_lock(), check if
-> >> the number of old filters is the same or less, if more, call
-> >> rcu_read_unlock, and try allocating more, and then call rcu_read_lock()
-> >> again and repeat. Then just copy the filters to the preallocate ones.
-> >> rcu_read_unlock() and then free any unused allocated filters.
-> >>
-> >> Maybe a bit messy, but not that bad.
-> >
-> > Sounds good.
-> 
-> I'd prefer a heavy-weight copy ;)
-> 
-> I think I'm a bit lost -- am I missing something obvious here?  I was
-> hoping by using a swapped-in-seccomp_state-pointer, locking and
-> consistency internal to the state objects would be a tad easier -
-> though expensive.
-
-Perhaps, but those free standing functions (the ones that are exported
-to modules) seem like they can destroy state.
-
-Your code would have been correct if you could call kzalloc under
-rcu_read_lock() (which you can on some kernel configurations but not
-all). The issue is that you need to pull out that allocation from the
-rcu_read_lock() because rcu_read_lock assumes you can't preempt, and
-that allocation can schedule out. The access to the filters must be done
-under rcu_read_lock(), other than that, you're fine.
-
--- Steve
-
-
+>
+>> >> > or:
+>> >> >        /*
+>> >> >         * If mode == 2, set the filter to syscall_nr
+>> >> >         * Recall this for each syscall that need a filter.
+>> >> >         * If a filter was previously set on the targeted syscall,
+>> >> >         * it will be overwritten.
+>> >> >         */
+>> >> >        prctl(PR_SET_SECCOMP, mode, syscall_nr, filter);
+>> >> >
+>> >> > One can erase a previous filter by setting the new filter "1".
+>> >> >
+>> >> > Also, instead of having a bitmap of syscall to accept. You could
+>> >> > simply set "0" as a filter to those you want to deactivate:
+>> >> >
+>> >> > prctl(PR_SET_SECCOMP, 2, 1, 0); <- deactivate the syscall_nr 1
+>> >> >
+>> >> > Hm?
+>> >>
+>> >> I like the simplicity in not needing to parse anything extra, but it
+>> >> does add the need for extra state - either a bit or a new field - to
+>> >> represent "enabled/enforcing".
+>> >
+>> > And by the way I'm really puzzled about these. I don't understand
+>> > well why we need this.
+>>
+>> Right now, if you are in seccomp mode !=0 , your system calls will be
+>> hooked (if TIF_SECCOMP is set too). The current patch begins filtering
+>> immediately.  And once filtering is enabled, the process is not
+>> allowed to expand its access to the kernel system cals - only shrink
+>> it.  An "enabled" bit would be needed to tell it that even though it
+>> is running in mode=2, it should/shouldn't kill the process for system
+>> call filter violations and it should allow filters to be added, not
+>> just dropped.  It's why the current patch does it in one step: set the
+>> filters and the mode.  While an enabled bit could be hidden behind
+>> whether TIF_SECCOMP is applied, I'm not sure if that would just be
+>> confusing.  There'd still be a need to APPLY_FILTERS to get the
+>> TIF_SECCOMP flag set to start hooking the system calls.
+>
+> It seems the filter is only ever needed for the childs, right?
+> And moreover when they exec. So Steve's suggestion to apply
+> the filters only after the next exec makes sense.
+>
+> That would solve the problem of both ON_NEXT_SYSCALL and APPLY_FILTER.
+>
+> I may be missing something obvious though. Do you see a limitation there?
+>
+>>
+>> > As for the enable_on_next_syscall. The documentation says
+>> > it's useful if you want the filter to only apply to the
+>> > child. So if fork immediately follows, you will be able to fork
+>> > but if the child doesn't have the right to exec, it won't be able
+>> > to do so. Same for the mmap() that involves...
+>> >
+>> > So I'm a bit confused about that.
+>>
+>> Here's an example:
+>>   http://static.dataspill.org/seccomp_filter/v1/seccomp_launcher.c
+>>
+>> You'd use it by calling fork() ... prctl(..., ON_NEXT_SYSCALL) then
+>> execve since you'll already have fork()d.  It seems to work, but maybe
+>> I'm missing something :)
+>
+> Nope, I see.
+>
+>>
+>> > But yeah if that's really needed, it looks to me better to
+>> > reduce the parsing and cut it that way:
+>> >
+>> >        prctl(PR_SET_SECCOMP, 2, syscall_name_or_nr, filter);
+>> >        prctl(PR_SECCOMP_APPLY_FILTERS, enable_on_next_syscall?)
+>> >
+>> > or something...
+>>
+>> Cool - if there are any other flags, it could be something like:
+>>   prctl(PR_SECCOMP_SET_FLAGS, SECCOMP_ENFORCE|SECCOMP_DELAYED_ENFORCEMENT);
+>>
+>> But only if there are other flags worth considering. I had a few
+>> others in mind, but now I've completely forgotten :/
+>
