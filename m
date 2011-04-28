@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab1D1Mqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:46:45 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:57841 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab1D1Mqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:46:43 -0400
-Subject: Re: [PATCHv4 2/7] ethtool: Call ethtool's get/set_settings
- callbacks with cleaned data
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: David Decotigny <decot@google.com>,
-        "David S. Miller" <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <20110428073417.GA2220@redhat.com>
-References: <1303965163-8198-1-git-send-email-decot@google.com>
-	 <1303965163-8198-3-git-send-email-decot@google.com>
-	 <20110428073417.GA2220@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Thu, 28 Apr 2011 13:46:39 +0100
-Message-ID: <1303994799.3032.456.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Apr 2011 12:46:43.0510 (UTC) FILETIME=[53C40D60:01CC05A2]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18102.003
-X-TM-AS-Result: No--17.578800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S932463Ab1D1Mq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:46:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:42411 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932396Ab1D1Mqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 08:46:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jan Glauber <jang@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, sliakh.lkml@gmail.com, jiang@cs.ncsu.edu,
+        mingo@elte.hu
+Subject: Re: Undoing module RONX protection fix
+In-Reply-To: <1303985300.3495.93.camel@localhost.localdomain>
+References: <20110418092348.GB7786@hal> <20110418092801.GC3837@infradead.org> <874o5v6drb.fsf@rustcorp.com.au> <20110421141949.GA10675@hal>  <87ipu0l1kt.fsf@rustcorp.com.au> <1303985300.3495.93.camel@localhost.localdomain>
+User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Thu, 28 Apr 2011 21:06:39 +0930
+Message-ID: <87tyditxo8.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 09:34 +0200, Stanislaw Gruszka wrote:
-> On Wed, Apr 27, 2011 at 09:32:38PM -0700, David Decotigny wrote:
-> > --- a/drivers/net/stmmac/stmmac_ethtool.c
-> > +++ b/drivers/net/stmmac/stmmac_ethtool.c
-> > @@ -237,13 +237,12 @@ stmmac_set_pauseparam(struct net_device *netdev,
-> >  
-> >  	if (phy->autoneg) {
-> >  		if (netif_running(netdev)) {
-> > -			struct ethtool_cmd cmd;
-> > +			struct ethtool_cmd cmd = { .cmd = ETHTOOL_SSET };
-> >  			/* auto-negotiation automatically restarted */
-> > -			cmd.cmd = ETHTOOL_NWAY_RST;
+On Thu, 28 Apr 2011 12:08:20 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
+> How about this?
 > 
-> Why did you change ETHTOOL_NWAY_RST to ETHTOOL_SSET ?
+> To be honest I don't like the inverse naming like in unset no-execute
+> too much, it makes me feel dizzy. But I wanted to keep the changes
+> minimal.
 
-Because the function it's calling is an implementation of ETHTOOL_SSET,
-not ETHTOOL_NWAY_RST.
+Yes, it should probably just be called protect_module_pages and
+unprotect_module_pages.  The current names provide far too much
+information.
 
-Ben.
+But going back a bit, how did we end up with a NULL mod->module_init and
+yet module->init_text_size, mod->init_size or mod->init_ro_size
+non-zero?
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Because if start == end, set_page_attributes() is a noop, right?
 
+Confused,
+Rusty.
