@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab1D1TyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 15:54:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60088 "EHLO mx1.redhat.com"
+	id S933431Ab1D1T7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 15:59:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56600 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756370Ab1D1TyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 15:54:21 -0400
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH -v2] flex_arrays: allow zero length flex arrays
-To: dave@linux.vnet.ibm.com
-Cc: steffen.klassert@secunet.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
-Date: Thu, 28 Apr 2011 15:54:02 -0400
-Message-ID: <20110428195402.6677.80147.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755863Ab1D1T7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 15:59:35 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
+In-Reply-To: <20110428192104.GA4658@suse.de>
+References: <1303990590.2081.9.camel@lenovo>
+	 <20110428135228.GC1696@quack.suse.cz> <20110428140725.GX4658@suse.de>
+	 <1304000714.2598.0.camel@mulgrave.site> <20110428150827.GY4658@suse.de>
+	 <1304006499.2598.5.camel@mulgrave.site>
+	 <1304009438.2598.9.camel@mulgrave.site>
+	 <1304009778.2598.10.camel@mulgrave.site> <20110428171826.GZ4658@suse.de>
+	 <1304015436.2598.19.camel@mulgrave.site>  <20110428192104.GA4658@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 14:59:27 -0500
+Message-ID: <1304020767.2598.21.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just like kmalloc will allow one to allocate a 0 length segment of memory
-flex arrays should do the same thing.  It should bomb if you try to use
-something, but it should at least allow the allocation.
+On Thu, 2011-04-28 at 20:21 +0100, Mel Gorman wrote:
+> On Thu, Apr 28, 2011 at 01:30:36PM -0500, James Bottomley wrote:
+> > > Way hey, cgroups are also in the mix. How jolly.
+> > > 
+> > > Is systemd a common element of the machines hitting this bug by any
+> > > chance?
+> > 
+> > Well, yes, the bug report is against FC15, which needs cgroups for
+> > systemd.
+> > 
+> 
+> Ok although we do not have direct evidence that it's the problem yet. A
+> broken shrinker could just mean we are also trying to aggressively
+> reclaim in cgroups.
+> 
+> > > The remaining traces seem to be follow-on damage related to the three
+> > > issues of "shrinkers are bust in some manner" causing "we are not
+> > > getting over the min watermark" and as a side-show "we are spending lots
+> > > of time doing something unspecified but unhelpful in cgroups".
+> > 
+> > Heh, well find a way for me to verify this: I can't turn off cgroups
+> > because systemd then won't work and the machine won't boot ...
+> > 
+> 
+> Same testcase, same kernel but a distro that is not using systemd to
+> verify if cgroups are the problem. Not ideal I know. When I'm back
+> online Tuesday, I'll try reproducing this on a !Fedora distribution. In
+> the meantime, the following untested hatchet job might spit out
+> which shrinker we are getting stuck in. It is also breaking out of
+> the shrink_slab loop so it'd even be interesting to see if the bug
+> is mitigated in any way.
 
-This is needed because when SELinux switched to using flex_arrays in 2.6.38
-the inability to allocate a 0 length array resulted in SELinux policy load
-returning -ENOSPC when previously it worked.
+Actually, talking to Chris, I think I can get the system up using
+init=/bin/bash without systemd, so I can try the no cgroup config.
 
-Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Tested-by: Chris Richards <gizmo@giz-works.com>
-Cc: stable@kernel.org [2.6.38+]
----
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c74a501..ed99104 100644
 
- lib/flex_array.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+In the mean time, this patch produces:
 
-diff --git a/lib/flex_array.c b/lib/flex_array.c
-index 0c33b24..854b57b 100644
---- a/lib/flex_array.c
-+++ b/lib/flex_array.c
-@@ -253,9 +253,16 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
- 	unsigned int end;
- 	struct flex_array_part *part;
- 
-+	if (!start && !nr_elements)
-+		return 0;
-+	if (start >= fa->total_nr_elements)
-+		return -ENOSPC;
-+	if (!nr_elements)
-+		return 0;
-+
- 	end = start + nr_elements - 1;
- 
--	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
-+	if (end >= fa->total_nr_elements)
- 		return -ENOSPC;
- 	if (elements_fit_in_base(fa))
- 		return 0;
-@@ -346,6 +353,8 @@ int flex_array_shrink(struct flex_array *fa)
- 	int part_nr;
- 	int ret = 0;
- 
-+	if (!fa->total_nr_elements)
-+		return 0;
- 	if (elements_fit_in_base(fa))
- 		return ret;
- 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++) {
+(that's nothing ... apparently the trace doesn't activate when kswapd
+goes mad).
+
+James
+
 
