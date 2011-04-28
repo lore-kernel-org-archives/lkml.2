@@ -1,58 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab1D1Wsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 18:48:31 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:33835 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab1D1Wsa (ORCPT
+	id S933569Ab1D1WtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 18:49:06 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.122]:60133 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab1D1WtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 18:48:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=sNGg4bfAFzTerfHCNXty36MrndPgcmDtRKp4lSJy50ROUFpNVlrAV9Ja3DTcDKHEIa
-         q8LH81x4QXQABbVCbfaw==
-Date: Thu, 28 Apr 2011 15:48:25 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: john stultz <johnstul@us.ibm.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-In-Reply-To: <1303954193.2971.43.camel@work-vm>
-Message-ID: <alpine.DEB.2.00.1104281545590.24536@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com> <1303331695.2796.159.camel@work-vm> <20110421103009.731B.A69D9226@jp.fujitsu.com> <1303846026.2816.117.camel@work-vm> <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
- <1303950728.2971.35.camel@work-vm> <1303954193.2971.43.camel@work-vm>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 28 Apr 2011 18:49:03 -0400
+X-Authority-Analysis: v=1.1 cv=r4yJ8ACLDmU9N8MfnU6qGSvboKzSN9UnPAeXToqJDNE= c=1 sm=0 a=VpboIDtyrZQA:10 a=31btZ-sII_UA:10 a=pdjqoNJ6s1kA:10 a=8nJEP1OIZ-IA:10 a=JDBpcgVbJLzshLqne7oz2g==:17 a=_TL3JTxRCnY8QD3YyKQA:9 a=wPNLvfGTeEIA:10 a=JDBpcgVbJLzshLqne7oz2g==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 69.134.8.117
+Message-ID: <4DB9EEDD.9070407@nc.rr.com>
+Date: Thu, 28 Apr 2011 18:49:01 -0400
+From: Ralph Blach <chipperb@nc.rr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+Subject: which kernel file contains /porc/acpi/thermal_zone/THRM/tempature
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011, john stultz wrote:
+I have looked for this file quite a bit, but cannot find it.  Which file contains /porc/acpi/thermal_zone/THRM/tempature
+so that I can configure it in my kernel
 
-> So thinking further, this can be simplified by adding the seqlock first,
-> and then retaining the task_locking only in the set_task_comm path until
-> all comm accessors are converted to using get_task_comm.
-> 
+Thanks
 
-On second thought, I think it would be better to just retain using a 
-spinlock but instead of using alloc_lock, introduce a new spinlock to 
-task_struct for the sole purpose of protecting comm.
-
-And, instead, of using get_task_comm() to write into a preallocated 
-buffer, I think it would be easier in the vast majority of cases that 
-you'll need to convert to just provide task_comm_lock(p) and 
-task_comm_unlock(p) so that p->comm can be dereferenced safely.  
-get_task_comm() could use that interface itself and then write into a 
-preallocated buffer.
-
-The problem with using get_task_comm() everywhere is it requires 16 
-additional bytes to be allocated on the stack in hundreds of locations 
-around the kernel which may or may not be safe.
+Chip
