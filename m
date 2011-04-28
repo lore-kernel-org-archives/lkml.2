@@ -1,50 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab1D1Ifc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 04:35:32 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:56638 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707Ab1D1If2 (ORCPT
+	id S1757260Ab1D1Ig2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 04:36:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49933 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755707Ab1D1IgX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 04:35:28 -0400
-Date: Thu, 28 Apr 2011 10:35:25 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [BUG 2.6.38] unlocked spinlock detected in hrtimer code
-Message-ID: <20110428083525.GB2431@osiris.boeblingen.de.ibm.com>
+	Thu, 28 Apr 2011 04:36:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=rI4VYAhgPU2TivJndg9KKfOAfqr2xMPrKiGap4PLihOe2oLesUx6RiGiMx24SIHUVr
+         uUuP0DLBEh7TTOdGB6HW/oeGSJrFoffghZoMyVdzaMztrezNjFqab3pXP8nFeSpitOpp
+         W+tMUHT9TKoRK1GNZnBEsioiv3xiForDXt06I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110428102212.2d8d607c@endymion.delvare>
+References: <1303963358-4652-1-git-send-email-haojian.zhuang@gmail.com> <20110428102212.2d8d607c@endymion.delvare>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 28 Apr 2011 16:36:02 +0800
+Message-ID: <BANLkTin6jguQue_0Y74jGPnmhCcvWLBjHg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Thu, Apr 28, 2011 at 4:22 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> Hi Haojian,
+>
+> On Thu, 28 Apr 2011 12:02:36 +0800, Haojian Zhuang wrote:
+>> Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+>> cores are sharing one pair of I2C pins.
+>>
+>> In order to keep I2C transaction operated with atomic, hardware lock
+>> (RIPC) is required. Because of this, bus lock in AP side can't afford
+>> this requirement. Now hardware lock is appended.
+>
+> I have no objection to the idea, but one question: when using the
+> hardware lock, isn't the software mutex redundant? I would expect that
+> you call the hardware_lock/unlock functions _instead_ of
+> rt_mutex_lock/unlock, rather than in addition to it. Or do you still
+> need the rt_mutex to prevent priority inversion?
+>
 
-while performing excessive cpu hotplug tests within a guest where the host was
-completly overloaded (opening all possible race windows) I got this one:
+Jean,
 
-Apr 27 14:11:33 h0529m4 kernel: BUG: spinlock already unlocked on CPU#0, kworker/4:2/43553
-Apr 27 14:11:33 h0529m4 kernel: lock: 0000000088325f00, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-Apr 27 14:11:33 h0529m4 kernel: CPU: 0 Not tainted 2.6.38 #16
-Apr 27 14:11:33 h0529m4 kernel: Process kworker/4:2 (pid: 43553, task: 000000007ca18838, ksp: 00000000669dfc48)
-Apr 27 14:11:33 h0529m4 kernel: 0000000000000000 00000000669dfca0 0000000000000002 0000000000000000 
-Apr 27 14:11:33 h0529m4 kernel:       00000000669dfd40 00000000669dfcb8 00000000669dfcb8 00000000005275c6 
-Apr 27 14:11:33 h0529m4 kernel:       0000000000000000 0000000000000000 0000000000000000 000000000000000b 
-Apr 27 14:11:33 h0529m4 kernel:       000000000000000c 00000000669dfd00 0000000000000000 0000000000000000 
-Apr 27 14:11:33 h0529m4 kernel:       0000000000565740 00000000001008f0 00000000669dfca0 00000000669dfce8 
-Apr 27 14:11:33 h0529m4 kernel: Call Trace:
-Apr 27 14:11:33 h0529m4 kernel: ([<00000000001007f6>] show_trace+0xee/0x144)
-Apr 27 14:11:33 h0529m4 kernel: [<0000000000348632>] do_raw_spin_unlock+0xbe/0xc4
-Apr 27 14:11:33 h0529m4 kernel: [<0000000000530c2c>] _raw_spin_unlock_irqrestore+0x40/0xa4
-Apr 27 14:11:33 h0529m4 kernel: [<00000000001722aa>] hrtimer_try_to_cancel+0x62/0xe0
-Apr 27 14:11:33 h0529m4 kernel: [<0000000000172352>] hrtimer_cancel+0x2a/0x58
-Apr 27 14:11:33 h0529m4 kernel: [<000000000014f50a>] do_exit+0x5ca/0x7d4
-Apr 27 14:11:33 h0529m4 kernel: [<000000000016d3c4>] kthread+0x9c/0xac
-Apr 27 14:11:33 h0529m4 kernel: [<000000000053166a>] kernel_thread_starter+0x6/0xc
-Apr 27 14:11:33 h0529m4 kernel: [<0000000000531664>] kernel_thread_starter+0x0/0xc
-Apr 27 14:11:33 h0529m4 kernel: INFO: lockdep is turned off.
+It's actually not redundant. The hardware lock is used to protect
+access to the same register regions between two processors (AP
+and CP so called), while the software lock is used to protect
+access from within the AP side.
 
-I didn't look any further into it and it doesn't look like it is reproducible.
+>>
+>> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+>> Cc: Ben Dooks <ben-linux@fluff.org>
+>> ---
+>>  drivers/i2c/i2c-core.c |   22 ++++++++++++++++++----
+>>  include/linux/i2c.h    |    3 +++
+>>  2 files changed, 21 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+>> index 045ba6e..412c7a5 100644
+>> --- a/drivers/i2c/i2c-core.c
+>> +++ b/drivers/i2c/i2c-core.c
+>> @@ -448,8 +448,11 @@ void i2c_lock_adapter(struct i2c_adapter *adapter)
+>>
+>>       if (parent)
+>>               i2c_lock_adapter(parent);
+>> -     else
+>> +     else {
+>>               rt_mutex_lock(&adapter->bus_lock);
+>> +             if (adapter->hardware_lock)
+>> +                     adapter->hardware_lock();
+>> +     }
+>>  }
+>>  EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>>
+>> @@ -460,11 +463,19 @@ EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>>  static int i2c_trylock_adapter(struct i2c_adapter *adapter)
+>>  {
+>>       struct i2c_adapter *parent = i2c_parent_is_i2c_adapter(adapter);
+>> +     int ret = 0;
+>>
+>>       if (parent)
+>>               return i2c_trylock_adapter(parent);
+>> -     else
+>> -             return rt_mutex_trylock(&adapter->bus_lock);
+>> +     else {
+>> +             ret = rt_mutex_trylock(&adapter->bus_lock);
+>> +             if (ret && adapter->hardware_trylock) {
+>> +                     ret = adapter->hardware_trylock();
+>> +                     if (!ret)
+>> +                             i2c_unlock_adapter(adapter);
+>> +             }
+>> +             return ret;
+>> +     }
+>>  }
+>>
+>>  /**
+>> @@ -477,8 +488,11 @@ void i2c_unlock_adapter(struct i2c_adapter *adapter)
+>>
+>>       if (parent)
+>>               i2c_unlock_adapter(parent);
+>> -     else
+>> +     else {
+>> +             if (adapter->hardware_unlock)
+>> +                     adapter->hardware_unlock();
+>>               rt_mutex_unlock(&adapter->bus_lock);
+>> +     }
+>>  }
+>>  EXPORT_SYMBOL_GPL(i2c_unlock_adapter);
+>>
+>> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+>> index 06a8d9c..b283b4e 100644
+>> --- a/include/linux/i2c.h
+>> +++ b/include/linux/i2c.h
+>> @@ -361,6 +361,9 @@ struct i2c_adapter {
+>>
+>>       /* data fields that are valid for all devices   */
+>>       struct rt_mutex bus_lock;
+>> +     void (*hardware_lock)(void);
+>> +     void (*hardware_unlock)(void);
+>> +     int (*hardware_trylock)(void);
+>>
+>>       int timeout;                    /* in jiffies */
+>>       int retries;
+>
+>
+> --
+> Jean Delvare
+>
