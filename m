@@ -1,169 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab1D1WM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 18:12:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33704 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab1D1WM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 18:12:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] [PATCH/RFC] MMC: remove unbalanced pm_runtime_suspend()
-Date: Fri, 29 Apr 2011 00:12:48 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1104221709030.1791-100000@iolanthe.rowland.org> <201104230011.48073.rjw@sisk.pl> <201104251229.27263.rjw@sisk.pl>
-In-Reply-To: <201104251229.27263.rjw@sisk.pl>
+	id S933526Ab1D1WQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 18:16:42 -0400
+Received: from aspirin.dii.utk.edu ([160.36.0.81]:46084 "EHLO
+	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932154Ab1D1WQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 18:16:41 -0400
+Date: Thu, 28 Apr 2011 18:16:22 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
+ config1/config2
+In-Reply-To: <20110427065241.GF17079@elte.hu>
+Message-ID: <alpine.DEB.2.00.1104281811400.25779@cl320.eecs.utk.edu>
+References: <1303407662-15564-1-git-send-email-acme@infradead.org> <1303407662-15564-2-git-send-email-acme@infradead.org> <20110422063429.GA16643@elte.hu> <20110422080604.GA22611@elte.hu> <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
+ <20110425175444.GC28239@elte.hu> <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu> <20110426073847.GB30630@elte.hu> <alpine.DEB.2.00.1104261648400.32482@cl320.eecs.utk.edu> <20110427065241.GF17079@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104290012.48800.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 25, 2011, Rafael J. Wysocki wrote:
-> On Saturday, April 23, 2011, Rafael J. Wysocki wrote:
-> > On Friday, April 22, 2011, Alan Stern wrote:
-> > > On Fri, 22 Apr 2011, Rafael J. Wysocki wrote:
-> > > 
-> > > > > The barrier would not prevent the race between the notifier and runtie PM
-> > > > > from taking place.  Why don't we do something like this instead:
-> > > > > 
-> > > > > ---
-> > > > >  drivers/base/dd.c |    3 ++-
-> > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > > > 
-> > > > > Index: linux-2.6/drivers/base/dd.c
-> > > > > ===================================================================
-> > > > > --- linux-2.6.orig/drivers/base/dd.c
-> > > > > +++ linux-2.6/drivers/base/dd.c
-> > > > > @@ -326,6 +326,8 @@ static void __device_release_driver(stru
-> > > > >  						     BUS_NOTIFY_UNBIND_DRIVER,
-> > > > >  						     dev);
-> > > > >  
-> > > > > +		pm_runtime_put_sync(dev);
-> > > > > +
-> > > > 
-> > > > In fact, I think this one may be _noidle.  If we allow the bus/driver
-> > > > to do what they wont, we might as well let them handle the "device idle"
-> > > > case from ->remove().
-> > > 
-> > > Maybe...  But keeping it put_sync doesn't do any harm.  In Guennadi's 
-> > > case, it might allow him to get rid of the pm_runtime_suspend() call in 
-> > > the remove routine.
-> > > 
-> > > > >  		if (dev->bus && dev->bus->remove)
-> > > > >  			dev->bus->remove(dev);
-> > > > >  		else if (drv->remove)
-> > > > > @@ -338,7 +340,6 @@ static void __device_release_driver(stru
-> > > > >  						     BUS_NOTIFY_UNBOUND_DRIVER,
-> > > > >  						     dev);
-> > > > >  
-> > > > > -		pm_runtime_put_sync(dev);
-> > > > >  	}
-> > > > >  }
-> > > 
-> > > Basically this is okay with me, and it should allow Guennadi to avoid
-> > > the extra put/get pair.
-> > 
-> > OK, so I'm going to put the appended patch into my linux-next branch
-> > (hopefully, the problem is explained sufficiently in the changelog).
-> 
-> I thought about that a bit more and came to the conclusion that we should
-> do things a bit differently in __device_release_driver().  Namely, the fact
-> that the device can be resumed (either synchronously or asynchronously) after
-> the pm_runtime_barrier() has returned may be problematic too, because it
-> may race with the bus notifier in some cases.  For this reason, I think it
-> would be better to do pm_runtime_get_sync() instead of the
-> pm_runtime_get_noresume() and pm_runtime_barrier().
-> 
-> So, I think the appended patch would be better than the previous one.
+On Wed, 27 Apr 2011, Ingo Molnar wrote:
 
-Well, there haven't been any objections, so I'm adding the patch below
-to my linux-next branch.
+> Secondly, you are still quite wrong even with your revised opinion. Being able 
+> to type '-e cycles' and '-e instructions' in perf and get ... cycles and 
+> instructions counts/events, and the kernel helping that kind of approach is not 
+> 'abstraction to the extreme', it's called 'common sense'.
 
-Thanks,
-Rafael
+by your logic I should be able to delete a file by saying
+  echo "delete /tmp/tempfile" > /dev/sdc1
+because using unlink() is too low of an abstraction and confusing to the 
+user.
 
+> The fact that perfmon and oprofile works via magic vendor-specific event string 
+> incantations is one of the many design failures of those projects - not a 
+> virtue.
 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Runtime: Rework runtime PM handling during driver removal
-> 
-> The driver core tries to prevent race conditions between runtime PM
-> and driver removal from happening by incrementing the runtime PM
-> usage counter of the device and executing pm_runtime_barrier() before
-> running the bus notifier and the ->remove() callbacks provided by the
-> device's subsystem or driver.  This guarantees that, if a future
-> runtime suspend of the device has been scheduled or a runtime resume
-> or idle request has been queued up right before the driver removal,
-> it will be canceled or waited for to complete and no other
-> asynchronous runtime suspend or idle requests for the device will be
-> put into the PM workqueue until the ->remove() callback returns.
-> However, it doesn't prevent resume requests from being queued up
-> after pm_runtime_barrier() has been called and it doesn't prevent
-> pm_runtime_resume() from executing the device subsystem's runtime
-> resume callback.  Morever, it prevents the device's subsystem or
-> driver from putting the device into the suspended state by calling
-> pm_runtime_suspend() from its ->remove() routine.  This turns out to
-> be a major inconvenience for some subsystems and drivers that want to
-> leave the devices they handle in the suspended state.
-> 
-> To really prevent runtime PM callbacks from racing with the bus
-> notifier callback in __device_release_driver(), which is necessary,
-> because the notifier is used by some subsystems to carry out
-> operations affecting the runtime PM functionality, use
-> pm_runtime_get_sync() instead of the combination of
-> pm_runtime_get_noresume() and pm_runtime_barrier().  This will resume
-> the device if it's in the suspended state and will prevent it from
-> being suspended again until pm_runtime_put_*() is called.
-> 
-> To allow subsystems and drivers to put devices into the suspended
-> state by calling pm_runtime_suspend() from their ->remove() routines,
-> execute pm_runtime_put_sync() after running the bus notifier in
-> __device_release_driver().  This will require subsystems and drivers
-> to make their ->remove() callbacks avoid races with runtime PM
-> directly, but it will allow of more flexibility in the handling of
-> devices during the removal of their drivers.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/dd.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/drivers/base/dd.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/dd.c
-> +++ linux-2.6/drivers/base/dd.c
-> @@ -316,8 +316,7 @@ static void __device_release_driver(stru
->  
->  	drv = dev->driver;
->  	if (drv) {
-> -		pm_runtime_get_noresume(dev);
-> -		pm_runtime_barrier(dev);
-> +		pm_runtime_get_sync(dev);
->  
->  		driver_sysfs_remove(dev);
->  
-> @@ -326,6 +325,8 @@ static void __device_release_driver(stru
->  						     BUS_NOTIFY_UNBIND_DRIVER,
->  						     dev);
->  
-> +		pm_runtime_put_sync(dev);
-> +
->  		if (dev->bus && dev->bus->remove)
->  			dev->bus->remove(dev);
->  		else if (drv->remove)
-> @@ -338,7 +339,6 @@ static void __device_release_driver(stru
->  						     BUS_NOTIFY_UNBOUND_DRIVER,
->  						     dev);
->  
-> -		pm_runtime_put_sync(dev);
->  	}
->  }
->  
+Well we disagree.  I think one of perf_events biggest failings (among 
+many) is that these generalized event definitions are shoved into the 
+kernel.  At least it bloats the kernel in an option commonly turned on by 
+vendors.  At worst it gives users a full sense of security in thinking 
+these counters are A). Portable across architectures and B). Actually 
+measure what they say they do.
+
+I know it is fun to reinvent the wheel, but you ignored decades of 
+experience in dealing with perf-counters when you ran off and invented 
+perf_events.  It will bite you eventually.
+
+Vince
