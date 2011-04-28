@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab1D1BHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 21:07:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39465 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757438Ab1D1BHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 21:07:42 -0400
-Message-ID: <4DB8BDC4.508@zytor.com>
-Date: Wed, 27 Apr 2011 18:07:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110422 Fedora/3.1.9-7.fc15 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: avoid pointless fields of struct cpuinfo_x86
-References: <4DB84D4C020000780003E675@vpn.id2.novell.com>
-In-Reply-To: <4DB84D4C020000780003E675@vpn.id2.novell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932295Ab1D1B1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 21:27:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27031 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab1D1B1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 21:27:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
+	references:organization;
+	b=o7GcYZBf3Xpi1+PzQZml1Khclb2JDxbwC5L5f38vAmBtSMrycbHCiLgbi5+66sIF/
+	YJRRwy4t/P/WgUPYdGOOg==
+From: David Decotigny <decot@google.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <bhutchings@solarflare.com>, mirq-linux@rere.qmqm.pl,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: David Decotigny <decot@google.com>
+Subject: [PATCHv3 5/7] acenic: Fix using the specified speed when configuring NIC
+Date: Wed, 27 Apr 2011 18:27:21 -0700
+Message-Id: <1303954043-17440-6-git-send-email-decot@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1303954043-17440-1-git-send-email-decot@google.com>
+References: <1303954043-17440-1-git-send-email-decot@google.com>
+Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2011 08:07 AM, Jan Beulich wrote:
-> Several of the flag fields of this structure are completely unused in
-> certain (common) configurations. Don't pointlessly reserve space for
-> them, and have truly flag-only fields consume a single bit only.
-> 
-> Make functionality detection conditional upon (partly new) config
-> options that are now also used to control the presence of those
-> fields.
+This tells the NIC to take the speed specified by ethtool into account
+when configuring it instead of keeping the previous speed.
 
-If you're going to make them bitflags, please use the features array we
-already have.  I do not think there is any point in compressing the
-array if we're not doing something epicly wrong.
+Signed-off-by: David Decotigny <decot@google.com>
+---
+ drivers/net/acenic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-One thing I would like to see is to move the bug flags into an array
-separate from the features array; the bug array should be OR'd together
-(if there is a bug on any CPU, it is here) instead of AND'ed; or we
-could just put them into the features array with negative logic (the
-lack of a bug is a feature.)
-
-That way we get to reuse all of our machinery.
-
-	-hpa
-
+diff --git a/drivers/net/acenic.c b/drivers/net/acenic.c
+index a579899..82260ca 100644
+--- a/drivers/net/acenic.c
++++ b/drivers/net/acenic.c
+@@ -2720,7 +2720,7 @@ static int ace_set_settings(struct net_device *dev, struct ethtool_cmd *ecmd)
+ 		link |= LNK_NEGOTIATE;
+ 	if (ethtool_cmd_speed(ecmd) != speed) {
+ 		link &= ~(LNK_1000MB | LNK_100MB | LNK_10MB);
+-		switch (speed) {
++		switch (ethtool_cmd_speed(ecmd)) {
+ 		case SPEED_1000:
+ 			link |= LNK_1000MB;
+ 			break;
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.3.1
 
