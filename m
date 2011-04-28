@@ -1,368 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab1D1DJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 23:09:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40698 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab1D1DJP (ORCPT
+	id S1755611Ab1D1DK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 23:10:27 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57418 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab1D1DK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 23:09:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 28 Apr 2011 12:02:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: linux-mm@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH] memcg: add reclaim statistics accounting
-Message-Id: <20110428120234.334e905a.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Apr 2011 23:10:26 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
+        mingo@elte.hu, jmorris@namei.org, rostedt@goodmis.org,
+        Will Drewry <wad@chromium.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 2/7] tracing: split out syscall_trace_enter construction
+Date: Wed, 27 Apr 2011 22:08:46 -0500
+Message-Id: <1303960136-14298-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+perf appears to be the primary consumer of the CONFIG_FTRACE_SYSCALLS
+infrastructure.  As such, many of the helpers that target perf can be
+split into a perf-focused helper and a generic CONFIG_FTRACE_SYSCALLS
+consumer interface.
 
-Now, memory cgroup provides poor reclaim statistics per memcg. This
-patch adds statistics for direct/soft reclaim as the number of
-pages scans, the number of page freed by reclaim, the nanoseconds of
-latency at reclaim. 
+This change splits out syscall_trace_enter construction from
+perf_syscall_enter for current into two helpers:
+- ftrace_syscall_enter_state
+- ftrace_syscall_enter_state_size
 
-It's good to add statistics before we modify memcg/global reclaim, largely.
-This patch refactors current soft limit status and add an unified update logic.
+And adds another helper for completeness:
+- ftrace_syscall_exit_state_size
 
-For example, After #cat 195Mfile > /dev/null under 100M limit.
-	# cat /cgroup/memory/A/memory.stat
-	....
-	limit_freed 24592
-	soft_steal 0
-	limit_scan 43974
-	soft_scan 0
-	limit_latency 133837417
+These helpers allow for shared code between perf ftrace events and
+any other consumers of CONFIG_FTRACE_SYSCALLS events.  The proposed
+seccomp_filter patches use this code.
 
-nearly 96M caches are freed. scanned twice. used 133ms.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamaezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- Documentation/cgroups/memory.txt |   13 ++++++--
- include/linux/memcontrol.h       |    1 
- include/linux/swap.h             |   10 ++----
- mm/memcontrol.c                  |   63 ++++++++++++++++++++++++---------------
- mm/vmscan.c                      |   25 +++++++++++++--
- 5 files changed, 77 insertions(+), 35 deletions(-)
+ include/trace/syscall.h       |    4 ++
+ kernel/trace/trace_syscalls.c |   96 +++++++++++++++++++++++++++++++++++------
+ 2 files changed, 86 insertions(+), 14 deletions(-)
 
-Index: memcg/include/linux/memcontrol.h
-===================================================================
---- memcg.orig/include/linux/memcontrol.h
-+++ memcg/include/linux/memcontrol.h
-@@ -106,6 +106,7 @@ extern void mem_cgroup_end_migration(str
- /*
-  * For memory reclaim.
-  */
-+enum { RECLAIM_SCAN, RECLAIM_FREE, RECLAIM_LATENCY, NR_RECLAIM_INFO};
- int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
- int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
-Index: memcg/mm/memcontrol.c
-===================================================================
---- memcg.orig/mm/memcontrol.c
-+++ memcg/mm/memcontrol.c
-@@ -96,10 +96,6 @@ enum mem_cgroup_events_index {
- 	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
- 	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
- 	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
--	MEM_CGROUP_EVENTS_SOFT_STEAL,	/* # of pages reclaimed from */
--					/* soft reclaim               */
--	MEM_CGROUP_EVENTS_SOFT_SCAN,	/* # of pages scanned from */
--					/* soft reclaim               */
- 	MEM_CGROUP_EVENTS_NSTATS,
- };
- /*
-@@ -206,6 +202,9 @@ struct mem_cgroup_eventfd_list {
- static void mem_cgroup_threshold(struct mem_cgroup *mem);
- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 31966a4..242ae04 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -41,6 +41,10 @@ extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+ extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+ extern int
+ ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
++extern int ftrace_syscall_enter_state(u8 *buf, size_t available,
++				      struct trace_entry **entry);
++extern size_t ftrace_syscall_enter_state_size(int nb_args);
++extern size_t ftrace_syscall_exit_state_size(void);
+ enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
+ 				      struct trace_event *event);
+ enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index ee7b5a0..f37f120 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -95,7 +95,7 @@ find_syscall_meta(unsigned long syscall)
+ 	return NULL;
+ }
  
-+/* memory reclaim contexts */
-+enum { MEM_LIMIT, MEM_SOFT, NR_MEM_CONTEXTS};
-+
- /*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-@@ -242,6 +241,7 @@ struct mem_cgroup {
- 	nodemask_t	scan_nodes;
- 	unsigned long   next_scan_node_update;
- #endif
-+	atomic_long_t	reclaim_info[NR_MEM_CONTEXTS][NR_RECLAIM_INFO];
+-static struct syscall_metadata *syscall_nr_to_meta(int nr)
++struct syscall_metadata *syscall_nr_to_meta(int nr)
+ {
+ 	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
+ 		return NULL;
+@@ -498,7 +498,7 @@ static int sys_perf_refcount_exit;
+ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ {
+ 	struct syscall_metadata *sys_data;
+-	struct syscall_trace_enter *rec;
++	void *buf;
+ 	struct hlist_head *head;
+ 	int syscall_nr;
+ 	int rctx;
+@@ -513,25 +513,22 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 		return;
+ 
+ 	/* get the size after alignment with the u32 buffer size field */
+-	size = sizeof(unsigned long) * sys_data->nb_args + sizeof(*rec);
+-	size = ALIGN(size + sizeof(u32), sizeof(u64));
+-	size -= sizeof(u32);
++	size = ftrace_syscall_enter_state_size(sys_data->nb_args);
+ 
+ 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
+ 		      "perf buffer not large enough"))
+ 		return;
+ 
+-	rec = (struct syscall_trace_enter *)perf_trace_buf_prepare(size,
+-				sys_data->enter_event->event.type, regs, &rctx);
+-	if (!rec)
++	buf = perf_trace_buf_prepare(size, sys_data->enter_event->event.type,
++				     regs, &rctx);
++	if (!buf)
+ 		return;
+ 
+-	rec->nr = syscall_nr;
+-	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
+-			       (unsigned long *)&rec->args);
++	/* The only error conditions in this helper are handled above. */
++	ftrace_syscall_enter_state(buf, size, NULL);
+ 
+ 	head = this_cpu_ptr(sys_data->enter_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(buf, size, rctx, 0, 1, regs, head);
+ }
+ 
+ int perf_sysenter_enable(struct ftrace_event_call *call)
+@@ -587,8 +584,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 		return;
+ 
+ 	/* We can probably do that at build time */
+-	size = ALIGN(sizeof(*rec) + sizeof(u32), sizeof(u64));
+-	size -= sizeof(u32);
++	size = ftrace_syscall_exit_state_size();
+ 
  	/*
- 	 * Should the accounting and control be hierarchical, per subtree?
- 	 */
-@@ -645,16 +645,6 @@ static void mem_cgroup_charge_statistics
- 	preempt_enable();
- }
- 
--static void mem_cgroup_soft_steal(struct mem_cgroup *mem, int val)
--{
--	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_STEAL], val);
--}
--
--static void mem_cgroup_soft_scan(struct mem_cgroup *mem, int val)
--{
--	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_SCAN], val);
--}
--
- static unsigned long
- mem_cgroup_get_zonestat_node(struct mem_cgroup *mem, int nid, enum lru_list idx)
- {
-@@ -679,6 +669,15 @@ static unsigned long mem_cgroup_get_loca
- 	return total;
- }
- 
-+void mem_cgroup_update_reclaim_info(struct mem_cgroup *mem, int context,
-+				unsigned long *stats)
-+{
-+	int i;
-+	for (i = 0; i < NR_RECLAIM_INFO; i++)
-+		atomic_long_add(stats[i], &mem->reclaim_info[context][i]);
-+}
-+
-+
- static bool __memcg_event_check(struct mem_cgroup *mem, int target)
- {
- 	unsigned long val, next;
-@@ -1560,6 +1559,8 @@ int mem_cgroup_select_victim_node(struct
- }
- #endif
- 
-+
-+
- /*
-  * Scan the hierarchy if needed to reclaim memory. We remember the last child
-  * we reclaimed from, so that we don't end up penalizing one child extensively
-@@ -1585,7 +1586,8 @@ static int mem_cgroup_hierarchical_recla
- 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
- 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
- 	unsigned long excess;
--	unsigned long nr_scanned;
-+	unsigned long stats[NR_RECLAIM_INFO];
-+	int context = (check_soft)? MEM_SOFT : MEM_LIMIT;
- 
- 	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
- 
-@@ -1631,13 +1633,12 @@ static int mem_cgroup_hierarchical_recla
- 		if (check_soft) {
- 			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
- 				noswap, get_swappiness(victim), zone,
--				&nr_scanned);
--			*total_scanned += nr_scanned;
--			mem_cgroup_soft_steal(victim, ret);
--			mem_cgroup_soft_scan(victim, nr_scanned);
-+				stats);
-+			*total_scanned += stats[RECLAIM_SCAN];
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, get_swappiness(victim));
-+					noswap, get_swappiness(victim),stats);
-+		mem_cgroup_update_reclaim_info(victim, context, stats);
- 		css_put(&victim->css);
- 		/*
- 		 * At shrinking usage, we can't check we should stop here or
-@@ -3661,7 +3662,7 @@ try_to_free:
- 			goto out;
- 		}
- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, get_swappiness(mem));
-+					false, get_swappiness(mem), NULL);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-@@ -3929,8 +3930,12 @@ enum {
- 	MCS_SWAP,
- 	MCS_PGFAULT,
- 	MCS_PGMAJFAULT,
-+	MCS_LIMIT_FREED,
- 	MCS_SOFT_STEAL,
-+	MCS_LIMIT_SCAN,
- 	MCS_SOFT_SCAN,
-+	MCS_LIMIT_LATENCY,
-+	MCS_SOFT_LATENCY,
- 	MCS_INACTIVE_ANON,
- 	MCS_ACTIVE_ANON,
- 	MCS_INACTIVE_FILE,
-@@ -3955,8 +3960,12 @@ struct {
- 	{"swap", "total_swap"},
- 	{"pgfault", "total_pgfault"},
- 	{"pgmajfault", "total_pgmajfault"},
-+	{"limit_freed", "total_limit_freed"},
- 	{"soft_steal", "total_soft_steal"},
-+	{"limit_scan", "total_limit_scan"},
- 	{"soft_scan", "total_soft_scan"},
-+	{"limit_latency", "total_limit_latency"},
-+	{"soft_latency", "total_soft_latency"},
- 	{"inactive_anon", "total_inactive_anon"},
- 	{"active_anon", "total_active_anon"},
- 	{"inactive_file", "total_inactive_file"},
-@@ -3985,10 +3994,18 @@ mem_cgroup_get_local_stat(struct mem_cgr
- 		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
- 		s->stat[MCS_SWAP] += val * PAGE_SIZE;
+ 	 * Impossible, but be paranoid with the future
+@@ -688,3 +684,75 @@ static int syscall_exit_register(struct ftrace_event_call *event,
  	}
--	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_STEAL);
-+	val = atomic_long_read(&mem->reclaim_info[MEM_LIMIT][RECLAIM_FREE]);
-+	s->stat[MCS_LIMIT_FREED] += val;
-+	val = atomic_long_read(&mem->reclaim_info[MEM_SOFT][RECLAIM_FREE]);
- 	s->stat[MCS_SOFT_STEAL] += val;
--	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_SCAN);
-+	val = atomic_long_read(&mem->reclaim_info[MEM_LIMIT][RECLAIM_SCAN]);
-+	s->stat[MCS_LIMIT_SCAN] += val;
-+	val = atomic_long_read(&mem->reclaim_info[MEM_SOFT][RECLAIM_SCAN]);
- 	s->stat[MCS_SOFT_SCAN] += val;
-+	val = atomic_long_read(&mem->reclaim_info[MEM_LIMIT][RECLAIM_LATENCY]);
-+	s->stat[MCS_LIMIT_LATENCY] += val;
-+	val = atomic_long_read(&mem->reclaim_info[MEM_SOFT][RECLAIM_LATENCY]);
-+	s->stat[MCS_SOFT_LATENCY] += val;
- 	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGFAULT);
- 	s->stat[MCS_PGFAULT] += val;
- 	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGMAJFAULT);
-Index: memcg/mm/vmscan.c
-===================================================================
---- memcg.orig/mm/vmscan.c
-+++ memcg/mm/vmscan.c
-@@ -2156,7 +2156,7 @@ unsigned long mem_cgroup_shrink_node_zon
- 						gfp_t gfp_mask, bool noswap,
- 						unsigned int swappiness,
- 						struct zone *zone,
--						unsigned long *nr_scanned)
-+						unsigned long *stats)
- {
- 	struct scan_control sc = {
- 		.nr_scanned = 0,
-@@ -2168,6 +2168,9 @@ unsigned long mem_cgroup_shrink_node_zon
- 		.order = 0,
- 		.mem_cgroup = mem,
- 	};
-+	u64 start, end;
-+
-+	start = sched_clock();
- 
- 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
-@@ -2175,7 +2178,6 @@ unsigned long mem_cgroup_shrink_node_zon
- 	trace_mm_vmscan_memcg_softlimit_reclaim_begin(0,
- 						      sc.may_writepage,
- 						      sc.gfp_mask);
--
- 	/*
- 	 * NOTE: Although we can get the priority field, using it
- 	 * here is not a good idea, since it limits the pages we can scan.
-@@ -2185,20 +2187,26 @@ unsigned long mem_cgroup_shrink_node_zon
- 	 */
- 	shrink_zone(0, zone, &sc);
- 
-+	stats[RECLAIM_SCAN] = sc.nr_scanned;
-+	stats[RECLAIM_FREE] = sc.nr_reclaimed;
-+	end = sched_clock();
-+	stats[RECLAIM_LATENCY] = end - start;
-+
- 	trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
- 
--	*nr_scanned = sc.nr_scanned;
- 	return sc.nr_reclaimed;
+ 	return 0;
  }
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
- 					   bool noswap,
--					   unsigned int swappiness)
-+					   unsigned int swappiness,
-+					   unsigned long *stats)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
- 	int nid;
-+	u64 end, start;
- 	struct scan_control sc = {
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
-@@ -2209,6 +2217,8 @@ unsigned long try_to_free_mem_cgroup_pag
- 		.mem_cgroup = mem_cont,
- 		.nodemask = NULL, /* we don't care the placement */
- 	};
 +
-+	start = sched_clock();
- 	/*
- 	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim
- 	 * don't take care of from where we get pages . So, the node where
-@@ -2226,6 +2236,13 @@ unsigned long try_to_free_mem_cgroup_pag
- 
- 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
-+	if (stats) {
-+		stats[RECLAIM_SCAN] = sc.nr_scanned;
-+		stats[RECLAIM_FREE] = sc.nr_reclaimed;
-+		end = sched_clock();
-+		stats[RECLAIM_LATENCY] = end - start;
-+	}
++/* ftrace_syscall_enter_state_size - returns the state size required.
++ *
++ * @nb_args: number of system call args expected.
++ *           a negative value implies the maximum allowed.
++ */
++size_t ftrace_syscall_enter_state_size(int nb_args)
++{
++	/* syscall_get_arguments only supports up to 6 arguments. */
++	int arg_count = (nb_args >= 0 ? nb_args : 6);
++	size_t size = (sizeof(unsigned long) * arg_count) +
++		      sizeof(struct syscall_trace_enter);
++	size = ALIGN(size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++	return size;
++}
++EXPORT_SYMBOL_GPL(ftrace_syscall_enter_state_size);
 +
- 	trace_mm_vmscan_memcg_reclaim_end(nr_reclaimed);
- 
- 	return nr_reclaimed;
-Index: memcg/Documentation/cgroups/memory.txt
-===================================================================
---- memcg.orig/Documentation/cgroups/memory.txt
-+++ memcg/Documentation/cgroups/memory.txt
-@@ -387,8 +387,13 @@ pgpgout		- # of pages paged out (equival
- swap		- # of bytes of swap usage
- pgfault		- # of page faults.
- pgmajfault	- # of major page faults.
--soft_steal	- # of pages reclaimed from global hierarchical reclaim
--soft_scan	- # of pages scanned from global hierarchical reclaim
-+limit_freed	- # of pages reclaimed by hitting limit.
-+soft_steal	- # of pages reclaimed by kernel with hints of soft limit
-+limit_scan	- # of pages scanned by hitting limit.
-+soft_scan	- # of pages scanned by kernel with hints of soft limit
-+limit_latency	- # of nanosecs epalsed at reclaiming by hitting limit
-+soft_latency	- # of nanosecs epalsed at reclaiming by kernel with hits of
-+		soft limit.
- inactive_anon	- # of bytes of anonymous memory and swap cache memory on
- 		LRU list.
- active_anon	- # of bytes of anonymous and swap cache memory on active
-@@ -412,8 +417,12 @@ total_pgpgout		- sum of all children's "
- total_swap		- sum of all children's "swap"
- total_pgfault		- sum of all children's "pgfault"
- total_pgmajfault	- sum of all children's "pgmajfault"
-+total_limit_freed	- sum of all children's "limit_freed"
- total_soft_steal	- sum of all children's "soft_steal"
-+total_limit_scan	- sum of all children's "limit_scan"
- total_soft_scan		- sum of all children's "soft_scan"
-+total_limit_latency	- sum of all children's "limit_latency"
-+total_soft_latency	- sum of all children's "soft_latency"
- total_inactive_anon	- sum of all children's "inactive_anon"
- total_active_anon	- sum of all children's "active_anon"
- total_inactive_file	- sum of all children's "inactive_file"
-Index: memcg/include/linux/swap.h
-===================================================================
---- memcg.orig/include/linux/swap.h
-+++ memcg/include/linux/swap.h
-@@ -252,13 +252,11 @@ static inline void lru_cache_add_file(st
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap,
--						  unsigned int swappiness);
-+		gfp_t gfp_mask, bool noswap, unsigned int swappiness,
-+		  unsigned long *stats);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
--						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
--						struct zone *zone,
--						unsigned long *nr_scanned);
-+		gfp_t gfp_mask, bool noswap, unsigned int swappiness,
-+		struct zone *zone, unsigned long *stats);
- extern int __isolate_lru_page(struct page *page, int mode, int file);
- extern unsigned long shrink_all_memory(unsigned long nr_pages);
- extern int vm_swappiness;
++size_t ftrace_syscall_exit_state_size(void)
++{
++	return ALIGN(sizeof(struct syscall_trace_exit) + sizeof(u32),
++		     sizeof(u64)) - sizeof(u32);
++}
++EXPORT_SYMBOL_GPL(ftrace_syscall_exit_state_size);
++
++/* ftrace_syscall_enter_state - build state for filter matching
++ *
++ * @buf: buffer to populate with current task state for matching
++ * @available: size available for use in the buffer.
++ * @entry: optional pointer to the trace_entry member of the state.
++ *
++ * Returns 0 on success and non-zero otherwise.
++ * If @entry is NULL, it will be ignored.
++ */
++int ftrace_syscall_enter_state(u8 *buf, size_t available,
++			       struct trace_entry **entry)
++{
++	struct syscall_trace_enter *sys_enter;
++	struct syscall_metadata *sys_data;
++	int size;
++	int syscall_nr;
++	struct pt_regs *regs = task_pt_regs(current);
++
++	syscall_nr = syscall_get_nr(current, regs);
++	if (syscall_nr < 0)
++		return -EINVAL;
++
++	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (!sys_data)
++		return -EINVAL;
++
++	/* Determine the actual size needed. */
++	size = sizeof(unsigned long) * sys_data->nb_args +
++	       sizeof(struct syscall_trace_enter);
++	size = ALIGN(size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++
++	BUG_ON(size > available);
++	sys_enter = (struct syscall_trace_enter *)buf;
++
++	/* Populating the struct trace_sys_enter is left to the caller, but
++	 * a pointer is returned to encourage opacity.
++	 */
++	if (entry)
++		*entry = &sys_enter->ent;
++
++	sys_enter->nr = syscall_nr;
++	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
++			      sys_enter->args);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ftrace_syscall_enter_state);
+-- 
+1.7.0.4
 
