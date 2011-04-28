@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1D1AQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:16:17 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50092 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab1D1AQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:16:15 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] ARM DMA mapping TODO, v1
-In-Reply-To: Your message of "Wed, 27 Apr 2011 12:08:28 BST."
-             <1303902508.15101.21.camel@e102109-lin.cambridge.arm.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201104212129.17013.arnd@arndb.de> <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com> <201104271243.16868.arnd@arndb.de>
-            <1303902508.15101.21.camel@e102109-lin.cambridge.arm.com>
+	id S1753005Ab1D1AW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:22:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60559 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab1D1AWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 20:22:55 -0400
+Date: Thu, 28 Apr 2011 10:22:44 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110428102244.6e1113e9@notabene.brown>
+In-Reply-To: <1303920491-25302-13-git-send-email-mgorman@suse.de>
+References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
+	<1303920491-25302-13-git-send-email-mgorman@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1303949729_5598P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Wed, 27 Apr 2011 20:15:29 -0400
-Message-ID: <11431.1303949729@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4DB8B1A5.0007,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1303949729_5598P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 27 Apr 2011 17:08:10 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-On Wed, 27 Apr 2011 12:08:28 BST, Catalin Marinas said:
 
-> The current version of the ARM ARM says "unpredictable". But this
-> general definition of "unpredictable" does not allow it to deadlock
-> (hardware) or have security implications. It is however allowed to
-> corrupt data.
+> +/*
+> + * Throttle direct reclaimers if backing storage is backed by the network
+> + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+> + * depleted. kswapd will continue to make progress and wake the processes
+> + * when the low watermark is reached
+> + */
+> +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> +					nodemask_t *nodemask)
+> +{
+> +	struct zone *zone;
+> +	int high_zoneidx = gfp_zone(gfp_mask);
+> +	DEFINE_WAIT(wait);
+> +
+> +	/* Check if the pfmemalloc reserves are ok */
+> +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
+> +		return;
 
-Not allowed to have security implications, but is allowed to corrupt data.
+As the first thing that 'wait_event_interruptible" does is test the condition
+and return if it is true, this "if () return;" is pointless.
+ 
+> +
+> +	/* Throttle */
+> +	wait_event_interruptible(zone->zone_pgdat->pfmemalloc_wait,
+> +		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
+> +}
 
-*boggle* :)
+I was surprised that you chose wait_event_interruptible as your previous code
+was almost exactly "wait_event_killable".
 
-(The problem being, of course, that if the attacker is able to predict/control
-what gets corrupted, it can easily end up leveraged into a security implication.)
+Is there some justification for not throttling processes which happen to have
+a (non-fatal) signal pending?
 
---==_Exmh_1303949729_5598P
-Content-Type: application/pgp-signature
+Thanks,
+NeilBrown
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFNuLGhcC3lWbTT17ARAofNAKCJq4YPwOGDwFc4TQEhpvtA36neHgCg2eAm
-0Y4V85ENPqLJXiYPkjcjruY=
-=j/Ko
------END PGP SIGNATURE-----
 
---==_Exmh_1303949729_5598P--
+> +
+>  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  				gfp_t gfp_mask, nodemask_t *nodemask)
+>  {
+> @@ -2133,6 +2172,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  		.nodemask = nodemask,
+>  	};
+>  
+> +	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+> +
+> +	/*
+> +	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
+> +	 * that the page allocator does not consider triggering OOM
+> +	 */
+> +	if (fatal_signal_pending(current))
+> +		return 1;
+> +
+>  	trace_mm_vmscan_direct_reclaim_begin(order,
+>  				sc.may_writepage,
+>  				gfp_mask);
+> @@ -2488,6 +2536,12 @@ loop_again:
+>  			}
+>  
+>  		}
+> +
+> +		/* Wake throttled direct reclaimers if low watermark is met */
+> +		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
+> +				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
+> +			wake_up_interruptible(&pgdat->pfmemalloc_wait);
+> +
+>  		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+>  			break;		/* kswapd: all done */
+>  		/*
 
