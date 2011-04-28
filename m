@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab1D1DgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 23:36:15 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42281 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab1D1DgN (ORCPT
+	id S1756846Ab1D1DkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 23:40:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49649 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab1D1DkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 23:36:13 -0400
-Date: Thu, 28 Apr 2011 00:36:27 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: linux-next: manual merge of the bluetooth tree with Linus' tree
-Message-ID: <20110428033626.GA2214@joana>
-Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Lucas De Marchi <lucas.demarchi@profusion.mobi>
-References: <20110428113404.081a74a5.sfr@canb.auug.org.au>
+	Wed, 27 Apr 2011 23:40:10 -0400
+Date: Thu, 28 Apr 2011 04:40:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Will Drewry <wad@chromium.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, kees.cook@canonical.com,
+        eparis@redhat.com, agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
+        rostedt@goodmis.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH 4/7] seccomp_filter: add process state reporting
+Message-ID: <20110428034003.GG9487@ZenIV.linux.org.uk>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-3-git-send-email-wad@chromium.org>
+ <20110428122334.D197.A69D9226@jp.fujitsu.com>
+ <BANLkTinfXZ3j0vG51=cQjM0FZQ5VR5ze8A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110428113404.081a74a5.sfr@canb.auug.org.au>
+In-Reply-To: <BANLkTinfXZ3j0vG51=cQjM0FZQ5VR5ze8A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Wed, Apr 27, 2011 at 10:24:20PM -0500, Will Drewry wrote:
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [2011-04-28 11:34:04 +1000]:
+> Definitely.  Would it make sense to have /proc/<pid>/seccomp and
+> /proc/<pid>/seccomp_filter?
 
-> Hi Gustavo,
-> 
-> Today's linux-next merge of the bluetooth tree got a conflict in
-> net/bluetooth/l2cap_sock.c between commit 25985edcedea ("Fix common
-> misspellings") from Linus' tree and commit dbe1c0aea650 ("Bluetooth: Move
-> conn to struct l2cap_chan") from the bluetooth tree.
-> 
-> Just context changes.  I fxied it up (see below) and can carry the fix as
-> necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc net/bluetooth/l2cap_sock.c
-> index 47394a1,09cc7a0..0000000
-> --- a/net/bluetooth/l2cap_sock.c
-> +++ b/net/bluetooth/l2cap_sock.c
-> @@@ -678,8 -692,8 +692,8 @@@ static int l2cap_sock_setsockopt(struc
->   		}
->   
->   		if (opt == BT_FLUSHABLE_OFF) {
-> - 			struct l2cap_conn *conn = l2cap_pi(sk)->conn;
-> + 			struct l2cap_conn *conn = chan->conn;
->  -			/* proceed futher only when we have l2cap_conn and
->  +			/* proceed further only when we have l2cap_conn and
->   			   No Flush support in the LM */
->   			if (!conn || !lmp_no_flush_capable(conn->hcon->hdev)) {
->   				err = -EINVAL;
-
-Thanks for the fix. 
-
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+Just one question: WTF bother with S_IRUSR?  Note that it's absolutely
+_useless_ in procfs; any kind of permission checks must be done in
+read(2) time since doing it in open(2) is worthless.  Consider execve()
+on suid binary; oops, there goes your uid and there goes the effect
+of checks done by open(2).  And if you *do* checks in read(2), why bother
+duplicating them in open(2)?
