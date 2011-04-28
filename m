@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1D1DEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 23:04:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55895 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab1D1DEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 23:04:35 -0400
-Date: Thu, 28 Apr 2011 13:04:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: large cross tree spelling fixes
-Message-Id: <20110428130427.06925753.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__28_Apr_2011_13_04_27_+1000_7XBVg.EGosDj=j=1"
+	id S1755403Ab1D1DFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 23:05:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61811 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab1D1DFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 23:05:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=BEimKAHOcpdLsVkoud4E1od632d6Fy8eCZrMMbMtYqWaHcBGV3l1H3YCVPZuYWZ7u/
+         gvkA7KW6FOs6TkwIfhpDhWPiVq0z8Phg5Nd9uSCnQ6qrk+fEu1SS8iV40b8F1YihIl7J
+         JHBRNdcmBF8E/kL2/GYre2WBn4jfKSrKkzkKs=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin3BmJpuzUyBWV1B38oVMDbXe=fbw@mail.gmail.com>
+References: <1303317178.2587.30.camel@mulgrave.site>
+	<alpine.DEB.2.00.1104201410350.31768@chino.kir.corp.google.com>
+	<20110421220351.9180.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1104211237250.5829@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1104211500170.5741@router.home>
+	<alpine.DEB.2.00.1104211411540.20201@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1104211501470.20201@chino.kir.corp.google.com>
+	<4DB3840F.3060503@gmail.com>
+	<alpine.DEB.2.00.1104251355410.31884@chino.kir.corp.google.com>
+	<4DB63349.3070808@gmail.com>
+	<Pine.BSM.4.64L.1104261049350.4851@herc.mirbsd.org>
+	<BANLkTin3BmJpuzUyBWV1B38oVMDbXe=fbw@mail.gmail.com>
+Date: Thu, 28 Apr 2011 15:05:12 +1200
+Message-ID: <BANLkTimZbC=jFGtA7X_O55yvneekH2oWzQ@mail.gmail.com>
+Subject: Re: [patch] m68k, mm: set all online nodes in N_NORMAL_MEMORY
+From: Michael Schmitz <schmitzmic@googlemail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Thorsten Glaser <tg@mirbsd.de>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, schwab@linux-m68k.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Apr_2011_13_04_27_+1000_7XBVg.EGosDj=j=1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Geert,
 
-Hi Linus,
+>> No, this has whitespace problems (tabs are expanded to spaces).
+>
+> Fixed those up, applied, and will send to Linus for 2.6.39-final.
 
-Next time you are tempted to take one of these, please resist. :-)
+Thanks, I have no idea how that happened.
+>
+> BTW, if I enable CONFIG_SLUB on my ARAnyM setup, I don't get a crash, but it
+> hangs after:
+>
+> | INIT: version 2.86 booting
+>
+> With Michael's patch, it continues fine.
 
-It was not urgent, could have been (at least) broken up and sent to the
-respective maintainers, and caused many conflicts in linux-next (which
-either means unnecessary rebases/merges or you will see the conflicts
-next merge window).
+It may just need a long time to crash - forcing e2fsck is a good way
+to speed up the crash usually.
 
---=20
+May depend on how much RAM you give to ARAnyM, on the kernel size and
+any number of other parameters.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__28_Apr_2011_13_04_27_+1000_7XBVg.EGosDj=j=1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNuNk7AAoJEDMEi1NhKgbsK8cH/j3RfQ6L2nwZuttjRerIXCKm
-SiMRGLo22l9VoIVciOPteErd27Eylzqi5/Ulg1rANjpWcOA1G/bqOYYPvaTNqL63
-emVSQqnStd2HdsFQ0MPR/OatohJeimlkG9HkcQAZXewzG+VUp42M0wEBAJ6w7/tB
-enr4gU5eYKeLwLAoKW/6ZCcsRTBVR3Xv6BAXimgW9k7oePncIyLiabMvAx+UfMk6
-sBQYoVeXri1rn91I0ZQkawK/NlWKpGQqYJ/+PUUWgxrlPkVJC3fOG+B+mFnBY+t9
-rPnY3ZWrdtP93aqFX2uY8EfIIwwxrReeH32CsQEVM17EJMvVee1JC5Gba/YuIJY=
-=EZKh
------END PGP SIGNATURE-----
-
---Signature=_Thu__28_Apr_2011_13_04_27_+1000_7XBVg.EGosDj=j=1--
+  Michael
