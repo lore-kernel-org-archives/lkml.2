@@ -1,147 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579Ab1D1XHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 19:07:19 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59945 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab1D1XGy convert rfc822-to-8bit (ORCPT
+	id S1756607Ab1D1XOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 19:14:49 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61878 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441Ab1D1XOr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 19:06:54 -0400
+	Thu, 28 Apr 2011 19:14:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=KYUiU0LhBZpISdHTmG2U0/KBu3n8lSqrJQcvKKT+wbQymBfepIhMTNpRPJ0LMbUxJv
-         s5wkOIPS05IY/WNUiEj/KkOAQ5UAia9VUFTUJ1/8Ft1EvKeT8bYb8q1WBDYNkAK1Pjvg
-         /UfsWXYxg/i892GE03DveVNazHrZ03x15UubY=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=dp2Cx3iaRLqnoOGio4AOFubSxSqZ8n2prbr5xNRe42INiWYa5SpG10frc+vdI8BzIH
+         p+OdYwbEDC3+QGEg6Qfg==
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <alpine.LFD.2.02.1104282353140.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com>
-	<20110426183859.6ff6279b@neptune.home>
-	<20110426190918.01660ccf@neptune.home>
-	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-	<alpine.LFD.2.02.1104262314110.3323@ionos>
-	<20110427081501.5ba28155@pluto.restena.lu>
-	<20110427204139.1b0ea23b@neptune.home>
-	<alpine.LFD.2.02.1104272351290.3323@ionos>
-	<alpine.LFD.2.02.1104281051090.19095@ionos>
-	<BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
-	<20110428102609.GJ2135@linux.vnet.ibm.com>
-	<1303997401.7819.5.camel@marge.simson.net>
-	<BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
-	<alpine.LFD.2.02.1104282044120.3005@ionos>
-	<20110428222301.0b745a0a@neptune.home>
-	<alpine.LFD.2.02.1104282227340.3005@ionos>
-	<20110428224444.43107883@neptune.home>
-	<alpine.LFD.2.02.1104282251080.3005@ionos>
-	<1304027480.2971.121.camel@work-vm>
-	<alpine.LFD.2.02.1104282353140.3005@ionos>
-Date: Fri, 29 Apr 2011 01:06:52 +0200
-Message-ID: <BANLkTi=uDstjKEQaPOkxX94NxMQU2Pu5gA@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>,
-        =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1303512373-25992-1-git-send-email-vnagarnaik@google.com>
+References: <1303512373-25992-1-git-send-email-vnagarnaik@google.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Thu, 28 Apr 2011 16:14:14 -0700
+Message-ID: <BANLkTimYB8dRUu4F-F4Yo5K09-rfUya7Ng@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add a free on close control mechanism for buffer_size_kb
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 12:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 28 Apr 2011, john stultz wrote:
->> On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
->> > /me suspects hrtimer changes to be the real culprit.
->>
->> I'm not seeing anything on right off, but it does smell like
->> e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
->> would crop up.
->>
->> Bruno, could you try checking out e06383db9ec, confirming it still
->> occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
->>
->> I'll keep digging in the meantime.
+All
+
+Can you please take a look at this patch and provide your thoughts?
+
+
+Thanks
+Vaibhav Nagarnaik
+
+
+
+On Fri, Apr 22, 2011 at 3:46 PM, Vaibhav Nagarnaik
+<vnagarnaik@google.com> wrote:
+> The proc file entry buffer_size_kb is used to set the size of tracing
+> buffer. The memory to expand the buffer size is kernel memory. Consider
+> a use case where tracing is handled by a user space utility, which acts
+> as a gate keeper for tracing requests. In an OOM condition, tracing is
+> considered a low priority task and if the utility gets killed the ring
+> buffer memory cannot be released back to the kernel.
 >
-> I found the bug already. The problem is that sched_init() calls
-> init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
-> hrtimers_init() is called.
+> This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
+> When this boolean is enabled, closing buffer_size_kb file will cause
+> tracing to stop and free up the ring buffer memory.
 >
-> That was unnoticed so far as the CLOCK id to hrtimer base conversion
-> was hardcoded. Now we use a table which is set up at hrtimers_init(),
-> so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
-> in the bss.
+> The user space process can then open the buffer_size_kb file to set the
+> new buffer size for tracing, enable the boolean through IOCTL and keep
+> the file open. Under OOM condition, if the process gets killed, the
+> kernel closes the file descriptor for buffer_size_kb. The release
+> handler stops the tracing and releases the kernel memory automatically.
 >
-> The patch below fixes this, by providing the table statically rather
-> than runtime initialized. Though that whole ordering wants to be
-> revisited.
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  include/linux/ftrace.h |    3 +
+>  kernel/trace/trace.c   |  135 ++++++++++++++++++++++++++++++++++++------------
+>  2 files changed, 105 insertions(+), 33 deletions(-)
 >
-> Thanks,
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index ca29e03..30c8a23 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -114,6 +114,9 @@ struct ftrace_func_command {
+>                                        char *params, int enable);
+>  };
 >
-> Â  Â  Â  Â tglx
+> +/* enable/disable auto free ring buffer on file close */
+> +#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
+> +
+>  #ifdef CONFIG_DYNAMIC_FTRACE
 >
-> --- linux-2.6.orig/kernel/hrtimer.c
-> +++ linux-2.6/kernel/hrtimer.c
-> @@ -81,7 +81,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base,
-> Â  Â  Â  Â }
-> Â };
+>  int ftrace_arch_code_modify_prepare(void);
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index d38c16a..c676f17 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2817,6 +2817,42 @@ static int tracing_resize_ring_buffer(unsigned long size)
+>        return ret;
+>  }
 >
-> -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
-> +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
-> + Â  Â  Â  [CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
-> + Â  Â  Â  [CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
-> + Â  Â  Â  [CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
+> +static ssize_t tracing_buffer_resize_atomic(unsigned long size)
+> +{
+> +       int cpu, ret = 0;
+> +
+> +       mutex_lock(&trace_types_lock);
+> +
+> +       tracing_stop();
+> +
+> +       /* disable all cpu buffers */
+> +       for_each_tracing_cpu(cpu) {
+> +               if (global_trace.data[cpu])
+> +                       atomic_inc(&global_trace.data[cpu]->disabled);
+> +               if (max_tr.data[cpu])
+> +                       atomic_inc(&max_tr.data[cpu]->disabled);
+> +       }
+> +
+> +       if (size != global_trace.entries)
+> +               ret = tracing_resize_ring_buffer(size);
+> +
+> +       /* If check pages failed, return ENOMEM */
+> +       if (tracing_disabled)
+> +               ret = -ENOMEM;
+> +
+> +       for_each_tracing_cpu(cpu) {
+> +               if (global_trace.data[cpu])
+> +                       atomic_dec(&global_trace.data[cpu]->disabled);
+> +               if (max_tr.data[cpu])
+> +                       atomic_dec(&max_tr.data[cpu]->disabled);
+> +       }
+> +
+> +       tracing_start();
+> +       mutex_unlock(&trace_types_lock);
+> +
+> +       return ret;
+> +}
+> +
+>
+>  /**
+>  * tracing_update_buffers - used by tracing facility to expand ring buffers
+> @@ -3399,11 +3435,37 @@ out_err:
+>        goto out;
+>  }
+>
+> +struct ftrace_entries_info {
+> +       struct trace_array      *tr;
+> +       int                     free_buffer_on_close;
 > +};
+> +
+> +static int
+> +tracing_entries_open(struct inode *inode, struct file *filp)
+> +{
+> +       struct ftrace_entries_info *info;
+> +
+> +       if (tracing_disabled)
+> +               return -ENODEV;
+> +
+> +       info = kzalloc(sizeof(*info), GFP_KERNEL);
+> +       if (!info)
+> +               return -ENOMEM;
+> +
+> +       info->tr = (struct trace_array *)inode->i_private;
+> +       info->free_buffer_on_close = 0;
+> +
+> +       filp->private_data = info;
+> +
+> +       return 0;
+> +}
+> +
+>  static ssize_t
+>  tracing_entries_read(struct file *filp, char __user *ubuf,
+>                     size_t cnt, loff_t *ppos)
+>  {
+> -       struct trace_array *tr = filp->private_data;
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +       struct trace_array *tr = info->tr;
+>        char buf[96];
+>        int r;
 >
-> Â static inline int hrtimer_clockid_to_base(clockid_t clock_id)
-> Â {
-> @@ -1722,10 +1726,6 @@ static struct notifier_block __cpuinitda
+> @@ -3425,7 +3487,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+>  {
+>        unsigned long val;
+>        char buf[64];
+> -       int ret, cpu;
+> +       int ret;
 >
-> Â void __init hrtimers_init(void)
-> Â {
-> - Â  Â  Â  hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
-> - Â  Â  Â  hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
-> - Â  Â  Â  hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
-> -
-> Â  Â  Â  Â hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â (void *)(long)smp_processor_id());
-> Â  Â  Â  Â register_cpu_notifier(&hrtimers_nb);
+>        if (cnt >= sizeof(buf))
+>                return -EINVAL;
+> @@ -3443,46 +3505,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+>        if (!val)
+>                return -EINVAL;
+>
+> -       mutex_lock(&trace_types_lock);
+> +       /* value is in KB */
+> +       val <<= 10;
+>
+> -       tracing_stop();
+> +       ret = tracing_buffer_resize_atomic(val);
+> +       if (ret < 0)
+> +               return ret;
+>
+> -       /* disable all cpu buffers */
+> -       for_each_tracing_cpu(cpu) {
+> -               if (global_trace.data[cpu])
+> -                       atomic_inc(&global_trace.data[cpu]->disabled);
+> -               if (max_tr.data[cpu])
+> -                       atomic_inc(&max_tr.data[cpu]->disabled);
+> -       }
+> +       *ppos += cnt;
+>
+> -       /* value is in KB */
+> -       val <<= 10;
+> +       return cnt;
+> +}
+>
+> -       if (val != global_trace.entries) {
+> -               ret = tracing_resize_ring_buffer(val);
+> -               if (ret < 0) {
+> -                       cnt = ret;
+> -                       goto out;
+> -               }
+> +static long
+> +tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> +{
+> +       int ret = -ENOIOCTLCMD;
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +
+> +       switch (cmd) {
+> +       case TRACE_RINGBUF_FREE_ON_CLOSE: {
+> +               info->free_buffer_on_close = !!arg;
+> +               ret = 0;
+> +               break;
+> +       }
+>        }
+>
+> -       *ppos += cnt;
+> +       return ret;
+> +}
+>
+> -       /* If check pages failed, return ENOMEM */
+> -       if (tracing_disabled)
+> -               cnt = -ENOMEM;
+> - out:
+> -       for_each_tracing_cpu(cpu) {
+> -               if (global_trace.data[cpu])
+> -                       atomic_dec(&global_trace.data[cpu]->disabled);
+> -               if (max_tr.data[cpu])
+> -                       atomic_dec(&max_tr.data[cpu]->disabled);
+> +static int
+> +tracing_entries_release(struct inode *inode, struct file *filp)
+> +{
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +
+> +       if (info->free_buffer_on_close) {
+> +               /* disable tracing */
+> +               tracing_off();
+> +               /* resize the ring buffer to 0 */
+> +               tracing_buffer_resize_atomic(0);
+>        }
+>
+> -       tracing_start();
+> -       mutex_unlock(&trace_types_lock);
+> +       kfree(info);
+>
+> -       return cnt;
+> +       return 0;
+>  }
+>
+>  static int mark_printk(const char *fmt, ...)
+> @@ -3624,9 +3690,12 @@ static const struct file_operations tracing_pipe_fops = {
+>  };
+>
+>  static const struct file_operations tracing_entries_fops = {
+> -       .open           = tracing_open_generic,
+> +       .open           = tracing_entries_open,
+>        .read           = tracing_entries_read,
+>        .write          = tracing_entries_write,
+> +       .unlocked_ioctl = tracing_entries_ioctl,
+> +       .compat_ioctl   = tracing_entries_ioctl,
+> +       .release        = tracing_entries_release,
+>        .llseek         = generic_file_llseek,
+>  };
+>
+> --
+> 1.7.3.1
 >
 >
->
-
-Looks good so far, no stalls or call-traces.
-
-Really stressing with 20+ open tabs in firefox with flash-movie
-running in one of them , tar-job, IRC-client etc.
-I will run some more tests and collect data and send them later.
-
-- Sedat -
-
-P.S.: Patchset against linux-2.6-rcu.git#sedat.2011.04.23a where 0003
-is from [2]
-
-[1] http://git.us.kernel.org/?p=linux/kernel/git/paulmck/linux-2.6-rcu.git;a=shortlog;h=refs/heads/sedat.2011.04.23a
-[2] https://patchwork.kernel.org/patch/739782/
-
-$ l ../RCU-HOORAY/
-insgesamt 40
-drwxr-xr-x  2 sd sd  4096 29. Apr 01:02 .
-drwxr-xr-x 35 sd sd 20480 29. Apr 01:01 ..
--rw-r--r--  1 sd sd   726 29. Apr 01:01
-0001-Revert-rcu-restrict-TREE_RCU-to-SMP-builds-with-PREE.patch
--rw-r--r--  1 sd sd   735 29. Apr 01:01
-0002-sched-Add-warning-when-RT-throttling-is-activated.patch
--rw-r--r--  1 sd sd  2376 29. Apr 01:01
-0003-2.6.39-rc4-Kernel-leaking-memory-during-FS-scanning-.patch
