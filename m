@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab1D1PkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:40:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25082 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951Ab1D1PkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:40:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,281,1301900400"; 
-   d="scan'208";a="427175917"
-Subject: Re: [PATCH 6/8] staging/mei: Header file contain the Userland API,
- (IOCTL and its struct)
-From: David Woodhouse <david.woodhouse@intel.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-In-Reply-To: <20110428150454.GA5365@suse.de>
-References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
-	 <1303900057-21694-7-git-send-email-oren.jer.weil@intel.com>
-	 <20110427081541.80cc591a.randy.dunlap@oracle.com>
-	 <20110427153335.GA25973@suse.de>
-	 <F28B59AD52D84B479DCA469824475335065AF92F69@hasmsx503.ger.corp.intel.com>
-	 <20110428134036.GC4861@suse.de>
-	 <F28B59AD52D84B479DCA469824475335065AFD8C6F@hasmsx503.ger.corp.intel.com>
-	 <20110428150454.GA5365@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation. Pipers Way, Swindon, Wiltshire, SN3 1RJ,
- UK.
-Date: Thu, 28 Apr 2011 16:39:45 +0100
-Message-ID: <1304005185.4772.32.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1760177Ab1D1PnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:43:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49591 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab1D1PnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 11:43:16 -0400
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Fernando Guzman Lugo <x0095840@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Nishanth Menon <nm@ti.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>
+Subject: [PATCH v4 0/6] staging tidspbridge: iommu migration
+Date: Thu, 28 Apr 2011 10:31:46 -0500
+Message-Id: <1304004712-8487-1-git-send-email-omar.ramirez@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 08:04 -0700, Greg KH wrote:
-> On Thu, Apr 28, 2011 at 05:12:45PM +0300, Weil, Oren jer wrote:
-> > ---------------------------------------------------------------------
-> > Intel Israel (74) Limited
-> > 
-> > This e-mail and any attachments may contain confidential material for
-> > the sole use of the intended recipient(s). Any review or distribution
-> > by others is strictly prohibited. If you are not the intended
-> > recipient, please contact the sender and delete all copies.
-> 
-> This type of footer is not allowed on discussion of Linux kernel related
-> things that are done in public.  Please fix your email client/system to
-> remove it.
+DO-NOT-APPLY to staging yet.
 
-Oren, I specifically told you to fix that before posting, or to post
-from a non-Intel account. Why didn't you?
+Rework and rebase of the previous set of patches for iommu migration[1].
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Reorganized the patches to avoid several iterations to change the same code.
+
+Patches were tested with an OMAP3630 board, with both, basic samples and
+gst-dsp; these are dependant on patch:
+	"OMAP: iovmm: fix SW flags passed by user"[2].
+
+[1] http://bit.ly/lUxbRO
+[2] http://bit.ly/mgSrr8
+
+Fernando Guzman Lugo (3):
+  staging: tidspbridge: remove custom mmu code
+  staging: tidspbridge: remove dmm module
+  staging: tidspbridge: decouple mmu functions from regular code
+
+Omar Ramirez Luna (3):
+  staging: tidspbridge: introduce mapping search based on device
+    address
+  staging: tidspbridge: replace custom mmu for omap iommu framework
+  staging: tidspbridge: mapping support when SG_CHAIN is not defined
+
+ drivers/staging/tidspbridge/Kconfig                |   11 +
+ drivers/staging/tidspbridge/Makefile               |    7 +-
+ drivers/staging/tidspbridge/core/_deh.h            |    5 +-
+ drivers/staging/tidspbridge/core/_tiomap.h         |   19 +-
+ drivers/staging/tidspbridge/core/dsp_mmu.c         |  396 +++++++
+ drivers/staging/tidspbridge/core/io_sm.c           |  181 +---
+ drivers/staging/tidspbridge/core/tiomap3430.c      | 1087 +++-----------------
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    6 +-
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   14 +-
+ drivers/staging/tidspbridge/core/ue_deh.c          |  115 +--
+ drivers/staging/tidspbridge/hw/EasiGlobal.h        |   41 -
+ drivers/staging/tidspbridge/hw/MMUAccInt.h         |   76 --
+ drivers/staging/tidspbridge/hw/MMURegAcM.h         |  225 ----
+ drivers/staging/tidspbridge/hw/hw_defs.h           |   58 -
+ drivers/staging/tidspbridge/hw/hw_mmu.c            |  562 ----------
+ drivers/staging/tidspbridge/hw/hw_mmu.h            |  163 ---
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 -
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   24 -
+ .../staging/tidspbridge/include/dspbridge/dmm.h    |   75 --
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   13 -
+ .../tidspbridge/include/dspbridge/dsp_mmu.h        |   33 +
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   44 -
+ .../tidspbridge/include/dspbridge/dspioctl.h       |    7 -
+ .../staging/tidspbridge/include/dspbridge/proc.h   |   46 -
+ drivers/staging/tidspbridge/pmgr/dev.c             |   63 +--
+ drivers/staging/tidspbridge/pmgr/dmm.c             |  533 ----------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |   36 +-
+ drivers/staging/tidspbridge/rmgr/drv.c             |   14 -
+ drivers/staging/tidspbridge/rmgr/drv_interface.c   |    2 -
+ drivers/staging/tidspbridge/rmgr/node.c            |   57 +-
+ drivers/staging/tidspbridge/rmgr/proc.c            |  224 +---
+ 31 files changed, 684 insertions(+), 3454 deletions(-)
+ create mode 100644 drivers/staging/tidspbridge/core/dsp_mmu.c
+ delete mode 100644 drivers/staging/tidspbridge/hw/EasiGlobal.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/MMUAccInt.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/MMURegAcM.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_defs.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.c
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dmm.h
+ create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dsp_mmu.h
+ delete mode 100644 drivers/staging/tidspbridge/pmgr/dmm.c
 
