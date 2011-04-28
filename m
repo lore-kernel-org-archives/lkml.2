@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab1D1JJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 05:09:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59641 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102Ab1D1JJd (ORCPT
+	id S1751836Ab1D1JR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 05:17:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48388 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1D1JR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 05:09:33 -0400
-Date: Thu, 28 Apr 2011 11:09:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier.adi@gmail.com>,
+	Thu, 28 Apr 2011 05:17:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 28 Apr 2011 18:10:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <alpine.LFD.2.02.1104272351290.3323@ionos>
-Message-ID: <alpine.LFD.2.02.1104281051090.19095@ionos>
-References: <20110425180450.1ede0845@neptune.home> <BANLkTikSLA59tdgRL4B=cr5tvP2NbzZ=KA@mail.gmail.com> <20110425190032.7904c95d@neptune.home> <BANLkTi=hQ=HcPLCdbb1pSi+xJByMTah-gw@mail.gmail.com> <20110425203606.4e78246c@neptune.home> <20110425191607.GL2468@linux.vnet.ibm.com>
- <20110425231016.34b4293e@neptune.home> <BANLkTin7wSGi1=E2c2u6Jb5TG_KUpYh=Dw@mail.gmail.com> <20110425214933.GO2468@linux.vnet.ibm.com> <20110426081904.0d2b1494@pluto.restena.lu> <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu> <20110427204139.1b0ea23b@neptune.home>
- <alpine.LFD.2.02.1104272351290.3323@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2055605702-1303981759=:19095"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
+Message-Id: <20110428181046.b81635ce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110428085432.GI12437@cmpxchg.org>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+	<20110427170304.d31c1398.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110428085432.GI12437@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 28 Apr 2011 10:54:32 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
---8323328-2055605702-1303981759=:19095
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+> On Wed, Apr 27, 2011 at 05:03:04PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 27 Apr 2011 01:25:20 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > 
+> > > In some __zone_reclaim case, we don't want to shrink mapped page.
+> > > Nonetheless, we have isolated mapped page and re-add it into
+> > > LRU's head. It's unnecessary CPU overhead and makes LRU churning.
+> > > 
+> > > Of course, when we isolate the page, the page might be mapped but
+> > > when we try to migrate the page, the page would be not mapped.
+> > > So it could be migrated. But race is rare and although it happens,
+> > > it's no big deal.
+> > > 
+> > > Cc: Christoph Lameter <cl@linux.com>
+> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Cc: Mel Gorman <mgorman@suse.de>
+> > > Cc: Rik van Riel <riel@redhat.com>
+> > > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > 
+> > 
+> > Hmm, it seems mm/memcontrol.c::mem_cgroup_isolate_pages() should be updated, too.
+> 
+> memcg reclaim always does sc->may_unmap = 1.  What is there to
+> communicate to mem_cgroup_isolate_pages?
+>
 
-Bruno,
-
-On Thu, 28 Apr 2011, Thomas Gleixner wrote:
-> On Wed, 27 Apr 2011, Bruno Prémont wrote:
-> I need some sleep now, but I will try to come up with sensible
-> debugging tomorrow unless Paul or someone else beats me to it.
-
-can you please add the patch below and provide the /proc/sched_debug
-output when the problem shows up again?
+Hmm, maybe you're right and nothing to do until memcg need to support soft
+limit in zone reclaim mode. I hope no more users.
 
 Thanks,
+-Kame
 
-	tglx
-
----
- kernel/sched.c |    3 ---
- 1 file changed, 3 deletions(-)
-
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -642,9 +642,6 @@ static void update_rq_clock(struct rq *r
- {
- 	s64 delta;
- 
--	if (rq->skip_clock_update)
--		return;
--
- 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
- 	rq->clock += delta;
- 	update_rq_clock_task(rq, delta);
---8323328-2055605702-1303981759=:19095--
