@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab1D1AW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:22:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60559 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab1D1AWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:22:55 -0400
-Date: Thu, 28 Apr 2011 10:22:44 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/13] mm: Throttle direct reclaimers if PF_MEMALLOC
- reserves are low and swap is backed by network storage
-Message-ID: <20110428102244.6e1113e9@notabene.brown>
-In-Reply-To: <1303920491-25302-13-git-send-email-mgorman@suse.de>
-References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
-	<1303920491-25302-13-git-send-email-mgorman@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1753586Ab1D1A0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:26:11 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43535 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1D1A0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 20:26:09 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Borislav Petkov <bp@alien8.de>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3.1] kbuild: implement several W= levels
+In-Reply-To: Your message of "Wed, 27 Apr 2011 13:35:13 +0200."
+             <20110427113513.GB18112@eferding.osrc.amd.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110422110947.GA20715@merkur.ravnborg.org> <1303494642-18594-1-git-send-email-bp@alien8.de> <20110427082555.GC5726@merkur.ravnborg.org>
+            <20110427113513.GB18112@eferding.osrc.amd.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1303950319_5598P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 27 Apr 2011 20:25:20 -0400
+Message-ID: <11802.1303950320@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4DB8B3F4.001D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 17:08:10 +0100 Mel Gorman <mgorman@suse.de> wrote:
+--==_Exmh_1303950319_5598P
+Content-Type: text/plain; charset=us-ascii
+
+On Wed, 27 Apr 2011 13:35:13 +0200, Borislav Petkov said:
+
+> If we do this inclusive, then W=2 dumps the, let's call it, level 1
+> _plus_ the new level 2 warnings, polluting the output with something
+> I've already seen, but only partially. And then I start to think, did
+> I see this one already, didn't I, which was it? By the time you enable
+> W=3, the output becomes pretty useless. For example, W=3 generates 190+
+> MB logfile here only with level 3 warnings. Now imagine all 3 levels
+> combined.
+
+If each level is averaging 10x the previous level, then all 3 levels will only be 11%
+bigger, or 211MB.
+
+You *really* want to get *all* the warnings - quite often, you'll be looking
+at a set of 15 or 20 level-3 warnings.  And if you had the Level-2's in there as
+well, you'd immediately realize that the single level-2 was the real root-cause
+of all the cascating warnings.
+
+Also, having it as a "volume control" means I don't have to go reading the
+Makefile to figure out which number I need to specify for which message - I can
+just say W=3 and *know* the flavor I want will be in there somewhere. Let's
+face it, if there's over 10 or 15 warnings involved, grep or your editor's
+"locate next" will do a better job of finding it than you ever can...
 
 
-> +/*
-> + * Throttle direct reclaimers if backing storage is backed by the network
-> + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-> + * depleted. kswapd will continue to make progress and wake the processes
-> + * when the low watermark is reached
-> + */
-> +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-> +					nodemask_t *nodemask)
-> +{
-> +	struct zone *zone;
-> +	int high_zoneidx = gfp_zone(gfp_mask);
-> +	DEFINE_WAIT(wait);
-> +
-> +	/* Check if the pfmemalloc reserves are ok */
-> +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-> +	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
-> +		return;
+--==_Exmh_1303950319_5598P
+Content-Type: application/pgp-signature
 
-As the first thing that 'wait_event_interruptible" does is test the condition
-and return if it is true, this "if () return;" is pointless.
- 
-> +
-> +	/* Throttle */
-> +	wait_event_interruptible(zone->zone_pgdat->pfmemalloc_wait,
-> +		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
-> +}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-I was surprised that you chose wait_event_interruptible as your previous code
-was almost exactly "wait_event_killable".
+iD8DBQFNuLPvcC3lWbTT17ARAtXzAJ9XjQ/BmPeVMYk2Y9CDg4mvDVSVfACghzoC
+iKAPd5eNOOzRAup+pTsdX/o=
+=vHpr
+-----END PGP SIGNATURE-----
 
-Is there some justification for not throttling processes which happen to have
-a (non-fatal) signal pending?
-
-Thanks,
-NeilBrown
-
-
-
-> +
->  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  				gfp_t gfp_mask, nodemask_t *nodemask)
->  {
-> @@ -2133,6 +2172,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  		.nodemask = nodemask,
->  	};
->  
-> +	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
-> +
-> +	/*
-> +	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
-> +	 * that the page allocator does not consider triggering OOM
-> +	 */
-> +	if (fatal_signal_pending(current))
-> +		return 1;
-> +
->  	trace_mm_vmscan_direct_reclaim_begin(order,
->  				sc.may_writepage,
->  				gfp_mask);
-> @@ -2488,6 +2536,12 @@ loop_again:
->  			}
->  
->  		}
-> +
-> +		/* Wake throttled direct reclaimers if low watermark is met */
-> +		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
-> +				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
-> +			wake_up_interruptible(&pgdat->pfmemalloc_wait);
-> +
->  		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
->  			break;		/* kswapd: all done */
->  		/*
+--==_Exmh_1303950319_5598P--
 
