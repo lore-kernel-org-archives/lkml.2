@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759643Ab1D1QUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 12:20:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34003 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab1D1QUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 12:20:17 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=0i_OOtiXEx8A:10 a=Rj1_iGo3bfgA:10 a=8nJEP1OIZ-IA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=cm27Pg_UAAAA:8 a=ns7_q2kFr6Bo1dlllzUA:9 a=x8N9Q-lMftX-A-7Z64MA:7 a=wPNLvfGTeEIA:10 a=zv9_9hqRWm8A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Thu, 28 Apr 2011 11:20:15 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
-        mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-Message-ID: <20110428162015.GA1927@hallyn.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
- <1303960136-14298-2-git-send-email-wad@chromium.org>
- <1303998629.18763.149.camel@gandalf.stny.rr.com>
- <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
+	id S1760414Ab1D1QYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 12:24:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33659 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757739Ab1D1QYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 12:24:51 -0400
+Message-ID: <4DB994CE.40403@suse.cz>
+Date: Thu, 28 Apr 2011 18:24:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Valdis.Kletnieks@vt.edu
+Cc: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3.1] kbuild: implement several W= levels
+References: <20110422110947.GA20715@merkur.ravnborg.org> <1303494642-18594-1-git-send-email-bp@alien8.de> <20110427082555.GC5726@merkur.ravnborg.org>            <20110427113513.GB18112@eferding.osrc.amd.com> <11802.1303950320@localhost>
+In-Reply-To: <11802.1303950320@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Will Drewry (wad@chromium.org):
-> >>  void __secure_computing(int this_syscall)
-> >>  {
-> >> -     int mode = current->seccomp.mode;
-> >> +     int mode = -1;
-> >>       int * syscall;
-> >> -
-> >> +     /* Do we need an RCU read lock to access current's state? */
-> >
-> > I'm actually confused to why you are using RCU. What are you protecting.
-> > Currently, I see the state is always accessed from current->seccomp. But
-> > current should not be fighting with itself.
-> >
-> > Maybe I'm missing something.
-> 
-> I'm sure it's me that's missing something.  I believe the seccomp
-> pointer can be accessed from:
-> - current
-> - via /proc/<pid>/seccomp_filter (read-only)
-> 
-> Given those cases, would it make sense to ditch the RCU interface for it?
+On 28.4.2011 02:25, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 27 Apr 2011 13:35:13 +0200, Borislav Petkov said:
+>
+>> If we do this inclusive, then W=2 dumps the, let's call it, level 1
+>> _plus_ the new level 2 warnings, polluting the output with something
+>> I've already seen, but only partially. And then I start to think, did
+>> I see this one already, didn't I, which was it? By the time you enable
+>> W=3, the output becomes pretty useless. For example, W=3 generates 190+
+>> MB logfile here only with level 3 warnings. Now imagine all 3 levels
+>> combined.
+>
+> If each level is averaging 10x the previous level, then all 3 levels will only be 11%
+> bigger, or 211MB.
+>
+> You *really* want to get *all* the warnings - quite often, you'll be looking
+> at a set of 15 or 20 level-3 warnings.  And if you had the Level-2's in there as
+> well, you'd immediately realize that the single level-2 was the real root-cause
+> of all the cascating warnings.
 
-ISTM you need them to protect the reader.
+How about W=12 for level 1 and 2 warnings and W=123 for all levels?
 
--serge
+Michal
