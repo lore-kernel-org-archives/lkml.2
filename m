@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab1D1SCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:02:34 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:39443 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867Ab1D1SCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:02:32 -0400
-Date: Thu, 28 Apr 2011 20:02:27 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k SLUB fix for 2.6.39
-Message-ID: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933306Ab1D1SDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:03:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932867Ab1D1SDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 14:03:00 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] x86: Populate virtual address field of all EFI memmap entries
+Date: Thu, 28 Apr 2011 14:02:26 -0400
+Message-Id: <1304013746-20239-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+Our current implementation of SetVirtualAddressMap passes back the entire
+memory map it received from the firmware, but only modifies entries that
+have the runtime attribute set. Experiments (mostly involving screaming)
+with real-world EFI implementations suggests that some will call
+ConvertPointer on data that exist outside runtime regions anyway. The
+easiest fix here seems to be to continue remapping runtime regions and
+just to copy the physical address to the virtal address for other regions.
 
-This is the SLUB fix for m68k, which also applies to stable.
+This doesn't fix any observed problems with our current implementation,
+but it seems better to be safe than sorry.
 
-The following changes since commit 8e10cd74342c7f5ce259cceca36f6eba084f5d58:
-  Linus Torvalds (1):
-        Linux 2.6.39-rc5
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/platform/efi/efi.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-are available in the git repository at:
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0fe27d7..f11b3b0 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -507,8 +507,10 @@ void __init efi_enter_virtual_mode(void)
+ 	efi.systab = NULL;
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME))
++		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
++			md->virt_addr = md->phys_addr;
+ 			continue;
++		}
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
+-- 
+1.7.4.4
 
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-2.6.39
-
-Michael Schmitz (1):
-      m68k/mm: Set all online nodes in N_NORMAL_MEMORY
-
- arch/m68k/mm/motorola.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-Thanks for pulling!
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
