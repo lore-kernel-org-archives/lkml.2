@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760210Ab1D1Pw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:52:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52099 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab1D1Pw4 convert rfc822-to-8bit (ORCPT
+	id S933277Ab1D1P5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:57:53 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32825 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759658Ab1D1P5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:52:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Thiago Farina <tfransosi@gmail.com>
-Subject: [PATCH v4] cpumask: add cpumask_var_t documentation
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <BANLkTiktDSC=njLhJZF9EVWEqBPWa=K7Ow@mail.gmail.com>
-References: <20110429004505.3D7F.A69D9226@jp.fujitsu.com> <BANLkTiktDSC=njLhJZF9EVWEqBPWa=K7Ow@mail.gmail.com>
-Message-Id: <20110429005435.C90F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	Thu, 28 Apr 2011 11:57:51 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Colin Ian King <colin.king@ubuntu.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1303928753.2417.6.camel@lenovo>
+References: <1303920553.2583.7.camel@mulgrave.site>
+	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
+	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
+	 <1303925374-sup-7968@think>  <1303926637.2583.17.camel@mulgrave.site>
+	 <1303928753.2417.6.camel@lenovo>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Fri, 29 Apr 2011 00:52:54 +0900 (JST)
+Date: Thu, 28 Apr 2011 10:57:42 -0500
+Message-ID: <1304006262.2598.2.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > + * This code makes NR_CPUS length memcopy and bring memory corruption.
+On Wed, 2011-04-27 at 19:25 +0100, Colin Ian King wrote:
+> Just like to add that I've seen almost identical issues with 2.6.38
+> copying large amounts of data to an ext4 filesystem with systems with
+> small amounts of memory.
 > 
-> Maybe:
-> 
-> s/bring memory/brings to a memory/
-> 
-> ?
-> 
-> > + * cpumask_copy() privide safe copy functionality.
-> s/privide/provides ?
+> I found that increasing /sys/fs/ext4/sdaX/max_writeback_mb_bump worked
+> around the issue.
 
+With the PREEMPT kernel, values of 256 and 512 don't prevent kswapd
+spinning up to 99% and staying there.
 
-Thank you.
-
-
-
->From 28549f1a51072a58bd661a409e378e36a97072a3 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 26 Apr 2011 19:58:39 +0900
-Subject: [PATCH v4] cpumask: add cpumask_var_t documentation
-
-cpumask_var_t has one nortable difference against cpumask_t.
-This patch adds the explanation.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- include/linux/cpumask.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 1e40dd0..8fcd82c 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -617,6 +617,20 @@ static inline size_t cpumask_size(void)
-  *	  ... use 'tmpmask' like a normal struct cpumask * ...
-  *
-  *	free_cpumask_var(tmpmask);
-+ *
-+ *
-+ * However, one notable exception is there. alloc_cpumask_var() allocates
-+ * only nr_cpumask_bits bits (in the other hand, real cpumask_t always has
-+ * NR_CPUS bits). Therefore you don't have to dereference cpumask_var_t.
-+ *
-+ *	cpumask_var_t tmpmask;
-+ *	if (!alloc_cpumask_var(&tmpmask, GFP_KERNEL))
-+ *		return -ENOMEM;
-+ *
-+ *	var = *tmpmask;
-+ *
-+ * This code makes NR_CPUS length memcopy and brings to a memory corruption.
-+ * cpumask_copy() provide safe copy functionality.
-  */
- #ifdef CONFIG_CPUMASK_OFFSTACK
- typedef struct cpumask *cpumask_var_t;
--- 
-1.7.3.1
-
+James
 
 
