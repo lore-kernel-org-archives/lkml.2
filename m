@@ -1,194 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab1D1PbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:31:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46000 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1D1Pa5 convert rfc822-to-8bit (ORCPT
+	id S1757187Ab1D1Pbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:31:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61518 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab1D1Pbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:30:57 -0400
+	Thu, 28 Apr 2011 11:31:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type;
+        b=g6EweUO4Tb52jswqfedGlUVIrVqPE9hECTu5xC45TJHzaHXlseYvdj9nOis5nXXKFZ
+         DQdWUJdlG4fGTEGKPrRFdSIUcg13sETRyduMkMCFTg3t8GMiuQe5vyKOBnqYC6JCRpL2
+         ebjDJVqscThC2yxs3egn3gEe5GcRXPpqPTNqA=
+Message-ID: <4DB9884F.10409@lwfinger.net>
+Date: Thu, 28 Apr 2011 10:31:27 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <1303998629.18763.149.camel@gandalf.stny.rr.com>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	<1303960136-14298-2-git-send-email-wad@chromium.org>
-	<1303998629.18763.149.camel@gandalf.stny.rr.com>
-Date: Thu, 28 Apr 2011 10:30:56 -0500
-Message-ID: <BANLkTikrXHvLhFH0A2LbpZ7sGBi0iOH+gQ@mail.gmail.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
-From: Will Drewry <wad@chromium.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
-        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: clemens fischer <ino-news@spotteswoode.dnsalias.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, jeff.chua.linux@gmail.com,
+        wlanfae@realtek.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
+References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net> <20110428150819.GA3713@spotteswoode.de.eu.org>
+In-Reply-To: <20110428150819.GA3713@spotteswoode.de.eu.org>
+Content-Type: multipart/mixed;
+ boundary="------------070809010405040102080608"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 8:50 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-04-27 at 22:08 -0500, Will Drewry wrote:
->
->> -typedef struct { int mode; } seccomp_t;
->> +/**
->> + * struct seccomp_state - the state of a seccomp'ed process
->> + *
->> + * @mode:
->> + *     if this is 1, the process is under standard seccomp rules
->> + *             is 2, the process is only allowed to make system calls where
->> + *                   the corresponding bit is set in bitmask and any
->> + *                   associated filters evaluate successfully.
->
-> I hate arbitrary numbers. This is not a big deal, but can we create an
-> enum or define that puts names for the modes.
->
-> SECCOMP_MODE_BASIC
-> SECCOMP_MODE_FILTER
->
-> ??
+This is a multi-part message in MIME format.
+--------------070809010405040102080608
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Works for me.
-
->> + * @usage: number of references to the current instance.
->> + * @bitmask: a mask of allowed or filtered system calls and additional flags.
->> + * @filter_count: number of seccomp filters in @filters.
->> + * @filters: list of seccomp_filter entries for  system calls.
->> + */
->> +struct seccomp_state {
->> +     uint16_t mode;
->> +     atomic_t usage;
->> +     DECLARE_BITMAP(bitmask, NR_syscalls + 1);
->> +     int filter_count;
->> +     struct list_head filters;
->> +};
+On 04/28/2011 10:08 AM, clemens fischer wrote:
+>> Larry Finger:
+>
+>> From: Jeff Chua<jeff.chua.linux@gmail.com>
+>>
+>> Driver r8712u is unable to handle ad-hoc mode. The issue is that when
+>> the driver first starts, there will not be an SSID for association.
+>> The fix is to always call the "select and join from scan" routine when
+>> in ad-hoc mode.
+>>
+>> Note: Ad-hoc mode worked intermittently before. If the driver had
+>> previously been associated, then things were OK.
+>>
+>> Signed-off-by: Jeff Chua<jeff.chua.linux@gmail.com>
+>> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
+>> Cc: Stable<stable@kernel.org>
+>> ---
+>>
+>> Index: linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
+>> ===================================================================
+>> --- linux-2.6.orig/drivers/staging/rtl8712/rtl871x_ioctl_set.c
+>> +++ linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_set.c
+>> @@ -68,7 +68,10 @@ static u8 do_join(struct _adapter *padap
+>>   	pmlmepriv->fw_state |= _FW_UNDER_LINKING;
+>>   	pmlmepriv->pscanned = plist;
+>>   	pmlmepriv->to_join = true;
+>> -	if (_queue_empty(queue) == true) {
 >> +
->> +typedef struct { struct seccomp_state *state; } seccomp_t;
->>
->>  extern void __secure_computing(int);
->>  static inline void secure_computing(int this_syscall)
->> @@ -16,8 +39,14 @@ static inline void secure_computing(int this_syscall)
->>               __secure_computing(this_syscall);
->>  }
->>
+>> +	/* adhoc mode will start with an empty queue, but skip checking */
+>> +	if (!check_fwstate(pmlmepriv, WIFI_ADHOC_STATE)&&
+>> +	    _queue_empty(queue)) {
+>>   		if (pmlmepriv->fw_state&  _FW_UNDER_LINKING)
+>>   			pmlmepriv->fw_state ^= _FW_UNDER_LINKING;
+>>   		/* when set_ssid/set_bssid for do_join(), but scanning queue
 >
+> Thanks for CC'ing me.
 >
->> diff --git a/kernel/fork.c b/kernel/fork.c
->> index e7548de..bdcf70b 100644
->> --- a/kernel/fork.c
->> +++ b/kernel/fork.c
->> @@ -34,6 +34,7 @@
->>  #include <linux/cgroup.h>
->>  #include <linux/security.h>
->>  #include <linux/hugetlb.h>
->> +#include <linux/seccomp.h>
->>  #include <linux/swap.h>
->>  #include <linux/syscalls.h>
->>  #include <linux/jiffies.h>
->> @@ -169,6 +170,9 @@ void free_task(struct task_struct *tsk)
->>       free_thread_info(tsk->stack);
->>       rt_mutex_debug_task_free(tsk);
->>       ftrace_graph_exit_task(tsk);
->> +#ifdef CONFIG_SECCOMP
->> +     put_seccomp_state(tsk->seccomp.state);
->> +#endif
->>       free_task_struct(tsk);
->>  }
->>  EXPORT_SYMBOL(free_task);
->> @@ -280,6 +284,10 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
->>       if (err)
->>               goto out;
->>
->> +#ifdef CONFIG_SECCOMP
->> +     tsk->seccomp.state = get_seccomp_state(orig->seccomp.state);
->> +#endif
+> This patch doesn't solve my problem[1], unfortunately.  I am using
+> iwconfig(8) to setup things, and it is still impossible to set the ESSID
+> and the power saving mode.  In my case it was even possible to get into
+> Ad-hoc mode without the patch and without ever beeing associated.
 >
-> I wonder if we could macro these to get rid of the #ifdefs in fork.c.
->
-> #define put_seccomp_state(state)        do { } while (0)
-> #define assign_seccomp_state(src, state) do { } while (0)
->
-> ??
+> [1] https://bugzilla.kernel.org/show_bug.cgi?id=33352
 
-Makes sense to me.  I'll add it to the next update.
+Does this one help? It should be in addition to the previous patch.
 
->> +
->>       setup_thread_stack(tsk, orig);
->>       clear_user_return_notifier(tsk);
->>       clear_tsk_need_resched(tsk);
->> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
->> index 57d4b13..1bee87c 100644
->> --- a/kernel/seccomp.c
->> +++ b/kernel/seccomp.c
->> @@ -8,10 +8,11 @@
->>
->>  #include <linux/seccomp.h>
->>  #include <linux/sched.h>
->> +#include <linux/slab.h>
->>  #include <linux/compat.h>
->>
->>  /* #define SECCOMP_DEBUG 1 */
->> -#define NR_SECCOMP_MODES 1
->> +#define NR_SECCOMP_MODES 2
->>
->>  /*
->>   * Secure computing mode 1 allows only read/write/exit/sigreturn.
->> @@ -32,9 +33,11 @@ static int mode1_syscalls_32[] = {
->>
->>  void __secure_computing(int this_syscall)
->>  {
->> -     int mode = current->seccomp.mode;
->> +     int mode = -1;
->>       int * syscall;
->> -
->> +     /* Do we need an RCU read lock to access current's state? */
->
-> I'm actually confused to why you are using RCU. What are you protecting.
-> Currently, I see the state is always accessed from current->seccomp. But
-> current should not be fighting with itself.
->
-> Maybe I'm missing something.
+Larry
 
-I'm sure it's me that's missing something.  I believe the seccomp
-pointer can be accessed from:
-- current
-- via /proc/<pid>/seccomp_filter (read-only)
+--------------070809010405040102080608
+Content-Type: text/plain;
+ name="r8712u_set_essid"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="r8712u_set_essid"
 
-Given those cases, would it make sense to ditch the RCU interface for it?
+Index: linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
++++ linux-2.6/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+@@ -990,8 +990,6 @@ static int r8711_wx_set_wap(struct net_d
+ 	struct wlan_network *pnetwork = NULL;
+ 	enum NDIS_802_11_AUTHENTICATION_MODE	authmode;
+ 
+-	if (padapter->bup == false)
+-		return -1;
+ 	if (check_fwstate(pmlmepriv, _FW_UNDER_SURVEY) == true)
+ 		return -1;
+ 	if (check_fwstate(pmlmepriv, _FW_UNDER_LINKING) == true)
+@@ -1182,8 +1180,6 @@ static int r8711_wx_set_essid(struct net
+ 	struct list_head *phead;
+ 	u32 len;
+ 
+-	if (padapter->bup == false)
+-		return -1;
+ 	if (check_fwstate(pmlmepriv, _FW_UNDER_SURVEY))
+ 		return -1;
+ 	if (check_fwstate(pmlmepriv, _FW_UNDER_LINKING))
 
-Thanks!
-will
-
->
->> +     if (current->seccomp.state)
->> +             mode = current->seccomp.state->mode;
->>       switch (mode) {
->>       case 1:
->>               syscall = mode1_syscalls;
->> @@ -47,6 +50,16 @@ void __secure_computing(int this_syscall)
->>                               return;
->>               } while (*++syscall);
->>               break;
->> +     case 2:
->> +#ifdef CONFIG_COMPAT
->> +             if (is_compat_task())
->> +                     /* XXX: No compat support yet. */
->> +                     break;
->> +#endif
->> +             if (!seccomp_test_filters(current->seccomp.state,
->> +                                       this_syscall))
->> +                     return;
->> +             break;
->>       default:
->>               BUG();
->>       }
->> @@ -57,30 +70,139 @@ void __secure_computing(int this_syscall)
->>       do_exit(SIGKILL);
->
->
->
+--------------070809010405040102080608--
