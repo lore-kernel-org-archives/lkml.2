@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758910Ab1D1KUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:20:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40922 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758169Ab1D1KUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:20:03 -0400
-Date: Thu, 28 Apr 2011 11:20:10 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: kalle.jokiniemi@nokia.com
-Cc: Sakari.Ailus@nokia.com, lrg@slimlogic.co.uk, mchehab@infradead.org,
-        svarbatov@mm-sol.com, saaguirre@ti.com, grosikopulos@mm-sol.com,
-        vimarsh.zutshi@nokia.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, laurent.pinchart@ideasonboard.com
-Subject: Re: [RFC] Regulator state after regulator_get
-Message-ID: <20110428102009.GB14494@opensource.wolfsonmicro.com>
-References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
- <4DB9348D.7000501@nokia.com>
- <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com>
+	id S1758865Ab1D1K0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:26:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58992 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639Ab1D1K0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:26:23 -0400
+Date: Thu, 28 Apr 2011 12:26:06 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
+Message-ID: <20110428102606.GL12437@cmpxchg.org>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+ <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+ <20110427170304.d31c1398.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110428085432.GI12437@cmpxchg.org>
+ <20110428181046.b81635ce.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110428181046.b81635ce.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 09:44:10AM +0000, kalle.jokiniemi@nokia.com wrote:
+On Thu, Apr 28, 2011 at 06:10:46PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 28 Apr 2011 10:54:32 +0200
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > On Wed, Apr 27, 2011 at 05:03:04PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Wed, 27 Apr 2011 01:25:20 +0900
+> > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > > 
+> > > > In some __zone_reclaim case, we don't want to shrink mapped page.
+> > > > Nonetheless, we have isolated mapped page and re-add it into
+> > > > LRU's head. It's unnecessary CPU overhead and makes LRU churning.
+> > > > 
+> > > > Of course, when we isolate the page, the page might be mapped but
+> > > > when we try to migrate the page, the page would be not mapped.
+> > > > So it could be migrated. But race is rare and although it happens,
+> > > > it's no big deal.
+> > > > 
+> > > > Cc: Christoph Lameter <cl@linux.com>
+> > > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > > Cc: Mel Gorman <mgorman@suse.de>
+> > > > Cc: Rik van Riel <riel@redhat.com>
+> > > > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > > > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > > 
+> > > 
+> > > Hmm, it seems mm/memcontrol.c::mem_cgroup_isolate_pages() should be updated, too.
+> > 
+> > memcg reclaim always does sc->may_unmap = 1.  What is there to
+> > communicate to mem_cgroup_isolate_pages?
+> >
+> 
+> Hmm, maybe you're right and nothing to do until memcg need to support soft
+> limit in zone reclaim mode. I hope no more users.
 
->  > Another alternative to the first option you proposed could be to add a
->  > flags field to regulator_consumer_supply, and use a flag to recognise
->  > regulators which need to be disabled during initialisation. The flag
->  > could be set by using a new macro e.g. REGULATOR_SUPPLY_NASTY() when
->  > defining the regulator.
+Ah, okay.  I thought I may have missed something.  Thanks for the
+clarification, Kame.
 
-> This sounds like a good option actually. Liam, Mark, any opinions?
-
-I'm not sure what "supply_nasty" would mean?  This also doesn't seem
-like something that we can set up per supply - it's going to affect the
-whole regulator state, it's not something that only affects a single
-supply.
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
