@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933515Ab1D1U3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:29:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44523 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1D1U3s (ORCPT
+	id S1754901Ab1D1UhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:37:04 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:44654 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753252Ab1D1UhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:29:48 -0400
-Date: Thu, 28 Apr 2011 22:29:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <20110428222301.0b745a0a@neptune.home>
-Message-ID: <alpine.LFD.2.02.1104282227340.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
- <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 28 Apr 2011 16:37:02 -0400
+Date: Thu, 28 Apr 2011 22:36:59 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Martin Jansa <martin.jansa@gmail.com>
+Cc: Zaurus PDA developers list <zaurus-devel@www.linuxtogo.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, thommycheck@gmail.com,
+        Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
+        kernel list <linux-kernel@vger.kernel.org>, lenz@cs.wisc.edu,
+        rpurdie@rpsys.net, eric.y.miao@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Zaurus-devel] 2.6.39-rc5 on zaurus: works
+Message-ID: <20110428203659.GA22663@elf.ucw.cz>
+References: <20110408062646.GA1472@ucw.cz>
+ <201104080931.11202.marek.vasut@gmail.com>
+ <20110408082827.GD3180@jama.jama.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1773929636-1304022557=:3005"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110408082827.GD3180@jama.jama.net>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi!
 
---8323328-1773929636-1304022557=:3005
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 28 Apr 2011, Bruno Prémont wrote:
-> On Thu, 28 April 2011 Thomas Gleixner <tglx@linutronix.de> wrote:
-> > -	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
-> > +	return HRTIMER_RESTART;
+> > > Build fix is below. Maybe it is pending in the trees somewhere
+> > > already...
+> > 
+> > Fix is already there, it was broken by a patch from someone recently. Thanks 
+> > though
+> > > 
+> > > Boot stops just after mounting root filesystem; cursor stops
+> > > flashing. (Any idea what goes on there?)
+> > 
+> > No idea, it works for me and doesn't hang ;-)
 > 
-> This doesn't help here.
-> Be it applied on top of the others, full diff attached
-> or applied alone (with throttling printk).
-> 
-> Could it be that NO_HZ=y has some importance in this matter?
+> it works here too with rev 6221f222c0ebf1acdf7abcf927178f40e1a65e2a
 
-Might be. Can you try with nohz=off on the kernel command line ?
- 
-Can you please provide the output of /proc/timer_list ?
+I had problems mounting filesystems; good news is that in 2.6.39-rc5
+these are fixed.
+								Pavel
 
-Thanks,
-
-	tglx
---8323328-1773929636-1304022557=:3005--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
