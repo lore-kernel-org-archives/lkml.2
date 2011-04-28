@@ -1,40 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab1D1LRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 07:17:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48330 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab1D1LRF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 07:17:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=RT4sAhahSfSfPDDR/tPTh+FkYLLa6q5dsKcc8JU9jquJJ51JE5Rf6FwMNJuys2436Y
-         g64nL1PvMNbDJT/eMFuvbXbtddVHUjlJ1hOg314m6P5bp6Ed0wUEZwTf1c5tI3miATZE
-         oIlu7W/O74mw6UJAhuz4hJeHFlSJx2nJ9HXDY=
+	id S1759379Ab1D1LTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 07:19:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753673Ab1D1LS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 07:18:59 -0400
+Date: Thu, 28 Apr 2011 12:18:54 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 08/13] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20110428111854.GV4658@suse.de>
+References: <1303920491-25302-1-git-send-email-mgorman@suse.de>
+ <1303920491-25302-9-git-send-email-mgorman@suse.de>
+ <20110428161933.1f1266e6@notabene.brown>
+ <20110428100035.GO4658@suse.de>
+ <20110428204755.2e07147e@notabene.brown>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Thu, 28 Apr 2011 13:17:04 +0200
-Message-ID: <BANLkTikoT4vHDjeNpoVWzefqMRBFAC0unA@mail.gmail.com>
-Subject: Re: Patchwork [-rcu,1/1] rcu: fix rcu CONFIG logic
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110428204755.2e07147e@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lai Jiangshan,
+On Thu, Apr 28, 2011 at 08:47:55PM +1000, NeilBrown wrote:
+> On Thu, 28 Apr 2011 11:05:06 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Thu, Apr 28, 2011 at 04:19:33PM +1000, NeilBrown wrote:
+> > > On Wed, 27 Apr 2011 17:08:06 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > > 
+> > > 
+> > > > @@ -1578,7 +1589,7 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+> > > >   */
+> > > >  static inline struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
+> > > >  {
+> > > > -	return alloc_pages_node(NUMA_NO_NODE, gfp_mask, 0);
+> > > > +	return alloc_pages_node(NUMA_NO_NODE, gfp_mask | __GFP_MEMALLOC, 0);
+> > > >  }
+> > > >  
+> > > 
+> > > I'm puzzling a bit over this change.
+> > > __netdev_alloc_page appears to be used to get pages to put in ring buffer
+> > > for a network card to DMA received packets into.  So it is OK to use
+> > > __GFP_MEMALLOC for these allocations providing we mark the resulting skb as
+> > > 'pfmemalloc' if a reserved page was used.
+> > > 
+> > > However I don't see where that marking is done.
+> > > I think it should be in skb_fill_page_desc, something like:
+> > > 
+> > >   if (page->pfmemalloc)
+> > > 	skb->pfmemalloc = true;
+> > > 
+> > > Is this covered somewhere else that I am missing?
+> > > 
+> > 
+> > You're not missing anything.
+> > 
+> > >From the context of __netdev_alloc_page, we do not know if the skb
+> > is suitable for marking pfmemalloc or not (we don't have SKB_ALLOC_RX
+> > flag for example that __alloc_skb has). The reserves are potentially
+> > being dipped into for an unsuitable packet but it gets dropped in
+> > __netif_receive_skb() and the memory is returned. If we mark the skb
+> > pfmemalloc as a result of __netdev_alloc_page using a reserve page, the
+> > packets would not get dropped as expected.
+> > 
+> 
+> The only code in __netif_receive_skb that seems to drop packets is
+> 
+> +	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
+> +		goto drop;
+> +
+> 
+> which requires that the skb have pfmemalloc set before it will be dropped.
+> 
 
-I like this patch (with explanations) and would test it, against which
-(GIT) tree is this for?
+Yes, I only wanted to drop the packet if we were under pressure
+when skb was allocated. If we hit pressure between when skb was
+allocated and when __netdev_alloc_page is called, then the PFMEMALLOC
+reserves may be used for packet receive unnecessarily but the next skb
+allocation that grows slab will have the flag set appropriately. There
+is a window during which we use reserves where we did not have to
+but it's limited. Again, the throttling if pfmemalloc reserves gets too
+depleted comes into play.
 
-Regards,
-- Sedat -
+> Actually ... I'm expecting to find code that says:
+>    if (skb_pfmalloc(skb) && !sock_flag(sk, SOCK_MEMALLOC))
+> 	drop_packet();
+> 
+> but I cannot find it.  Where is the code that discard pfmalloc packets for
+> non-memalloc sockets?
+> 
+> I can see similar code in sk_filter but that doesn't drop the packet, it just
+> avoids filtering it.
+> 
 
+hmm, if sk_filter is returning -ENOMEM then things like
+sock_queue_rcv_skb() return error and the skb does not get queued and I
+expected it to get dropped. What did I miss?
 
-[1] https://patchwork.kernel.org/patch/735291/
+-- 
+Mel Gorman
+SUSE Labs
