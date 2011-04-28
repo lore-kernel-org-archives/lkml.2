@@ -1,264 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493Ab1D1Bty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 21:49:54 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:39166 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1D1Btw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 21:49:52 -0400
-Date: Thu, 28 Apr 2011 10:37:05 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Ying Han <yinghan@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCHv3] memcg: reclaim memory from node in round-robin
-Message-Id: <20110428103705.a284df87.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110428093513.5a6970c0.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTinx+4zXaO3rhHRUzr3m-K-2_NMTQw@mail.gmail.com>
-	<20110428093513.5a6970c0.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1751548Ab1D1Bxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 21:53:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60257 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab1D1Bxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 21:53:36 -0400
+Date: Thu, 28 Apr 2011 11:53:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20110428115327.6727e04f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__28_Apr_2011_11_53_27_+1000_tHwCZhghe8nU+InU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011 09:35:13 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+--Signature=_Thu__28_Apr_2011_11_53_27_+1000_tHwCZhghe8nU+InU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Now, memory cgroup's direct reclaim frees memory from the current node.
-> But this has some troubles. In usual, when a set of threads works in
-> cooperative way, they are tend to on the same node. So, if they hit
-> limits under memcg, it will reclaim memory from themselves, it may be
-> active working set.
-> 
-> For example, assume 2 node system which has Node 0 and Node 1
-> and a memcg which has 1G limit. After some work, file cacne remains and
-                                                        ^^^^^
-                                                        cache
-> and usages are
->    Node 0:  1M
->    Node 1:  998M.
-> 
-> and run an application on Node 0, it will eats its foot before freeing
-> unnecessary file caches.
-> 
-> This patch adds round-robin for NUMA and adds equal pressure to each
-> node. With using cpuset's spread memory feature, this will work very well.
-> 
-> But yes, better algorithm is appreciated.
-> 
-> From: Ying Han <yinghan@google.com>
-> Signed-off-by: Ying Han <yinghan@google.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Changelog v2->v3
->   - added comments for why we need sanity check.
-> 
-> Changelog v1->v2:
->   - fixed comments.
->   - added a logic to avoid scanning unused node.
-> 
-> ---
->  include/linux/memcontrol.h |    1 
->  mm/memcontrol.c            |  102 ++++++++++++++++++++++++++++++++++++++++++---
->  mm/vmscan.c                |    9 +++
->  3 files changed, 105 insertions(+), 7 deletions(-)
-> 
-> Index: memcg/include/linux/memcontrol.h
-> ===================================================================
-> --- memcg.orig/include/linux/memcontrol.h
-> +++ memcg/include/linux/memcontrol.h
-> @@ -108,6 +108,7 @@ extern void mem_cgroup_end_migration(str
->   */
->  int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
->  int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
-> +int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
->  unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
->  				       struct zone *zone,
->  				       enum lru_list lru);
-> Index: memcg/mm/memcontrol.c
-> ===================================================================
-> --- memcg.orig/mm/memcontrol.c
-> +++ memcg/mm/memcontrol.c
-> @@ -237,6 +237,11 @@ struct mem_cgroup {
->  	 * reclaimed from.
->  	 */
->  	int last_scanned_child;
-> +	int last_scanned_node;
-> +#if MAX_NUMNODES > 1
-> +	nodemask_t	scan_nodes;
-> +	unsigned long   next_scan_node_update;
-> +#endif
->  	/*
->  	 * Should the accounting and control be hierarchical, per subtree?
->  	 */
-> @@ -650,18 +655,27 @@ static void mem_cgroup_soft_scan(struct 
->  	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_SCAN], val);
->  }
->  
-> +static unsigned long
-> +mem_cgroup_get_zonestat_node(struct mem_cgroup *mem, int nid, enum lru_list idx)
-> +{
-> +	struct mem_cgroup_per_zone *mz;
-> +	u64 total;
-> +	int zid;
-> +
-> +	for (zid = 0; zid < MAX_NR_ZONES; zid++) {
-> +		mz = mem_cgroup_zoneinfo(mem, nid, zid);
-> +		total += MEM_CGROUP_ZSTAT(mz, idx);
-> +	}
-> +	return total;
-> +}
->  static unsigned long mem_cgroup_get_local_zonestat(struct mem_cgroup *mem,
->  					enum lru_list idx)
->  {
-> -	int nid, zid;
-> -	struct mem_cgroup_per_zone *mz;
-> +	int nid;
->  	u64 total = 0;
->  
->  	for_each_online_node(nid)
-> -		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
-> -			mz = mem_cgroup_zoneinfo(mem, nid, zid);
-> -			total += MEM_CGROUP_ZSTAT(mz, idx);
-> -		}
-> +		total += mem_cgroup_get_zonestat_node(mem, nid, idx);
->  	return total;
->  }
->  
-> @@ -1471,6 +1485,81 @@ mem_cgroup_select_victim(struct mem_cgro
->  	return ret;
->  }
->  
-> +#if MAX_NUMNODES > 1
-> +
-> +/*
-> + * Update nodemask always is not very good. Even if we have empty
-> + * list, or wrong list here, we can start from some node and traverse all nodes
-> + * based on zonelist. So, update the list loosely once in 10 secs.
-> + *
-> + */
-> +static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
-> +{
-> +	int nid;
-> +
-> +	if (time_after(mem->next_scan_node_update, jiffies))
-> +		return;
-> +
-Shouldn't it be time_before() or time_after(jiffies, next_scan_node_update) ?
+Hi all,
 
-Looks good to me, otherwise.
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Thanks,
-Daisuke Nishimura.
+sound/soc/soc-utils.o: In function `cleanup_module':
+(.exit.text+0x0): multiple definition of `cleanup_module'
+sound/soc/soc-core.o:(.exit.text+0x0): first defined here
+sound/soc/soc-utils.o: In function `init_module':
+(.init.text+0x0): multiple definition of `init_module'
+sound/soc/soc-core.o:(.init.text+0x0): first defined here
 
-> +	mem->next_scan_node_update = jiffies + 10*HZ;
-> +	/* make a nodemask where this memcg uses memory from */
-> +	mem->scan_nodes = node_states[N_HIGH_MEMORY];
-> +
-> +	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-> +
-> +		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
-> +		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
-> +			continue;
-> +
-> +		if (total_swap_pages &&
-> +		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
-> +		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
-> +			continue;
-> +		node_clear(nid, mem->scan_nodes);
-> +	}
-> +}
-> +
-> +/*
-> + * Selecting a node where we start reclaim from. Because what we need is just
-> + * reducing usage counter, start from anywhere is O,K. Considering
-> + * memory reclaim from current node, there are pros. and cons.
-> + *
-> + * Freeing memory from current node means freeing memory from a node which
-> + * we'll use or we've used. So, it may make LRU bad. And if several threads
-> + * hit limits, it will see a contention on a node. But freeing from remote
-> + * node means more costs for memory reclaim because of memory latency.
-> + *
-> + * Now, we use round-robin. Better algorithm is welcomed.
-> + */
-> +int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-> +{
-> +	int node;
-> +
-> +	mem_cgroup_may_update_nodemask(mem);
-> +	node = mem->last_scanned_node;
-> +
-> +	node = next_node(node, mem->scan_nodes);
-> +	if (node == MAX_NUMNODES)
-> +		node = first_node(mem->scan_nodes);
-> +	/*
-> +	 * We call this when we hit limit, not when pages are added to LRU.
-> +	 * No LRU may hold pages because all pages are UNEVICTABLE or
-> +	 * memcg is too small and all pages are not on LRU. In that case,
-> +	 * we use curret node.
-> +	 */
-> +	if (unlikely(node == MAX_NUMNODES))
-> +		node = numa_node_id();
-> +
-> +	mem->last_scanned_node = node;
-> +	return node;
-> +}
-> +
-> +#else
-> +int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  /*
->   * Scan the hierarchy if needed to reclaim memory. We remember the last child
->   * we reclaimed from, so that we don't end up penalizing one child extensively
-> @@ -4678,6 +4767,7 @@ mem_cgroup_create(struct cgroup_subsys *
->  		res_counter_init(&mem->memsw, NULL);
->  	}
->  	mem->last_scanned_child = 0;
-> +	mem->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&mem->oom_notify);
->  
->  	if (parent)
-> Index: memcg/mm/vmscan.c
-> ===================================================================
-> --- memcg.orig/mm/vmscan.c
-> +++ memcg/mm/vmscan.c
-> @@ -2198,6 +2198,7 @@ unsigned long try_to_free_mem_cgroup_pag
->  {
->  	struct zonelist *zonelist;
->  	unsigned long nr_reclaimed;
-> +	int nid;
->  	struct scan_control sc = {
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
-> @@ -2208,10 +2209,16 @@ unsigned long try_to_free_mem_cgroup_pag
->  		.mem_cgroup = mem_cont,
->  		.nodemask = NULL, /* we don't care the placement */
->  	};
-> +	/*
-> +	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim
-> +	 * don't take care of from where we get pages . So, the node where
-> +	 * we start scan is not needed to be current node.
-> +	 */
-> +	nid = mem_cgroup_select_victim_node(mem_cont);
->  
->  	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
-> -	zonelist = NODE_DATA(numa_node_id())->node_zonelists;
-> +	zonelist = NODE_DATA(nid)->node_zonelists;
->  
->  	trace_mm_vmscan_memcg_reclaim_begin(0,
->  					    sc.may_writepage,
-> 
+Probably caused by commit 848dd8beef44 ("ASoC: Add more natural support
+for no-DMA DAIs")?
+
+I have used the sound-asoc tree from next-20110427 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__28_Apr_2011_11_53_27_+1000_tHwCZhghe8nU+InU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNuMiXAAoJEDMEi1NhKgbsxTAIAIO65ozzCLQLtoCkJNrQK+ED
+2VP/DgZf0P7ab7kQUdw+rAKknvW50GiGrkTNJig4wliy+m8Ks5n8TQ4evwCXuy+P
+V3tnPOFrf6u5bX6laeTSTrcpAND7YZLOxtIHddnN4MEhe1AUaonyBbgkrC2dI1MP
+bQM9oznBMzs3QoaNQW77jhsUMFeXWc66g7ThTi8TrCLEawWRpouiRg1gxM7DAW4e
+WxFFXASk6jY/GMR4De60q2wDWBo7iASiubWx+G68S5IReIwZUBqfKxLI6FcaBioa
+vzBFu0CIZ/m7Pjelx2hjRDobpd5Sr/aDDWCV7fVJlPdv0jTFfpEBZv60+MK3nxs=
+=5bQ/
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Apr_2011_11_53_27_+1000_tHwCZhghe8nU+InU--
