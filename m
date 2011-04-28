@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1D1L6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 07:58:50 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:17785 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab1D1L6s convert rfc822-to-8bit (ORCPT
+	id S1754238Ab1D1L7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 07:59:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58563 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab1D1L7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 07:58:48 -0400
-From: <kalle.jokiniemi@nokia.com>
-To: <broonie@opensource.wolfsonmicro.com>
-CC: <lrg@slimlogic.co.uk>, <mchehab@infradead.org>, <svarbatov@mm-sol.com>,
-        <saaguirre@ti.com>, <grosikopulos@mm-sol.com>,
-        <vimarsh.zutshi@nokia.com>, <Sakari.Ailus@nokia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
-Subject: RE: [RFC] Regulator state after regulator_get
-Thread-Topic: [RFC] Regulator state after regulator_get
-Thread-Index: AQHMBYvuahnBNc70lUOziC4VKJ5gv5RzHHpw///h3wCAACaloA==
-Date: Thu, 28 Apr 2011 11:58:26 +0000
-Message-ID: <9D0D31AA57AAF5499AFDC63D6472631B09C8CE@008-AM1MPN1-036.mgdnok.nokia.com>
-References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
- <20110428100629.GA14494@opensource.wolfsonmicro.com>
- <9D0D31AA57AAF5499AFDC63D6472631B09C858@008-AM1MPN1-036.mgdnok.nokia.com>
- <20110428111447.GA19484@opensource.wolfsonmicro.com>
-In-Reply-To: <20110428111447.GA19484@opensource.wolfsonmicro.com>
-Accept-Language: fi-FI, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.22.212.101]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 28 Apr 2011 11:58:28.0201 (UTC) FILETIME=[9606F590:01CC059B]
-X-Nokia-AV: Clean
+	Thu, 28 Apr 2011 07:59:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=gcaop+ne/w3FJdL8zzssSxi+fmGUNvVA5Q1byxB7mHMKz4oqowC0hwoEasddNnxaJA
+         EQ2zevJm5hA4vo0Y9ar1n9h/AWeuqj20MhSJ55hAc3NmiK2cAouoApgXnrjUBgZqHXHi
+         kFhRgJ3vjJYzfCm6LB9Ghq8bTgA88OSPA6rQQ=
+Subject: RE: Low performance Intel 10GE NIC (3.2.10) on 2.6.38 Kernel
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dana Rubin <dana4kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTikpVTudMWsteoRYgkPFxtsKsKrtZQ@mail.gmail.com>
+References: <BANLkTikpVTudMWsteoRYgkPFxtsKsKrtZQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 13:58:54 +0200
+Message-ID: <1303991934.3360.62.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le jeudi 28 avril 2011 à 14:23 +0300, Dana Rubin a écrit :
+> Hi,
+> 
+> the same phenomenon that described in thread
+> http://www.spinics.net/lists/netdev/msg160549.html
+> is reproducible in IBM x3850 X5 with Intel X520 Dual Nic.
+> 
+> Please, let me know if there is any additional information from that
+> system that can be in use to resolve the problem.
+
+Maybe you could :
+
+- post to netdev instead of linux-kernel
+
+- Try various things that were suggested to Wei Gu, and give all needed
+information.
 
 
- > -----Original Message-----
- > From: ext Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
- > Sent: 28. huhtikuuta 2011 14:15
- > To: Jokiniemi Kalle (Nokia-SD/Tampere)
- > Cc: lrg@slimlogic.co.uk; mchehab@infradead.org; svarbatov@mm-sol.com;
- > saaguirre@ti.com; grosikopulos@mm-sol.com; Zutshi Vimarsh (Nokia-
- > SD/Helsinki); Ailus Sakari (Nokia-SD/Helsinki); linux-kernel@vger.kernel.org;
- > linux-media@vger.kernel.org
- > Subject: Re: [RFC] Regulator state after regulator_get
- > 
- > On Thu, Apr 28, 2011 at 11:08:08AM +0000, kalle.jokiniemi@nokia.com wrote:
- > 
- > > I don't have a full set of regulators described, that's why things broke when
- > > I tried the regulator_full_constraints call earlier. But I don't think it would be
- > too
- > > big issue to check the current after boot configuration and define all the
- > > regulators as you suggest. I will try this approach.
- > 
- > As I said in my previous mail if you've got a reagulator you don't know
- > about which is on you can give it an always_on constraint until you
- > figure out what (if anything) should be controlling it.
-
-Yeps, I plan to check the PMIC for the regulators that are left on after boot
-In the current working setup and then put those "always_on" flags on those
-regulators in the final setup.
-
-Thanks for the help!
-
-- Kalle
