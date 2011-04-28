@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab1D1MxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 08:53:08 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:37841 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab1D1MxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 08:53:05 -0400
-Date: Thu, 28 Apr 2011 14:53:02 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, mingo@elte.hu,
-        tglx@linutronix.de, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [PATCH] allow placing exception table in .rodata (and do	 so
- on x86)
-Message-ID: <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
-References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
- <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
- <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
- <BANLkTikJN92ogUfxAc+SgzvX1Q8r48ughw@mail.gmail.com>
- <4DB9748B020000780003EA01@vpn.id2.novell.com>
+	id S1759558Ab1D1M70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 08:59:26 -0400
+Received: from 8bytes.org ([88.198.83.132]:34837 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751865Ab1D1M7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 08:59:25 -0400
+Date: Thu, 28 Apr 2011 14:59:24 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110428125924.GD13402@8bytes.org>
+References: <201104212129.17013.arnd@arndb.de> <20110427073514.GH17290@n2100.arm.linux.org.uk> <20110428104143.GB13402@8bytes.org> <20110428110129.GE17290@n2100.arm.linux.org.uk> <20110428122508.GC13402@8bytes.org> <20110428124242.GJ17290@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DB9748B020000780003EA01@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110428124242.GJ17290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 01:07:07PM +0100, Jan Beulich wrote:
-> >>> On 28.04.11 at 13:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > On Thu, Apr 28, 2011 at 13:40, Jan Beulich <JBeulich@novell.com> wrote:
-> >>>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> >>> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
-> >>> That's odd. The kernel actually writes to it (sort_main_extable()), so
-> >>> it shouldn't be in the ro data section, but the data section.
-> >>
-> >> This area does get written, but only at boot time, before read-only
-> >> data gets set to r/o (on x86 at least). With this in mind, it's better
-> >> to place it in .rodata, as that way run-time protection will be in place
-> >> (and I think you agree that it was misplaced in .text in any case).
-> > 
-> > Which means it may be in ROM (which is really read-only) on some embedded
-> > devices, so it cannot be sorted?
+On Thu, Apr 28, 2011 at 01:42:42PM +0100, Russell King - ARM Linux wrote:
+
+> Sigh.  You're not seeing the point.
 > 
-> Perhaps - but since sorting is a requirement, people building such
-> systems must have found a way... Anyway, I don't see where both
+> There is _no_ point doing the cache management _if_ we're using something
+> like dmabounce or swiotlb, as we'll be using memcpy() at some point with
+> the buffer.  Moreover, dmabounce or swiotlb may have to do its own cache
+> management _after_ that memcpy() to ensure that the page cache requirements
+> are met.
 
-Yes, we found a way on s390: we put the exception table in the data section.
+Well, I was talking about a generic dma_ops implementation based on the
+iommu-api so that every system that has iommu hardware can use a common
+code-set.
+If you have to dma-bounce you don't have iommu hardware and thus you
+don't use this common implementation of dma_ops (but probably the
+swiotlb implementation which is already mostly generic).
 
-> your and Heiko's comment are heading, since the situation is even
-> worse without the patch afaics (since .text gets marked read-only
-> as much as .rodata does, and could equally be placed in ROM).
+> Doing DMA cache management for dmabounce or swiotlb will result in
+> unnecessary overhead - and as we can see from the MMC discussions,
+> it has a _significant_ performance impact.
 
-My point is that your default is wrong. If it makes sense to put the extable
-into the rodata section then an architecture could do so. However making the
-default to put data into the rodata section that is actually written to is
-the wrong approach.
-It just asks for breakage.
+Yeah, I see that from your explanation below. But as I said, swiotlb
+backend is not a target use-case for a common iommu-api-bound dma_ops
+implementation.
+
+> Think about it.  If you're using dmabounce, but still do the cache
+> management:
+> 
+> 1. you flush the data out of the CPU cache back to memory.
+> 2. you allocate new memory using dma_alloc_coherent() for the DMA buffer
+>    which is accessible to the device.
+> 3. you memcpy() the data out of the buffer you just flushed into the
+>    DMA buffer - this re-fills the cache, evicting entries which may
+>    otherwise be hot due to the cache fill policy.
+> 
+> Step 1 is entirely unnecessary and is just a complete and utter waste of
+> CPU resources.
+
+Thanks for the explanation.
+
+Regards,
+
+	Joerg
+
