@@ -1,130 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163Ab1D1PIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:08:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58590 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933055Ab1D1PIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:08:32 -0400
-Date: Thu, 28 Apr 2011 16:08:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-Message-ID: <20110428150827.GY4658@suse.de>
-References: <1303923000.2583.8.camel@mulgrave.site>
- <1303923177-sup-2603@think>
- <1303924902.2583.13.camel@mulgrave.site>
- <1303925374-sup-7968@think>
- <1303926637.2583.17.camel@mulgrave.site>
- <1303934716.2583.22.camel@mulgrave.site>
- <1303990590.2081.9.camel@lenovo>
- <20110428135228.GC1696@quack.suse.cz>
- <20110428140725.GX4658@suse.de>
- <1304000714.2598.0.camel@mulgrave.site>
+	id S933192Ab1D1PKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:10:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45633 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932882Ab1D1PKC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 11:10:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tTyKwhvwosW5Yh4MmsnpFmQkJtxRAzx1vjUW2SsoC/5a1iFOFfVb1hHecFHIwZ6p26
+         5gkZNLZ+JV6lDnohrtU7MXZgaq8+K/nP37ybiYwTvYoIqUzec26qkUsTDathATxdgQgh
+         6yKVyUWBRxZ/DKLVFn+Otggxul68YRqk1ULwE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1304000714.2598.0.camel@mulgrave.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110429000619.3D63.A69D9226@jp.fujitsu.com>
+References: <20110429000619.3D63.A69D9226@jp.fujitsu.com>
+Date: Thu, 28 Apr 2011 12:10:01 -0300
+Message-ID: <BANLkTikq2vorpoNzSCZ1B7z=gvtCNv0L=A@mail.gmail.com>
+Subject: Re: [PATCH] cris: convert old cpumask API into new one
+From: Thiago Farina <tfransosi@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 09:25:14AM -0500, James Bottomley wrote:
-> On Thu, 2011-04-28 at 15:07 +0100, Mel Gorman wrote:
-> > On Thu, Apr 28, 2011 at 03:52:28PM +0200, Jan Kara wrote:
-> > > On Thu 28-04-11 12:36:30, Colin Ian King wrote:
-> > > > One more data point to add, I've been looking at an identical issue when
-> > > > copying large amounts of data.  I bisected this - and the lockups occur
-> > > > with commit 
-> > > > 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
-> > > > issue. With this commit, my file copy test locks up after ~8-10
-> > > > iterations, before this commit I can copy > 100 times and don't see the
-> > > > lockup.
-> > >   Adding Mel to CC, I guess he'll be interested. Mel, it seems this commit
-> > > of yours causes kswapd on non-preempt kernels spin for a *long* time...
-> > > 
-> > 
-> > I'm still thinking about the traces which do not point the finger
-> > directly at compaction per-se but it's possible that the change means
-> > kswapd is not reclaiming like it should be.
-> > 
-> > To test this theory, does applying
-> > [d527caf2: mm: compaction: prevent kswapd compacting memory to reduce
-> > CPU usage] help?
-> 
-> I can answer definitively no to this.  The upstream kernel I reproduced
-> this on has that patch included.
-> 
+On Thu, Apr 28, 2011 at 12:04 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Adapt new API.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mikael Starvik <starvik@axis.com>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: linux-cris-kernel@axis.com
+>
+> ---
+>  arch/cris/arch-v32/kernel/irq.c |    4 ++--
+>  arch/cris/arch-v32/kernel/smp.c |   33 ++++++++++++++++++---------------
+>  2 files changed, 20 insertions(+), 17 deletions(-)
+>
+> diff --git a/arch/cris/arch-v32/kernel/irq.c b/arch/cris/arch-v32/kernel/irq.c
+> index 68a1a59..5ebe6e8 100644
+> --- a/arch/cris/arch-v32/kernel/irq.c
+> +++ b/arch/cris/arch-v32/kernel/irq.c
+> @@ -266,11 +266,11 @@ static int irq_cpu(int irq)
+>
+>
+>        /* Let the interrupt stay if possible */
+> -       if (cpu_isset(cpu, irq_allocations[irq - FIRST_IRQ].mask))
+> +       if (cpumask_test_cpu(cpu, &irq_allocations[irq - FIRST_IRQ].mask))
+>                goto out;
+>
+>        /* IRQ must be moved to another CPU. */
+> -       cpu = first_cpu(irq_allocations[irq - FIRST_IRQ].mask);
+> +       cpu = cpumask_first(&irq_allocations[irq - FIRST_IRQ].mask);
+>        irq_allocations[irq - FIRST_IRQ].cpu = cpu;
+>  out:
+>        spin_unlock_irqrestore(&irq_lock, flags);
+> diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
+> index 66cc756..54467ec 100644
+> --- a/arch/cris/arch-v32/kernel/smp.c
+> +++ b/arch/cris/arch-v32/kernel/smp.c
+> @@ -81,7 +81,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+>
+>        /* Mark all possible CPUs as present */
+>        for (i = 0; i < max_cpus; i++)
+> -           cpu_set(i, phys_cpu_present_map);
+> +           cpumask_set_cpu(i, &phys_cpu_present_map);
+>  }
+>
+>  void __devinit smp_prepare_boot_cpu(void)
+> @@ -98,7 +98,7 @@ void __devinit smp_prepare_boot_cpu(void)
+>        SUPP_REG_WR(RW_MM_TLB_PGD, pgd);
+>
+>        set_cpu_online(0, true);
+> -       cpu_set(0, phys_cpu_present_map);
+> +       cpumask_set_cpu(0, &phys_cpu_present_map);
+>        set_cpu_possible(0, true);
+>  }
+>
+> @@ -112,8 +112,9 @@ smp_boot_one_cpu(int cpuid)
+>  {
+>        unsigned timeout;
+>        struct task_struct *idle;
+> -       cpumask_t cpu_mask = CPU_MASK_NONE;
+> +       cpumask_t cpu_mask;
+>
+> +       cpumask_clear(&cpu_mask);
+>        idle = fork_idle(cpuid);
+>        if (IS_ERR(idle))
+>                panic("SMP: fork failed for CPU:%d", cpuid);
+> @@ -125,10 +126,10 @@ smp_boot_one_cpu(int cpuid)
+>        cpu_now_booting = cpuid;
+>
+>        /* Kick it */
+> -       cpu_set(cpuid, cpu_online_map);
+> -       cpu_set(cpuid, cpu_mask);
+> +       set_cpu_online(cpuid, true);
+> +       cpumask_set_cpu(cpuid, &cpu_mask);
+>        send_ipi(IPI_BOOT, 0, cpu_mask);
+> -       cpu_clear(cpuid, cpu_online_map);
+> +       set_cpu_online(cpuid, false);
+>
+>        /* Wait for CPU to come online */
+>        for (timeout = 0; timeout < 10000; timeout++) {
+> @@ -176,7 +177,7 @@ void __init smp_callin(void)
+>        notify_cpu_starting(cpu);
+>        local_irq_enable();
+>
+> -       cpu_set(cpu, cpu_online_map);
+> +       set_cpu_online(cpu, true);
+>        cpu_idle();
+>  }
+>
+> @@ -214,8 +215,9 @@ int __cpuinit __cpu_up(unsigned int cpu)
+>
+>  void smp_send_reschedule(int cpu)
+>  {
+> -       cpumask_t cpu_mask = CPU_MASK_NONE;
+> -       cpu_set(cpu, cpu_mask);
+> +       cpumask_t cpu_mask;
+> +       cpumask_clear(&cpu_mask);
+> +       cpumask_set_cpu(cpu, &cpu_mask);
+>        send_ipi(IPI_SCHEDULE, 0, cpu_mask);
+>  }
+>
+> @@ -232,7 +234,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
+>
+>        spin_lock_irqsave(&tlbstate_lock, flags);
+>        cpu_mask = (mm == FLUSH_ALL ? cpu_all_mask : *mm_cpumask(mm));
+> -       cpu_clear(smp_processor_id(), cpu_mask);
+> +       cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
+>        flush_mm = mm;
+>        flush_vma = vma;
+>        flush_addr = addr;
+> @@ -277,10 +279,10 @@ int send_ipi(int vector, int wait, cpumask_t cpu_mask)
+>        int ret = 0;
+>
+>        /* Calculate CPUs to send to. */
+> -       cpus_and(cpu_mask, cpu_mask, cpu_online_map);
+> +       cpumask_and(&cpu_mask, &cpu_mask, cpu_online_mask);
+>
+>        /* Send the IPI. */
+> -       for_each_cpu_mask(i, cpu_mask)
+> +       for_each_cpu(i,&cpu_mask)
 
-So it is.
+please, could you add a space between i,&cpu_mask?
 
-Another consequence of this patch is that when high order allocations
-are in progress (is the test case fork heavy in any way for
-example? alternatively, it might be something in the storage stack
-that requires high-order allocs) we are no longer necessarily going
-to sleep because of should_reclaim_continue() check. This could
-explain kswapd-at-99% but would only apply if CONFIG_COMPACTION is
-set (does unsetting CONFIG_COMPACTION help). If the bug only triggers
-for CONFIG_COMPACTION, does the following *untested* patch help any?
+>        {
+>                ipi.vector |= vector;
+>                REG_WR(intr_vect, irq_regs[i], rw_ipi, ipi);
+> @@ -288,7 +290,7 @@ int send_ipi(int vector, int wait, cpumask_t cpu_mask)
+>
+>        /* Wait for IPI to finish on other CPUS */
+>        if (wait) {
+> -               for_each_cpu_mask(i, cpu_mask) {
+> +               for_each_cpu(i,&cpu_mask) {
 
-(as a warning, I'm offline Friday until Tuesday morning. I'll try
-check mail over the weekend but it's unlikely I'll find a terminal
-or be allowed to use it without an ass kicking)
+please, could you add a space between i,&cpu_mask?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 148c6e6..c74a501 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1842,15 +1842,22 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 		return false;
- 
- 	/*
--	 * If we failed to reclaim and have scanned the full list, stop.
--	 * NOTE: Checking just nr_reclaimed would exit reclaim/compaction far
--	 *       faster but obviously would be less likely to succeed
--	 *       allocation. If this is desirable, use GFP_REPEAT to decide
--	 *       if both reclaimed and scanned should be checked or just
--	 *       reclaimed
-+	 * For direct reclaimers
-+	 *   If we failed to reclaim and have scanned the full list, stop.
-+	 *   The caller will check congestion and sleep if necessary until
-+	 *   some IO completes.
-+	 * For kswapd
-+	 *   Check just nr_reclaimed. If we are failing to reclaim, we
-+	 *   want to stop this reclaim loop, increase the priority and
-+	 *   go to sleep if necessary to allow IO a change to complete.
-+	 *   This avoids kswapd going into a busy loop in shrink_zone()
- 	 */
--	if (!nr_reclaimed && !nr_scanned)
--		return false;
-+	if (!nr_reclaimed) {
-+		if (current_is_kswapd())
-+			return false;
-+		else if (!nr_scanned)
-+			return false;
-+	}
- 
- 	/*
- 	 * If we have not reclaimed enough pages for compaction and the
-@@ -1924,8 +1931,13 @@ restart:
- 
- 	/* reclaim/compaction might need reclaim to continue */
- 	if (should_continue_reclaim(zone, nr_reclaimed,
--					sc->nr_scanned - nr_scanned, sc))
-+					sc->nr_scanned - nr_scanned, sc)) {
-+		/* Throttle direct reclaimers if congested */
-+		if (!current_is_kswapd())
-+			wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
-+
- 		goto restart;
-+	}
- 
- 	throttle_vm_writeout(sc->gfp_mask);
- }
+>                         int j;
+>                         for (j = 0 ; j < 1000; j++) {
+>                                ipi = REG_RD(intr_vect, irq_regs[i], rw_ipi);
+> @@ -314,11 +316,12 @@ int send_ipi(int vector, int wait, cpumask_t cpu_mask)
+>  */
+>  int smp_call_function(void (*func)(void *info), void *info, int wait)
+>  {
+> -       cpumask_t cpu_mask = CPU_MASK_ALL;
+> +       cpumask_t cpu_mask;
+>        struct call_data_struct data;
+>        int ret;
+>
+> -       cpu_clear(smp_processor_id(), cpu_mask);
+> +       cpumask_setall(&cpu_mask);
+> +       cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
+>
+>        WARN_ON(irqs_disabled());
+>
