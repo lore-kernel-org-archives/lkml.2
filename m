@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab1D1OsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 10:48:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65526 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab1D1OsF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 10:48:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gIKt1U/ypdpuKeESidUPS0cWrAYsfVXr7NL7It0DgRh+N/oshDkoyb1xGOajeTNc3y
-         x1Zut6qRmA3o/a5+9Z36adLwu++XH00pgvcewZjn67zVM2OlYbKdn1/n7wogF7DzgtsN
-         xSG9LQWDqvNc5aCYg+6d+7PVl87GzSF824RtA=
-MIME-Version: 1.0
-In-Reply-To: <20110428143724.GQ17290@n2100.arm.linux.org.uk>
-References: <1303963358-4652-1-git-send-email-haojian.zhuang@gmail.com>
-	<20110428102212.2d8d607c@endymion.delvare>
-	<BANLkTin6jguQue_0Y74jGPnmhCcvWLBjHg@mail.gmail.com>
-	<20110428161625.5eaacb85@endymion.delvare>
-	<20110428143724.GQ17290@n2100.arm.linux.org.uk>
-Date: Thu, 28 Apr 2011 22:48:02 +0800
-Message-ID: <BANLkTi=YeqxF_eu2Q=cy6oAFfyTrzAH6VA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jean Delvare <khali@linux-fr.org>, Eric Miao <eric.y.miao@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, ben-linux@fluff.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932927Ab1D1Otu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 10:49:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57988 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab1D1Ott (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 10:49:49 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Colin Ian King <colin.king.lkml@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1303993705-sup-5213@think>
+References: <1303920553.2583.7.camel@mulgrave.site>
+	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
+	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
+	 <1303925374-sup-7968@think> <1303926637.2583.17.camel@mulgrave.site>
+	 <1303934716.2583.22.camel@mulgrave.site> <1303990590.2081.9.camel@lenovo>
+	 <1303993705-sup-5213@think>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 09:49:43 -0500
+Message-ID: <1304002183.2598.1.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 10:37 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Apr 28, 2011 at 04:16:25PM +0200, Jean Delvare wrote:
->> Are you suggesting that the hardware lock wouldn't mind being taken
->> twice by the AP side? If it is the case, then indeed the software mutex
->> is still needed to prevent it from happening.
->>
->> That being said... I guess that avoiding a priority inversion is a good
->> enough reason to always take the rt_mutex, regardless of the hardware
->> lock implementation.
->>
->> So, this patch is
->>
->> Acked-by: Jean Delvare <khali@linux-fr.org>
->>
->> I guess it makes more sense for me to let Ben apply it, as the other
->> two patches in the series are for him too. This will avoid a dependency
->> between our trees.
->
-> Only change I'd suggest is passing adapter to the hardware_lock/unlock
-> methods.  Having no arguments what so ever in generic code for this kind
-> of stuff looks rather strange and limiting.
->
+On Thu, 2011-04-28 at 08:29 -0400, Chris Mason wrote:
+> Excerpts from Colin Ian King's message of 2011-04-28 07:36:30 -0400:
+> > One more data point to add, I've been looking at an identical issue when
+> > copying large amounts of data.  I bisected this - and the lockups occur
+> > with commit 
+> > 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
+> > issue. With this commit, my file copy test locks up after ~8-10
+> > iterations, before this commit I can copy > 100 times and don't see the
+> > lockup.
+> 
+> Well, that's really interesting.  I tried with compaction on here and
+> couldn't trigger it, but this (very very lightly) tested patch might
+> help.
+> 
+> It moves the writeout throttle before the goto restart, and also makes
+> sure we do at least one cond_resched before we loop.
 
-OK. I'll update it.
+It seems to take longer, but with a PREEMPT kernel, kswapd eventually
+shoots up to 99% during the tar.
+
+James
+
+
