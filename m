@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab1D1HHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 03:07:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54286 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab1D1HHe (ORCPT
+	id S1754498Ab1D1HHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 03:07:41 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:43544 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab1D1HHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 03:07:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Ln4zuRuVHn4pwPNfdIkd96EOgv7BXpBUtWDdlbK34J0klqoPW4BcTHJCTcBafxd3vz
-         UVmeTgD0wVSw+SIqZSOOe0/oXnqmuAA1xrdGC6ZR9B8RY5MsnzGzMKuPxiy0Sas84CeM
-         ugecncA5kJbInNNscbgmFXfTvFSU0N/KmdqCQ=
+	Thu, 28 Apr 2011 03:07:37 -0400
+From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+To: Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
+In-Reply-To: <1303332697-16426-1-git-send-email-ncrao@google.com>
+References: <1303332697-16426-1-git-send-email-ncrao@google.com>
+User-Agent: Notmuch/0.3.1-59-g676d251 (http://notmuchmail.org) Emacs/23.2.1 (x86_64-redhat-linux-gnu)
+Date: Thu, 28 Apr 2011 12:37:27 +0530
+Message-ID: <m3tydi6ehc.fsf@IBM-009124035060.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <0D753D10438DA54287A00B027084269764D2650215@AUSP01VMBX24.collaborationhost.net>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
-	<0D753D10438DA54287A00B027084269764D2650215@AUSP01VMBX24.collaborationhost.net>
-Date: Thu, 28 Apr 2011 09:07:33 +0200
-X-Google-Sender-Auth: 1fPjUggg9FLu59m6web6TbP4USw
-Message-ID: <BANLkTikc7B5J0Z_aiS5kXCxMSxcFrfSRxw@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to drivers/gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/27 H Hartley Sweeten <hartleys@visionengravers.com>:
-> On Wednesday, April 27, 2011 6:13 AM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This rewrites the U300 GPIO driver using gpiolib and the irq_chip
->> abstractions, makes it runtime-configured rather than compile-time,
->> and moves it to the drivers/gpio subsystem where it belongs,
->> depopulating the ARM tree of one more driver.
->>
->> Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->
-> If this and other platform-specific GPIO drivers are going to be
-> moved to the drivers/gpio subsystem, the Kconfig and Makefile should
-> probably be updated to reflect this.
->
-> In drivers/gpio/Kconfig:
->
-> #
-> # platform-neutral GPIO infrastructure and expanders
-> #
->
-> And in drivers/gpio/Makefile:
->
-> # generic gpio support: dedicated expander chips, etc
-> #
-> # NOTE: platform-specific GPIO drivers don't belong in the
-> # drivers/gpio directory; put them with other platform setup
-> # code, IRQ controllers, board init, etc.
+--=-=-=
 
-Yeah, you're right. I can take these comments out, simply.
-I'll review the files as bit to make sure there aren't any more
-statements like that.
+On Wed, 20 Apr 2011 13:51:19 -0700, Nikhil Rao <ncrao@google.com> wrote:
+> Hi All,
+> 
+> I have attached an early version of a RFC patchset to increase resolution of
+> sched entity load weights. This RFC introduces SCHED_LOAD_RESOLUTION which
+> scales NICE_0_LOAD by a factor of 1024. The scaling is done internally and should
+> be completely invisible to the user.
+> 
+> Why do we need this?
+> This extra resolution allows us to scale on two dimensions - number of cpus and
+> the depth of hierarchies. It also allows for proper load balancing of low weight
+> task groups (for eg., nice+19 on autogroup).
+> 
+> One of the big roadblocks for increasing resolution is the use of unsigned long
+> for load.weight, which on 32-bit architectures can overflow with ~48 max-weight
+> sched entities. In this RFC we convert all uses of load.weight to u64. This is
+> still a work-in-progress and I have listed some of the issues I am still
+> investigating below.
+> 
+> I would like to get some feedback on the direction of this patchset. Please let
+> me know if there are alternative ways of doing this, and I'll be happy to
+> explore them as well.
+> 
+> The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
+> x86_64. Beyond the basic checks, it has not been well tested yet.
+> 
+> Major TODOs:
+> - Detect overflow in update shares calculations (time * load), and set load_avg
+>   to maximum possible value (~0ULL).
+> - tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
+>   machines. Might need to add a lock to protect this instead of atomic ops.
+> - Check wake-affine math and effective load calculations for overflows.
+> - Needs more testing and need to ensure fairness/balancing is not broken.
+> 
+Hi Nikhil,
 
-> The Makefile should probably be reordered, either alphabetically
-> or grouped by type (arch/mmio/i2c/spi/pci/etc) and then
-> alphabetically in order to reduce merge conflicts.
+I did a quick test for creating 600 cpu hog tasks with and without this
+patches on a 16cpu machine(x86_64) and I am seeing some mis-behaviour:
 
-Yes, but if I do that in my patchset I will screw up Grants GPIO tree
-completely, so I prefer that Grant do this. And maybe after pulling
-in my GPIO consolidation tree to his in that case, so we don't get
-undesired collisions. So leaving this for the GPIO maintainer.
+Base kernel - 2.6.39-rc4
 
-Yours,
-Linus Walleij
+[root@krm1 ~]# time -p ./test
+real 43.54
+user 0.12
+sys 1.05
+[root@krm1 ~]# 
+
+Base + patches
+
+[root@krm1 ~]# time -p ./test
+
+Takes almost infinity, after 2 minutes I see only 16 tasks created
+viewed from another ssh session to the machine:
+
+[root@krm1 ~]# ps ax | grep dowhile$ | wc  -l
+16
+[root@krm1 ~]# 
+
+I am attaching the script.
+
+Regards,
+Nikunj
+
+
+--=-=-=
+Content-Type: application/x-sh
+Content-Disposition: attachment; filename=create_loop_tasks.sh
+Content-Transfer-Encoding: base64
+
+IyEvYmluL3NoCnRvdGFsX3Rhc2tzPTYwMAppPTAKd2hpbGUgWyAkaSAtbHQgJHRvdGFsX3Rhc2tz
+IF0KZG8KLi9kb3doaWxlICYKaT1gZXhwciAkaSArIDFgCmRvbmUKCm51bV9kb3doaWxlPSQocHMg
+YXggfCBncmVwIGRvd2hpbGUkIHwgd2MgLWwpCndoaWxlIFsgJG51bV9kb3doaWxlIC1uZSAkdG90
+YWxfdGFza3MgXSA7CmRvCiAgICBzbGVlcCAxCiAgICBudW1fZG93aGlsZT0kKHBzIGF4IHwgZ3Jl
+cCBkb3doaWxlJCB8IHdjIC1sKQpkb25lCg==
+--=-=-=--
