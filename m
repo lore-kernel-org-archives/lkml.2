@@ -1,141 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab1D1SVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:21:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab1D1SVJ convert rfc822-to-8bit (ORCPT
+	id S933350Ab1D1SVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:21:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37875 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760686Ab1D1SVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:21:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wci1I7MA4d79IU+ic0mTIt72/y7j2iJrxuwaMd6YKjqL4Pt97b8x6vIFkW52KTqszX
-         FHRiDGyh4KMz8o4mnKYA==
-MIME-Version: 1.0
-In-Reply-To: <m3wriey4tw.fsf@IBM-009124035060.in.ibm.com>
-References: <1303332697-16426-1-git-send-email-ncrao@google.com>
- <m3tydi6ehc.fsf@IBM-009124035060.in.ibm.com> <m3wriey4tw.fsf@IBM-009124035060.in.ibm.com>
-From: Nikhil Rao <ncrao@google.com>
-Date: Thu, 28 Apr 2011 11:20:36 -0700
-Message-ID: <BANLkTi=gvxmUuue5ns5QYsEgycDbxHHOnA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 00/18] Increase resolution of load weights
-To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 28 Apr 2011 14:21:17 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=0i_OOtiXEx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8X0srE0SAArvNrBGM9oA:9 a=bZ-Zs8dRdDovd1m85GMA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
+ filtering
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Drewry <wad@chromium.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, eparis@redhat.com, agl@chromium.org,
+        mingo@elte.hu, jmorris@namei.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>
+In-Reply-To: <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	 <1303960136-14298-2-git-send-email-wad@chromium.org>
+	 <20110428165525.GB1927@hallyn.com>
+	 <1304010981.18763.192.camel@gandalf.stny.rr.com>
+	 <20110428173957.GA25940@hallyn.com>
+	 <BANLkTi=ukfidjHpKUr1vL67aQUFcNxXFeA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 28 Apr 2011 14:21:14 -0400
+Message-ID: <1304014874.18763.201.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 4:48 AM, Nikunj A. Dadhania
-<nikunj@linux.vnet.ibm.com> wrote:
-> On Thu, 28 Apr 2011 12:37:27 +0530, "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com> wrote:
->> On Wed, 20 Apr 2011 13:51:19 -0700, Nikhil Rao <ncrao@google.com> wrote:
->> > Hi All,
->> >
->> > I have attached an early version of a RFC patchset to increase resolution of
->> > sched entity load weights. This RFC introduces SCHED_LOAD_RESOLUTION which
->> > scales NICE_0_LOAD by a factor of 1024. The scaling is done internally and should
->> > be completely invisible to the user.
->> >
->> > Why do we need this?
->> > This extra resolution allows us to scale on two dimensions - number of cpus and
->> > the depth of hierarchies. It also allows for proper load balancing of low weight
->> > task groups (for eg., nice+19 on autogroup).
->> >
->> > One of the big roadblocks for increasing resolution is the use of unsigned long
->> > for load.weight, which on 32-bit architectures can overflow with ~48 max-weight
->> > sched entities. In this RFC we convert all uses of load.weight to u64. This is
->> > still a work-in-progress and I have listed some of the issues I am still
->> > investigating below.
->> >
->> > I would like to get some feedback on the direction of this patchset. Please let
->> > me know if there are alternative ways of doing this, and I'll be happy to
->> > explore them as well.
->> >
->> > The patchset applies cleanly to v2.6.39-rc4. It compiles for i386 and boots on
->> > x86_64. Beyond the basic checks, it has not been well tested yet.
->> >
->> > Major TODOs:
->> > - Detect overflow in update shares calculations (time * load), and set load_avg
->> >   to maximum possible value (~0ULL).
->> > - tg->task_weight uses an atomic which needs to be updates to 64-bit on 32-bit
->> >   machines. Might need to add a lock to protect this instead of atomic ops.
->> > - Check wake-affine math and effective load calculations for overflows.
->> > - Needs more testing and need to ensure fairness/balancing is not broken.
->> >
->> Hi Nikhil,
->>
->> I did a quick test for creating 600 cpu hog tasks with and without this
->> patches on a 16cpu machine(x86_64) and I am seeing some mis-behaviour:
->>
->> Base kernel - 2.6.39-rc4
->>
->> [root@krm1 ~]# time -p ./test
->> real 43.54
->> user 0.12
->> sys 1.05
->> [root@krm1 ~]#
->>
->> Base + patches
->>
->> [root@krm1 ~]# time -p ./test
->>
->> Takes almost infinity, after 2 minutes I see only 16 tasks created
->> viewed from another ssh session to the machine:
->>
-> I could get this working using following patch, not sure if it has other
-> implications though. With this, I am back to saner time values for
-> creating 600 cpu hog tasks:
->
-> [root@ ~]# time -p ./test
-> real 45.02
-> user 0.13
-> sys 1.07
-> [root@ ~]#
->
+On Thu, 2011-04-28 at 13:01 -0500, Will Drewry wrote:
 
-Nikunj,
+> Good to know! My question (below) is if I should even be using an RCU
+> guard at all. I may have been a bit too overzealous.
+> 
+> >> >
+> >> > I actually thought you were going to be more extreme about the seccomp
+> >> > state than you are:  I thought you were going to tie a filter list to
+> >> > seccomp state.  So adding or removing a filter would have required
+> >> > duping the seccomp state, duping all the filters, making the change in
+> >> > the copy, and then swapping the new state into place.  Slow in the
+> >> > hopefully rare update case, but safe.
+> 
+> Hrm, I think I'm confused now!  This is exactly what I *thought* the
+> code was doing.
 
-Thanks for running the tests and identifying this issue. You are right
--- we need to scale the reference weight, else we end up with slices
-that are 2^10 times the expected value. Thanks for the patch.
+I guess my thought by looking at the code is the call_rcu() to free the
+filters in drop_matching_filters().
 
--Thanks,
-Nikhil
+Also, you have seccomp_drop_all_filters() as a standalone function that
+is even exported to modules.
 
-> ===================================================================
->    From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
->
->    sched: calc_delta_mine - fix calculation
->
->    All the calculations of inv_weight takes scaled down weight, while
->    calculating the tmp, weight is not scaled down by
->    SCHED_LOAD_RESOLUTION, which then will return big values because of
->    which the sched_slice thinks that its not time to preempt the
->    current running task
->
->    Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
->
-> Index: kernel/sched.c
-> ===================================================================
-> --- kernel/sched.c.orig 2011-04-28 16:34:24.000000000 +0530
-> +++ kernel/sched.c      2011-04-28 16:36:29.000000000 +0530
-> @@ -1336,7 +1336,7 @@ calc_delta_mine(unsigned long delta_exec
->                        lw->inv_weight = 1 + (WMULT_CONST - w/2) / (w + 1);
->        }
->
-> -       tmp = (u64)delta_exec * weight;
-> +       tmp = (u64)delta_exec * (weight >> SCHED_LOAD_RESOLUTION);
->        /*
->         * Check whether we'd overflow the 64-bit multiplication:
->         */
->
->
+This to me, seems that the filters can disappear at any time. Because
+the freeing is done with a rcu_call() the access to the filters needs a
+ref count.
+
+> 
+> At present, seccomp_state can be shared across predecessor/ancestor
+> relationships using refcounting in fork.c  (get/put). However, the
+> only way to change a given seccomp_state or its filters is either
+> through the one-bit on_next_syscall change or through
+> prctl_set_seccomp.  In prctl_set_seccomp, it does:
+> state = (orig_state ? seccomp_state_dup(orig_state) :
+>                               seccomp_state_new());
+> operates on the new state and then rcu_assign_pointer()s it to the
+> task.  I didn't intentionally provide any way to drop filters from an
+> existing state object nor change the filtered syscalls on an in-use
+> object.  That _dup call should hit the impromperly rcu_locked
+> copy_all_filters returning duplicates of the original filters by
+> reparsing the filter_string.
+> 
+> Did I accidentally provide a means to mutate a state object or filter
+> list without dup()ing? :/
+
+That seccomp_drop_all_filters() looks like you can.
+
+> 
+> >> > You don't have to do that, but then I'm pretty sure you'll need to add
+> >> > reference counts to each filter and use rcu cycles to a reader from
+> >> > having the filter disappear mid-read.
+> 
+> Right now, I don't think it is possible for seccomp_copy_all_filters()
+> to be called with a src list that changes since every change is
+> guarded by a seccomp_state_dup(). If that's not true, then I violated
+> my own invariant :/  If that is the case, should I not treat the list
+> as an RCU list?  There should never be any simultaneous
+> reader/writers, just a single reader/writer or multiple readers.
+
+Again, that seccomp_copy_all_filters() is called free standing (exported
+to modules). Which to me means that it can be called by anyone at
+anytime. There is no protection of this src list.
+
+> 
+> >>
+> >> Or you can preallocate the new filters, call rcu_read_lock(), check if
+> >> the number of old filters is the same or less, if more, call
+> >> rcu_read_unlock, and try allocating more, and then call rcu_read_lock()
+> >> again and repeat. Then just copy the filters to the preallocate ones.
+> >> rcu_read_unlock() and then free any unused allocated filters.
+> >>
+> >> Maybe a bit messy, but not that bad.
+> >
+> > Sounds good.
+> 
+> I'd prefer a heavy-weight copy ;)
+> 
+> I think I'm a bit lost -- am I missing something obvious here?  I was
+> hoping by using a swapped-in-seccomp_state-pointer, locking and
+> consistency internal to the state objects would be a tad easier -
+> though expensive.
+
+Perhaps, but those free standing functions (the ones that are exported
+to modules) seem like they can destroy state.
+
+Your code would have been correct if you could call kzalloc under
+rcu_read_lock() (which you can on some kernel configurations but not
+all). The issue is that you need to pull out that allocation from the
+rcu_read_lock() because rcu_read_lock assumes you can't preempt, and
+that allocation can schedule out. The access to the filters must be done
+under rcu_read_lock(), other than that, you're fine.
+
+-- Steve
+
+
