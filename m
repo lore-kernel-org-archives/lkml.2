@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab1D1AGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:06:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34706 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab1D1AGD (ORCPT
+	id S1756895Ab1D1AGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:06:20 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57504 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab1D1AGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:06:03 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=i38SgkEfDKkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eyoELzJebOAUyCIMRVgA:9 a=kFX5o7QLZMGu7W3F7J8A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] linux/string.h: Introduce streq macro.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110427214657.GE9487@ZenIV.linux.org.uk>
-References: <ae304c124297e5ca75721398f398f6d524b615d2.1303843697.git.tfransosi@gmail.com>
-	 <20110427164639.GD9487@ZenIV.linux.org.uk>
-	 <1303924079.18763.70.camel@gandalf.stny.rr.com>
-	 <20110427214657.GE9487@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 27 Apr 2011 20:05:59 -0400
-Message-ID: <1303949159.18763.120.camel@gandalf.stny.rr.com>
+	Wed, 27 Apr 2011 20:06:04 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Oren Weil <oren.jer.weil@intel.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        alan@linux.intel.com, david@woodhou.se
+Subject: Re: [PATCH 8/8] staging/mei: Updates to staging/Kconfig ane staging/Makefile and a new Makefile and Kconfig
+In-Reply-To: Your message of "Wed, 27 Apr 2011 13:27:37 +0300."
+             <1303900057-21694-9-git-send-email-oren.jer.weil@intel.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
+            <1303900057-21694-9-git-send-email-oren.jer.weil@intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: multipart/signed; boundary="==_Exmh_1303949150_5598P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 27 Apr 2011 20:05:50 -0400
+Message-ID: <10935.1303949150@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4DB8AF62.0083,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 22:46 +0100, Al Viro wrote:
+--==_Exmh_1303949150_5598P
+Content-Type: text/plain; charset=us-ascii
 
-> That's the whole fucking _point_; adding random extensions to the language
-> leads to the place where Pascal and LISP are and it's not pretty.  Each
-> might make sense taken separately (hell, bzero(3) would prevent real, honest
-> to Cthulhu bugs - it's memset(p, 0, n) and we had memset-with-swapped-arguments
-> bugs fairly often and yes, in our tree most of memset() callers do pass '\0'
-> as the second argument).  Pile enough of those together and you've got yourself
-> a dialect only you understand.  _Bad_ idea, since the next thing that happens
-> is different dialects in different parts of tree.  And the end of non-incestous
-> code review and fixes.  I've seen it first-hand (OK, second - I had enough
-> sense to stay out of that particular clusterfuck) on Algol 68 codebase.  I
-> *really*, *really* do not want to see anything similar ever again.  Especially
-> on projects I can't just piss upon and walk away from.  The fact that in C
-> you *can* extend the language that way doesn't make it a good idea.
-> 
+On Wed, 27 Apr 2011 13:27:37 +0300, Oren Weil said:
+> Changes of Kconfig and Makefile in drivers/staging
+> for adding the Intel MEI Driver to the Linux kernel.
+> New Makefile and Kconfig building for MEI Driver.
 
-So in translating the above I have:
+> +++ b/drivers/staging/mei/Kconfig
+> @@ -0,0 +1,10 @@
+> +config INTEL_MEI
+> +	tristate "Intel Management Engine Interface (Intel MEI)"
+> +	depends on X86 && EXPERIMENTAL
+> +	help
+> +		The Intel Management Engine (Intel ME) provides Manageability,
+> +		Security and Media services for system containing Intel chipsets.
+> +		if selected /dev/mei misc device will be created.
+> +
+> +		For more information see
+> +		<http://software.intel.com/en-us/manageability/>
 
-"Don't do this because you are opening up a door that will lead to
-extension hell"
+Can this be expanded a bit to give a better hint *which* Intel chipsets support
+this? I just spent an honest 10 minutes looking around that website, and am no
+clearer on whether the 82801I in my laptop supports this.  Having a line like
+"server chipsets XY948 and later and ICH10 and later" or similar would be a big
+help to all those who hit this when it goes into the tree.
 
-Am I correct?
 
-If I am, then I will take that as a reason not to add it and leave it at
-that.
+--==_Exmh_1303949150_5598P
+Content-Type: application/pgp-signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
+iD8DBQFNuK9ecC3lWbTT17ARAjFLAKDd6zBGXOARZNWzrV24i82DZt9BygCdHL1a
+k2QwyIauj8Gohq0it3y6YeU=
+=2ddy
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1303949150_5598P--
 
