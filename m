@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab1D1KkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:40:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45295 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759221Ab1D1KkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:40:13 -0400
-Date: Thu, 28 Apr 2011 11:40:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sakari Ailus <sakari.ailus@nokia.com>
-Cc: kalle.jokiniemi@nokia.com, lrg@slimlogic.co.uk, mchehab@infradead.org,
-        svarbatov@mm-sol.com, saaguirre@ti.com, grosikopulos@mm-sol.com,
-        vimarsh.zutshi@nokia.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, laurent.pinchart@ideasonboard.com
-Subject: Re: [RFC] Regulator state after regulator_get
-Message-ID: <20110428104021.GD14494@opensource.wolfsonmicro.com>
-References: <9D0D31AA57AAF5499AFDC63D6472631B09C76A@008-AM1MPN1-036.mgdnok.nokia.com>
- <4DB9348D.7000501@nokia.com>
- <9D0D31AA57AAF5499AFDC63D6472631B09C7BE@008-AM1MPN1-036.mgdnok.nokia.com>
- <20110428102009.GB14494@opensource.wolfsonmicro.com>
- <4DB94122.9010203@nokia.com>
+	id S1759322Ab1D1Klq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:41:46 -0400
+Received: from 8bytes.org ([88.198.83.132]:60022 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758670Ab1D1Klp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:41:45 -0400
+Date: Thu, 28 Apr 2011 12:41:44 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110428104143.GB13402@8bytes.org>
+References: <201104212129.17013.arnd@arndb.de> <20110427073514.GH17290@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DB94122.9010203@nokia.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110427073514.GH17290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 01:27:46PM +0300, Sakari Ailus wrote:
-> Mark Brown wrote:
+On Wed, Apr 27, 2011 at 08:35:14AM +0100, Russell King - ARM Linux wrote:
+> On Thu, Apr 21, 2011 at 09:29:16PM +0200, Arnd Bergmann wrote:
 
-> > I'm not sure what "supply_nasty" would mean?  This also doesn't seem
-> > like something that we can set up per supply - it's going to affect the
-> > whole regulator state, it's not something that only affects a single
-> > supply.
+> dma_map_ops design is broken - we can't have the entire DMA API indirected
+> through that structure.  Whether you have an IOMMU or not is completely
+> independent of whether you have to do DMA cache handling.  Moreover, with
+> dmabounce, having the DMA cache handling in place doesn't make sense.
+> 
+> So you can't have a dma_map_ops for the cache handling bits, a dma_map_ops
+> for IOMMU, and a dma_map_ops for the dmabounce stuff.  It just doesn't
+> work like that.
 
-> supply_nasty() would be used to define a regulator which is enabled by
-> the boot loader when it shouldn't be, which is the actual problem.
+Nobody says that the complete feature-set of the dma_ops needs to be
+provided through the IOMMU-API. The different APIs are there to solve
+different problems:
 
-That's *really* not a clear name.
+The IOMMU-API provides low-level access to IOMMU hardware and to map io
+addresses to physical addresses (which can be chosen by the caller). The
+IOMMU-API does not care about address space layout or cache management.
 
-> How should this regulator be turned off in the boot by the kernel?
+The DMA-API cares about address management. Every dma_ops implementation
+using an IOMMU has an address allocator for io addresses implemented.
+the DMA-API also cares about cache-management.
 
-Have you read my previous mail where I described the existing support
-for doing this when we have a full set of information on the regualtors
-in the systems?
+So if we can abstract the different IOMMUs on all architectures in the
+IOMMU-API I see no reason why we can't have a common dma_ops
+implementation. The dma-buffer ownership management (cpu<->device) can
+be put into archtectural call-backs so that architectures that need it
+just implement them and everything should work.
+
+Or I am too naive to believe that (which is possible because of my
+limited ARM knowledge). In this case please correct me :)
+
+Regards,
+
+	Joerg
+
