@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760340Ab1D0X7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 19:59:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55433 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab1D0X7S (ORCPT
+	id S1756639Ab1D1AFE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:05:04 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57936 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752531Ab1D1AFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 19:59:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=coDzWRruJg0A5o+jDpVURrXHdMSu7Htv+Nh0GBPXCKjkwZLjTVFR4YPpc2QIsvPYAg
-         F9L0ia3P9+s8Aiyw4n/Dw/qgDUOlnWXz053/sPqlLlQI254koCAE6qsJd1C78xikZI9W
-         VUy71HMAcJGCIC49giigp8O70EOx7deDbykDA=
+	Wed, 27 Apr 2011 20:05:02 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgIEANiuuE15LHHJgWdsb2JhbAClfhUBARYmJcUJDoVoBJU9h1I
+Date: Thu, 28 Apr 2011 10:04:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: drosenberg@vsecurity.com, ak@linux.intel.com, eugeneteo@kernel.org,
+        aelder@sgi.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [8/106] xfs: prevent leaking uninitialized stack
+ memory in FSGEOMETRY_V1
+Message-ID: <20110428000449.GK12436@dastard>
+References: <20110426212.641772347@firstfloor.org>
+ <20110426211246.2E1863E1887@tassilo.jf.intel.com>
+ <20110427052610.GH12436@dastard>
+ <20110427150039.GP16484@one.firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <4DB8AAE3.20806@redhat.com>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
-	<51e7412097fa62f86656c77c1934e3eb96d5eef6.1303833417.git.minchan.kim@gmail.com>
-	<4DB8AAE3.20806@redhat.com>
-Date: Thu, 28 Apr 2011 08:59:17 +0900
-Message-ID: <BANLkTimPAU-uc=FCV9Z-LKmQm-GGusHfiw@mail.gmail.com>
-Subject: Re: [RFC 6/8] In order putback lru core
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427150039.GP16484@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rik,
+On Wed, Apr 27, 2011 at 05:00:39PM +0200, Andi Kleen wrote:
+> > > v2 switches to memset() to avoid future issues if structure members
+> > > change, on suggestion of Dave Chinner.
+> > 
+> > Did you grab the followup patch that fixed the stack corruption
+> > this change caused?
+> 
+> No. Which commit ID is that?
 
-On Thu, Apr 28, 2011 at 8:46 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 04/26/2011 12:25 PM, Minchan Kim wrote:
->
->> But this approach has a problem on contiguous pages.
->> In this case, my idea can not work since friend pages are isolated, too.
->> It means prev_page->next == next_page always is false and both pages are
->> not
->> LRU any more at that time. It's pointed out by Rik at LSF/MM summit.
->> So for solving the problem, I can change the idea.
->> I think we don't need both friend(prev, next) pages relation but
->> just consider either prev or next page that it is still same LRU.
->
->> Any comment?
->
-> If the friend pages are isolated too, then your condition
-> "either prev or next page that it is still same LRU" is
-> likely to be false, no?
+commit af24ee9ea8d532e16883251a6684dfa1be8eec29. I see it is patch
+52 of the series, so everything shoul dbe OK. It took a while for
+all the patches in the series to trickle into my mail box....
 
-H - P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - T
+Cheers,
 
-assume : we isolate pages P3~P7 and we consider only next pointer.
-
-H - P1 - P2 - P8 - P9 - P10 - T
-
-If we start to putback P7 as starting point, next P8 is valid so,
-
-H - P1 - P2 - P7 - P8 - P9 - P10 - T
-Then, if we consider P6, next P7 is valid, too. So,
-
-H - P1 - P2 - P6 - P7 - P8 - P9 - P10 - T
-
-continue until P3.
-
-
+Dave.
 -- 
-Kind regards,
-Minchan Kim
+Dave Chinner
+david@fromorbit.com
