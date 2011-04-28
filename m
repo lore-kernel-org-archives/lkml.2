@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760655Ab1D1QDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 12:03:08 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47289 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757715Ab1D1QDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 12:03:04 -0400
-Subject: Re: [PATCH 2/3] make new alloc_pages_exact()
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <4DB88DAF.2010504@freescale.com>
-References: <20110414200139.ABD98551@kernel>
-	 <20110414200140.CDE09A20@kernel> <4DB88AF0.1050501@freescale.com>
-	 <1303940249.9516.366.camel@nimitz>  <4DB88DAF.2010504@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 28 Apr 2011 09:02:57 -0700
-Message-ID: <1304006577.9516.2578.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1760531Ab1D1QFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 12:05:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46581 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757742Ab1D1QFO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 12:05:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110428155745.GF1798@nowhere>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	<1303960136-14298-2-git-send-email-wad@chromium.org>
+	<20110428142857.GC1798@nowhere>
+	<BANLkTikf4b1qMSOucNH-DLUFa7K3QOVN7w@mail.gmail.com>
+	<20110428155745.GF1798@nowhere>
+Date: Thu, 28 Apr 2011 11:05:12 -0500
+Message-ID: <BANLkTimH-1J2BmSHu7Hc6tbkyREEB-cyDg@mail.gmail.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
+        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
+        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 16:42 -0500, Timur Tabi wrote:
-> Dave Hansen wrote:
-> >> Is there an easy way to verify that alloc_pages_exact(5MB) really does allocate
-> >> > only 5MB and not 8MB?
-> 
-> > I'm not sure why you're asking.  How do we know that the _normal_
-> > allocator only gives us 4k when we ask for 4k?  Well, that's just how it
-> > works.  If alloc_pages_exact() returns success, you know it's got the
-> > amount of memory that you asked for, and only that plus a bit of masking
-> > for page alignment.
-> > 
-> > Have you seen alloc_pages_exact() behaving in some other way?
-> 
-> I've never tested this part of alloc_pages_exact(), even when I wrote (the first
-> version of) it.  I just took it on faith that it actually did what it was
-> supposed to do.
+On Thu, Apr 28, 2011 at 10:57 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Thu, Apr 28, 2011 at 10:15:04AM -0500, Will Drewry wrote:
+>> On Thu, Apr 28, 2011 at 9:29 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Wed, Apr 27, 2011 at 10:08:47PM -0500, Will Drewry wrote:
+>> >> This change adds a new seccomp mode based on the work by
+>> >> agl@chromium.org. This mode comes with a bitmask of NR_syscalls size and
+>> >> an optional linked list of seccomp_filter objects. When in mode 2, all
+>> >
+>> > Since you now use the filters. Why not using them to filter syscalls
+>> > entirely rather than using a bitmap of allowed syscalls?
+>>
+>> The current approach just uses a linked list of filters.  While a more
+>> efficient data structure could be used, the bitmask provides a quick
+>> binary decision, and optimizes for the relatively common case where
+>> there won't be many non-binary filters to evaluate so we don't have to
+>> walk the list for a larger number of yes/no decisions versus more
+>> complex predicates.  Though that may be a short-sighted view! I'm
+>> happy to change it up.
+>
+> Well, using a hlist that points to the filters may be not that slower.
+> Dunno, that needs to be measured perhaps.
+>
+> No big deal for now.
 
-I did actually go add a bunch of printks to it at one point.  It did
-seem to be working just fine and freeing the right amount of memory.
+Cool - that makes sense.  I just haven't used hlist before and was
+reticent to dive in given how much other new territory this was.  I'll
+check it out, though.
 
--- Dave
+>>
+>> > You have the "nr" field in syscall tracepoints.
+>>
+>> I'n not sure I follow.  Do you mean moving entirely to using the
+>> actual tracepoint infrastructure instead of using the seccomp hooks,
+>> or just looking up proper filter by syscall nr?  If there's a sane and
+>> better way to do the latter, I'm all ears :)  As far as using the
+>> tracepoints themselves, I looked to how the perf/ftrace interactions
+>> worked and while I could've registered with the syscalls tracepoints
+>> for enter and exit, it would mean later evaluation of the system call
+>> interception, possibly out-of-order with respect to other registered
+>> event sinks, and there is complexity in just killing current from
+>> within the notifier-like list registered syscall events (as Eric Paris
+>> ran into when expanding filtering into perf itself).  To get around
+>> that, the tracepoint handler would have to pump the data somewhere
+>> else (like it does for perf), and it just seemed messy.  I think it's
+>> doable, but I don't know that the pure syscall tracepoint
+>> infrastructure should be burdened with the added requirements that
+>> come with seccomp-filtering.   If I didn't properly understand the
+>> code, though, please set me on the right path.
+>
+> No, my bad I was confused. I always post questions that show my
+> misunderstanding of a new (or not) patchset. It's like a tradition ;)
 
+Awesome - I was getting worried I'd missed something terribly obvious!
