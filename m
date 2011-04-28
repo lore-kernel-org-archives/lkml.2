@@ -1,90 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1D1G4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 02:56:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55664 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab1D1G4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 02:56:32 -0400
-Date: Thu, 28 Apr 2011 06:55:54 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-7y40wib8n1eqio5hjpn3dsrm@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/stat] perf stat: Fix compatibility behavior
-Git-Commit-ID: ede70290046043b2638204cab55e26ea1d0c6cd9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754121Ab1D1G7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 02:59:23 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:42266 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752575Ab1D1G7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 02:59:22 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] gpio: rename VIA local config struct
+Date: Thu, 28 Apr 2011 08:59:00 +0200
+Message-ID: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Apr 2011 06:55:54 +0000 (UTC)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ede70290046043b2638204cab55e26ea1d0c6cd9
-Gitweb:     http://git.kernel.org/tip/ede70290046043b2638204cab55e26ea1d0c6cd9
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Thu, 28 Apr 2011 08:48:42 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 28 Apr 2011 08:48:42 +0200
+From: Linus Walleij <linus.walleij@linaro.org>
 
-perf stat: Fix compatibility behavior
+The local VIA GPIO config struct "gpio_config" collides with my
+extension to the gpio_chip struct, so rename it to via_gpio_config
+so we don't get this clash.
 
-Instead of failing on an unknown event, when new perf stat is run on
-older kernels:
-
-  $ ./perf stat true
-  Error: open_counter returned with 22 (Invalid argument). /bin/dmesg
-  may provide additional information.
-
-  Fatal: Not all events could be opened.
-
-Just ignore EINVAL and ENOSYS, we'll print the results as not counted:
-
- Performance counter stats for 'true':
-
-          0.239483 task-clock               #    0.493 CPUs utilized
-                 0 context-switches         #    0.000 M/sec
-                 0 CPU-migrations           #    0.000 M/sec
-                86 page-faults              #    0.359 M/sec
-           704,766 cycles                   #    2.943 GHz
-     <not counted> stalled-cycles
-           381,961 instructions             #    0.54  insns per cycle
-            69,626 branches                 #  290.735 M/sec
-             4,594 branch-misses            #    6.60% of all branches
-
-        0.000485883  seconds time elapsed
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-7y40wib8n1eqio5hjpn3dsrm@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- tools/perf/builtin-stat.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/video/via/via-gpio.c |   49 +++++++++++++++++++++--------------------
+ 1 files changed, 25 insertions(+), 24 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 5658a77..da77077 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -372,7 +372,10 @@ static int run_perf_stat(int argc __used, const char **argv)
+diff --git a/drivers/video/via/via-gpio.c b/drivers/video/via/via-gpio.c
+index c2a0a1c..4b26f3f 100644
+--- a/drivers/video/via/via-gpio.c
++++ b/drivers/video/via/via-gpio.c
+@@ -145,7 +145,7 @@ static int via_gpio_get(struct gpio_chip *chip, unsigned int nr)
+ }
  
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter) < 0) {
--			if (errno == -EPERM || errno == -EACCES) {
-+			if (errno == EINVAL || errno == ENOSYS)
-+				continue;
-+
-+			if (errno == EPERM || errno == EACCES) {
- 				error("You may not have permission to collect %sstats.\n"
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+ 
+-static struct viafb_gpio_cfg gpio_config = {
++static struct viafb_gpio_cfg via_gpio_config = {
+ 	.gpio_chip = {
+ 		.label = "VIAFB onboard GPIO",
+ 		.owner = THIS_MODULE,
+@@ -183,8 +183,8 @@ static int viafb_gpio_resume(void *private)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
+-		viafb_gpio_enable(gpio_config.active_gpios[i]);
++	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
++		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
+ 	return 0;
+ }
+ 
+@@ -201,9 +201,9 @@ int viafb_gpio_lookup(const char *name)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < gpio_config.gpio_chip.ngpio; i++)
+-		if (!strcmp(name, gpio_config.active_gpios[i]->vg_name))
+-			return gpio_config.gpio_chip.base + i;
++	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i++)
++		if (!strcmp(name, via_gpio_config.active_gpios[i]->vg_name))
++			return via_gpio_config.gpio_chip.base + i;
+ 	return -1;
+ }
+ EXPORT_SYMBOL_GPL(viafb_gpio_lookup);
+@@ -229,14 +229,15 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
+ 		for (gpio = viafb_all_gpios;
+ 		     gpio < viafb_all_gpios + VIAFB_NUM_GPIOS; gpio++)
+ 			if (gpio->vg_port_index == port_cfg[i].ioport_index) {
+-				gpio_config.active_gpios[ngpio] = gpio;
+-				gpio_config.gpio_names[ngpio] = gpio->vg_name;
++				via_gpio_config.active_gpios[ngpio] = gpio;
++				via_gpio_config.gpio_names[ngpio] =
++					gpio->vg_name;
+ 				ngpio++;
+ 			}
+ 	}
+-	gpio_config.gpio_chip.ngpio = ngpio;
+-	gpio_config.gpio_chip.names = gpio_config.gpio_names;
+-	gpio_config.vdev = vdev;
++	via_gpio_config.gpio_chip.ngpio = ngpio;
++	via_gpio_config.gpio_chip.names = via_gpio_config.gpio_names;
++	via_gpio_config.vdev = vdev;
+ 	if (ngpio == 0) {
+ 		printk(KERN_INFO "viafb: no GPIOs configured\n");
+ 		return 0;
+@@ -245,18 +246,18 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
+ 	 * Enable the ports.  They come in pairs, with a single
+ 	 * enable bit for both.
+ 	 */
+-	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
++	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
+ 	for (i = 0; i < ngpio; i += 2)
+-		viafb_gpio_enable(gpio_config.active_gpios[i]);
+-	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
++		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
++	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
+ 	/*
+ 	 * Get registered.
+ 	 */
+-	gpio_config.gpio_chip.base = -1;  /* Dynamic */
+-	ret = gpiochip_add(&gpio_config.gpio_chip);
++	via_gpio_config.gpio_chip.base = -1;  /* Dynamic */
++	ret = gpiochip_add(&via_gpio_config.gpio_chip);
+ 	if (ret) {
+ 		printk(KERN_ERR "viafb: failed to add gpios (%d)\n", ret);
+-		gpio_config.gpio_chip.ngpio = 0;
++		via_gpio_config.gpio_chip.ngpio = 0;
+ 	}
+ #ifdef CONFIG_PM
+ 	viafb_pm_register(&viafb_gpio_pm_hooks);
+@@ -277,8 +278,8 @@ static int viafb_gpio_remove(struct platform_device *platdev)
+ 	/*
+ 	 * Get unregistered.
+ 	 */
+-	if (gpio_config.gpio_chip.ngpio > 0) {
+-		ret = gpiochip_remove(&gpio_config.gpio_chip);
++	if (via_gpio_config.gpio_chip.ngpio > 0) {
++		ret = gpiochip_remove(&via_gpio_config.gpio_chip);
+ 		if (ret) { /* Somebody still using it? */
+ 			printk(KERN_ERR "Viafb: GPIO remove failed\n");
+ 			return ret;
+@@ -287,11 +288,11 @@ static int viafb_gpio_remove(struct platform_device *platdev)
+ 	/*
+ 	 * Disable the ports.
+ 	 */
+-	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
+-	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
+-		viafb_gpio_disable(gpio_config.active_gpios[i]);
+-	gpio_config.gpio_chip.ngpio = 0;
+-	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
++	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
++	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
++		viafb_gpio_disable(via_gpio_config.active_gpios[i]);
++	via_gpio_config.gpio_chip.ngpio = 0;
++	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
+ 	return ret;
+ }
+ 
+-- 
+1.7.3.2
+
