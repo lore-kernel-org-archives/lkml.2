@@ -1,39 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab1D1V4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:56:33 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40343 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752761Ab1D1V4c (ORCPT
+	id S933436Ab1D1WCZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 18:02:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59253 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352Ab1D1WCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:56:32 -0400
-Date: Thu, 28 Apr 2011 22:56:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michael Williamson <michael.williamson@criticallink.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        lrg@slimlogic.co.uk, tiwai@suse.de
-Subject: Re: [PATCH] audio: tlv320aic26: fix PLL register configuration
-Message-ID: <20110428215639.GB19535@opensource.wolfsonmicro.com>
-References: <1304026377-21829-1-git-send-email-michael.williamson@criticallink.com>
+	Thu, 28 Apr 2011 18:02:24 -0400
+Date: Fri, 29 Apr 2011 00:02:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+In-Reply-To: <1304027480.2971.121.camel@work-vm>
+Message-ID: <alpine.LFD.2.02.1104282353140.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com>  <20110426183859.6ff6279b@neptune.home>  <20110426190918.01660ccf@neptune.home>  <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>  <alpine.LFD.2.02.1104262314110.3323@ionos>  <20110427081501.5ba28155@pluto.restena.lu>
+  <20110427204139.1b0ea23b@neptune.home>  <alpine.LFD.2.02.1104272351290.3323@ionos>  <alpine.LFD.2.02.1104281051090.19095@ionos>  <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>  <20110428102609.GJ2135@linux.vnet.ibm.com>  <1303997401.7819.5.camel@marge.simson.net>
+  <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>  <alpine.LFD.2.02.1104282044120.3005@ionos>  <20110428222301.0b745a0a@neptune.home>  <alpine.LFD.2.02.1104282227340.3005@ionos>  <20110428224444.43107883@neptune.home>  <alpine.LFD.2.02.1104282251080.3005@ionos>
+ <1304027480.2971.121.camel@work-vm>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304026377-21829-1-git-send-email-michael.williamson@criticallink.com>
-X-Cookie: Are you sure the back door is locked?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 05:32:57PM -0400, Michael Williamson wrote:
+On Thu, 28 Apr 2011, john stultz wrote:
+> On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
+> > /me suspects hrtimer changes to be the real culprit.
+> 
+> I'm not seeing anything on right off, but it does smell like
+> e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
+> would crop up.
+> 
+> Bruno, could you try checking out e06383db9ec, confirming it still
+> occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
+> 
+> I'll keep digging in the meantime.
 
-> -	jval = (fsref == 44100) ? 7 : 8;
-> -	dval = (fsref == 44100) ? 5264 : 1920;
-> +	jval = fsref / (aic26->mclk / 2048);
-> +	dval = fsref - jval * (aic26->mclk / 2048);
+I found the bug already. The problem is that sched_init() calls
+init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
+hrtimers_init() is called.
 
-I'd like some more brackets on this line, especially given the
-similarity with the previous line.  Otherwise this looks fine if a bit
-magic:
+That was unnoticed so far as the CLOCK id to hrtimer base conversion
+was hardcoded. Now we use a table which is set up at hrtimers_init(),
+so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
+in the bss.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The patch below fixes this, by providing the table statically rather
+than runtime initialized. Though that whole ordering wants to be
+revisited.
+
+Thanks,
+
+	tglx
+
+--- linux-2.6.orig/kernel/hrtimer.c
++++ linux-2.6/kernel/hrtimer.c
+@@ -81,7 +81,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, 
+ 	}
+ };
+ 
+-static int hrtimer_clock_to_base_table[MAX_CLOCKS];
++static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
++	[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
++	[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
++	[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
++};
+ 
+ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
+ {
+@@ -1722,10 +1726,6 @@ static struct notifier_block __cpuinitda
+ 
+ void __init hrtimers_init(void)
+ {
+-	hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
+-	hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
+-	hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
+-
+ 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+ 			  (void *)(long)smp_processor_id());
+ 	register_cpu_notifier(&hrtimers_nb);
+
+
