@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1D1NaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 09:30:25 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:54823 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab1D1NaU convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:3>);
-	Thu, 28 Apr 2011 09:30:20 -0400
-Message-Id: <4DB98854020000780003EA4D@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 28 Apr 2011 14:31:32 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Heiko Carstens" <heiko.carstens@de.ibm.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        <linux-arch@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] allow placing exception table in .rodata (and do
-	 so on x86)
-References: <4DB85404020000780003E6D7@vpn.id2.novell.com>
- <20110428104306.GC2431@osiris.boeblingen.de.ibm.com>
- <4DB96E6A020000780003E9EB@vpn.id2.novell.com>
- <BANLkTikJN92ogUfxAc+SgzvX1Q8r48ughw@mail.gmail.com>
- <4DB9748B020000780003EA01@vpn.id2.novell.com>
- <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
-In-Reply-To: <20110428125302.GD2431@osiris.boeblingen.de.ibm.com>
+	id S1757023Ab1D1Nbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 09:31:42 -0400
+Received: from relay.ptn-ipout02.plus.net ([212.159.7.36]:61117 "EHLO
+	relay.ptn-ipout02.plus.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751802Ab1D1Nbk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 09:31:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq0oABlsuU1UXebr/2dsb2JhbACCNIJfkz6NL3eyYQKHTYkXDoVoBJJwglyHGQ
+Subject: mutex deadlock in w1/slaves/w1_ds2760
+From: "Paul Parsons" <lost.distance@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <johnpol@2ka.mipt.ru>
+Date: Thu, 28 Apr 2011 13:31:37 +0000
+Content-Type: text/plain
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: email v2.5.0 (Linux 2.6.38 x86_64 [http://email.cleancode.org])
+Message-Id: <E1QFRJi-0003wk-Dm@outmx07.plus.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.04.11 at 14:53, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> On Thu, Apr 28, 2011 at 01:07:07PM +0100, Jan Beulich wrote:
->> >>> On 28.04.11 at 13:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> > On Thu, Apr 28, 2011 at 13:40, Jan Beulich <JBeulich@novell.com> wrote:
->> >>>>> On 28.04.11 at 12:43, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
->> >>> On Wed, Apr 27, 2011 at 04:36:04PM +0100, Jan Beulich wrote:
->> >>> That's odd. The kernel actually writes to it (sort_main_extable()), so
->> >>> it shouldn't be in the ro data section, but the data section.
->> >>
->> >> This area does get written, but only at boot time, before read-only
->> >> data gets set to r/o (on x86 at least). With this in mind, it's better
->> >> to place it in .rodata, as that way run-time protection will be in place
->> >> (and I think you agree that it was misplaced in .text in any case).
->> > 
->> > Which means it may be in ROM (which is really read-only) on some embedded
->> > devices, so it cannot be sorted?
->> 
->> Perhaps - but since sorting is a requirement, people building such
->> systems must have found a way... Anyway, I don't see where both
-> 
-> Yes, we found a way on s390: we put the exception table in the data section.
-> 
->> your and Heiko's comment are heading, since the situation is even
->> worse without the patch afaics (since .text gets marked read-only
->> as much as .rodata does, and could equally be placed in ROM).
-> 
-> My point is that your default is wrong. If it makes sense to put the extable
-> into the rodata section then an architecture could do so. However making the
-> default to put data into the rodata section that is actually written to is
-> the wrong approach.
-> It just asks for breakage.
+I found a mutex deadlock in w1/slaves/w1_ds2760. The deadlock is intermittent in linux-2.6.39-rc4 (as though a race condition) but seems consistent in linux-2.6.39-rc5. The platform is an iPAQ hx4700 (XScale-PXA270).
 
-The patch doesn't make this the default - it just makes it possible
-for an architecture to do so.
+I can demonstrate the deadlock by adding some printk() calls, replacing the mutex_lock() call in w1_ds2760_io() with mutex_trylock(), and dumping the stack trace if mutex_trylock() fails.
 
-Jan
+Here's the dmesg output:
+
+w1_process: mutex_lock(0xc3921e68)
+w1_ds2760_io: mutex_trylock(0xc3921e68)
+ [<c0023c44>] save_stack_trace_tsk+0x0/0xc4
+ [<c0023d2c>] save_stack_trace+0x24/0x28
+ [<c0193d58>] w1_ds2760_io+0x12c/0x144
+ [<c0193db0>] w1_ds2760_read+0x1c/0x24
+ [<c0195ed0>] ds2760_battery_read_status+0x3c/0x31c
+ [<c0196418>] ds2760_battery_probe+0xb0/0x26c
+ [<c015fff0>] platform_drv_probe+0x1c/0x20
+ [<c015eb74>] driver_probe_device+0x88/0x18c
+ [<c015ed58>] __device_attach+0x48/0x4c
+ [<c015e05c>] bus_for_each_drv+0x6c/0x94
+ [<c015edec>] device_attach+0x64/0x7c
+ [<c015de58>] bus_probe_device+0x30/0x50
+ [<c015c630>] device_add+0x4ec/0x5cc
+ [<c0160654>] platform_device_add+0x100/0x198
+ [<c0193b0c>] w1_ds2760_add_slave+0x90/0xfc
+ [<c0191548>] w1_attach_slave_device+0x1a4/0x370
+ [<c019186c>] w1_slave_found+0x158/0x15c
+ [<c0193750>] ds1wm_search+0xd8/0xdc
+ [<c0192d88>] w1_search_devices+0x44/0x50
+ [<c0191dcc>] w1_search_process+0x5c/0xf0
+ [<c0191f54>] w1_process+0xf4/0x120
+ [<c004b9e4>] kthread+0x90/0x98
+ [<c003563c>] do_exit+0x0/0x6e8
+ [<ffffffff>] 0xffffffff
+w1_process: mutex_unlock(0xc3921e68)
+
+Explanation:
+
+1. w1_process() locks the mutex at 0xc3921e68.
+2. w1_ds2760_io() locks the same mutex at 0xc3921e68 and thus mutex_trylock() fails.
+3. stack trace showing the function path from w1_process() to w1_ds2760_io().
+4. w1_process() unlocks the mutex at 0xc3921e68.
 
