@@ -1,177 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933379Ab1D1SV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:21:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62042 "EHLO
+	id S1760686Ab1D1SXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:23:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33421 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933356Ab1D1SVX convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753950Ab1D1SXC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:21:23 -0400
+	Thu, 28 Apr 2011 14:23:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110428173614.GH1798@nowhere>
+In-Reply-To: <20110428084621.5517ec8a.rdunlap@xenotime.net>
 References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	<1303960136-14298-2-git-send-email-wad@chromium.org>
-	<20110428151241.GD1798@nowhere>
-	<BANLkTika4xn5SajxGbRtszqyA4R=4y8M6Q@mail.gmail.com>
-	<20110428161304.GG1798@nowhere>
-	<BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
-	<20110428173614.GH1798@nowhere>
-Date: Thu, 28 Apr 2011 13:21:18 -0500
-Message-ID: <BANLkTinchyMvwgc=PjMV7k_jt6extmjB_A@mail.gmail.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
+	<1303960136-14298-4-git-send-email-wad@chromium.org>
+	<20110428084621.5517ec8a.rdunlap@xenotime.net>
+Date: Thu, 28 Apr 2011 13:23:00 -0500
+Message-ID: <BANLkTi=LpryxATT2=U2i2xHTTqatY0B4eg@mail.gmail.com>
+Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
+ how it works.
 From: Will Drewry <wad@chromium.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
 Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
         agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
+        rostedt@goodmis.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 12:36 PM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Thu, Apr 28, 2011 at 11:48:47AM -0500, Will Drewry wrote:
->> On Thu, Apr 28, 2011 at 11:13 AM, Frederic Weisbecker
->> <fweisbec@gmail.com> wrote:
->> > On Thu, Apr 28, 2011 at 10:29:11AM -0500, Will Drewry wrote:
->> >> On Thu, Apr 28, 2011 at 10:12 AM, Frederic Weisbecker
->> >> <fweisbec@gmail.com> wrote:
->> >> > Instead of having such multiline filter definition with syscall
->> >> > names prepended, it would be nicer to make the parsing simplier.
->> >> >
->> >> > You could have either:
->> >> >
->> >> >        prctl(PR_SET_SECCOMP, mode);
->> >> >        /* Works only if we are in mode 2 */
->> >> >        prctl(PR_SET_SECCOMP_FILTER, syscall_nr, filter);
->> >>
->> >> It'd need to be syscall_name instead of syscall_nr.  Otherwise we're
->> >> right back to where Adam's patch was 2+ years ago :)  Using the event
->> >> names from the syscalls infrastructure means the consumer of the
->> >> interface doesn't need to be confident of the syscall number.
->> >
->> > Is it really a problem?
+On Thu, Apr 28, 2011 at 10:46 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Wed, 27 Apr 2011 22:08:49 -0500 Will Drewry wrote:
+>
+>> Adds a text file covering what CONFIG_SECCOMP_FILTER is, how it is
+>> implemented presently, and what it may be used for.  In addition,
+>> the limitations and caveats of the proposed implementation are
+>> included.
 >>
->> I'd prefer using numbers myself since it gives more flexibility around
->> filtering entries that haven't yet made it into ftrace syscalls hooks.
->> However, I think there's some complexity in ensuring it matches the
->> host kernel.  (It would also allow compat_task support which doesn't
->> seem to be possible now.)
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>> ---
+>>  Documentation/trace/seccomp_filter.txt |   75 ++++++++++++++++++++++++++++++++
+>>  1 files changed, 75 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/trace/seccomp_filter.txt
+>>
+>> diff --git a/Documentation/trace/seccomp_filter.txt b/Documentation/trace/seccomp_filter.txt
+>> new file mode 100644
+>> index 0000000..6a0fd33
+>> --- /dev/null
+>> +++ b/Documentation/trace/seccomp_filter.txt
+>> @@ -0,0 +1,75 @@
+>> +             Seccomp filtering
+>> +             =================
+>> +
+>> +Introduction
+>> +------------
+>> +
+>> +A large number of system calls are exposed to every userland process
+>> +with many of them going unused for the entire lifetime of the
+>> +application.  As system calls change and mature, bugs are found and
+>> +quashed.  A certain subset of userland applications benefit by having
+>> +a reduce set of available system calls.  The reduced set reduces the
 >
-> You'd have some problems with compat and syscall naming, I think some
-> of them are not the same between compat architectures.
+>     reduced
 >
-> Note that your new prctl() request is turning syscall handler names (in-kernel API)
-> into a user ABI. We won't be able to change the name of those kernel handlers
-> after that. I'm not sure that's desired.
+>> +total kernel surface exposed to the application.  System call filtering
+>> +is meant for use with those applications.
+>> +
+>> +The implementation currently leverages both the existing seccomp
+>> +infrastructure and the kernel tracing infrastructure.  By centralizing
+>> +hooks for attack surface reduction in seccomp, it is possible to assure
+>> +attention to security that is less relevant in normal ftrace scenarios,
+>> +such as time of check, time of use attacks.  However, ftrace provides a
+>> +rich, human-friendly environment for specifying system calls by name and
+>> +expected arguments.  (As such, this requires FTRACE_SYSCALLS.)
+>> +
+>> +
+>> +What it isn't
+>> +-------------
+>> +
+>> +System call filtering isn't a sandbox.  It provides a clearly defined
+>> +mechanism for minimizing the exposed kernel surface.  Beyond that, policy for
+>> +logical behavior and information flow should be managed with an LSM of your
+>> +choosing.
+>> +
+>> +
+>> +Usage
+>> +-----
+>> +
+>> +An additional seccomp mode is exposed through mode '2'.  This mode
+>> +depends on CONFIG_SECCOMP_FILTER which in turn depends on
+>> +CONFIG_FTRACE_SYSCALLS.
+>> +
+>> +A collection of filters may be supplied via prctl, and the current set of
+>> +filters is exposed in /proc/<pid>/seccomp_filter.
+>> +
+>> +For instance,
+>> +  const char filters[] =
+>> +    "sys_read: (fd == 1) || (fd == 2)\n"
+>> +    "sys_write: (fd == 0)\n"
+>> +    "sys_exit: 1\n"
+>> +    "sys_exit_group: 1\n"
+>> +    "on_next_syscall: 1";
+>> +  prctl(PR_SET_SECCOMP, 2, filters);
+>> +
+>> +This will setup system call filters for read, write, and exit where reading can
+>> +be done only from fds 1 and 2 and writing to fd 0.  The "on_next_syscall" directive tells
+>> +seccomp to not enforce the ruleset until after the next system call is run.  This allows
+>> +for launchers to apply system call filters to a binary before executing it.
+>> +
+>> +Once enabled, the access may only be reduced.  For example, a set of filters may be:
+>> +
+>> +  sys_read: 1
+>> +  sys_write: 1
+>> +  sys_mmap: 1
+>> +  sys_prctl: 1
+>> +
+>> +Then it may call the following to drop mmap access:
+>> +  prctl(PR_SET_SECCOMP, 2, "sys_mmap: 0");
+>> +
+>> +
+>> +Caveats
+>> +-------
+>> +
+>> +The system call names come from ftrace events.  At present, many system
+>> +calls are not hooked - such as x86's ptregs wrapped system calls.
+>> +
+>> +In addition compat_task()s will not be supported until a sys32s begin
+>> +being hooked.
 >
-> OTOH, syscall numbers are a user ABI,
+> Last sentence is hard to read IMO:
+> a. what are compat_task()s?
+> b. what is a sys32s begin?
+> c. awkward wording, maybe change to:   until a sys32s begin has been hooked.
 
-Makes sense.  I don't mind going the syscall nr route and using a
-library for name resolution in userspace, but other users could just
-include the libc provided names.  If it doesn't work, the SIGKILL will
-make it apparent pretty quickly :p   I don't think it would be a
-problem and it makes the kernel side even simpler again.
+I'll clean it up and try again.  I believe the other thread discussing
+the interface will change this last sentence anyway, so once it
+settles, I'll update this patch to reflect the new reality.
 
->
->
->>
->> > There are libraries that can resolve that. Of course I can't recall their name.
->>
->> asm-generic/unistd.h will provide the mapping, if available. It would
->> mean that any helper libraries would need to be matched to the locally
->> running kernel.
->
-> Yeah. But syscall numbers don't move inside a given architecture (could they?)
-> Or if so then you'd a dynamic library.
-
-Works for me.
-
->
->> >> > or:
->> >> >        /*
->> >> >         * If mode == 2, set the filter to syscall_nr
->> >> >         * Recall this for each syscall that need a filter.
->> >> >         * If a filter was previously set on the targeted syscall,
->> >> >         * it will be overwritten.
->> >> >         */
->> >> >        prctl(PR_SET_SECCOMP, mode, syscall_nr, filter);
->> >> >
->> >> > One can erase a previous filter by setting the new filter "1".
->> >> >
->> >> > Also, instead of having a bitmap of syscall to accept. You could
->> >> > simply set "0" as a filter to those you want to deactivate:
->> >> >
->> >> > prctl(PR_SET_SECCOMP, 2, 1, 0); <- deactivate the syscall_nr 1
->> >> >
->> >> > Hm?
->> >>
->> >> I like the simplicity in not needing to parse anything extra, but it
->> >> does add the need for extra state - either a bit or a new field - to
->> >> represent "enabled/enforcing".
->> >
->> > And by the way I'm really puzzled about these. I don't understand
->> > well why we need this.
->>
->> Right now, if you are in seccomp mode !=0 , your system calls will be
->> hooked (if TIF_SECCOMP is set too). The current patch begins filtering
->> immediately.  And once filtering is enabled, the process is not
->> allowed to expand its access to the kernel system cals - only shrink
->> it.  An "enabled" bit would be needed to tell it that even though it
->> is running in mode=2, it should/shouldn't kill the process for system
->> call filter violations and it should allow filters to be added, not
->> just dropped.  It's why the current patch does it in one step: set the
->> filters and the mode.  While an enabled bit could be hidden behind
->> whether TIF_SECCOMP is applied, I'm not sure if that would just be
->> confusing.  There'd still be a need to APPLY_FILTERS to get the
->> TIF_SECCOMP flag set to start hooking the system calls.
->
-> It seems the filter is only ever needed for the childs, right?
-> And moreover when they exec. So Steve's suggestion to apply
-> the filters only after the next exec makes sense.
->
-> That would solve the problem of both ON_NEXT_SYSCALL and APPLY_FILTER.
->
-> I may be missing something obvious though. Do you see a limitation there?
->
->>
->> > As for the enable_on_next_syscall. The documentation says
->> > it's useful if you want the filter to only apply to the
->> > child. So if fork immediately follows, you will be able to fork
->> > but if the child doesn't have the right to exec, it won't be able
->> > to do so. Same for the mmap() that involves...
->> >
->> > So I'm a bit confused about that.
->>
->> Here's an example:
->>   http://static.dataspill.org/seccomp_filter/v1/seccomp_launcher.c
->>
->> You'd use it by calling fork() ... prctl(..., ON_NEXT_SYSCALL) then
->> execve since you'll already have fork()d.  It seems to work, but maybe
->> I'm missing something :)
->
-> Nope, I see.
->
->>
->> > But yeah if that's really needed, it looks to me better to
->> > reduce the parsing and cut it that way:
->> >
->> >        prctl(PR_SET_SECCOMP, 2, syscall_name_or_nr, filter);
->> >        prctl(PR_SECCOMP_APPLY_FILTERS, enable_on_next_syscall?)
->> >
->> > or something...
->>
->> Cool - if there are any other flags, it could be something like:
->>   prctl(PR_SECCOMP_SET_FLAGS, SECCOMP_ENFORCE|SECCOMP_DELAYED_ENFORCEMENT);
->>
->> But only if there are other flags worth considering. I had a few
->> others in mind, but now I've completely forgotten :/
->
+thanks!
