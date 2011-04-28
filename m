@@ -1,142 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab1D1Pq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:46:26 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:40073 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932413Ab1D1PqY (ORCPT
+	id S1760143Ab1D1PtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:49:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41511 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab1D1Ps7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:46:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=t5I6llDDMysfjX6iHDorWvUj9fm6euAtblk6VgM5lBaNGe+/2fElVAbQelo4Is0poPgFaYf5OTG44CsptghBmkcTzucysKA925eLYJf4XeNyH3dkd3eb9mdV8ZnLn5O0;
-Date: Thu, 28 Apr 2011 08:46:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
-        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        rostedt@goodmis.org
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
- how it works.
-Message-Id: <20110428084621.5517ec8a.rdunlap@xenotime.net>
-In-Reply-To: <1303960136-14298-4-git-send-email-wad@chromium.org>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	<1303960136-14298-4-git-send-email-wad@chromium.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 28 Apr 2011 11:48:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bcLEmhzVng6xrhb/ci302lUS5DzoY7ZKG11bbjnfyUDLt5zDyi92WjzxhhbspwqW0r
+         SUfN7pJcaXfOpJNrc4Zg78hLko7BhCY9QP5Uiz2wXCwOKf6KftdzFEHTv3wufFrv0O7v
+         E+HydnlCAUeFYNlTZtjGNutzapJQci/Mcn9R0=
+MIME-Version: 1.0
+In-Reply-To: <20110429004505.3D7F.A69D9226@jp.fujitsu.com>
+References: <20110429002847.3D77.A69D9226@jp.fujitsu.com>
+	<BANLkTim4RWbkEMuUDcGG5y-ApznqX+31uw@mail.gmail.com>
+	<20110429004505.3D7F.A69D9226@jp.fujitsu.com>
+Date: Thu, 28 Apr 2011 12:48:58 -0300
+Message-ID: <BANLkTiktDSC=njLhJZF9EVWEqBPWa=K7Ow@mail.gmail.com>
+Subject: Re: [PATCH v3] cpumask: add cpumask_var_t documentation
+From: Thiago Farina <tfransosi@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 22:08:49 -0500 Will Drewry wrote:
+On Thu, Apr 28, 2011 at 12:43 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Thu, Apr 28, 2011 at 12:27 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > cpumask_var_t has one nortable difference against cpumask_t.
+>> > This patch adds the explanation.
+>> >
+>> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> > ---
+>> >  include/linux/cpumask.h |   14 ++++++++++++++
+>> >  1 files changed, 14 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+>> > index 1e40dd0..471c98a 100644
+>> > --- a/include/linux/cpumask.h
+>> > +++ b/include/linux/cpumask.h
+>> > @@ -617,6 +617,20 @@ static inline size_t cpumask_size(void)
+>> >  *       ... use 'tmpmask' like a normal struct cpumask * ...
+>> >  *
+>> >  *     free_cpumask_var(tmpmask);
+>> > + *
+>> > + *
+>> > + * However, one notable exception is there. cpumask_var_t is allocated
+>> > + * only nr_cpu_ids bits
+>>
+>> Maybe, instead of "is allocated only", "allocates only" ?
+>
+> Instead, "alloc_cpumask_var() allocates only nr_cpu_ids bits" is more clear? :)
+>
+Yup. Thx.
 
-> Adds a text file covering what CONFIG_SECCOMP_FILTER is, how it is
-> implemented presently, and what it may be used for.  In addition,
-> the limitations and caveats of the proposed implementation are
-> included.
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
+>
+>> > (in the other hand, real cpumask_t always has
+>> > + * NR_CPUS bits). therefore You don't have to dereference cpumask_var_t.
+>>
+>> s/therefore You/Therefore you/ ?
+>>
+>
+> Thx.
+>
+>
+>> > + *
+>> > + *     cpumask_var_t tmpmask;
+>> > + *     if (!alloc_cpumask_var(&tmpmask, GFP_KERNEL))
+>> > + *             return -ENOMEM;
+>> > + *
+>> > + *     var = *tmpmask;
+>> > + *
+>> > + * This code makes NR_CPUS length memcopy and bring memroy corruption.
+>>
+>> /s/memroy/memory
+>>
+>> You are saying that I should not use this code? I'm confused, could
+>> you explain a little bit?
+>
+> Yes. you aren't confused.
+>
+>
+>> > + * You have to use cpumask_copy() instead.
+>> >  */
+>>
+>> I don't get this. :(
+>
+> "cpumask_copy() privide safe copy functionality." is clear?
+>
+Yes. ;)
+
+>
+> From d2ea9d4846e46bcc8a82b9a641ede3a10aca346c Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 26 Apr 2011 19:58:39 +0900
+> Subject: [PATCH v3] cpumask: add cpumask_var_t documentation
+>
+> cpumask_var_t has one nortable difference against cpumask_t.
+> This patch adds the explanation.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > ---
->  Documentation/trace/seccomp_filter.txt |   75 ++++++++++++++++++++++++++++++++
->  1 files changed, 75 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/trace/seccomp_filter.txt
-> 
-> diff --git a/Documentation/trace/seccomp_filter.txt b/Documentation/trace/seccomp_filter.txt
-> new file mode 100644
-> index 0000000..6a0fd33
-> --- /dev/null
-> +++ b/Documentation/trace/seccomp_filter.txt
-> @@ -0,0 +1,75 @@
-> +		Seccomp filtering
-> +		=================
-> +
-> +Introduction
-> +------------
-> +
-> +A large number of system calls are exposed to every userland process
-> +with many of them going unused for the entire lifetime of the
-> +application.  As system calls change and mature, bugs are found and
-> +quashed.  A certain subset of userland applications benefit by having
-> +a reduce set of available system calls.  The reduced set reduces the
+>  include/linux/cpumask.h |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+> index 1e40dd0..e2b9032 100644
+> --- a/include/linux/cpumask.h
+> +++ b/include/linux/cpumask.h
+> @@ -617,6 +617,20 @@ static inline size_t cpumask_size(void)
+>  *       ... use 'tmpmask' like a normal struct cpumask * ...
+>  *
+>  *     free_cpumask_var(tmpmask);
+> + *
+> + *
+> + * However, one notable exception is there. alloc_cpumask_var() allocates
+> + * only nr_cpumask_bits bits (in the other hand, real cpumask_t always has
+> + * NR_CPUS bits). Therefore you don't have to dereference cpumask_var_t.
+> + *
+> + *     cpumask_var_t tmpmask;
+> + *     if (!alloc_cpumask_var(&tmpmask, GFP_KERNEL))
+> + *             return -ENOMEM;
+> + *
+> + *     var = *tmpmask;
+> + *
+> + * This code makes NR_CPUS length memcopy and bring memory corruption.
 
-     reduced
+Maybe:
 
-> +total kernel surface exposed to the application.  System call filtering
-> +is meant for use with those applications.
-> +
-> +The implementation currently leverages both the existing seccomp
-> +infrastructure and the kernel tracing infrastructure.  By centralizing
-> +hooks for attack surface reduction in seccomp, it is possible to assure
-> +attention to security that is less relevant in normal ftrace scenarios,
-> +such as time of check, time of use attacks.  However, ftrace provides a
-> +rich, human-friendly environment for specifying system calls by name and
-> +expected arguments.  (As such, this requires FTRACE_SYSCALLS.)
-> +
-> +
-> +What it isn't
-> +-------------
-> +
-> +System call filtering isn't a sandbox.  It provides a clearly defined
-> +mechanism for minimizing the exposed kernel surface.  Beyond that, policy for
-> +logical behavior and information flow should be managed with an LSM of your
-> +choosing.
-> +
-> +
-> +Usage
-> +-----
-> +
-> +An additional seccomp mode is exposed through mode '2'.  This mode
-> +depends on CONFIG_SECCOMP_FILTER which in turn depends on
-> +CONFIG_FTRACE_SYSCALLS.
-> +
-> +A collection of filters may be supplied via prctl, and the current set of
-> +filters is exposed in /proc/<pid>/seccomp_filter.
-> +
-> +For instance,
-> +  const char filters[] =
-> +    "sys_read: (fd == 1) || (fd == 2)\n"
-> +    "sys_write: (fd == 0)\n"
-> +    "sys_exit: 1\n"
-> +    "sys_exit_group: 1\n"
-> +    "on_next_syscall: 1";
-> +  prctl(PR_SET_SECCOMP, 2, filters);
-> +
-> +This will setup system call filters for read, write, and exit where reading can
-> +be done only from fds 1 and 2 and writing to fd 0.  The "on_next_syscall" directive tells
-> +seccomp to not enforce the ruleset until after the next system call is run.  This allows
-> +for launchers to apply system call filters to a binary before executing it.
-> +
-> +Once enabled, the access may only be reduced.  For example, a set of filters may be:
-> +
-> +  sys_read: 1
-> +  sys_write: 1
-> +  sys_mmap: 1
-> +  sys_prctl: 1
-> +
-> +Then it may call the following to drop mmap access:
-> +  prctl(PR_SET_SECCOMP, 2, "sys_mmap: 0");
-> +
-> +
-> +Caveats
-> +-------
-> +
-> +The system call names come from ftrace events.  At present, many system
-> +calls are not hooked - such as x86's ptregs wrapped system calls.
-> +
-> +In addition compat_task()s will not be supported until a sys32s begin
-> +being hooked.
+s/bring memory/brings to a memory/
 
-Last sentence is hard to read IMO:
-a. what are compat_task()s?
-b. what is a sys32s begin?
-c. awkward wording, maybe change to:   until a sys32s begin has been hooked.
+?
 
+> + * cpumask_copy() privide safe copy functionality.
+s/privide/provides ?
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>  */
+>  #ifdef CONFIG_CPUMASK_OFFSTACK
+>  typedef struct cpumask *cpumask_var_t;
+> --
+> 1.7.3.1
+>
+>
+>
+>
