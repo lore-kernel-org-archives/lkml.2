@@ -1,88 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab1D1QH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 12:07:28 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51739 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab1D1QHY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 12:07:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=o-2ML0MxNXa0SsFm8JQ1D+_4Zxw@mail.gmail.com>
-References: <1303315216-14852-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTi=o-2ML0MxNXa0SsFm8JQ1D+_4Zxw@mail.gmail.com>
-Date: Thu, 28 Apr 2011 18:07:22 +0200
-Message-ID: <BANLkTimy4zREJyAmtOVEMUSObxWBaJk8Xg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: add a custom configuration mechanism to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stijn Devriendt <highguy@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754595Ab1D1QL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 12:11:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33230 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab1D1QL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 12:11:57 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Colin Ian King <colin.king@ubuntu.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <20110428143329.GE1696@quack.suse.cz>
+References: <1303924902.2583.13.camel@mulgrave.site>
+	 <1303925374-sup-7968@think> <1303926637.2583.17.camel@mulgrave.site>
+	 <1303934716.2583.22.camel@mulgrave.site> <1303990590.2081.9.camel@lenovo>
+	 <1303993705-sup-5213@think> <1303998140.2081.11.camel@lenovo>
+	 <1303998300-sup-4941@think> <1303999282.2081.15.camel@lenovo>
+	 <20110428142551.GD1696@quack.suse.cz> <20110428143329.GE1696@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 11:11:48 -0500
+Message-ID: <1304007108.2598.7.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 25, 2011 at 7:21 PM, Stijn Devriendt <highguy@gmail.com> wrote:
+On Thu, 2011-04-28 at 16:33 +0200, Jan Kara wrote:
+> James, Colin, can you capture output of 'vmstat 1' while you do the
+> copying? Thanks.
 
-> Why contain all values in the config rather than
-> // Actual config
-> #define GPIO_CONFIG_BIAS 0x1
->
-> #define GPIO_BIAS_UNKNOWN 0x0
-> #define GPIO_BIAS_FLOAT 0x1
-> #define GPIO_BIAS_PULL_UP       0x2
-> #define GPIO_BIAS_PULL_DOWN     0x3
-> #define GPIO_BIAS_HIGH          0x4
-> #define GPIO_BIAS_GROUND                0x5
-> #define GPIO_BIAS_ARCH_SPECIFIC 0x100
->
-> #define GPIO_CONFIG_DRIVE 0x2
-> /// omitted rest
->
-> #define GPIO_CONFIG_COMPLEX_SAMPLE 0x3
-> struct gpio_complex_sample_config
-> {
->  // whatever here
-> };
->
-> // code:
-> gpio_config(10, GPIO_CONFIG_BIAS, GPIO_BIAS_FLOAT);
-> struct gpio_complex_sample_config config = { ... };
-> gpio_config(10, GPIO_CONFIG_COMPLEX_SAMPLE, &config);
+Sure; this is with a PREEMPT kernel so the tar goes to completion
+without locking the system.
 
-It doesn't work like that, since the gpio_config() function has this
-signature:
+I started using a memory balloon to clear out the page cache.
 
-gpio_config(unsigned gpio, u16 param, unsigned long *data);
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0  98708 1676100   4112  39556    0   45  1566  1879  392  168 14 17 59 10  0
+ 0  0  98708 1676100   4112  39604    0    0     0     0   37   35  0  0 100  0  0
+ 0  0  98708 1676100   4112  39652    0    0     0     0   31   35  0  0 100  0  0
+ 0  0  98708 1676100   4112  39652    0    0     0     0   26   27  0  0 100  0  0
+ 0  0  98708 1676100   4112  39652   32    0    32     0   50   48  0  0 100  0  0
+ 1  1  98708 1673984   4616  40576  192    0  1812     0  286  117  0  0 92  8  0
+ 0  1  98708 1590540   4792 124236    0    0 41972     0  901  822  0  4 67 29  0
+ 0  1  98708 1499524   4808 214820    0    0 45328     0  917  890  0  4 77 20  0
+ 0  1  98708 1404532   4808 308316   64    0 46784     0  965 1033  0  3 77 20  0
+ 0  1  98708 1312020   5612 399008    0    0 44836     0 1274 1075  0  6 77 18  0
+ 0  1  98708 1304540   5628 406324    0    0  3600 47260  289  115  0  2 68 30  0
+ 0  1  98708 1230760   5672 479020    0    0 36260   712  914  854  0  3 79 18  0
+ 0  1  98708 1208696   5676 500016    0    0 10500 93888  421  251  0  3 67 31  0
+ 0  1  98708 1157632   5676 551264    0    0 25600     0  658  518  0  2 75 23  0
+ 0  1  98708 1052356   5680 655344    0    0 51972     0 1112 1112  0  4 78 19  0
+ 0  2  98708 1024960   5680 679080    0    0 11904 87304  477  277  0  3 54 43  0
+ 1  1  98708 1027288   5684 679432    0    0   128  2896  195   42  0  0 85 14  0
+ 0  1  98708 947124   5688 758528    0    0 39552     4  932  899  0  4 68 28  0
+ 0  1  98708 849792   5692 854272    0    0 47876  4468 1045  936  0  4 77 20  0
+ 0  1  98708 813000   5820 890492    0    0 18176 18300  512  386  0  3 66 32  0
+ 1  2  98708 794304   5820 908132    0    0  8832 95640  379  324  0  2 77 21  0
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 1  1  98708 794272   5824 908128    0    0     0 39456  212   58  0  1 73 26  0
+ 0  1  98708 792344   5832 910452    0    0  1156 44440  193   62  0  1 74 25  0
+ 0  1  98708 764392   5836 938288    0    0 13956     0  441  374  0  1 79 19  0
+ 0  1  98708 660828   5840 1040232    0    0 50948     0 1141  992  0  6 65 29  0
+ 0  1  98708 555156   5840 1144216    0    0 51968     0 1072 1008  0  4 76 20  0
+ 0  1  98708 458692   5856 1239212    0    0 47496   120  995 1046  0  3 78 19  0
+ 0  1  98708 411336   5856 1285896    0    0 23296 17764  536  463  0  3 71 26  0
+ 1  1  98708 367716   5856 1328904    0    0 21504 22272  541  463  0  3 78 20  0
+ 0  1  98708 330048   5864 1366044    0    0 18568 17524  529  515  0  2 78 20  0
+ 0  1  98708 301620   5864 1393912    0    0 13952 28148  382  309  0  2 68 30  0
+ 1  1  98708 245140   5872 1449576    0    0 27776 13224  610  567  0  3 73 24  0
+ 0  2  98708 226868   5872 1467000    0    0  8704 114804  375  322  0  2 77 21  0
+ 0  2  98708 226268   5876 1467552    0    0   260 51720  204   40  0  1 75 24  0
+ 0  1  98708 226548   5880 1467536    0    0     4 13180  149   29  0  1 70 30  0
+ 2  0  98708 159792   5880 1533844    0    0 33152     0  721  747  0  2 81 17  0
+ 0  1  98708  55252   5888 1636692    0    0 51456   104 1021  977  0  5 70 25  0
+ 1  1  98708  22804   2680 1671344    0    0 53632     0 1806 1188  0 20 59 21  0
+ 2  1  98708  22832   2672 1671372    0    0 40704 11196 1967 1126  0 22 60 17  0
+ 1  1  98708  22908   2676 1671196    0    0 24580 23040 1621  705  0 35 36 30  0
+ 1  1  98708  22968   2676 1670796    0    0 21504 22212 1576  674  0 22 60 18  0
+ 1  1  98708  22672   2684 1670996    0    0 17920 16968 1450  687  0 27 51 23  0
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 2  1  98708  22904   2452 1671344    0    0 24832 25780 1632  714  0 27 50 23  0
+ 1  2  98708  22764   2452 1670724    0    0 15488 96304 1459  531  0 37 33 30  0
+ 2  2  98708  22640   2452 1670724    0    0     0 60300 1219  356  0 20 45 35  0
+ 1  1  98708  22744   2452 1670688    0    0   768 29312 1200  253  0 29 36 34  0
+ 2  0  98708  22964   2460 1671040    0    0 10752    68 1345  445  0 23 56 21  0
+ 1  1  98708  22652   2536 1671560    0    0 51540     0 2113 1246  0 28 49 23  0
+ 1  1  98708  22676   2528 1671768    0    0 118276 14604 4875 2681  0 27 51 22  0
+ 1  1  98708  22644   2528 1671804    0    0 23680 18172 1539  774  0 29 44 27  0
+ 1  1  98708  22720   2536 1671464    0    0 21888 24664 1494  651  0 24 55 22  0
+ 2  1  98708  22672   2496 1671592    0    0 22528 18144 1493  643  0 30 42 28  0
+ 1  1  98708  22732   2488 1671508    0    0 22528 25192 1537  726  0 23 55 21  0
+ 1  2  98708  22884   2488 1670504    0    0 18816 89440 1464  581  0 31 37 32  0
+ 1  2  98708  22740   2488 1670764    0    0   768 75012 1196  254  0 22 55 23  0
+ 1  2  98708  22848   2492 1670600    0    0   256 15512 1225  358  0 29 27 44  0
+ 1  1  98708  22620   2500 1671628    0    0 19076 11408 1490  575  0 23 54 23  0
+ 1  1  98708  22988   2500 1671108    0    0 55040     0 2118 1203  0 27 51 22  0
+ 1  1  98708  22876   2488 1671044    0    0 53760     0 2138 1323  0 28 49 23  0
+ 1  1  98708  22904   2500 1671012    0    0 48012  5528 2049 1097  0 32 43 25  0
+ 1  1  98708  22856   2508 1670876    0    0 21504 18536 1500  646  0 23 55 22  0
+ 2  0  98708  22684   2504 1670972    0    0 23680 23552 1537  784  0 29 44 26  0
+ 1  1  98708  22960   2500 1670520    0    0 23808 25552 1529  677  0 24 55 21  0
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 2  1  98708  22820   2504 1670804    0    0 21764 25104 1507  647  0 30 43 26  0
+ 1  1  98708  22880   2504 1670812    0    0 24192 18900 1541  768  0 23 55 22  0
+ 2  3  98708  22716   2512 1670068    0    0  2816 132592 1257  303  0 30 30 40  0
+ 1  1  98708  22944   2512 1669940    0    0   512 40400 1165  247  0 23 57 20  0
+ 1  1  98708  22672   2512 1670624    0    0   512     0 1186  349  0 28 44 29  0
+ 1  1  98708  22788   2504 1670416    0    0 51200     0 2130 1158  0 25 53 22  0
+ 1  1  98708  22660   2508 1670688    0    0 50564     0 1972 1161  0 31 43 26  0
+ 1  1  98708  22780   2516 1670088    0    0 50176    64 2028 1204  0 24 56 20  0
+ 1  1  98708  22856   2508 1669884    0    0 32640 19040 1723  819  0 31 43 26  0
+ 3  0  98708  22808   2512 1669812    0    0 23812 19176 1535  670  0 23 55 22  0
+ 1  1  98708  22744   2504 1669728    0    0 21888 24872 1535  653  0 30 43 27  0
+ 1  1  98708  22696   2504 1669636    0    0 22784 25032 1529  647  0 23 55 21  0
+ 1  1  98708  22632   2512 1669596    0    0 21896 19228 1515  647  0 30 43 27  0
+ 1  2  98708  22676   2512 1668992    0    0  9600 74484 1366  418  0 24 43 33  0
+ 1  2  98708  22780   2512 1668772    0    0   256 107120 1211  245  0 29 42 30  0
+ 1  1  98708  23196   2512 1668920    0    0   256    40 1158  228  0 23 57 20  0
+ 2  1  98708  22968   2512 1669092    0    0 47360     0 2023 1097  0 26 49 25  0
+ 1  1  98708  22864   2704 1668784    0    0 39992   116 1878  994  0 27 49 24  0
+ 1  1  98708  22704   2708 1668872    0    0 53388     0 2166 1206  0 28 49 23  0
+ 1  1  98708  22796   2712 1668472    0    0 39940 12784 1873  966  0 27 52 21  0
+ 2  1  98708  22624   2712 1668508    0    0 21888 21904 1498  645  0 30 43 27  0
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 2  1  98708  22700   2704 1668688    0    0 24320 26240 1548  685  0 23 55 22  0
+ 1  1  98708  22776   2712 1668284    0    0 18048 17532 1438  586  0 30 43 27  0
+ 1  1  98708  22868   2712 1668336    0    0 24192 21764 1552  661  0 23 55 23  0
+ 2  2  98708  22772   2716 1667696    0    0 12420 88772 1433  494  0 30 41 28  0
+ 1  2  98708  23424   2720 1667584    0    0     4  9092 1181  246  0 23 40 37  0
+ 1  1  98708  23120   2724 1667584    0    0     4 86380 1262  269  0 29 42 29  0
+ 1  0  98708  23408   2984 1667708    0    0   364     0 1187  249  0 22 60 18  0
+ 2  0  98708  23416   2992 1667772    0    0     0   120 1045  246  0 25 74  1  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1025  221  0 26 74  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1030  225  0 28 72  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1024  224  0 23 77  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1034  226  0 28 72  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1022  221  0 23 77  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1032  227  0 28 72  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1024  221  0 23 77  0  0
+ 1  0  98708  23408   2992 1667720    0    0     0     0 1034  228  0 28 72  0  0
 
-If you want to pass two parameters you need to store the second
-parameter in a variable and pass a pointer to that:
+kswapd goes up to 99% at nearly the end of the second page.  I ^C on the
+tar but kswapd stays at 99% for the end.
 
-unsigned long data = GPIO_BIAS_FLOAT;
-gpio_config(10, GPIO_CONFIG_BIAS, &data);
+James
 
-Well you COULD do this:
 
-gpio_config(10, GPIO_CONFIG_BIAS, (unsigned long *) GPIO_BIAS_FLOAT);
-
-Which leads to inventing pointer-cast macros like we have
-for PTR_ERR() and similar to stash enumerators into the
-pointer... and since a corresponding get_* operation will
-not pass data in the pointer but an actual pointer it gets
-awfully asymmetric.
-
-So compared to enumerating and passing simply one argument
-and NULL:
-
-gpio_config(10, GPIO_CONFIG_BIAS_FLOAT, NULL);
-
-I think this is less ugly than either of the two above.
-
-Since this is a little bit of matter of taste, I will drive it in the current
-version unless there is an massive choir of "no" from all directions.
-
-Yours,
-Linus Walleij
