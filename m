@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162Ab1D1Kcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 06:32:46 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19991 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758198Ab1D1Kcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 06:32:45 -0400
-Date: Thu, 28 Apr 2011 12:32:32 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-In-reply-to: <20110428093741.GV17290@n2100.arm.linux.org.uk>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Message-id: <003e01cc058f$94beb490$be3c1db0$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AcwFh/oBELAHNcGWQwGsX1As1NdVyAAAXj5A
-References: <201104212129.17013.arnd@arndb.de>
- <20110427073514.GH17290@n2100.arm.linux.org.uk>
- <1303940271.2513.187.camel@pasglop>
- <20110428093741.GV17290@n2100.arm.linux.org.uk>
+	id S1759068Ab1D1KfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 06:35:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34347 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab1D1KfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 06:35:10 -0400
+Date: Thu, 28 Apr 2011 11:35:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC 3/8] vmscan: make isolate_lru_page with filter aware
+Message-ID: <20110428103505.GS4658@suse.de>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+ <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <232562452317897b5acb1445803410d74233a923.1303833417.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thursday, April 28, 2011 11:38 AM Russell King - ARM Linux wrote:
-
-> > > > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
-> > > >    that this is needed, and it currently is not implemented, with
-> > > >    an outdated comment explaining why it used to not be possible
-> > > >    to do it.
-> > >
-> > > dma_alloc_noncoherent is an entirely pointless API afaics.
-> >
-> > I was about to ask what the point is ... (what is the expected
-> > semantic ? Memory that is reachable but not necessarily cache
-> > coherent ?)
+On Wed, Apr 27, 2011 at 01:25:20AM +0900, Minchan Kim wrote:
+> In some __zone_reclaim case, we don't want to shrink mapped page.
+> Nonetheless, we have isolated mapped page and re-add it into
+> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
 > 
-> As far as I can see, dma_alloc_noncoherent() should just be a wrapper
-> around the normal page allocation function.  I don't see it ever needing
-> to do anything special - and the advantage of just being the normal
-> page allocation function is that its properties are well known and
-> architecture independent.
+> Of course, when we isolate the page, the page might be mapped but
+> when we try to migrate the page, the page would be not mapped.
+> So it could be migrated. But race is rare and although it happens,
+> it's no big deal.
+> 
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-If there is IOMMU chip that supports pages larger than 4KiB then
-dma_alloc_noncoherent() might try to allocate such larger pages what will
-result in faster access to the buffer (lower iommu tlb miss ratio).
-For large buffers even 64KiB 'pages' gives a significant performance
-improvement.
+> index 71d2da9..e8d6190 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1147,7 +1147,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  
+>  static unsigned long isolate_pages_global(unsigned long nr,
+>  					struct list_head *dst,
+> -					unsigned long *scanned, int order,
+> +					unsigned long *scanned,
+> +					struct scan_control *sc,
+>  					int mode, struct zone *z,
+>  					int active, int file)
+>  {
+> @@ -1156,8 +1157,8 @@ static unsigned long isolate_pages_global(unsigned long nr,
+>  		lru += LRU_ACTIVE;
+>  	if (file)
+>  		lru += LRU_FILE;
+> -	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
+> -					mode, file, 0, 0);
+> +	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, sc->order,
+> +					mode, file, 0, !sc->may_unmap);
+>  }
+>  
 
-Best regards
+Why not take may_writepage into account for dirty pages?
+
+>  /*
+> @@ -1407,7 +1408,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  
+>  	if (scanning_global_lru(sc)) {
+>  		nr_taken = isolate_pages_global(nr_to_scan,
+> -			&page_list, &nr_scanned, sc->order,
+> +			&page_list, &nr_scanned, sc,
+>  			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+>  					ISOLATE_BOTH : ISOLATE_INACTIVE,
+>  			zone, 0, file);
+> @@ -1531,7 +1532,7 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+>  	spin_lock_irq(&zone->lru_lock);
+>  	if (scanning_global_lru(sc)) {
+>  		nr_taken = isolate_pages_global(nr_pages, &l_hold,
+> -						&pgscanned, sc->order,
+> +						&pgscanned, sc,
+>  						ISOLATE_ACTIVE, zone,
+>  						1, file);
+>  		zone->pages_scanned += pgscanned;
+> -- 
+> 1.7.1
+> 
+
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+Mel Gorman
+SUSE Labs
