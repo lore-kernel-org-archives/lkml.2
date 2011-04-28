@@ -1,175 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1D1Rg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 13:36:29 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55712 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab1D1Rg2 (ORCPT
+	id S1757482Ab1D1Rhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 13:37:37 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:22104 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755793Ab1D1Rhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 13:36:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=TQDYd8Y3lLQEjXzrkIssa3EauLVHa+uNbhV9SlCbmL9odokqCk/2uWMzx9oj/6Jnhu
-         t1Bob0/XOKHSzF+i9mRnqDagL086fUX0QVtZ2oSk5ywBfdG/cyOKxU1/UW+0fagaOA0M
-         L2TOOGTIrrzw9/m/XnoKz31RYiDJ/qO34Jtw4=
-Date: Thu, 28 Apr 2011 19:36:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
-        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
- filtering
-Message-ID: <20110428173614.GH1798@nowhere>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
- <1303960136-14298-2-git-send-email-wad@chromium.org>
- <20110428151241.GD1798@nowhere>
- <BANLkTika4xn5SajxGbRtszqyA4R=4y8M6Q@mail.gmail.com>
- <20110428161304.GG1798@nowhere>
- <BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
+	Thu, 28 Apr 2011 13:37:35 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: dSVA_zAVM1kngdBhE1GheZiINz7RU1Mz6l82vaBKBAGu.A0
+ eu3aRFa23h_pBj1ekDrlOh8OtJxQg6..WCgJKWXNTLx_KGeTmbBSv3qBQwVa
+ mu61qkK9H8mPQ8AEenhc6GDm5RjMdEO61V0qixIVHet4PK5gcto9brlOzhvx
+ xhCqxPamk4d44v3a8286LtwI_O2EGj.ZDRq6QGZOtUiJiUCL8.luGBs_giHD
+ Gk4Sfon2KfPHg7TUX5fSoBDmYEiO3tYGpdj.XvlpQ0feMmpZ2ZWnqtoAXUnU
+ QLoUePt_3XZEigCw_2BcygkxivUL8ZrsXKKj_P7T1BWRDjZqJ0y_QIXa8Ajg
+ VrS_4X99lKJJ38lGFlNlHEe8X9KsmQSwOlMg3WNtK
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DB9A5D9.7030607@schaufler-ca.com>
+Date: Thu, 28 Apr 2011 10:37:29 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikr-ScMsLQG4gpAOkVTHjGBRFvsxg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Roberto Sassu <roberto.sassu@polito.it>
+CC: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        viro@zeniv.linux.org.uk, john.johansen@canonical.com,
+        apparmor@lists.ubuntu.com, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
+References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it> <4DB87A6B.7060805@schaufler-ca.com> <20110427232718.GG30854@boyd.l.tihix.com> <201104281435.08273.roberto.sassu@polito.it>
+In-Reply-To: <201104281435.08273.roberto.sassu@polito.it>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 11:48:47AM -0500, Will Drewry wrote:
-> On Thu, Apr 28, 2011 at 11:13 AM, Frederic Weisbecker
-> <fweisbec@gmail.com> wrote:
-> > On Thu, Apr 28, 2011 at 10:29:11AM -0500, Will Drewry wrote:
-> >> On Thu, Apr 28, 2011 at 10:12 AM, Frederic Weisbecker
-> >> <fweisbec@gmail.com> wrote:
-> >> > Instead of having such multiline filter definition with syscall
-> >> > names prepended, it would be nicer to make the parsing simplier.
-> >> >
-> >> > You could have either:
-> >> >
-> >> >        prctl(PR_SET_SECCOMP, mode);
-> >> >        /* Works only if we are in mode 2 */
-> >> >        prctl(PR_SET_SECCOMP_FILTER, syscall_nr, filter);
-> >>
-> >> It'd need to be syscall_name instead of syscall_nr.  Otherwise we're
-> >> right back to where Adam's patch was 2+ years ago :)  Using the event
-> >> names from the syscalls infrastructure means the consumer of the
-> >> interface doesn't need to be confident of the syscall number.
-> >
-> > Is it really a problem?
-> 
-> I'd prefer using numbers myself since it gives more flexibility around
-> filtering entries that haven't yet made it into ftrace syscalls hooks.
-> However, I think there's some complexity in ensuring it matches the
-> host kernel.  (It would also allow compat_task support which doesn't
-> seem to be possible now.)
+On 4/28/2011 5:35 AM, Roberto Sassu wrote:
+> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
+>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+>>>> File descriptor labeling issue
+>>>>
+>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
+>>>> opening process and use it in LSM hooks security_file_permission(),
+>>>> security_file_fcntl() and others to verify if the 'current' process has the
+>>>> rights to perform the requested operation.
+>>>>
+>>>> Using the credentials of the 'current' process may be not appropriate in
+>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
+>>>> and made shared among user processes. For instance, in a system with
+>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
+>>>> obtains a file descriptor to access the correspondent inode in the lower
+>>>> filesystem, labeled with the A's label.
+>>>>
+>>>> If the process B accesses the same encrypted file, it needs the 'use'
+>>>> permission on the A's label other than permissions for the lower inode.
+>>>> However, if B is the first accessing process, A needs the 'use' permission
+>>>> on the B's label.
+>>> I am having trouble understanding the argument. I will pose my
+>>> question in Smack terms, as I can speak most definitively in them.
+>>>
+>>> A process running with a Smack label "A" creates a file, and that
+>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
+>>> this ought not change. If eCryptfs in encrypting the label it needs
+>>> to do so in such a way as to be able to decrypt it prior to
+>>> presentation to the vfs layer, where it will be used in an access
+>>> check. When the process running with a Smack label "B" comes along
+>>> the vfs code will check the fetched and possibly decrypted "A"
+>>> against "B" and, unless there is an explicit Smack rule in place
+>>> granting "B" access to "A", fail.
+>>>
+>>> What is the problem? What is eCryptfs doing that prevents this
+>>> from working?
+>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
+>> only one lower file per eCryptfs inode. Imagine that there are 5
+>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
+>> to be open in the lower filesystem and all eCryptfs file operations will
+>> be multiplexed through it.
+>>
+>> To make things more complicated, if the eCryptfs file is opened for
+>> writing, the lower file must be opened for reading and writing. This is
+>> because a write operation requires eCryptfs to vfs_read() from the lower
+>> filesystem, decrypt that data and then vfs_write() the new data.
+>>
+>> If the lower file can't be opened O_RDWR by the calling process, the
+>> request is handed off to a kernel thread to open the lower file on
+>> behalf of the calling process. It is definitely ugly.
+>>
+>> Roberto, I hope I correctly described the situation that you're trying
+>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
+>> files to lower files?
+>>
+>> Instead of having just one lower file attached to the eCryptfs inode, we
+>> could have a list of opened files. There would be one for each eCryptfs
+>> file that was opened. ecryptfs_writepage() would have to pick, in a
+>> somewhat random fashion, one of the lower files to use. Of course, we
+>> would still need to solve the problem of opening the lower file O_RDWR
+>> when the calling process is only allowed write access (I may have just
+>> answered my own question of why the 1:1 mapping technique won't solve
+>> this problem).
+>>
+> Hi Tyler
+>
+> i think the 1:1 mapping isn't necessary at least from the security perspective.
+> Since eCryptfs is a stacked filesystem access control is performed on
+> both the upper and the lower layer.
+> ECryptfs relies on the lower filesystem for the management of extended
+> attributes, so this means that the security label of both the upper and
+> the lower inodes is the same (however this is not the current behavior
+> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
 
-You'd have some problems with compat and syscall naming, I think some
-of them are not the same between compat architectures.
+Where does this assignment occur?
 
-Note that your new prctl() request is turning syscall handler names (in-kernel API)
-into a user ABI. We won't be able to change the name of those kernel handlers
-after that. I'm not sure that's desired.
+> In my view, for this reason the access control checks can be performed
+> only at the upper layer, letting eCryptfs full privileges to access inodes
+> in the lower filesystem.
 
-OTOH, syscall numbers are a user ABI, 
+On this point I most strongly disagree.
 
+The behavior of a filesystem and the data that it uses to determine
+that behavior is wrought with complex interactions which may include
+but are not limited to caching, read-aheads, garbage collection,
+and various side effects of access control. If eCryptfs needs to go
+mucking about with the data used by the underlying filesystem it is
+not stacking properly. A stacked filesystem has no business whatever
+changing the data of the underlying filesystem.
 
-> 
-> > There are libraries that can resolve that. Of course I can't recall their name.
-> 
-> asm-generic/unistd.h will provide the mapping, if available. It would
-> mean that any helper libraries would need to be matched to the locally
-> running kernel.
+> This solves the problem of opening the lower file in r/w mode even if only
+> the read is requested, because at the upper layer the subject is the
+> accessing process with its own credentials which needs the read permission
+> and at the lower layer the subject is the eCryptfs kernel module with
+> unlimited privileges.
 
-Yeah. But syscall numbers don't move inside a given architecture (could they?)
-Or if so then you'd a dynamic library.
+Excuse my ignorance for a moment. Is eCryptfs a user mode filesystem,
+or in the kernel properly? The behavior makes it sound like the former
+while the interfaces you're requesting make it seem like the latter.
 
+> The issue i described in the cover letter is related to the label assigned
+> to the file descriptor obtained by eCryptfs (or another kernel service) when
+> opening an inode in the lower filesystem, which actually depends on the
+> first accessing process.
+> This label is checked against the credentials of the 'current' process in the
+> hook security_file_permission(), which is triggered by vfs calls (read, write,
+> readdir) performed on both the upper and the lower inodes.
+> In SELinux, a process needs the permission to 'use' a opened file descriptor.
+> So, having a fixed label helps in defining the rule that must be added in the
+> policy for eCryptfs to ensure it works properly.
 
-> >> > or:
-> >> >        /*
-> >> >         * If mode == 2, set the filter to syscall_nr
-> >> >         * Recall this for each syscall that need a filter.
-> >> >         * If a filter was previously set on the targeted syscall,
-> >> >         * it will be overwritten.
-> >> >         */
-> >> >        prctl(PR_SET_SECCOMP, mode, syscall_nr, filter);
-> >> >
-> >> > One can erase a previous filter by setting the new filter "1".
-> >> >
-> >> > Also, instead of having a bitmap of syscall to accept. You could
-> >> > simply set "0" as a filter to those you want to deactivate:
-> >> >
-> >> > prctl(PR_SET_SECCOMP, 2, 1, 0); <- deactivate the syscall_nr 1
-> >> >
-> >> > Hm?
-> >>
-> >> I like the simplicity in not needing to parse anything extra, but it
-> >> does add the need for extra state - either a bit or a new field - to
-> >> represent "enabled/enforcing".
-> >
-> > And by the way I'm really puzzled about these. I don't understand
-> > well why we need this.
-> 
-> Right now, if you are in seccomp mode !=0 , your system calls will be
-> hooked (if TIF_SECCOMP is set too). The current patch begins filtering
-> immediately.  And once filtering is enabled, the process is not
-> allowed to expand its access to the kernel system cals - only shrink
-> it.  An "enabled" bit would be needed to tell it that even though it
-> is running in mode=2, it should/shouldn't kill the process for system
-> call filter violations and it should allow filters to be added, not
-> just dropped.  It's why the current patch does it in one step: set the
-> filters and the mode.  While an enabled bit could be hidden behind
-> whether TIF_SECCOMP is applied, I'm not sure if that would just be
-> confusing.  There'd still be a need to APPLY_FILTERS to get the
-> TIF_SECCOMP flag set to start hooking the system calls.
+I'm afraid to suggest this, but it looks as if you may be
+able to solve your problems with some SELinux policy. I am
+of course not an expert on SELinux policy, but it looks as
+if not specifying an appropriate policy for the user space
+component is what is in the way here.
 
-It seems the filter is only ever needed for the childs, right?
-And moreover when they exec. So Steve's suggestion to apply
-the filters only after the next exec makes sense.
+> PS: i'm adding in CC the Apparmor's mantainer and the mailing list to have
+> their opinion about the protection offered for the eCryptfs filesystem and
+> other kernel services. The overall thread is available at the url:
+>
+> https://lkml.org/lkml/2011/4/27/201
+>
+> Thanks
+>
+> Roberto Sassu
+>
+>
+>> Tyler
+>>
+>
 
-That would solve the problem of both ON_NEXT_SYSCALL and APPLY_FILTER.
-
-I may be missing something obvious though. Do you see a limitation there?
-
-> 
-> > As for the enable_on_next_syscall. The documentation says
-> > it's useful if you want the filter to only apply to the
-> > child. So if fork immediately follows, you will be able to fork
-> > but if the child doesn't have the right to exec, it won't be able
-> > to do so. Same for the mmap() that involves...
-> >
-> > So I'm a bit confused about that.
-> 
-> Here's an example:
->   http://static.dataspill.org/seccomp_filter/v1/seccomp_launcher.c
-> 
-> You'd use it by calling fork() ... prctl(..., ON_NEXT_SYSCALL) then
-> execve since you'll already have fork()d.  It seems to work, but maybe
-> I'm missing something :)
-
-Nope, I see.
-
-> 
-> > But yeah if that's really needed, it looks to me better to
-> > reduce the parsing and cut it that way:
-> >
-> >        prctl(PR_SET_SECCOMP, 2, syscall_name_or_nr, filter);
-> >        prctl(PR_SECCOMP_APPLY_FILTERS, enable_on_next_syscall?)
-> >
-> > or something...
-> 
-> Cool - if there are any other flags, it could be something like:
->   prctl(PR_SECCOMP_SET_FLAGS, SECCOMP_ENFORCE|SECCOMP_DELAYED_ENFORCEMENT);
-> 
-> But only if there are other flags worth considering. I had a few
-> others in mind, but now I've completely forgotten :/
