@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab1D1Vl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:41:57 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45584 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab1D1Vl4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:41:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ApC/hPxE3aJ3dqoCiEAxLBFL38AFil6iTzDat1kj6P5aiZtEJq3H21BuQaFcUZAutZ
-         Gf4yiNd74eO2sCcmFI6g==
-Date: Thu, 28 Apr 2011 14:41:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+	id S1754774Ab1D1Vv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 17:51:29 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:35466 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751946Ab1D1Vv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 17:51:27 -0400
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] m68k SLUB fix for 2.6.39
-In-Reply-To: <1304026464.2598.36.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1104282251080.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com>
+	 <20110426183859.6ff6279b@neptune.home>
+	 <20110426190918.01660ccf@neptune.home>
+	 <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+	 <alpine.LFD.2.02.1104262314110.3323@ionos>
+	 <20110427081501.5ba28155@pluto.restena.lu>
+	 <20110427204139.1b0ea23b@neptune.home>
+	 <alpine.LFD.2.02.1104272351290.3323@ionos>
+	 <alpine.LFD.2.02.1104281051090.19095@ionos>
+	 <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+	 <20110428102609.GJ2135@linux.vnet.ibm.com>
+	 <1303997401.7819.5.camel@marge.simson.net>
+	 <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
+	 <alpine.LFD.2.02.1104282044120.3005@ionos>
+	 <20110428222301.0b745a0a@neptune.home>
+	 <alpine.LFD.2.02.1104282227340.3005@ionos>
+	 <20110428224444.43107883@neptune.home>
+	 <alpine.LFD.2.02.1104282251080.3005@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 14:51:20 -0700
+Message-ID: <1304027480.2971.121.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011, James Bottomley wrote:
-
-> > Since 4a5fa3590f09 ([PARISC] slub: fix panic with DISCONTIGMEM) from 
-> > 2.6.39-rc4, you can't actually select slub on m68k without CONFIG_ADVANCED 
-> > and CONFIG_SINGLE_MEMORY_CHUNK because it otherwises defaults to 
-> > discontigmem.
+On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
+> On Thu, 28 Apr 2011, Bruno Prémont wrote:
+> > Timer List Version: v0.6
+> > HRTIMER_MAX_CLOCK_BASES: 3
+> > now at 1150126155286 nsecs
 > > 
-> > James tested hppa64 with my N_NORMAL_MEMORY fix and found that it turned 
-> > an SMP box into UP.  If you've tested slub on m68k without regressions, 
-> > then perhaps you'd like to add a "|| M68K" to CONFIG_SLUB?
+> > cpu: 0
+> >  clock 0:
+> >   .base:       c1559360
+> >   .index:      0
+> >   .resolution: 1 nsecs
+> >   .get_time:   ktime_get_real
+> >   .offset:     1304021489280954699 nsecs
+> > active timers:
+> >  #0: def_rt_bandwidth, sched_rt_period_timer, S:01, enqueue_task_rt, swapper/1
+> >  # expires at 1304028703000000000-1304028703000000000 nsecs [in 1304027552873844714 to 1304027552873844714 nsecs]
 > 
-> To be honest, I really don't see that fixing it.  As soon as you
-> allocate memory beyond range zero, you move onto a non-zero node as far
-> as slub is concerned, and that will oops.
+> Ok, that expiry time is obviously bogus as it does not account the offset:
 > 
-
-Possible nodes are represented in slub with N_NORMAL_MEMORY, so the 
-kmem_cache_node structures are allocated and initialized based on this 
-nodemask.  As long as the memory ranges map to nodes set in the nodemask, 
-this should be fine.
-
-> I think what the N_NORMAL_MEMORY patch did is just make it take a whiile
-> before you start allocating from that range.  Try executing a memory
-> balloon on the platform; that was how we first demonstrated the problem
-> on parisc.
+> So in reality it's: expires in: 6063592890015ns 
 > 
+> Which is still completely wrong. The timer should expire at max a
+> second from now. But it's going to expire in 6063.592890015 seconds
+> from now, which is pretty much explaining the after 2hrs stuff got
+> going again.
+> 
+> But the real interesting question is why he heck is that timer on
+> CLOCK_REALTIME ???? It is initalized for CLOCK_MONOTONIC.
+> 
+> /me suspects hrtimer changes to be the real culprit.
 
-With parisc, you encountered an oops in add_partial() because the 
-kmem_cache_node structure for the memory range returned by page_to_nid() 
-was not allocated.  init_kmem_cache_nodes() takes care of this for all 
-memory ranges set in N_NORMAL_MEMORY.
+I'm not seeing anything on right off, but it does smell like
+e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
+would crop up.
 
-Adding Christoph and Pekka to the cc if there is additional concerns about 
-slub on this architecture.
+Bruno, could you try checking out e06383db9ec, confirming it still
+occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
+
+I'll keep digging in the meantime.
+
+thanks
+-john
+
+
+
+
+
+
