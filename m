@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab1D1Vfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 17:35:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:40560 "EHLO
+	id S932218Ab1D1Vl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 17:41:57 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45584 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab1D1Vft (ORCPT
+	with ESMTP id S1754392Ab1D1Vl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 17:35:49 -0400
+	Thu, 28 Apr 2011 17:41:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=kUjufzLe8HzQj3Q7PrilzYg8O5Rgsji9KfJgqw6TxDn5f6Ef0oxiIyLk6wKJ06I01u
-         XvC6yZ3Fb61M8OnzA+nw==
-Date: Thu, 28 Apr 2011 14:35:32 -0700 (PDT)
+        b=ApC/hPxE3aJ3dqoCiEAxLBFL38AFil6iTzDat1kj6P5aiZtEJq3H21BuQaFcUZAutZ
+         Gf4yiNd74eO2sCcmFI6g==
+Date: Thu, 28 Apr 2011 14:41:50 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] comm: ext4: Protect task->comm access by using
- get_task_comm()
-In-Reply-To: <1303963411-2064-4-git-send-email-john.stultz@linaro.org>
-Message-ID: <alpine.DEB.2.00.1104281426210.21665@chino.kir.corp.google.com>
-References: <1303963411-2064-1-git-send-email-john.stultz@linaro.org> <1303963411-2064-4-git-send-email-john.stultz@linaro.org>
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] m68k SLUB fix for 2.6.39
+In-Reply-To: <1304026464.2598.36.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,43 +35,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011, John Stultz wrote:
+On Thu, 28 Apr 2011, James Bottomley wrote:
 
-> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-> index 7b80d54..d37414e 100644
-> --- a/fs/ext4/file.c
-> +++ b/fs/ext4/file.c
-> @@ -124,11 +124,15 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
->  		static unsigned long unaligned_warn_time;
->  
->  		/* Warn about this once per day */
-> -		if (printk_timed_ratelimit(&unaligned_warn_time, 60*60*24*HZ))
-> +		if (printk_timed_ratelimit(&unaligned_warn_time, 60*60*24*HZ)) {
-> +			char comm[TASK_COMM_LEN];
-> +
-> +			get_task_comm(comm, current);
->  			ext4_msg(inode->i_sb, KERN_WARNING,
->  				 "Unaligned AIO/DIO on inode %ld by %s; "
->  				 "performance will be poor.",
-> -				 inode->i_ino, current->comm);
-> +				 inode->i_ino, comm);
-> +		}
->  		mutex_lock(ext4_aio_mutex(inode));
->  		ext4_aiodio_wait(inode);
->  	}
+> > Since 4a5fa3590f09 ([PARISC] slub: fix panic with DISCONTIGMEM) from 
+> > 2.6.39-rc4, you can't actually select slub on m68k without CONFIG_ADVANCED 
+> > and CONFIG_SINGLE_MEMORY_CHUNK because it otherwises defaults to 
+> > discontigmem.
+> > 
+> > James tested hppa64 with my N_NORMAL_MEMORY fix and found that it turned 
+> > an SMP box into UP.  If you've tested slub on m68k without regressions, 
+> > then perhaps you'd like to add a "|| M68K" to CONFIG_SLUB?
+> 
+> To be honest, I really don't see that fixing it.  As soon as you
+> allocate memory beyond range zero, you move onto a non-zero node as far
+> as slub is concerned, and that will oops.
+> 
 
-Thanks very much for looking into concurrent readers of current->comm, 
-John!
+Possible nodes are represented in slub with N_NORMAL_MEMORY, so the 
+kmem_cache_node structures are allocated and initialized based on this 
+nodemask.  As long as the memory ranges map to nodes set in the nodemask, 
+this should be fine.
 
-This patch in the series demonstrates one of the problems with using 
-get_task_comm(), however: we must allocate a 16-byte buffer on the stack 
-and that could become risky if we don't know its current depth.  We may be 
-particularly deep in the stack and then cause an overflow because of the 
-16 bytes.
+> I think what the N_NORMAL_MEMORY patch did is just make it take a whiile
+> before you start allocating from that range.  Try executing a memory
+> balloon on the platform; that was how we first demonstrated the problem
+> on parisc.
+> 
 
-I'm wondering if it would be better for ->comm to be protected by a 
-spinlock (or rwlock) other than ->alloc_lock and then just require readers 
-to take the lock prior to dereferencing it?  That's what is done in the 
-oom killer with task_lock().  Perhaps you could introduce new 
-task_comm_lock() and task_comm_unlock() to prevent the extra stack usage 
-in over 300 locations within the kernel?
+With parisc, you encountered an oops in add_partial() because the 
+kmem_cache_node structure for the memory range returned by page_to_nid() 
+was not allocated.  init_kmem_cache_nodes() takes care of this for all 
+memory ranges set in N_NORMAL_MEMORY.
+
+Adding Christoph and Pekka to the cc if there is additional concerns about 
+slub on this architecture.
