@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab1D1SDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 14:03:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab1D1SDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 14:03:00 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] x86: Populate virtual address field of all EFI memmap entries
-Date: Thu, 28 Apr 2011 14:02:26 -0400
-Message-Id: <1304013746-20239-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1759394Ab1D1SGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 14:06:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49428 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757901Ab1D1SGA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 14:06:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vTZgMAUvAQn1/WtxUNtQFJj+Tjd/MFxAbEteQQvTCgkD3l05sg9I7piOdIQvq3SbuW
+         bNsv2xWz69qxucklMawNnq7CAPO1x1rHhpic4nmbwZrFqaJ8ejeaTvBIGPPtm18571US
+         uZq2BoG3cvcQ/MyLP92rsP9zGHSvgzh14QzjU=
+MIME-Version: 1.0
+In-Reply-To: <4DB9884F.10409@lwfinger.net>
+References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
+	<20110428150819.GA3713@spotteswoode.de.eu.org>
+	<4DB9884F.10409@lwfinger.net>
+Date: Fri, 29 Apr 2011 02:05:56 +0800
+Message-ID: <BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: clemens fischer <ino-news@spotteswoode.dnsalias.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, wlanfae@realtek.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our current implementation of SetVirtualAddressMap passes back the entire
-memory map it received from the firmware, but only modifies entries that
-have the runtime attribute set. Experiments (mostly involving screaming)
-with real-world EFI implementations suggests that some will call
-ConvertPointer on data that exist outside runtime regions anyway. The
-easiest fix here seems to be to continue remapping runtime regions and
-just to copy the physical address to the virtal address for other regions.
+On Thu, Apr 28, 2011 at 11:31 PM, Larry Finger
+<Larry.Finger@lwfinger.net> wrote:
+> On 04/28/2011 10:08 AM, clemens fischer wrote:
+>> This patch doesn't solve my problem[1], unfortunately.  I am using
+>> iwconfig(8) to setup things, and it is still impossible to set the ESSID
+>> and the power saving mode.  In my case it was even possible to get into
+>> Ad-hoc mode without the patch and without ever beeing associated.
 
-This doesn't fix any observed problems with our current implementation,
-but it seems better to be safe than sorry.
+iwconfig doesn't work by itself to set adhoc mode (I haven't figure
+why either). You can get into "adhoc mode", but you won't see
+ESSID:XXXX.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- arch/x86/platform/efi/efi.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Can you please try "wpa_supplicant" instead?
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 0fe27d7..f11b3b0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -507,8 +507,10 @@ void __init efi_enter_virtual_mode(void)
- 	efi.systab = NULL;
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (!(md->attribute & EFI_MEMORY_RUNTIME))
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
-+			md->virt_addr = md->phys_addr;
- 			continue;
-+		}
- 
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
--- 
-1.7.4.4
 
+Jeff
