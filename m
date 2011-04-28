@@ -1,53 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab1D1UPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:15:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35104 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1D1UPd (ORCPT
+	id S933501Ab1D1UXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:23:18 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:55703 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933488Ab1D1UXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:15:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-pgp-id:x-archive
-         :user-agent;
-        b=IfRn4Iwj9OwnaRysyq//MZqe1IIRuBc/+fzZWtGpFx7bFMmfPSA+2J9K/mkowIECjE
-         R1xwVHixLSOg3wU7WoLwvkXGtmMaWS7goRMcw/qh3SZFE6HiLhQepstg6M55O8++p5rQ
-         pt641SIc9pF70i1pXKG9ZqyS8admPfvtSnVN4=
-Date: Thu, 28 Apr 2011 22:15:27 +0200
-From: clemens fischer <ino-news@spotteswoode.dnsalias.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, wlanfae@realtek.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
-Message-ID: <20110428201527.GA3738@spotteswoode.de.eu.org>
-References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
- <20110428150819.GA3713@spotteswoode.de.eu.org>
- <4DB9884F.10409@lwfinger.net>
- <BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
-X-PGP-ID: 0x214190AF
-X-Archive: encrypt=none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Apr 2011 16:23:16 -0400
+Date: Thu, 28 Apr 2011 22:23:01 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+Message-ID: <20110428222301.0b745a0a@neptune.home>
+In-Reply-To: <alpine.LFD.2.02.1104282044120.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com>
+	<20110426183859.6ff6279b@neptune.home>
+	<20110426190918.01660ccf@neptune.home>
+	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+	<alpine.LFD.2.02.1104262314110.3323@ionos>
+	<20110427081501.5ba28155@pluto.restena.lu>
+	<20110427204139.1b0ea23b@neptune.home>
+	<alpine.LFD.2.02.1104272351290.3323@ionos>
+	<alpine.LFD.2.02.1104281051090.19095@ionos>
+	<BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+	<20110428102609.GJ2135@linux.vnet.ibm.com>
+	<1303997401.7819.5.camel@marge.simson.net>
+	<BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
+	<alpine.LFD.2.02.1104282044120.3005@ionos>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="MP_/tLAgSp4G09kmuF7p.zJ/tEu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jeff Chua:
+--MP_/tLAgSp4G09kmuF7p.zJ/tEu
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-> iwconfig doesn't work by itself to set adhoc mode (I haven't figure
-> why either). You can get into "adhoc mode", but you won't see
-> ESSID:XXXX.
+On Thu, 28 April 2011 Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 28 Apr 2011, Sedat Dilek wrote:
+> > On Thu, Apr 28, 2011 at 3:30 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > rt_rq[0]:
+> >   .rt_nr_running                 : 0
+> >   .rt_throttled                  : 0
 > 
-> Can you please try "wpa_supplicant" instead?
+> >   .rt_time                       : 888.893877
+> 
+> >   .rt_time                       : 950.005460
+> 
+> So rt_time is constantly accumulated, but never decreased. The
+> decrease happens in the timer callback. Looks like the timer is not
+> running for whatever reason.
+> 
+> Can you add the following patch as well ?
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -172,7 +172,7 @@ static enum hrtimer_restart sched_rt_per
+>  		idle = do_sched_rt_period_timer(rt_b, overrun);
+>  	}
+>  
+> -	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
+> +	return HRTIMER_RESTART;
 
-Well, I never figured out how to configure adhoc-mode using
-"wpa_supplicant", could you please send a minimal working config entry?
+This doesn't help here.
+Be it applied on top of the others, full diff attached
+or applied alone (with throttling printk).
+
+Could it be that NO_HZ=y has some importance in this matter?
 
 
-regards, clemens fischer
+Extended throttling printk (Linus asked what exact values were looking
+like):
+[  401.000119] sched: RT throttling activated 950012539 > 950000000
+
+
+Equivalent to what Sedat sees (/proc/sched_debug):
+rt_rq[0]:
+  .rt_nr_running                 : 2
+  .rt_throttled                  : 1
+  .rt_time                       : 950.012539
+  .rt_runtime                    : 950.000000
+
+
+/proc/$(pidof rcu_kthread)/sched captured at regular intervals:
+Thu Apr 28 21:33:41 CEST 2011
+rcu_kthread (6, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :             0.000000
+se.vruntime                        :             0.000703
+se.sum_exec_runtime                :           903.067982
+nr_switches                        :                23752
+nr_voluntary_switches              :                23751
+nr_involuntary_switches            :                    1
+se.load.weight                     :                 1024
+policy                             :                    1
+prio                               :                   98
+clock-delta                        :                  912
+Thu Apr 28 21:34:11 CEST 2011
+rcu_kthread (6, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :             0.000000
+se.vruntime                        :             0.000703
+se.sum_exec_runtime                :           974.899495
+nr_switches                        :                25721
+nr_voluntary_switches              :                25720
+nr_involuntary_switches            :                    1
+se.load.weight                     :                 1024
+policy                             :                    1
+prio                               :                   98
+clock-delta                        :                 1098
+Thu Apr 28 21:34:41 CEST 2011
+rcu_kthread (6, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :             0.000000
+se.vruntime                        :             0.000703
+se.sum_exec_runtime                :           974.899495
+nr_switches                        :                25721
+nr_voluntary_switches              :                25720
+nr_involuntary_switches            :                    1
+se.load.weight                     :                 1024
+policy                             :                    1
+prio                               :                   98
+clock-delta                        :                 1126
+Thu Apr 28 21:35:11 CEST 2011
+rcu_kthread (6, #threads: 1)
+
+
+
+>  }
+>  
+>  static
+
+--MP_/tLAgSp4G09kmuF7p.zJ/tEu
+Content-Type: text/x-patch
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename=sched_rt.diff
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 312f8b9..aad1b88 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -172,7 +172,7 @@ static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
+ 		idle = do_sched_rt_period_timer(rt_b, overrun);
+ 	}
+ 
+-	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
++	return /* idle ? HRTIMER_NORESTART : */ HRTIMER_RESTART;
+ }
+ 
+ static
+@@ -460,7 +460,7 @@ struct rq {
+ 	u64 nohz_stamp;
+ 	unsigned char nohz_balance_kick;
+ #endif
+-	unsigned int skip_clock_update;
++	int skip_clock_update;
+ 
+ 	/* capture load from *all* tasks on this cpu: */
+ 	struct load_weight load;
+@@ -642,8 +642,8 @@ static void update_rq_clock(struct rq *rq)
+ {
+ 	s64 delta;
+ 
+-	if (rq->skip_clock_update)
+-		return;
++/*	if (rq->skip_clock_update > 0)
++		return; */
+ 
+ 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+ 	rq->clock += delta;
+@@ -4035,7 +4035,7 @@ static inline void schedule_debug(struct task_struct *prev)
+ 
+ static void put_prev_task(struct rq *rq, struct task_struct *prev)
+ {
+-	if (prev->se.on_rq)
++	if (prev->se.on_rq || rq->skip_clock_update < 0)
+ 		update_rq_clock(rq);
+ 	prev->sched_class->put_prev_task(rq, prev);
+ }
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index e7cebdc..2feae93 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -572,8 +572,15 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
+ 				enqueue = 1;
+ 		}
+ 
+-		if (enqueue)
++		if (enqueue) {
++			/*
++			 * Tag a forced clock update if we're coming out of idle
++			 * so rq->clock_task will be updated when we schedule().
++			 */
++			if (rq->curr == rq->idle)
++				rq->skip_clock_update = -1;
+ 			sched_rt_rq_enqueue(rt_rq);
++		}
+ 		raw_spin_unlock(&rq->lock);
+ 	}
+ 
+@@ -608,6 +615,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+ 		return 0;
+ 
+ 	if (rt_rq->rt_time > runtime) {
++		printk_once(KERN_WARNING "sched: RT throttling activated %llu > %llu\n", rt_rq->rt_time, runtime);
+ 		rt_rq->rt_throttled = 1;
+ 		if (rt_rq_throttled(rt_rq)) {
+ 			sched_rt_rq_dequeue(rt_rq);
+
+--MP_/tLAgSp4G09kmuF7p.zJ/tEu--
