@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485Ab1D1UCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 16:02:18 -0400
-Received: from waste.org ([173.11.57.241]:52473 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933419Ab1D1UCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 16:02:15 -0400
-X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Apr 2011 16:02:15 EDT
-Subject: Re: [PATCH 1/2] hwrng: manage resource allocation in amd driver
-From: Matt Mackall <mpm@selenic.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>
-In-Reply-To: <1303932076-7428-1-git-send-email-dbaryshkov@gmail.com>
-References: <1303932076-7428-1-git-send-email-dbaryshkov@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 14:51:53 -0500
-Message-ID: <1304020313.20288.1.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1760281Ab1D1UCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:02:35 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44596 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933474Ab1D1UCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 16:02:16 -0400
+Subject: [PATCH 6/6] powerpc: use irq_alloc_desc() to manage irq allocations
+To: Michal Simek <monstr@monstr.eu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Thu, 28 Apr 2011 14:02:14 -0600
+Message-ID: <20110428200214.8979.84221.stgit@ponder>
+In-Reply-To: <20110428192227.8979.49181.stgit@ponder>
+References: <20110428192227.8979.49181.stgit@ponder>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 23:21 +0400, Dmitry Eremin-Solenikov wrote:
-> As amd driver doesn't bind to PCI device, we'd better manage reource
-> allocation on our own to disallow (possible) conflicts.
+This patch drops the architecture specific code for managing irq
+assignments and uses core code instead.
 
-These two look good to me.
+*RFC*
 
-Acked-by: Matt Mackall <mpm@selenic.com>
+This patch is *not* ready for merging.  The locking is messed up where
+the irq_map is still used to find out if a mapping is already established,
+but irq_alloc_desc() is now called before the irq_map is updated which
+creates a race condition.  I've not completely sorted out how to solve
+this yet.  The solution may very well be to convert the irq_big_lock
+to a mutex (but I'm not sure if anything that sleeps calls the affected
+code), and hold the mutex over the entire operation.
 
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> ---
->  drivers/char/hw_random/amd-rng.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/amd-rng.c b/drivers/char/hw_random/amd-rng.c
-> index 0d8c578..c6af038 100644
-> --- a/drivers/char/hw_random/amd-rng.c
-> +++ b/drivers/char/hw_random/amd-rng.c
-> @@ -133,6 +133,12 @@ found:
->  	pmbase &= 0x0000FF00;
->  	if (pmbase == 0)
->  		goto out;
-> +	if (!request_region(pmbase + 0xF0, 8, "AMD HWRNG")) {
-> +		dev_err(&pdev->dev, "AMD HWRNG region 0x%x already in use!\n",
-> +			pmbase + 0xF0);
-> +		err = -EBUSY;
-> +		goto out;
-> +	}
->  	amd_rng.priv = (unsigned long)pmbase;
->  	amd_pdev = pdev;
->  
-> @@ -141,6 +147,7 @@ found:
->  	if (err) {
->  		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
->  		       err);
-> +		release_region(pmbase + 0xF0, 8);
->  		goto out;
->  	}
->  out:
-> @@ -149,6 +156,8 @@ out:
->  
->  static void __exit mod_exit(void)
->  {
-> +	u32 pmbase = (unsigned long)amd_rng.priv;
-> +	release_region(pmbase + 0xF0, 8);
->  	hwrng_unregister(&amd_rng);
->  }
->  
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ arch/powerpc/kernel/irq.c |   51 ++++++++++++---------------------------------
+ 1 files changed, 14 insertions(+), 37 deletions(-)
 
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 0fb90ab..e4a6646 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -984,53 +984,29 @@ unsigned int irq_linear_revmap(struct irq_host *host,
+ static unsigned int irq_alloc_virt(struct irq_host *host, unsigned int hint)
+ {
+ 	unsigned long flags;
+-	unsigned int i, j, found = NO_IRQ;
+-	int res;
++	int found;
+ 
+-	raw_spin_lock_irqsave(&irq_big_lock, flags);
+-
+-	/* Use hint for 1 interrupt if any */
+-	if (hint >= NUM_ISA_INTERRUPTS &&
+-	    hint < irq_virq_count && irq_map[hint].host == NULL) {
+-		found = hint;
+-		goto hint_found;
+-	}
+-
+-	/* Look for a free virq in the allocatable (non-legacy) space */
+-	for (i = NUM_ISA_INTERRUPTS, j = 0; i < irq_virq_count; i++) {
+-		if (irq_map[i].host == NULL) {
+-			found = i;
+-			break;
+-		}
+-	}
+-	if (found == NO_IRQ) {
+-		raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++	/*
++	 * Find an unused interrupt.  First, attempt to allocate
++	 * 'hint'.  If that fails, then just allocate any free one.
++	 */
++	found = irq_alloc_desc_at(hint, 0);
++	if (found <= NO_IRQ)
++		found = irq_alloc_desc(0);
++	if (found <= NO_IRQ) {
++		pr_debug("irq: -> allocating desc failed\n");
+ 		return NO_IRQ;
+ 	}
+- hint_found:
++
++	raw_spin_lock_irqsave(&irq_big_lock, flags);
+ 	irq_map[found].hwirq = host->inval_irq;
+ 	smp_wmb();
+ 	irq_map[found].host = host;
+ 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
+ 
+-	res = irq_alloc_desc_at(found, 0);
+-	if (res != found) {
+-		pr_debug("irq: -> allocating desc failed\n");
+-		goto error_desc;
+-	}
+-
+ 	irq_clear_status_flags(found, IRQ_NOREQUEST);
+ 
+ 	return found;
+-
+- error_desc:
+-	raw_spin_lock_irqsave(&irq_big_lock, flags);
+-	host = irq_map[found].host;
+-	irq_map[found].hwirq = host->inval_irq;
+-	smp_wmb();
+-	irq_map[found].host = NULL;
+-	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
+-	return NO_IRQ;
+ }
+ 
+ /**
+@@ -1051,13 +1027,14 @@ static void irq_free_virt(unsigned int virq)
+ 		return;
+ 	}
+ 
+-	irq_free_descs(virq, 1);
+ 	raw_spin_lock_irqsave(&irq_big_lock, flags);
+ 	host = irq_map[virq].host;
+ 	irq_map[virq].hwirq = host->inval_irq;
+ 	smp_wmb();
+ 	irq_map[virq].host = NULL;
+ 	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++
++	irq_free_descs(virq, 1);
+ }
+ 
+ int arch_early_irq_init(void)
 
