@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab1D1A0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:26:11 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43535 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1D1A0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:26:09 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Borislav Petkov <bp@alien8.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3.1] kbuild: implement several W= levels
-In-Reply-To: Your message of "Wed, 27 Apr 2011 13:35:13 +0200."
-             <20110427113513.GB18112@eferding.osrc.amd.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20110422110947.GA20715@merkur.ravnborg.org> <1303494642-18594-1-git-send-email-bp@alien8.de> <20110427082555.GC5726@merkur.ravnborg.org>
-            <20110427113513.GB18112@eferding.osrc.amd.com>
+	id S1751714Ab1D1AcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:32:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:34171 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009Ab1D1AcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 20:32:16 -0400
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+From: john stultz <johnstul@us.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
+	 <1303331695.2796.159.camel@work-vm>
+	 <20110421103009.731B.A69D9226@jp.fujitsu.com>
+	 <1303846026.2816.117.camel@work-vm>
+	 <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Apr 2011 17:32:08 -0700
+Message-ID: <1303950728.2971.35.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1303950319_5598P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Date: Wed, 27 Apr 2011 20:25:20 -0400
-Message-ID: <11802.1303950320@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4DB8B3F4.001D,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1303950319_5598P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 2011-04-27 at 16:51 -0700, David Rientjes wrote:
+> On Tue, 26 Apr 2011, john stultz wrote:
+> > In the meantime, I'll put some effort into trying to protect unlocked
+> > current->comm acccess using get_task_comm() where possible. Won't happen
+> > in a day, and help would be appreciated. 
+> > 
+> 
+> We need to stop protecting ->comm with ->alloc_lock since it is used for 
+> other members of task_struct that may or may not be held in a function 
+> that wants to read ->comm.  We should probably introduce a seqlock.
 
-On Wed, 27 Apr 2011 13:35:13 +0200, Borislav Petkov said:
+Agreed. My initial approach is to consolidate accesses to use
+get_task_comm(), with special case to skip the locking if tsk==current,
+as well as a lock free __get_task_comm() for cases where its not current
+being accessed and the task locking is already done.
 
-> If we do this inclusive, then W=2 dumps the, let's call it, level 1
-> _plus_ the new level 2 warnings, polluting the output with something
-> I've already seen, but only partially. And then I start to think, did
-> I see this one already, didn't I, which was it? By the time you enable
-> W=3, the output becomes pretty useless. For example, W=3 generates 190+
-> MB logfile here only with level 3 warnings. Now imagine all 3 levels
-> combined.
+Once that's all done, the next step is to switch to a seqlock (or
+possibly RCU if Dave is still playing with that idea), internally in the
+get_task_comm implementation and then yank the special __get_task_comm. 
 
-If each level is averaging 10x the previous level, then all 3 levels will only be 11%
-bigger, or 211MB.
+But other suggestions are welcome.
 
-You *really* want to get *all* the warnings - quite often, you'll be looking
-at a set of 15 or 20 level-3 warnings.  And if you had the Level-2's in there as
-well, you'd immediately realize that the single level-2 was the real root-cause
-of all the cascating warnings.
+thanks
+-john
 
-Also, having it as a "volume control" means I don't have to go reading the
-Makefile to figure out which number I need to specify for which message - I can
-just say W=3 and *know* the flavor I want will be in there somewhere. Let's
-face it, if there's over 10 or 15 warnings involved, grep or your editor's
-"locate next" will do a better job of finding it than you ever can...
-
-
---==_Exmh_1303950319_5598P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNuLPvcC3lWbTT17ARAtXzAJ9XjQ/BmPeVMYk2Y9CDg4mvDVSVfACghzoC
-iKAPd5eNOOzRAup+pTsdX/o=
-=vHpr
------END PGP SIGNATURE-----
-
---==_Exmh_1303950319_5598P--
 
