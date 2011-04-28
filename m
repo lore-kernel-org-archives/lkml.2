@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab1D1PPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:15:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42287 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932882Ab1D1PPG (ORCPT
+	id S1760524Ab1D1PQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:16:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59953 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932882Ab1D1PQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:15:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110428142857.GC1798@nowhere>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	<1303960136-14298-2-git-send-email-wad@chromium.org>
-	<20110428142857.GC1798@nowhere>
-Date: Thu, 28 Apr 2011 10:15:04 -0500
-Message-ID: <BANLkTikf4b1qMSOucNH-DLUFa7K3QOVN7w@mail.gmail.com>
-Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call filtering
-From: Will Drewry <wad@chromium.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
-        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
-        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Apr 2011 11:16:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PtHoOr74+DivJzwd2nCxGuxDfcUxNL1oirxVNYteG5OpMRs6F5fdfUAWrKDjBuKxcw
+         FVIMHiBR23fDZVmm5fTdGKFRSNGs2yLBqe0VJ4GclWX5H6mHE5k5c7Xfa4czkGat0y4B
+         Zc8Lg1j7Wkp3a41Oweih833q5KwU7q+IyJcGs=
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: eric.y.miao@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: [PATCH 1/3] i2c: append hardware lock with bus lock
+Date: Thu, 28 Apr 2011 23:15:44 +0800
+Message-Id: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <2011042801>
+References: <2011042801>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 9:29 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Wed, Apr 27, 2011 at 10:08:47PM -0500, Will Drewry wrote:
->> This change adds a new seccomp mode based on the work by
->> agl@chromium.org. This mode comes with a bitmask of NR_syscalls size and
->> an optional linked list of seccomp_filter objects. When in mode 2, all
->
-> Since you now use the filters. Why not using them to filter syscalls
-> entirely rather than using a bitmap of allowed syscalls?
+Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+cores are sharing one pair of I2C pins.
 
-The current approach just uses a linked list of filters.  While a more
-efficient data structure could be used, the bitmask provides a quick
-binary decision, and optimizes for the relatively common case where
-there won't be many non-binary filters to evaluate so we don't have to
-walk the list for a larger number of yes/no decisions versus more
-complex predicates.  Though that may be a short-sighted view! I'm
-happy to change it up.
+In order to keep I2C transaction operated with atomic, hardware lock
+(RIPC) is required. Because of this, bus lock in AP side can't afford
+this requirement. Now hardware lock is appended.
 
-> You have the "nr" field in syscall tracepoints.
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Jean Delvare <khali@linux-fr.org>
+---
+ drivers/i2c/i2c-core.c |   22 ++++++++++++++++++----
+ include/linux/i2c.h    |    3 +++
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
-I'n not sure I follow.  Do you mean moving entirely to using the
-actual tracepoint infrastructure instead of using the seccomp hooks,
-or just looking up proper filter by syscall nr?  If there's a sane and
-better way to do the latter, I'm all ears :)  As far as using the
-tracepoints themselves, I looked to how the perf/ftrace interactions
-worked and while I could've registered with the syscalls tracepoints
-for enter and exit, it would mean later evaluation of the system call
-interception, possibly out-of-order with respect to other registered
-event sinks, and there is complexity in just killing current from
-within the notifier-like list registered syscall events (as Eric Paris
-ran into when expanding filtering into perf itself).  To get around
-that, the tracepoint handler would have to pump the data somewhere
-else (like it does for perf), and it just seemed messy.  I think it's
-doable, but I don't know that the pure syscall tracepoint
-infrastructure should be burdened with the added requirements that
-come with seccomp-filtering.   If I didn't properly understand the
-code, though, please set me on the right path.
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 045ba6e..132d46c 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -448,8 +448,11 @@ void i2c_lock_adapter(struct i2c_adapter *adapter)
+ 
+ 	if (parent)
+ 		i2c_lock_adapter(parent);
+-	else
++	else {
+ 		rt_mutex_lock(&adapter->bus_lock);
++		if (adapter->hardware_lock)
++			adapter->hardware_lock(adapter);
++	}
+ }
+ EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+ 
+@@ -460,11 +463,19 @@ EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+ static int i2c_trylock_adapter(struct i2c_adapter *adapter)
+ {
+ 	struct i2c_adapter *parent = i2c_parent_is_i2c_adapter(adapter);
++	int ret = 0;
+ 
+ 	if (parent)
+ 		return i2c_trylock_adapter(parent);
+-	else
+-		return rt_mutex_trylock(&adapter->bus_lock);
++	else {
++		ret = rt_mutex_trylock(&adapter->bus_lock);
++		if (ret && adapter->hardware_trylock) {
++			ret = adapter->hardware_trylock(adapter);
++			if (!ret)
++				i2c_unlock_adapter(adapter);
++		}
++		return ret;
++	}
+ }
+ 
+ /**
+@@ -477,8 +488,11 @@ void i2c_unlock_adapter(struct i2c_adapter *adapter)
+ 
+ 	if (parent)
+ 		i2c_unlock_adapter(parent);
+-	else
++	else {
++		if (adapter->hardware_unlock)
++			adapter->hardware_unlock(adapter);
+ 		rt_mutex_unlock(&adapter->bus_lock);
++	}
+ }
+ EXPORT_SYMBOL_GPL(i2c_unlock_adapter);
+ 
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 06a8d9c..f4ef5b0 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -361,6 +361,9 @@ struct i2c_adapter {
+ 
+ 	/* data fields that are valid for all devices	*/
+ 	struct rt_mutex bus_lock;
++	void (*hardware_lock)(struct i2c_adapter *);
++	void (*hardware_unlock)(struct i2c_adapter *);
++	int (*hardware_trylock)(struct i2c_adapter *);
+ 
+ 	int timeout;			/* in jiffies */
+ 	int retries;
+-- 
+1.7.1
 
-thanks!
-will
