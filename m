@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab1D1Bl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 21:41:29 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55339 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab1D1Bl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 21:41:26 -0400
-Date: Thu, 28 Apr 2011 11:41:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the bluetooth tree
-Message-Id: <20110428114118.dd5a74e0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__28_Apr_2011_11_41_18_+1000_NdJWcJkB_W7kIV1k"
+	id S1751099Ab1D1BpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 21:45:14 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34353 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1D1BpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Apr 2011 21:45:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] proc: fix pagemap_read() error case (was Re: [PATCH] proc: put check_mem_permission before __get_free_page in mem_read)
+Cc: kosaki.motohiro@jp.fujitsu.com, bookjovi@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LSU.2.00.1104261321550.9533@sister.anvils>
+References: <20110426145226.F383.A69D9226@jp.fujitsu.com> <alpine.LSU.2.00.1104261321550.9533@sister.anvils>
+Message-Id: <20110428104658.D18C.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 28 Apr 2011 10:45:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Apr_2011_11_41_18_+1000_NdJWcJkB_W7kIV1k
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Great, thank you.  Though I see Steve has cleverly spotted another:
+> yes, that should be worth looking into, but I've not studied it.
+> 
+> I confess that when I wrote yesterday, I thought there were a lot more
+> such instances in fs/proc.  I thought /proc/pid/smaps was vulnerable,
+> for example, but I cannot see that now: maybe I just confused it with
+> /proc/pid/pagemap.
+> 
+> I was worrying about this a couple of months ago, when David had an
+> OOM dump with OOM-killed threads failing to exit because they could
+> not skb_alloc in proc_exit_connector()'s cn_netlink_send() - connector
+> needs to allocate skb upfront (I'm being vague!), not when thread exits.
+>
+> But it was a mystery why memory was still unavailable at that late
+> stage: my unsubstantiated suspicion was that something else was
+> holding on to the mm-to-be-freed while trying to allocate memory.
 
-Hi Gustavo,
+Hi
 
-After merging the bluetooth tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thank you for the explanation.
 
-net/bluetooth/cmtp/core.c: In function 'cmtp_add_connection':
-net/bluetooth/cmtp/core.c:349: error: 'struct l2cap_pinfo' has no member na=
-med 'omtu'
-net/bluetooth/cmtp/core.c:349: error: 'struct l2cap_pinfo' has no member na=
-med 'imtu'
-net/bluetooth/hidp/core.c: In function 'hidp_add_connection':
-net/bluetooth/hidp/core.c:982: error: 'struct l2cap_pinfo' has no member na=
-med 'omtu'
-net/bluetooth/hidp/core.c:982: error: 'struct l2cap_pinfo' has no member na=
-med 'imtu'
-net/bluetooth/hidp/core.c:983: error: 'struct l2cap_pinfo' has no member na=
-med 'omtu'
-net/bluetooth/hidp/core.c:983: error: 'struct l2cap_pinfo' has no member na=
-med 'imtu'
+Today, I revisit get_task_mm() users. So, I found four suspect codes
+for google usecase.
 
-Caused by commit 6657e8f0cc05 ("Bluetooth: Move more channel info to
-struct l2cap_chan").
+o CPUSET
+  cpuset_change_nodemask() and cpuset_attach() call do_migrate_pages()
+  under holding mm reference. That said, If you try to attach crazy large
+  application, you can face the "OOM-killed threads failing to exit" issue.
 
-I have used the bluetooth tree from next-20110427 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+o /proc/{pid}/cmdline and /proc/{pid}/environ
+  proc_pid_cmdline() and environ_read() call get_user_pages() under holding
+  mm reference. That said, If you run system monitor process and it periodically
+  read the above interface, oom-kill can't gurantte to work.
 
---Signature=_Thu__28_Apr_2011_11_41_18_+1000_NdJWcJkB_W7kIV1k
-Content-Type: application/pgp-signature
+So, I'll second that Linus said we should remove TIF_MEMDIE and PF_EXITING check
+from select_bad_process(). Or at least, We have to make timeout and try to kill
+next process if timeout is happen.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+And, as Oleg said at past, maybe we have to make MMF_OOM_KILLED and page fault
+should detect it.
 
-iQEcBAEBAgAGBQJNuMW+AAoJEDMEi1NhKgbseQkH/jbYsoJp0crUHjBfNIV4Gpj/
-qOCU5XUG1Wxjvw0tFHnjasmAUM5VCWB/MnxrPj7ods80p6n/txJrUKi8BWjghZUQ
-sLx3M/bmTIUYawm8tmJYwxTyeBj+6M0NUIG/1KFNdKBU3Bjbo2VUkEFGbo5ANuHa
-lY83CzTvchabA7HW3JPSA77IHqiVA0ii7QdU5b3hiBCnGv+i/TJUhlHrVAoJ4qH9
-sjX5BT+qayjT/nvr74NwMUtfGC1qi0filNt8gDK8kAp+UbPYDyom+V67HreLw31e
-oFsSCiSOABOKVGayayXUF026FSFI3IJoRwqZPAoP7zVFjQKBXwki7gjMm26IpaA=
-=r5Mn
------END PGP SIGNATURE-----
 
---Signature=_Thu__28_Apr_2011_11_41_18_+1000_NdJWcJkB_W7kIV1k--
+
+
