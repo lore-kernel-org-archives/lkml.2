@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933277Ab1D1P5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:57:53 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32825 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759658Ab1D1P5v (ORCPT
+	id S933319Ab1D1P6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:58:04 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57683 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933307Ab1D1P57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:57:51 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Colin Ian King <colin.king@ubuntu.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1303928753.2417.6.camel@lenovo>
-References: <1303920553.2583.7.camel@mulgrave.site>
-	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
-	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
-	 <1303925374-sup-7968@think>  <1303926637.2583.17.camel@mulgrave.site>
-	 <1303928753.2417.6.camel@lenovo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 10:57:42 -0500
-Message-ID: <1304006262.2598.2.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Apr 2011 11:57:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VvvUcVVzDPt2tt2Kgg2mwbjhxwIbbRY+JNC1AfWnFUFlTiJ1tLthzIWggDsUID8MuD
+         4+0+D7400Xo2YopboYh4urHanPzPRo4dSr5i9q9AVsn9U5tS6r0mJ2ILavZJJA0wgQis
+         bDbaMpTALnKcabfPERT3p4EoM+SAzh+2YJ9EM=
+Date: Thu, 28 Apr 2011 17:57:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com, eparis@redhat.com,
+        agl@chromium.org, mingo@elte.hu, jmorris@namei.org,
+        rostedt@goodmis.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Slaby <jslaby@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 3/7] seccomp_filter: Enable ftrace-based system call
+ filtering
+Message-ID: <20110428155745.GF1798@nowhere>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+ <1303960136-14298-2-git-send-email-wad@chromium.org>
+ <20110428142857.GC1798@nowhere>
+ <BANLkTikf4b1qMSOucNH-DLUFa7K3QOVN7w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikf4b1qMSOucNH-DLUFa7K3QOVN7w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 19:25 +0100, Colin Ian King wrote:
-> Just like to add that I've seen almost identical issues with 2.6.38
-> copying large amounts of data to an ext4 filesystem with systems with
-> small amounts of memory.
+On Thu, Apr 28, 2011 at 10:15:04AM -0500, Will Drewry wrote:
+> On Thu, Apr 28, 2011 at 9:29 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Wed, Apr 27, 2011 at 10:08:47PM -0500, Will Drewry wrote:
+> >> This change adds a new seccomp mode based on the work by
+> >> agl@chromium.org. This mode comes with a bitmask of NR_syscalls size and
+> >> an optional linked list of seccomp_filter objects. When in mode 2, all
+> >
+> > Since you now use the filters. Why not using them to filter syscalls
+> > entirely rather than using a bitmap of allowed syscalls?
 > 
-> I found that increasing /sys/fs/ext4/sdaX/max_writeback_mb_bump worked
-> around the issue.
+> The current approach just uses a linked list of filters.  While a more
+> efficient data structure could be used, the bitmask provides a quick
+> binary decision, and optimizes for the relatively common case where
+> there won't be many non-binary filters to evaluate so we don't have to
+> walk the list for a larger number of yes/no decisions versus more
+> complex predicates.  Though that may be a short-sighted view! I'm
+> happy to change it up.
 
-With the PREEMPT kernel, values of 256 and 512 don't prevent kswapd
-spinning up to 99% and staying there.
+Well, using a hlist that points to the filters may be not that slower.
+Dunno, that needs to be measured perhaps.
 
-James
+No big deal for now.
 
+> 
+> > You have the "nr" field in syscall tracepoints.
+> 
+> I'n not sure I follow.  Do you mean moving entirely to using the
+> actual tracepoint infrastructure instead of using the seccomp hooks,
+> or just looking up proper filter by syscall nr?  If there's a sane and
+> better way to do the latter, I'm all ears :)  As far as using the
+> tracepoints themselves, I looked to how the perf/ftrace interactions
+> worked and while I could've registered with the syscalls tracepoints
+> for enter and exit, it would mean later evaluation of the system call
+> interception, possibly out-of-order with respect to other registered
+> event sinks, and there is complexity in just killing current from
+> within the notifier-like list registered syscall events (as Eric Paris
+> ran into when expanding filtering into perf itself).  To get around
+> that, the tracepoint handler would have to pump the data somewhere
+> else (like it does for perf), and it just seemed messy.  I think it's
+> doable, but I don't know that the pure syscall tracepoint
+> infrastructure should be burdened with the added requirements that
+> come with seccomp-filtering.   If I didn't properly understand the
+> code, though, please set me on the right path.
 
+No, my bad I was confused. I always post questions that show my
+misunderstanding of a new (or not) patchset. It's like a tradition ;)
