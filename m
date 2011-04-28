@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab1D1AGU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Apr 2011 20:06:20 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57504 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab1D1AGE (ORCPT
+	id S1757084Ab1D1AHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Apr 2011 20:07:00 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:53491 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab1D1AG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Apr 2011 20:06:04 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Oren Weil <oren.jer.weil@intel.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, david@woodhou.se
-Subject: Re: [PATCH 8/8] staging/mei: Updates to staging/Kconfig ane staging/Makefile and a new Makefile and Kconfig
-In-Reply-To: Your message of "Wed, 27 Apr 2011 13:27:37 +0300."
-             <1303900057-21694-9-git-send-email-oren.jer.weil@intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
-            <1303900057-21694-9-git-send-email-oren.jer.weil@intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1303949150_5598P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 27 Apr 2011 20:05:50 -0400
-Message-ID: <10935.1303949150@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020202.4DB8AF62.0083,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 27 Apr 2011 20:06:56 -0400
+Date: Wed, 27 Apr 2011 19:06:46 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Roberto Sassu <roberto.sassu@polito.it>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        viro@zeniv.linux.org.uk
+Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
+Message-ID: <20110428000646.GH30854@boyd.l.tihix.com>
+References: <1303907657-18366-1-git-send-email-roberto.sassu@polito.it>
+ <4DB87A6B.7060805@schaufler-ca.com>
+ <20110427232718.GG30854@boyd.l.tihix.com>
+ <4DB8AD76.3020405@schaufler-ca.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB8AD76.3020405@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1303949150_5598P
-Content-Type: text/plain; charset=us-ascii
+On Wed Apr 27, 2011 at 04:57:42PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 4/27/2011 4:27 PM, Tyler Hicks wrote:
+> > On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> >> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+> >>> File descriptor labeling issue
+> >>>
+> >>> Actually SELinux and SMACK assign to file descriptors the same label of the
+> >>> opening process and use it in LSM hooks security_file_permission(),
+> >>> security_file_fcntl() and others to verify if the 'current' process has the
+> >>> rights to perform the requested operation.
+> >>>
+> >>> Using the credentials of the 'current' process may be not appropriate in
+> >>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
+> >>> and made shared among user processes. For instance, in a system with
+> >>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
+> >>> obtains a file descriptor to access the correspondent inode in the lower
+> >>> filesystem, labeled with the A's label.
+> >>>
+> >>> If the process B accesses the same encrypted file, it needs the 'use'
+> >>> permission on the A's label other than permissions for the lower inode.
+> >>> However, if B is the first accessing process, A needs the 'use' permission
+> >>> on the B's label.
+> >> I am having trouble understanding the argument. I will pose my
+> >> question in Smack terms, as I can speak most definitively in them.
+> >>
+> >> A process running with a Smack label "A" creates a file, and that
+> >> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
+> >> this ought not change. If eCryptfs in encrypting the label it needs
+> >> to do so in such a way as to be able to decrypt it prior to
+> >> presentation to the vfs layer, where it will be used in an access
+> >> check. When the process running with a Smack label "B" comes along
+> >> the vfs code will check the fetched and possibly decrypted "A"
+> >> against "B" and, unless there is an explicit Smack rule in place
+> >> granting "B" access to "A", fail.
+> >>
+> >> What is the problem? What is eCryptfs doing that prevents this
+> >> from working?
+> > Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
+> > only one lower file per eCryptfs inode. Imagine that there are 5
+> > files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
+> > to be open in the lower filesystem and all eCryptfs file operations will
+> > be multiplexed through it.
+> >
+> > To make things more complicated, if the eCryptfs file is opened for
+> > writing, the lower file must be opened for reading and writing. This is
+> > because a write operation requires eCryptfs to vfs_read() from the lower
+> > filesystem, decrypt that data and then vfs_write() the new data.
+> >
+> > If the lower file can't be opened O_RDWR by the calling process, the
+> > request is handed off to a kernel thread to open the lower file on
+> > behalf of the calling process. It is definitely ugly.
+> 
+> Is eCryptfs handling xattrs? It needs to be if it isn't.
 
-On Wed, 27 Apr 2011 13:27:37 +0300, Oren Weil said:
-> Changes of Kconfig and Makefile in drivers/staging
-> for adding the Intel MEI Driver to the Linux kernel.
-> New Makefile and Kconfig building for MEI Driver.
+Yes - we pass the calls to the lower filesystem and return the result.
 
-> +++ b/drivers/staging/mei/Kconfig
-> @@ -0,0 +1,10 @@
-> +config INTEL_MEI
-> +	tristate "Intel Management Engine Interface (Intel MEI)"
-> +	depends on X86 && EXPERIMENTAL
-> +	help
-> +		The Intel Management Engine (Intel ME) provides Manageability,
-> +		Security and Media services for system containing Intel chipsets.
-> +		if selected /dev/mei misc device will be created.
-> +
-> +		For more information see
-> +		<http://software.intel.com/en-us/manageability/>
+The only catch would be that users can opt to have eCryptfs store the
+crypto metadata in user.ecryptfs instead of the first 8k of the file.
 
-Can this be expanded a bit to give a better hint *which* Intel chipsets support
-this? I just spent an honest 10 minutes looking around that website, and am no
-clearer on whether the 82801I in my laptop supports this.  Having a line like
-"server chipsets XY948 and later and ICH10 and later" or similar would be a big
-help to all those who hit this when it goes into the tree.
+Tyler
 
-
---==_Exmh_1303949150_5598P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNuK9ecC3lWbTT17ARAjFLAKDd6zBGXOARZNWzrV24i82DZt9BygCdHL1a
-k2QwyIauj8Gohq0it3y6YeU=
-=2ddy
------END PGP SIGNATURE-----
-
---==_Exmh_1303949150_5598P--
-
+> 
+> > Roberto, I hope I correctly described the situation that you're trying
+> > to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
+> > files to lower files?
+> >
+> > Instead of having just one lower file attached to the eCryptfs inode, we
+> > could have a list of opened files. There would be one for each eCryptfs
+> > file that was opened. ecryptfs_writepage() would have to pick, in a
+> > somewhat random fashion, one of the lower files to use. Of course, we
+> > would still need to solve the problem of opening the lower file O_RDWR
+> > when the calling process is only allowed write access (I may have just
+> > answered my own question of why the 1:1 mapping technique won't solve
+> > this problem).
+> >
+> > Tyler
+> >
+> >
+> 
