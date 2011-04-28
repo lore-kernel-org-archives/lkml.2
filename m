@@ -1,337 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1D1FZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 01:25:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37755 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab1D1FZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 01:25:46 -0400
-Date: Thu, 28 Apr 2011 15:25:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for April 28
-Message-Id: <20110428152534.7240a49c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__28_Apr_2011_15_25_34_+1000_1ahQyLm8nVqU2G4t"
+	id S1753837Ab1D1FaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 01:30:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34587 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab1D1FaU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 01:30:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=X7UwXUCJL+Sw+Ney/Ajz6nMY5LHh/ebM34UfpRgSWsrI65072/gycHb8iD4N/6QlJS
+         R+iy4Ob6ni/zzHvk3ybL4ZQ8PySyDnKFJVHV37Z3jvef3zBDXLHVHsKWOByFSNAcFozu
+         heOX1TD1nHWy/391JmPam6gwiX/9uQai2E/Ic=
+MIME-Version: 1.0
+In-Reply-To: <20110427175432.GA2328@joana>
+References: <BANLkTi=UG0Xy2UEkNj2S_bS-PjOG5krNkQ@mail.gmail.com>
+	<20110427175432.GA2328@joana>
+Date: Thu, 28 Apr 2011 13:30:18 +0800
+Message-ID: <BANLkTim=hU-D+174pFrksmA6Qimp9Xo1pA@mail.gmail.com>
+Subject: Re: kernel panic after unplug usb bluetooth dongle
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Dave Young <hidave.darkstar@gmail.com>,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Apr_2011_15_25_34_+1000_1ahQyLm8nVqU2G4t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 28, 2011 at 1:54 AM, Gustavo F. Padovan
+<padovan@profusion.mobi> wrote:
+> * Dave Young <hidave.darkstar@gmail.com> [2011-04-27 14:35:59 +0800]:
+>
+>> Hi,
+>>
+>> Unplug usb bluetooth dongle make kernel panic as below. Thomas, any
+>> idea about it?
+>
+> Commit b79f44c16a4 on
+>
+>        git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+>
+> fixes this. The only problem is that it didn't arrive at mainline yet.
 
-Hi all,
+Confirmed, thank you.
 
-The kernel.org mirroring is being very slow today.
+>
+> --
+> Gustavo F. Padovan
+> http://profusion.mobi
+>
 
-Changes since 20110427:
 
-Dropped tree: xen
 
-The ux500-core tree gained a build failure so I used the version from
-next-20110427.
-
-I applied a patch to the net tree to fix a boot failuer on powerpc.
-
-The bluetooth tree gained a conflict against Linus' tree and a build
-failure so I used the version from next-20110427..
-
-The sound-asoc tree gained a build failure so I used the version from
-next-20110427.
-
-The trivial tree lost its conflict.
-
-The staging tree gained conflicts against Linus' tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 186 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-$ git reset --hard HEAD^
-Merging refs/next/20110427/ux500-core
-Merging xilinx/arm-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-CONFLICT (content): Merge conflict in fs/ubifs/super.c
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
-e.c
-CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
-ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
-i2c-intel-mid.c left in tree.
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
-$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
-Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
-Applying: i2c: designware-pcidrv depends on PCI
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-CONFLICT (content): Merge conflict in drivers/media/video/omap3isp/isp.c
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-Merging bluetooth/master
-CONFLICT (content): Merge conflict in net/bluetooth/l2cap_sock.c
-$ git reset --hard HEAD^
-Merging refs/next/20110427/bluetooth
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-$ git reset --hard HEAD^
-Merging refs/next/20110427/sound-asoc
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-CONFLICT (content): Merge conflict in security/selinux/avc.c
-CONFLICT (content): Merge conflict in security/selinux/hooks.c
-CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
-Merging staging/staging-next
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_pci.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_pci.c left in tree.
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_usb.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_usb.c left in tree.
-$ git rm -f drivers/staging/rt2860/common/cmm_data_pci.c drivers/staging/rt=
-2860/common/cmm_data_usb.c
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-Applying: net: ibmveth: force reconfiguring checksum settings on startup
-
---Signature=_Thu__28_Apr_2011_15_25_34_+1000_1ahQyLm8nVqU2G4t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNuPpOAAoJEDMEi1NhKgbshQoH/1xopV5YUnAZBkq2jCHx5RMq
-S44oPAxEEmUquxLZD/Y/1zY/C/6wzaJXiD/Fh9DeB0YzqTMIRryXpK3LN0jO87j5
-w2do2Gi3VIyNSHEOYFs4IaVf3bTcBWOqKfYtVMEnJs5beD/vd2xTkHhAnpgYrDLZ
-M4q9hKrNNvwynjzbd1wWEs0pnob4sqQblSXGqK1ELBvh9UxBtrBA+vNxbLjHp6fj
-tYElwD7vv9kVzsP4D7qmPR+RsKfOkHx2Faf3LvmBtOqIsnmA9R+qQHTjt5L6qD92
-P7uCtHzmwnqK3EnaArfPHWpbxu+nNBpDCQtF3TLxPtc0qay509r0St+ZBaAJMSE=
-=obcs
------END PGP SIGNATURE-----
-
---Signature=_Thu__28_Apr_2011_15_25_34_+1000_1ahQyLm8nVqU2G4t--
+-- 
+Regards
+dave
