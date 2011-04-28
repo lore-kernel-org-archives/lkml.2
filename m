@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760470Ab1D1OUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 10:20:53 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52688 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760010Ab1D1OUw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 10:20:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: [RFC PATCH] cpuset: fix cpuset_cpus_allowed_fallback() don't update tsk->rt.nr_cpus_allowed
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20110428232228.3D57.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Thu, 28 Apr 2011 23:20:50 +0900 (JST)
+	id S1760545Ab1D1OZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 10:25:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57102 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932534Ab1D1OZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 10:25:20 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
+In-Reply-To: <20110428140725.GX4658@suse.de>
+References: <1303920553.2583.7.camel@mulgrave.site>
+	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
+	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
+	 <1303925374-sup-7968@think> <1303926637.2583.17.camel@mulgrave.site>
+	 <1303934716.2583.22.camel@mulgrave.site> <1303990590.2081.9.camel@lenovo>
+	 <20110428135228.GC1696@quack.suse.cz>  <20110428140725.GX4658@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 09:25:14 -0500
+Message-ID: <1304000714.2598.0.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg, Peter,
+On Thu, 2011-04-28 at 15:07 +0100, Mel Gorman wrote:
+> On Thu, Apr 28, 2011 at 03:52:28PM +0200, Jan Kara wrote:
+> > On Thu 28-04-11 12:36:30, Colin Ian King wrote:
+> > > One more data point to add, I've been looking at an identical issue when
+> > > copying large amounts of data.  I bisected this - and the lockups occur
+> > > with commit 
+> > > 3e7d344970673c5334cf7b5bb27c8c0942b06126 - before that I don't see the
+> > > issue. With this commit, my file copy test locks up after ~8-10
+> > > iterations, before this commit I can copy > 100 times and don't see the
+> > > lockup.
+> >   Adding Mel to CC, I guess he'll be interested. Mel, it seems this commit
+> > of yours causes kswapd on non-preempt kernels spin for a *long* time...
+> > 
+> 
+> I'm still thinking about the traces which do not point the finger
+> directly at compaction per-se but it's possible that the change means
+> kswapd is not reclaiming like it should be.
+> 
+> To test this theory, does applying
+> [d527caf2: mm: compaction: prevent kswapd compacting memory to reduce
+> CPU usage] help?
 
-I apologize if I misunderstand a code. I'm afraid we need following
-patch. Is there any gurantte that cpusets user task is not RT task?
+I can answer definitively no to this.  The upstream kernel I reproduced
+this on has that patch included.
 
-
-
->From 400e24f7b6e15d1397dc82d74fdd1e0a631493ef Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 28 Apr 2011 16:14:16 +0900
-Subject: [PATCH] cpuset: fix cpuset_cpus_allowed_fallback() don't update tsk->rt.nr_cpus_allowed
-
-The rule is, we have to update tsk->rt.nr_cpus_allowed too if we change
-tsk->cpus_allowed.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- include/linux/cpuset.h |    1 +
- kernel/cpuset.c        |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index f20eb8f..42dcbdc 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -147,6 +147,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
- static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
- {
- 	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
-+	p->rt.nr_cpus_allowed = cpumask_weight(&p->cpus_allowed);
- 	return cpumask_any(cpu_active_mask);
- }
- 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 1ceeb04..6e5bbe8 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2220,6 +2220,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- 		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
- 		cpu = cpumask_any(cpu_active_mask);
- 	}
-+	tsk->rt.nr_cpus_allowed = cpumask_weight(&tsk->cpus_allowed);
- 
- 	return cpu;
- }
--- 
-1.7.3.1
+James
 
 
 
