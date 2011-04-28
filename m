@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933431Ab1D1T7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 15:59:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56600 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab1D1T7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 15:59:35 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-In-Reply-To: <20110428192104.GA4658@suse.de>
-References: <1303990590.2081.9.camel@lenovo>
-	 <20110428135228.GC1696@quack.suse.cz> <20110428140725.GX4658@suse.de>
-	 <1304000714.2598.0.camel@mulgrave.site> <20110428150827.GY4658@suse.de>
-	 <1304006499.2598.5.camel@mulgrave.site>
-	 <1304009438.2598.9.camel@mulgrave.site>
-	 <1304009778.2598.10.camel@mulgrave.site> <20110428171826.GZ4658@suse.de>
-	 <1304015436.2598.19.camel@mulgrave.site>  <20110428192104.GA4658@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 14:59:27 -0500
-Message-ID: <1304020767.2598.21.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S933457Ab1D1UAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 16:00:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50253 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933438Ab1D1UAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 16:00:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=CDNuMn3zbd3SUFizSc/ZWz53O0ttLO2FBdJ0uOaqbrSEIVKiG1wC3qgk06lbzg4W6C
+         zaApLk0ksHAahoMRVt8baCeWNAaNHF6ztkKVxrICc28Szf31D/ZokafPAfm3DmMQdTWn
+         bmQ7YdvsePCs5xy4Io6ocFOp76FB4yyfwtysU=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: rob@curates-egg.org
+Subject: Re: Linux 2.6.39-rc4: modprobe lm85 provokes WARNING
+Date: Thu, 28 Apr 2011 21:59:57 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc5; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <4DB5B530.8010900@curates-egg.org>
+In-Reply-To: <4DB5B530.8010900@curates-egg.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104282159.58034.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 20:21 +0100, Mel Gorman wrote:
-> On Thu, Apr 28, 2011 at 01:30:36PM -0500, James Bottomley wrote:
-> > > Way hey, cgroups are also in the mix. How jolly.
-> > > 
-> > > Is systemd a common element of the machines hitting this bug by any
-> > > chance?
-> > 
-> > Well, yes, the bug report is against FC15, which needs cgroups for
-> > systemd.
-> > 
-> 
-> Ok although we do not have direct evidence that it's the problem yet. A
-> broken shrinker could just mean we are also trying to aggressively
-> reclaim in cgroups.
-> 
-> > > The remaining traces seem to be follow-on damage related to the three
-> > > issues of "shrinkers are bust in some manner" causing "we are not
-> > > getting over the min watermark" and as a side-show "we are spending lots
-> > > of time doing something unspecified but unhelpful in cgroups".
-> > 
-> > Heh, well find a way for me to verify this: I can't turn off cgroups
-> > because systemd then won't work and the machine won't boot ...
-> > 
-> 
-> Same testcase, same kernel but a distro that is not using systemd to
-> verify if cgroups are the problem. Not ideal I know. When I'm back
-> online Tuesday, I'll try reproducing this on a !Fedora distribution. In
-> the meantime, the following untested hatchet job might spit out
-> which shrinker we are getting stuck in. It is also breaking out of
-> the shrink_slab loop so it'd even be interesting to see if the bug
-> is mitigated in any way.
+I created a Bugzilla entry athttps://bugzilla.kernel.org/show_bug.cgi?id=34072
+for your bug report, please add your address to the CC list in there, thanks!
 
-Actually, talking to Chris, I think I can get the system up using
-init=/bin/bash without systemd, so I can try the no cgroup config.
-
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c74a501..ed99104 100644
-
-In the mean time, this patch produces:
-
-(that's nothing ... apparently the trace doesn't activate when kswapd
-goes mad).
-
-James
-
-
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
