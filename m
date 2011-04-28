@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760576Ab1D1Ptf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 11:49:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55145 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755488Ab1D1Pte (ORCPT
+	id S1760210Ab1D1Pw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 11:52:57 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52099 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757684Ab1D1Pw4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 11:49:34 -0400
+	Thu, 28 Apr 2011 11:52:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Subject: [PATCH v4] cpumask: add cpumask_var_t documentation
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <BANLkTiktDSC=njLhJZF9EVWEqBPWa=K7Ow@mail.gmail.com>
+References: <20110429004505.3D7F.A69D9226@jp.fujitsu.com> <BANLkTiktDSC=njLhJZF9EVWEqBPWa=K7Ow@mail.gmail.com>
+Message-Id: <20110429005435.C90F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
-References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
- <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
- <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos>
- <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
- <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
- <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 28 Apr 2011 08:48:39 -0700
-Message-ID: <BANLkTi=-D80vqazya6aHfV0841SBkNPsSQ@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-To: sedat.dilek@gmail.com
-Cc: Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri, 29 Apr 2011 00:52:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 8:28 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->
-> From the very beginning it looked as the system is "stable" due to:
+> > + * This code makes NR_CPUS length memcopy and bring memory corruption.
+> 
+> Maybe:
+> 
+> s/bring memory/brings to a memory/
+> 
+> ?
+> 
+> > + * cpumask_copy() privide safe copy functionality.
+> s/privide/provides ?
 
-Actually, look here, right from the beginning that log is showing
-total breakage:
 
-  Thu Apr 28 16:49:51 CEST 2011
-    .rt_time                       : 233.923773
-  Thu Apr 28 16:50:06 CEST 2011
-    .rt_time                       : 259.446506
-  Thu Apr 28 16:50:22 CEST 2011
-    .rt_time                       : 273.110840
-  Thu Apr 28 16:50:37 CEST 2011
-    .rt_time                       : 282.713537
-  Thu Apr 28 16:50:52 CEST 2011
-    .rt_time                       : 288.136013
-  Thu Apr 28 16:51:07 CEST 2011
-    .rt_time                       : 293.057088
-..
-  Thu Apr 28 16:58:29 CEST 2011
-    .rt_time                       : 888.893877
-  Thu Apr 28 16:58:44 CEST 2011
-    .rt_time                       : 950.005460
+Thank you.
 
-iow, rt_time just constantly grows. You have that "sleep 15" between
-every log entry, so rt_time growing by 10-100 ms every 15 seconds
-obviously does mean that it's using real CPU time, but it's still well
-in the "much less than 1% CPU" range. So the rcu thread is clearly
-doing work, but equally clearly it should NOT be throttled.
 
-But since it is constantly growing, at some point it _will_ hit that
-magical "950ms total time used", and then it gets throttled. For no
-good reason.
 
-It shouldn't have been throttled in the first place, and then the
-other bug - that it isn't apparently ever unthrottled - just makes it
-not work at all.
+>From 28549f1a51072a58bd661a409e378e36a97072a3 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 26 Apr 2011 19:58:39 +0900
+Subject: [PATCH v4] cpumask: add cpumask_var_t documentation
 
-So that whole throttling is totally broken.
+cpumask_var_t has one nortable difference against cpumask_t.
+This patch adds the explanation.
 
-                           Linus
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ include/linux/cpumask.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index 1e40dd0..8fcd82c 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -617,6 +617,20 @@ static inline size_t cpumask_size(void)
+  *	  ... use 'tmpmask' like a normal struct cpumask * ...
+  *
+  *	free_cpumask_var(tmpmask);
++ *
++ *
++ * However, one notable exception is there. alloc_cpumask_var() allocates
++ * only nr_cpumask_bits bits (in the other hand, real cpumask_t always has
++ * NR_CPUS bits). Therefore you don't have to dereference cpumask_var_t.
++ *
++ *	cpumask_var_t tmpmask;
++ *	if (!alloc_cpumask_var(&tmpmask, GFP_KERNEL))
++ *		return -ENOMEM;
++ *
++ *	var = *tmpmask;
++ *
++ * This code makes NR_CPUS length memcopy and brings to a memory corruption.
++ * cpumask_copy() provide safe copy functionality.
+  */
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ typedef struct cpumask *cpumask_var_t;
+-- 
+1.7.3.1
+
+
+
