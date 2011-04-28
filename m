@@ -1,245 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab1D1FwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 01:52:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25461 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1D1FwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 01:52:04 -0400
-Content-Type: multipart/mixed; boundary="===============1080112790=="
+	id S1752047Ab1D1Fxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 01:53:31 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:62842 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab1D1Fxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 01:53:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6329"; a="88068264"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
+Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        <balbi@ti.com>, "'USB list'" <linux-usb@vger.kernel.org>,
+        "'Kernel development list'" <linux-kernel@vger.kernel.org>,
+        "'Matthew Wilcox'" <matthew.r.wilcox@intel.com>
+References: <20110426172559.GA5405@xanatos> <Pine.LNX.4.44L0.1104261423250.2035-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1104261423250.2035-100000@iolanthe.rowland.org>
+Subject: RE: [RFC/PATCH v3 2/5] uas: MS UAS Gadget driver - Infrastructure
+Date: Thu, 28 Apr 2011 08:54:48 +0300
+Message-ID: <002701cc0568$cac33470$60499d50$@org>
 MIME-Version: 1.0
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,278,1301900400"; 
-   d="p7s'?scan'208";a="685119646"
-From: "Weil, Oren jer" <oren.jer.weil@intel.com>
-To: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "david@woodhou.se" <david@woodhou.se>
-Date: Thu, 28 Apr 2011 08:51:41 +0300
-Subject: RE: [PATCH 7/8] staging/mei: AMT Watchdog
-Thread-Topic: [PATCH 7/8] staging/mei: AMT Watchdog
-Thread-Index: AcwE7li/XgAFtWCzSLudmot4hgO14AAeWN9A
-Message-ID: <F28B59AD52D84B479DCA469824475335065AF92EC7@hasmsx503.ger.corp.intel.com>
-References: <1303900057-21694-1-git-send-email-oren.jer.weil@intel.com>
- <1303900057-21694-8-git-send-email-oren.jer.weil@intel.com>
- <201104271553.01464.arnd@arndb.de> <20110427150738.GE24596@suse.de>
-In-Reply-To: <20110427150738.GE24596@suse.de>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcwEQXpp4qELhlrXQp6vIhbOVM00dgBImzuQ
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============1080112790==
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_018C_01CC0581.7E7CF420"
+Hi All
 
-------=_NextPart_000_018C_01CC0581.7E7CF420
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+> 
+> Since Tanya is writing the gadget driver, she gets to decide how many
+> streams it will support (limited by the device controller hardware).
+> In this setting I would use one thread per stream, since a thread can't
+> have more than one VFS read or write request outstanding at any time.
+> 
+> Except that, as Christoph has mentioned a few times, it would be better
+> to abandon this driver design entirely and use the SCSI Target
+> framework instead.  Then presumably threads would not be an issue.
+> 
+> Alan Stern
 
->On Wed, Apr 27, 2011 at 03:53:01PM +0200, Arnd Bergmann wrote:
->> I still think this should be a regular watchdog driver using the
->> drivers/watchdog user interface.
->
->I agree, Oren, if you are going to insist on doing things this way, you had
->better describe _why_ you are ignoring the existing kernel interfaces
->provided.
+Thank you very much for you inputs and help! I'm not familiar with the SCSI
+Target framework Christoph referred me too so I postponed looking into that
+until the driver is stable. Well, I guess that time has come so I'll switch
+over to studying that and applying it to the UAS gadget driver.
 
-we are not going to ignore the existing interfaces, it is one of our items
-in the TODO list.
-You can see the we move all of the Watchdog code to a single file so it
-would easy to us to take it later to other driver.
-Another Item on our TODO list is to expose Kernel function that equivalent
-to user interface so kernel clients 
-can access FW features/clients.
-
----
-Oren Weil - Intel Corporation.
-http://www.intel.com
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
 
 
 
-
-------=_NextPart_000_018C_01CC0581.7E7CF420
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIduzCCAyAw
-ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
-dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
-ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
-ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
-KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
-uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
-wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
-aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
-dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
-EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
-IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
-CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
-hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
-7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
-ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
-ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
-MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
-EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
-Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
-IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
-ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
-uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
-lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
-iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
-Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
-Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
-AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
-tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
-Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFYzCCBEugAwIBAgIKYSyl/gAA
-AAAABjANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
-YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wNjAzMjIy
-MjIyNDdaFw0xMjAzMjIyMjMyNDdaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
-b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIw
-DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMDoHJYUGvcdR4k0Qv8/RrwNX4+vEe5PN2LnGn4x
-fIWwdUbk5+zvrRy1HjoKdG/AShZfxAuFoVyNIah5GJLpiS/vGbsDYKK+EZcIcmtPfvbB9Yg09EnQ
-0OpsZ2ORRd5lYUfMUU+zkpgL96vKFdkiG+eeHEwnSS3VikGVrF7UDdKfvxZwRwQCx6rEHAFPCjBD
-VfGYZuYT1EDhSDvzEiU7KzBsxrdBCFU4RYL7kh+do+vyMDlBzpw3WKvMVbf3s5lxYiY7AjEhU8OS
-yZEQlgtK8PNyifHjmyrSaeJrPshM3PuLFG4d3gm1UJEiGNzxcHGb6YLP29IQAwY5mAk8j+UOVcsC
-AwEAAaOCAjUwggIxMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFG/DcREooZ0ZV/VnV8/ZKSaI
-1aWiMAsGA1UdDwQEAwIBhjAQBgkrBgEEAYI3FQEEAwIBADAZBgkrBgEEAYI3FAIEDB4KAFMAdQBi
-AEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGs
-oIGphk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFs
-JTIwQmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29t
-L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNy
-bDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUy
-MENBLmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3Np
-dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0Eu
-Y3J0MA0GCSqGSIb3DQEBBQUAA4IBAQBAiWWHL6T21QXFZDyaUIye0jh7f40GXqi75Ro5JbpROtlZ
-BqyRq6oPMAG6Igxd5Bd9TMtNkOvguknFnK1y17UdMhLOl+FuInE+FAWk803aRW27OsX+ot0KmPio
-KnZ3L1K5qcQS3tp6or7AaZzd0w0qFitm4UfP9nnTXQtY9XM5QJ07IKFDE3tlOlamKhjbiJV3FKig
-CVesPZSx9h2G7Ve4irEfz915Vks26AJHGZagEHNxM9exkgem4ENsG+t0vYqn9x7YsqJ6fmbOSyrz
-jzb3CYeEfyE5SL+f3Vx9uMsQDyb8LVCDBXQtxLEHnFEBPrRSSF9kPmyjavx4UqFdPEyCMIIFijCC
-BHKgAwIBAgIKYSCKYgAAAAAACDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UE
-ChMRSW50ZWwgQ29ycG9yYXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGlj
-eSBDQTAeFw0wOTA1MTUxOTI3MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYD
-VQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNz
-dWluZyBDQSAzQjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc
-7KB+eiYElmrcEWE32WUdHvWG+IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+
-AArc0la87Olybzm8K9jXEfTBvTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63
-NKdc2bT804HRf6YptZFa4k6YN94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9R
-uk8yN+3N6n9fUo/qBigiF2kEn9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXT
-H5l575H4Lq++77OFv38CAwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7G
-KvdZsggQkCVvw939imYxMCvFMAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsG
-AQQBgjcVAgQWBBQ5oFY2ekKQ/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMA
-QTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGp
-hk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIw
-QmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB
-4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9z
-aXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENB
-LmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9y
-eS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0
-MA0GCSqGSIb3DQEBBQUAA4IBAQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65
-JT+oYgpIAtfEsYXeUJu1cChqpb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO
-8jOmN4jTjfJq3ElZ7yFWpy7rB3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNs
-HDNrJZX1vxlM78Lb1hjskTENPmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiL
-DUqzy1Z6KL7TcOS/PCl8RHCJXkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGDzCCBPeg
-AwIBAgIKMs1vuQABAABZejANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
-SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
-Q0EgM0IwHhcNMTAwODI0MDYzMDUxWhcNMTMwODA4MDYzMDUxWjBBMRcwFQYDVQQDEw5XZWlsLCBP
-cmVuIGplcjEmMCQGCSqGSIb3DQEJARYXb3Jlbi5qZXIud2VpbEBpbnRlbC5jb20wggEiMA0GCSqG
-SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDxlb9m9/wf9QwTgd/XeUNG0D67Q+l59M9/V5cOdU47brPj
-alIOAyXrhfkc+15RlpMpqFYc6Ho5XpTtovaeTCgsB9LOUNvgGlNzR3G3EG+tCbIXXRjOFf+2/PIB
-IdJoeTzf9sqZGT9h2TO5QzeQyIh2euHF8s5WiHT4skTHqw4b9QiNPOcWAAVFcrdNLiEq/aiTkhuZ
-A/6eUVxslcFQvPDZbePWDVYAzNIBhXKsGATzpYXlJ+dYtEgK54cggxbEqR56c1PJEwyUzXrqYVll
-/XeCHhonA+wFThBUUB0L2UtN+AhIvBto9CeIePVIH/MfTIIr78qcdZe3aHyORWwq5SNLAgMBAAGj
-ggLyMIIC7jALBgNVHQ8EBAMCB4AwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhsOMdYSZ5VGD
-/YEohY6fU4KRwAlngd69OZXwQwIBZAIBCDAdBgNVHQ4EFgQUp2yd+HenU0oNT2u96HK1ahdvblMw
-HwYDVR0jBBgwFoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZX
-aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
-c2ljJTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVs
-LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIw
-Q0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3
-LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFz
-aWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZp
-Y2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwl
-MjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYK
-KwYBBAGCNwoDDDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwwwSwYD
-VR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxAaW50ZWwuY29tgRdvcmVuLmpl
-ci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAjIH2RdlavZjoCNfS+3S5qGkBifxo
-K3FPbv1/bqfR+5KkBpwF+T3rMGTou5tBYBMyK1mZq5QkezC69ADLVGsvqd0VjuQPu9QGtbtVQaFz
-atCe3SWeiiPUDNE0KApdhdEUTtQZPEWEMcCmKVc5a9dPx54pJVzggWeZndPKkalFLvmmV/JVyCDg
-sGxMcasa+Vyo1KVEeuS/x0TrZKZYznABl75T1YB6yX3+XbqjqPOMN6iXzUtKz8EqPzM71DCRETHm
-fz29bE/nTHNsyC4DBOAsSzWKc6jX/jMtPEcyoShDXmdvx3uyBfMeDmOjMeJruhA61J5D7klJLhNK
-hnbNTm1LQDCCBkowggUyoAMCAQICChTFJ3cAAAAAPJwwDQYJKoZIhvcNAQEFBQAwVjELMAkGA1UE
-BhMCVVMxGjAYBgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5h
-bCBCYXNpYyBJc3N1aW5nIENBIDNCMB4XDTA5MDcyMjEwMjgwOVoXDTEyMDEwODEwMjgwOVowQTEX
-MBUGA1UEAxMOV2VpbCwgT3JlbiBqZXIxJjAkBgkqhkiG9w0BCQEWF29yZW4uamVyLndlaWxAaW50
-ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmnvUzxK68joxNOKb80igSM/X
-tJrq3/B/9nCud/OQwxe9RzO90y0fimeg+7DxbjvdmMVxfpYXVc6xa9pcJPm5Ecd1NZLxGgSbZaAZ
-bXIWrGqqovEmBJrNHcEoQFwqvonsT1aniIXQ/MoTyWwsh+MDY8ZPYSME5JuBZqoFA2cP4yDxpdLn
-Hfz/lCQyYdhSVmierzRxopONFRq59EVI2PvYrtyNthu4TaAey7HU2hCn28YwSm58+PYdrf8L8SY9
-fNYSm5yq9R/NsUgvgM6OPG0dGH0/jvRc9C0GTGlrLefNB7hUH2l+bksl8S2Lxbco/jvLFCtnvm54
-XY4MrXiNHQHL8QIDAQABo4IDLTCCAykwCwYDVR0PBAQDAgQwMEQGCSqGSIb3DQEJDwQ3MDUwDgYI
-KoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzAdBgNVHQ4E
-FgQU79YjzVs1KXgP8glZgp+ptq2yMw4wHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwQw
-HwYDVR0jBBgwFoAUb8NxESihnRlX9WdXz9kpJojVpaIwgckGA1UdHwSBwTCBvjCBu6CBuKCBtYZU
-aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
-c2ljJTIwSXNzdWluZyUyMENBJTIwM0IuY3Jshl1odHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
-MjAzQi5jcmwwge8GCCsGAQUFBwEBBIHiMIHfMGkGCCsGAQUFBzAChl1odHRwOi8vd3d3LmludGVs
-LmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJ
-c3N1aW5nJTIwQ0ElMjAzQi5jcnQwcgYIKwYBBQUHMAKGZmh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50
-ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUy
-MElzc3VpbmclMjBDQSUyMDNCLmNydDA9BgkrBgEEAYI3FQcEMDAuBiYrBgEEAYI3FQiGw4x1hJnl
-UYP9gSiFjp9TgpHACWeEudlBh4T/TgIBZAIBCzApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwME
-MAwGCisGAQQBgjcKAwQwSwYDVR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxA
-aW50ZWwuY29tgRdvcmVuLmplci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAOUK4
-cUiRAFsaa7/Q/4EOb636TNk/0c7CY7wRyhFWlOT9GnvqglDRYzIzsc0W7PBQoXRLuQWcpTTj04Yk
-TrMBSixS2qv4evZVgXbb9eF+hvlpMSkk7NJO9WHAKktTa+fdStnZmRPLyodRch/AyxqIRLY6iK1u
-Rqzm1XzFPRfYZZPHZhGCKWNOXpETwa0E+Nwi2Daydru+VmqLNGEeDE7Qh7PUYBkvh3xxTJTQ9jNV
-sV42lGKEMYI/EX8ZGvB32s+e61Ml1Vy2/UXFlk1ot228Zdy4PelHKFwdTL47YBhU+L6ex6Z/fwq6
-ArRZ5VjkohfuIpQof/3pizp7Ob2vGpXIADGCA5IwggOOAgEBMGQwVjELMAkGA1UEBhMCVVMxGjAY
-BgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJ
-c3N1aW5nIENBIDNCAgoyzW+5AAEAAFl6MAkGBSsOAwIaBQCgggIDMBgGCSqGSIb3DQEJAzELBgkq
-hkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTExMDQyODA1NTE0MVowIwYJKoZIhvcNAQkEMRYEFEal
-9jpmJELGvWruiAUafpEW1qk9MHMGCSsGAQQBgjcQBDFmMGQwVjELMAkGA1UEBhMCVVMxGjAYBgNV
-BAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1
-aW5nIENBIDNCAgoUxSd3AAAAADycMHUGCyqGSIb3DQEJEAILMWagZDBWMQswCQYDVQQGEwJVUzEa
-MBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2lj
-IElzc3VpbmcgQ0EgM0ICChTFJ3cAAAAAPJwwgbcGCSqGSIb3DQEJDzGBqTCBpjALBglghkgBZQME
-ASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFlAwQBAjAOBggqhkiG9w0DAgICAIAw
-BwYFKw4DAgcwDQYIKoZIhvcNAwICAUAwDQYIKoZIhvcNAwICASgwBwYFKw4DAhowCwYJYIZIAWUD
-BAIDMAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwCgYIKoZIhvcNAgUwDQYJKoZIhvcNAQEBBQAE
-ggEAm2LBS3rj92bKR/yVl+pL7wT6RfN9ay6pRkmTLKge52ACaEf2XcRJSIu2bcflA+ZdNDfGrG6J
-fLUJJLZi2DYX00JqivNi2fBQ3llVWcNOlUmp0HcoP/7WceOG7EZ/GnM6H2PAaPqpN7vXoVfb3HEz
-6gNcttkqfD1kc5n4uDhm7kWmmiXCc5PHTV8BvarL+y316LVLhrWmGchaBj8C7tugFQU+r8g0V+7Z
-thQDF8+4fOumCIBo2y6cNWN0RCpANfneitvqjTBmz3ZN1OUzIKmJi48lJiP0Bd1aGa44lmDu8KAp
-LfWrp84mpSdiuzc0BOylV9QMKvCZFAvX7TVxB7ENmAAAAAAAAA==
-
-------=_NextPart_000_018C_01CC0581.7E7CF420--
---===============1080112790==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
---===============1080112790==--
