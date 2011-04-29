@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab1D2XS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:18:57 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:40785 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932325Ab1D2XS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:18:56 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=e9G2kgCujyENKy4jjwGuuUOLbiUPsSRRStU+EHLIedJCh5c8qGsikk39pSSg/GUrvXhDa2XcYo+xCDadvUTpwdWAt3P35tUkJuOv6uOTspWy6jzcFYhtZP8rawEWBVfE;
-Date: Fri, 29 Apr 2011 16:18:53 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: <pefoley2@verizon.net>
-Cc: <linux-kernel@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to
- scripts/docproc.c
-Message-Id: <20110429161853.772ee28d.rdunlap@xenotime.net>
-In-Reply-To: <4DBB450E.7080208@verizon.net>
-References: <4DBB3DD4.9000000@verizon.net>
-	<20110429154649.848f9ba8.rdunlap@xenotime.net>
-	<4DBB450E.7080208@verizon.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S934147Ab1D2XTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:19:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49531 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325Ab1D2XTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 19:19:34 -0400
+Date: Fri, 29 Apr 2011 16:14:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: Re: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+ cleanup accordingly
+Message-ID: <20110429231421.GA24396@suse.de>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-8-git-send-email-kys@microsoft.com>
+ <20110426224545.GC31974@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD1C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110428002018.GC14294@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD55F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110429151052.GC12142@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481DD842@TK5EX14MBXC124.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DD842@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 19:09:02 -0400 Peter Foley wrote:
+On Fri, Apr 29, 2011 at 10:02:43PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Friday, April 29, 2011 11:11 AM
+> > To: KY Srinivasan
+> > Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
+> > PVT LTD)
+> > Subject: Re: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+> > cleanup accordingly
+> > 
+> > 
+> > Just resend it with some more comments as I explained, and the rest, and
+> > I'll queue them up when I get caught up on my patch queue (I only have
+> > 381 to get through, the end is near!)
+> 
+> Done; I just resent the remaining patches with comments and corrections
+> you had recommended. With regards to asking for a review, should I wait until 
+> all these patches are applied?
 
+Yes, unless you know of any other changes you want to make to the vmbus
+core.
 
-> See https://lkml.org/lkml/2011/4/29/89 for the attachment request.
-> My current email client (thunderbird) seems to mangle any patches that I send.
-> If anybody can suggest an email client that doesn't mangle patches I'll be happy to try it.
+thanks,
 
-Have you tried any hints in Documentation/email-clients.txt for thunderbird?
-
-I can send patches successfully with thunderbird 3.0 (on Linux).
-
-or it could just be verizon helping out too much.  :(
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
