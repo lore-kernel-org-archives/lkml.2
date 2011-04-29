@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759006Ab1D2O0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 10:26:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55056 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758610Ab1D2O0H (ORCPT
+	id S1759093Ab1D2O0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 10:26:18 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:39983 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759043Ab1D2O0Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 10:26:07 -0400
-Date: Fri, 29 Apr 2011 16:25:34 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/18] RAS daemon: Easter Eggs Edition
-Message-ID: <20110429142534.GD18746@aftab>
-References: <1303576100-425-1-git-send-email-bp@amd64.org>
- <20110429140844.GB1768@nowhere>
+	Fri, 29 Apr 2011 10:26:16 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Topic: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Index: AQHMBGnbOdiUysHbTUGr026Sn7cwwZRw2pzQgAIIP4CAAfzqoA==
+Date: Fri, 29 Apr 2011 14:26:13 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD5AA@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110428002817.GE14294@kroah.com>
+In-Reply-To: <20110428002817.GE14294@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429140844.GB1768@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 10:08:48AM -0400, Frederic Weisbecker wrote:
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, April 27, 2011 8:28 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
 > 
-> If you want to accelerate that, I suggest you cut your patchset into smaller
-> sets and focus on merging them piece by piece. Few people are going to review
-> 18 patches at once. They may plan to scatter their review over days but
-> that doesn't scale well, and it naturally reduces the number of reviewers.
+> On Wed, Apr 27, 2011 at 01:54:02AM +0000, KY Srinivasan wrote:
+> > > After that, do you want another round of review of the code, or do
+> > > you have more things you want to send in (like the name[64] removal?)
+> >
+> > I would prefer that we go through the  review process. What is the process for
+> > this review?
 > 
-> You could start with exporting trace things into tools/trace, post the
-> few concerned patches and iterate them until everyone is happy. Then
-> switch to another subset of the big thing.
+> The same as always, just ask.
+> 
+> > Is there a time window for people to respond.
+> 
+> No.  We don't have time limits here, this is a community, we don't have
+> deadlines, you know that.
 
-Hi Frederic,
+Perhaps I did not properly formulate my question here. The review
+process itself may be open-ended, and that is fine - we will fix all legitimate
+issues/concerns  in our drivers whether they are in the staging area or not. 
+My question was specifically with regards to the review process that may gate exiting
+staging. I am hoping to re-spin the remaining patches of the last patch-set and send it to
+you by early next week and ask for a review. I fully intend to address whatever review 
+comments I may get in a very timely manner. Assuming at some point in time after I ask
+for this review there are no outstanding issues, would that be sufficient to exit staging?  
 
-I can definitely do that. I just wanted to know before I do it though,
-whether the general direction is ok and whether people are fine with the
-changes, i.e. Arnaldo, Ingo, Peter, Steven, any reactions? If yes, I can
-get to work and split the big pile into more digestible pieces.
+> 
+> > I am hoping I will be able to address all the review comments well in
+> > advance of the  next closing of the tree, with the hope of taking the
+> > vmbus driver out of staging this go around (hope springs eternal in
+> > the human breast ...)!
+> 
+> Yes, it would be nice, and I understand your the corporate pressures you
+> are under to get this done, and I am doing my best to fit the patch
+> review and apply cycle into my very-very-limited-at-the-moment spare
+> time.
 
-Thanks.
+Greg, I do appreciate your ongoing  help here.
 
--- 
-Regards/Gruss,
-Boris.
+Regards,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+K. Y 
+
