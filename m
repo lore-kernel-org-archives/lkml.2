@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933910Ab1D2Vfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:35:32 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:37459
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932208Ab1D2Vfb (ORCPT
+	id S933840Ab1D2VlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:41:07 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:35839 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932208Ab1D2VlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:35:31 -0400
-Date: Fri, 29 Apr 2011 21:35:28 +0000 (UTC)
-From: johnlinn@comcast.net
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        michal simek <michal.simek@petalogix.com>, joe@perches.com,
-        grant likely <grant.likely@secretlab.ca>,
-        John Linn <john.linn@xilinx.com>
-Message-ID: <915452381.2094179.1304112928503.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <681890114.2094084.1304112868616.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+	Fri, 29 Apr 2011 17:41:05 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DBB3044.7090109@verizon.net>
+Date: Fri, 29 Apr 2011 17:40:20 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH RESEND 0/4] kbuild: Makefile cleanups
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [149.199.62.254]
-X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series adds some targets to PHONY and makes some targets work
+in KBUILD_OUTDIR.
 
-> > Yes I'll have a look at it, sorry for the hassle.  
-> > 
-> > I'm assuming I need to try it against linus
-> > tree as something may have changed. Or some other tree?
-> 
-> Or you are assuimg NO_IRQ is defined everywhere which it isn't. The
-> kernel mainstream just uses zero as intended not a define for it.
-> 
-> Alan
+Patches also attached as requested by Michal Marek.
 
-Thanks Alan, I'll fix that.  I wanted to make sure I replicated the issue
-so I could verify it goes away.
+Thanks,
+
+Peter
