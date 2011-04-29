@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab1D2S6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:58:34 -0400
-Received: from kroah.org ([198.145.64.141]:50281 "EHLO coco.kroah.org"
+	id S933706Ab1D2TD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:03:56 -0400
+Received: from kroah.org ([198.145.64.141]:50332 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933128Ab1D2S60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
-Message-Id: <20110429185654.895867979@clark.kroah.org>
+	id S933220Ab1D2S6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
+Message-Id: <20110429185655.774296728@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:47 -0700
+Date: Fri, 29 Apr 2011 11:55:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [24/55] ALSA: hda - Add a fix-up for Acer dmic with ALC271x codec
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [33/55] [S390] kvm-390: Let kernel exit SIE instruction on work
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Carsten Otte <cotte@de.ibm.com>
 
-commit 6981d184376e74391c23c116a068f8d1305f0e57 upstream.
+commit 9ff4cfb3fcfd48b49fdd9be7381b3be340853aa4 upstream.
 
-Acer laptops with ALC271x needs a magic initialization for digital-mic
-to make it working with mono streams (and PulseAudio).
-Added a fix-up applied to Acer with ALC271x generically.
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch fixes the sie exit on interrupts. The low level
+interrupt handler returns to the PSW address in pt_regs and not
+to the PSW address in the lowcore.
+Without this fix a cpu bound guest might never leave guest state
+since the host interrupt handler would blindly return to the
+SIE instruction, even on need_resched and friends.
+
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ arch/s390/kvm/sie64a.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -14945,6 +14945,23 @@ static void alc269_fixup_hweq(struct hda
- 	alc_write_coef_idx(codec, 0x1e, coef | 0x80);
- }
+--- a/arch/s390/kvm/sie64a.S
++++ b/arch/s390/kvm/sie64a.S
+@@ -48,10 +48,10 @@ sie_irq_handler:
+ 	tm	__TI_flags+7(%r2),_TIF_EXIT_SIE
+ 	jz	0f
+ 	larl	%r2,sie_exit			# work pending, leave sie
+-	stg	%r2,__LC_RETURN_PSW+8
++	stg	%r2,SPI_PSW+8(0,%r15)
+ 	br	%r14
+ 0:	larl	%r2,sie_reenter			# re-enter with guest id
+-	stg	%r2,__LC_RETURN_PSW+8
++	stg	%r2,SPI_PSW+8(0,%r15)
+ 1:	br	%r14
  
-+static void alc271_fixup_dmic(struct hda_codec *codec,
-+			      const struct alc_fixup *fix, int action)
-+{
-+	static struct hda_verb verbs[] = {
-+		{0x20, AC_VERB_SET_COEF_INDEX, 0x0d},
-+		{0x20, AC_VERB_SET_PROC_COEF, 0x4000},
-+		{}
-+	};
-+	unsigned int cfg;
-+
-+	if (strcmp(codec->chip_name, "ALC271X"))
-+		return;
-+	cfg = snd_hda_codec_get_pincfg(codec, 0x12);
-+	if (get_defcfg_connect(cfg) == AC_JACK_PORT_FIXED)
-+		snd_hda_sequence_write(codec, verbs);
-+}
-+
- enum {
- 	ALC269_FIXUP_SONY_VAIO,
- 	ALC275_FIXUP_SONY_VAIO_GPIO2,
-@@ -14953,6 +14970,7 @@ enum {
- 	ALC269_FIXUP_ASUS_G73JW,
- 	ALC269_FIXUP_LENOVO_EAPD,
- 	ALC275_FIXUP_SONY_HWEQ,
-+	ALC271_FIXUP_DMIC,
- };
- 
- static const struct alc_fixup alc269_fixups[] = {
-@@ -15006,7 +15024,11 @@ static const struct alc_fixup alc269_fix
- 		.v.func = alc269_fixup_hweq,
- 		.chained = true,
- 		.chain_id = ALC275_FIXUP_SONY_VAIO_GPIO2
--	}
-+	},
-+	[ALC271_FIXUP_DMIC] = {
-+		.type = ALC_FIXUP_FUNC,
-+		.v.func = alc271_fixup_dmic,
-+	},
- };
- 
- static struct snd_pci_quirk alc269_fixup_tbl[] = {
-@@ -15015,6 +15037,7 @@ static struct snd_pci_quirk alc269_fixup
- 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
- 	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
- 	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
-+	SND_PCI_QUIRK_VENDOR(0x1025, "Acer Aspire", ALC271_FIXUP_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Thinkpad SL410/510", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x215e, "Thinkpad L512", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
+ /*
 
 
