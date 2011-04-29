@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab1D2WZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:25:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43380 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485Ab1D2WZx (ORCPT
+	id S934002Ab1D2W0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:26:08 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:55730 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab1D2W0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:25:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:x-pgp-id:x-archive:user-agent;
-        b=KRP8EW2Fip/DuCqKz3T0QTeNWTUm+YBfS5sXxs7vpS/Z1nA2NMmG/YF2P5tSQSFjp0
-         IqJcPB22+91daKPKjEKSxU01zf4DB1m2JkJVCvnintK3x7ivH4jF8Hl/9jsTUOOFB04g
-         nA65HLv3RK1JSktLphe0mhd/LS3T9JmvESVAA=
-Date: Sat, 30 Apr 2011 00:25:48 +0200
-From: clemens fischer <ino-news@spotteswoode.dnsalias.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, wlanfae@realtek.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
-Message-ID: <20110429222548.GC4351@spotteswoode.de.eu.org>
-References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
- <20110428150819.GA3713@spotteswoode.de.eu.org>
- <4DB9884F.10409@lwfinger.net>
- <BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
- <20110428201527.GA3738@spotteswoode.de.eu.org>
- <BANLkTimi4cUzS5-r_ofzLnjbVtNNjwD69Q@mail.gmail.com>
- <20110429211548.GA4351@spotteswoode.de.eu.org>
- <BANLkTi=-4NaMCMEDxj3CVg6iAmS3DGm0Qw@mail.gmail.com>
+	Fri, 29 Apr 2011 18:26:04 -0400
+Date: Fri, 29 Apr 2011 16:26:00 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        Torben Hohn <torbenh@linutronix.de>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH 1/2] x86/dtb: make irq host list accessible
+Message-ID: <20110429222600.GJ7497@ponder.secretlab.ca>
+References: <20110427143423.GB15211@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=-4NaMCMEDxj3CVg6iAmS3DGm0Qw@mail.gmail.com>
-X-PGP-ID: 0x214190AF
-X-Archive: encrypt=none
+In-Reply-To: <20110427143423.GB15211@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jeff Chua:
+On Wed, Apr 27, 2011 at 04:34:23PM +0200, Sebastian Andrzej Siewior wrote:
+> From: Torben Hohn <torbenh@linutronix.de>
+> 
+> There is an gpio irq chip comming which needs this from the outside.
+> There is no EXPORT_SYMBOL because this does not yet work in modules.
+> 
+> Signed-off-by: Torben Hohn <torbenh@linutronix.de>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  arch/x86/include/asm/irq_controller.h |    2 ++
+>  arch/x86/kernel/devicetree.c          |   15 +++++++++++----
+>  2 files changed, 13 insertions(+), 4 deletions(-)
 
-> On Sat, Apr 30, 2011 at 5:15 AM, clemens fischer
-> <ino-news@spotteswoode.dnsalias.org> wrote:
->
-> > I cannot find out what it is:  "dnsmasq(8)" even gives out a lease, the
-> > firewall doesn't block any packets etc.  Note that "wpa_supplicant(8)"
-> > could set the ESSID while "iwconfig(8)" couldn't.  I think it has to do
-> > with my mobile, a window$-mobile-6.1 device, because I cannot see the
-> > typical log entries:
-> >
-> >  client provides name: wince
-> >  vendor class: Microsoft Windows CE
-> >  DHCPREQUEST(wlan0) 192.168.3.2 ...
-> >  DHCPACK(wlan0) 192.168.3.2 ...
-> >  requested options: 1:netmask, ...
->
-> It looks like dhcpd has given you an IP. That's good. Can you try to
-> ping your mobile from your server. Does ping return anything?
->
-> # ping 192.168.3.2
+Can you rework this to sit on top of the of_irq_domain series I sent
+out yesterday?  I *really* hope to get of_irq_domain merged into .40,
+but this change would conflict.
 
-You misunderstood: The log entries shown were from the configuration
-using the old driver whereas "r8712u" has only DHCP offers in the logs
-but no ACKs.  But since you asked, "ping(8)" returns:
+Thanks,
+g.
 
-  From 192.168.3.1 icmp_seq=8 Destination Host Unreachable
-
-192.168.3.1 is the IP of the wlan0 interface of the linux host acting
-as the router/DNS-resolver/DHCP-provider.
-
-
-regards, clemens
+> 
+> diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
+> index 423bbbd..04fecc0 100644
+> --- a/arch/x86/include/asm/irq_controller.h
+> +++ b/arch/x86/include/asm/irq_controller.h
+> @@ -9,4 +9,6 @@ struct irq_domain {
+>  	struct list_head l;
+>  };
+>  
+> +extern void irq_add_of_interrupt_host(struct irq_domain *ih);
+> +extern void irq_remove_of_interrupt_host(struct irq_domain *ih);
+>  #endif
+> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+> index e90f084..58c4208 100644
+> --- a/arch/x86/kernel/devicetree.c
+> +++ b/arch/x86/kernel/devicetree.c
+> @@ -26,8 +26,7 @@ static DEFINE_RAW_SPINLOCK(big_irq_lock);
+>  
+>  int __initdata of_ioapic;
+>  
+> -#ifdef CONFIG_X86_IO_APIC
+> -static void add_interrupt_host(struct irq_domain *ih)
+> +void irq_add_of_interrupt_host(struct irq_domain *ih)
+>  {
+>  	unsigned long flags;
+>  
+> @@ -35,7 +34,15 @@ static void add_interrupt_host(struct irq_domain *ih)
+>  	list_add(&ih->l, &irq_domains);
+>  	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
+>  }
+> -#endif
+> +
+> +void irq_remove_of_interrupt_host(struct irq_domain *ih)
+> +{
+> +	unsigned long flags;
+> +
+> +	raw_spin_lock_irqsave(&big_irq_lock, flags);
+> +	list_del(&ih->l);
+> +	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
+> +}
+>  
+>  static struct irq_domain *get_ih_from_node(struct device_node *controller)
+>  {
+> @@ -415,7 +422,7 @@ static void __init ioapic_add_ofnode(struct device_node *np)
+>  			id->controller = np;
+>  			id->xlate = ioapic_xlate;
+>  			id->priv = (void *)i;
+> -			add_interrupt_host(id);
+> +			irq_add_of_interrupt_host(id);
+>  			return;
+>  		}
+>  	}
+> -- 
+> 1.7.4.4
+> 
