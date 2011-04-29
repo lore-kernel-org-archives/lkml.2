@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933731Ab1D2THm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:07:42 -0400
-Received: from kroah.org ([198.145.64.141]:51379 "EHLO coco.kroah.org"
+	id S933734Ab1D2TH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:07:59 -0400
+Received: from kroah.org ([198.145.64.141]:50239 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932921Ab1D2THk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:07:40 -0400
-Date: Fri, 29 Apr 2011 12:07:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] STAGING fixes for .39
-Message-ID: <20110429190730.GA13635@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932698Ab1D2S6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
+Message-Id: <20110429185654.140264014@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 29 Apr 2011 11:55:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Pekka Paalanen <pq@iki.fi>
+Subject: [16/55] drm/nouveau: fix notifier memory corruption bug
+In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of minor staging driver fixes for your .39-rc tree.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-Almost all of these fix build errors that have been reported by people.
-There is one usbip bugfix for a runtime issue as well.
+------------------
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-All of these patches have been in the mm and -next trees for a while.
+commit a18d89ca026140eb8ac4459bf70a01c571dd9a32 upstream.
 
-These patches will be sent to the linux driver project list for all to
-see.
+nouveau_bo_wr32 expects offset to be in words, but we pass value in bytes,
+so after commit 73412c3854c877e5f37ad944ee8977addde4d35a ("drm/nouveau: allocate
+kernel's notifier object at end of block") we started to overwrite some memory
+after notifier buffer object (previously m2mf_ntfy was always 0, so it didn't
+matter it was a value in bytes).
 
-thanks,
+Reported-by: Dominik Brodowski <linux@dominikbrodowski.net>
+Reported-by: Nigel Cunningham <lkml@nigelcunningham.com.au>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>
+Cc: Pekka Paalanen <pq@iki.fi>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-greg k-h
+---
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---------------
+--- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
++++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+@@ -181,13 +181,13 @@ nouveau_fbcon_sync(struct fb_info *info)
+ 		OUT_RING  (chan, 0);
+ 	}
+ 
+-	nouveau_bo_wr32(chan->notifier_bo, chan->m2mf_ntfy + 3, 0xffffffff);
++	nouveau_bo_wr32(chan->notifier_bo, chan->m2mf_ntfy/4 + 3, 0xffffffff);
+ 	FIRE_RING(chan);
+ 	mutex_unlock(&chan->mutex);
+ 
+ 	ret = -EBUSY;
+ 	for (i = 0; i < 100000; i++) {
+-		if (!nouveau_bo_rd32(chan->notifier_bo, chan->m2mf_ntfy + 3)) {
++		if (!nouveau_bo_rd32(chan->notifier_bo, chan->m2mf_ntfy/4 + 3)) {
+ 			ret = 0;
+ 			break;
+ 		}
 
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    3 ---
- drivers/staging/gma500/Kconfig                     |    2 +-
- drivers/staging/intel_sst/intelmid_v1_control.c    |    1 +
- drivers/staging/intel_sst/intelmid_v2_control.c    |    1 +
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c         |    1 +
- drivers/staging/rts_pstor/debug.h                  |    2 +-
- drivers/staging/rts_pstor/ms.c                     |    1 +
- drivers/staging/rts_pstor/rtsx_chip.c              |    5 +++--
- drivers/staging/rts_pstor/rtsx_scsi.c              |    1 +
- drivers/staging/rts_pstor/sd.c                     |    4 ++--
- drivers/staging/rts_pstor/trace.h                  |    2 +-
- drivers/staging/rts_pstor/xd.c                     |    1 +
- drivers/staging/solo6x10/Kconfig                   |    1 +
- drivers/staging/usbip/vhci_hcd.c                   |    9 ++++-----
- drivers/staging/usbip/vhci_sysfs.c                 |    7 ++++---
- 16 files changed, 23 insertions(+), 22 deletions(-)
-
----------------
-
-Jeff Mahoney (5):
-      staging: olpc: Add <linux/delay.h>
-      staging: gma500: Depend on X86
-      staging: rts_pstor: Add <linux/vmalloc.h>
-      staging: rts_pstor: use #ifdef instead of #if
-      staging: ft1000: Remove unnecessary EXPORT_SYMBOLs
-
-Max Vozeler (1):
-      staging: usbip: vhci: fix oops on subsequent attach
-
-Peter Foley (1):
-      staging: solo6x10: add select SND_PCM to fix build error
-
-Randy Dunlap (1):
-      staging: intel_sst: intelmid needs delay.h
 
