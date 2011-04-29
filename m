@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934117Ab1D2XEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:04:10 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38838 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934069Ab1D2XEJ (ORCPT
+	id S934124Ab1D2XHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:07:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61045 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932787Ab1D2XHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:04:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=mvkgLUoSKTMGj22DNhNeG5MoyYrC6ooH/IGUgpEHthiy4Jb5AZaOCjd4fBWM/mh/98QVwbQihgXVWSmpd7ITp0h8iMe8IrEe09uzCkLuF6JASVpymGIBCqfykXs+NUv+;
-Date: Fri, 29 Apr 2011 16:04:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: <pefoley2@verizon.net>, <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to
- scripts/docproc.c
-Message-Id: <20110429160406.5a1f56bc.rdunlap@xenotime.net>
-In-Reply-To: <20110429160053.bbe7c199.rdunlap@xenotime.net>
-References: <4DBB3DD4.9000000@verizon.net>
-	<20110429155915.f9059777.rdunlap@xenotime.net>
-	<20110429160053.bbe7c199.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 29 Apr 2011 19:07:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6331"; a="88503381"
+From: David Collins <collinsd@codeaurora.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org,
+        David Collins <collinsd@codeaurora.org>
+Subject: [PATCH v2 0/2] regulator: msm: Add PM8921 regulator driver
+Date: Fri, 29 Apr 2011 16:07:01 -0700
+Message-Id: <1304118421-18764-1-git-send-email-collinsd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org>
+References: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 16:00:53 -0700 Randy Dunlap wrote:
+This patch set adds a new regulator driver to control the regulators in
+Qualcomm PM8921 PMIC chips.  It also introduces board file changes to use
+this new driver with the Qualcomm MSM 8960 platform.
 
-> On Fri, 29 Apr 2011 15:59:15 -0700 Randy Dunlap wrote:
-> 
-> > On Fri, 29 Apr 2011 18:38:12 -0400 Peter Foley wrote:
-> > 
-> > > This patchset moves scripts/basic/docproc to scripts/docproc.
-> > > This causes docproc to only be built for *doc targets rather than every
-> > > time the kernel is compiled.
-> > > 
-> > > Patches also attached as requested by Michal Marek.
-> > 
-> > 
-> > Please test & fix when using O=output_dir.
-> 
-> Sorry, user error.  I missed applying patch 6/7.  :(
+This patch set depends upon the following outstanding PM8XXX and PM8921
+patches:
 
-Works successfully now.  :)
+https://patchwork.kernel.org/patch/688832/
+https://patchwork.kernel.org/patch/688882/
+https://patchwork.kernel.org/patch/735362/
+https://patchwork.kernel.org/patch/735372/
+https://patchwork.kernel.org/patch/688842/
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Updates from V1:
+Major modifications were made based on Mark Brown's suggestions.
+
+Major changes:
+ 1. A set of semi-virtual regulators were added to support pin-control.
+ 2. The set_mode callbacks were modified so that they act normal and do not
+    control pin-control.
+ 3. Changed set_voltage callbacks to round up min_uV to the next available set
+    point and to bail out if that set point is greater than max_uV.
+ 4. Added list_voltage callbacks.
+ 5. Enable and disable callbacks were separated out per regualtor type to
+    handle differing requirements for pin controllable regulators.
+
+Minor changes:
+ 1. Moved kfree of regulator mfd_cells to the PMIC core remove function.
+ 2. Simplified handling of unknown voltages in regulators in which enable state
+    and output voltage are set using the same bits.
+ 3. Made symbol names more consistent.
+ 4. Modified how overlapping voltage ranges are handled to ensure most
+    efficient operation.
+ 5. Corrected names used for PMIC 8921 pin control inputs.
+ 6. Removed unused member: struct pm8921_vreg.state
+ 7. Renamed pm8921_vreg_write to pm8921_vreg_masked_write to better illustrate
+    its functionality.
+ 8. Added pm8921_vreg_masked_write_forced to handle registers that must be
+    overwritten even if their value is unchanged in order for hardware to
+    change state.
+ 9. Mutex locking was added for all callback functions which touch pin
+    controllable regulators because the regulator framework will have no way
+    of knowing that two separate regualtor_dev's modify the same physical
+    regulators.
+10. Debug/error messages were moved so that they do not span multiple lines.
+11. pm8921_init_regulator was removed and the switch statement in it was moved
+    into pm8921_vreg_probe.
+12. pm8921_vreg_init was changed from module_init to subsys_init.
+13. Comments were added describing the enums and structs in pm8921-regulator.h.
+14. system_uA platform data was added to quantify the max current draw 
+    intrinsic to a system that is not associated with any consumer.
+15. Changed NULL to "reg-debug-consumer" in the board file.
+16. Remove pin-control column in board file for normal regulator constraints.
+
+David Collins (2):
+  regulator: pm8921-regulator: Add regulator driver for PM8921
+  msm: board-8960: Add support for pm8921-regulator
+
+ arch/arm/mach-msm/Makefile                  |    1 +
+ arch/arm/mach-msm/board-msm8960-regulator.c |  306 +++
+ arch/arm/mach-msm/board-msm8960.c           |    4 +
+ arch/arm/mach-msm/board-msm8960.h           |   23 +
+ drivers/mfd/pm8921-core.c                   |   34 +
+ drivers/regulator/Kconfig                   |   10 +
+ drivers/regulator/Makefile                  |    1 +
+ drivers/regulator/pm8921-regulator.c        | 3025 +++++++++++++++++++++++++++
+ include/linux/mfd/pm8xxx/pm8921.h           |    3 +
+ include/linux/regulator/pm8921-regulator.h  |  155 ++
+ 10 files changed, 3562 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-msm8960-regulator.c
+ create mode 100644 arch/arm/mach-msm/board-msm8960.h
+ create mode 100644 drivers/regulator/pm8921-regulator.c
+ create mode 100644 include/linux/regulator/pm8921-regulator.h
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
