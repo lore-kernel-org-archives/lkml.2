@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760666Ab1D2Rh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 13:37:26 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63229 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760412Ab1D2RhY convert rfc822-to-8bit (ORCPT
+	id S1760687Ab1D2RkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 13:40:07 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:54018 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759957Ab1D2RkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 13:37:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=CY+4k677dSZd5d4hP2jFZhulU7kbvhaSmNhS7DTp+hR7Hp4i/K53NGzZV5oj85T/Bm
-         lbJnLA5hl48ray91FmWv1ZpFFUFEtpfHO+JMSq2wz09noGR5MO5EqowoPsUfb4F887L6
-         l0JlPUMPq8xHBfFmxtQ/pThav6HgNiLDDjOIo=
-MIME-Version: 1.0
-In-Reply-To: <20110429172525.GA2745@tassilo.jf.intel.com>
-References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
-	<BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com>
-	<20110429172525.GA2745@tassilo.jf.intel.com>
-Date: Fri, 29 Apr 2011 20:37:23 +0300
-X-Google-Sender-Auth: NiRnYv5Cxv1V7XpQL8VWZxAUTss
-Message-ID: <BANLkTim3bojtfeeWsAFx2Gct7LsvGCdn-w@mail.gmail.com>
-Subject: Re: re-enable Nehalem raw Offcore-Events support
-From: Pekka Enberg <penberg@kernel.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, torvalds@linux-foundation.org,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Apr 2011 13:40:06 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+ cleanup accordingly
+Thread-Topic: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+ cleanup accordingly
+Thread-Index: AQHMBCwlOahkyDWQA0Cj/4uI6AAO6ZRxNFuA///EzKCAAef0AIAB4skAgACoXgD//7LvYA==
+Date: Fri, 29 Apr 2011 17:40:04 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DD6D6@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-1-git-send-email-kys@microsoft.com>
+ <1303834842-5022-8-git-send-email-kys@microsoft.com>
+ <20110426224545.GC31974@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD1C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110428002018.GC14294@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD55F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110429151052.GC12142@suse.de>
+In-Reply-To: <20110429151052.GC12142@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 8:25 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> >  2.  Users are too stupid to use the raw functionality properly;
->> >      we should only allow a kernel-developer-approved small subset
->> >      of the features provided by the CPU as described in the intel
->> >      developers manuals.
->> >
->> > #2 seems like a gross misinterpretation of the whole "Linux gives you
->> > enough rope to shoot yourself in the foot" policy from days passed, but
->> > maybe things have moved on.
->>
->> That's a gross misrepresentation of what Ingo has been saying on LKML.
->> Really, learn to work with relevant maintainers before you ask Linus
->> to revert something.
->
-> Ingo may not have explicitely said (2), but at least his revert (disabling
-> the raw interface users are asking for) is practically implementing (2).
->
-> Actions speak louder than words.
->
-> That is either you have a raw interface or you only have the cooked
-> interface or you have both. Since he reverted raw only cooked
-> is left, which is (2)
->
-> I agree with Vince it's a bad policy.
 
-So a maintainer reverts an ABI that he thinks needs more thought/work
-before it's too late and we're stuck with it forever. Can you please
-explain what's the problem here?
 
-Asking Linus to revert the commit is short-sighted and doesn't solve
-the problem. Learn to work with the maintainer and save yourself a lot
-of trouble.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, April 29, 2011 11:11 AM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Haiyang Zhang; Abhishek Kane (Mindtree Consulting
+> PVT LTD)
+> Subject: Re: [PATCH 08/25] Staging: hv: vmbus_driver cannot be unloaded;
+> cleanup accordingly
+> 
+> On Fri, Apr 29, 2011 at 01:49:21PM +0000, KY Srinivasan wrote:
+> 
+> Just resend it with some more comments as I explained, and the rest, and
+> I'll queue them up when I get caught up on my patch queue (I only have
+> 381 to get through, the end is near!)
+
+Thanks Greg; soon after I sent you this patch-set, I had also sent a single patch to
+address a redundant assignment:
+
+0001-Staging-hv-Do-not-re-set-the-bus-name.patch
+
+Please drop this patch. I will deal with this issue as part of the remaining patch-set
+I will be sending now.
+
+Regards,
+
+K. Y
+
+
+ 
+> 
+> thanks,
+> 
+> greg k-h
+
