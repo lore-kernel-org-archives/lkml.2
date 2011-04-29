@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760970Ab1D2VYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:24:05 -0400
-Received: from kroah.org ([198.145.64.141]:47107 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab1D2VYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:24:02 -0400
-Date: Fri, 29 Apr 2011 14:23:28 -0700
-From: Greg KH <greg@kroah.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Subject: Re: [PATCH v3 3/5] Introduce CONFIG_GOOGLE_FIRMWARE
-Message-ID: <20110429212328.GA19207@kroah.com>
-References: <20110315065839.12047.70666.stgit@mike.mtv.corp.google.com>
- <20110315065855.12047.31930.stgit@mike.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315065855.12047.31930.stgit@mike.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932645Ab1D2VbZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:31:25 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46890 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757640Ab1D2VbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 17:31:24 -0400
+Date: Fri, 29 Apr 2011 22:32:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: johnlinn@comcast.net
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        michal simek <michal.simek@petalogix.com>, joe@perches.com,
+        grant likely <grant.likely@secretlab.ca>,
+        John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110429223222.7d283dde@lxorguk.ukuu.org.uk>
+In-Reply-To: <1426670407.2093674.1304112562934.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+References: <20110429211434.GA1355@kroah.com>
+	<1426670407.2093674.1304112562934.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 11:58:55PM -0700, Mike Waychison wrote:
-> In order to keep Google's firmware drivers organized amongst themselves,
-> create a new directory for them to live in.  As well, all Google
-> firmware drivers are gated on CONFIG_GOOGLE_FIRMWARE=y, which defaults
-> to 'n' in the kernel build.
+> Yes I'll have a look at it, sorry for the hassle.  
 > 
-> Signed-off-by: Mike Waychison <mikew@google.com>
+> I'm assuming I need to try it against linus
+> tree as something may have changed. Or some other tree?
 
-This patch breaks the build:
+Or you are assuimg NO_IRQ is defined everywhere which it isn't. The
+kernel mainstream just uses zero as intended not a define for it.
 
-ld: cannot find drivers/firmware/google/built-in.o: No such file or directory
-
-Care to reoder this to be the last patch in the series?
-
-I've applied the first two, so just send the last 3, with this one being
-the last one, and it should be fine.
-
-thanks,
-
-greg k-h
+Alan
