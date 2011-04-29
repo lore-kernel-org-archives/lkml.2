@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab1D2Fl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 01:41:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42429 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab1D2Fl0 (ORCPT
+	id S1753793Ab1D2Fly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 01:41:54 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51237 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab1D2Fl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 01:41:26 -0400
+	Fri, 29 Apr 2011 01:41:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=YUgci2LGmJQbDQXKCRONn3G18Iki/lzVK8NXTQf/aZceWbI3g3hQ9Rnm9Pe7mBG7VJ
-         tS1mQqbBMy/HxCeM+Q6DKSFsK/Ul8VwMQ0TDYhALPnwOMAGiSJNOg2s0MUDlHpgGhjhv
-         rOk4gV+QSZJH8W2TpcU2ovaxKw5OC/KRd4NoU=
+        b=xkzQSwpOcp+bZi32ui5idRVTMqMvWYxOu6AxtryI/Hi51M/OP1rHiXIp3jXHxPjyZv
+         MnAY010gZyL5EKGfqHyLJsW1MYBt+TEgUS5QbFuwazABMKon+I6409sQcc2+sSftHBuX
+         xOZkaeJUm5uzyWTgJQWZOYwZlABqac2F81xyE=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 2/6] staging: ft1000: Remove unused variables in ft1000_info.
-Date: Fri, 29 Apr 2011 07:41:06 +0200
-Message-Id: <1304055670-3573-2-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 5/6] staging: ft1000: Remove unused variable CurrentInterruptEnableMask.
+Date: Fri, 29 Apr 2011 07:41:09 +0200
+Message-Id: <1304055670-3573-5-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304055670-3573-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1304055670-3573-1-git-send-email-marek.belisko@open-nandra.com>
@@ -28,54 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removed because was only assigned and never used.
+
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    1 -
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index b4b4f1d..1e5c750 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -749,7 +749,6 @@ int init_ft1000_netdev(struct ft1000_device *ft1000dev)
+ 	pInfo->mediastate = 0;
+ 	pInfo->fifo_cnt = 0;
+ 	pInfo->DeviceCreated = FALSE;
+-	pInfo->CurrentInterruptEnableMask = ISR_DEFAULT_MASK;
+ 	pInfo->InterruptsEnabled = FALSE;
+ 	pInfo->CardReady = 0;
+ 	pInfo->DSP_TIME[0] = 0;
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index bade59d..4111e5c 100644
+index ee47d4c..69576cd 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -494,21 +494,11 @@ struct ft1000_info {
-     bool fProvComplete;
-     bool fCondResetPend;
-     bool fAppMsgPend;
--    char *pfwimg;
--    int fwimgsz;
-     u16 DrvErrNum;
--    u8  *pTestImage;
-     u16 AsicID;
--    unsigned long TestImageIndx;
--    unsigned long TestImageSz;
--    u8  TestImageEnable;
--    u8  TestImageReady;
-     int ASICResetNum;
-     int DspAsicReset;
--    int PktIntfErr;
-     int DSPResetNum;
--    int NumIOCTLBufs;
--    int IOCTLBufLvl;
-     int DeviceCreated;
-     int CardReady;
-     int NetDevRegDone;
-@@ -517,8 +507,6 @@ struct ft1000_info {
-     struct ft1000_debug_dirs nodes;
-     int registered;
-     int mediastate;
--    int dhcpflg;
--    u16 packetseqnum;
+@@ -508,7 +508,6 @@ struct ft1000_info {
      u8 squeseqnum;                 // sequence number on slow queue
      spinlock_t dpram_lock;
      spinlock_t fifo_lock;
-@@ -534,7 +522,6 @@ struct ft1000_info {
-     u8 RfCalVer[CALVERSZ];
-     u8 RfCalDate[CALDATESZ];
-     u16 DSP_TIME[4];
--    u16 ProgSnr;
-     u16 LedStat;	//mbelian
-     u16 ConStat;	//mbelian
-     u16 ProgConStat;
+-    u16 CurrentInterruptEnableMask;
+     int InterruptsEnabled;
+     u16 fifo_cnt;
+     u8 DspVer[DSPVERSZ];        // DSP version number
 -- 
 1.7.1
 
