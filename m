@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab1D2WG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:06:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52401 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab1D2WGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:06:54 -0400
-Date: Fri, 29 Apr 2011 16:06:51 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Liam Girdwood <lrg@ti.com>
-Cc: "grant@secretlab.ca" <grant@secretlab.ca>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCHv5 2/4] TPS65910: GPIO: Add GPIO driver
-Message-ID: <20110429220651.GG7497@ponder.secretlab.ca>
-References: <2CAE1D41-48DC-457F-8FF3-E45B17AC3E0F@slimlogic.co.uk>
- <4DBAD7E8.8090703@ti.com>
+	id S932690Ab1D2WKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:10:21 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:38704 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932333Ab1D2WKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 18:10:20 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: 2.6.39-rc5-git2 boot crashs
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Fri, 29 Apr 2011 18:10:14 -0400
+Message-ID: <web-515866242@zbackend1.aha.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DBAD7E8.8090703@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 04:23:20PM +0100, Liam Girdwood wrote:
-> On 27/04/11 16:51, Jorge Eduardo Candelaria wrote:
-> > From: Graeme Gregory <gg@slimlogic.co.uk>
-> > 
-> > TPS65910 has one configurable GPIO that can be used for several
-> > purposes. Subsequent versions of the TPS chip support more than
-> > one GPIO.
-> > 
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-> > ---
-> >  drivers/mfd/Makefile         |    2 +-
-> >  drivers/mfd/tps65910-gpio.c  |   91 ++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/mfd/tps65910.c       |    7 +++
-> >  include/linux/mfd/tps65910.h |    2 +
-> >  4 files changed, 101 insertions(+), 1 deletions(-)
-> >  create mode 100644 drivers/mfd/tps65910-gpio.c
-> > 
-> 
-> Grant, if you are happy with this I can take all via regulator.
 
-Yes, I'm okay with it.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
+Pid: 5635, comm: mount Tainted: G         C 
+ 2.6.39-rc5-git2 #1 System manufacturer System Product 
+Name/M2N8-VMX
+EIP: 0060:[<c12d01fb>] EFLAGS: 00010246 CPU: 0
+EIP is at logfs_drop_inode+0x3c/0x68
+EAX: 00000000 EBX: f4db8000 ECX: f4db81f4 EDX: f4db81f4
+ESI: f521c000 EDI: f5232c00 EBP: f5199e70 ESP: f5199e68
+  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process mount (pid: 5635, ti=f5198000 task=f523ae50 
+task.ti=f5198000)
+Stack:
+  c1f2344c f4db8000 f5199e84 c10ea544 ffffffea f5232c00 
+f68ac1c0 f5199ec0
+  c12d77cd 00000000 00000000 c10ced5c 00000000 f521c000 
+00000400 f521c000
+  f68a4b40 00000040 000000d0 00000000 f5106cb0 f5106cb0 
+f5199ef8 c10d9b11
+Call Trace:
+  [<c10ea544>] iput+0x5c/0x119
+  [<c12d77cd>] logfs_mount+0x44f/0x5cc
+  [<c10ced5c>] ? __kmalloc_track_caller+0x9b/0x157
+  [<c10d9b11>] mount_fs+0x68/0x13e
+  [<c10b1ce3>] ? kstrdup+0x30/0x41
+  [<c10ee6c3>] vfs_kern_mount+0x53/0x7f
+  [<c10ee747>] do_kern_mount+0x3c/0xbb
+  [<c10eede8>] do_mount+0x622/0x66f
+  [<c10ed9ca>] ? copy_mount_options+0xe/0xe7
+  [<c10b1c15>] ? memdup_user+0x34/0x4b
+  [<c10b1c5d>] ? strndup_user+0x31/0x42
+  [<c10eeea2>] sys_mount+0x6d/0x9b
+  [<c1eba70c>] syscall_call+0x7/0xb
+Code: 8c 01 00 00 b8 30 4e 79 c2 e8 41 a1 be 00 8d 8b f4 
+01 00 00 8b 93 f4 01 00 00 8b 83 f8 01 00 00 89 42 04 89 
+10 8b 86 54 02 00 00
+  48 04 89 83 f4 01 00 00 8d 86 54 02 00 00 89 83 f8 01 00 
+00
+EIP: [<c12d01fb>] logfs_drop_inode+0x3c/0x68 SS:ESP 
+0068:f5199e68
+CR2: 0000000000000004
+---[ end trace cd59ca17c20fba5d ]---
+---
+Professional hosting for everyone - http://www.host.ru
