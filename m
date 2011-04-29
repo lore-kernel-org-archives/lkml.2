@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab1D2TLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:11:10 -0400
-Received: from kroah.org ([198.145.64.141]:50159 "EHLO coco.kroah.org"
+	id S932719Ab1D2TYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:24:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44337 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760876Ab1D2S6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:06 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:52 2011
-Message-Id: <20110429185652.870989164@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [03/55] ath: add missing regdomain pair 0x5c mapping
-In-Reply-To: <20110429185706.GA12824@kroah.com>
+	id S932481Ab1D2TYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 15:24:02 -0400
+Date: Fri, 29 Apr 2011 21:23:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Ahern <dsahern@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/stat] perf stat: Fail softly on unsupported events
+Message-ID: <20110429192347.GA15068@elte.hu>
+References: <tip-7y40wib8n006io7hjpn1dsrm@git.kernel.org>
+ <4DBACC5C.1020502@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DBACC5C.1020502@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
+* David Ahern <dsahern@gmail.com> wrote:
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+> 
+> 
+> On 04/29/11 08:27, tip-bot for Ingo Molnar wrote:
+> > Commit-ID:  370faf1dd0461ad811852c8abbbcd3d73b1e4fc4
+> > Gitweb:     http://git.kernel.org/tip/370faf1dd0461ad811852c8abbbcd3d73b1e4fc4
+> > Author:     Ingo Molnar <mingo@elte.hu>
+> > AuthorDate: Fri, 29 Apr 2011 16:11:03 +0200
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Fri, 29 Apr 2011 16:22:33 +0200
+> > 
+> > perf stat: Fail softly on unsupported events
+> > 
+> > David Ahern reported this perf stat failure:
+> > 
+> >> # /tmp/build-perf/perf stat -- sleep 1
+> >>   Error: stalled-cycles-frontend event is not supported.
+> >>   Fatal: Not all events could be opened.
+> >>
+> >> This is a Dell R410 with an E5620 processor.
+> > 
+> > Fail in a softer fashion on unknown/unsupported events.
+> > 
+> > Reported-by: David Ahern <dsahern@gmail.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Link: http://lkml.kernel.org/n/tip-7y40wib8n006io7hjpn1dsrm@git.kernel.org
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > ---
+> >  tools/perf/builtin-stat.c |    4 +---
+> >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> > index 9e596ab..c8b535b 100644
+> > --- a/tools/perf/builtin-stat.c
+> > +++ b/tools/perf/builtin-stat.c
+> > @@ -377,7 +377,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+> >  
+> >  	list_for_each_entry(counter, &evsel_list->entries, node) {
+> >  		if (create_perf_stat_counter(counter) < 0) {
+> > -			if (errno == EINVAL || errno == ENOSYS)
+> > +			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT)
+> >  				continue;
+> >  
+> >  			if (errno == EPERM || errno == EACCES) {
+> > @@ -385,8 +385,6 @@ static int run_perf_stat(int argc __used, const char **argv)
+> >  				      "\t Consider tweaking"
+> >  				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+> >  				      system_wide ? "system-wide " : "");
+> > -			} else if (errno == ENOENT) {
+> > -				error("%s event is not supported. ", event_name(counter));
+> 
+> This silently ignores events -- including ones that a user requested. I
+> think a better option is a continue here.
+> 
+>  /tmp/build-perf/perf stat -- sleep 1
+>   Error: stalled-cycles-frontend event is not supported.
+>   Error: stalled-cycles-backend event is not supported.
 
-commit bd39a274fb7b43374c797bafdb7f506598f36f77 upstream.
+Ok. Got time to send a patch for that, which prints whichever message you find 
+the most intuitive? Perhaps word it as:
 
-Joe Culler reported a problem with his AR9170 device:
+ Info: stalled-cycles-frontend event is not supported by the kernel
 
-> ath: EEPROM regdomain: 0x5c
-> ath: EEPROM indicates we should expect a direct regpair map
-> ath: invalid regulatory domain/country code 0x5c
-> ath: Invalid EEPROM contents
+to not yell 'error!' at users all the time?
 
-It turned out that the regdomain 'APL7_FCCA' was not mapped yet.
-According to Luis R. Rodriguez [Atheros' engineer] APL7 maps to
-FCC_CTL and FCCA maps to FCC_CTL as well, so the attached patch
-should be correct.
+Thanks,
 
-Reported-by: Joe Culler <joe.culler@gmail.com>
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/ath/regd_common.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/wireless/ath/regd_common.h
-+++ b/drivers/net/wireless/ath/regd_common.h
-@@ -195,6 +195,7 @@ static struct reg_dmn_pair_mapping regDo
- 	{APL9_WORLD, CTL_ETSI, CTL_ETSI},
- 
- 	{APL3_FCCA, CTL_FCC, CTL_FCC},
-+	{APL7_FCCA, CTL_FCC, CTL_FCC},
- 	{APL1_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_APLD, CTL_FCC, NO_CTL},
-
-
+	Ingo
