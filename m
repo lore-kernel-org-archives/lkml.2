@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab1D2S64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:58:56 -0400
-Received: from kroah.org ([198.145.64.141]:35096 "EHLO coco.kroah.org"
+	id S933648Ab1D2TBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:01:11 -0400
+Received: from kroah.org ([198.145.64.141]:35122 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933377Ab1D2S6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:45 -0400
+	id S933632Ab1D2S6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:50 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:57 2011
-Message-Id: <20110429185656.925958215@clark.kroah.org>
+Message-Id: <20110429185657.451172472@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:08 -0700
+Date: Fri, 29 Apr 2011 11:56:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [45/55] nfs: dont lose MS_SYNCHRONOUS on remount of noac mount
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [50/55] agp: fix OOM and buffer overflow
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 26c4c170731f00008f4317a2888a0a07ac99d90d upstream.
+commit b522f02184b413955f3bc952e3776ce41edc6355 upstream.
 
-On a remount, the VFS layer will clear the MS_SYNCHRONOUS bit on the
-assumption that the flags on the mount syscall will have it set if the
-remounted fs is supposed to keep it.
+page_count is copied from userspace.  agp_allocate_memory() tries to
+check whether this number is too big, but doesn't take into account the
+wrap case.  Also agp_create_user_memory() doesn't check whether
+alloc_size is calculated from num_agp_pages variable without overflow.
+This may lead to allocation of too small buffer with following buffer
+overflow.
 
-In the case of "noac" though, MS_SYNCHRONOUS is implied. A remount of
-such a mount will lose the MS_SYNCHRONOUS flag since "sync" isn't part
-of the mount options.
+Another problem in agp code is not addressed in the patch - kernel memory
+exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
+whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
+Each allocation is limited to 16KB, though, there is no per-process limit.
+This might lead to OOM situation, which is not even solved in case of the
+caller death by OOM killer - the memory is allocated for another (faked) process.
 
-Reported-by: Max Matveev <makc@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/super.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/char/agp/generic.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2077,6 +2077,15 @@ nfs_remount(struct super_block *sb, int
- 	if (error < 0)
- 		goto out;
+--- a/drivers/char/agp/generic.c
++++ b/drivers/char/agp/generic.c
+@@ -115,6 +115,9 @@ static struct agp_memory *agp_create_use
+ 	struct agp_memory *new;
+ 	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
  
-+	/*
-+	 * noac is a special case. It implies -o sync, but that's not
-+	 * necessarily reflected in the mtab options. do_remount_sb
-+	 * will clear MS_SYNCHRONOUS if -o sync wasn't specified in the
-+	 * remount options, so we have to explicitly reset it.
-+	 */
-+	if (data->flags & NFS_MOUNT_NOAC)
-+		*flags |= MS_SYNCHRONOUS;
++	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
++		return NULL;
 +
- 	/* compare new mount options with old ones */
- 	error = nfs_compare_remount_data(nfss, data);
- out:
+ 	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
+ 	if (new == NULL)
+ 		return NULL;
+@@ -234,11 +237,14 @@ struct agp_memory *agp_allocate_memory(s
+ 	int scratch_pages;
+ 	struct agp_memory *new;
+ 	size_t i;
++	int cur_memory;
+ 
+ 	if (!bridge)
+ 		return NULL;
+ 
+-	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
++	cur_memory = atomic_read(&bridge->current_memory_agp);
++	if ((cur_memory + page_count > bridge->max_memory_agp) ||
++	    (cur_memory + page_count < page_count))
+ 		return NULL;
+ 
+ 	if (type >= AGP_USER_TYPES) {
 
 
