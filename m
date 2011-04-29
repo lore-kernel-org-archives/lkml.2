@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab1D2OUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 10:20:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60635 "EHLO mx2.mail.elte.hu"
+	id S1758976Ab1D2OXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 10:23:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48980 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757942Ab1D2OUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 10:20:52 -0400
-Date: Fri, 29 Apr 2011 16:20:37 +0200
+	id S1755094Ab1D2OXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 10:23:44 -0400
+Date: Fri, 29 Apr 2011 16:23:36 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: David Ahern <dsahern@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,12 +15,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
 Subject: Re: perf stat branch: perf stat fails on unsupported event
-Message-ID: <20110429142037.GB4106@elte.hu>
+Message-ID: <20110429142336.GA9971@elte.hu>
 References: <4DBAC59F.2020009@gmail.com>
+ <20110429141103.GA4106@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DBAC59F.2020009@gmail.com>
+In-Reply-To: <20110429141103.GA4106@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,54 +35,61 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Ahern <dsahern@gmail.com> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> This is a Dell R410 with an E5620 processor.
+> Does the patch below allow the other events to be counted?
 
-That's a Westmere CPU.
-
-Could you check whether the patch below applied to latest -tip gives you 
-stalled-cycles-frontend and stalled-cycles-backend events?
+That patch was buggy - the one below should work better.
 
 Thanks,
 
 	Ingo
 
---------------->
->From 3808ae38f1905c1f11da46ac981c8d2579936fd8 Mon Sep 17 00:00:00 2001
+---------->
+>From 370faf1dd0461ad811852c8abbbcd3d73b1e4fc4 Mon Sep 17 00:00:00 2001
 From: Ingo Molnar <mingo@elte.hu>
-Date: Sat, 30 Apr 2011 09:14:54 +0200
-Subject: [PATCH] perf events, x86: Add Westmere stalled-cycles-frontend/backend events
+Date: Fri, 29 Apr 2011 16:11:03 +0200
+Subject: [PATCH] perf stat: Fail softly on unsupported events
 
-Extend the Intel Westmere PMU driver with definitions for generic front-end and
-back-end stall events.
+David Ahern reported this perf stat failure:
 
-( These are only approximations. )
+> # /tmp/build-perf/perf stat -- sleep 1
+>   Error: stalled-cycles-frontend event is not supported.
+>   Fatal: Not all events could be opened.
+>
+> This is a Dell R410 with an E5620 processor.
+
+Fail in a softer fashion on unknown/unsupported events.
 
 Reported-by: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-7y40wib8n008io7hjpn1dsrm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-7y40wib8n006io7hjpn1dsrm@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ tools/perf/builtin-stat.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 7983b9a..be8363a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1458,6 +1458,12 @@ static __init int intel_pmu_init(void)
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
- 		x86_pmu.pebs_constraints = intel_westmere_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_westmere_extra_regs;
-+
-+		/* UOPS_ISSUED.STALLED_CYCLES */
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
-+		/* UOPS_EXECUTED.CORE_ACTIVE_CYCLES,c=1,i=1 */
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x1803fb1;
-+
- 		pr_cont("Westmere events, ");
- 		break;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 9e596ab..c8b535b 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -377,7 +377,7 @@ static int run_perf_stat(int argc __used, const char **argv)
  
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+ 		if (create_perf_stat_counter(counter) < 0) {
+-			if (errno == EINVAL || errno == ENOSYS)
++			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT)
+ 				continue;
+ 
+ 			if (errno == EPERM || errno == EACCES) {
+@@ -385,8 +385,6 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 				      "\t Consider tweaking"
+ 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+ 				      system_wide ? "system-wide " : "");
+-			} else if (errno == ENOENT) {
+-				error("%s event is not supported. ", event_name(counter));
+ 			} else {
+ 				error("open_counter returned with %d (%s). "
+ 				      "/bin/dmesg may provide additional information.\n",
