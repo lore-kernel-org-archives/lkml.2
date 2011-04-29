@@ -1,74 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759233Ab1D3AAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 20:00:22 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39246 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758858Ab1D3AAR convert rfc822-to-8bit (ORCPT
+	id S932442Ab1D3ACz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 20:02:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53646 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755972Ab1D3ACx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 20:00:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=OQil/O5/5971DE3ViTyLnGwgOs93toSnFfY9JCJpnRiQmBn/Mnwg9kfg/LiHxG1G3x
-         nvsq04CCiXUaBXER6yV1RLc0snibK31QDW89UkG/0CJOg/a3SGKTH+yTD3DQ5ueyNOcU
-         nXAt4nWc36Oc8bZ0i9zH/97f+MvkTU9082uGg=
-MIME-Version: 1.0
-In-Reply-To: <20110429234805.GA20579@tux1.beaverton.ibm.com>
-References: <20110429234805.GA20579@tux1.beaverton.ibm.com>
-Date: Fri, 29 Apr 2011 18:00:16 -0600
-X-Google-Sender-Auth: cRYO6_mUVgXrNOnC65z691XALoQ
-Message-ID: <BANLkTimm00fwBukO_C=wS_jK6090rdj2pw@mail.gmail.com>
-Subject: Re: Premature -ENOSPC on btrfs?
-From: cwillu <cwillu@cwillu.com>
-To: djwong@us.ibm.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 29 Apr 2011 20:02:53 -0400
+Message-Id: <201104300002.p3U02Ma2026266@imap1.linux-foundation.org>
+Subject: mmotm 2011-04-29-16-25 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Fri, 29 Apr 2011 16:26:16 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 5:48 PM, Darrick J. Wong <djwong@us.ibm.com> wrote:
-> Hi,
->
-> I was giving btrfs (2.6.39-rc4) a quick tryout today and noticed some odd
-> behavior when running a rather stupid test.
->
-> First, I create a 1GB test fs, format it, and mount it.  Then, I run the
-> following command to create a huge file, truncate it, rewrite it, and report
-> what size file got created.
->
-> # while true; do dd if=/dev/zero of=/mnt/testfile bs=1024k; done
->
-> This is roughly what I see in terms of file size after filtering out all the
-> "dd: writing `/mnt/testfile': No space left on device" messages.
->
-> 782237696 bytes (782 MB) copied, 16.5647 s, 47.2 MB/s
-> 545259520 bytes (545 MB) copied, 14.061 s, 38.8 MB/s
-> 780140544 bytes (780 MB) copied, 15.2959 s, 51.0 MB/s
-> 933232640 bytes (933 MB) copied, 15.2241 s, 61.3 MB/s
-> 827326464 bytes (827 MB) copied, 14.8383 s, 55.8 MB/s
-> 931135488 bytes (931 MB) copied, 15.1554 s, 61.4 MB/s
-> 936378368 bytes (936 MB) copied, 2.98301 s, 314 MB/s
-> 393216000 bytes (393 MB) copied, 12.9202 s, 30.4 MB/s
-> 387973120 bytes (388 MB) copied, 13.4906 s, 28.8 MB/s
-> 932184064 bytes (932 MB) copied, 15.3356 s, 60.8 MB/s
-> 785383424 bytes (785 MB) copied, 14.6429 s, 53.6 MB/s
-> 927989760 bytes (928 MB) copied, 15.4386 s, 60.1 MB/s
-> 833617920 bytes (834 MB) copied, 14.6289 s, 57.0 MB/s
-> 936378368 bytes (936 MB) copied, 3.33651 s, 281 MB/s
-> 393216000 bytes (393 MB) copied, 12.9689 s, 30.3 MB/s
-> 389021696 bytes (389 MB) copied, 6.02794 s, 64.5 MB/s
-> 294649856 bytes (295 MB) copied, 1.05144 s, 280 MB/s
->
-> Strangely, df reports that free space remains, and I can even create a second
-> file to fill the empty space, so clearly the fs isn't full yet.  Is this the
-> intended behavior of btrfs?  ext4/vfat seem to produce the same size file
-> every time.
+The mm-of-the-moment snapshot 2011-04-29-16-25 has been uploaded to
 
-https://btrfs.wiki.kernel.org/index.php/FAQ#if_your_device_is_small
+   http://userweb.kernel.org/~akpm/mmotm/
 
-You'll want to use mixed block groups with such a small filesystem.
+and will soon be available at
+
+   git://zen-kernel.org/kernel/mmotm.git
+
+It contains the following patches against 2.6.39-rc5:
+
+origin.patch
+rtc-s3c-rtc-fixup-wake-support-for-rtc.patch
+backlight-new-driver-for-the-adp8870-backlight-devices.patch
+linux-next.patch
+next-remove-localversion.patch
+i-need-old-gcc.patch
+arch-alpha-kernel-systblss-remove-debug-check.patch
+include-asm-generic-vmlinuxldsh-fix-__modver-section-warnings.patch
+drivers-i2c-busses-i2c-designware-corec-needs-delayh.patch
+tmpfs-fix-race-between-umount-and-writepage.patch
+fs-namespacec-bound-mount-propagation-fix.patch
+drivers-scsi-pmcraid-reject-negative-request-size.patch
+acpi-remove-acpi_sleep=s4_nonvs.patch
+acerhdf-add-support-for-aspire-1410-bios-v13314.patch
+arch-x86-include-asm-delayh-fix-udelay-and-ndelay-for-8-bit-args.patch
+x86-fix-mmap-random-address-range.patch
+leds-new-pcengines-alix-system-driver-enables-leds-via-gpio-interface.patch
+gpio-show-explicit-dependency-between-gpio_cs5535-and-mfd_cs5535.patch
+msm-timer-migrate-to-timer-based-__delay.patch
+arch-arm-mach-ux500-mbox-db5500c-world-writable-sysfs-fifo-file.patch
+audit-always-follow-va_copy-with-va_end.patch
+btrfs-dont-dereference-extent_mapping-if-null.patch
+drivers-gpu-drm-radeon-atomc-fix-warning.patch
+fb-fix-potential-deadlock-between-lock_fb_info-and-console_lock.patch
+cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
+fscache-remove-dead-code-under-config_workqueue_debugfs.patch
+bitmap-irq-add-smp_affinity_list-interface-to-proc-irq.patch
+posix-timers-rcu-conversion.patch
+leds-support-automatic-start-of-blinking-with-ledtrig-timer.patch
+drivers-leds-leds-pca9532c-add-gpio-capability.patch
+leds-route-kbd-leds-through-the-generic-leds-layer.patch
+net-irda-convert-bfin_sir-to-common-blackfin-uart-header.patch
+net-convert-%p-usage-to-%pk.patch
+backlight-add-backlight-type-fix.patch
+backlight-add-backlight-type-fix-fix.patch
+drivers-video-backlight-adp5520_blc-check-strict_strtoul-return-value.patch
+drivers-video-backlight-adp5520_blc-check-strict_strtoul-return-value-fix.patch
+i915-add-native-backlight-control.patch
+btusb-patch-add_apple_macbookpro62.patch
+drivers-message-fusion-mptsasc-fix-warning.patch
+scsi-fix-a-header-to-include-linux-typesh.patch
+aic94xx-world-writable-sysfs-update_bios-file.patch
+osst-wrong-index-used-in-inner-loop.patch
+osst-wrong-index-used-in-inner-loop-checkpatch-fixes.patch
+drivers-scsi-osstc-fix-warning.patch
+drivers-scsi-megaraidc-fix-sparse-warnings.patch
+drbd-fix-warning.patch
+usb-yurex-recognize-generalkeys-wireless-presenter-as-generic-hid.patch
+drivers-usb-misc-usbtestc-fix-warning.patch
+mm.patch
+arch-mm-filter-disallowed-nodes-from-arch-specific-show_mem-functions.patch
+mmap-add-alignment-for-some-variables.patch
+mmap-avoid-unnecessary-anon_vma-lock.patch
+mmap-avoid-merging-cloned-vmas.patch
+mm-remove-unused-zone_idx-variable-from-set_migratetype_isolate.patch
+mm-nommu-sort-mm-mmap-list-properly.patch
+mm-nommu-sort-mm-mmap-list-properly-fix.patch
+mm-nommu-dont-scan-the-vma-list-when-deleting.patch
+mm-nommu-find-vma-using-the-sorted-vma-list.patch
+mm-nommu-check-the-vma-list-when-unmapping-file-mapped-vma.patch
+mm-nommu-fix-a-potential-memory-leak-in-do_mmap_private.patch
+mm-nommu-fix-a-compile-warning-in-do_mmap_pgoff.patch
+mm-per-node-vmstat-show-proper-vmstats.patch
+mm-per-node-vmstat-show-proper-vmstats-fix.patch
+mm-increase-reclaim_distance-to-30.patch
+mm-introduce-wait_on_page_locked_killable.patch
+x86mm-make-pagefault-killable.patch
+mm-mem-hotplug-fix-section-mismatch-setup_per_zone_inactive_ratio-should-be-__meminit.patch
+mm-mem-hotplug-recalculate-lowmem_reserve-when-memory-hotplug-occur.patch
+mm-mem-hotplug-update-pcp-stat_threshold-when-memory-hotplug-occur.patch
+mm-mem-hotplug-update-pcp-stat_threshold-when-memory-hotplug-occur-fix.patch
+mm-convert-vma-vm_flags-to-64-bit.patch
+mm-add-__nocast-attribute-to-vm_flags.patch
+fremap-convert-vm_flags-to-unsigned-long-long.patch
+procfs-convert-vm_flags-to-unsigned-long-long.patch
+mm-compaction-reverse-the-change-that-forbade-sync-migraton-with-__gfp_no_kswapd.patch
+oom-replace-pf_oom_origin-with-toggling-oom_score_adj.patch
+oom-replace-pf_oom_origin-with-toggling-oom_score_adj-update.patch
+include-linux-gfph-work-around-apparent-sparse-confusion.patch
+include-linux-gfph-convert-bug_on-into-vm_bug_on.patch
+mm-rename-alloc_pages_exact.patch
+mm-make-new-alloc_pages_exact.patch
+mm-reuse-__free_pages_exact-in-__alloc_pages_exact.patch
+mm-vmalloc-remove-guard-page-from-between-vmap-blocks.patch
+mm-make-expand_downwards-symmetrical-with-expand_upwards.patch
+mm-make-expand_downwards-symmetrical-with-expand_upwards-v3.patch
+mm-mmu_gather-rework.patch
+mm-mmu_gather-rework-fix.patch
+powerpc-mmu_gather-rework.patch
+sparc-mmu_gather-rework.patch
+s390-mmu_gather-rework.patch
+arm-mmu_gather-rework.patch
+sh-mmu_gather-rework.patch
+ia64-mmu_gather-rework.patch
+um-mmu_gather-rework.patch
+mm-now-that-all-old-mmu_gather-code-is-gone-remove-the-storage.patch
+mm-powerpc-move-the-rcu-page-table-freeing-into-generic-code.patch
+mm-extended-batches-for-generic-mmu_gather.patch
+lockdep-mutex-provide-mutex_lock_nest_lock.patch
+mm-remove-i_mmap_lock-lockbreak.patch
+mm-convert-i_mmap_lock-to-a-mutex.patch
+mm-revert-page_lock_anon_vma-lock-annotation.patch
+mm-improve-page_lock_anon_vma-comment.patch
+mm-use-refcounts-for-page_lock_anon_vma.patch
+mm-convert-anon_vma-lock-to-a-mutex.patch
+mm-optimize-page_lock_anon_vma-fast-path.patch
+mm-uninline-large-generic-tlbh-functions.patch
+mm-thp-optimize-memcg-charge-in-khugepaged.patch
+mm-thp-optimize-memcg-charge-in-khugepaged-fix.patch
+mn10300-replace-mm-cpu_vm_mask-with-mm_cpumask.patch
+tile-replace-mm-cpu_vm_mask-with-mm_cpumask.patch
+mm-convert-mm-cpu_vm_cpumask-into-cpumask_var_t.patch
+mm-convert-mm-cpu_vm_cpumask-into-cpumask_var_t-fix.patch
+mm-convert-mm-cpu_vm_cpumask-into-cpumask_var_t-checkpatch-fixes.patch
+mm-break-out-page-allocation-warning-code.patch
+mm-print-vmalloc-state-after-allocation-failures.patch
+writeback-pass-writeback_control-down-to-move_expired_inodes.patch
+writeback-introduce-writeback_controlinodes_cleaned.patch
+writeback-try-more-writeback-as-long-as-something-was-written.patch
+writeback-the-kupdate-expire-timestamp-should-be-a-moving-target.patch
+writeback-sync-expired-inodes-first-in-background-writeback.patch
+writeback-sync-expired-inodes-first-in-background-writeback-fix.patch
+writeback-refill-b_io-iff-empty.patch
+mem-hotplug-call-isolate_lru_page-with-elevated-refcount.patch
+mem-hwpoison-fix-page-refcount-around-isolate_lru_page.patch
+mm-strictly-require-elevated-page-refcount-in-isolate_lru_page.patch
+alpha-mm-set-all-online-nodes-in-n_normal_memory.patch
+m32r-mm-set-all-online-nodes-in-n_normal_memory.patch
+mm-check-if-any-page-in-a-pageblock-is-reserved-before-marking-it-migrate_reserve.patch
+mm-check-if-any-page-in-a-pageblock-is-reserved-before-marking-it-migrate_reserve-fix.patch
+readahead-readahead-page-allocations-are-ok-to-fail.patch
+vmscan-change-shrink_slab-interfaces-by-passing-shrink_control.patch
+vmscan-change-shrink_slab-interfaces-by-passing-shrink_control-fix.patch
+vmscan-change-shrink_slab-interfaces-by-passing-shrink_control-fix-2.patch
+vmscan-change-shrinker-api-by-passing-shrink_control-struct.patch
+vmscan-change-shrinker-api-by-passing-shrink_control-struct-fix.patch
+vmscan-change-shrinker-api-by-passing-shrink_control-struct-fix-2.patch
+readahead-return-early-when-readahead-is-disabled.patch
+readahead-reduce-unnecessary-mmap_miss-increases.patch
+readahead-trigger-mmap-sequential-readahead-on-pg_readahead.patch
+writeback-split-inode_wb_list_lock-into-bdi_writebacklist_lock.patch
+writeback-elevate-queue_io-into-wb_writeback.patch
+mm-remove-unused-token-argument-from-apply_to_page_range-callback.patch
+mm-add-apply_to_page_range_batch.patch
+ioremap-use-apply_to_page_range_batch-for-ioremap_page_range.patch
+vmalloc-use-plain-pte_clear-for-unmaps.patch
+vmalloc-use-apply_to_page_range_batch-for-vunmap_page_range.patch
+vmalloc-use-apply_to_page_range_batch-for-vmap_page_range_noflush.patch
+vmalloc-use-apply_to_page_range_batch-in-alloc_vm_area.patch
+xen-mmu-use-apply_to_page_range_batch-in-xen_remap_domain_mfn_range.patch
+xen-grant-table-use-apply_to_page_range_batch.patch
+memsw-remove-noswapaccount-kernel-parameter.patch
+mm-batch-activate_page-to-reduce-lock-contention.patch
+xattrh-expose-string-defines-to-userspace.patch
+frv-duplicate-output_buffer-of-e03.patch
+frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
+hpet-factor-timer-allocate-from-open.patch
+alpha-replace-with-new-cpumask-apis.patch
+arch-alpha-include-asm-ioh-s-extern-inline-static-inline.patch
+m32r-convert-cpumask-api.patch
+m32r-fix-spin_lock_irqsave-misuse.patch
+m32r-remove-redundant-declaration.patch
+ulimit-raise-default-hard-ulimit-on-number-of-files-to-4096.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure-checkpatch-fixes.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure-fix.patch
+sparse-define-dummy-build_bug_on-definition-for-sparse.patch
+sparse-define-__must_be_array-for-__checker__.patch
+sparse-undef-__compiletime_warningerror-if-__checker__-is-defined.patch
+lib-vsprintfc-fix-interaction-of-kasprintf-and-vsnprintf-when-using-%pv.patch
+memblock-add-error-return-when-config_have_memblock-is-not-set.patch
+printk-allocate-kernel-log-buffer-earlier-v2.patch
+printk-allocate-kernel-log-buffer-earlier-v2-checkpatch-fixes.patch
+printk-allocate-kernel-log-buffer-earlier-v2-fix.patch
+fcntlf_setfl-allow-setting-of-o_sync.patch
+maintainers-roman-zippel-has-been-mia-for-several-years.patch
+lru_cache-use-correct-type-in-sizeof-for-allocation.patch
+lru_cache-use-correct-type-in-sizeof-for-allocation-fix.patch
+lib-add-kstrto_from_user.patch
+lib-consolidate-debug_per_cpu_maps.patch
+include-linux-genalloch-add-multiple-inclusion-guards.patch
+lib-genallocc-add-support-for-specifying-the-physical-address.patch
+lib-genallocc-add-support-for-specifying-the-physical-address-v2.patch
+percpu_counter-change-return-value-and-add-comments.patch
+percpu_counter-change-return-value-and-add-comments-fix.patch
+checkpatch-add-check-for-line-continuations-in-quoted-strings.patch
+checkpatch-add-foo_level-and-module_bar-to-80-column-exceptions.patch
+checkpatch-fix-defect-in-printkkern_level-80-column-exceptions.patch
+lib-hexdumpc-make-hex2bin-return-the-updated-src-address.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix-fix.patch
+fs-ncpfs-inodec-suppress-used-uninitialised-warning.patch
+rtc-add-support-for-the-rtc-in-via-vt8500-and-compatibles.patch
+rtc-add-em3027-rtc-driver.patch
+rtc-add-rv3029c2-rtc-support.patch
+rtc-add-basic-support-for-st-m41t93-spi-rtc.patch
+drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region.patch
+drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region-fix.patch
+rtc-add-support-for-spear-rtc.patch
+rtc-driver-for-pt7c4338-chip.patch
+rtc-driver-for-pt7c4338-chip-checkpatch-fixes.patch
+rtc-driver-for-pt7c4338-chip-fix.patch
+rtc-rtc-driver-for-da9052-pmic.patch
+gpio-add-new-altera-pio-driver.patch
+gpio-add-new-altera-pio-driver-update.patch
+gpio-make-gpio_requestfree_array-gpio-array-parameter-const.patch
+jbd-remove-dependency-on-__gfp_nofail.patch
+ufs-truncated-values-handling-64-bit-metadata.patch
+documentation-atomic_opstxt-avoid-volatile-in-sample-code.patch
+documentation-accounting-getdelaysc-fix-unused-var-warning.patch
+documentation-accounting-getdelaysc-handle-sendto-failures.patch
+cgroups-read-write-lock-clone_thread-forking-per-threadgroup.patch
+cgroups-add-per-thread-subsystem-callbacks.patch
+cgroups-make-procs-file-writable.patch
+cgroups-use-flex_array-in-attach_proc.patch
+cgroup-remove-the-ns_cgroup.patch
+mm-move-enum-vm_event_item-into-a-standalone-header-file.patch
+memcg-count-the-soft_limit-reclaim-in-global-background-reclaim.patch
+memcg-add-stats-to-monitor-soft_limit-reclaim.patch
+add-the-pagefault-count-into-memcg-stats.patch
+add-the-pagefault-count-into-memcg-stats-fix.patch
+memcg-remove-pointless-next_mz-nullification-in-mem_cgroup_soft_limit_reclaim.patch
+memcg-mark-init_section_page_cgroup-properly.patch
+memcg-fix-off-by-one-when-calculating-swap-cgroup-map-length.patch
+memcg-move-page-freeing-code-out-of-lock.patch
+maintainers-add-mm-page_cgroupc-into-memcg-subsystem.patch
+cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node.patch
+cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-cpusets-initialize-spread-rotor-lazily.patch
+cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-cpusets-initialize-spread-rotor-lazily-fix.patch
+asm-generic-ptraceh-start-a-common-low-level-ptrace-helper.patch
+blackfin-convert-to-asm-generic-ptraceh.patch
+x86-convert-to-asm-generic-ptraceh.patch
+sh-convert-to-asm-generic-ptraceh.patch
+kgdbts-unify-generalize-gdb-breakpoint-adjustment.patch
+signal-introduce-retarget_shared_pending.patch
+signal-retarget_shared_pending-consider-shared-unblocked-signals-only.patch
+signal-retarget_shared_pending-optimize-while_each_thread-loop.patch
+signal-sigprocmask-narrow-the-scope-of-siglock.patch
+signal-sigprocmask-should-do-retarget_shared_pending.patch
+x86-signal-handle_signal-should-use-set_current_blocked.patch
+x86-signal-sys_rt_sigreturn-should-use-set_current_blocked.patch
+signal-cleanup-sys_rt_sigprocmask.patch
+mm-extract-exe_file-handling-from-procfs.patch
+coredump-add-support-for-exe_file-in-core-name.patch
+kstrtox-convert-fs-proc.patch
+proc-constify-status-array.patch
+proc-stat-use-defined-macro-kmalloc_max_size.patch
+proc-put-check_mem_permission-after-__get_free_page-in-mem_write.patch
+proc-fix-pagemap_read-error-case.patch
+cpumask-convert-for_each_cpumask-with-for_each_cpu.patch
+cpumask-convert-cpumask_of_cpu-to-cpumask_of.patch
+drivers-char-mspecc-use-kvzalloc-to-allocate-memory.patch
+fs-partitions-efic-corrupted-guid-partition-tables-can-cause-kernel-oops.patch
+fs-partitions-efic-corrupted-guid-partition-tables-can-cause-kernel-oops-fix.patch
+sysctl-add-proc_dointvec_bool-handler.patch
+sysctl-use-proc_dointvec_bool-where-appropriate.patch
+sysctl-add-proc_dointvec_unsigned-handler.patch
+sysctl-use-proc_dointvec_unsigned-where-appropriate.patch
+pid-fix-typo-in-function-description.patch
+fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
+drivers-char-ppdevc-put-gotten-port-value.patch
+kernel-profilec-use-vzalloc-instead-of-vmallocmemset.patch
+scatterlist-new-helper-functions.patch
+scatterlist-new-helper-functions-update.patch
+scatterlist-new-helper-functions-update-fix.patch
+memstick-add-support-for-legacy-memorysticks.patch
+memstick-add-support-for-legacy-memorysticks-update-2.patch
+w1-add-1-wire-w1-reset-and-resume-command-api-support.patch
+w1-add-1-wire-w1-ds2408-8-channel-addressable-switch-support.patch
+w1-complete-the-1-wire-w1-ds1wm-driver-search-algorithm.patch
+w1-have-netlink-search-update-kernel-list.patch
+kexec-remove-kmsg_dump_kexec.patch
+kexec-remove-kmsg_dump_kexec-fix.patch
+m68knommu-fix-build-error-due-to-the-lack-of-find_next_bit_le.patch
+arch-add-define-for-each-of-optimized-find-bitops.patch
+bitops-add-ifndef-for-each-of-find-bitops.patch
+arch-remove-config_generic_find_next_bitbit_lelast_bit.patch
+arm-use-asm-generic-bitops-leh.patch
+s390-use-asm-generic-bitops-leh.patch
+m68knommu-use-generic-find_next_bit_le.patch
+make-sure-nobodys-leaking-resources.patch
+journal_add_journal_head-debug.patch
+releasing-resources-with-children.patch
+make-frame_pointer-default=y.patch
+mutex-subsystem-synchro-test-module.patch
+mutex-subsystem-synchro-test-module-fix.patch
+slab-leaks3-default-y.patch
+put_bh-debug.patch
+add-debugging-aid-for-memory-initialisation-problems.patch
+workaround-for-a-pci-restoring-bug.patch
+prio_tree-debugging-patch.patch
+single_open-seq_release-leak-diagnostics.patch
+add-a-refcount-check-in-dput.patch
+memblock-add-input-size-checking-to-memblock_find_region.patch
+memblock-add-input-size-checking-to-memblock_find_region-fix.patch
