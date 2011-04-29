@@ -1,44 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933943Ab1D2Vlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:41:35 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:60883
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933897Ab1D2VlL (ORCPT
+	id S933953Ab1D2Vlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:41:37 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:35868 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933899Ab1D2VlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:41:11 -0400
-Date: Fri, 29 Apr 2011 21:41:08 +0000 (UTC)
-From: johnlinn@comcast.net
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        michal simek <michal.simek@petalogix.com>, joe@perches.com,
-        grant likely <grant.likely@secretlab.ca>,
-        John Linn <john.linn@xilinx.com>
-Message-ID: <1013673718.2094564.1304113268455.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <20110429223222.7d283dde@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+	Fri, 29 Apr 2011 17:41:15 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DBB304D.3090703@verizon.net>
+Date: Fri, 29 Apr 2011 17:40:29 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [149.199.62.254]
-X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH RESEND 2/4] kbuild: make headerdep work in KBUILD_OUTDIR
+Content-Type: multipart/mixed;
+	boundary="------------080106080807080207080209"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--------------080106080807080207080209
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 
-> > Yes I'll have a look at it, sorry for the hassle.  
-> > 
-> > I'm assuming I need to try it against linus
-> > tree as something may have changed. Or some other tree?
-> 
-> Or you are assuimg NO_IRQ is defined everywhere which it isn't. The
-> kernel mainstream just uses zero as intended not a define for it.
-> 
-> Alan
+This patch fixes the headerdep target so it works when make is invoked
+in KBUILD_OUTDIR.
 
-Ahh... maybe I see, it's only defined in ARM and that's what I was building
-for.  I'm a little slow sometimes, but I'll get there.
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
+---
+ Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Gotcha, replace with 0. Thanks.
+diff --git a/Makefile b/Makefile
+index 2a5159a..093c9d2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -991,7 +991,8 @@ include/generated/utsrelease.h:
+include/config/kernel.release FORCE
+
+ PHONY += headerdep
+ headerdep:
+-	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
++	$(Q)find $(srctree)/include/ -name '*.h' | xargs --max-args 1 \
++	$(srctree)/scripts/headerdep.pl -I$(srctree)/include
+
+ #
+---------------------------------------------------------------------------
+
+-- 
+1.7.5.rc1
+
+
+
+--------------080106080807080207080209
+Content-Type: text/plain;
+	name="kbuild-make-headerdep-work-in-KBUILD_OUTDIR.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="kbuild-make-headerdep-work-in-KBUILD_OUTDIR.patch"
+
+>From 547283fa29efcfbfecd2f277bf03a06d726bd294 Mon Sep 17 00:00:00 2001
+From: Peter Foley <pefoley2@verizon.net>
+Date: Tue, 26 Apr 2011 17:17:11 -0400
+Subject: [PATCH 2/4] kbuild: make headerdep work in KBUILD_OUTDIR
+
+
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
+---
+ Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 2a5159a..093c9d2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -991,7 +991,8 @@ include/generated/utsrelease.h: include/config/kernel.release FORCE
+ 
+ PHONY += headerdep
+ headerdep:
+-	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
++	$(Q)find $(srctree)/include/ -name '*.h' | xargs --max-args 1 \
++	$(srctree)/scripts/headerdep.pl -I$(srctree)/include
+ 
+ # ---------------------------------------------------------------------------
+ 
+-- 
+1.7.5.rc1
+
+
+
+--------------080106080807080207080209--
