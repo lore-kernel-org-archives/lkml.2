@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab1D2FmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 01:42:15 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59821 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab1D2Fl2 (ORCPT
+	id S1751986Ab1D2FvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 01:51:15 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:24428 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751491Ab1D2FvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 01:41:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=SsRBC8lmNSddXao5q0KmYzYQy8fytk3Gbvqi9DY+xTu3/i5ICQvIP5Q64La6seJkkM
-         tWivFpOYB41ObB1sfyWufQ1D4j45eI0h3y/tPvydVInBwtnUcw//zW/ZxNrLJx8l9kHi
-         iyuTGNG5EEXeFtczsURskUjSoHE63ACcs1wck=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 4/6] staging: ft1000: Remove unused variable DSPResetNum.
-Date: Fri, 29 Apr 2011 07:41:08 +0200
-Message-Id: <1304055670-3573-4-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1304055670-3573-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1304055670-3573-1-git-send-email-marek.belisko@open-nandra.com>
+	Fri, 29 Apr 2011 01:51:14 -0400
+Message-ID: <4DBA5194.7080609@vmware.com>
+Date: Fri, 29 Apr 2011 07:50:12 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Jerome Glisse <j.glisse@gmail.com>, linaro-mm-sig@lists.linaro.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+References: <201104212129.17013.arnd@arndb.de>	<201104281428.56780.arnd@arndb.de>	<20110428131531.GK17290@n2100.arm.linux.org.uk>	<201104281629.52863.arnd@arndb.de>	<20110428143440.GP17290@n2100.arm.linux.org.uk>	<BANLkTinhm7ar1mf1D-dSMiLtw5hRNY36RA@mail.gmail.com> <1304036962.2513.202.camel@pasglop>
+In-Reply-To: <1304036962.2513.202.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed because was only assigned and never used.
+On 04/29/2011 02:29 AM, Benjamin Herrenschmidt wrote:
+> On Thu, 2011-04-28 at 15:37 -0400, Jerome Glisse wrote:
+>    
+>> Jesse also pointed out space exhaustion inside the iommu and i believe
+>> this should also be considered. This is why i believe the dma_* api is
+>> not well suited. In DRM/TTM we use  pci_dma_mapping* and we also play
+>> with with page set_page*_uc|wc|wb.
+>>      
+> Which are yet another set of completely x86-centric APIs that have not
+> been thought in the context of other architectures and are probably
+> mostly unimplementables on half of them :-)
+>
+> Cheers,
+> Ben.
+>
+>
+>    
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    2 --
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    1 -
- 2 files changed, 0 insertions(+), 3 deletions(-)
+I've been doing some thinking over the years on how we could extend that 
+functionality to other architectures. The reason we need those is 
+because some x86 processors (early AMDs and, I think VIA c3) dislike 
+multiple mappings of the same pages with conflicting caching attributes.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 5d85382..b4b4f1d 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -650,8 +650,6 @@ static int ft1000_reset_card(struct net_device *dev)
- 	DEBUG("ft1000_hw:ft1000_reset_card: reset asic\n");
- 	ft1000_reset_asic(dev);
- 
--	info->DSPResetNum++;
--
- 	DEBUG("ft1000_hw:ft1000_reset_card: call dsp_reload\n");
- 	dsp_reload(ft1000dev);
- 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 55ba1ad..ee47d4c 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -497,7 +497,6 @@ struct ft1000_info {
-     u16 DrvErrNum;
-     u16 AsicID;
-     int DspAsicReset;
--    int DSPResetNum;
-     int DeviceCreated;
-     int CardReady;
-     int NetDevRegDone;
--- 
-1.7.1
+What we really want to be able to do is to unmap pages from the linear 
+kernel map, to avoid having to transition the linear kernel map every 
+time we change other mappings.
+
+The reason we need to do this in the first place is that AGP and modern 
+GPUs has a fast mode where snooping is turned off.
+
+However, we should be able to construct a completely generic api around 
+these operations, and for architectures that don't support them we need 
+to determine
+
+a)  Whether we want to support them anyway (IIRC the problem with PPC is 
+that the linear kernel map has huge tlb entries that are very 
+inefficient to break up?)
+
+b)  Whether they are needed at all on the particular architecture. The 
+Intel x86 spec is, (according to AMD), supposed to forbid conflicting 
+caching attributes, but the Intel graphics guys use them for GEM. PPC 
+appears not to need it.
+
+c)  If neither of the above applies, we might be able to either use 
+explicit cache flushes (which will require a TTM cache sync API), or 
+require the device to use snooping mode. The architecture may also 
+perhaps have a pool of write-combined pages that we can use. This should 
+be indicated by defines in the api header.
+
+/Thomas
+
+
+
+
+> _______________________________________________
+> Linaro-mm-sig mailing list
+> Linaro-mm-sig@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+>    
 
