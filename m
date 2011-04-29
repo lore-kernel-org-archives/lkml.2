@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760904Ab1D2VHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:07:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37216 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759839Ab1D2VH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:07:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [Update][PATCH 7/9] PM / Runtime: Generic clock manipulation rountines for runtime PM (v3)
-Date: Fri, 29 Apr 2011 23:07:34 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Colin Cross <ccross@google.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-sh@vger.kernel.org,
-        lethal@linux-sh.org, Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-References: <201104130205.26988.rjw@sisk.pl> <201104280258.34694.rjw@sisk.pl> <20110429205039.GB7497@ponder.secretlab.ca>
-In-Reply-To: <20110429205039.GB7497@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104292307.35070.rjw@sisk.pl>
+	id S1760986Ab1D2VIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:08:15 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39233
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1760914Ab1D2VIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 17:08:09 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 09/18] Staging: hv: Make event_dpc a stand alone variable
+Date: Fri, 29 Apr 2011 13:45:07 -0700
+Message-Id: <1304109916-24874-9-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1304109916-24874-1-git-send-email-kys@microsoft.com>
+References: <1304109779-24819-1-git-send-email-kys@microsoft.com>
+ <1304109916-24874-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 29, 2011, Grant Likely wrote:
-> On Thu, Apr 28, 2011 at 02:58:34AM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, April 28, 2011, Colin Cross wrote:
-> > > On Wed, Apr 27, 2011 at 2:48 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > > +void pm_runtime_clk_remove(struct device *dev, const char *con_id)
-> > > > +{
-> > > > +       struct pm_runtime_clk_data *prd = __to_prd(dev);
-> > > > +       struct pm_clock_entry *ce;
-> > > > +
-> > > > +       if (!prd)
-> > > > +               return;
-> > > > +
-> > > > +       mutex_lock(&prd->lock);
-> > > > +
-> > > > +       list_for_each_entry(ce, &prd->clock_list, node)
-> > > Braces
-> > 
-> > No, this is correct as is.
-> 
-> The code is correct, but Colin's comment is valid.  Braces do make it
-> easier for a reader to properly interpret the scope of large multiline
-> blocks, even if it does resolve to a single statement.
+In preparation for getting rid of struct hv_bus, Make event_dpc a
+stand alone variable.
 
-OK, I'll add the braces.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/vmbus_drv.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index 38bfff0..6cc01c2 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -43,11 +43,11 @@
+ static struct pci_dev *hv_pci_dev;
+ 
+ static struct tasklet_struct msg_dpc;
++static struct tasklet_struct event_dpc;
+ 
+ /* Main vmbus driver data structure */
+ struct hv_bus {
+ 	struct bus_type bus;
+-	struct tasklet_struct event_dpc;
+ };
+ 
+ unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
+@@ -519,7 +519,7 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+ 			tasklet_schedule(&msg_dpc);
+ 
+ 		if (test_bit(1, (unsigned long *)&ret))
+-			tasklet_schedule(&hv_bus.event_dpc);
++			tasklet_schedule(&event_dpc);
+ 
+ 		return IRQ_HANDLED;
+ 	} else {
+@@ -552,7 +552,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
+ 
+ 	/* Initialize the bus context */
+ 	tasklet_init(&msg_dpc, vmbus_on_msg_dpc, 0);
+-	tasklet_init(&hv_bus.event_dpc, vmbus_on_event, 0);
++	tasklet_init(&event_dpc, vmbus_on_event, 0);
+ 
+ 	/* Now, register the bus  with LDM */
+ 	ret = bus_register(&hv_bus.bus);
+-- 
+1.7.4.1
+
