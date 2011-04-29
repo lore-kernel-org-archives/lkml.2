@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab1D2TCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:02:39 -0400
-Received: from kroah.org ([198.145.64.141]:50376 "EHLO coco.kroah.org"
+	id S933394Ab1D2S6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:40 -0400
+Received: from kroah.org ([198.145.64.141]:50359 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933406Ab1D2S6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:41 -0400
+	id S933130Ab1D2S6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:38 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:56 2011
-Message-Id: <20110429185656.425233710@clark.kroah.org>
+Message-Id: <20110429185656.144193163@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:03 -0700
+Date: Fri, 29 Apr 2011 11:56:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: [40/55] oom: use pte pages in OOM score
+        David Rientjes <rientjes@google.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [37/55] [PARISC] set memory ranges in N_NORMAL_MEMORY when onlined
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: David Rientjes <rientjes@google.com>
 
-commit f755a042d82b51b54f3bdd0890e5ea56c0fb6807 upstream.
+commit d9b41e0b54fd7e164daf1e9c539c1070398aa02e upstream.
 
-PTE pages eat up memory just like anything else, but we do not account for
-them in any way in the OOM scores.  They are also _guaranteed_ to get
-freed up when a process is OOM killed, while RSS is not.
+When a DISCONTIGMEM memory range is brought online as a NUMA node, it
+also needs to have its bet set in N_NORMAL_MEMORY.  This is necessary for
+generic kernel code that utilizes N_NORMAL_MEMORY as a subset of N_ONLINE
+for memory savings.
 
-Reported-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+These types of hacks can hopefully be removed once DISCONTIGMEM is either
+removed or abstracted away from CONFIG_NUMA.
+
+Fixes a panic in the slub code which only initializes structures for
+N_NORMAL_MEMORY to save memory:
+
+	Backtrace:
+	 [<000000004021c938>] add_partial+0x28/0x98
+	 [<000000004021faa0>] __slab_free+0x1d0/0x1d8
+	 [<000000004021fd04>] kmem_cache_free+0xc4/0x128
+	 [<000000004033bf9c>] ida_get_new_above+0x21c/0x2c0
+	 [<00000000402a8980>] sysfs_new_dirent+0xd0/0x238
+	 [<00000000402a974c>] create_dir+0x5c/0x168
+	 [<00000000402a9ab0>] sysfs_create_dir+0x98/0x128
+	 [<000000004033d6c4>] kobject_add_internal+0x114/0x258
+	 [<000000004033d9ac>] kobject_add_varg+0x7c/0xa0
+	 [<000000004033df20>] kobject_add+0x50/0x90
+	 [<000000004033dfb4>] kobject_create_and_add+0x54/0xc8
+	 [<00000000407862a0>] cgroup_init+0x138/0x1f0
+	 [<000000004077ce50>] start_kernel+0x5a0/0x840
+	 [<000000004011fa3c>] start_parisc+0xa4/0xb8
+	 [<00000000404bb034>] packet_ioctl+0x16c/0x208
+	 [<000000004049ac30>] ip_mroute_setsockopt+0x260/0xf20
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/oom_kill.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/parisc/mm/init.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -172,10 +172,13 @@ unsigned int oom_badness(struct task_str
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
+ 	}
+ 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
  
- 	/*
- 	 * The baseline for the badness score is the proportion of RAM that each
--	 * task's rss and swap space use.
-+	 * task's rss, pagetable and swap space use.
- 	 */
--	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
--			totalpages;
-+	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
-+	points += get_mm_counter(p->mm, MM_SWAPENTS);
-+
-+	points *= 1000;
-+	points /= totalpages;
- 	task_unlock(p);
+-	for (i = 0; i < npmem_ranges; i++)
++	for (i = 0; i < npmem_ranges; i++) {
++		node_set_state(i, N_NORMAL_MEMORY);
+ 		node_set_online(i);
++	}
+ #endif
  
  	/*
 
