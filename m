@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab1D2I2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 04:28:07 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:32977 "EHLO kernel.dk"
+	id S932240Ab1D2IdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 04:33:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41912 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757594Ab1D2I2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 04:28:03 -0400
-Message-ID: <4DBA7691.4010806@kernel.dk>
-Date: Fri, 29 Apr 2011 10:28:01 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cdrom: always check_disk_change() on open
-References: <20110406121920.GC4142@mtj.dyndns.org> <20110429060200.GA5107@amit-x200.redhat.com> <4DBA73B6.6040603@kernel.dk> <20110429081653.GI16552@htj.dyndns.org>
-In-Reply-To: <20110429081653.GI16552@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752085Ab1D2IdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 04:33:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,286,1301900400"; 
+   d="scan'208";a="685836908"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RESEND PATCH 1/2] perf probe: Fix the missed parameter initialization
+Date: Fri, 29 Apr 2011 08:41:57 +0000
+Message-Id: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1304066518-30420-1-git-send-email-ming.m.lin@intel.com>
+References: <1304066518-30420-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-29 10:16, Tejun Heo wrote:
-> On Fri, Apr 29, 2011 at 10:15:50AM +0200, Jens Axboe wrote:
->>> Also, please mark this for stable-2.6.38.
->>
->> Done, added for 2.6.39 and marked stable for 2.6.38.
-> 
-> Heh, mid-air collision.  Good morning, Jens. :)
+pubname_callback_param::found should be initialized to 0 in fastpath lookup.
 
-Indeed :-)
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/util/probe-finder.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index a7c7145..3b9d0b8 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 			.file	  = pp->file,
+ 			.cu_die	  = &pf->cu_die,
+ 			.sp_die	  = &pf->sp_die,
++			.found	  = 0,
+ 		};
+ 		struct dwarf_callback_param probe_param = {
+ 			.data = pf,
 -- 
-Jens Axboe
+1.7.4.4
 
