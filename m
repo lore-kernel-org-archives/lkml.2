@@ -1,145 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759165Ab1D2P2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:28:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54924 "EHLO
+	id S1759237Ab1D2P24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:28:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46165 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757516Ab1D2P2x (ORCPT
+	with ESMTP id S1759047Ab1D2P2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:28:53 -0400
+	Fri, 29 Apr 2011 11:28:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:message-id:x-mailer;
-        b=ZDty4d/Wj2zUG8MAlEnesDkO07BdwTLDR+k5Fm58hRJ+Eama7XHseBKTCb9fnifDMv
-         /ynD0yQ9xT12PmRZ9bRel8RcxRBeUloU0Fk9DFL6bHJ+1+yGxvJCqm5gz2Kv+ZK3me3h
-         c7wLtFiQyG3lH51vHNbInAM4jQJ1mWtUQtJog=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=SN/myqzu8zxokak+gNgK7zoNNHee0bBbpueCOfXionlji86D4QODeS0Py5csO+KvXB
+         5BBbc+UK53sorM19Yhigr/1Y3NPlTp9mrqjqq6V2npdE3OHM6fc2X4JUPXk4RT7VbQt5
+         VH4LlV8a9Xjq8AYc9Wa93a745MvBDXcKSAxAQ=
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, yinghai@kernel.org, rientjes@google.com,
         tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHSET tip] x86, NUMA: Unify 32 and 64bit NUMA initialization
-Date: Fri, 29 Apr 2011 17:28:19 +0200
-Message-Id: <1304090924-8197-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/25] x86-64, NUMA: Simplify hotadd memory handling
+Date: Fri, 29 Apr 2011 17:28:20 +0200
+Message-Id: <1304090924-8197-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1304090924-8197-1-git-send-email-tj@kernel.org>
+References: <1304090924-8197-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The only special handling NUMA needs to do for hotadd memory is
+determining the node for the hotadd memory given the address of it and
+there's nothing specific to specific config method used.
 
-This patchset, finally, unifies 32 and 64bit NUMA initialization.  It
-gradually moves 64bit stuff to common code and replaces 32bit code
-with it.  Once the unification is complete, amdtopology and emulation
-are enabled for 32bit too (there's no reason not to).
+srat_64.c does somewhat elaborate error checking on
+ACPI_SRAT_MEM_HOT_PLUGGABLE regions, remembers them and implements
+memory_add_physaddr_to_nid() which determines the node for given
+hotadd address.
 
-This patchset contains the following 25 patches.
+This is almost completely redundant.  All the information is already
+available to the generic NUMA code which already performs all the
+sanity checking and merging.  All that's necessary is not using
+__initdata from numa_meminfo and providing a function which uses it to
+map address to node.
 
- 0001-x86-64-NUMA-Simplify-hotadd-memory-handling.patch
- 0002-x86-64-NUMA-trivial-cleanups-for-setup_node_bootmem.patch
- 0003-x86-64-NUMA-simplify-nodedata-allocation.patch
- 0004-x86-32-NUMA-Automatically-set-apicid-node-in-setup_l.patch
- 0005-x86-NUMA-Unify-32-64bit-numa_cpu_node-implementation.patch
- 0006-x86-32-NUMA-Make-apic-x86_32_numa_cpu_node-optional.patch
- 0007-x86-32-NUMA-use-sparse_memory_present_with_active_re.patch
- 0008-x86-NUMA-trivial-cleanups.patch
+Drop the specific implementation from srat_64.c and add generic
+memory_add_physaddr_to_nid() in numa_64.c, which is enabled if
+CONFIG_MEMORY_HOTPLUG is set.  Other than dropping the code, srat_64.c
+doesn't need any change as it already calls numa_add_memblk() for hot
+pluggable regions which is enough.
 
- 0009-x86-NUMA-rename-srat_64.c-to-srat.c.patch
- 0010-x86-NUMA-make-srat.c-32bit-safe.patch
- 0011-x86-32-NUMA-Move-get_memcfg_numa-into-numa_32.c.patch
- 0012-x86-NUMA-Move-numa_nodes_parsed-to-numa.-hc.patch
- 0013-x86-32-NUMA-implement-temporary-NUMA-init-shims.patch
- 0014-x86-32-NUMA-Replace-srat_32.c-with-srat.c.patch
+While at it, change CONFIG_MEMORY_HOTPLUG_SPARSE in srat_64.c to
+CONFIG_MEMORY_HOTPLUG, for NUMA on x86-64, the two are always the
+same.
 
- 0015-x86-32-NUMA-Update-numaq-to-use-new-NUMA-init-protoc.patch
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/mm/init_64.c |    8 -----
+ arch/x86/mm/numa_64.c |   22 +++++++++++++-
+ arch/x86/mm/srat_64.c |   78 +------------------------------------------------
+ 3 files changed, 22 insertions(+), 86 deletions(-)
 
- 0016-x86-NUMA-Move-NUMA-init-logic-from-numa_64.c-to-numa.patch
- 0017-x86-NUMA-Enable-build-of-generic-NUMA-init-code-on-3.patch
- 0018-x86-NUMA-Remove-long-64bit-assumption-from-numa.c.patch
- 0019-x86-32-NUMA-Add-start-and-end-to-init_alloc_remap.patch
- 0020-x86-NUMA-Initialize-and-use-remap-allocator-from-set.patch
- 0021-x86-NUMA-Make-32bit-use-common-NUMA-init-path.patch
- 0022-x86-NUMA-Make-numa_init_array-static.patch
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 7942335..0404bb3 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -679,14 +679,6 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ }
+ EXPORT_SYMBOL_GPL(arch_add_memory);
+ 
+-#if !defined(CONFIG_ACPI_NUMA) && defined(CONFIG_NUMA)
+-int memory_add_physaddr_to_nid(u64 start)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+-#endif
+-
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ static struct kcore_list kcore_vsyscall;
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 13f5b06..c4eecc2 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -28,7 +28,12 @@ EXPORT_SYMBOL(node_data);
+ 
+ nodemask_t numa_nodes_parsed __initdata;
+ 
+-static struct numa_meminfo numa_meminfo __initdata;
++static struct numa_meminfo numa_meminfo
++#ifndef CONFIG_MEMORY_HOTPLUG
++__initdata
++#endif
++;
++
+ static int numa_distance_cnt;
+ static u8 *numa_distance;
+ 
+@@ -540,3 +545,18 @@ int __cpuinit numa_cpu_node(int cpu)
+ 		return __apicid_to_node[apicid];
+ 	return NUMA_NO_NODE;
+ }
++
++#ifdef CONFIG_MEMORY_HOTPLUG
++int memory_add_physaddr_to_nid(u64 start)
++{
++	struct numa_meminfo *mi = &numa_meminfo;
++	int nid = mi->blk[0].nid;
++	int i;
++
++	for (i = 0; i < mi->nr_blks; i++)
++		if (mi->blk[i].start <= start && mi->blk[i].end > start)
++			nid = mi->blk[i].nid;
++	return nid;
++}
++EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
++#endif
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index 8e9d339..9994d2c 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -26,8 +26,6 @@
+ 
+ int acpi_numa __initdata;
+ 
+-static struct bootnode nodes_add[MAX_NUMNODES];
+-
+ static __init int setup_node(int pxm)
+ {
+ 	return acpi_map_pxm_to_node(pxm);
+@@ -37,7 +35,6 @@ static __init void bad_srat(void)
+ {
+ 	printk(KERN_ERR "SRAT: SRAT not used.\n");
+ 	acpi_numa = -1;
+-	memset(nodes_add, 0, sizeof(nodes_add));
+ }
+ 
+ static __init inline int srat_disabled(void)
+@@ -131,67 +128,11 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 	       pxm, apic_id, node);
+ }
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
++#ifdef CONFIG_MEMORY_HOTPLUG
+ static inline int save_add_info(void) {return 1;}
+ #else
+ static inline int save_add_info(void) {return 0;}
+ #endif
+-/*
+- * Update nodes_add[]
+- * This code supports one contiguous hot add area per node
+- */
+-static void __init
+-update_nodes_add(int node, unsigned long start, unsigned long end)
+-{
+-	unsigned long s_pfn = start >> PAGE_SHIFT;
+-	unsigned long e_pfn = end >> PAGE_SHIFT;
+-	int changed = 0;
+-	struct bootnode *nd = &nodes_add[node];
+-
+-	/* I had some trouble with strange memory hotadd regions breaking
+-	   the boot. Be very strict here and reject anything unexpected.
+-	   If you want working memory hotadd write correct SRATs.
+-
+-	   The node size check is a basic sanity check to guard against
+-	   mistakes */
+-	if ((signed long)(end - start) < NODE_MIN_SIZE) {
+-		printk(KERN_ERR "SRAT: Hotplug area too small\n");
+-		return;
+-	}
+-
+-	/* This check might be a bit too strict, but I'm keeping it for now. */
+-	if (absent_pages_in_range(s_pfn, e_pfn) != e_pfn - s_pfn) {
+-		printk(KERN_ERR
+-			"SRAT: Hotplug area %lu -> %lu has existing memory\n",
+-			s_pfn, e_pfn);
+-		return;
+-	}
+-
+-	/* Looks good */
+-
+-	if (nd->start == nd->end) {
+-		nd->start = start;
+-		nd->end = end;
+-		changed = 1;
+-	} else {
+-		if (nd->start == end) {
+-			nd->start = start;
+-			changed = 1;
+-		}
+-		if (nd->end == start) {
+-			nd->end = end;
+-			changed = 1;
+-		}
+-		if (!changed)
+-			printk(KERN_ERR "SRAT: Hotplug zone not continuous. Partly ignored\n");
+-	}
+-
+-	if (changed) {
+-		node_set(node, numa_nodes_parsed);
+-		printk(KERN_INFO "SRAT: hot plug zone found %Lx - %Lx\n",
+-				 nd->start, nd->end);
+-	}
+-}
+ 
+ /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+ void __init
+@@ -228,9 +169,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 
+ 	printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
+ 	       start, end);
+-
+-	if (ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)
+-		update_nodes_add(node, start, end);
+ }
+ 
+ void __init acpi_numa_arch_fixup(void) {}
+@@ -244,17 +182,3 @@ int __init x86_acpi_numa_init(void)
+ 		return ret;
+ 	return srat_disabled() ? -EINVAL : 0;
+ }
+-
+-#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) || defined(CONFIG_ACPI_HOTPLUG_MEMORY)
+-int memory_add_physaddr_to_nid(u64 start)
+-{
+-	int i, ret = 0;
+-
+-	for_each_node(i)
+-		if (nodes_add[i].start <= start && nodes_add[i].end > start)
+-			ret = i;
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+-#endif
+-- 
+1.7.1
 
- 0023-x86-NUMA-Rename-amdtopology_64.c-to-amdtopology.c.patch
- 0024-x86-NUMA-Enable-CONFIG_AMD_NUMA-on-32bit-too.patch
- 0025-x86-NUMA-Enable-emulation-on-32bit-too.patch
-
-Patches can be grouped as follows.
-
-0001-0008 are preparation patches.  Please note that 0001 was posted
-before.
-
-0009-0014 rename srat_64.c to srat.c and replace srat_32.c with it.
-
-0015 converts NUMAQ to follow the new init protocol.
-
-0016-0022 move 64bit NUMA init code from numa_64.c to numa.c and
-replace 32bit init code in numa_32.c with it.
-
-0023-0025 enable amdtoplogy and emulation for 32bit too.
-
-I've tested ACPI and amdtopology with and without emulation on 32 and
-64bit with several different configurations.  It all looks dandy but
-wider scope testing is definitely required.  Also, I couldn't test
-NUMAQ at all.
-
-Due to dependencies, the base commit this patchset is based on is a
-bit complex.  This patchset is based on,
-
- tip:x86/mm	c7a7b814c9dca9ee01b38e63b4a46de87156d3b6
- + tip:x86/numa	993ba1585cbb03fab012e41d1a5d24330a283b31
- + Cherry pick of 765af22da8 (x86-32, NUMA: Fix ACPI NUMA init broken
-   by recent x86-64 change)
-
-The tip:x86/numa requirement is because of the "x86-32, NUMA: Clean up
-alloc_remap" patchset[2] which got committed there.  I think it would
-have been better if they got routed together through x86/mm.  Well,
-anyways, we can sort it out.
-
-So, for review, please use the following git branch as base.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-unify-numa-base
-
-The whole patchset on top of the above base is available in the
-following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-unify-numa
-
-diffstat follows.  610 lines removed and 32bit NUMA got much better! :)
-
- arch/x86/Kconfig                 |    4 
- arch/x86/include/asm/acpi.h      |    2 
- arch/x86/include/asm/amd_nb.h    |    1 
- arch/x86/include/asm/apic.h      |    9 
- arch/x86/include/asm/dma.h       |   12 
- arch/x86/include/asm/mmzone_32.h |   20 -
- arch/x86/include/asm/numa.h      |   32 ++
- arch/x86/include/asm/numa_32.h   |   10 
- arch/x86/include/asm/numa_64.h   |   36 --
- arch/x86/include/asm/numaq.h     |    7 
- arch/x86/include/asm/srat.h      |   39 --
- arch/x86/include/asm/topology.h  |    7 
- arch/x86/kernel/apic/apic.c      |   26 -
- arch/x86/kernel/apic/apic_noop.c |    9 
- arch/x86/kernel/apic/bigsmp_32.c |    1 
- arch/x86/kernel/apic/es7000_32.c |    7 
- arch/x86/kernel/apic/numaq_32.c  |   30 --
- arch/x86/kernel/apic/probe_32.c  |    1 
- arch/x86/kernel/apic/summit_32.c |    1 
- arch/x86/mm/Makefile             |    4 
- arch/x86/mm/amdtopology.c        |  197 ++++++++++++++
- arch/x86/mm/amdtopology_64.c     |  196 --------------
- arch/x86/mm/init_32.c            |    1 
- arch/x86/mm/init_64.c            |    8 
- arch/x86/mm/numa.c               |  545 ++++++++++++++++++++++++++++++++++++++-
- arch/x86/mm/numa_32.c            |  165 -----------
- arch/x86/mm/numa_64.c            |  519 -------------------------------------
- arch/x86/mm/numa_emulation.c     |   16 -
- arch/x86/mm/numa_internal.h      |    8 
- arch/x86/mm/srat.c               |  184 +++++++++++++
- arch/x86/mm/srat_32.c            |  287 --------------------
- arch/x86/mm/srat_64.c            |  260 ------------------
- 32 files changed, 1017 insertions(+), 1627 deletions(-)
-
---
-tejun
