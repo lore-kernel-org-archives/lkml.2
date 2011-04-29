@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934099Ab1D2XAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:00:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49186 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934069Ab1D2XAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:00:12 -0400
-Message-ID: <4DBB42F9.7070407@suse.cz>
-Date: Sat, 30 Apr 2011 01:00:09 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: pefoley2@verizon.net, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to scripts/docproc.c
-References: <4DBB3DD4.9000000@verizon.net> <20110429154649.848f9ba8.rdunlap@xenotime.net>
-In-Reply-To: <20110429154649.848f9ba8.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934111Ab1D2XA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:00:58 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:35147 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934069Ab1D2XA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 19:00:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ER/Wew6jr9uBZ2SIdmxmF4rNqk0D/hC27heTItaV+58DsasmCi6vcw8B/BUk892LMcv6bDW1ezd+nD6GkWfadbHQVB8DU8LfTVQcMTOxTXvbq8wncizpfSgS1pP0fjFV;
+Date: Fri, 29 Apr 2011 16:00:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: <pefoley2@verizon.net>, <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to
+ scripts/docproc.c
+Message-Id: <20110429160053.bbe7c199.rdunlap@xenotime.net>
+In-Reply-To: <20110429155915.f9059777.rdunlap@xenotime.net>
+References: <4DBB3DD4.9000000@verizon.net>
+	<20110429155915.f9059777.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.4.2011 00:46, Randy Dunlap wrote:
+On Fri, 29 Apr 2011 15:59:15 -0700 Randy Dunlap wrote:
+
 > On Fri, 29 Apr 2011 18:38:12 -0400 Peter Foley wrote:
 > 
->> This patchset moves scripts/basic/docproc to scripts/docproc.
->> This causes docproc to only be built for *doc targets rather than every
->> time the kernel is compiled.
->>
->> Patches also attached as requested by Michal Marek.
+> > This patchset moves scripts/basic/docproc to scripts/docproc.
+> > This causes docproc to only be built for *doc targets rather than every
+> > time the kernel is compiled.
+> > 
+> > Patches also attached as requested by Michal Marek.
 > 
 > 
-> That's disappointing (the attachments).  Why was this requested?
-> 
-> See Documentation/CodingStyle, section 7:
-> 
-> "No MIME, no links, no compression, no attachments.  Just plain text."
+> Please test & fix when using O=output_dir.
 
-and a couple of lines later:
-"Exception:  If your mailer is mangling patches then someone may ask
-you to re-send them using MIME."
+Sorry, user error.  I missed applying patch 6/7.  :(
 
-Which is exactly what happened here - the patches had missing or excess
-leading space and in some cases a context line was missing. So instead
-of manually reconstructing the patches, I asked Peter to resend them as
-attachments.
-
-BUT - I didn't request to split this patch into seven pieces. Splitting
-patches into smaller parts is desired, but each part has to be self
-contained and not break stuff when the later parts are not applied. So
-when moving a .c file, then the corespoding Makefile changes need to be
-contained in the same patch. No need to resend the patch now, I'll fold
-the patches into one again, but please consider this next time.
-
-> Instead, the saved file contains lines like
-> this (below) and each patch 2 times (inline and attachment).
-
-Yeah, only sending the attachment would be better in this case.
-
-Michal
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
