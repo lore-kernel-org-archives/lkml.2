@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab1D2Lgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 07:36:35 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56179 "EHLO e3.ny.us.ibm.com"
+	id S1758097Ab1D2Lro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 07:47:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53552 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932315Ab1D2Lge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 07:36:34 -0400
-Date: Fri, 29 Apr 2011 01:39:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
-Message-ID: <20110429083904.GA12987@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-2-git-send-email-gleb@redhat.com>
- <20110429083618.GL2191@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429083618.GL2191@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755566Ab1D2Lrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 07:47:42 -0400
+Subject: Re: [RFC] ARM DMA mapping TODO, v1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-mm-sig@lists.linaro.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <201104291326.25634.arnd@arndb.de>
+References: <201104212129.17013.arnd@arndb.de>
+	 <20110428093039.GU17290@n2100.arm.linux.org.uk>
+	 <1304024836.2513.198.camel@pasglop>  <201104291326.25634.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Apr 2011 21:47:21 +1000
+Message-ID: <1304077641.2513.242.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
+On Fri, 2011-04-29 at 13:26 +0200, Arnd Bergmann wrote:
+> On Thursday 28 April 2011, Benjamin Herrenschmidt wrote:
+> > > > 
+> > > > For PCI you can have the flag propagate from the PHB down, for busses
+> > > > without a bus type (platform) then whoever instanciate them (the
+> > > > platform code) can set that appropriately.
+> > > 
+> > > How can you do that when it changes mid-bus heirarchy?  I'm thinking
+> > > of the situation where the DRM stuff is on a child bus below the
+> > > root bus, and the root bus has DMA coherent devices on it but the DRM
+> > > stuff doesn't.
+> > 
+> > But that's not PCI right ? IE. with PCI, coherency is a property of the
+> > PHB... 
 > 
-> Hmmm....  This is interesting.  KVM being a module, we either expand
-> TINY_RCU's size a bit by making rcu_note_context_switch() be a real
-> function in rcutiny.c and adding an export, or we expand it by adding
-> two exports.
+> That is my understanding at least, but I'd like to have a confirmation
+> from the DRM folks.
 > 
-> I would like to solve this without making TINY_RCU larger, and preferably
-> by making it smaller.  Any ideas come to mind?  (Other than making
-> KVM depend on CONFIG_SMP, which sounds too much like throwing out the
-> baby with the bathwater.)
+> I believe that the PC graphics cards that have noncoherent DMA mappings
+> are all of the unified memory (integrated into the northbridge) kind,
+> so they are not on the same host bridge as all regular PCI devices,
+> even if they appear as a PCI device.
 
-Nothing quite like hitting "send" to make an idea show up...
+Hrm... beware with x86 , they love playing tricks :-) Since too many
+BIOSes don't understand PCI domains, they make devices on separate
+bridges look like sibling on the same segment and that sort of thing.
 
-In a UP kernel, does it actually help anything to have KVM
-tell RCU about executing in a guest?  If not, could we have a
-rcu_note_context_switch_kvm() that is a static inline empty function in
-TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
+Cheers,
+Ben.
 
-							Thanx, Paul
-
-> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > ---
-> >  include/linux/rcutiny.h |    6 +-----
-> >  kernel/rcutiny.c        |    7 +++++++
-> >  kernel/rcutree.c        |    1 +
-> >  3 files changed, 9 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-> > index 30ebd7c..8e5f7cf 100644
-> > --- a/include/linux/rcutiny.h
-> > +++ b/include/linux/rcutiny.h
-> > @@ -93,11 +93,7 @@ static inline int rcu_needs_cpu(int cpu)
-> > 
-> >  #endif /* #else #ifdef CONFIG_TINY_RCU */
-> > 
-> > -static inline void rcu_note_context_switch(int cpu)
-> > -{
-> > -	rcu_sched_qs(cpu);
-> > -	rcu_preempt_note_context_switch();
-> > -}
-> > +extern void rcu_note_context_switch(int cpu);
-> > 
-> >  /*
-> >   * Return the number of grace periods.
-> > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> > index 0c343b9..3d715a4 100644
-> > --- a/kernel/rcutiny.c
-> > +++ b/kernel/rcutiny.c
-> > @@ -78,6 +78,13 @@ void rcu_exit_nohz(void)
-> > 
-> >  #endif /* #ifdef CONFIG_NO_HZ */
-> > 
-> > +void rcu_note_context_switch(int cpu)
-> > +{
-> > +	rcu_sched_qs(cpu);
-> > +	rcu_preempt_note_context_switch();
-> > +}
-> > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > +
-> >  /*
-> >   * Helper function for rcu_qsctr_inc() and rcu_bh_qsctr_inc().
-> >   * Also disable irqs to avoid confusion due to interrupt handlers
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index dd4aea8..0837d63 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -124,6 +124,7 @@ void rcu_note_context_switch(int cpu)
-> >  	rcu_sched_qs(cpu);
-> >  	rcu_preempt_note_context_switch(cpu);
-> >  }
-> > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > 
-> >  #ifdef CONFIG_NO_HZ
-> >  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
-> > -- 
-> > 1.7.2.3
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
