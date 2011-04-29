@@ -1,214 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab1D2Pq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:46:28 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:27246 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753950Ab1D2Pq0 (ORCPT
+	id S1756930Ab1D2PrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:47:08 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58239 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab1D2PrF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:46:26 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: mttw6xAVM1k.mpglkDuZWhjeoIWuRrPDdJjgrYzgisqLxAq
- uq6bHeir80JKgfKPcZBuXJiZlmwhU.uNW3YIXN0cP6iPVlvU174Gpl6jaoOv
- LuegeGge2K85zO21nVEuZmUb.Q6K5yZt.N7ey5n5ajevJJTq6Zimpy1J4fGU
- lsn26GfmxtHHqhEm.mW.4GJS.Xd52P27rQbmtUFIdOupD92_aOGMSEGfn8h4
- DR2IrnQ7YXdhPy3rYNvjSGVpyJIOhXwneuRMApTDrv9JtGln57wV2ycTmanW
- 961YiPly8XrXg7e2yXZ5Jh1e_.jRx6Q8o.S7G7cb4x0JQI7ZIP2ANe7muF86
- Yc6LLi34Gxr0ylf3nSUoy6b2x0mJb59fGnw--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DBADD4C.9040507@schaufler-ca.com>
-Date: Fri, 29 Apr 2011 08:46:20 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Fri, 29 Apr 2011 11:47:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=A0vNCLF+am7RHRiLEeS+mydYXhOmfeyen36fkb6IdOflGlFH8H+8JlWOoWDqNAAnMN
+         CR1ykyi4cvzK5iHbNUKhJgN61ao5GIeeOOzICBLYRgOEY+Ku3Arvsl1tZbFA8EYc+vPU
+         xyopVnEHJg+ykSO//wNHwq1ePOhH4UT08uuZI=
 MIME-Version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>
-CC: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk, john.johansen@canonical.com,
-        apparmor@lists.ubuntu.com, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-References: <201104291139.37489.roberto.sassu@polito.it>
-In-Reply-To: <201104291139.37489.roberto.sassu@polito.it>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110428110623.GU4658@suse.de>
+References: <cover.1303833415.git.minchan.kim@gmail.com>
+	<51e7412097fa62f86656c77c1934e3eb96d5eef6.1303833417.git.minchan.kim@gmail.com>
+	<20110428110623.GU4658@suse.de>
+Date: Sat, 30 Apr 2011 00:47:03 +0900
+Message-ID: <BANLkTikzKBHfDkbxn89jtGxy2nAL-Fpt1w@mail.gmail.com>
+Subject: Re: [RFC 6/8] In order putback lru core
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/29/2011 2:39 AM, Roberto Sassu wrote:
-> Sorry for resending, it was rejected by the mailing lists due to
-> the html formatting.
->
->
-> On Thursday, April 28, 2011 07:37:29 PM Casey Schaufler wrote:
->> On 4/28/2011 5:35 AM, Roberto Sassu wrote:
->>> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
->>>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
->>>>>> File descriptor labeling issue
->>>>>>
->>>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
->>>>>> opening process and use it in LSM hooks security_file_permission(),
->>>>>> security_file_fcntl() and others to verify if the 'current' process has the
->>>>>> rights to perform the requested operation.
->>>>>>
->>>>>> Using the credentials of the 'current' process may be not appropriate in
->>>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
->>>>>> and made shared among user processes. For instance, in a system with
->>>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
->>>>>> obtains a file descriptor to access the correspondent inode in the lower
->>>>>> filesystem, labeled with the A's label.
->>>>>>
->>>>>> If the process B accesses the same encrypted file, it needs the 'use'
->>>>>> permission on the A's label other than permissions for the lower inode.
->>>>>> However, if B is the first accessing process, A needs the 'use' permission
->>>>>> on the B's label.
->>>>> I am having trouble understanding the argument. I will pose my
->>>>> question in Smack terms, as I can speak most definitively in them.
->>>>>
->>>>> A process running with a Smack label "A" creates a file, and that
->>>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
->>>>> this ought not change. If eCryptfs in encrypting the label it needs
->>>>> to do so in such a way as to be able to decrypt it prior to
->>>>> presentation to the vfs layer, where it will be used in an access
->>>>> check. When the process running with a Smack label "B" comes along
->>>>> the vfs code will check the fetched and possibly decrypted "A"
->>>>> against "B" and, unless there is an explicit Smack rule in place
->>>>> granting "B" access to "A", fail.
->>>>>
->>>>> What is the problem? What is eCryptfs doing that prevents this
->>>>> from working?
->>>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
->>>> only one lower file per eCryptfs inode. Imagine that there are 5
->>>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
->>>> to be open in the lower filesystem and all eCryptfs file operations will
->>>> be multiplexed through it.
->>>>
->>>> To make things more complicated, if the eCryptfs file is opened for
->>>> writing, the lower file must be opened for reading and writing. This is
->>>> because a write operation requires eCryptfs to vfs_read() from the lower
->>>> filesystem, decrypt that data and then vfs_write() the new data.
->>>>
->>>> If the lower file can't be opened O_RDWR by the calling process, the
->>>> request is handed off to a kernel thread to open the lower file on
->>>> behalf of the calling process. It is definitely ugly.
->>>>
->>>> Roberto, I hope I correctly described the situation that you're trying
->>>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
->>>> files to lower files?
->>>>
->>>> Instead of having just one lower file attached to the eCryptfs inode, we
->>>> could have a list of opened files. There would be one for each eCryptfs
->>>> file that was opened. ecryptfs_writepage() would have to pick, in a
->>>> somewhat random fashion, one of the lower files to use. Of course, we
->>>> would still need to solve the problem of opening the lower file O_RDWR
->>>> when the calling process is only allowed write access (I may have just
->>>> answered my own question of why the 1:1 mapping technique won't solve
->>>> this problem).
->>>>
->>> Hi Tyler
->>>
->>> i think the 1:1 mapping isn't necessary at least from the security perspective.
->>> Since eCryptfs is a stacked filesystem access control is performed on
->>> both the upper and the lower layer.
->>> ECryptfs relies on the lower filesystem for the management of extended
->>> attributes, so this means that the security label of both the upper and
->>> the lower inodes is the same (however this is not the current behavior
->>> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
->> Where does this assignment occur?
+On Thu, Apr 28, 2011 at 8:06 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Wed, Apr 27, 2011 at 01:25:23AM +0900, Minchan Kim wrote:
+>> This patch defines new APIs to putback the page into previous position of LRU.
+>> The idea is simple.
 >>
-> Hi Casey
->
-> The assignment happens at the inode's initialization time and depends on
-> the behavior configured for a specific filesystem.
-> The SELinux reference policy actually configures static labeling for inodes
-> in the eCryptfs filesystem while for example allows ext4 inodes to be
-> initialized using extended attributes.
-
-So how about changing eCryptfs (Goodness, but I hate camelCase) to
-properly support extended attributes? That would seem a better
-approach than mucking up the entire LSM. You still have to deal
-with the SELinux policy, but I don't see you getting away without
-doing something with that in any case.
-
->>> In my view, for this reason the access control checks can be performed
->>> only at the upper layer, letting eCryptfs full privileges to access inodes
->>> in the lower filesystem.
->> On this point I most strongly disagree.
+>> When we try to putback the page into lru list and if friends(prev, next) of the pages
+>> still is nearest neighbor, we can insert isolated page into prev's next instead of
+>> head of LRU list. So it keeps LRU history without losing the LRU information.
 >>
->> The behavior of a filesystem and the data that it uses to determine
->> that behavior is wrought with complex interactions which may include
->> but are not limited to caching, read-aheads, garbage collection,
->> and various side effects of access control. If eCryptfs needs to go
->> mucking about with the data used by the underlying filesystem it is
->> not stacking properly. A stacked filesystem has no business whatever
->> changing the data of the underlying filesystem.
+>> Before :
+>>       LRU POV : H - P1 - P2 - P3 - P4 -T
 >>
-> Ok, probably i have to go more in deep to explain how access control is
-> performed on eCryptfs. I'm talking for the SELinux's case, so SELinux experts
-> can correct me if i'm wrong.
+>> Isolate P3 :
+>>       LRU POV : H - P1 - P2 - P4 - T
+>>
+>> Putback P3 :
+>>       if (P2->next == P4)
+>>               putback(P3, P2);
+>>       So,
+>>       LRU POV : H - P1 - P2 - P3 - P4 -T
+>>
+>> For implement, we defines new structure pages_lru which remebers
+>> both lru friend pages of isolated one and handling functions.
+>>
+>> But this approach has a problem on contiguous pages.
+>> In this case, my idea can not work since friend pages are isolated, too.
+>> It means prev_page->next == next_page always is false and both pages are not
+>> LRU any more at that time. It's pointed out by Rik at LSF/MM summit.
+>> So for solving the problem, I can change the idea.
+>> I think we don't need both friend(prev, next) pages relation but
+>> just consider either prev or next page that it is still same LRU.
+>> Worset case in this approach, prev or next page is free and allocate new
+>> so it's in head of LRU and our isolated page is located on next of head.
+>> But it's almost same situation with current problem. So it doesn't make worse
+>> than now and it would be rare. But in this version, I implement based on idea
+>> discussed at LSF/MM. If my new idea makes sense, I will change it.
+>>
+>> Any comment?
+>>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  include/linux/migrate.h  |    2 +
+>>  include/linux/mm_types.h |    7 ++++
+>>  include/linux/swap.h     |    4 ++-
+>>  mm/compaction.c          |    3 +-
+>>  mm/internal.h            |    2 +
+>>  mm/memcontrol.c          |    2 +-
+>>  mm/migrate.c             |   36 +++++++++++++++++++++
+>>  mm/swap.c                |    2 +-
+>>  mm/vmscan.c              |   79 +++++++++++++++++++++++++++++++++++++++++++--
+>>  9 files changed, 129 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+>> index e39aeec..3aa5ab6 100644
+>> --- a/include/linux/migrate.h
+>> +++ b/include/linux/migrate.h
+>> @@ -9,6 +9,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+>>  #ifdef CONFIG_MIGRATION
+>>  #define PAGE_MIGRATION 1
+>>
+>> +extern void putback_pages_lru(struct list_head *l);
+>>  extern void putback_lru_pages(struct list_head *l);
+>>  extern int migrate_page(struct address_space *,
+>>                       struct page *, struct page *);
+>> @@ -33,6 +34,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+>>  #else
+>>  #define PAGE_MIGRATION 0
+>>
+>> +static inline void putback_pages_lru(struct list_head *l) {}
+>>  static inline void putback_lru_pages(struct list_head *l) {}
+>>  static inline int migrate_pages(struct list_head *l, new_page_t x,
+>>               unsigned long private, bool offlining,
+>> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+>> index ca01ab2..35e80fb 100644
+>> --- a/include/linux/mm_types.h
+>> +++ b/include/linux/mm_types.h
+>> @@ -102,6 +102,13 @@ struct page {
+>>  #endif
+>>  };
+>>
+>> +/* This structure is used for keeping LRU ordering of isolated page */
+>> +struct pages_lru {
+>> +        struct page *page;      /* isolated page */
+>> +        struct page *prev_page; /* previous page of isolate page as LRU order */
+>> +        struct page *next_page; /* next page of isolate page as LRU order */
+>> +        struct list_head lru;
+>> +};
+>>  /*
 >
-> First, i want to use extended attributes to initialize an eCryptfs inode, so
-> both the upper and the lower inodes have the same security context
-> because eCryptfs calls the *xattr() methods of the underlying filesystem.
+> So this thing has to be allocated from somewhere. We can't put it
+> on the stack as we're already in danger there so we must be using
+> kmalloc. In the reclaim paths, this should be avoided obviously.
+> For compaction, we might hurt the compaction success rates if pages
+> are pinned with control structures. It's something to be wary of.
 
-OK, you could create your own xattr functions that do whatever credential
-mucking they need to and then call the underlying file system's version.
-It is possible that the work the NFS people have been doing for xattr
-support (I haven't seen much on this lately, is it still active? Anyone?)
-would prove instructive.
+Actually, 32 page unit of migration in compaction should be not a big problem.
+Maybe, just one page is enough to keep pages_lru arrays but I admit
+dynamic allocation in reclaim patch and pinning the page in compaction
+path isn't good.
+So I have thought pagevec-like approach which is static allocated.
+But the approach should be assume the migration unit should be small
+like SWAP_CLUSTER_MAX It's true now but actually I don't want to
+depends on the size.
+But for free the size limitation, we have to allocate new page dynamically,
 
-> Then, the process A accesses the eCryptfs inode 'I'. On the upper layer access
-> control is performed using the credentials of the 'current' process and the
-> security context of I.
+Hmm, any ideas?
+Personally, I don't have any idea other than pagevec-like approach of 32 pages.
+
 >
-> If the process is allowed to access the upper inode, eCryptfs opens the lower
-> inode, presenting its own credentials with the type 'kernel_t'.
+> At LSF/MM, I stated a preference for swapping the source and
+> destination pages in the LRU. This unfortunately means that the LRU
 
-So eCryptfs provides its own process context. When you say "open" do you
-mean open(2) or something else? A little precision goes a long way in these
-discussions.
+I can't understand your point. swapping source and destination?
+Could you elaborate on it?
 
-> Then, SELinux
-> checks if 'kernel_t' can access the inode with the security context of 'I'.
-
-Why doesn't eCryptfs provide the credentials of 'I'? In the kernel you
-can do what you will.
-
-> If so,
-> eCryptfs obtains a file descriptor which, in this patch set, is labeled using the
-> same credentials it provided at open time and binds it to the upper inode.
+> now contains a page in the process of being migrated to and the backout
+> paths for migration failure become a lot more complex. Reclaim should
+> be ok as it'll should fail to lock the page and recycle it in the list.
+> This avoids allocations but I freely admit that I'm not in the position
+> to implement such a thing right now :(
 >
-> Suppose for a moment that A is working on the eCryptfs inode 'I' and the process
-> B requests the same inode. ECryptfs uses the already opened file descriptor and
-> B will be granted to open the requested inode if:
+>>   * A region containing a mapping of a non-memory backed file under NOMMU
+>>   * conditions.  These are held in a global tree and are pinned by the VMAs that
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index baef4ad..4ad0a0c 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -227,6 +227,8 @@ extern void rotate_reclaimable_page(struct page *page);
+>>  extern void deactivate_page(struct page *page);
+>>  extern void swap_setup(void);
+>>
+>> +extern void update_page_reclaim_stat(struct zone *zone, struct page *page,
+>> +                                    int file, int rotated);
+>>  extern void add_page_to_unevictable_list(struct page *page);
+>>
+>>  /**
+>> @@ -260,7 +262,7 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>>                                               struct zone *zone,
+>>                                               unsigned long *nr_scanned);
+>>  extern int __isolate_lru_page(struct page *page, int mode, int file,
+>> -                             int not_dirty, int not_mapped);
+>> +             int not_dirty, int not_mapped, struct pages_lru *pages_lru);
+>>  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+>>  extern int vm_swappiness;
+>>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 653b02b..c453000 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -335,7 +335,8 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>>               }
+>>
+>>               /* Try isolate the page */
+>> -             if (__isolate_lru_page(page, ISOLATE_BOTH, 0, !cc->sync, 0) != 0)
+>> +             if (__isolate_lru_page(page, ISOLATE_BOTH, 0,
+>> +                                     !cc->sync, 0, NULL) != 0)
+>>                       continue;
+>>
+>>               VM_BUG_ON(PageTransCompound(page));
+>> diff --git a/mm/internal.h b/mm/internal.h
+>> index d071d38..3c8182c 100644
+>> --- a/mm/internal.h
+>> +++ b/mm/internal.h
+>> @@ -43,6 +43,8 @@ extern unsigned long highest_memmap_pfn;
+>>   * in mm/vmscan.c:
+>>   */
+>>  extern int isolate_lru_page(struct page *page);
+>> +extern bool keep_lru_order(struct pages_lru *pages_lru);
+>> +extern void putback_page_to_lru(struct page *page, struct list_head *head);
+>>  extern void putback_lru_page(struct page *page);
+>>
+>>  /*
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 471e7fd..92a9046 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1193,7 +1193,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>>                       continue;
+>>
+>>               scan++;
+>> -             ret = __isolate_lru_page(page, mode, file, 0, 0);
+>> +             ret = __isolate_lru_page(page, mode, file, 0, 0, NULL);
+>>               switch (ret) {
+>>               case 0:
+>>                       list_move(&page->lru, dst);
+>> diff --git a/mm/migrate.c b/mm/migrate.c
+>> index 819d233..9cfb63b 100644
+>> --- a/mm/migrate.c
+>> +++ b/mm/migrate.c
+>> @@ -85,6 +85,42 @@ void putback_lru_pages(struct list_head *l)
+>>  }
+>>
+>>  /*
+>> + * This function is almost same iwth putback_lru_pages.
+>> + * The difference is that function receives struct pages_lru list
+>> + * and if possible, we add pages into original position of LRU
+>> + * instead of LRU's head.
+>> + */
+>> +void putback_pages_lru(struct list_head *l)
+>> +{
+>> +        struct pages_lru *isolated_page;
+>> +        struct pages_lru *isolated_page2;
+>> +        struct page *page;
+>> +
+>> +        list_for_each_entry_safe(isolated_page, isolated_page2, l, lru) {
+>> +                struct zone *zone;
+>> +                page = isolated_page->page;
+>> +                list_del(&isolated_page->lru);
+>> +
+>> +                dec_zone_page_state(page, NR_ISOLATED_ANON +
+>> +                                page_is_file_cache(page));
+>> +
+>> +                zone = page_zone(page);
+>> +                spin_lock_irq(&zone->lru_lock);
+>> +                if (keep_lru_order(isolated_page)) {
+>> +                        putback_page_to_lru(page, &isolated_page->prev_page->lru);
+>> +                        spin_unlock_irq(&zone->lru_lock);
+>> +                }
+>> +                else {
+>> +                        spin_unlock_irq(&zone->lru_lock);
+>> +                        putback_lru_page(page);
+>> +                }
+>> +
+>> +                kfree(isolated_page);
+>> +        }
+>> +}
 >
-> - B has the 'open' permission on the upper inode 'I';
->
->
-> and can perform read/write operations if:
->
-> - B has the 'read' and 'write' permissions on the upper inode 'I';
-> - B is allowed to use the file descriptor opened by eCryptfs ('kernel_t').
-> - B has the 'read' and 'write' permissions on the lower inode I;
->
->
-> What i miss to say in my previous email is that even if eCryptfs is granted
-> to access inodes in the lower filesystem with full privileges, user processes
-> still need the permission to deal with the lower inode, but the check on the
-> upper inode is sufficient because the security context is the same.
+> I think we also need counters at least at discussion stage to see
+> how successful this is.
 
-Right, but what I don't understand is why you can't use existing
-mechanisms to achieve this? NFS manages (mostly).
+Actually, I had some numbers but don't published it.
+(4core, 1G DRAM and THP always, big stress(qemu, compile, web
+browsing, eclipse and other programs fork, successful rate is about
+50%)
+That's because I have another idea to solve contiguous PFN problem.
+Please, see the description and reply of Rik's question on this thread.
+I guess the approach could make a high successful rate if there isn't
+concurrent direct compaction processes.
 
->> Excuse my ignorance for a moment. Is eCryptfs a user mode filesystem,
->> or in the kernel properly? The behavior makes it sound like the former
->> while the interfaces you're requesting make it seem like the latter.
+>
+> For example, early in the system there is a casual relationship
+> between the age of a page and its location in physical memory. The
+> buddy allocator gives pages back in PFN order where possible and
+> there is a loose relationship between when pages get allocated and
+> when they get reclaimed. As compaction is a linear scanner, there
+> is a likelihood (that is highly variable) that physically contiguous
+> pages will have similar positions in the LRU. They'll be isolated at
+> the same time meaning they also won't be put back in order.
 
-I'll repeat the question because it matters.
+Indeed! but I hope my second idea would solve the problem.
+What do you think about it?
+>
+> This might cease to matter when the system is running for some time but
+> it's a concern.
 
+Yes. It depends on aging of workloads.
+I think it's not easy to get a meaningful number to justify all. :(
+
+-- 
+Kind regards,
+Minchan Kim
