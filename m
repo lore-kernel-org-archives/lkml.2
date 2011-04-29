@@ -1,295 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066Ab1D2EXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 00:23:53 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:38804 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750721Ab1D2EXw (ORCPT
+	id S1751293Ab1D2EbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 00:31:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45264 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab1D2EbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 00:23:52 -0400
-Date: Fri, 29 Apr 2011 00:23:44 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -v4 3/4] lib, Make gen_pool memory allocator lockless
-Message-ID: <20110429042344.GA10464@Krystal>
-References: <1303806878-333-1-git-send-email-ying.huang@intel.com> <1303806878-333-4-git-send-email-ying.huang@intel.com> <20110428143738.GA19161@Krystal> <4DBA0C97.8070908@intel.com> <20110429011113.GA3391@Krystal> <4DBA2AE1.4030309@intel.com>
+	Fri, 29 Apr 2011 00:31:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=xnIwfpcM9AobANjAslDvAvwyyRHnuvCUAvdELurBhg6fB3tOhgN7xTXB7m0VD9oubN
+         AP1lAczz8BdFjBvBhup5B+Yu976/ysOz/Rq3ZVPabnP4qOtVbJQyzG7V3IYQ11MNe6pS
+         CIqjELW4gr2D7tB6OLfdOoK9neE3IxB37CJKI=
+Message-ID: <4DBA3F13.9010706@gmail.com>
+Date: Fri, 29 Apr 2011 08:31:15 +0400
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DBA2AE1.4030309@intel.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 00:21:37 up 156 days,  9:24,  1 user,  load average: 0.00, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+CC: Rodolfo Giometti <rodolfo.giometti@enneenne.com>, linuxpps@ml.enneenne.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [LinuxPPS] [PATCH 2/2] pps: new client driver using IRQs
+References: <1303928054-14662-3-git-send-email-jamesnuss@nanometrics.ca>	<20110428152222.0271163f@apollo.gnet>	<BANLkTimG0vL3Ky=ARa+7XyW4PSFdg064YQ@mail.gmail.com>	<20110429005524.67600139@apollo.gnet> <20110429012748.704a39a6@apollo.gnet>
+In-Reply-To: <20110429012748.704a39a6@apollo.gnet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Huang Ying (ying.huang@intel.com) wrote:
-> On 04/29/2011 09:11 AM, Mathieu Desnoyers wrote:
-> > * Huang Ying (ying.huang@intel.com) wrote:
-> >> Hi, Mathieu,
-> >>
-> >> Thanks for your comments.
-> >>
-> >> On 04/28/2011 10:37 PM, Mathieu Desnoyers wrote:
-> >>> * Huang Ying (ying.huang@intel.com) wrote:
-> >> [snip]
-> >>>>
-> >>>> +/**
-> >>>> + * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
-> >>>> + * @chunk:   the struct gen_pool_chunk * to use as a loop cursor
-> >>>> + * @pool:    the generic memory pool
-> >>>> + *
-> >>>> + * Not lockless, proper mutual exclusion is needed to use this macro
-> >>>> + * with other gen_pool function simultaneously.
-> >>>> + */
-> >>>> +#define gen_pool_for_each_chunk(chunk, pool)                 \
-> >>>> +     list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
-> >>>
-> >>> Is it just me or this macro is never used ? Maybe you should consider
-> >>> removing it.
-> >>
-> >> This macro is not used in this patch.  But it is used in 4/4 of the
-> >> patchset to free the backing pages before destroy the pool.
-> > 
-> > Depending on how frequently you want to use it, you might want to use
-> > list_for_each_entry_rcu directly rather than a macro wrapper. E.g.  for
-> > 2-3 uses, adding a macro just obfuscates the code IMHO (e.g. you don't
-> > know it iterates on a RCU list by looking at the caller code).
-> 
-> Yes. gen_pool_for_each_chunk() is not a good wrapper.  I just don't want
-> to expose too much implementation details to users, after all, we are
-> working on library code.  Maybe something like below is better?
-> 
-> void gen_pool_for_each_chunk(struct gen_pool *pool, void (*func)(struct
-> gen_pool *pool, struct gen_pool_chunk *chunk)) {
-> 	rcu_read_lock();
-> 	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-> 		func(pool, chunk);
-> 	rcu_read_unlock();
-> }
+Hi!
 
-If it is expected to be exposed to other parts of the kernel, indeed we
-should not expect the caller to magically know they must hold the rcu
-read-side lock.
+> В Fri, 29 Apr 2011 00:55:24 +0400
+> Alexander Gordeev<lasaine@lvk.cs.msu.su>  пишет:
+>
+>> В Thu, 28 Apr 2011 16:03:59 -0400
+>> James Nuss<jamesnuss@nanometrics.ca>  пишет:
+>>
+>>> Hi Alexander,
+>>>
+>>> Thanks for reviewing the code.
+>>>
+>>> On Thu, Apr 28, 2011 at 7:22 AM, Alexander Gordeev
+>>> <lasaine@lvk.cs.msu.su>  wrote:
+>>>> Hi James,
+>>>>
+>>>> В Wed, 27 Apr 2011 14:14:14 -0400
+>>>> James Nuss<jamesnuss@nanometrics.ca>  пишет:
+>>>>
+>>>>> +             return -EINVAL;
+>>>>> +     }
+>>>>> +
+>>>>> +     res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>>>>> +     if (res == NULL) {
+>>>>> +             pr_err(PPS_IRQ_NAME ": no IRQ resource was given");
+>>>>> +             return -EINVAL;
+>>>>> +     }
+>>>>> +
+>>>>> +     if (!(res->flags&  (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING))) {
+>>>>> +             pr_err(PPS_IRQ_NAME ": given IRQ resource must be edge triggered");
+>>>>> +             return -EINVAL;
+>>>>> +     }
+>>>> I think it doesn't actually expect that both flags are set because it
+>>>> always treats it as assert in the irq handler. What does your signal
+>>>> look like?
+>>> The conditional logic is that one of either IRQF_TRIGGER_RISING or
+>>> IRQF_TRIGGER_FALLING must be set. It doesn't make much sense to have
+>>> neither set for PPS signals.
+>>> My intention is that the driver is generic enough so you can register
+>>> an IRQ resource with either IRQF_TRIGGER_RISING or
+>>> IRQF_TRIGGER_FALLING and you will get and assert event for that edge.
+>>> Clear events are not generated as you suggest but I believe this is
+>>> OK.
+>>> My signal is a simple low-to-high transition indicating the PPS. But I
+>>> believe you could register a device using this driver referencing the
+>>> other edge if required.
+>> Ok, but is there a way one can register an IRQ resource with both flags
+>> set? If yes, then it would be nice to have a stricter check here to
+>> prevent two situations:
+>> 1. none flag is set (it is already in place)
+>> 2. both flags are set
+>>
+>> The latter will definitely mess things up, right?
+> I mean, one surely can register an IRQ resource with both flags set. And
+> if the underlying hardware works as it is described (i.e. raises an irq
+> on both edges) then it will be a problem.
 
-I'm not sure whether this iterator is necessary though. Just a comment
-could suffice.
+Please don't try to abandon one of ASSERT or CLEAR events!
+It is very useful to register both of them, because in this case its 
+possible to measure pulse width and decode PPS signals like DCF77.
 
-> 
-> >>
-> >> [snip]
-> >>>> @@ -108,43 +226,50 @@ EXPORT_SYMBOL(gen_pool_destroy);
-> >>>>   * @size: number of bytes to allocate from the pool
-> >>>>   *
-> >>>>   * Allocate the requested number of bytes from the specified pool.
-> >>>> - * Uses a first-fit algorithm.
-> >>>> + * Uses a first-fit algorithm. Can not be used in NMI handler on
-> >>>> + * architectures without NMI-safe cmpxchg implementation.
-> >>>>   */
-> >>>>  unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
-> >>>>  {
-> >>>> -     struct list_head *_chunk;
-> >>>>       struct gen_pool_chunk *chunk;
-> >>>> -     unsigned long addr, flags;
-> >>>> +     unsigned long addr;
-> >>>>       int order = pool->min_alloc_order;
-> >>>> -     int nbits, start_bit, end_bit;
-> >>>> +     int nbits, start_bit = 0, end_bit, remain;
-> >>>> +
-> >>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-> >>>> +     BUG_ON(in_nmi());
-> >>>> +#endif
-> >>>>
-> >>>>       if (size == 0)
-> >>>>               return 0;
-> >>>>
-> >>>>       nbits = (size + (1UL << order) - 1) >> order;
-> >>>> -
-> >>>> -     read_lock(&pool->lock);
-> >>>> -     list_for_each(_chunk, &pool->chunks) {
-> >>>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-> >>>> +     rcu_read_lock();
-> >>>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-> >>>> +             if (size > atomic_read(&chunk->avail))
-> >>>> +                     continue;
-> >>>>
-> >>>>               end_bit = (chunk->end_addr - chunk->start_addr) >> order;
-> >>>> -
-> >>>> -             spin_lock_irqsave(&chunk->lock, flags);
-> >>>> -             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
-> >>>> -                                             nbits, 0);
-> >>>> -             if (start_bit >= end_bit) {
-> >>>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
-> >>>> +retry:
-> >>>> +             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
-> >>>> +                                                    start_bit, nbits, 0);
-> >>>> +             if (start_bit >= end_bit)
-> >>>>                       continue;
-> >>>> +             remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
-> >>>> +             if (remain) {
-> >>>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit,
-> >>>> +                                              nbits - remain);
-> >>>> +                     BUG_ON(remain);
-> >>>> +                     goto retry;
-> >>>>               }
-> >>>>
-> >>>>               addr = chunk->start_addr + ((unsigned long)start_bit << order);
-> >>>> -
-> >>>> -             bitmap_set(chunk->bits, start_bit, nbits);
-> >>>> -             spin_unlock_irqrestore(&chunk->lock, flags);
-> >>>> -             read_unlock(&pool->lock);
-> >>>> +             size = nbits << order;
-> >>>> +             atomic_sub(size, &chunk->avail);
-> >>>> +             rcu_read_unlock();
-> >>>
-> >>> I don't really like seeing a rcu_read_unlock() within a rcu list
-> >>> iteration (even if it comes right before a "return"). Doing:
-> >>>
-> >>> unsigned long addr = 0;
-> >>>
-> >>> rcu_read_lock();
-> >>> list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-> >>>   if (...)
-> >>>     continue;
-> >>>   ...
-> >>>   addr = ...;
-> >>>   break;
-> >>> }
-> >>> rcu_read_unlock();
-> >>> return addr;
-> >>>
-> >>> Would be more symmetric, and would remove one return path, which makes
-> >>> the code easier to modify in the future.
-> >>
-> >> Unlock in loop is common in Linux kernel.  Sometimes it makes code
-> >> cleaner (but not always).  Yes, for this case, we can avoid unlock in
-> >> loop easily.  But for the next case it is not so clean.
-> > 
-> > See comment below,
-> > 
-> >>
-> >>>>               return addr;
-> >>>>       }
-> >>>> -     read_unlock(&pool->lock);
-> >>>> +     rcu_read_unlock();
-> >>>>       return 0;
-> >>>>  }
-> >>>>  EXPORT_SYMBOL(gen_pool_alloc);
-> >>>> @@ -155,33 +280,73 @@ EXPORT_SYMBOL(gen_pool_alloc);
-> >>>>   * @addr: starting address of memory to free back to pool
-> >>>>   * @size: size in bytes of memory to free
-> >>>>   *
-> >>>> - * Free previously allocated special memory back to the specified pool.
-> >>>> + * Free previously allocated special memory back to the specified
-> >>>> + * pool.  Can not be used in NMI handler on architectures without
-> >>>> + * NMI-safe cmpxchg implementation.
-> >>>>   */
-> >>>>  void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
-> >>>>  {
-> >>>> -     struct list_head *_chunk;
-> >>>>       struct gen_pool_chunk *chunk;
-> >>>> -     unsigned long flags;
-> >>>>       int order = pool->min_alloc_order;
-> >>>> -     int bit, nbits;
-> >>>> +     int start_bit, nbits, remain;
-> >>>>
-> >>>> -     nbits = (size + (1UL << order) - 1) >> order;
-> >>>> -
-> >>>> -     read_lock(&pool->lock);
-> >>>> -     list_for_each(_chunk, &pool->chunks) {
-> >>>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-> >>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-> >>>> +     BUG_ON(in_nmi());
-> >>>> +#endif
-> >>>>
-> >>>> +     nbits = (size + (1UL << order) - 1) >> order;
-> > 
-> > you could add:
-> > 
-> >   remain = nbits;
-> > 
-> >>>> +     rcu_read_lock();
-> >>>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-> >>>>               if (addr >= chunk->start_addr && addr < chunk->end_addr) {
-> >>>>                       BUG_ON(addr + size > chunk->end_addr);
-> >>>> -                     spin_lock_irqsave(&chunk->lock, flags);
-> >>>> -                     bit = (addr - chunk->start_addr) >> order;
-> >>>> -                     while (nbits--)
-> >>>> -                             __clear_bit(bit++, chunk->bits);
-> >>>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
-> >>>> -                     break;
-> >>>> +                     start_bit = (addr - chunk->start_addr) >> order;
-> > 
-> > You could turn this:
-> > 
-> >>>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
-> >>>> +                     BUG_ON(remain);
-> >>>> +                     size = nbits << order;
-> >>>> +                     atomic_add(size, &chunk->avail);
-> > 
-> > into:
-> > 
-> >   remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
-> >   size = nbits << order;
-> >   atomic_add(size, &chunk->avail);
-> >   break;
-> >     
-> > 
-> >>>> +                     rcu_read_unlock();
-> >>>
-> >>> Same comment as above apply here.
-> >>
-> >> It is harder to remove unlock in loop here.  An extra variable should be
-> >> used to indicate that something is freed from the pool.  Do you think it
-> >> is cleaner to just keep the unlock in loop here?
-> >>
-> >> Best Regards,
-> >> Huang Ying
-> >>
-> >>> +                     return;
-> >>>               }
-> >>>       }
-> > 
-> > And turn this:
-> > 
-> >>> -     BUG_ON(nbits > 0);
-> >>> -     read_unlock(&pool->lock);
-> >>> +     rcu_read_unlock();
-> >>> +     BUG();
-> > 
-> > into:
-> > 
-> >   BUG_ON(remain);
-> >   rcu_read_unlock();
-> > 
-> > Does that look OK to you ? On the plus side, you end up having a single
-> > BUG_ON() in the function.
-> 
-> I am afraid this make code a little harder to be understood.  Why do you
-> hate unlock in loop so much?  It is common in kernel and I think most
-> kernel developers are familiar with it.
+I write similar driver (pps-client-gpio.c) for Linux-2.6.36 with helper 
+drivers (virtual-gps.c and pps-decoders.c) which allows to receive 
+GeoSIG Ltd. T1PPS (DCF77 alike) time signal, register both events, then 
+decode them and provide a virtual GPS (NMEA time source) device.
 
-I'm fine either way for this function, no strong opinion on this one.
+These drivers operates very well together with standard NTP server.
 
-Thanks,
+>
+> _______________________________________________
+> LinuxPPS mailing list
+> LinuxPPS@ml.enneenne.com
+> http://ml.enneenne.com/cgi-bin/mailman/listinfo/linuxpps
+> Wiki:http://wiki.enneenne.com/index.php/LinuxPPS_support
 
-Mathieu
-
-> 
-> Best Regards,
-> Huang Ying
+Best regards!
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Igor Plyatov
+
