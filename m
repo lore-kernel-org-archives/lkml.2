@@ -1,149 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab1D2AnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 20:43:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53102 "EHLO e7.ny.us.ibm.com"
+	id S1758437Ab1D2A4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 20:56:03 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38477 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561Ab1D2AnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 20:43:04 -0400
-Date: Thu, 28 Apr 2011 17:42:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, john stultz <johnstul@us.ibm.com>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110429004255.GF2191@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
- <alpine.LFD.2.02.1104282044120.3005@ionos>
- <20110428222301.0b745a0a@neptune.home>
- <alpine.LFD.2.02.1104282227340.3005@ionos>
- <20110428224444.43107883@neptune.home>
- <alpine.LFD.2.02.1104282251080.3005@ionos>
- <1304027480.2971.121.camel@work-vm>
- <alpine.LFD.2.02.1104282353140.3005@ionos>
- <BANLkTi=uDstjKEQaPOkxX94NxMQU2Pu5gA@mail.gmail.com>
- <BANLkTikS-PN0PDBbCz3emWRBL90sGMY+Kg@mail.gmail.com>
+	id S1758382Ab1D2Azy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 20:55:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,283,1301900400"; 
+   d="scan'208";a="427494080"
+Message-ID: <4DBA0C97.8070908@intel.com>
+Date: Fri, 29 Apr 2011 08:55:51 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikS-PN0PDBbCz3emWRBL90sGMY+Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v4 3/4] lib, Make gen_pool memory allocator lockless
+References: <1303806878-333-1-git-send-email-ying.huang@intel.com> <1303806878-333-4-git-send-email-ying.huang@intel.com> <20110428143738.GA19161@Krystal>
+In-Reply-To: <20110428143738.GA19161@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 01:35:44AM +0200, Sedat Dilek wrote:
-> On Fri, Apr 29, 2011 at 1:06 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> > On Fri, Apr 29, 2011 at 12:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> On Thu, 28 Apr 2011, john stultz wrote:
-> >>> On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
-> >>> > /me suspects hrtimer changes to be the real culprit.
-> >>>
-> >>> I'm not seeing anything on right off, but it does smell like
-> >>> e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
-> >>> would crop up.
-> >>>
-> >>> Bruno, could you try checking out e06383db9ec, confirming it still
-> >>> occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
-> >>>
-> >>> I'll keep digging in the meantime.
-> >>
-> >> I found the bug already. The problem is that sched_init() calls
-> >> init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
-> >> hrtimers_init() is called.
-> >>
-> >> That was unnoticed so far as the CLOCK id to hrtimer base conversion
-> >> was hardcoded. Now we use a table which is set up at hrtimers_init(),
-> >> so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
-> >> in the bss.
-> >>
-> >> The patch below fixes this, by providing the table statically rather
-> >> than runtime initialized. Though that whole ordering wants to be
-> >> revisited.
-> >>
-> >> Thanks,
-> >>
-> >>        tglx
-> >>
-> >> --- linux-2.6.orig/kernel/hrtimer.c
-> >> +++ linux-2.6/kernel/hrtimer.c
-> >> @@ -81,7 +81,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base,
-> >>        }
-> >>  };
-> >>
-> >> -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
-> >> +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
-> >> +       [CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
-> >> +       [CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
-> >> +       [CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
-> >> +};
-> >>
-> >>  static inline int hrtimer_clockid_to_base(clockid_t clock_id)
-> >>  {
-> >> @@ -1722,10 +1726,6 @@ static struct notifier_block __cpuinitda
-> >>
-> >>  void __init hrtimers_init(void)
-> >>  {
-> >> -       hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
-> >> -       hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
-> >> -       hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
-> >> -
-> >>        hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
-> >>                          (void *)(long)smp_processor_id());
-> >>        register_cpu_notifier(&hrtimers_nb);
-> >>
-> >>
-> >>
-> >
-> > Looks good so far, no stalls or call-traces.
-> >
-> > Really stressing with 20+ open tabs in firefox with flash-movie
-> > running in one of them , tar-job, IRC-client etc.
-> > I will run some more tests and collect data and send them later.
-> >
-> > - Sedat -
-> >
-> > P.S.: Patchset against linux-2.6-rcu.git#sedat.2011.04.23a where 0003
-> > is from [2]
-> >
-> > [1] http://git.us.kernel.org/?p=linux/kernel/git/paulmck/linux-2.6-rcu.git;a=shortlog;h=refs/heads/sedat.2011.04.23a
-> > [2] https://patchwork.kernel.org/patch/739782/
-> >
-> > $ l ../RCU-HOORAY/
-> > insgesamt 40
-> > drwxr-xr-x  2 sd sd  4096 29. Apr 01:02 .
-> > drwxr-xr-x 35 sd sd 20480 29. Apr 01:01 ..
-> > -rw-r--r--  1 sd sd   726 29. Apr 01:01
-> > 0001-Revert-rcu-restrict-TREE_RCU-to-SMP-builds-with-PREE.patch
-> > -rw-r--r--  1 sd sd   735 29. Apr 01:01
-> > 0002-sched-Add-warning-when-RT-throttling-is-activated.patch
-> > -rw-r--r--  1 sd sd  2376 29. Apr 01:01
-> > 0003-2.6.39-rc4-Kernel-leaking-memory-during-FS-scanning-.patch
-> >
-> 
-> As promised the tarball (at the end of the log I made some XZ compressing).
-> 
-> Wow!
-> $ uptime
->  01:35:17 up 45 min,  3 users,  load average: 0.45, 0.57, 1.27
-> 
-> Thanks to all involved people helping to kill that bug (Come on Paul, smile!).
+Hi, Mathieu,
 
-Woo-hoo!!!!
+Thanks for your comments.
 
-Many thanks to Thomas for tracking this down -- it is fair to say that
-I never would have thought to look at timer initialization!  ;-)
+On 04/28/2011 10:37 PM, Mathieu Desnoyers wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+[snip]
+>>
+>> +/**
+>> + * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
+>> + * @chunk:   the struct gen_pool_chunk * to use as a loop cursor
+>> + * @pool:    the generic memory pool
+>> + *
+>> + * Not lockless, proper mutual exclusion is needed to use this macro
+>> + * with other gen_pool function simultaneously.
+>> + */
+>> +#define gen_pool_for_each_chunk(chunk, pool)                 \
+>> +     list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
+> 
+> Is it just me or this macro is never used ? Maybe you should consider
+> removing it.
 
-							Thanx, Paul
+This macro is not used in this patch.  But it is used in 4/4 of the
+patchset to free the backing pages before destroy the pool.
+
+[snip]
+>> @@ -108,43 +226,50 @@ EXPORT_SYMBOL(gen_pool_destroy);
+>>   * @size: number of bytes to allocate from the pool
+>>   *
+>>   * Allocate the requested number of bytes from the specified pool.
+>> - * Uses a first-fit algorithm.
+>> + * Uses a first-fit algorithm. Can not be used in NMI handler on
+>> + * architectures without NMI-safe cmpxchg implementation.
+>>   */
+>>  unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+>>  {
+>> -     struct list_head *_chunk;
+>>       struct gen_pool_chunk *chunk;
+>> -     unsigned long addr, flags;
+>> +     unsigned long addr;
+>>       int order = pool->min_alloc_order;
+>> -     int nbits, start_bit, end_bit;
+>> +     int nbits, start_bit = 0, end_bit, remain;
+>> +
+>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>> +     BUG_ON(in_nmi());
+>> +#endif
+>>
+>>       if (size == 0)
+>>               return 0;
+>>
+>>       nbits = (size + (1UL << order) - 1) >> order;
+>> -
+>> -     read_lock(&pool->lock);
+>> -     list_for_each(_chunk, &pool->chunks) {
+>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
+>> +             if (size > atomic_read(&chunk->avail))
+>> +                     continue;
+>>
+>>               end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+>> -
+>> -             spin_lock_irqsave(&chunk->lock, flags);
+>> -             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+>> -                                             nbits, 0);
+>> -             if (start_bit >= end_bit) {
+>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
+>> +retry:
+>> +             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
+>> +                                                    start_bit, nbits, 0);
+>> +             if (start_bit >= end_bit)
+>>                       continue;
+>> +             remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
+>> +             if (remain) {
+>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit,
+>> +                                              nbits - remain);
+>> +                     BUG_ON(remain);
+>> +                     goto retry;
+>>               }
+>>
+>>               addr = chunk->start_addr + ((unsigned long)start_bit << order);
+>> -
+>> -             bitmap_set(chunk->bits, start_bit, nbits);
+>> -             spin_unlock_irqrestore(&chunk->lock, flags);
+>> -             read_unlock(&pool->lock);
+>> +             size = nbits << order;
+>> +             atomic_sub(size, &chunk->avail);
+>> +             rcu_read_unlock();
+> 
+> I don't really like seeing a rcu_read_unlock() within a rcu list
+> iteration (even if it comes right before a "return"). Doing:
+> 
+> unsigned long addr = 0;
+> 
+> rcu_read_lock();
+> list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
+>   if (...)
+>     continue;
+>   ...
+>   addr = ...;
+>   break;
+> }
+> rcu_read_unlock();
+> return addr;
+> 
+> Would be more symmetric, and would remove one return path, which makes
+> the code easier to modify in the future.
+
+Unlock in loop is common in Linux kernel.  Sometimes it makes code
+cleaner (but not always).  Yes, for this case, we can avoid unlock in
+loop easily.  But for the next case it is not so clean.
+
+>>               return addr;
+>>       }
+>> -     read_unlock(&pool->lock);
+>> +     rcu_read_unlock();
+>>       return 0;
+>>  }
+>>  EXPORT_SYMBOL(gen_pool_alloc);
+>> @@ -155,33 +280,73 @@ EXPORT_SYMBOL(gen_pool_alloc);
+>>   * @addr: starting address of memory to free back to pool
+>>   * @size: size in bytes of memory to free
+>>   *
+>> - * Free previously allocated special memory back to the specified pool.
+>> + * Free previously allocated special memory back to the specified
+>> + * pool.  Can not be used in NMI handler on architectures without
+>> + * NMI-safe cmpxchg implementation.
+>>   */
+>>  void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
+>>  {
+>> -     struct list_head *_chunk;
+>>       struct gen_pool_chunk *chunk;
+>> -     unsigned long flags;
+>>       int order = pool->min_alloc_order;
+>> -     int bit, nbits;
+>> +     int start_bit, nbits, remain;
+>>
+>> -     nbits = (size + (1UL << order) - 1) >> order;
+>> -
+>> -     read_lock(&pool->lock);
+>> -     list_for_each(_chunk, &pool->chunks) {
+>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>> +     BUG_ON(in_nmi());
+>> +#endif
+>>
+>> +     nbits = (size + (1UL << order) - 1) >> order;
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
+>>               if (addr >= chunk->start_addr && addr < chunk->end_addr) {
+>>                       BUG_ON(addr + size > chunk->end_addr);
+>> -                     spin_lock_irqsave(&chunk->lock, flags);
+>> -                     bit = (addr - chunk->start_addr) >> order;
+>> -                     while (nbits--)
+>> -                             __clear_bit(bit++, chunk->bits);
+>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
+>> -                     break;
+>> +                     start_bit = (addr - chunk->start_addr) >> order;
+>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
+>> +                     BUG_ON(remain);
+>> +                     size = nbits << order;
+>> +                     atomic_add(size, &chunk->avail);
+>> +                     rcu_read_unlock();
+> 
+> Same comment as above apply here.
+
+It is harder to remove unlock in loop here.  An extra variable should be
+used to indicate that something is freed from the pool.  Do you think it
+is cleaner to just keep the unlock in loop here?
+
+Best Regards,
+Huang Ying
+
+> +                     return;
+>               }
+>       }
+> -     BUG_ON(nbits > 0);
+> -     read_unlock(&pool->lock);
+> +     rcu_read_unlock();
+> +     BUG();
+>  }
+[snip]
