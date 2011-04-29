@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab1D2PhX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:37:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36813 "EHLO mx2.suse.de"
+	id S1759613Ab1D2Phw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:37:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8343 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab1D2PhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:37:21 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: sedat.dilek@gmail.com
-Cc: Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTimpMJRX0CF7tZ75_x1kWmTkFx3XxA@mail.gmail.com>
-References: <1303920553.2583.7.camel@mulgrave.site>
-	 <1303921583-sup-4021@think> <1303923000.2583.8.camel@mulgrave.site>
-	 <1303923177-sup-2603@think> <1303924902.2583.13.camel@mulgrave.site>
-	 <BANLkTimpMJRX0CF7tZ75_x1kWmTkFx3XxA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Apr 2011 10:37:16 -0500
-Message-ID: <1304091436.2559.8.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1759230Ab1D2Pht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 11:37:49 -0400
+Date: Fri, 29 Apr 2011 17:37:39 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jump_label,x86: use text_poke_smp_batch for entries
+ update
+Message-ID: <20110429153739.GB1966@jolsa.brq.redhat.com>
+References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
+ <20110429151509.GA2545@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429151509.GA2545@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-29 at 12:23 +0200, Sedat Dilek wrote:
-> But as I see these RCU (CPU) stalls, the patch from [1] might be worth a try.
-> First, I have seen negative effects on my UP-system was when playing
-> with linux-next [2].
-> It was not clear what the origin was and the the side-effects were
-> somehow "bizarre".
-> The issue could be easily reproduced by tar-ing the kernel build-dir
-> to an external USB-hdd.
-> The issue kept RCU and TIP folks really busy.
-> Before stepping 4 weeks in the dark, give it a try and let me know in
-> case of success.
+On Fri, Apr 29, 2011 at 11:15:09AM -0400, Jason Baron wrote:
+> On Thu, Apr 28, 2011 at 10:52:41PM +0200, Jiri Olsa wrote:
+> > Changing the jump label update code to use batch processing
+> > for x86 architectures. 
+> > 
+> > Currently each jump label update calls text_poke_smp for each
+> > jump label key entry. Thus one key update ends up calling stop
+> > machine multiple times.
+> > 
+> 
+> cool. Batching the updates is a nice idea.
+> 
+> > This patch is using text_poke_smp_batch, which is called for
+> > all the key's entries.  Ensuring the stop machine is called
+> > only once.
+> > 
+> 
+> Since we walk the modules list per key (calling __jump_label_update()),
+> this is not always the case. I'm wondering then if maybe what we want to do
+> is 'queue' each update from the core code. Then, when the queue fills
+> up, we flush out the queue. In this way, we cover jump labels that might
+> be in both the core kernel and in modules. This also has the side effect
+> of moving code such as:
+> 
+> /*
+>  * The entry->code set to 0 invalidates module
+>  * init text
+>  * sections (see
+>  * jump_label_invalidate_module_init).
+>  */
+> if (!entry->code || !kernel_text_address(entry->code))
+>               continue;
+> 
+> 
+> out of the arch code into the generic code, which in my opinion is a bit
+> cleaner. thoughts?
 
-Well, it's highly unlikely because that's a 2.6.39 artifact and the bug
-showed up in 2.6.38 ... I tried it just in case with no effect, so we
-know it isn't the cause.
+nice, we'd safe another few stop machine calls
+I'll update the patch
 
-> For the systemd/cgroups part of the discussion (yes, I followed this
-> thread in parallel):
-> The patch from [4] might be interesting (untested here).
-
-What makes you think that?  This patch is about rcu problems in cgroup
-manipulation through the mounted cgroup control filesystems.  The bug in
-question manifests when all of that is quiescent, so it's not likely to
-be related.
-
-James
-
-
+thanks,
+jirka
