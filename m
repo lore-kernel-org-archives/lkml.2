@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab1D2THA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:07:00 -0400
-Received: from kroah.org ([198.145.64.141]:50256 "EHLO coco.kroah.org"
+	id S933240Ab1D2THZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:07:25 -0400
+Received: from kroah.org ([198.145.64.141]:50245 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932992Ab1D2S6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:21 -0400
+	id S932921Ab1D2S6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:19 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
-Message-Id: <20110429185654.418295987@clark.kroah.org>
+Message-Id: <20110429185654.231167341@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:42 -0700
+Date: Fri, 29 Apr 2011 11:55:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathew McKernan <matmckernan@rauland.com.au>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Keith Packard <keithp@keithp.com>
-Subject: [19/55] drm/i915/tv: Remember the detected TV type
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [17/55] drm/radeon/kms: fix bad shift in atom iio table parser
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathew McKernan <matmckernan@rauland.com.au>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit d5627663f2088fa4be447fdcfd52bcb233448d85 upstream.
+commit 8e461123f28e6b17456225e70eb834b3b30d28bb upstream.
 
-During detect() we would probe the connection bits to determine if
-there was a TV attached, and what video input type (Component, S-Video,
-Composite, etc) to use. However, we promptly discarded this vital bit of
-information and never propagated it to where it was used to determine
-the correct modes and setup the control registers. Fix it!
+Noticed by Patrick Lowry.
 
-This fixes a regression from 7b334fcb45b757ffb093696ca3de1b0c8b4a33f1.
-
-Reported-and-tested-by: Mathew McKernan <matmckernan@rauland.com.au>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=35977
-Signed-off-by: Mathew McKernan <matmckernan@rauland.com.au>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_tv.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/atom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1380,7 +1380,9 @@ intel_tv_detect(struct drm_connector *co
- 	if (type < 0)
- 		return connector_status_disconnected;
- 
-+	intel_tv->type = type;
- 	intel_tv_find_better_format(connector);
-+
- 	return connector_status_connected;
- }
- 
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -135,7 +135,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_INDEX:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((index >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -145,7 +145,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_DATA:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((data >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -155,7 +155,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_ATTR:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((ctx->
+ 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
 
 
