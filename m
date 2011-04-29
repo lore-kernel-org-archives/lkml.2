@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923Ab1D2TJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:09:38 -0400
-Received: from kroah.org ([198.145.64.141]:50188 "EHLO coco.kroah.org"
+	id S932604Ab1D2S6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:08 -0400
+Received: from kroah.org ([198.145.64.141]:50145 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932667Ab1D2S6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:53 2011
-Message-Id: <20110429185653.365838835@clark.kroah.org>
+	id S1753090Ab1D2S6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:04 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:52 2011
+Message-Id: <20110429185652.677904385@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:31 -0700
+Date: Fri, 29 Apr 2011 11:55:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [08/55] nfsd4: Fix filp leak
+        Felix Fietkau <nbd@openwrt.org>,
+        Kyungwan Nam <Kyungwan.Nam@Atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [01/55] ath9k_hw: fix stopping rx DMA during resets
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +27,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit a96e5b90804be8b540d30f4a1453fc87f95b3149 upstream.
+commit 5882da02e9d9089b7e8c739f3e774aaeeff8b7ba upstream.
 
-23fcf2ec93fb8573a653408316af599939ff9a8e (nfsd4: fix oops on lock failure)
+During PHY errors, the MAC can sometimes fail to enter an idle state on older
+hardware (before AR9380) after an rx stop has been requested.
 
-The above patch breaks free path for stp->st_file. If stp was inserted
-into sop->so_stateids, we have to free stp->st_file refcount. Because
-stp->st_file refcount itself is taken whether or not any refcounts are
-taken on the stp->st_file->fi_fds[].
+This typically shows up in the kernel log with messages like these:
 
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+ath: Could not stop RX, we could be confusing the DMA engine when we start RX up
+------------[ cut here ]------------
+WARNING: at drivers/net/wireless/ath/ath9k/recv.c:504 ath_stoprecv+0xcc/0xf0 [ath9k]()
+Call Trace:
+[<8023f0e8>] dump_stack+0x8/0x34
+[<80075050>] warn_slowpath_common+0x78/0xa4
+[<80075094>] warn_slowpath_null+0x18/0x24
+[<80d66d60>] ath_stoprecv+0xcc/0xf0 [ath9k]
+[<80d642cc>] ath_set_channel+0xbc/0x270 [ath9k]
+[<80d65254>] ath_radio_disable+0x4a4/0x7fc [ath9k]
+
+When this happens, the state that the MAC enters is easy to identify and
+does not result in bogus DMA traffic, however to ensure a working state
+after a channel change, the hardware should still be reset.
+
+This patch adds detection for this specific MAC state, after which the above
+warnings completely disappear in my tests.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Cc: Kyungwan Nam <Kyungwan.Nam@Atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/hw.c   |    9 ---------
+ drivers/net/wireless/ath/ath9k/mac.c  |   25 ++++++++++++++++++++++---
+ drivers/net/wireless/ath/ath9k/mac.h  |    2 +-
+ drivers/net/wireless/ath/ath9k/recv.c |    6 +++---
+ 4 files changed, 26 insertions(+), 16 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -403,8 +403,8 @@ static void free_generic_stateid(struct
- 	if (stp->st_access_bmap) {
- 		oflag = nfs4_access_bmap_to_omode(stp);
- 		nfs4_file_put_access(stp->st_file, oflag);
--		put_nfs4_file(stp->st_file);
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1218,15 +1218,6 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 	ah->txchainmask = common->tx_chainmask;
+ 	ah->rxchainmask = common->rx_chainmask;
+ 
+-	if ((common->bus_ops->ath_bus_type != ATH_USB) && !ah->chip_fullsleep) {
+-		ath9k_hw_abortpcurecv(ah);
+-		if (!ath9k_hw_stopdmarecv(ah)) {
+-			ath_dbg(common, ATH_DBG_XMIT,
+-				"Failed to stop receive dma\n");
+-			bChannelChange = false;
+-		}
+-	}
+-
+ 	if (!ath9k_hw_setpower(ah, ATH9K_PM_AWAKE))
+ 		return -EIO;
+ 
+--- a/drivers/net/wireless/ath/ath9k/mac.c
++++ b/drivers/net/wireless/ath/ath9k/mac.c
+@@ -770,28 +770,47 @@ void ath9k_hw_abortpcurecv(struct ath_hw
+ }
+ EXPORT_SYMBOL(ath9k_hw_abortpcurecv);
+ 
+-bool ath9k_hw_stopdmarecv(struct ath_hw *ah)
++bool ath9k_hw_stopdmarecv(struct ath_hw *ah, bool *reset)
+ {
+ #define AH_RX_STOP_DMA_TIMEOUT 10000   /* usec */
+ #define AH_RX_TIME_QUANTUM     100     /* usec */
+ 	struct ath_common *common = ath9k_hw_common(ah);
++	u32 mac_status, last_mac_status = 0;
+ 	int i;
+ 
++	/* Enable access to the DMA observation bus */
++	REG_WRITE(ah, AR_MACMISC,
++		  ((AR_MACMISC_DMA_OBS_LINE_8 << AR_MACMISC_DMA_OBS_S) |
++		   (AR_MACMISC_MISC_OBS_BUS_1 <<
++		    AR_MACMISC_MISC_OBS_BUS_MSB_S)));
++
+ 	REG_WRITE(ah, AR_CR, AR_CR_RXD);
+ 
+ 	/* Wait for rx enable bit to go low */
+ 	for (i = AH_RX_STOP_DMA_TIMEOUT / AH_TIME_QUANTUM; i != 0; i--) {
+ 		if ((REG_READ(ah, AR_CR) & AR_CR_RXE) == 0)
+ 			break;
++
++		if (!AR_SREV_9300_20_OR_LATER(ah)) {
++			mac_status = REG_READ(ah, AR_DMADBG_7) & 0x7f0;
++			if (mac_status == 0x1c0 && mac_status == last_mac_status) {
++				*reset = true;
++				break;
++			}
++
++			last_mac_status = mac_status;
++		}
++
+ 		udelay(AH_TIME_QUANTUM);
  	}
-+	put_nfs4_file(stp->st_file);
- 	kmem_cache_free(stateid_slab, stp);
+ 
+ 	if (i == 0) {
+ 		ath_err(common,
+-			"DMA failed to stop in %d ms AR_CR=0x%08x AR_DIAG_SW=0x%08x\n",
++			"DMA failed to stop in %d ms AR_CR=0x%08x AR_DIAG_SW=0x%08x DMADBG_7=0x%08x\n",
+ 			AH_RX_STOP_DMA_TIMEOUT / 1000,
+ 			REG_READ(ah, AR_CR),
+-			REG_READ(ah, AR_DIAG_SW));
++			REG_READ(ah, AR_DIAG_SW),
++			REG_READ(ah, AR_DMADBG_7));
+ 		return false;
+ 	} else {
+ 		return true;
+--- a/drivers/net/wireless/ath/ath9k/mac.h
++++ b/drivers/net/wireless/ath/ath9k/mac.h
+@@ -692,7 +692,7 @@ bool ath9k_hw_setrxabort(struct ath_hw *
+ void ath9k_hw_putrxbuf(struct ath_hw *ah, u32 rxdp);
+ void ath9k_hw_startpcureceive(struct ath_hw *ah, bool is_scanning);
+ void ath9k_hw_abortpcurecv(struct ath_hw *ah);
+-bool ath9k_hw_stopdmarecv(struct ath_hw *ah);
++bool ath9k_hw_stopdmarecv(struct ath_hw *ah, bool *reset);
+ int ath9k_hw_beaconq_setup(struct ath_hw *ah);
+ 
+ /* Interrupt Handling */
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -513,12 +513,12 @@ start_recv:
+ bool ath_stoprecv(struct ath_softc *sc)
+ {
+ 	struct ath_hw *ah = sc->sc_ah;
+-	bool stopped;
++	bool stopped, reset = false;
+ 
+ 	spin_lock_bh(&sc->rx.rxbuflock);
+ 	ath9k_hw_abortpcurecv(ah);
+ 	ath9k_hw_setrxfilter(ah, 0);
+-	stopped = ath9k_hw_stopdmarecv(ah);
++	stopped = ath9k_hw_stopdmarecv(ah, &reset);
+ 
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+ 		ath_edma_stop_recv(sc);
+@@ -533,7 +533,7 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 			"confusing the DMA engine when we start RX up\n");
+ 		ATH_DBG_WARN_ON_ONCE(!stopped);
+ 	}
+-	return stopped;
++	return stopped || reset;
  }
  
+ void ath_flushrecv(struct ath_softc *sc)
 
 
