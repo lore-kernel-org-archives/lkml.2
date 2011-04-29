@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab1D2HPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 03:15:39 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:45068 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab1D2HPg (ORCPT
+	id S1756239Ab1D2HPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 03:15:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47936 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab1D2HPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 03:15:36 -0400
-Subject: [PATCH v5 1/8] arm/dt: Make __vet_atags also accept a dtb image
+	Fri, 29 Apr 2011 03:15:40 -0400
+Subject: [PATCH v5 2/8] arm/dt: Allow CONFIG_OF on ARM
 To: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Date: Fri, 29 Apr 2011 01:15:32 -0600
-Message-ID: <20110429071532.12522.13124.stgit@ponder>
+Date: Fri, 29 Apr 2011 01:15:37 -0600
+Message-ID: <20110429071537.12522.86977.stgit@ponder>
 In-Reply-To: <20110429070135.12522.35745.stgit@ponder>
 References: <20110429070135.12522.35745.stgit@ponder>
 User-Agent: StGit/0.15
@@ -24,122 +24,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dtb is passed to the kernel via register r2, which is the same
-method that is used to pass an atags pointer.  This patch modifies
-__vet_atags to not clear r2 when it encounters a dtb image.
+Add some basic empty infrastructure for DT support on ARM.
 
-v2: fixed bugs pointed out by Nicolas Pitre
+v5: - Fix off-by-one error in size calculation of initrd
+    - Stop mucking with cmd_line, and load command line from dt into
+      boot_command_line instead which matches the behaviour of ATAGS booting
+v3: - moved cmd_line export and initrd setup to this patch to make the
+      series bisectable.
+    - switched to alloc_bootmem_align() for allocation when
+      unflattening the device tree.  memblock_alloc() was not the
+      right interface.
 
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arm/kernel/head-common.S |   24 ++++++++++++++++++------
- arch/arm/kernel/head.S        |    8 ++++----
- 2 files changed, 22 insertions(+), 10 deletions(-)
+ arch/arm/Kconfig             |    7 ++++++
+ arch/arm/include/asm/prom.h  |   25 ++++++++++++++++++++++
+ arch/arm/include/asm/setup.h |    2 ++
+ arch/arm/kernel/Makefile     |    1 +
+ arch/arm/kernel/devtree.c    |   47 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/setup.c      |    2 +-
+ arch/arm/mm/init.c           |    9 ++++++++
+ 7 files changed, 92 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/include/asm/prom.h
+ create mode 100644 arch/arm/kernel/devtree.c
 
-diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-index c84b57d..854bd22 100644
---- a/arch/arm/kernel/head-common.S
-+++ b/arch/arm/kernel/head-common.S
-@@ -15,6 +15,12 @@
- #define ATAG_CORE_SIZE ((2*4 + 3*4) >> 2)
- #define ATAG_CORE_SIZE_EMPTY ((2*4) >> 2)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 377a7a5..efc7f3c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1687,6 +1687,13 @@ endmenu
  
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+#define OF_DT_MAGIC 0xd00dfeed
-+#else
-+#define OF_DT_MAGIC 0xedfe0dd0 /* 0xd00dfeed in big-endian */
-+#endif
+ menu "Boot options"
+ 
++config USE_OF
++	bool "Flattened Device Tree support"
++	select OF
++	select OF_EARLY_FLATTREE
++	help
++	  Include support for flattened device tree machine descriptions.
++
+ # Compressed boot loader in ROM.  Yes, we really want to ask about
+ # TEXT and BSS so we preserve their values in the config files.
+ config ZBOOT_ROM_TEXT
+diff --git a/arch/arm/include/asm/prom.h b/arch/arm/include/asm/prom.h
+new file mode 100644
+index 0000000..8f1037f
+--- /dev/null
++++ b/arch/arm/include/asm/prom.h
+@@ -0,0 +1,25 @@
++/*
++ *  arch/arm/include/asm/prom.h
++ *
++ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#ifndef __ASMARM_PROM_H
++#define __ASMARM_PROM_H
++
++#ifdef CONFIG_OF
++
++#include <asm/setup.h>
++#include <asm/irq.h>
++
++static inline void irq_dispose_mapping(unsigned int virq)
++{
++	return;
++}
++
++#endif /* CONFIG_OF */
++#endif /* ASMARM_PROM_H */
+diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
+index 95176af..93b4702 100644
+--- a/arch/arm/include/asm/setup.h
++++ b/arch/arm/include/asm/setup.h
+@@ -217,6 +217,8 @@ extern struct meminfo meminfo;
+ #define bank_phys_end(bank)	((bank)->start + (bank)->size)
+ #define bank_phys_size(bank)	(bank)->size
+ 
++extern int arm_add_memory(phys_addr_t start, unsigned long size);
++
+ #endif  /*  __KERNEL__  */
+ 
+ #endif
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 8d95446..908c78c 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -44,6 +44,7 @@ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
++obj-$(CONFIG_OF)		+= devtree.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
+ obj-$(CONFIG_SWP_EMULATE)	+= swp_emulate.o
+ CFLAGS_swp_emulate.o		:= -Wa,-march=armv7-a
+diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+new file mode 100644
+index 0000000..75e3df8
+--- /dev/null
++++ b/arch/arm/kernel/devtree.c
+@@ -0,0 +1,47 @@
++/*
++ *  linux/arch/arm/kernel/devtree.c
++ *
++ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/types.h>
++#include <linux/bootmem.h>
++#include <linux/memblock.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++
++#include <asm/setup.h>
++#include <asm/page.h>
++
++void __init early_init_dt_add_memory_arch(u64 base, u64 size)
++{
++	arm_add_memory(base, size);
++}
++
++void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
++{
++	return alloc_bootmem_align(size, align);
++}
++
++/**
++ * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
++ *
++ * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
++ * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
++ * supported.
++ */
++unsigned int irq_create_of_mapping(struct device_node *controller,
++				   const u32 *intspec, unsigned int intsize)
++{
++	return intspec[0];
++}
++EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 006c1e8..109997e 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -466,7 +466,7 @@ static struct machine_desc * __init setup_machine(unsigned int nr)
+ 		/* can't use cpu_relax() here as it may require MMU setup */;
+ }
+ 
+-static int __init arm_add_memory(phys_addr_t start, unsigned long size)
++int __init arm_add_memory(phys_addr_t start, unsigned long size)
+ {
+ 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
+ 
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index e5f6fc4..26c4054 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -15,6 +15,7 @@
+ #include <linux/mman.h>
+ #include <linux/nodemask.h>
+ #include <linux/initrd.h>
++#include <linux/of_fdt.h>
+ #include <linux/highmem.h>
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
+@@ -71,6 +72,14 @@ static int __init parse_tag_initrd2(const struct tag *tag)
+ 
+ __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+ 
++#ifdef CONFIG_OF_FLATTREE
++void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
++{
++	phys_initrd_start = start;
++	phys_initrd_size = end - start;
++}
++#endif /* CONFIG_OF_FLATTREE */
 +
  /*
-  * Exception handling.  Something went wrong and we can't proceed.  We
-  * ought to tell the user, but since we don't have any guarantee that
-@@ -28,20 +34,26 @@
- 
- /* Determine validity of the r2 atags pointer.  The heuristic requires
-  * that the pointer be aligned, in the first 16k of physical RAM and
-- * that the ATAG_CORE marker is first and present.  Future revisions
-+ * that the ATAG_CORE marker is first and present.  If CONFIG_OF_FLATTREE
-+ * is selected, then it will also accept a dtb pointer.  Future revisions
-  * of this function may be more lenient with the physical address and
-  * may also be able to move the ATAGS block if necessary.
-  *
-  * Returns:
-- *  r2 either valid atags pointer, or zero
-+ *  r2 either valid atags pointer, valid dtb pointer, or zero
-  *  r5, r6 corrupted
-  */
- __vet_atags:
- 	tst	r2, #0x3			@ aligned?
- 	bne	1f
- 
--	ldr	r5, [r2, #0]			@ is first tag ATAG_CORE?
--	cmp	r5, #ATAG_CORE_SIZE
-+	ldr	r5, [r2, #0]
-+#ifdef CONFIG_OF_FLATTREE
-+	ldr	r6, =OF_DT_MAGIC		@ is it a DTB?
-+	cmp	r5, r6
-+	beq	2f
-+#endif
-+	cmp	r5, #ATAG_CORE_SIZE		@ is first tag ATAG_CORE?
- 	cmpne	r5, #ATAG_CORE_SIZE_EMPTY
- 	bne	1f
- 	ldr	r5, [r2, #4]
-@@ -49,7 +61,7 @@ __vet_atags:
- 	cmp	r5, r6
- 	bne	1f
- 
--	mov	pc, lr				@ atag pointer is ok
-+2:	mov	pc, lr				@ atag/dtb pointer is ok
- 
- 1:	mov	r2, #0
- 	mov	pc, lr
-@@ -61,7 +73,7 @@ ENDPROC(__vet_atags)
-  *
-  *  r0  = cp#15 control register
-  *  r1  = machine ID
-- *  r2  = atags pointer
-+ *  r2  = atags/dtb pointer
-  *  r9  = processor ID
-  */
- 	__INIT
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index c9173cf..a5e5c5b 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -59,7 +59,7 @@
-  *
-  * This is normally called from the decompressor code.  The requirements
-  * are: MMU = off, D-cache = off, I-cache = dont care, r0 = 0,
-- * r1 = machine nr, r2 = atags pointer.
-+ * r1 = machine nr, r2 = atags or dtb pointer.
-  *
-  * This code is mostly position independent, so if you link the kernel at
-  * 0xc0008000, you call this at __pa(0xc0008000).
-@@ -91,7 +91,7 @@ ENTRY(stext)
- #endif
- 
- 	/*
--	 * r1 = machine no, r2 = atags,
-+	 * r1 = machine no, r2 = atags or dtb,
- 	 * r8 = phys_offset, r9 = cpuid, r10 = procinfo
- 	 */
- 	bl	__vet_atags
-@@ -339,7 +339,7 @@ __secondary_data:
-  *
-  *  r0  = cp#15 control register
-  *  r1  = machine ID
-- *  r2  = atags pointer
-+ *  r2  = atags or dtb pointer
-  *  r4  = page table pointer
-  *  r9  = processor ID
-  *  r13 = *virtual* address to jump to upon completion
-@@ -376,7 +376,7 @@ ENDPROC(__enable_mmu)
-  *
-  *  r0  = cp#15 control register
-  *  r1  = machine ID
-- *  r2  = atags pointer
-+ *  r2  = atags or dtb pointer
-  *  r9  = processor ID
-  *  r13 = *virtual* address to jump to upon completion
-  *
+  * This keeps memory configuration data used by a couple memory
+  * initialization functions, as well as show_mem() for the skipping
 
