@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab1D2S6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:58:18 -0400
-Received: from kroah.org ([198.145.64.141]:50209 "EHLO coco.kroah.org"
+	id S933112Ab1D2TIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:08:18 -0400
+Received: from kroah.org ([198.145.64.141]:50232 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698Ab1D2S6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:53 2011
-Message-Id: <20110429185653.658083663@clark.kroah.org>
+	id S932846Ab1D2S6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
+Message-Id: <20110429185654.039379722@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:34 -0700
+Date: Fri, 29 Apr 2011 11:55:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [11/55] x86, gart: Make sure GART does not map physmem above 1TB
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [15/55] drm/radeon/kms: pll tweaks for r7xx
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 665d3e2af83c8fbd149534db8f57d82fa6fa6753 upstream.
+commit 5785e53ffa73f77fb19e378c899027afc07272bc upstream.
 
-The GART can only map physical memory below 1TB. Make sure
-the gart driver in the kernel does not try to map memory
-above 1TB.
+Prefer min m to max p only on pre-r7xx asics.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/1303134346-5805-5-git-send-email-joerg.roedel@amd.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=36197
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/pci-gart_64.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/arch/x86/kernel/pci-gart_64.c
-+++ b/arch/x86/kernel/pci-gart_64.c
-@@ -81,6 +81,9 @@ static u32 gart_unmapped_entry;
- #define AGPEXTERN
- #endif
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -532,10 +532,7 @@ static u32 atombios_adjust_pll(struct dr
+ 		else
+ 			pll->flags |= RADEON_PLL_PREFER_LOW_REF_DIV;
  
-+/* GART can only remap to physical addresses < 1TB */
-+#define GART_MAX_PHYS_ADDR	(1ULL << 40)
-+
- /* backdoor interface to AGP driver */
- AGPEXTERN int agp_memory_reserved;
- AGPEXTERN __u32 *agp_gatt_table;
-@@ -212,9 +215,13 @@ static dma_addr_t dma_map_area(struct de
- 				size_t size, int dir, unsigned long align_mask)
- {
- 	unsigned long npages = iommu_num_pages(phys_mem, size, PAGE_SIZE);
--	unsigned long iommu_page = alloc_iommu(dev, npages, align_mask);
-+	unsigned long iommu_page;
- 	int i;
- 
-+	if (unlikely(phys_mem + size > GART_MAX_PHYS_ADDR))
-+		return bad_dma_addr;
-+
-+	iommu_page = alloc_iommu(dev, npages, align_mask);
- 	if (iommu_page == -1) {
- 		if (!nonforced_iommu(dev, phys_mem, size))
- 			return phys_mem;
+-		if ((rdev->family == CHIP_R600) ||
+-		    (rdev->family == CHIP_RV610) ||
+-		    (rdev->family == CHIP_RV630) ||
+-		    (rdev->family == CHIP_RV670))
++		if (rdev->family < CHIP_RV770)
+ 			pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
+ 	} else {
+ 		pll->flags |= RADEON_PLL_LEGACY;
+@@ -565,7 +562,6 @@ static u32 atombios_adjust_pll(struct dr
+ 			if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
+ 				if (ss_enabled) {
+ 					if (ss->refdiv) {
+-						pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
+ 						pll->flags |= RADEON_PLL_USE_REF_DIV;
+ 						pll->reference_div = ss->refdiv;
+ 						if (ASIC_IS_AVIVO(rdev))
 
 
