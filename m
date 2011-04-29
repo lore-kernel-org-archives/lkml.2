@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959Ab1D2VU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:20:59 -0400
-Received: from nd215.dnsexit.com ([64.182.102.215]:51855 "EHLO
-	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750721Ab1D2VU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:20:57 -0400
-X-Complaints-To: abuse@dnsExit.com
-X-SPAM: Please report Spam to abuse@dnsExit.com
-        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
-        Accounts will be suspended immediately if convicted Spam
-Message-ID: <4DBB2B85.1040506@verizon.net>
-Date: Fri, 29 Apr 2011 17:20:05 -0400
-From: Peter Foley <pefoley2@verizon.net>
-Reply-To: <pefoley2@verizon.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1760970Ab1D2VYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:24:05 -0400
+Received: from kroah.org ([198.145.64.141]:47107 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab1D2VYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 17:24:02 -0400
+Date: Fri, 29 Apr 2011 14:23:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Subject: Re: [PATCH v3 3/5] Introduce CONFIG_GOOGLE_FIRMWARE
+Message-ID: <20110429212328.GA19207@kroah.com>
+References: <20110315065839.12047.70666.stgit@mike.mtv.corp.google.com>
+ <20110315065855.12047.31930.stgit@mike.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH 1/4] kbuild: add targets to PHONY
-References: <4DB73C94.1020701@verizon.net> <20110429123610.GD1619@sepie.suse.cz>
-In-Reply-To: <20110429123610.GD1619@sepie.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315065855.12047.31930.stgit@mike.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/29/2011 8:36 AM, Michal Marek wrote:
-> Hi,
+On Mon, Mar 14, 2011 at 11:58:55PM -0700, Mike Waychison wrote:
+> In order to keep Google's firmware drivers organized amongst themselves,
+> create a new directory for them to live in.  As well, all Google
+> firmware drivers are gated on CONFIG_GOOGLE_FIRMWARE=y, which defaults
+> to 'n' in the kernel build.
 > 
-> could you repost also this series and the patch that moves docproc.c to
-> scripts with patches as attachments? The patches look OK, but they are
-> unfortunatelly corrupted (missing or excess space and missing context
-> sometimes).
-> 
-> thanks,
-> Michal
+> Signed-off-by: Mike Waychison <mikew@google.com>
 
-Ok, I'll do that.
+This patch breaks the build:
 
-Thanks,
+ld: cannot find drivers/firmware/google/built-in.o: No such file or directory
 
-Peter Foley
+Care to reoder this to be the last patch in the series?
+
+I've applied the first two, so just send the last 3, with this one being
+the last one, and it should be fine.
+
+thanks,
+
+greg k-h
