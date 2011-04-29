@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab1D1X5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 19:57:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43301 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147Ab1D1X5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 19:57:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ginkel.com; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:from:date
-         :message-id:subject:to:cc:content-type;
-        b=Pwnkkyhicod9pTdpGNWeru9fVQGedImGZGwfq+utNMKyyDN6h+wEt+aTROe8gZZP1d
-         2kqGxhj+2yW0ax0TKirznpxOH6+q8ahJBWap2SsH0dV+C59uwJn7x3WlgpHsHdFsAyYu
-         aH0QzI4J3Nbby9XSfPKVcMe9FHMAUIipJPYCE=
-MIME-Version: 1.0
-X-Originating-IP: [91.17.222.55]
-In-Reply-To: <20110428103036.GB10721@htj.dyndns.org>
-References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
- <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com> <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
- <201104172135.40189.arnd@arndb.de> <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
- <20110426131132.GG878@htj.dyndns.org> <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
- <20110428103036.GB10721@htj.dyndns.org>
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
-Date: Fri, 29 Apr 2011 01:56:46 +0200
-Message-ID: <BANLkTinK3jZmKewkbtmOn54cRXhszh_5sQ@mail.gmail.com>
-Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
-To: Tejun Heo <tj@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	id S1758235Ab1D2AFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 20:05:04 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40432 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758106Ab1D2AFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 20:05:02 -0400
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+From: john stultz <johnstul@us.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1304034500.2971.160.camel@work-vm>
+References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
+	 <1303331695.2796.159.camel@work-vm>
+	 <20110421103009.731B.A69D9226@jp.fujitsu.com>
+	 <1303846026.2816.117.camel@work-vm>
+	 <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
+	 <1303950728.2971.35.camel@work-vm> <1303954193.2971.43.camel@work-vm>
+	 <alpine.DEB.2.00.1104281545590.24536@chino.kir.corp.google.com>
+	 <1304034500.2971.160.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Apr 2011 17:04:55 -0700
+Message-ID: <1304035495.2971.169.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 12:30, Tejun Heo <tj@kernel.org> wrote:
-> Does your kernel have preemption enabled?
+On Thu, 2011-04-28 at 16:48 -0700, john stultz wrote:
+> On Thu, 2011-04-28 at 15:48 -0700, David Rientjes wrote:
+> > On Wed, 27 Apr 2011, john stultz wrote:
+> > 
+> > > So thinking further, this can be simplified by adding the seqlock first,
+> > > and then retaining the task_locking only in the set_task_comm path until
+> > > all comm accessors are converted to using get_task_comm.
+> > > 
+> > 
+> > On second thought, I think it would be better to just retain using a 
+> > spinlock but instead of using alloc_lock, introduce a new spinlock to 
+> > task_struct for the sole purpose of protecting comm.
+> > 
+> > And, instead, of using get_task_comm() to write into a preallocated 
+> > buffer, I think it would be easier in the vast majority of cases that 
+> > you'll need to convert to just provide task_comm_lock(p) and 
+> > task_comm_unlock(p) so that p->comm can be dereferenced safely.  
 
-CONFIG_PREEMPT is not set
+Ok.. trying to find a middle ground here by replying to my own
+concerns. :)
 
-> If not, does the following patch fix the problem?
+> So my concern with this is that it means one more lock that could be
+> mis-nested. By keeping the locking isolated to the get/set_task_comm, we
+> can be sure that won't happen. 
+> 
+> Also tracking new current->comm references will be easier if we just
+> don't allow new ones. Validating that all the comm references are
+> correctly locked becomes more difficult if we need locking at each use
+> site.
 
-Yep, looks good so far (at least in my virtualized test environment):
-2.6.39-rc4 with your patch applied survived 100 suspend/resume cycles
-w/o locking up.
+So maybe we still ban current->comm access and instead have a
+lightweight get_comm_locked() accessor or something that. Then we can
+add debugging options to validate that the lock is properly held
+internally.
 
-Just out of curiosity: Was this a new issue in 2.6.39-rc4 ord could
-this fix be backported to 2.6.38?
+> Further, since I'm not convinced that we never reference current->comm
+> from irq context, if we go with spinlocks, we're going to have to
+> disable irqs in the read path as well. seqlocks were nice for that
+> aspect.
 
-Thanks,
-Thilo
+rwlocks can resolve this concern.
+
+
+Any other thoughts?
+
+-john
+
