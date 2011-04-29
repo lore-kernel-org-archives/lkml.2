@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760777Ab1D2SCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:02:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51288 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760726Ab1D2SCL (ORCPT
+	id S1760792Ab1D2SCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:02:20 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:45580 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760781Ab1D2SCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:02:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=MCHs7CzzhgT/Lu2BvI3rqOwJAO4ITyAtZDT18JERIA0NKurCNe+bkrHWrPx4Ix0RZa
-         4EhhcgvdG3TdsHxaItrwR8plbeZjHPjXf8bLUQoyPDOnCUpbfG1tKjRn6l83RKx/zAgN
-         XCWs2BSD16aL1xVwbSgnD93BceuxcP4Rfipt0=
-Subject: [PATCH] sched: Use proper type for runqueue's idle_at_tick.
-From: Rakib Mullick <rakib.mullick@gmail.com>
+	Fri, 29 Apr 2011 14:02:17 -0400
+Date: Fri, 29 Apr 2011 14:01:28 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Apr 2011 00:01:02 +0600
-Message-ID: <1304100062.19359.6.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: re-enable Nehalem raw Offcore-Events support
+In-Reply-To: <20110429164227.GA25491@elte.hu>
+Message-ID: <alpine.DEB.2.00.1104291353310.23685@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu> <20110429164227.GA25491@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Searching over scheduler code for uses of idle_at_tick, tells that its been used for making TRUE/FALSE decision. But, its been declared as 'unsigned char', using 'bool' is more rational here. So, for consistency use 'bool' as idle_at_tick type instead of 'unsigned char'.
+On Fri, 29 Apr 2011, Ingo Molnar wrote:
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+> Firstly, one technical problem i have with the raw events ABI method is that it 
+> was added in commit e994d7d23a0b ("perf: Fix LLC-* events on Intel 
+> Nehalem/Westmere"). The raw ABI bit was done 'under the radar', it was not the 
+> declared title of the commit, it was not declared in the changelog either and 
+> it was not my intention to offer such an ABI prematurely either - and i noticed 
+> those two lines too late - but still in time to not let this slip into v2.6.39.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8cb0a57..d9f7f98 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -505,7 +505,7 @@ struct rq {
- 
- 	unsigned long cpu_power;
- 
--	unsigned char idle_at_tick;
-+	bool idle_at_tick;
- 	/* For active balancing */
- 	int post_schedule;
- 	int active_balance;
+The initial patches from November seem to make it clear what is being done 
+here.  I thought it was pretty obvious to those reviewing those patches 
+what was involved.  How would I have known that OFFCORE_RESPONSE support 
+was coming if I didn't see the patches obviously float by on linux-kernel?
 
+> Thirdly, and this is my most fundamental objection, i also object to the timing 
+> of this offcore raw access ABI, because past experience is that we *really* do 
+> not want to allow raw PMU details without *first* having generic abstractions 
+> and generic events first.
 
+why?  Can you explain this better?
+
+> The thing is, as far as i can see you and Andi are *still* pushing the failed 
+> perfmon and Oprofile ABI and tooling models.
+
+what ABI?  by the way, I hate oprofile and never use it.
+
+perfmon2 and perfctr are very similar to perf_events in that they provide 
+lightly massaged access to the MSRs so you can program whatever raw event 
+that you like.
+
+It's true that the *userspace* tools (pfmon, iperfex, PAPI) handle things 
+differently than perf, but that's a *userspace* API, not a kernel ABI.  
+You seem to keep confusing this.
+
+> We put structure, proper abstractions and easy tooling *ahead* of the interests 
+> of a small group of people who'd rather prefer a lowlevel, opaque hardware 
+> channel so that they do not have to *think* about generalization and also 
+> perhaps so they do not have to share their selection of events and analysis 
+> methods with others ...
+
+And generalization across platforms (and even across minor chip revisions) 
+*doesn't work*.  It lasted maybe a year in PAPI before it was realized to 
+be unworkable.  Talk to some people from AMD or Intel if you want.  It's 
+not possible to sanely generalize perf counters.  They are too tied to 
+hardware quirks.
+
+Vince
+vweaver1@eecs.utk.edu
