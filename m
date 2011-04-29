@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933627Ab1D2S6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:58:51 -0400
-Received: from kroah.org ([198.145.64.141]:35100 "EHLO coco.kroah.org"
+	id S933676Ab1D2S65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:57 -0400
+Received: from kroah.org ([198.145.64.141]:50392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933623Ab1D2S6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:46 -0400
+	id S933625Ab1D2S6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:57 2011
-Message-Id: <20110429185657.028539228@clark.kroah.org>
+Message-Id: <20110429185657.233703857@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:09 -0700
+Date: Fri, 29 Apr 2011 11:56:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [46/55] NFSv4.1: Ensure state manager thread dies on last umount
+        Dave Airlie <airlied@redhat.com>
+Subject: [48/55] drm: select FRAMEBUFFER_CONSOLE_PRIMARY if we have FRAMEBUFFER_CONSOLE
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 47c2199b6eb5fbe38ddb844db7cdbd914d304f9c upstream.
+commit bf5192edcbc1f0a7f9c054649dbf1a0b3210d9b7 upstream.
 
-Currently, the state manager may continue to try recovering state forever
-even after the last filesystem to reference that nfs_client has umounted.
+Multi-gpu/switcheroo relies on this option to get the console on the
+correct GPU at bootup, some distros enable it but it seems some get
+it wrong.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4state.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1600,7 +1600,7 @@ static void nfs4_state_manager(struct nf
- 	int status = 0;
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -24,6 +24,7 @@ config DRM_KMS_HELPER
+ 	depends on DRM
+ 	select FB
+ 	select FRAMEBUFFER_CONSOLE if !EXPERT
++	select FRAMEBUFFER_CONSOLE_DETECT_PRIMARY if FRAMEBUFFER_CONSOLE
+ 	help
+ 	  FB and CRTC helpers for KMS drivers.
  
- 	/* Ensure exclusive access to NFSv4 state */
--	for(;;) {
-+	do {
- 		if (test_and_clear_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state)) {
- 			/* We're going to have to re-establish a clientid */
- 			status = nfs4_reclaim_lease(clp);
-@@ -1684,7 +1684,7 @@ static void nfs4_state_manager(struct nf
- 			break;
- 		if (test_and_set_bit(NFS4CLNT_MANAGER_RUNNING, &clp->cl_state) != 0)
- 			break;
--	}
-+	} while (atomic_read(&clp->cl_count) > 1);
- 	return;
- out_error:
- 	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
 
 
