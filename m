@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1D2PCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:02:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47321 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab1D2PCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:02:42 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, colin.king@canonical.com,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, mgorman@novell.com
-In-Reply-To: <20110428202701.GB4658@suse.de>
-References: <20110428140725.GX4658@suse.de>
-	 <1304000714.2598.0.camel@mulgrave.site> <20110428150827.GY4658@suse.de>
-	 <1304006499.2598.5.camel@mulgrave.site>
-	 <1304009438.2598.9.camel@mulgrave.site>
-	 <1304009778.2598.10.camel@mulgrave.site> <20110428171826.GZ4658@suse.de>
-	 <1304015436.2598.19.camel@mulgrave.site> <20110428192104.GA4658@suse.de>
-	 <1304020767.2598.21.camel@mulgrave.site>  <20110428202701.GB4658@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Apr 2011 10:02:36 -0500
-Message-ID: <1304089357.2559.4.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1754051Ab1D2PGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:06:12 -0400
+Received: from jaguar.mail.utk.edu ([160.36.0.84]:47002 "EHLO
+	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab1D2PGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 11:06:11 -0400
+Date: Fri, 29 Apr 2011 11:04:46 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: torvalds@linux-foundation.org
+cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Andi Kleen <ak@linux.intel.com>
+Subject: re-enable Nehalem raw Offcore-Events support
+Message-ID: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 21:27 +0100, Mel Gorman wrote:
-> On Thu, Apr 28, 2011 at 02:59:27PM -0500, James Bottomley wrote:
-> > On Thu, 2011-04-28 at 20:21 +0100, Mel Gorman wrote:
-> > > On Thu, Apr 28, 2011 at 01:30:36PM -0500, James Bottomley wrote:
-> > > > > Way hey, cgroups are also in the mix. How jolly.
-> > > > > 
-> > > > > Is systemd a common element of the machines hitting this bug by any
-> > > > > chance?
-> > > > 
-> > > > Well, yes, the bug report is against FC15, which needs cgroups for
-> > > > systemd.
-> > > > 
-> > > 
-> > > Ok although we do not have direct evidence that it's the problem yet. A
-> > > broken shrinker could just mean we are also trying to aggressively
-> > > reclaim in cgroups.
-> > > 
-> > > > > The remaining traces seem to be follow-on damage related to the three
-> > > > > issues of "shrinkers are bust in some manner" causing "we are not
-> > > > > getting over the min watermark" and as a side-show "we are spending lots
-> > > > > of time doing something unspecified but unhelpful in cgroups".
-> > > > 
-> > > > Heh, well find a way for me to verify this: I can't turn off cgroups
-> > > > because systemd then won't work and the machine won't boot ...
-> > > > 
-> > > 
-> > > Same testcase, same kernel but a distro that is not using systemd to
-> > > verify if cgroups are the problem. Not ideal I know. When I'm back
-> > > online Tuesday, I'll try reproducing this on a !Fedora distribution. In
-> > > the meantime, the following untested hatchet job might spit out
-> > > which shrinker we are getting stuck in. It is also breaking out of
-> > > the shrink_slab loop so it'd even be interesting to see if the bug
-> > > is mitigated in any way.
-> > 
-> > Actually, talking to Chris, I think I can get the system up using
-> > init=/bin/bash without systemd, so I can try the no cgroup config.
-> > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index c74a501..ed99104 100644
-> > 
-> > In the mean time, this patch produces:
-> > 
-> > (that's nothing ... apparently the trace doesn't activate when kswapd
-> > goes mad).
-> > 
-> 
-> Or is looping there for shorter than we expect. HZ/10?
+Hello Linus
 
-Still doesn't print anything, even with HZ/10.
+can you revert the commit b52c55c6a25e4515b5e075a989ff346fc251ed09
 
-James
+This removed functionality from perf_events that allowed raw event access 
+for OFFCORE_EVENTS type events on Nehalem and Westmere cpus.
 
+To be fair, this is not technically a regression as the feature was only 
+(finally!) added in the 2.6.39 merge window.  However this is a useful 
+feature and many tools (including the PAPI performance counter library 
+that I work on) had added support for it in anticipation of the 2.6.39 
+release.
 
+Ingo's reasons for removing the feature seem to boil down to
+  1.  "perf" doesn't use the functionality, and any other userspace
+      program that uses the perf_events syscalls don't matter
+  2.  Users are too stupid to use the raw functionality properly;
+      we should only allow a kernel-developer-approved small subset
+      of the features provided by the CPU as described in the intel
+      developers manuals.
 
+#2 seems like a gross misinterpretation of the whole "Linux gives you 
+enough rope to shoot yourself in the foot" policy from days passed, but 
+maybe things have moved on.
+
+Thanks,
+
+Vince
+vweaver1@eecs.utk.edu
