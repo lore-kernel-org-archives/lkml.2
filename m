@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760758Ab1D2RoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 13:44:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47707 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760742Ab1D2RoG (ORCPT
+	id S1760746Ab1D2Rrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 13:47:42 -0400
+Received: from jaguar.mail.utk.edu ([160.36.0.84]:51806 "EHLO
+	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760660Ab1D2Rrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 13:44:06 -0400
-Date: Fri, 29 Apr 2011 11:43:55 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Michal Simek <monstr@monstr.eu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/6] General device tree irq domain infrastructure
-Message-ID: <20110429174355.GA21098@ponder.secretlab.ca>
-References: <20110428192227.8979.49181.stgit@ponder>
- <4DBAE461.7000307@linutronix.de>
+	Fri, 29 Apr 2011 13:47:41 -0400
+Date: Fri, 29 Apr 2011 13:46:01 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Pekka Enberg <penberg@kernel.org>
+cc: Andi Kleen <ak@linux.intel.com>, torvalds@linux-foundation.org,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: re-enable Nehalem raw Offcore-Events support
+In-Reply-To: <BANLkTim3bojtfeeWsAFx2Gct7LsvGCdn-w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1104291341510.23685@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu> <BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com> <20110429172525.GA2745@tassilo.jf.intel.com> <BANLkTim3bojtfeeWsAFx2Gct7LsvGCdn-w@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DBAE461.7000307@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 06:16:33PM +0200, Sebastian Andrzej Siewior wrote:
-> Grant Likely wrote:
-> >I'd really like to get patches 1-4 merged into 2.6.40.  Please test.
-> >I'm also running through build testing here, and when it's complete
-> >I'll push it out to a 'devicetree/irq-domain' branch on
-> >git://git.secretlab.ca/git/linux-2.6
-> 
-> I pulled this, built and booted my x86-dt box and nothing exploded so far.
-> 
-> If you merge Linus' tree then you will get a conflict (sooner or later) in
-> ioapic_of_irq_map() in arch/x86/kernel/devicetree.c:
-> 
-> -       return io_apic_setup_irq_pin_once(*out_hwirq, cpu_to_node(0), &attr);
->  -      if (io_apic_setup_irq_pin(hwirq, cpu_to_node(0), &attr))
-> ++      if (io_apic_setup_irq_pin_once(hwirq, cpu_to_node(0), &attr))
-> 
-> Sebastian
+On Fri, 29 Apr 2011, Pekka Enberg wrote:
 
-Thanks Sebastian.  Unless you say otherwise, I'll take that as an Acked-by.  :-)
+> Asking Linus to revert the commit is short-sighted and doesn't solve
+> the problem. Learn to work with the maintainer and save yourself a lot
+> of trouble.
 
-g.
+Work "with" Ingo?  That's turned out well so far.  I'm sure certain 
+scheduler people could comment here too on where that gets you.
+
+The kernel I run is "Linux" not "Ingoix".  So I await a comment from Linus 
+on this issue.  If it turns out that he's happy with Ingo's work, fine.
+It just means I'll have to start maintaining some perf counter related 
+patches out of tree for those of us who actually like having control on 
+what we're measuring.
+
+Vince
