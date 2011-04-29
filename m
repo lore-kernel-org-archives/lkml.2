@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab1D2TDl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:03:41 -0400
-Received: from kroah.org ([198.145.64.141]:50337 "EHLO coco.kroah.org"
+	id S932841Ab1D2S6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:34 -0400
+Received: from kroah.org ([198.145.64.141]:50281 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933128Ab1D2S6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
-Message-Id: <20110429185655.869230858@clark.kroah.org>
+	id S933128Ab1D2S60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:26 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
+Message-Id: <20110429185654.895867979@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:57 -0700
+Date: Fri, 29 Apr 2011 11:55:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [34/55] [S390] pfault: fix token handling
+        Takashi Iwai <tiwai@suse.de>
+Subject: [24/55] ALSA: hda - Add a fix-up for Acer dmic with ALC271x codec
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e35c76cd47c244eaa7a74adaabde4d0a1cadb907 upstream.
+commit 6981d184376e74391c23c116a068f8d1305f0e57 upstream.
 
-f6649a7e "[S390] cleanup lowcore access from external interrupts" changed
-handling of external interrupts. Instead of letting the external interrupt
-handlers accessing the per cpu lowcore the entry code of the kernel reads
-already all fields that are necessary and passes them to the handlers.
-The pfault interrupt handler was incorrectly converted. It tries to
-dereference a value which used to be a pointer to a lowcore field. After
-the conversion however it is not anymore the pointer to the field but its
-content. So instead of a dereference only a cast is needed to get the
-task pointer that caused the pfault.
+Acer laptops with ALC271x needs a magic initialization for digital-mic
+to make it working with mono streams (and PulseAudio).
+Added a fix-up applied to Acer with ALC271x generically.
 
-Fixes a NULL pointer dereference and a subsequent kernel crash:
-
-Unable to handle kernel pointer dereference at virtual kernel address (null)
-Oops: 0004 [#1] SMP
-Modules linked in: nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss sunrpc
-                   loop qeth_l3 qeth vmur ccwgroup ext3 jbd mbcache dm_mod
-                   dasd_eckd_mod dasd_diag_mod dasd_mod
-CPU: 0 Not tainted 2.6.38-2-s390x #1
-Process cron (pid: 1106, task: 000000001f962f78, ksp: 000000001fa0f9d0)
-Krnl PSW : 0404200180000000 000000000002c03e (pfault_interrupt+0xa2/0x138)
-           R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
-Krnl GPRS: 0000000000000000 0000000000000001 0000000000000000 0000000000000001
-           000000001f962f78 0000000000518968 0000000090000002 000000001ff03280
-           0000000000000000 000000000064f000 000000001f962f78 0000000000002603
-           0000000006002603 0000000000000000 000000001ff7fe68 000000001ff7fe48
-Krnl Code: 000000000002c036: 5820d010            l       %r2,16(%r13)
-           000000000002c03a: 1832                lr      %r3,%r2
-           000000000002c03c: 1a31                ar      %r3,%r1
-          >000000000002c03e: ba23d010            cs      %r2,%r3,16(%r13)
-           000000000002c042: a744fffc            brc     4,2c03a
-           000000000002c046: a7290002            lghi    %r2,2
-           000000000002c04a: e320d0000024        stg     %r2,0(%r13)
-           000000000002c050: 07f0                bcr     15,%r0
-Call Trace:
- ([<000000001f962f78>] 0x1f962f78)
-  [<000000000001acda>] do_extint+0xf6/0x138
-  [<000000000039b6ca>] ext_no_vtime+0x30/0x34
-  [<000000007d706e04>] 0x7d706e04
-Last Breaking-Event-Address:
-  [<0000000000000000>] 0x0
-
-For stable maintainers:
-the first kernel which contains this bug is 2.6.37.
-
-Reported-by: Stephen Powell <zlinuxman@wowway.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/mm/fault.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -558,9 +558,9 @@ static void pfault_interrupt(unsigned in
- 	 * Get the token (= address of the task structure of the affected task).
- 	 */
- #ifdef CONFIG_64BIT
--	tsk = *(struct task_struct **) param64;
-+	tsk = (struct task_struct *) param64;
- #else
--	tsk = *(struct task_struct **) param32;
-+	tsk = (struct task_struct *) param32;
- #endif
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -14945,6 +14945,23 @@ static void alc269_fixup_hweq(struct hda
+ 	alc_write_coef_idx(codec, 0x1e, coef | 0x80);
+ }
  
- 	if (subcode & 0x0080) {
++static void alc271_fixup_dmic(struct hda_codec *codec,
++			      const struct alc_fixup *fix, int action)
++{
++	static struct hda_verb verbs[] = {
++		{0x20, AC_VERB_SET_COEF_INDEX, 0x0d},
++		{0x20, AC_VERB_SET_PROC_COEF, 0x4000},
++		{}
++	};
++	unsigned int cfg;
++
++	if (strcmp(codec->chip_name, "ALC271X"))
++		return;
++	cfg = snd_hda_codec_get_pincfg(codec, 0x12);
++	if (get_defcfg_connect(cfg) == AC_JACK_PORT_FIXED)
++		snd_hda_sequence_write(codec, verbs);
++}
++
+ enum {
+ 	ALC269_FIXUP_SONY_VAIO,
+ 	ALC275_FIXUP_SONY_VAIO_GPIO2,
+@@ -14953,6 +14970,7 @@ enum {
+ 	ALC269_FIXUP_ASUS_G73JW,
+ 	ALC269_FIXUP_LENOVO_EAPD,
+ 	ALC275_FIXUP_SONY_HWEQ,
++	ALC271_FIXUP_DMIC,
+ };
+ 
+ static const struct alc_fixup alc269_fixups[] = {
+@@ -15006,7 +15024,11 @@ static const struct alc_fixup alc269_fix
+ 		.v.func = alc269_fixup_hweq,
+ 		.chained = true,
+ 		.chain_id = ALC275_FIXUP_SONY_VAIO_GPIO2
+-	}
++	},
++	[ALC271_FIXUP_DMIC] = {
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc271_fixup_dmic,
++	},
+ };
+ 
+ static struct snd_pci_quirk alc269_fixup_tbl[] = {
+@@ -15015,6 +15037,7 @@ static struct snd_pci_quirk alc269_fixup
+ 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+ 	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
+ 	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
++	SND_PCI_QUIRK_VENDOR(0x1025, "Acer Aspire", ALC271_FIXUP_DMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Thinkpad SL410/510", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Thinkpad L512", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
 
 
