@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933648Ab1D2TBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:01:11 -0400
-Received: from kroah.org ([198.145.64.141]:35122 "EHLO coco.kroah.org"
+	id S933703Ab1D2TBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:01:46 -0400
+Received: from kroah.org ([198.145.64.141]:50388 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933632Ab1D2S6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:57 2011
-Message-Id: <20110429185657.451172472@clark.kroah.org>
+	id S933598Ab1D2S6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:56 2011
+Message-Id: <20110429185656.615891595@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:13 -0700
+Date: Fri, 29 Apr 2011 11:56:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [50/55] agp: fix OOM and buffer overflow
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>
+Subject: [42/55] mm: thp: fix /dev/zero MAP_PRIVATE and vm_flags cleanups
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +26,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit b522f02184b413955f3bc952e3776ce41edc6355 upstream.
+commit 78f11a255749d09025f54d4e2df4fbcb031530e2 upstream.
 
-page_count is copied from userspace.  agp_allocate_memory() tries to
-check whether this number is too big, but doesn't take into account the
-wrap case.  Also agp_create_user_memory() doesn't check whether
-alloc_size is calculated from num_agp_pages variable without overflow.
-This may lead to allocation of too small buffer with following buffer
-overflow.
+The huge_memory.c THP page fault was allowed to run if vm_ops was null
+(which would succeed for /dev/zero MAP_PRIVATE, as the f_op->mmap wouldn't
+setup a special vma->vm_ops and it would fallback to regular anonymous
+memory) but other THP logics weren't fully activated for vmas with vm_file
+not NULL (/dev/zero has a not NULL vma->vm_file).
 
-Another problem in agp code is not addressed in the patch - kernel memory
-exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
-whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
-Each allocation is limited to 16KB, though, there is no per-process limit.
-This might lead to OOM situation, which is not even solved in case of the
-caller death by OOM killer - the memory is allocated for another (faked) process.
+So this removes the vm_file checks so that /dev/zero also can safely use
+THP (the other albeit safer approach to fix this bug would have been to
+prevent the THP initial page fault to run if vm_file was set).
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+After removing the vm_file checks, this also makes huge_memory.c stricter
+in khugepaged for the DEBUG_VM=y case.  It doesn't replace the vm_file
+check with a is_pfn_mapping check (but it keeps checking for VM_PFNMAP
+under VM_BUG_ON) because for a is_cow_mapping() mapping VM_PFNMAP should
+only be allowed to exist before the first page fault, and in turn when
+vma->anon_vma is null (so preventing khugepaged registration).  So I tend
+to think the previous comment saying if vm_file was set, VM_PFNMAP might
+have been set and we could still be registered in khugepaged (despite
+anon_vma was not NULL to be registered in khugepaged) was too paranoid.
+The is_linear_pfn_mapping check is also I think superfluous (as described
+by comment) but under DEBUG_VM it is safe to stay.
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=33682
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Caspar Zhang <bugs@casparzhang.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/generic.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ include/linux/huge_mm.h |    2 +-
+ include/linux/mm.h      |    3 ++-
+ mm/huge_memory.c        |   43 ++++++++++++++++++++++++-------------------
+ 3 files changed, 27 insertions(+), 21 deletions(-)
 
---- a/drivers/char/agp/generic.c
-+++ b/drivers/char/agp/generic.c
-@@ -115,6 +115,9 @@ static struct agp_memory *agp_create_use
- 	struct agp_memory *new;
- 	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -117,7 +117,7 @@ static inline void vma_adjust_trans_huge
+ 					 unsigned long end,
+ 					 long adjust_next)
+ {
+-	if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
++	if (!vma->anon_vma || vma->vm_ops)
+ 		return;
+ 	__vma_adjust_trans_huge(vma, start, end, adjust_next);
+ }
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -137,7 +137,8 @@ extern unsigned int kobjsize(const void
+ #define VM_RandomReadHint(v)		((v)->vm_flags & VM_RAND_READ)
  
-+	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
-+		return NULL;
+ /*
+- * special vmas that are non-mergable, non-mlock()able
++ * Special vmas that are non-mergable, non-mlock()able.
++ * Note: mm/huge_memory.c VM_NO_THP depends on this definition.
+  */
+ #define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_RESERVED | VM_PFNMAP)
+ 
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1400,6 +1400,9 @@ out:
+ 	return ret;
+ }
+ 
++#define VM_NO_THP (VM_SPECIAL|VM_INSERTPAGE|VM_MIXEDMAP|VM_SAO| \
++		   VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
 +
- 	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
- 	if (new == NULL)
- 		return NULL;
-@@ -234,11 +237,14 @@ struct agp_memory *agp_allocate_memory(s
- 	int scratch_pages;
- 	struct agp_memory *new;
- 	size_t i;
-+	int cur_memory;
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+ {
+@@ -1408,11 +1411,7 @@ int hugepage_madvise(struct vm_area_stru
+ 		/*
+ 		 * Be somewhat over-protective like KSM for now!
+ 		 */
+-		if (*vm_flags & (VM_HUGEPAGE |
+-				 VM_SHARED   | VM_MAYSHARE   |
+-				 VM_PFNMAP   | VM_IO      | VM_DONTEXPAND |
+-				 VM_RESERVED | VM_HUGETLB | VM_INSERTPAGE |
+-				 VM_MIXEDMAP | VM_SAO))
++		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+@@ -1428,11 +1427,7 @@ int hugepage_madvise(struct vm_area_stru
+ 		/*
+ 		 * Be somewhat over-protective like KSM for now!
+ 		 */
+-		if (*vm_flags & (VM_NOHUGEPAGE |
+-				 VM_SHARED   | VM_MAYSHARE   |
+-				 VM_PFNMAP   | VM_IO      | VM_DONTEXPAND |
+-				 VM_RESERVED | VM_HUGETLB | VM_INSERTPAGE |
+-				 VM_MIXEDMAP | VM_SAO))
++		if (*vm_flags & (VM_NOHUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+ 		*vm_flags &= ~VM_HUGEPAGE;
+ 		*vm_flags |= VM_NOHUGEPAGE;
+@@ -1566,10 +1561,14 @@ int khugepaged_enter_vma_merge(struct vm
+ 		 * page fault if needed.
+ 		 */
+ 		return 0;
+-	if (vma->vm_file || vma->vm_ops)
++	if (vma->vm_ops)
+ 		/* khugepaged not yet working on file or special mappings */
+ 		return 0;
+-	VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
++	/*
++	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
++	 * true too, verify it here.
++	 */
++	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
+ 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 	hend = vma->vm_end & HPAGE_PMD_MASK;
+ 	if (hstart < hend)
+@@ -1818,12 +1817,15 @@ static void collapse_huge_page(struct mm
+ 	    (vma->vm_flags & VM_NOHUGEPAGE))
+ 		goto out;
  
- 	if (!bridge)
- 		return NULL;
+-	/* VM_PFNMAP vmas may have vm_ops null but vm_file set */
+-	if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
++	if (!vma->anon_vma || vma->vm_ops)
+ 		goto out;
+ 	if (is_vma_temporary_stack(vma))
+ 		goto out;
+-	VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
++	/*
++	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
++	 * true too, verify it here.
++	 */
++	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
  
--	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
-+	cur_memory = atomic_read(&bridge->current_memory_agp);
-+	if ((cur_memory + page_count > bridge->max_memory_agp) ||
-+	    (cur_memory + page_count < page_count))
- 		return NULL;
+ 	pgd = pgd_offset(mm, address);
+ 	if (!pgd_present(*pgd))
+@@ -2056,13 +2058,16 @@ static unsigned int khugepaged_scan_mm_s
+ 			progress++;
+ 			continue;
+ 		}
+-		/* VM_PFNMAP vmas may have vm_ops null but vm_file set */
+-		if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
++		if (!vma->anon_vma || vma->vm_ops)
+ 			goto skip;
+ 		if (is_vma_temporary_stack(vma))
+ 			goto skip;
+-
+-		VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
++		/*
++		 * If is_pfn_mapping() is true is_learn_pfn_mapping()
++		 * must be true too, verify it here.
++		 */
++		VM_BUG_ON(is_linear_pfn_mapping(vma) ||
++			  vma->vm_flags & VM_NO_THP);
  
- 	if (type >= AGP_USER_TYPES) {
+ 		hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 		hend = vma->vm_end & HPAGE_PMD_MASK;
 
 
