@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab1D2OUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 10:20:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33528 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1D2OT7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 10:19:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kur0bvRybUDhdz7ish3UvTqza/268yS2m2LaMgt5RuUClFzWLVdKnpCm2Bv798CxYf
-         Pekvucam03O2oKvUUG4qBIDZbEFRNv9Q4zIMq5vZJdsPSFa3fQs4n3ZRZlhkY4vhczIS
-         0SPKzyJiqdk22XM0jyMljeeunXfW5UFKHVWqk=
+	id S1758937Ab1D2OUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 10:20:53 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60635 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757942Ab1D2OUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 10:20:52 -0400
+Date: Fri, 29 Apr 2011 16:20:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: perf stat branch: perf stat fails on unsupported event
+Message-ID: <20110429142037.GB4106@elte.hu>
+References: <4DBAC59F.2020009@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110429134231.GI13402@8bytes.org>
-References: <201104212129.17013.arnd@arndb.de>
-	<201104281428.56780.arnd@arndb.de>
-	<20110428131531.GK17290@n2100.arm.linux.org.uk>
-	<201104281629.52863.arnd@arndb.de>
-	<20110428143440.GP17290@n2100.arm.linux.org.uk>
-	<BANLkTinhm7ar1mf1D-dSMiLtw5hRNY36RA@mail.gmail.com>
-	<20110429134231.GI13402@8bytes.org>
-Date: Fri, 29 Apr 2011 10:19:58 -0400
-Message-ID: <BANLkTi=EQMuuGzDgKF3i-jukDh31gzn_JA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DBAC59F.2020009@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 9:42 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Thu, Apr 28, 2011 at 03:37:00PM -0400, Jerome Glisse wrote:
->> As Jesse pointed out already, for performance reasons it's lot better
->> if you let the driver decide even if you have an iommu capable of
->> handling coherency for you. My understanding is that each time
->> coherency is asked for it trigger bus activities of some kind (i think
->> snoop is the term used for pci) this traffic can slow down both the
->> cpu and the device. For graphic driver we have a lot of write once and
->> use (once or more) buffer and it makes a lot of sense to have those
->> buffer allocated using uncached memory so we can tell the device (in
->> case of drm driver) that there is no need to trigger snoop activities
->> for coherency. So i believe the decision should ultimately be in the
->> driver side.
->
-> Stupid question: Couldn't these write-once-read-often buffers just stay
-> in the memory of the GPU instead of refetching them every time from main
-> memory? Or is that necessary because of the limited space on some GPUs?
->
-> Regards,
->
->        Joerg
->
 
-We might be talking about several G of data, so using system is not
-uncommon. Also when uploading data to GPU vram is better to let the
-GPU do dma from system memory rather than having the CPU do memcpy.
+* David Ahern <dsahern@gmail.com> wrote:
 
-Cheers,
-Jerome
+> This is a Dell R410 with an E5620 processor.
+
+That's a Westmere CPU.
+
+Could you check whether the patch below applied to latest -tip gives you 
+stalled-cycles-frontend and stalled-cycles-backend events?
+
+Thanks,
+
+	Ingo
+
+--------------->
+>From 3808ae38f1905c1f11da46ac981c8d2579936fd8 Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@elte.hu>
+Date: Sat, 30 Apr 2011 09:14:54 +0200
+Subject: [PATCH] perf events, x86: Add Westmere stalled-cycles-frontend/backend events
+
+Extend the Intel Westmere PMU driver with definitions for generic front-end and
+back-end stall events.
+
+( These are only approximations. )
+
+Reported-by: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/n/tip-7y40wib8n008io7hjpn1dsrm@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 7983b9a..be8363a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1458,6 +1458,12 @@ static __init int intel_pmu_init(void)
+ 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+ 		x86_pmu.pebs_constraints = intel_westmere_pebs_event_constraints;
+ 		x86_pmu.extra_regs = intel_westmere_extra_regs;
++
++		/* UOPS_ISSUED.STALLED_CYCLES */
++		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
++		/* UOPS_EXECUTED.CORE_ACTIVE_CYCLES,c=1,i=1 */
++		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x1803fb1;
++
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
