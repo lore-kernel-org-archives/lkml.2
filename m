@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab1D2UMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 16:12:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51311 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756786Ab1D2UMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 16:12:48 -0400
-Date: Fri, 29 Apr 2011 16:12:42 -0400
-From: Dave Jones <davej@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the cpufreq tree
-Message-ID: <20110429201241.GA12256@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110427111024.eb26b6f5.sfr@canb.auug.org.au>
- <20110427013217.GA30804@redhat.com>
- <20110427115427.f5a4fac7.sfr@canb.auug.org.au>
+	id S933762Ab1D2UN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:13:56 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:12936
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932307Ab1D2UNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 16:13:55 -0400
+X-SpamScore: -28
+X-BigFish: VPS-28(zzbb2dK9371Odf9M154dM1432N98dKzz1202hzz8275bh8275dhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LKFK6V-02-CS0-02
+X-M-MSG: 
+Message-ID: <4DBB1B6E.9060203@amd.com>
+Date: Fri, 29 Apr 2011 16:11:26 -0400
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110427115427.f5a4fac7.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Boris Ostrovsky <ostr@amd64.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jvpeetz@web.de" <jvpeetz@web.de>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH] Subject: [PATCH] x86, AMD: K8 Rev.A-E processors are
+ subject to erratum 400
+References: <1304106663-3720-1-git-send-email-ostr@amd64.org> <20110429195548.GA17166@elte.hu>
+In-Reply-To: <20110429195548.GA17166@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 11:54:27AM +1000, Stephen Rothwell wrote:
- > Hi Dave,
- > 
- > On Tue, 26 Apr 2011 21:32:17 -0400 Dave Jones <davej@redhat.com> wrote:
- > >
- > > As the commit message suggests, per-arch cpufreq drivers are moving to drivers/cpufreq/
- > > So far, I've only moved the x86 ones.  As a side-effect of this, the 
- > > source "drivers/cpufreq/Kconfig" is no longer a per-arch thing, as it now gets
- > > included from kernel/power/Kconfig.
- > > 
- > > I suspect the warnings are happening because on the unconverted archs, drivers/cpufreq/Kconfig
- > > is now getting included twice.  If you kill the 'source' line in kernel/power/Kconfig,
- > > does this make things go back to normal ?  (Check that cpufreq still shows up in
- > > the resulting config afterwards)
- > 
- > Removing the source line in kernel/power/Kconfig makes the warnings go
- > away and the only change in the generated config file is this:
+On 04/29/2011 03:55 PM, Ingo Molnar wrote:
+>
+> * Boris Ostrovsky<ostr@amd64.org>  wrote:
+>
+>> Signed-off-by: Boris Ostrovsky<Boris.Ostrovsky@amd.com>
+>> Acked-by: Borislav Petkov<borislav.petkov@amd.com>
+>> Reported-by: Joerg-Volker Peetz<jvpeetz@web.de>
+>> Tested-by: Joerg-Volker Peetz<jvpeetz@web.de>
+>>
+>> Older AMD K8 processors (Revisions A-E) are affected by erratum 400 (APIC
+>> timer interrupts don't occur in C states greater than C1). This, for example,
+>> means that X86_FEATURE_ARAT flag should not be set for these parts.
+>>
+>> This addresses regression introduced by commit
+>> b87cf80af3ba4b4c008b4face3c68d604e1715c6 (x86, AMD: Set ARAT feature on AMD
+>> processors") so it is somewhat high priority.
+>
+> Hm, what is the regression, how do users see it? Hangs? Delays? Crashes?
+> Something more benign? The changelog should really contain such information.
 
-I've moved this work onto a separate move-drivers branch. Could you track that in next too please?
-(Apply after fixes & next)
 
-I'm hoping this branch will be fairly short-lived, but it depends how quickly
-other architecture maintainers move their drivers over too.
+The system becomes unresponsive until an external interrupt (e.g. 
+keyboard input) happens. The most obvious effect is that time is not 
+reported correctly. We haven't seen anything worse but that's probably 
+bad enough.
 
-thanks,
+Do you want me to resubmit the patch with updated comments?
 
-	Dave
+Thanks.
+-boris
 
