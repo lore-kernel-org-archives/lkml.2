@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760935Ab1D2Tz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:55:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33605 "EHLO mx2.mail.elte.hu"
+	id S932969Ab1D2T6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:58:30 -0400
+Received: from trent.utfs.org ([194.246.123.103]:53382 "EHLO trent.utfs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759857Ab1D2Tz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:55:57 -0400
-Date: Fri, 29 Apr 2011 21:55:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Boris Ostrovsky <ostr@amd64.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, jvpeetz@web.de,
-        borislav.petkov@amd.com, boris.ostrovsky@amd.com
-Subject: Re: [PATCH] Subject: [PATCH] x86, AMD: K8 Rev.A-E processors are
- subject to erratum 400
-Message-ID: <20110429195548.GA17166@elte.hu>
-References: <1304106663-3720-1-git-send-email-ostr@amd64.org>
+	id S1760563Ab1D2T63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 15:58:29 -0400
+Date: Fri, 29 Apr 2011 12:58:26 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        minchan.kim@gmail.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110428233751.GR12436@dastard>
+Message-ID: <alpine.DEB.2.01.1104291250480.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
+ <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard> <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org> <20110428233751.GR12436@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304106663-3720-1-git-send-email-ostr@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 29 Apr 2011 at 09:37, Dave Chinner wrote:
+> Did you read the email that pointed to CONFIG_TINY_RCU as the
+> ptotential source of the problem? Can you change to CONFIG_TREE_RCU
+> and see if the problem goes away?
 
-* Boris Ostrovsky <ostr@amd64.org> wrote:
+Tried with TREE_RCU, unfortunately the problem persists. However, the OOM 
+messages did not make it to the disk this time. Syslog continued to work 
+until 11:51 (local time), the slabinfo-8-TREE_RCU.txt file was written to 
+until 11:57, the machine was already unusable at that point. At 12:07 I 
+took a "screenshot" and then powercycled the machine:
 
-> Signed-off-by: Boris Ostrovsky <Boris.Ostrovsky@amd.com>
-> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-> Reported-by: Joerg-Volker Peetz <jvpeetz@web.de>
-> Tested-by: Joerg-Volker Peetz <jvpeetz@web.de>
-> 
-> Older AMD K8 processors (Revisions A-E) are affected by erratum 400 (APIC 
-> timer interrupts don't occur in C states greater than C1). This, for example, 
-> means that X86_FEATURE_ARAT flag should not be set for these parts.
-> 
-> This addresses regression introduced by commit 
-> b87cf80af3ba4b4c008b4face3c68d604e1715c6 (x86, AMD: Set ARAT feature on AMD 
-> processors") so it is somewhat high priority.
+  http://nerdbynature.de/bits/2.6.39-rc4/oom/
+  (The files marked with -8 are the current ones)
 
-Hm, what is the regression, how do users see it? Hangs? Delays? Crashes? 
-Something more benign? The changelog should really contain such information.
+Btw, the xfs filesystem I'm du'ing over is still mounted with "noatime".
+
+Any ideas? Patches to try?
 
 Thanks,
+Christian.
+-- 
+BOFH excuse #70:
 
-	Ingo
+nesting roaches shorted out the ether cable
