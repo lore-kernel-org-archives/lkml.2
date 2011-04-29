@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760910Ab1D2Tm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:42:59 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57485 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab1D2Tm5 (ORCPT
+	id S1760918Ab1D2TqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:46:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49350 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760905Ab1D2TqF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:42:57 -0400
+	Fri, 29 Apr 2011 15:46:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=dv/I/K488RhF2F8dgiah1eh7eWBWNz0RfnDOoKaI36OmM04cjfkq0WdIIUi+aUXJi5
-         wz760G1Uz4HmIXJFMoz8JmVvwgtXutFwtLLjm0lnRKCGaxe3OxsXC00mSW2cL6AQMew3
-         7EToZzJJyEJ4JEiVlHITfQxRlt98edK1gUJDw=
-Date: Fri, 29 Apr 2011 22:44:06 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Destroying alive neighbour
-Message-ID: <20110429194406.GA4244@swordfish>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=xcmR4lTOUD5J0qmpEFRCK6BglnP0brKKQ7jcawsKBUWgl7nteBKCe2bEP1vYV/u/0l
+         tATl9EBFRMpWCbjm2sHA==
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304033561.18763.212.camel@gandalf.stny.rr.com>
+References: <1303512373-25992-1-git-send-email-vnagarnaik@google.com> <1304033561.18763.212.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Fri, 29 Apr 2011 12:45:28 -0700
+Message-ID: <BANLkTimY9weoBhiQv+dfS4UzYPGBFDdPQQ@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add a free on close control mechanism for buffer_size_kb
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 28, 2011 at 4:32 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Sorry, my mind has been elsewhere and I forgot about your patches.
+>
+> On Fri, 2011-04-22 at 15:46 -0700, Vaibhav Nagarnaik wrote:
+>> The proc file entry buffer_size_kb is used to set the size of tracing
+>> buffer. The memory to expand the buffer size is kernel memory. Consider
+>> a use case where tracing is handled by a user space utility, which acts
+>> as a gate keeper for tracing requests. In an OOM condition, tracing is
+>> considered a low priority task and if the utility gets killed the ring
+>> buffer memory cannot be released back to the kernel.
+>>
+>> This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
+>> When this boolean is enabled, closing buffer_size_kb file will cause
+>> tracing to stop and free up the ring buffer memory.
+>>
+>> The user space process can then open the buffer_size_kb file to set the
+>> new buffer size for tracing, enable the boolean through IOCTL and keep
+>> the file open. Under OOM condition, if the process gets killed, the
+>> kernel closes the file descriptor for buffer_size_kb. The release
+>> handler stops the tracing and releases the kernel memory automatically.
+>>
+>> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+>> ---
+>>  include/linux/ftrace.h |    3 +
+>>  kernel/trace/trace.c   |  135 ++++++++++++++++++++++++++++++++++++------------
+>>  2 files changed, 105 insertions(+), 33 deletions(-)
+>>
+>> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+>> index ca29e03..30c8a23 100644
+>> --- a/include/linux/ftrace.h
+>> +++ b/include/linux/ftrace.h
+>> @@ -114,6 +114,9 @@ struct ftrace_func_command {
+>>                                       char *params, int enable);
+>>  };
+>>
+>> +/* enable/disable auto free ring buffer on file close */
+>> +#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
+>> +
+>>  #ifdef CONFIG_DYNAMIC_FTRACE
+>>
+>>  int ftrace_arch_code_modify_prepare(void);
+>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+>> index d38c16a..c676f17 100644
+>> --- a/kernel/trace/trace.c
+>> +++ b/kernel/trace/trace.c
+>> @@ -2817,6 +2817,42 @@ static int tracing_resize_ring_buffer(unsigned long size)
+>>       return ret;
+>>  }
+>>
+>> +static ssize_t tracing_buffer_resize_atomic(unsigned long size)
+>
+> Why call it "atomic"? Because you do the mutex? Anyway I hate the name.
+> It sounds like it can do it without preemption, which it clearly can't
+> do.
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I just wanted to note that it was a locked operation. I have changed the name
+to tracing_buffer_resize_locked.
 
-Hello,
+If you think it can be named better, I will change it.
 
-.39-rc5-git2
+>
+> The rest looks fine to me.
+>
+Thanks for reviewing. I will send the updated patch.
 
-Not sure whether I can reproduce this easily:
+> -- Steve
+>
+>> +{
+>> +     int cpu, ret = 0;
+>> +
+>> +     mutex_lock(&trace_types_lock);
+>> +
+>> +     tracing_stop();
+>> +
+>> +     /* disable all cpu buffers */
+>> +     for_each_tracing_cpu(cpu) {
+>> +             if (global_trace.data[cpu])
+>> +                     atomic_inc(&global_trace.data[cpu]->disabled);
+>> +             if (max_tr.data[cpu])
+>> +                     atomic_inc(&max_tr.data[cpu]->disabled);
+>> +     }
+>> +
+>> +     if (size != global_trace.entries)
+>> +             ret = tracing_resize_ring_buffer(size);
+>> +
+>> +     /* If check pages failed, return ENOMEM */
+>> +     if (tracing_disabled)
+>> +             ret = -ENOMEM;
+>> +
+>> +     for_each_tracing_cpu(cpu) {
+>> +             if (global_trace.data[cpu])
+>> +                     atomic_dec(&global_trace.data[cpu]->disabled);
+>> +             if (max_tr.data[cpu])
+>> +                     atomic_dec(&max_tr.data[cpu]->disabled);
+>> +     }
+>> +
+>> +     tracing_start();
+>> +     mutex_unlock(&trace_types_lock);
+>> +
+>> +     return ret;
+>> +}
+>> +
+>>
+>
+>
+>
 
-[  845.225899] Destroying alive neighbour ffff88015736b400
-[  845.225910] Pid: 0, comm: kworker/0:1 Not tainted 2.6.39-rc5-dbg-git2-00495-g48c9216-dirty #543
-[  845.225917] Call Trace:
-[  845.225922]  <IRQ>  [<ffffffff813dee2f>] neigh_destroy+0x3c/0x115
-[  845.225950]  [<ffffffff81400326>] ipv4_dst_check+0xae/0x158
-[  845.225963]  [<ffffffff813c6f67>] __sk_dst_check+0xa5/0xd4
-[  845.225975]  [<ffffffff8142e772>] inet_sk_rebuild_header+0x15/0x2b7
-[  845.225989]  [<ffffffff8141c762>] ? tcp_write_timer+0x19/0x1a4
-[  845.225999]  [<ffffffff8141ac3b>] tcp_retransmit_skb+0x8f/0x522
-[  845.226010]  [<ffffffff81241579>] ? do_raw_spin_lock+0x6b/0x122
-[  845.226020]  [<ffffffff8141c598>] tcp_retransmit_timer+0x4d5/0x686
-[  845.226030]  [<ffffffff8141c7e7>] tcp_write_timer+0x9e/0x1a4
-[  845.226043]  [<ffffffff8104c1f6>] run_timer_softirq+0x319/0x4f5
-[  845.226053]  [<ffffffff8104c0c4>] ? run_timer_softirq+0x1e7/0x4f5
-[  845.226065]  [<ffffffff8105fcf2>] ? __run_hrtimer+0x2ac/0x357
-[  845.226076]  [<ffffffff8141c749>] ? tcp_retransmit_timer+0x686/0x686
-[  845.226091]  [<ffffffff81044e73>] __do_softirq+0x170/0x301
-[  845.226104]  [<ffffffff8106a257>] ? tick_dev_program_event+0x37/0xf6
-[  845.226115]  [<ffffffff8106a330>] ? tick_program_event+0x1a/0x1c
-[  845.226127]  [<ffffffff814791dc>] call_softirq+0x1c/0x30
-[  845.226140]  [<ffffffff810031d7>] do_softirq+0x46/0x9f
-[  845.226151]  [<ffffffff8104525a>] irq_exit+0x4e/0xa0
-[  845.226166]  [<ffffffff8101954c>] smp_apic_timer_interrupt+0x87/0x95
-[  845.226212]  [<ffffffff81478d13>] apic_timer_interrupt+0x13/0x20
-[  845.226216]  <EOI>  [<ffffffff8126d3b7>] ? intel_idle+0xe0/0x105
-[  845.226232]  [<ffffffff8126d3b0>] ? intel_idle+0xd9/0x105
-[  845.226242]  [<ffffffff813b93d4>] cpuidle_idle_call+0x157/0x288
-[  845.226250]  [<ffffffff810007aa>] cpu_idle+0xa2/0xf3
-[  845.226259]  [<ffffffff8146244b>] start_secondary+0x1ee/0x1f7
-
-
-	Sergey
-
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk27FQYACgkQfKHnntdSXjTm2QP+MeBVgjIx/YTfMMQokqHOEDcW
-O97fP5OBHADSxKF3DUhm/A8PlLuUoBsERtTtm3pFpBhr0BZ9EnlTWJJxkcD/JnU2
-YDlj2FLaD7U8SDvPAHCMSvzR/zIfWNUYYG5Ggnqs3g4ixOAF5YfjYKECqOltGYB2
-9bnNAJTJIM/r/4WpYC0=
-=Gm3t
------END PGP SIGNATURE-----
-
---ReaqsoxgOBHFXBhH--
+Vaibhav Nagarnaik
