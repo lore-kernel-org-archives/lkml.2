@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759058Ab1D2Xea (ORCPT <rfc822;w@1wt.eu>);
+	id S1759337Ab1D2Xed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:34:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35718 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759106Ab1D2Xea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Apr 2011 19:34:30 -0400
-Received: from kroah.org ([198.145.64.141]:46778 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756731Ab1D2XeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:34:17 -0400
-Date: Fri, 29 Apr 2011 16:32:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        platform-driver-x86@vger.kernel.org, linux-serial@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
- Systems TS-5xxx detection
-Message-ID: <20110429233230.GB24864@kroah.com>
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 29 Apr 2011 16:28:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>
+Subject: Re: Allow setting of number of raw devices as a module parameter
+Message-Id: <20110429162817.2eb26efb.akpm@linux-foundation.org>
+In-Reply-To: <1304029469-19672-1-git-send-email-jack@suse.cz>
+References: <1304029469-19672-1-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 06:21:48PM -0400, Vivien Didelot wrote:
-> +/proc filesystem
-> +----------------
+On Fri, 29 Apr 2011 00:24:29 +0200
+Jan Kara <jack@suse.cz> wrote:
+
+> Allow setting of maximal number of raw devices as a module parameter. This
+> requires changing of static array into a vmalloced one (the array is going to
+> be too large for kmalloc).
+> 
+
+Changelog failed to describe why the patch is needed.  Lacking that
+information, we have no reason to apply it.
+
+> +static int max_raw_minors = MAX_RAW_MINORS;
+
+I suppose we could remove MAX_RAW_MINORS and use CONFIG_MAX_RAW_DEVS
+directly.
+
 > +
-> +Information about the TS board is available through the /proc/ts-sbcinfo.
-
-Really?  Why?
-
-As you now have added a new kernel/user ABI, it must be documented in
-Documentation/ABI/
-
-Please include that in your next patch.
-
-But first off, why a new proc file?  What is it used for?
-
-> +static int ts_sbcinfo_init_buffer(char *buf, struct ts5xxx_sbcinfo *sbcinfo)
-> +{
-> +	char *pos = buf;
+> +module_param(max_raw_minors, int, 0);
+> +MODULE_PARM_DESC(max_raw_minors, "Maximum number of raw devices (1-65536)");
 > +
-> +	pos += ts_addbuf(pos, "Board ID", "TS-%d", sbcinfo->board_id);
-> +	pos += ts_addbuf(pos, "RS485", "%s", sbcinfo->rs485 ? "yes" : "no");
-> +	pos += ts_addbuf(pos, "AnalogToDigital", "%s",
-> +			 sbcinfo->adc ? "yes" : "no");
-> +	pos += ts_addbuf(pos, "Auto485", "%s", sbcinfo->auto485 ? "yes" : "no");
-> +	pos += ts_addbuf(pos, "SRAM", "%s", sbcinfo->sram ? "yes" : "no");
-> +	pos += ts_addbuf(pos, "External Reset", "%s",
-> +			 sbcinfo->external_reset ? "yes" : "no");
+>  /*
+>   * Open/close code for raw IO.
+>   *
+> @@ -131,7 +137,7 @@ static int bind_set(int number, u64 majo
+>  	struct raw_device_data *rawdev;
+>  	int err = 0;
+>  
+> -	if (number <= 0 || number >= MAX_RAW_MINORS)
+> +	if (number <= 0 || number >= max_raw_minors)
+>  		return -EINVAL;
+>  
+>  	if (MAJOR(dev) != major || MINOR(dev) != minor)
+> @@ -318,12 +324,26 @@ static int __init raw_init(void)
+>  	dev_t dev = MKDEV(RAW_MAJOR, 0);
+>  	int ret;
+>  
+> -	ret = register_chrdev_region(dev, MAX_RAW_MINORS, "raw");
+> +	if (max_raw_minors < 1 || max_raw_minors > 65536) {
+> +		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
+> +			" between 1 and 65536), using %d\n", MAX_RAW_MINORS);
+> +		max_raw_minors = MAX_RAW_MINORS;
+> +	}
+> +
+> +	raw_devices = vmalloc(sizeof(struct raw_device_data) * max_raw_minors);
+> +	if (!raw_devices) {
+> +		printk(KERN_ERR "Not enough memory for raw device structures\n");
+> +		ret = -ENOMEM;
+> +		goto error;
+> +	}
+> +	memset(raw_devices, 0, sizeof(struct raw_device_data) * max_raw_minors);
 
-Most of these look like they should be simple "one value per file" sysfs
-files for your system.  That would make things much easier on your
-userspace tools to handle parsing them properly, right?
+vzalloc().
 
-Why not do that instead?
 
-thanks,
-
-greg k-h
