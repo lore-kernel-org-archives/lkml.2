@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab1D2SaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:30:07 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49963 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab1D2SaE (ORCPT
+	id S932591Ab1D2Sa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:30:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54417 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760811Ab1D2SaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:30:04 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Michal Marek <mmarek@suse.cz>
-Cc: bp@alien8.de, sam@ravnborg.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
-In-Reply-To: Your message of "Fri, 29 Apr 2011 15:31:33 +0200."
-             <1304083893-18849-1-git-send-email-mmarek@suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <71633.1304013549@localhost>
-            <1304083893-18849-1-git-send-email-mmarek@suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304101756_56837P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 29 Apr 2011 14:30:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Date: Fri, 29 Apr 2011 20:29:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+References: <201104212129.17013.arnd@arndb.de> <20110429075958.GV17290@n2100.arm.linux.org.uk> <20110429093209.1926c732@jbarnes-desktop>
+In-Reply-To: <20110429093209.1926c732@jbarnes-desktop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Date: Fri, 29 Apr 2011 14:29:16 -0400
-Message-ID: <154241.1304101756@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020202.4DBB0380.0162,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Message-Id: <201104292029.50680.arnd@arndb.de>
+X-Provags-ID: V02:K0:0nAAP/s01CtLw2p1NYv1z6PkuGsBVTzQaTFEJgj+D9L
+ ICPfsQOaZx/8U+7XTyY2IaltBGstKef2xTdINM/MSaX3LdgdvG
+ 0VTRGX/3sH/vl65/n9w+6mtUKlSKKsxErSpzd9wDmnufiJ+jZ9
+ wrh6X/WTFQBhq+D46RgHysv8hdulU+1myn/r+hD6yCJp3LOb2i
+ oUEr9VXELQKpchznFml6A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304101756_56837P
-Content-Type: text/plain; charset=us-ascii
-
-On Fri, 29 Apr 2011 15:31:33 +0200, Michal Marek said:
-> Add support for make W=12, make W=123 and so on, to enable warnings from
-> multiple W= levels. Normally, make W=<level> does not include warnings
-> from the previous level.
+On Friday 29 April 2011 18:32:09 Jesse Barnes wrote:
+> On Fri, 29 Apr 2011 08:59:58 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
+> > On Fri, Apr 29, 2011 at 07:50:12AM +0200, Thomas Hellstrom wrote:
+> > > However, we should be able to construct a completely generic api around  
+> > > these operations, and for architectures that don't support them we need  
+> > > to determine
+> > >
+> > > a)  Whether we want to support them anyway (IIRC the problem with PPC is  
+> > > that the linear kernel map has huge tlb entries that are very  
+> > > inefficient to break up?)
+> > 
+> > That same issue applies to ARM too - you'd need to stop the entire
+> > machine, rewrite all processes page tables, flush tlbs, and only
+> > then restart.  Otherwise there's the possibility of ending up with
+> > conflicting types of TLB entries, and I'm not sure what the effect
+> > of having two matching TLB entries for the same address would be.
+> 
+> Right, I don't think anyone wants to see this sort of thing happen with
+> any frequency.  So either a large, uncached region can be set up a boot
+> time for allocations, or infrequent, large requests and conversions can
+> be made on demand, with memory being freed back to the main, coherent
+> pool under pressure.
 
-OK, that addresses my concerns, feel free to stick a
-Reviewed-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-on it...
+I'd like to first have an official confirmation from the CPU designers
+if there is actually a problem with mapping a single page both cacheable
+and noncacheable. Based on what Catalin said, it's probably allowed and
+the current spec is just being more paranoid than it needs to be. Also,
+KyongHo Cho said that it might only be relevant for pages that are mapped
+executable.
 
---==_Exmh_1304101756_56837P
-Content-Type: application/pgp-signature
+If that is the case, we can probably work around this by turning the entire
+linear mapping (except for the kernel binary) into nonexecutable mode,
+if we don't do that already.
+This is desirable for security purposes anyway.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNuwN8cC3lWbTT17ARAkx5AKCJib5sgQzMUF+G3aXr0VsH9Esp9QCgqvts
-ZF+QLPT+THUboTn6f112/5A=
-=sFfW
------END PGP SIGNATURE-----
-
---==_Exmh_1304101756_56837P--
-
+	Arnd
