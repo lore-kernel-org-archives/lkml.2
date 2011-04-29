@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab1D2T6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:58:30 -0400
-Received: from trent.utfs.org ([194.246.123.103]:53382 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760563Ab1D2T63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:58:29 -0400
-Date: Fri, 29 Apr 2011 12:58:26 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        minchan.kim@gmail.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110428233751.GR12436@dastard>
-Message-ID: <alpine.DEB.2.01.1104291250480.18728@trent.utfs.org>
-References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
- <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard> <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org> <20110428233751.GR12436@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1758078Ab1D2UBT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:01:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39034 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab1D2UBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 16:01:17 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=vVy0PQ3ZQx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8cYTcFRtT2wx23DzZDUA:9 a=JvPdCk_vDXSHiNLQC6gA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace: Add a free on close control mechanism for
+ buffer_size_kb
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>
+In-Reply-To: <BANLkTimY9weoBhiQv+dfS4UzYPGBFDdPQQ@mail.gmail.com>
+References: <1303512373-25992-1-git-send-email-vnagarnaik@google.com>
+	 <1304033561.18763.212.camel@gandalf.stny.rr.com>
+	 <BANLkTimY9weoBhiQv+dfS4UzYPGBFDdPQQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Apr 2011 16:01:15 -0400
+Message-ID: <1304107275.18763.279.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 at 09:37, Dave Chinner wrote:
-> Did you read the email that pointed to CONFIG_TINY_RCU as the
-> ptotential source of the problem? Can you change to CONFIG_TREE_RCU
-> and see if the problem goes away?
+On Fri, 2011-04-29 at 12:45 -0700, Vaibhav Nagarnaik wrote:
 
-Tried with TREE_RCU, unfortunately the problem persists. However, the OOM 
-messages did not make it to the disk this time. Syslog continued to work 
-until 11:51 (local time), the slabinfo-8-TREE_RCU.txt file was written to 
-until 11:57, the machine was already unusable at that point. At 12:07 I 
-took a "screenshot" and then powercycled the machine:
+> > Why call it "atomic"? Because you do the mutex? Anyway I hate the name.
+> > It sounds like it can do it without preemption, which it clearly can't
+> > do.
+> 
+> I just wanted to note that it was a locked operation. I have changed the name
+> to tracing_buffer_resize_locked.
+> 
+> If you think it can be named better, I will change it.
 
-  http://nerdbynature.de/bits/2.6.39-rc4/oom/
-  (The files marked with -8 are the current ones)
+Actually, the normal convention that I noticed that is used around the
+kernel is the "normal" name is used when locking is applied. For
+functions that do the same thing but does not lock, add two underscores
+in front of the name:
 
-Btw, the xfs filesystem I'm du'ing over is still mounted with "noatime".
 
-Any ideas? Patches to try?
+void __foo(void)
+{
+	do_foo();
+}
 
-Thanks,
-Christian.
--- 
-BOFH excuse #70:
+void foo(void)
+{
+	mutex_lock(&foo_lock);
+	__foo();
+	mutex_unlock(&foo_lock);
+}
 
-nesting roaches shorted out the ether cable
+But if this has no real equivalent, just remove that name altogether.
+
+Not to lock should be the exception, not locking.
+
+-- Steve
+
+
