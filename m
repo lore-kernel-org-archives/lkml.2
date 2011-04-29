@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760948Ab1D2VNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 17:13:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51568
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab1D2VNN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 17:13:13 -0400
-Date: Fri, 29 Apr 2011 14:12:40 -0700 (PDT)
-Message-Id: <20110429.141240.233691679.davem@davemloft.net>
-To: decot@google.com
-Cc: bhutchings@solarflare.com, mirq-linux@rere.qmqm.pl, sgruszka@redhat.com,
-        alexander.h.duyck@intel.com, eilong@broadcom.com,
-        grundler@parisc-linux.org, e1000-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCHv3 0/7] ethtool: generalize use of ethtool_cmd_speed API
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1303954043-17440-1-git-send-email-decot@google.com>
-References: <1303954043-17440-1-git-send-email-decot@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1760953Ab1D2VPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 17:15:42 -0400
+Received: from kroah.org ([198.145.64.141]:52143 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760875Ab1D2VPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 17:15:41 -0400
+Date: Fri, 29 Apr 2011 14:14:34 -0700
+From: Greg KH <greg@kroah.com>
+To: johnlinn@comcast.net
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, michal.simek@petalogix.com, joe@perches.com,
+        grant.likely@secretlab.ca, John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110429211434.GA1355@kroah.com>
+References: <beef0ca4-f7d3-4f61-b22a-d9eeeb0618f4@VA3EHSMHS010.ehs.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <beef0ca4-f7d3-4f61-b22a-d9eeeb0618f4@VA3EHSMHS010.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@google.com>
-Date: Wed, 27 Apr 2011 18:27:16 -0700
+On Wed, Apr 27, 2011 at 12:17:36PM -0600, johnlinn@comcast.net wrote:
+> From: John Linn <john.linn@xilinx.com>
+> 
+> The Xilinx PS Uart is used on the new ARM based SoC. This
+> UART is not compatible with others such that a seperate
+> driver is required.
+> 
+> Signed-off-by: John Linn <john.linn@xilinx.com>
 
-> Third version of the patch series ensuring ethtool_cmd::speed/_hi
-> fields are accessed using ethtool_cmd_speed/_set API. Thanks to Ben
-> and Stephen for their feedbacks that have been integrated here,
-> including some from Ben suggested in PATCHv1 and added here (intel GbE
-> drivers: last patch in the series).
+I get build failures with this patch:
 
-Great work David, all applied to net-next-2.6
+  CC [M]  drivers/tty/serial/xilinx_uartps.o
+drivers/tty/serial/xilinx_uartps.c: In function ‘xuartps_get_port’:
+drivers/tty/serial/xilinx_uartps.c:785:14: error: ‘NO_IRQ’ undeclared (first use in this function)
+drivers/tty/serial/xilinx_uartps.c:785:14: note: each undeclared identifier is reported only once for each function it appears in
+make[1]: *** [drivers/tty/serial/xilinx_uartps.o] Error 1
 
-Thanks!
+Care to fix this up so it's in a state I can properly apply it to the
+tree?
+
+thanks,
+
+greg k-h
