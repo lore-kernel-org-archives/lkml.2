@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760538Ab1D2Rdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 13:33:38 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36989 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760156Ab1D2Rdg (ORCPT
+	id S1760495Ab1D2Rfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 13:35:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44564 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756810Ab1D2Rfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 13:33:36 -0400
-Date: Fri, 29 Apr 2011 14:33:32 -0300
+	Fri, 29 Apr 2011 13:35:36 -0400
+Date: Fri, 29 Apr 2011 14:35:21 -0300
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH 1/2] perf probe: Fix the missed parameter
- initialization
-Message-ID: <20110429173332.GA3273@ghostprotocols.net>
-References: <1304066518-30420-1-git-send-email-ming.m.lin@intel.com>
- <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/18] RAS daemon: Easter Eggs Edition
+Message-ID: <20110429173521.GB3273@ghostprotocols.net>
+References: <1303576100-425-1-git-send-email-bp@amd64.org>
+ <20110429140844.GB1768@nowhere>
+ <20110429142534.GD18746@aftab>
+ <20110429143145.GB10590@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <20110429143145.GB10590@elte.hu>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 29, 2011 at 08:41:57AM +0000, Lin Ming escreveu:
-> pubname_callback_param::found should be initialized to 0 in fastpath lookup.
-
-
-Is this really needed? Or is this just to stress it, for documentational
-purposes?
- 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  tools/perf/util/probe-finder.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+Em Fri, Apr 29, 2011 at 04:31:45PM +0200, Ingo Molnar escreveu:
 > 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index a7c7145..3b9d0b8 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
->  			.file	  = pp->file,
->  			.cu_die	  = &pf->cu_die,
->  			.sp_die	  = &pf->sp_die,
-> +			.found	  = 0,
->  		};
->  		struct dwarf_callback_param probe_param = {
->  			.data = pf,
-> -- 
-> 1.7.4.4
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > On Fri, Apr 29, 2011 at 10:08:48AM -0400, Frederic Weisbecker wrote:
+> > > 
+> > > If you want to accelerate that, I suggest you cut your patchset into 
+> > > smaller sets and focus on merging them piece by piece. Few people are going 
+> > > to review 18 patches at once. They may plan to scatter their review over 
+> > > days but that doesn't scale well, and it naturally reduces the number of 
+> > > reviewers.
+> > > 
+> > > You could start with exporting trace things into tools/trace, post the few 
+> > > concerned patches and iterate them until everyone is happy. Then switch to 
+> > > another subset of the big thing.
+> > 
+> > Hi Frederic,
+> > 
+> > I can definitely do that. I just wanted to know before I do it though, 
+> > whether the general direction is ok and whether people are fine with the 
+> > changes, i.e. Arnaldo, Ingo, Peter, Steven, any reactions? If yes, I can get 
+> > to work and split the big pile into more digestible pieces.
+> 
+> I definitely like the general approach, it's a big step forward from mcelog. 
+> Might make sense to progress to the small digestible patches stage to get out 
+> the detailed reviews?
+
++1
+ 
+> Thanks,
+> 
+> 	Ingo
