@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612Ab1D2TFE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:05:04 -0400
-Received: from kroah.org ([198.145.64.141]:50309 "EHLO coco.kroah.org"
+	id S933371Ab1D2TF3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:05:29 -0400
+Received: from kroah.org ([198.145.64.141]:50304 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933156Ab1D2S6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:30 -0400
+	id S933141Ab1D2S63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:29 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
-Message-Id: <20110429185655.361581598@clark.kroah.org>
+Message-Id: <20110429185655.275055344@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:52 -0700
+Date: Fri, 29 Apr 2011 11:55:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ike Panhc <ike.pan@canonical.com>, Matthew Garrett <mjg@redhat.com>
-Subject: [29/55] ideapad: read brightness setting on brightness key notify
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [28/55] UBIFS: fix master node recovery
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ike Panhc <ike.pan@canonical.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit 2165136585b5c7d6f118f1d90fbde550bb7de212 upstream.
+commit 6e0d9fd38b750d678bf9fd07db23582f52fafa55 upstream.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=25922
+This patch fixes the following symptoms:
+1. Unmount UBIFS cleanly.
+2. Start mounting UBIFS R/W and have a power cut immediately
+3. Start mounting UBIFS R/O, this succeeds
+4. Try to re-mount UBIFS R/W - this fails immediately or later on,
+   because UBIFS will write the master node to the flash area
+   which has been written before.
 
-On ideapad Y530, the brightness key notify will be blocked if the last notify
-is not responsed by getting the brightness value. Read value when we get the
-notify shall fix the problem and will not have any difference on other ideapads.
+The analysis of the problem:
 
-Signed-off-by: Ike Panhc <ike.pan@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+1. UBIFS is unmounted cleanly, both copies of the master node are clean.
+2. UBIFS is being mounter R/W, starts changing master node copy 1, and
+   a power cut happens. The copy N1 becomes corrupted.
+3. UBIFS is being mounted R/O. It notices the copy N1 is corrupted and
+   reads copy N2. Copy N2 is clean.
+4. Because of R/O mode, UBIFS cannot recover copy 1.
+5. The mount code (ubifs_mount()) sees that the master node is clean,
+   so it decides that no recovery is needed.
+6. We are re-mounting R/W. UBIFS believes no recovery is needed and
+   starts updating the master node, but copy N1 is still corrupted
+   and was not recovered!
+
+Fix this problem by marking the master node as dirty every time we
+recover it and we are in R/O mode. This forces further recovery and
+the UBIFS cleans-up the corruptions and recovers the copy N1 when
+re-mounting R/W later.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/ideapad-laptop.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ubifs/recovery.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -459,6 +459,8 @@ static void ideapad_acpi_notify(struct a
- 		if (test_bit(vpc_bit, &vpc1)) {
- 			if (vpc_bit == 9)
- 				ideapad_sync_rfk_state(adevice);
-+			else if (vpc_bit == 4)
-+				read_ec_data(handle, 0x12, &vpc2);
- 			else
- 				ideapad_input_report(priv, vpc_bit);
+--- a/fs/ubifs/recovery.c
++++ b/fs/ubifs/recovery.c
+@@ -300,6 +300,32 @@ int ubifs_recover_master_node(struct ubi
+ 			goto out_free;
  		}
+ 		memcpy(c->rcvrd_mst_node, c->mst_node, UBIFS_MST_NODE_SZ);
++
++		/*
++		 * We had to recover the master node, which means there was an
++		 * unclean reboot. However, it is possible that the master node
++		 * is clean at this point, i.e., %UBIFS_MST_DIRTY is not set.
++		 * E.g., consider the following chain of events:
++		 *
++		 * 1. UBIFS was cleanly unmounted, so the master node is clean
++		 * 2. UBIFS is being mounted R/W and starts changing the master
++		 *    node in the first (%UBIFS_MST_LNUM). A power cut happens,
++		 *    so this LEB ends up with some amount of garbage at the
++		 *    end.
++		 * 3. UBIFS is being mounted R/O. We reach this place and
++		 *    recover the master node from the second LEB
++		 *    (%UBIFS_MST_LNUM + 1). But we cannot update the media
++		 *    because we are being mounted R/O. We have to defer the
++		 *    operation.
++		 * 4. However, this master node (@c->mst_node) is marked as
++		 *    clean (since the step 1). And if we just return, the
++		 *    mount code will be confused and won't recover the master
++		 *    node when it is re-mounter R/W later.
++		 *
++		 *    Thus, to force the recovery by marking the master node as
++		 *    dirty.
++		 */
++		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_DIRTY);
+ 	} else {
+ 		/* Write the recovered master node */
+ 		c->max_sqnum = le64_to_cpu(mst->ch.sqnum) - 1;
 
 
