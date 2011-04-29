@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab1D2TER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:04:17 -0400
-Received: from kroah.org ([198.145.64.141]:50326 "EHLO coco.kroah.org"
+	id S933708Ab1D2TEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:04:32 -0400
+Received: from kroah.org ([198.145.64.141]:50323 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933201Ab1D2S6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:33 -0400
+	id S933178Ab1D2S6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
-Message-Id: <20110429185655.670713778@clark.kroah.org>
+Message-Id: <20110429185655.570642374@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:55 -0700
+Date: Fri, 29 Apr 2011 11:55:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [32/55] UBIFS: fix false space checking failure
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [31/55] ath9k_hw: partially revert "fix dma descriptor rx error bit parsing"
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 8c230d9a5b5ec7970139acb7e2d165d7a3fe9f9e upstream.
+commit 115dad7a7f42e68840392767323ceb9306dbdb36 upstream.
 
-This patch fixes UBIFS mount failure when the debugging support is enabled,
-we are recovering from a power cut, we were first mounter R/O and we are
-re-mounting R/W. In this case we should not assume that the amount of free
-space before we have re-mounted R/W and after are equivalent, because
-when we have mounted R/O the file-system is in a non-committed state so
-the amount of free space is slightly smaller, due to the fact that we cannot
-predict the amount of free space precisely before we commit.
+The rx error bit parsing was changed to consider PHY errors and various
+decryption errors separately. While correct according to the documentation,
+this is causing spurious decryption error reports in some situations.
 
-This patch fixes the issue by skipping the debugging check in case of
-recovery. This issue was reported by Caizhiyong <caizhiyong@huawei.com>
-here: http://thread.gmane.org/gmane.linux.drivers.mtd/34350/focus=34387
+Fix this by restoring the original order of the checks in those places,
+where the errors are meant to be mutually exclusive.
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reported-by: Caizhiyong <caizhiyong@huawei.com>
+If a CRC error is reported, then MIC failure and decryption errors
+are irrelevant, and a PHY error is unlikely.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/super.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_mac.c |    8 ++++----
+ drivers/net/wireless/ath/ath9k/mac.c        |   14 ++++++++++----
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1643,15 +1643,27 @@ static int ubifs_remount_rw(struct ubifs
- 	if (err)
- 		goto out;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
+@@ -615,7 +615,7 @@ int ath9k_hw_process_rxdesc_edma(struct
+ 		 */
+ 		if (rxsp->status11 & AR_CRCErr)
+ 			rxs->rs_status |= ATH9K_RXERR_CRC;
+-		if (rxsp->status11 & AR_PHYErr) {
++		else if (rxsp->status11 & AR_PHYErr) {
+ 			phyerr = MS(rxsp->status11, AR_PHYErrCode);
+ 			/*
+ 			 * If we reach a point here where AR_PostDelimCRCErr is
+@@ -638,11 +638,11 @@ int ath9k_hw_process_rxdesc_edma(struct
+ 				rxs->rs_phyerr = phyerr;
+ 			}
  
-+	dbg_gen("re-mounted read-write");
-+	c->remounting_rw = 0;
+-		}
+-		if (rxsp->status11 & AR_DecryptCRCErr)
++		} else if (rxsp->status11 & AR_DecryptCRCErr)
+ 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
+-		if (rxsp->status11 & AR_MichaelErr)
++		else if (rxsp->status11 & AR_MichaelErr)
+ 			rxs->rs_status |= ATH9K_RXERR_MIC;
 +
- 	if (c->need_recovery) {
- 		c->need_recovery = 0;
- 		ubifs_msg("deferred recovery completed");
-+	} else {
-+		/*
-+		 * Do not run the debugging space check if the were doing
-+		 * recovery, because when we saved the information we had the
-+		 * file-system in a state where the TNC and lprops has been
-+		 * modified in memory, but all the I/O operations (including a
-+		 * commit) were deferred. So the file-system was in
-+		 * "non-committed" state. Now the file-system is in committed
-+		 * state, and of course the amount of free space will change
-+		 * because, for example, the old index size was imprecise.
-+		 */
-+		err = dbg_check_space_info(c);
+ 		if (rxsp->status11 & AR_KeyMiss)
+ 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
  	}
+--- a/drivers/net/wireless/ath/ath9k/mac.c
++++ b/drivers/net/wireless/ath/ath9k/mac.c
+@@ -690,17 +690,23 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
+ 		rs->rs_flags |= ATH9K_RX_DECRYPT_BUSY;
  
--	dbg_gen("re-mounted read-write");
--	c->remounting_rw = 0;
- 	c->always_chk_crc = 0;
--	err = dbg_check_space_info(c);
- 	mutex_unlock(&c->umount_mutex);
- 	return err;
- 
+ 	if ((ads.ds_rxstatus8 & AR_RxFrameOK) == 0) {
++		/*
++		 * Treat these errors as mutually exclusive to avoid spurious
++		 * extra error reports from the hardware. If a CRC error is
++		 * reported, then decryption and MIC errors are irrelevant,
++		 * the frame is going to be dropped either way
++		 */
+ 		if (ads.ds_rxstatus8 & AR_CRCErr)
+ 			rs->rs_status |= ATH9K_RXERR_CRC;
+-		if (ads.ds_rxstatus8 & AR_PHYErr) {
++		else if (ads.ds_rxstatus8 & AR_PHYErr) {
+ 			rs->rs_status |= ATH9K_RXERR_PHY;
+ 			phyerr = MS(ads.ds_rxstatus8, AR_PHYErrCode);
+ 			rs->rs_phyerr = phyerr;
+-		}
+-		if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
++		} else if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
+ 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+-		if (ads.ds_rxstatus8 & AR_MichaelErr)
++		else if (ads.ds_rxstatus8 & AR_MichaelErr)
+ 			rs->rs_status |= ATH9K_RXERR_MIC;
++
+ 		if (ads.ds_rxstatus8 & AR_KeyMiss)
+ 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+ 	}
 
 
