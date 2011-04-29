@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933419Ab1D2S7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:59:00 -0400
-Received: from kroah.org ([198.145.64.141]:35087 "EHLO coco.kroah.org"
+	id S933280Ab1D2S6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:37 -0400
+Received: from kroah.org ([198.145.64.141]:50293 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933206Ab1D2S6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:56 2011
-Message-Id: <20110429185656.804658161@clark.kroah.org>
+	id S933130Ab1D2S61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:27 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
+Message-Id: <20110429185655.087982902@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:07 -0700
+Date: Fri, 29 Apr 2011 11:55:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Changli Gao <xiaosuo@gmail.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [44/55] vfs: avoid large kmalloc()s for the fdtable
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@pobox.com>
+Subject: [26/55] libata: Implement ATA_FLAG_NO_DIPM and apply it to mcp65
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 6d4831c283530a5f2c6bd8172c13efa236eb149d upstream.
+commit ae01b2493c3bf03c504c32ac4ebb01d528508db3 upstream.
 
-Azurit reports large increases in system time after 2.6.36 when running
-Apache.  It was bisected down to a892e2d7dcdfa6c76e6 ("vfs: use kmalloc()
-to allocate fdmem if possible").
+NVIDIA mcp65 familiy of controllers cause command timeouts when DIPM
+is used.  Implement ATA_FLAG_NO_DIPM and apply it.
 
-That patch caused the vfs to use kmalloc() for very large allocations and
-this is causing excessive work (and presumably excessive reclaim) within
-the page allocator.
+This problem was reported by Stefan Bader in the following thread.
 
-Fix it by falling back to vmalloc() earlier - when the allocation attempt
-would have been considered "costly" by reclaim.
+ http://thread.gmane.org/gmane.linux.ide/48841
 
-Reported-by: azurIt <azurit@pobox.sk>
-Tested-by: azurIt <azurit@pobox.sk>
-Acked-by: Changli Gao <xiaosuo@gmail.com>
-Cc: Americo Wang <xiyou.wangcong@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+stable: applicable to 2.6.37 and 38.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/file.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/ata/ahci.c      |    2 +-
+ drivers/ata/libata-eh.c |    6 ++++--
+ include/linux/libata.h  |    1 +
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -9,6 +9,7 @@
- #include <linux/module.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/mmzone.h>
- #include <linux/time.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-@@ -39,14 +40,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
-  */
- static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -150,7 +150,7 @@ static const struct ata_port_info ahci_p
+ 	{
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_FPDMA_AA | AHCI_HFLAG_NO_PMP |
+ 				 AHCI_HFLAG_YES_NCQ),
+-		.flags		= AHCI_FLAG_COMMON,
++		.flags		= AHCI_FLAG_COMMON | ATA_FLAG_NO_DIPM,
+ 		.pio_mask	= ATA_PIO4,
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -3276,6 +3276,7 @@ static int ata_eh_set_lpm(struct ata_lin
+ 	struct ata_eh_context *ehc = &link->eh_context;
+ 	struct ata_device *dev, *link_dev = NULL, *lpm_dev = NULL;
+ 	enum ata_lpm_policy old_policy = link->lpm_policy;
++	bool no_dipm = ap->flags & ATA_FLAG_NO_DIPM;
+ 	unsigned int hints = ATA_LPM_EMPTY | ATA_LPM_HIPM;
+ 	unsigned int err_mask;
+ 	int rc;
+@@ -3292,7 +3293,7 @@ static int ata_eh_set_lpm(struct ata_lin
+ 	 */
+ 	ata_for_each_dev(dev, link, ENABLED) {
+ 		bool hipm = ata_id_has_hipm(dev->id);
+-		bool dipm = ata_id_has_dipm(dev->id);
++		bool dipm = ata_id_has_dipm(dev->id) && !no_dipm;
  
--static inline void *alloc_fdmem(unsigned int size)
-+static void *alloc_fdmem(unsigned int size)
- {
--	void *data;
--
--	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
--	if (data != NULL)
--		return data;
--
-+	/*
-+	 * Very large allocations can stress page reclaim, so fall back to
-+	 * vmalloc() if the allocation size will be considered "large" by the VM.
-+	 */
-+	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		if (data != NULL)
-+			return data;
-+	}
- 	return vmalloc(size);
- }
+ 		/* find the first enabled and LPM enabled devices */
+ 		if (!link_dev)
+@@ -3349,7 +3350,8 @@ static int ata_eh_set_lpm(struct ata_lin
+ 
+ 	/* host config updated, enable DIPM if transitioning to MIN_POWER */
+ 	ata_for_each_dev(dev, link, ENABLED) {
+-		if (policy == ATA_LPM_MIN_POWER && ata_id_has_dipm(dev->id)) {
++		if (policy == ATA_LPM_MIN_POWER && !no_dipm &&
++		    ata_id_has_dipm(dev->id)) {
+ 			err_mask = ata_dev_set_feature(dev,
+ 					SETFEATURES_SATA_ENABLE, SATA_DIPM);
+ 			if (err_mask && err_mask != AC_ERR_DEV) {
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -203,6 +203,7 @@ enum {
+ 					      * management */
+ 	ATA_FLAG_SW_ACTIVITY	= (1 << 22), /* driver supports sw activity
+ 					      * led */
++	ATA_FLAG_NO_DIPM	= (1 << 23), /* host not happy with DIPM */
+ 
+ 	/* bits 24:31 of ap->flags are reserved for LLD specific flags */
  
 
 
