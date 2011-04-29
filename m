@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760843Ab1D2SXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:23:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774Ab1D2SXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:23:50 -0400
-Date: Fri, 29 Apr 2011 21:23:47 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
-Message-ID: <20110429182347.GB32566@redhat.com>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-2-git-send-email-gleb@redhat.com>
- <20110429083618.GL2191@linux.vnet.ibm.com>
- <20110429083904.GA12987@linux.vnet.ibm.com>
- <20110429180239.GA32566@redhat.com>
+	id S1760840Ab1D2S1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:27:01 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53513 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab1D2S07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:26:59 -0400
+Date: Fri, 29 Apr 2011 20:26:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Frysinger <vapier.adi@gmail.com>
+cc: john stultz <johnstul@us.ibm.com>,
+        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+In-Reply-To: <BANLkTinr9J5OQoia-+yH3_hjU6AciAxu9A@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1104292026270.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
+ <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
+ <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos> <20110428224444.43107883@neptune.home> <alpine.LFD.2.02.1104282251080.3005@ionos>
+ <1304027480.2971.121.camel@work-vm> <alpine.LFD.2.02.1104282353140.3005@ionos> <BANLkTinr9J5OQoia-+yH3_hjU6AciAxu9A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429180239.GA32566@redhat.com>
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1972088565-1304101600=:3005"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 09:02:39PM +0300, Gleb Natapov wrote:
-> On Fri, Apr 29, 2011 at 01:39:04AM -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
-> > > 
-> > > Hmmm....  This is interesting.  KVM being a module, we either expand
-> > > TINY_RCU's size a bit by making rcu_note_context_switch() be a real
-> > > function in rcutiny.c and adding an export, or we expand it by adding
-> > > two exports.
-> > > 
-> > > I would like to solve this without making TINY_RCU larger, and preferably
-> > > by making it smaller.  Any ideas come to mind?  (Other than making
-> > > KVM depend on CONFIG_SMP, which sounds too much like throwing out the
-> > > baby with the bathwater.)
-> > 
-> > Nothing quite like hitting "send" to make an idea show up...
-> > 
-> > In a UP kernel, does it actually help anything to have KVM
-> > tell RCU about executing in a guest?  If not, could we have a
-> > rcu_note_context_switch_kvm() that is a static inline empty function in
-> > TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
-> > 
-> That will work, but does making rcu_note_context_switch() out of line
-> actually increase kernel size? The function is called in two places
-> currently, so by making it out of line we make two calling site smaller.
-> Will measure it next week.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1972088565-1304101600=:3005
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 29 Apr 2011, Mike Frysinger wrote:
+
+> On Thu, Apr 28, 2011 at 18:02, Thomas Gleixner wrote:
+> > -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
+> > +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
+> > +       [CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
+> > +       [CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
+> > +       [CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
+> > +};
 > 
-Why wait for so long? Here is the result:
-   text    data     bss     dec     hex filename
-4544134  590596 2023424 7158154  6d398a vmlinux     inline
-4544198  590532 2023424 7158154  6d398a vmlinux.ol  out of line
+> this would let us constify the array too
 
-So in out of line version text is 64 byte bigger, but data is 64 byte
-smaller. Hmm.
-
---
-			Gleb.
+Indeed.
+--8323328-1972088565-1304101600=:3005--
