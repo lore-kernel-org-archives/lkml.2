@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab1D2PbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:31:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54924 "EHLO
+	id S1759488Ab1D2Pb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:31:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46165 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759344Ab1D2P32 (ORCPT
+	with ESMTP id S1759448Ab1D2P30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:29:28 -0400
+	Fri, 29 Apr 2011 11:29:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=CUg5qJPUmjmeQTJKGRGE+9UXzJYcqPN1kkWRarI71Sy+bF26apQDuUnfYlkTWVRmtA
-         Ie6O8gJmzzHXQvPZ3kXUZ48CHvqZiVv0xihbYYSSzLH6++Ukti8JmOY3mmjks0kiUfSg
-         cHCwtVm69tSo2UauP31klCwVbVKuM97gt0kmU=
+        b=kjylQTw9DsLJDPTfU7ih9ggY1WO/brjB7p5IYp2vJ8yLfGtnJBsDIiPKuheDvQtioF
+         7iLUgJhUrPSg8OUSft8Ok6pj6wgWvR5D6zy0f75woQvxsQUhcutn/MX6A3U0HYygtQT9
+         KBeWCeNGLdd+MMZXEuXM1nPUZEIu8a9Cq3wNQ=
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, yinghai@kernel.org, rientjes@google.com,
         tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 20/25] x86, NUMA: Initialize and use remap allocator from setup_node_bootmem()
-Date: Fri, 29 Apr 2011 17:28:39 +0200
-Message-Id: <1304090924-8197-21-git-send-email-tj@kernel.org>
+Subject: [PATCH 19/25] x86-32, NUMA: Add @start and @end to init_alloc_remap()
+Date: Fri, 29 Apr 2011 17:28:38 +0200
+Message-Id: <1304090924-8197-20-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1304090924-8197-1-git-send-email-tj@kernel.org>
 References: <1304090924-8197-1-git-send-email-tj@kernel.org>
@@ -29,14 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-setup_node_bootmem() is taken from 64bit and doesn't use remap
-allocator.  It's about to be shared with 32bit so add support for it.
-If NODE_DATA is remapped, it's noted in the debug message and node
-locality check is skipped as the __pa() of the remapped address
-doesn't reflect the actual physical address.
-
-On 64bit, remap allocator becomes noop and doesn't affect the
-behavior.
+Instead of dereferencing node_start/end_pfn[] directly, make
+init_alloc_remap() take @start and @end and let the caller be
+responsible for making sure the range is sane.  This is to prepare for
+use from unified NUMA init code.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -45,115 +41,70 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/mm/numa.c          |   41 +++++++++++++++++++++++++++--------------
- arch/x86/mm/numa_32.c       |    2 +-
- arch/x86/mm/numa_internal.h |    6 ++++++
- 3 files changed, 34 insertions(+), 15 deletions(-)
+ arch/x86/mm/numa_32.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index b2fca54..a37b382 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -197,7 +197,9 @@ static void __init setup_node_bootmem(int nid, u64 start, u64 end)
- 	const u64 nd_low = PFN_PHYS(MAX_DMA_PFN);
- 	const u64 nd_high = PFN_PHYS(max_pfn_mapped);
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
-+	bool remapped = false;
- 	u64 nd_pa;
-+	void *nd;
- 	int tnid;
- 
- 	/*
-@@ -207,34 +209,45 @@ static void __init setup_node_bootmem(int nid, u64 start, u64 end)
- 	if (end && (end - start) < NODE_MIN_SIZE)
- 		return;
- 
-+	/* initialize remap allocator before aligning to ZONE_ALIGN */
-+	init_alloc_remap(nid, start, end);
-+
- 	start = roundup(start, ZONE_ALIGN);
- 
- 	printk(KERN_INFO "Initmem setup node %d %016Lx-%016Lx\n",
- 	       nid, start, end);
- 
- 	/*
--	 * Try to allocate node data on local node and then fall back to
--	 * all nodes.  Never allocate in DMA zone.
-+	 * Allocate node data.  Try remap allocator first, node-local
-+	 * memory and then any node.  Never allocate in DMA zone.
- 	 */
--	nd_pa = memblock_x86_find_in_range_node(nid, nd_low, nd_high,
-+	nd = alloc_remap(nid, nd_size);
-+	if (nd) {
-+		nd_pa = __pa(nd);
-+		remapped = true;
-+	} else {
-+		nd_pa = memblock_x86_find_in_range_node(nid, nd_low, nd_high,
- 						nd_size, SMP_CACHE_BYTES);
--	if (nd_pa == MEMBLOCK_ERROR)
--		nd_pa = memblock_find_in_range(nd_low, nd_high,
--					       nd_size, SMP_CACHE_BYTES);
--	if (nd_pa == MEMBLOCK_ERROR) {
--		pr_err("Cannot find %zu bytes in node %d\n", nd_size, nid);
--		return;
-+		if (nd_pa == MEMBLOCK_ERROR)
-+			nd_pa = memblock_find_in_range(nd_low, nd_high,
-+						nd_size, SMP_CACHE_BYTES);
-+		if (nd_pa == MEMBLOCK_ERROR) {
-+			pr_err("Cannot find %zu bytes in node %d\n",
-+			       nd_size, nid);
-+			return;
-+		}
-+		memblock_x86_reserve_range(nd_pa, nd_pa + nd_size, "NODE_DATA");
-+		nd = __va(nd_pa);
- 	}
--	memblock_x86_reserve_range(nd_pa, nd_pa + nd_size, "NODE_DATA");
- 
- 	/* report and initialize */
--	printk(KERN_INFO "  NODE_DATA [%016Lx - %016Lx]\n",
--	       nd_pa, nd_pa + nd_size - 1);
-+	printk(KERN_INFO "  NODE_DATA [%016Lx - %016Lx]%s\n",
-+	       nd_pa, nd_pa + nd_size - 1, remapped ? " (remapped)" : "");
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
--	if (tnid != nid)
-+	if (!remapped && tnid != nid)
- 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
- 
--	node_data[nid] = __va(nd_pa);
-+	node_data[nid] = nd;
- 	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
- 	NODE_DATA(nid)->node_id = nid;
- 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
 diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 9008632..fbd558f 100644
+index 975a76f..9008632 100644
 --- a/arch/x86/mm/numa_32.c
 +++ b/arch/x86/mm/numa_32.c
-@@ -265,7 +265,7 @@ void resume_map_numa_kva(pgd_t *pgd_base)
+@@ -265,8 +265,10 @@ void resume_map_numa_kva(pgd_t *pgd_base)
   * opportunistically and the callers will fall back to other memory
   * allocation mechanisms on failure.
   */
--static __init void init_alloc_remap(int nid, u64 start, u64 end)
-+void __init init_alloc_remap(int nid, u64 start, u64 end)
+-static __init void init_alloc_remap(int nid)
++static __init void init_alloc_remap(int nid, u64 start, u64 end)
  {
- 	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long end_pfn = end >> PAGE_SHIFT;
-diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
-index ad86ec9..7178c3a 100644
---- a/arch/x86/mm/numa_internal.h
-+++ b/arch/x86/mm/numa_internal.h
-@@ -21,6 +21,12 @@ void __init numa_reset_distance(void);
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long end_pfn = end >> PAGE_SHIFT;
+ 	unsigned long size, pfn;
+ 	u64 node_pa, remap_pa;
+ 	void *remap_va;
+@@ -276,24 +278,15 @@ static __init void init_alloc_remap(int nid)
+ 	 * memory could be added but not currently present.
+ 	 */
+ 	printk(KERN_DEBUG "node %d pfn: [%lx - %lx]\n",
+-	       nid, node_start_pfn[nid], node_end_pfn[nid]);
+-	if (node_start_pfn[nid] > max_pfn)
+-		return;
+-	if (!node_end_pfn[nid])
+-		return;
+-	if (node_end_pfn[nid] > max_pfn)
+-		node_end_pfn[nid] = max_pfn;
++	       nid, start_pfn, end_pfn);
  
- void __init x86_numa_init(void);
+ 	/* calculate the necessary space aligned to large page size */
+-	size = node_memmap_size_bytes(nid, node_start_pfn[nid],
+-				      min(node_end_pfn[nid], max_pfn));
++	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
+ 	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
+ 	size = ALIGN(size, LARGE_PAGE_BYTES);
  
-+#ifdef CONFIG_X86_64
-+static inline void init_alloc_remap(int nid, u64 start, u64 end)	{ }
-+#else
-+void __init init_alloc_remap(int nid, u64 start, u64 end);
-+#endif
+ 	/* allocate node memory and the lowmem remap area */
+-	node_pa = memblock_find_in_range(node_start_pfn[nid] << PAGE_SHIFT,
+-					 (u64)node_end_pfn[nid] << PAGE_SHIFT,
+-					 size, LARGE_PAGE_BYTES);
++	node_pa = memblock_find_in_range(start, end, size, LARGE_PAGE_BYTES);
+ 	if (node_pa == MEMBLOCK_ERROR) {
+ 		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
+ 			   size, nid);
+@@ -391,8 +384,14 @@ void __init initmem_init(void)
+ 	get_memcfg_numa();
+ 	numa_init_array();
+ 
+-	for_each_online_node(nid)
+-		init_alloc_remap(nid);
++	for_each_online_node(nid) {
++		u64 start = (u64)node_start_pfn[nid] << PAGE_SHIFT;
++		u64 end = min((u64)node_end_pfn[nid] << PAGE_SHIFT,
++			      (u64)max_pfn << PAGE_SHIFT);
 +
- #ifdef CONFIG_NUMA_EMU
- void __init numa_emulation(struct numa_meminfo *numa_meminfo,
- 			   int numa_dist_cnt);
++		if (start < end)
++			init_alloc_remap(nid, start, end);
++	}
+ 
+ #ifdef CONFIG_HIGHMEM
+ 	highstart_pfn = highend_pfn = max_pfn;
 -- 
 1.7.1
 
