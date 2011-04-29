@@ -1,293 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab1D2FYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 01:24:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63883 "EHLO mga09.intel.com"
+	id S1752653Ab1D2FZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 01:25:21 -0400
+Received: from mail.perches.com ([173.55.12.10]:1094 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab1D2FYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 01:24:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,285,1301900400"; 
-   d="scan'208";a="635686744"
-Message-ID: <4DBA4B7A.10305@intel.com>
-Date: Fri, 29 Apr 2011 13:24:10 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -v4 3/4] lib, Make gen_pool memory allocator lockless
-References: <1303806878-333-1-git-send-email-ying.huang@intel.com> <1303806878-333-4-git-send-email-ying.huang@intel.com> <20110428143738.GA19161@Krystal> <4DBA0C97.8070908@intel.com> <20110429011113.GA3391@Krystal> <4DBA2AE1.4030309@intel.com> <20110429042344.GA10464@Krystal>
-In-Reply-To: <20110429042344.GA10464@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752092Ab1D2FZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 01:25:20 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-wireless@vger.kernel.org, libertas-dev@lists.infradead.org,
+        orinoco-users@lists.sourceforge.net,
+        orinoco-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] wireless: Make and use const struct ieee80211_channel
+Date: Thu, 28 Apr 2011 22:25:06 -0700
+Message-Id: <cover.1304054543.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.5.rc3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2011 12:23 PM, Mathieu Desnoyers wrote:
-> * Huang Ying (ying.huang@intel.com) wrote:
->> On 04/29/2011 09:11 AM, Mathieu Desnoyers wrote:
->>> * Huang Ying (ying.huang@intel.com) wrote:
->>>> Hi, Mathieu,
->>>>
->>>> Thanks for your comments.
->>>>
->>>> On 04/28/2011 10:37 PM, Mathieu Desnoyers wrote:
->>>>> * Huang Ying (ying.huang@intel.com) wrote:
->>>> [snip]
->>>>>>
->>>>>> +/**
->>>>>> + * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
->>>>>> + * @chunk:   the struct gen_pool_chunk * to use as a loop cursor
->>>>>> + * @pool:    the generic memory pool
->>>>>> + *
->>>>>> + * Not lockless, proper mutual exclusion is needed to use this macro
->>>>>> + * with other gen_pool function simultaneously.
->>>>>> + */
->>>>>> +#define gen_pool_for_each_chunk(chunk, pool)                 \
->>>>>> +     list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
->>>>>
->>>>> Is it just me or this macro is never used ? Maybe you should consider
->>>>> removing it.
->>>>
->>>> This macro is not used in this patch.  But it is used in 4/4 of the
->>>> patchset to free the backing pages before destroy the pool.
->>>
->>> Depending on how frequently you want to use it, you might want to use
->>> list_for_each_entry_rcu directly rather than a macro wrapper. E.g.  for
->>> 2-3 uses, adding a macro just obfuscates the code IMHO (e.g. you don't
->>> know it iterates on a RCU list by looking at the caller code).
->>
->> Yes. gen_pool_for_each_chunk() is not a good wrapper.  I just don't want
->> to expose too much implementation details to users, after all, we are
->> working on library code.  Maybe something like below is better?
->>
->> void gen_pool_for_each_chunk(struct gen_pool *pool, void (*func)(struct
->> gen_pool *pool, struct gen_pool_chunk *chunk)) {
->> 	rcu_read_lock();
->> 	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
->> 		func(pool, chunk);
->> 	rcu_read_unlock();
->> }
-> 
-> If it is expected to be exposed to other parts of the kernel, indeed we
-> should not expect the caller to magically know they must hold the rcu
-> read-side lock.
+Joe Perches (2):
+  wireless: Make struct ieee80211_channel const where possible
+  wireless: Use const struct ieee80211_channel where possible
 
-Yes.  So I want to help the users via acquiring/releasing the rcu
-read-side lock by ourselves.
+ drivers/net/wireless/iwlegacy/iwl-4965-lib.c |    2 +-
+ drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c   |    2 +-
+ drivers/net/wireless/iwmc3200wifi/cfg80211.c |    4 +-
+ drivers/net/wireless/libertas/cfg.c          |    2 +-
+ drivers/net/wireless/mwifiex/cfg80211.c      |    9 ++++---
+ drivers/net/wireless/orinoco/cfg.c           |    2 +-
+ drivers/net/wireless/rndis_wlan.c            |    9 ++++---
+ drivers/net/wireless/wl1251/cmd.c            |    2 +-
+ drivers/net/wireless/wl1251/cmd.h            |    2 +-
+ include/net/cfg80211.h                       |   34 +++++++++++++-------------
+ net/wireless/chan.c                          |   10 ++++----
+ net/wireless/core.h                          |   14 ++++++----
+ net/wireless/debugfs.c                       |    2 +-
+ net/wireless/ibss.c                          |    6 ++--
+ net/wireless/mlme.c                          |   15 ++++++-----
+ net/wireless/nl80211.c                       |   31 ++++++++++++-----------
+ net/wireless/nl80211.h                       |    9 ++++---
+ net/wireless/reg.c                           |   11 ++++----
+ net/wireless/reg.h                           |    4 +-
+ net/wireless/scan.c                          |    6 ++--
+ net/wireless/wext-sme.c                      |    2 +-
+ 22 files changed, 94 insertions(+), 86 deletions(-)
 
-> I'm not sure whether this iterator is necessary though. Just a comment
-> could suffice.
-
-I try to hide some implementation details from the users here.  So that
-we can change the implementation easier if necessary in the future.  I
-will add comments to warn users that the callback function is executed
-in rcu_read_lock environment.
-
->>>>
->>>> [snip]
->>>>>> @@ -108,43 +226,50 @@ EXPORT_SYMBOL(gen_pool_destroy);
->>>>>>   * @size: number of bytes to allocate from the pool
->>>>>>   *
->>>>>>   * Allocate the requested number of bytes from the specified pool.
->>>>>> - * Uses a first-fit algorithm.
->>>>>> + * Uses a first-fit algorithm. Can not be used in NMI handler on
->>>>>> + * architectures without NMI-safe cmpxchg implementation.
->>>>>>   */
->>>>>>  unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
->>>>>>  {
->>>>>> -     struct list_head *_chunk;
->>>>>>       struct gen_pool_chunk *chunk;
->>>>>> -     unsigned long addr, flags;
->>>>>> +     unsigned long addr;
->>>>>>       int order = pool->min_alloc_order;
->>>>>> -     int nbits, start_bit, end_bit;
->>>>>> +     int nbits, start_bit = 0, end_bit, remain;
->>>>>> +
->>>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
->>>>>> +     BUG_ON(in_nmi());
->>>>>> +#endif
->>>>>>
->>>>>>       if (size == 0)
->>>>>>               return 0;
->>>>>>
->>>>>>       nbits = (size + (1UL << order) - 1) >> order;
->>>>>> -
->>>>>> -     read_lock(&pool->lock);
->>>>>> -     list_for_each(_chunk, &pool->chunks) {
->>>>>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
->>>>>> +     rcu_read_lock();
->>>>>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
->>>>>> +             if (size > atomic_read(&chunk->avail))
->>>>>> +                     continue;
->>>>>>
->>>>>>               end_bit = (chunk->end_addr - chunk->start_addr) >> order;
->>>>>> -
->>>>>> -             spin_lock_irqsave(&chunk->lock, flags);
->>>>>> -             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
->>>>>> -                                             nbits, 0);
->>>>>> -             if (start_bit >= end_bit) {
->>>>>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
->>>>>> +retry:
->>>>>> +             start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
->>>>>> +                                                    start_bit, nbits, 0);
->>>>>> +             if (start_bit >= end_bit)
->>>>>>                       continue;
->>>>>> +             remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
->>>>>> +             if (remain) {
->>>>>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit,
->>>>>> +                                              nbits - remain);
->>>>>> +                     BUG_ON(remain);
->>>>>> +                     goto retry;
->>>>>>               }
->>>>>>
->>>>>>               addr = chunk->start_addr + ((unsigned long)start_bit << order);
->>>>>> -
->>>>>> -             bitmap_set(chunk->bits, start_bit, nbits);
->>>>>> -             spin_unlock_irqrestore(&chunk->lock, flags);
->>>>>> -             read_unlock(&pool->lock);
->>>>>> +             size = nbits << order;
->>>>>> +             atomic_sub(size, &chunk->avail);
->>>>>> +             rcu_read_unlock();
->>>>>
->>>>> I don't really like seeing a rcu_read_unlock() within a rcu list
->>>>> iteration (even if it comes right before a "return"). Doing:
->>>>>
->>>>> unsigned long addr = 0;
->>>>>
->>>>> rcu_read_lock();
->>>>> list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
->>>>>   if (...)
->>>>>     continue;
->>>>>   ...
->>>>>   addr = ...;
->>>>>   break;
->>>>> }
->>>>> rcu_read_unlock();
->>>>> return addr;
->>>>>
->>>>> Would be more symmetric, and would remove one return path, which makes
->>>>> the code easier to modify in the future.
->>>>
->>>> Unlock in loop is common in Linux kernel.  Sometimes it makes code
->>>> cleaner (but not always).  Yes, for this case, we can avoid unlock in
->>>> loop easily.  But for the next case it is not so clean.
->>>
->>> See comment below,
->>>
->>>>
->>>>>>               return addr;
->>>>>>       }
->>>>>> -     read_unlock(&pool->lock);
->>>>>> +     rcu_read_unlock();
->>>>>>       return 0;
->>>>>>  }
->>>>>>  EXPORT_SYMBOL(gen_pool_alloc);
->>>>>> @@ -155,33 +280,73 @@ EXPORT_SYMBOL(gen_pool_alloc);
->>>>>>   * @addr: starting address of memory to free back to pool
->>>>>>   * @size: size in bytes of memory to free
->>>>>>   *
->>>>>> - * Free previously allocated special memory back to the specified pool.
->>>>>> + * Free previously allocated special memory back to the specified
->>>>>> + * pool.  Can not be used in NMI handler on architectures without
->>>>>> + * NMI-safe cmpxchg implementation.
->>>>>>   */
->>>>>>  void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
->>>>>>  {
->>>>>> -     struct list_head *_chunk;
->>>>>>       struct gen_pool_chunk *chunk;
->>>>>> -     unsigned long flags;
->>>>>>       int order = pool->min_alloc_order;
->>>>>> -     int bit, nbits;
->>>>>> +     int start_bit, nbits, remain;
->>>>>>
->>>>>> -     nbits = (size + (1UL << order) - 1) >> order;
->>>>>> -
->>>>>> -     read_lock(&pool->lock);
->>>>>> -     list_for_each(_chunk, &pool->chunks) {
->>>>>> -             chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
->>>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
->>>>>> +     BUG_ON(in_nmi());
->>>>>> +#endif
->>>>>>
->>>>>> +     nbits = (size + (1UL << order) - 1) >> order;
->>>
->>> you could add:
->>>
->>>   remain = nbits;
->>>
->>>>>> +     rcu_read_lock();
->>>>>> +     list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
->>>>>>               if (addr >= chunk->start_addr && addr < chunk->end_addr) {
->>>>>>                       BUG_ON(addr + size > chunk->end_addr);
->>>>>> -                     spin_lock_irqsave(&chunk->lock, flags);
->>>>>> -                     bit = (addr - chunk->start_addr) >> order;
->>>>>> -                     while (nbits--)
->>>>>> -                             __clear_bit(bit++, chunk->bits);
->>>>>> -                     spin_unlock_irqrestore(&chunk->lock, flags);
->>>>>> -                     break;
->>>>>> +                     start_bit = (addr - chunk->start_addr) >> order;
->>>
->>> You could turn this:
->>>
->>>>>> +                     remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
->>>>>> +                     BUG_ON(remain);
->>>>>> +                     size = nbits << order;
->>>>>> +                     atomic_add(size, &chunk->avail);
->>>
->>> into:
->>>
->>>   remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
->>>   size = nbits << order;
->>>   atomic_add(size, &chunk->avail);
->>>   break;
->>>     
->>>
->>>>>> +                     rcu_read_unlock();
->>>>>
->>>>> Same comment as above apply here.
->>>>
->>>> It is harder to remove unlock in loop here.  An extra variable should be
->>>> used to indicate that something is freed from the pool.  Do you think it
->>>> is cleaner to just keep the unlock in loop here?
->>>>
->>>> Best Regards,
->>>> Huang Ying
->>>>
->>>>> +                     return;
->>>>>               }
->>>>>       }
->>>
->>> And turn this:
->>>
->>>>> -     BUG_ON(nbits > 0);
->>>>> -     read_unlock(&pool->lock);
->>>>> +     rcu_read_unlock();
->>>>> +     BUG();
->>>
->>> into:
->>>
->>>   BUG_ON(remain);
->>>   rcu_read_unlock();
->>>
->>> Does that look OK to you ? On the plus side, you end up having a single
->>> BUG_ON() in the function.
->>
->> I am afraid this make code a little harder to be understood.  Why do you
->> hate unlock in loop so much?  It is common in kernel and I think most
->> kernel developers are familiar with it.
-> 
-> I'm fine either way for this function, no strong opinion on this one.
-
-Thanks.  I will keep this function and change the other one
-(gen_pool_alloc).
-
-Best Regards,
-Huang Ying
+-- 
+1.7.5.rc3.dirty
 
