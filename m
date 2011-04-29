@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1D2Gbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 02:31:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52876 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab1D2Gbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 02:31:48 -0400
-Date: Fri, 29 Apr 2011 06:31:12 GMT
-From: tip-bot for Tim Gardner <tim.gardner@canonical.com>
-Message-ID: <tip-c7a7b814c9dca9ee01b38e63b4a46de87156d3b6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        suresh.b.siddha@intel.com, tim.gardner@canonical.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        tim.gardner@canonical.com, mingo@elte.hu
-In-Reply-To: <4DB99D2E.9080106@canonical.com>
-References: <4DB99D2E.9080106@canonical.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] ioremap: Delay sanity check until after a successful mapping
-Git-Commit-ID: c7a7b814c9dca9ee01b38e63b4a46de87156d3b6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 29 Apr 2011 06:31:17 +0000 (UTC)
+	id S1754919Ab1D2Ggz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 02:36:55 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:56696 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754245Ab1D2Ggy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 02:36:54 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18s7BEqM4EspBi6TjA89cSW83WIF+vPME1t24obtP
+	AL73p4b/caLi3e
+Subject: [patch] Re: rt scheduler may calculate wrong rt_time
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Giesel <skoe@directbox.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20110427195113.4e0064bb@acer>
+References: <20110421145510.28cb7b78@skoe.de>
+	 <1303460491.28545.12.camel@marge.simson.net> <20110427195113.4e0064bb@acer>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Apr 2011 08:36:50 +0200
+Message-ID: <1304059010.7472.1.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c7a7b814c9dca9ee01b38e63b4a46de87156d3b6
-Gitweb:     http://git.kernel.org/tip/c7a7b814c9dca9ee01b38e63b4a46de87156d3b6
-Author:     Tim Gardner <tim.gardner@canonical.com>
-AuthorDate: Thu, 28 Apr 2011 11:00:30 -0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 29 Apr 2011 08:02:47 +0200
+On Wed, 2011-04-27 at 19:51 +0200, Thomas Giesel wrote:
+> > Hm.  Does forcing a clock update if we're idle when we release the
+> > throttle do the trick?
+> 
+> It does. I tested it today and it works as expected. Even with ftrace I
+> couldn't see any suspicious behaviour anymore.
+> 
+> Mike: Can you send the patch to the right people to get it into the
+> kernel or should I do it? Or is Peter the right one already?
 
-ioremap: Delay sanity check until after a successful mapping
+Peter is the right one.  Below is an ever so slightly different version.
 
-While tracking down the reason for an ioremap() failure I was
-distracted  by the WARN_ONCE() in __ioremap_caller().
+sched, rt: update rq clock when unthrottling of an otherwise idle CPU
 
-Performing a WARN_ONCE() sanity check before the mapping
-is successful seems pointless if the caller sends bad values.
+If an RT task is awakened while it's rt_rq is throttled, the time between
+wakeup/enqueue and unthrottle/selection may be accounted as rt_time
+if the CPU is idle.  Set rq->skip_clock_update negative upon throttle
+release to tell put_prev_task() that we need a clock update.
 
-A case in point is when the BIOS provides erroneous screen_info
-values causing vesafb_probe() to request an outrageuous size.
-The WARN_ONCE is then wasted on bogosity. Move the warning to a
-point where the mapping has been successfully allocated.
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Thomas Giesel <skoe@directbox.com>
 
-Addresses:
-
-  http://bugs.launchpad.net/bugs/772042
-
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Link: http://lkml.kernel.org/r/4DB99D2E.9080106@canonical.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/ioremap.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/sched.c    |    6 +++---
+ kernel/sched_rt.c |    7 +++++++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 0369843..be1ef57 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -91,13 +91,6 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 		return (__force void __iomem *)phys_to_virt(phys_addr);
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -464,7 +464,7 @@ struct rq {
+ 	u64 nohz_stamp;
+ 	unsigned char nohz_balance_kick;
+ #endif
+-	unsigned int skip_clock_update;
++	int skip_clock_update;
  
- 	/*
--	 * Check if the request spans more than any BAR in the iomem resource
--	 * tree.
--	 */
--	WARN_ONCE(iomem_map_sanity_check(phys_addr, size),
--		  KERN_INFO "Info: mapping multiple BARs. Your kernel is fine.");
--
--	/*
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
- 	last_pfn = last_addr >> PAGE_SHIFT;
-@@ -170,6 +163,13 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	ret_addr = (void __iomem *) (vaddr + offset);
- 	mmiotrace_ioremap(unaligned_phys_addr, unaligned_size, ret_addr);
+ 	/* capture load from *all* tasks on this cpu: */
+ 	struct load_weight load;
+@@ -650,7 +650,7 @@ static void update_rq_clock(struct rq *r
+ {
+ 	s64 delta;
  
-+	/*
-+	 * Check if the request spans more than any BAR in the iomem resource
-+	 * tree.
-+	 */
-+	WARN_ONCE(iomem_map_sanity_check(unaligned_phys_addr, unaligned_size),
-+		  KERN_INFO "Info: mapping multiple BARs. Your kernel is fine.");
+-	if (rq->skip_clock_update)
++	if (rq->skip_clock_update > 0)
+ 		return;
+ 
+ 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+@@ -4125,7 +4125,7 @@ static inline void schedule_debug(struct
+ 
+ static void put_prev_task(struct rq *rq, struct task_struct *prev)
+ {
+-	if (prev->on_rq)
++	if (prev->on_rq || rq->skip_clock_update < 0)
+ 		update_rq_clock(rq);
+ 	prev->sched_class->put_prev_task(rq, prev);
+ }
+Index: linux-2.6/kernel/sched_rt.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_rt.c
++++ linux-2.6/kernel/sched_rt.c
+@@ -562,6 +562,13 @@ static int do_sched_rt_period_timer(stru
+ 			if (rt_rq->rt_throttled && rt_rq->rt_time < runtime) {
+ 				rt_rq->rt_throttled = 0;
+ 				enqueue = 1;
 +
- 	return ret_addr;
- err_free_area:
- 	free_vm_area(area);
++				/*
++				 * Force a clock update if the CPU was idle,
++				 * lest wakeup -> unthrottle time accumulate.
++				 */
++				if (rt_rq->rt_nr_running && rq->curr == rq->idle)
++					rq->skip_clock_update = -1;
+ 			}
+ 			if (rt_rq->rt_time || rt_rq->rt_nr_running)
+ 				idle = 0;
+
+
