@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760856Ab1D2S4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:56:42 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44263 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab1D2S4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:56:40 -0400
-Date: Fri, 29 Apr 2011 20:56:10 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-        =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <peetz@dynato-kyma.net>,
-        Borislav Petkov <bp@alien8.de>,
-        =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: Linux 2.6.38.4 : regression due to x86 AMD ARAT feature
-Message-ID: <20110429185609.GG18746@aftab>
-References: <20110421213926.GA19721@kroah.com>
- <4DB3DA0C.1050003@web.de>
- <20110424182041.GA19984@liondog.tnic>
- <4DB47211.90901@dynato-kyma.net>
- <EE335F95F28A664DB4A21289D2AA053BD1807651@SAUSEXMBP01.amd.com>
- <4DBB04C1.30003@gmail.com>
+	id S1760860Ab1D2S54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:57:56 -0400
+Received: from kroah.org ([198.145.64.141]:50139 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090Ab1D2S5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:57:54 -0400
+Date: Fri, 29 Apr 2011 11:57:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/55] 2.6.38.5-stable review
+Message-ID: <20110429185706.GA12824@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DBB04C1.30003@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 02:34:41PM -0400, Jiri Slaby wrote:
-> On 04/24/2011 09:44 PM, Ostrovsky, Boris wrote:
-> > Borislav Petkov wrote, on 04/24/11 20:20:
-> >> On Sun, Apr 24, 2011 at 10:06:36AM +0200, Jörg-Volker Peetz wrote:
-> >>> With 2.6.38.4 the clock slows down and the affected laptop sometimes, e.g. for
-> >>> the output of "ps axuw" to appear, needs an input from the keyboard or the
-> >>> touchpad. Please find attached the kernel config file and the output of dmesg.
-> >>>
-> >>> Commenting out the the lines
-> >>>
-> >>>      if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-> >>>              set_cpu_cap(c, X86_FEATURE_ARAT);
-> >>>
-> >>> in arch/x86/kernel/cpu/amd.c makes this laptop work as before with kernel
-> >>> 2.6.38.3. I think these lines came with commit
-> >>> d7b7f0c401303dd7eafcff11752fe74d3b75c766.
-> 
-> > It's an old family fh processor (CPUID 00020F42) that
-> cpu_has_amd_erratum(amd_erratum_400) apparently hasn't picked up. Since
-> all fh processors are affected by this erratum I'll replace "c->x86 >=
-> 0xf" with "c->x86 > 0xf" (and probably fix erratum formula anyway).
-> 
-> Hi, what's the status of this please?
-> 
-> I don't see the fix neither in the -next tree.
+This is the start of the stable review cycle for the 2.6.38.5 release.
+There are 55 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-Boris O will be coming up with a patch soon. We wanted to clarify the
-details first.
+Responses should be made by May 2, 2011, 15:00:00 UTC.
+Anything received after that time might be too late.
 
-Thanks.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.38.5-rc1.gz
+and the diffstat can be found below.
 
--- 
-Regards/Gruss,
-Boris.
+thanks,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+greg k-h
+
+ Makefile                                    |    2 +-
+ arch/m68k/mm/motorola.c                     |    2 +
+ arch/parisc/mm/init.c                       |    4 +-
+ arch/s390/kvm/sie64a.S                      |    4 +-
+ arch/s390/mm/fault.c                        |    4 +-
+ arch/um/sys-i386/Makefile                   |    2 +-
+ arch/x86/include/asm/gart.h                 |    4 +-
+ arch/x86/kernel/aperture_64.c               |    2 +-
+ arch/x86/kernel/pci-gart_64.c               |    9 +++-
+ block/blk-sysfs.c                           |    4 +-
+ drivers/acpi/battery.c                      |   22 +++++++++
+ drivers/acpi/scan.c                         |    4 ++
+ drivers/ata/ahci.c                          |    2 +-
+ drivers/ata/libahci.c                       |   17 ++++++-
+ drivers/ata/libata-core.c                   |    4 +-
+ drivers/ata/libata-eh.c                     |    6 ++-
+ drivers/char/agp/generic.c                  |   19 ++++++--
+ drivers/char/virtio_console.c               |   11 ----
+ drivers/gpu/drm/Kconfig                     |    1 +
+ drivers/gpu/drm/i915/intel_display.c        |   68 ++++++++++++++-------------
+ drivers/gpu/drm/i915/intel_tv.c             |    2 +
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    4 +-
+ drivers/gpu/drm/radeon/atom.c               |    6 +-
+ drivers/gpu/drm/radeon/atombios_crtc.c      |    6 +--
+ drivers/input/xen-kbdfront.c                |   12 ++++-
+ drivers/media/dvb/b2c2/flexcop-pci.c        |    2 +-
+ drivers/net/netxen/netxen_nic.h             |    4 +-
+ drivers/net/netxen/netxen_nic_main.c        |   17 +++++++
+ drivers/net/qlcnic/qlcnic.h                 |    1 +
+ drivers/net/qlcnic/qlcnic_main.c            |   14 ++++++
+ drivers/net/wireless/ath/ath9k/ar9003_mac.c |    8 ++--
+ drivers/net/wireless/ath/ath9k/hw.c         |    9 ----
+ drivers/net/wireless/ath/ath9k/mac.c        |   39 +++++++++++++---
+ drivers/net/wireless/ath/ath9k/mac.h        |    2 +-
+ drivers/net/wireless/ath/ath9k/recv.c       |    6 +-
+ drivers/net/wireless/ath/regd_common.h      |    1 +
+ drivers/net/wireless/iwlwifi/iwl-3945-hw.h  |    2 -
+ drivers/net/wireless/iwlwifi/iwl-3945.c     |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-4965.c     |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |    5 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |    6 --
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   22 +++++++--
+ drivers/net/wireless/iwlwifi/iwl-eeprom.c   |    7 ---
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |   11 +---
+ drivers/net/wireless/p54/txrx.c             |    2 +-
+ drivers/pci/intel-iommu.c                   |   17 ++++++-
+ drivers/platform/x86/ideapad-laptop.c       |    2 +
+ drivers/tty/n_gsm.c                         |    8 ++-
+ drivers/tty/serial/imx.c                    |    3 +-
+ drivers/virtio/virtio_ring.c                |    1 +
+ fs/file.c                                   |   18 ++++---
+ fs/nfs/nfs4state.c                          |    4 +-
+ fs/nfs/super.c                              |    9 ++++
+ fs/nfsd/nfs4state.c                         |    3 +-
+ fs/ubifs/recovery.c                         |   26 ++++++++++
+ fs/ubifs/super.c                            |   18 ++++++-
+ include/linux/huge_mm.h                     |    2 +-
+ include/linux/libata.h                      |    1 +
+ include/linux/mm.h                          |    3 +-
+ init/Kconfig                                |    1 +
+ mm/huge_memory.c                            |   43 +++++++++-------
+ mm/memory.c                                 |    2 +-
+ mm/oom_kill.c                               |    9 ++-
+ scripts/kconfig/conf.c                      |    2 +-
+ sound/pci/hda/patch_realtek.c               |   25 +++++++++-
+ sound/soc/codecs/jz4740.c                   |    2 -
+ sound/soc/codecs/wm_hubs.c                  |    8 ++--
+ 67 files changed, 400 insertions(+), 190 deletions(-)
