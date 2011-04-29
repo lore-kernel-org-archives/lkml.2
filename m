@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab1D2ICo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 04:02:44 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37754 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754537Ab1D2ICl (ORCPT
+	id S1755276Ab1D2INO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 04:13:14 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40752 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab1D2INK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 04:02:41 -0400
-Date: Fri, 29 Apr 2011 09:02:36 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: [PATCH] mm: Delete non-atomic mm counter implementation
-Message-ID: <20110429090236.6f2d8e61@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110428090857.24de6532.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1303914965-868-1-git-send-email-matt@console-pimps.org>
-	<20110428090857.24de6532.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Apr 2011 04:13:10 -0400
+Date: Fri, 29 Apr 2011 09:12:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        shiraz.hashim@st.com,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 5/5] driver core: let dev_set_drvdata return int
+	instead of void as it can fail
+Message-ID: <20110429081257.GW17290@n2100.arm.linux.org.uk>
+References: <20110420074248.GS31131@pengutronix.de> <1303285486-28598-1-git-send-email-u.kleine-koenig@pengutronix.de> <1303285486-28598-5-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1303285486-28598-5-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Apr 2011 09:08:57 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
- 
-> now mm_counters are update in per-thread and removing non-atomic
-> will not have big impact in performance, I hope. 
+On Wed, Apr 20, 2011 at 09:44:46AM +0200, Uwe Kleine-König wrote:
+> Before commit
 > 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
+> 
+> calling dev_set_drvdata with dev=NULL was an unchecked error. After some
+> discussion about what to return in this case removing the check (and so
+> producing a null pointer exception) seems fine.
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  drivers/base/dd.c      |    7 +++----
+>  include/linux/device.h |    2 +-
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index da57ee9..f9d69d7 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -408,17 +408,16 @@ void *dev_get_drvdata(const struct device *dev)
+>  }
+>  EXPORT_SYMBOL(dev_get_drvdata);
+>  
+> -void dev_set_drvdata(struct device *dev, void *data)
+> +int dev_set_drvdata(struct device *dev, void *data)
+>  {
+>  	int error;
+>  
+> -	if (!dev)
+> -		return;
+>  	if (!dev->p) {
+>  		error = device_private_init(dev);
+>  		if (error)
+> -			return;
+> +			return error;
+>  	}
+>  	dev->p->driver_data = data;
+> +	return 0;
 
-Thanks!
+Who is going to modify all the thousands of drivers we have in the kernel
+tree to check this return value?
 
-Note that this patch doesn't enable per-thread counters for the
-non-USE_SPLIT_PTLOCKS case; SPLIT_RSS_COUNTING is still only enabled if
-USE_SPLIT_PTLOCKS is on.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+If the answer is no one, its pointless returning an error value in the
+first place (which I think is what the original author already thought
+about.)
