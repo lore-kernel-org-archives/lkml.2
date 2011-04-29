@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1D2FvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 01:51:15 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:24428 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751491Ab1D2FvO (ORCPT
+	id S1752882Ab1D2GIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 02:08:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3233 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1D2GIH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 01:51:14 -0400
-Message-ID: <4DBA5194.7080609@vmware.com>
-Date: Fri, 29 Apr 2011 07:50:12 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+	Fri, 29 Apr 2011 02:08:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 28 Apr 2011 23:08:06 -0700
+From: Wei Ni <wni@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>
+Date: Fri, 29 Apr 2011 14:08:02 +0800
+Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Topic: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Index: Acv/U9peluMUOVgAQtuc8GIYvXxc8QFcZJpQAAyVSsAATfGVkA==
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4E2@HKMAIL01.nvidia.com>
+References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
+ <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF0497F1AAC4@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF0497F1AAC4@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Jerome Glisse <j.glisse@gmail.com>, linaro-mm-sig@lists.linaro.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-References: <201104212129.17013.arnd@arndb.de>	<201104281428.56780.arnd@arndb.de>	<20110428131531.GK17290@n2100.arm.linux.org.uk>	<201104281629.52863.arnd@arndb.de>	<20110428143440.GP17290@n2100.arm.linux.org.uk>	<BANLkTinhm7ar1mf1D-dSMiLtw5hRNY36RA@mail.gmail.com> <1304036962.2513.202.camel@pasglop>
-In-Reply-To: <1304036962.2513.202.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2011 02:29 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-04-28 at 15:37 -0400, Jerome Glisse wrote:
->    
->> Jesse also pointed out space exhaustion inside the iommu and i believe
->> this should also be considered. This is why i believe the dma_* api is
->> not well suited. In DRM/TTM we use  pci_dma_mapping* and we also play
->> with with page set_page*_uc|wc|wb.
->>      
-> Which are yet another set of completely x86-centric APIs that have not
-> been thought in the context of other architectures and are probably
-> mostly unimplementables on half of them :-)
->
-> Cheers,
-> Ben.
->
->
->    
+Hi, Stephen
+I think your patches address the different issues with my patches.
+My patches are used for retry transfer and new slave controller.
 
-I've been doing some thinking over the years on how we could extend that 
-functionality to other architectures. The reason we need those is 
-because some x86 processors (early AMDs and, I think VIA c3) dislike 
-multiple mappings of the same pages with conflicting caching attributes.
-
-What we really want to be able to do is to unmap pages from the linear 
-kernel map, to avoid having to transition the linear kernel map every 
-time we change other mappings.
-
-The reason we need to do this in the first place is that AGP and modern 
-GPUs has a fast mode where snooping is turned off.
-
-However, we should be able to construct a completely generic api around 
-these operations, and for architectures that don't support them we need 
-to determine
-
-a)  Whether we want to support them anyway (IIRC the problem with PPC is 
-that the linear kernel map has huge tlb entries that are very 
-inefficient to break up?)
-
-b)  Whether they are needed at all on the particular architecture. The 
-Intel x86 spec is, (according to AMD), supposed to forbid conflicting 
-caching attributes, but the Intel graphics guys use them for GEM. PPC 
-appears not to need it.
-
-c)  If neither of the above applies, we might be able to either use 
-explicit cache flushes (which will require a TTM cache sync API), or 
-require the device to use snooping mode. The architecture may also 
-perhaps have a pool of write-combined pages that we can use. This should 
-be indicated by defines in the api header.
-
-/Thomas
+Thanks
+Wei.
 
 
+-----Original Message-----
+From: Stephen Warren 
+Sent: Thursday, April 28, 2011 12:29 AM
+To: Wei Ni
+Cc: khali@linux-fr.org; ben-linux@fluff.org; lucas.demarchi@profusion.mobi; ccross@android.com; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; Olof Johansson (olof@lixom.net)
+Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
 
+Wei Ni wrote at Wednesday, April 27, 2011 4:26 AM:
+> Hi, all
+> Could anyone review these changes?
 
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
->    
+Wei,
+
+It looks like some of the patches I recently posted address the same
+issues as the patches you had already posted. Sorry for the potential
+conflicts.
+
+Can you please take a look at the patches I posted and comment on which
+of those are still relevant given your patches. Even for the cases where
+we both posted patches to address the same issue (e.g. use new slave
+mode), there are differences in the patches. I simply took the changes
+from the chromeos-2.6.37 kernel and cherry-picked them into the mainline
+kernel. Are the changes you posted re-written to address issues that
+weren't solved in the ChromeOS kernel?
+
+Thanks for any feedback on this.
+
+> 
+> Thanks
+> Wei.
+> 
+> -----Original Message-----
+> From: Wei Ni
+> Sent: Wednesday, April 20, 2011 8:09 PM
+> To: khali@linux-fr.org; ben-linux@fluff.org;
+> lucas.demarchi@profusion.mobi; ccross@android.com; linux-
+> i2c@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: Wei Ni
+> Subject: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+> 
+> From: Wei Ni <wni@nvidia.com>
+> 
+> *** BLURB HERE ***
+> 
+> Wei Ni (2):
+>   i2c: tegra: Retry transfer when unexpected/no_ack status is detected
+>   i2c: tegra: use new i2c slave controller
+> 
+>  drivers/i2c/busses/i2c-tegra.c |   57
+> +++++++++++++++++++++++++++++++++++++--
+>  include/linux/i2c-tegra.h      |    3 ++
+>  2 files changed, 57 insertions(+), 3 deletions(-)
+
+-- 
+nvpublic
 
