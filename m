@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab1D2RR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 13:17:27 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60891 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759983Ab1D2RR0 convert rfc822-to-8bit (ORCPT
+	id S932508Ab1D2RTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 13:19:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34722 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894Ab1D2RTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 13:17:26 -0400
+	Fri, 29 Apr 2011 13:19:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Vs5NmJ2dMYQgsxVX1gp1oBJ8gyQvTFtdqVfYYWZ4nQgo7fzg/khiyXV/PMkzsb6AHu
-         sOW8atYEVaqj++TwyHX2YdQ6ZSd9M+dhS1sZ+hn4VnVfDe83Ox5TQV9J8zu2OhdIZ5pZ
-         gtrsaBSCP317TNOSEvGHsj636zor28WGnaEOw=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
-Date: Fri, 29 Apr 2011 20:17:24 +0300
-X-Google-Sender-Auth: BNp2_2Tibtv6OcR_eoOniKhLFEc
-Message-ID: <BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com>
-Subject: Re: re-enable Nehalem raw Offcore-Events support
-From: Pekka Enberg <penberg@kernel.org>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: torvalds@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=CTZ85OL12at3Xhy1LgV5kS5lIAiCqxLscSbI7agsRqU8UM3weGd0BkCKN4Y57Q+57l
+         v+4RGCdKFuwvvOWoMgW4nArP7AAjvw3lAlT6GwvXMJai5DXwvSG940MoIANLM6SSE3Ss
+         Pn1U7FELutLBjwpIDT5t6SsDbwW7nYNn7jn0M=
+Subject: Re: linux-next: Tree for April 29 (bpf_jit)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>, David Miller <davem@davemloft.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110429092632.26ff1e53.randy.dunlap@oracle.com>
+References: <20110429131940.4f4c938f.sfr@canb.auug.org.au>
+	 <20110429092632.26ff1e53.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Apr 2011 19:19:18 +0200
+Message-ID: <1304097558.2686.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vince,
+Le vendredi 29 avril 2011 Ã  09:26 -0700, Randy Dunlap a Ã©crit :
+> On Fri, 29 Apr 2011 13:19:40 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20110428:
+> 
+> 
+> when CONFIG_MODULES is not enabled:
+> 
+> bpf_jit_comp.c:(.text+0x43cc2): undefined reference to `module_free'
+> (.text+0x4521a): undefined reference to `module_alloc'
+> (.text+0x453af): undefined reference to `module_free'
+> 
+> 
 
-On Fri, Apr 29, 2011 at 6:04 PM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> Hello Linus
->
-> can you revert the commit b52c55c6a25e4515b5e075a989ff346fc251ed09
->
-> This removed functionality from perf_events that allowed raw event access
-> for OFFCORE_EVENTS type events on Nehalem and Westmere cpus.
->
-> To be fair, this is not technically a regression as the feature was only
-> (finally!) added in the 2.6.39 merge window.  However this is a useful
-> feature and many tools (including the PAPI performance counter library
-> that I work on) had added support for it in anticipation of the 2.6.39
-> release.
->
-> Ingo's reasons for removing the feature seem to boil down to
->  1.  "perf" doesn't use the functionality, and any other userspace
->      program that uses the perf_events syscalls don't matter
->  2.  Users are too stupid to use the raw functionality properly;
->      we should only allow a kernel-developer-approved small subset
->      of the features provided by the CPU as described in the intel
->      developers manuals.
->
-> #2 seems like a gross misinterpretation of the whole "Linux gives you
-> enough rope to shoot yourself in the foot" policy from days passed, but
-> maybe things have moved on.
+Oh well, I guess we can add one 'depends on MODULES' like we do for
+KPROBES (it also uses module_alloc())
 
-That's a gross misrepresentation of what Ingo has been saying on LKML.
-Really, learn to work with relevant maintainers before you ask Linus
-to revert something.
+Not sure many people build a !CONFIG_MODULES kernel these days...
 
-                                Pekka
+Thanks Randy !
+
+[PATCH net-next-2.6] bpf: depends on MODULES
+
+module_alloc() and module_free() are available only if CONFIG_MODULES=y
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/Kconfig |    1 +
+ 1 files changed, 1 insertion(+)
+
+diff --git a/net/Kconfig b/net/Kconfig
+index 745fb02..878151c 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -238,6 +238,7 @@ config HAVE_BPF_JIT
+ config BPF_JIT
+ 	bool "enable BPF Just In Time compiler"
+ 	depends on HAVE_BPF_JIT
++	depends on MODULES
+ 	---help---
+ 	  Berkeley Packet Filter filtering capabilities are normally handled
+ 	  by an interpreter. This option allows kernel to generate a native
+
+
