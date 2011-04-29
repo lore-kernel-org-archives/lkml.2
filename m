@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760815Ab1D2SCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:02:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760789Ab1D2SCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:02:44 -0400
-Date: Fri, 29 Apr 2011 21:02:39 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
-Message-ID: <20110429180239.GA32566@redhat.com>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-2-git-send-email-gleb@redhat.com>
- <20110429083618.GL2191@linux.vnet.ibm.com>
- <20110429083904.GA12987@linux.vnet.ibm.com>
+	id S1760800Ab1D2SKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:10:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49159 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760760Ab1D2SKL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:10:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eGpeTk2zLyyRndKUx20SrUrFOBqlE3N2KbhnxYb0YsMVH+ZaRNd7fxELaeEdm2Oxws
+         AXSNvKMXolELO8yrkBXRzu2Qe/e9IGLn1FEg1veLpeYL3/R6Ag+7pQZJbTrly2YApz8H
+         IXJ+g3i9CRX8Jl8CGyz+N5JjWOW7viuglufHc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429083904.GA12987@linux.vnet.ibm.com>
+In-Reply-To: <alpine.LFD.2.02.1104282353140.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home>
+ <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+ <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
+ <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos>
+ <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+ <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
+ <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos>
+ <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos>
+ <20110428224444.43107883@neptune.home> <alpine.LFD.2.02.1104282251080.3005@ionos>
+ <1304027480.2971.121.camel@work-vm> <alpine.LFD.2.02.1104282353140.3005@ionos>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 29 Apr 2011 14:09:50 -0400
+Message-ID: <BANLkTinr9J5OQoia-+yH3_hjU6AciAxu9A@mail.gmail.com>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>,
+        =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 01:39:04AM -0700, Paul E. McKenney wrote:
-> On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> > On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
-> > 
-> > Hmmm....  This is interesting.  KVM being a module, we either expand
-> > TINY_RCU's size a bit by making rcu_note_context_switch() be a real
-> > function in rcutiny.c and adding an export, or we expand it by adding
-> > two exports.
-> > 
-> > I would like to solve this without making TINY_RCU larger, and preferably
-> > by making it smaller.  Any ideas come to mind?  (Other than making
-> > KVM depend on CONFIG_SMP, which sounds too much like throwing out the
-> > baby with the bathwater.)
-> 
-> Nothing quite like hitting "send" to make an idea show up...
-> 
-> In a UP kernel, does it actually help anything to have KVM
-> tell RCU about executing in a guest?  If not, could we have a
-> rcu_note_context_switch_kvm() that is a static inline empty function in
-> TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
-> 
-That will work, but does making rcu_note_context_switch() out of line
-actually increase kernel size? The function is called in two places
-currently, so by making it out of line we make two calling site smaller.
-Will measure it next week.
+On Thu, Apr 28, 2011 at 18:02, Thomas Gleixner wrote:
+> -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
+> +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
+> +       [CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
+> +       [CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
+> +       [CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
+> +};
 
-> 							Thanx, Paul
-> 
-> > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > > ---
-> > >  include/linux/rcutiny.h |    6 +-----
-> > >  kernel/rcutiny.c        |    7 +++++++
-> > >  kernel/rcutree.c        |    1 +
-> > >  3 files changed, 9 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-> > > index 30ebd7c..8e5f7cf 100644
-> > > --- a/include/linux/rcutiny.h
-> > > +++ b/include/linux/rcutiny.h
-> > > @@ -93,11 +93,7 @@ static inline int rcu_needs_cpu(int cpu)
-> > > 
-> > >  #endif /* #else #ifdef CONFIG_TINY_RCU */
-> > > 
-> > > -static inline void rcu_note_context_switch(int cpu)
-> > > -{
-> > > -	rcu_sched_qs(cpu);
-> > > -	rcu_preempt_note_context_switch();
-> > > -}
-> > > +extern void rcu_note_context_switch(int cpu);
-> > > 
-> > >  /*
-> > >   * Return the number of grace periods.
-> > > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> > > index 0c343b9..3d715a4 100644
-> > > --- a/kernel/rcutiny.c
-> > > +++ b/kernel/rcutiny.c
-> > > @@ -78,6 +78,13 @@ void rcu_exit_nohz(void)
-> > > 
-> > >  #endif /* #ifdef CONFIG_NO_HZ */
-> > > 
-> > > +void rcu_note_context_switch(int cpu)
-> > > +{
-> > > +	rcu_sched_qs(cpu);
-> > > +	rcu_preempt_note_context_switch();
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > > +
-> > >  /*
-> > >   * Helper function for rcu_qsctr_inc() and rcu_bh_qsctr_inc().
-> > >   * Also disable irqs to avoid confusion due to interrupt handlers
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index dd4aea8..0837d63 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -124,6 +124,7 @@ void rcu_note_context_switch(int cpu)
-> > >  	rcu_sched_qs(cpu);
-> > >  	rcu_preempt_note_context_switch(cpu);
-> > >  }
-> > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > > 
-> > >  #ifdef CONFIG_NO_HZ
-> > >  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
-> > > -- 
-> > > 1.7.2.3
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-
---
-			Gleb.
+this would let us constify the array too
+-mike
