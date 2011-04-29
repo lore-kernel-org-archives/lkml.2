@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab1D2Agu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 20:36:50 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48555 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab1D2Agt (ORCPT
+	id S1758280Ab1D2AjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 20:39:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37243 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab1D2Ai6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 20:36:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=f6O7A5g0rdMSsn6SW1sAGicJUfYnvPFnhEDYsY1n+uWjvSWoYoFt2LJeCH5V1tEs3L
-         Pzsg85dcW4cNOCNX/alyxVm5H/N8LryOpJpCXSLfJuTZCtmehqDlZpPq7j5eJiCFWcM2
-         StPRpZlxz58s1rq5QnuwoWMRpEWbxUEcBIoQI=
+	Thu, 28 Apr 2011 20:38:58 -0400
+Date: Fri, 29 Apr 2011 02:38:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 2/2] x86: Change trap definitions to enumerated values
+In-Reply-To: <1303513438-26519-2-git-send-email-vnagarnaik@google.com>
+Message-ID: <alpine.LFD.2.02.1104290233490.3005@ionos>
+References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com> <1303513438-26519-2-git-send-email-vnagarnaik@google.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20110428201527.GA3738@spotteswoode.de.eu.org>
-References: <4db8436a.NDzkd3ql2wJdwy2L%Larry.Finger@lwfinger.net>
-	<20110428150819.GA3713@spotteswoode.de.eu.org>
-	<4DB9884F.10409@lwfinger.net>
-	<BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
-	<20110428201527.GA3738@spotteswoode.de.eu.org>
-Date: Fri, 29 Apr 2011 08:36:48 +0800
-Message-ID: <BANLkTimi4cUzS5-r_ofzLnjbVtNNjwD69Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: clemens fischer <ino-news@spotteswoode.dnsalias.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, wlanfae@realtek.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 4:15 AM, clemens fischer
-<ino-news@spotteswoode.dnsalias.org> wrote:
->> Jeff Chua:
->
->> iwconfig doesn't work by itself to set adhoc mode (I haven't figure
->> why either). You can get into "adhoc mode", but you won't see
->> ESSID:XXXX.
->>
->> Can you please try "wpa_supplicant" instead?
->
-> Well, I never figured out how to configure adhoc-mode using
-> "wpa_supplicant", could you please send a minimal working config entry?
+On Fri, 22 Apr 2011, Vaibhav Nagarnaik wrote:
 
-Clemens,
+> From: Aditya Kali <adityakali@google.com>
+> 
+> The traps are referred to by their numbers and it can be difficult to
+> understand them while reading the code without context. This patch adds
+> enumeration of the trap numbers and replaced the numbers to the correct
+> enum for x86.
 
-Try this. This is my working config.
+I really like that patch, but it should have been 1/2 as it has a
+value independent of the trap trace stuff.
 
+And if you had done that, then the trap trace patch could have used
+those symbols instead of the numbers as well.
 
-# /etc/wpa1.conf
-ap_scan=2       # 0 does not work. 1 is ok. 2 is fast.
+Now that's the 2/2 patch and leaves the (not so) shiny new trace
+points with those weird numbers. :(
 
-network={
-        auth_alg=SHARED
-        mode=1          # ad-hoc
-        group=WEP104
-        ssid="yourSSID"
-        wep_key0=1234567890ABCDEF123456678
-        wep_tx_keyidx=0
-        key_mgmt=NONE
-        priority=0
-        scan_ssid=0
-        frequency=2412
-}
+Thanks,
 
-
-# modprobe r8712u
-# iwconfig     <- you should be able to see 'wlan0' or 'wlan1' if
-you've more than 1 wireless
-# ifconfig wlan0 up
-# wpa_supplicant -i wlan0 -c /etc/wpa1.conf
-
-
-That should work.
-
-Jeff
+	tglx
