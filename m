@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760479Ab1D2R3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 13:29:32 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2430 "EHLO mms2.broadcom.com"
+	id S1760423Ab1D2Rca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 13:32:30 -0400
+Received: from trent.utfs.org ([194.246.123.103]:56873 "EHLO trent.utfs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759995Ab1D2R3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 13:29:31 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Date: Fri, 29 Apr 2011 10:29:16 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "openwireless@eff.org" <openwireless@eff.org>
-Subject: Re: EFF's Open Wireless Movement - solutions for Linux 802.11
- APs
-Message-ID: <20110429172916.GA17775@broadcom.com>
-References: <BANLkTinw9KJ5Awow5W6ASZ6ZWS6Hu7n7LA@mail.gmail.com>
+	id S1757548Ab1D2Rc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 13:32:29 -0400
+Date: Fri, 29 Apr 2011 10:32:16 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110428233751.GR12436@dastard>
+Message-ID: <alpine.DEB.2.01.1104291029500.18728@trent.utfs.org>
+References: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org> <20110424234655.GC12436@dastard> <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard>
+ <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard> <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org> <20110428233751.GR12436@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinw9KJ5Awow5W6ASZ6ZWS6Hu7n7LA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 61A429BC3CK25830180-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 10:05:08AM -0700, Luis R. Rodriguez wrote:
-> The EFF announced an effort and desire to promote open wireless
-> networks instead of closed encrypted networks to help users with
-> connectivity. They have come up with some alternative proposals and
-> challenges which they are asking for review / help on. As far as Linux
-> is concerned I've started a wiki [2] to cover what we can do for
-> 802.11 Linux based APs. Feel free to extend the wiki as you see fit
-> and / or subscribe for changes.
-> 
-> [1] https://www.eff.org/deeplinks/2011/04/open-wireless-movement
-> [2] http://wireless.kernel.org/en/developers/OpenWirelessMovement
+On Fri, 29 Apr 2011 at 09:37, Dave Chinner wrote:
+> Did you read the email that pointed to CONFIG_TINY_RCU as the
+> ptotential source of the problem? Can you change to CONFIG_TREE_RCU
+> and see if the problem goes away?
 
+For that I had to select SMP on this UP-PowerPC G4 machine. But compiling 
+-rc5 (as the bug is strill present in -rc5) fails with:
 
-The Wi-Fi Alliance currently has a Hotspot program in development:
+/usr/local/src/linux-2.6-git/arch/powerpc/kernel/crash.c: In function 
+‘default_machine_crash_shutdown’:
+/usr/local/src/linux-2.6-git/arch/powerpc/kernel/crash.c:349: error: 
+implicit declaration of function ‘crash_kexec_wait_realmode’
+make[2]: *** [arch/powerpc/kernel/crash.o] Error 1
+make[1]: *** [arch/powerpc/kernel] Error 2
+make: *** [sub-make] Error 2
 
-	http://www.wi-fi.org/news_articles.php?news_id=1048
+Maybe I'll just disable kexec and see if TREE_RCU helps.
 
-While it's mainly targeted at service providers, it seem likely that much of
-the work could be leveraged if you consider the "service provider" in this case
-to be a loosly-coordinated group of people willing to make their APs available
-for public use.
+Meanwhile, I gave up on the git bisect, as I can hardly boot inbetween 
+commits: http://nerdbynature.de/bits/2.6.39-rc4/oom/git-bisect-log.txt
 
-- Henry
+Thanks,
+Christian.
+-- 
+BOFH excuse #446:
 
-
+Mailer-daemon is busy burning your message in hell.
