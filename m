@@ -1,97 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780Ab1D2UPH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 16:15:07 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:38065 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1D2UPE convert rfc822-to-8bit (ORCPT
+	id S933767Ab1D2UPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:15:50 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:6601 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab1D2UPs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 16:15:04 -0400
-Date: Fri, 29 Apr 2011 22:14:50 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+	Fri, 29 Apr 2011 16:15:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eMHq1o1JqvMY0oJatYCH3nm1TvwbuT1LxEtm5lrLQ0YGzMguY/iJGFvvF2VBQXkR3u
+         ATONHMrJgsxO3MC+uLWw==
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1104290158320.3005@ionos>
+References: <1303512981-26234-1-git-send-email-vnagarnaik@google.com> <alpine.LFD.2.02.1104290158320.3005@ionos>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Fri, 29 Apr 2011 13:15:04 -0700
+Message-ID: <BANLkTimJ-53iMWHhRS_GjJCdOec3csYb5Q@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add special x86 irq entry/exit tracepoints
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>, sedat.dilek@gmail.com,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-Message-ID: <20110429221450.5af5d22b@neptune.home>
-In-Reply-To: <alpine.LFD.2.02.1104292209220.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com>
-	<20110426183859.6ff6279b@neptune.home>
-	<20110426190918.01660ccf@neptune.home>
-	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-	<alpine.LFD.2.02.1104262314110.3323@ionos>
-	<20110427081501.5ba28155@pluto.restena.lu>
-	<20110427204139.1b0ea23b@neptune.home>
-	<alpine.LFD.2.02.1104272351290.3323@ionos>
-	<alpine.LFD.2.02.1104281051090.19095@ionos>
-	<BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
-	<20110428102609.GJ2135@linux.vnet.ibm.com>
-	<1303997401.7819.5.camel@marge.simson.net>
-	<BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
-	<alpine.LFD.2.02.1104282044120.3005@ionos>
-	<20110428222301.0b745a0a@neptune.home>
-	<alpine.LFD.2.02.1104282227340.3005@ionos>
-	<20110428224444.43107883@neptune.home>
-	<alpine.LFD.2.02.1104282251080.3005@ionos>
-	<1304027480.2971.121.camel@work-vm>
-	<alpine.LFD.2.02.1104282353140.3005@ionos>
-	<20110429213100.75f771eb@neptune.home>
-	<alpine.LFD.2.02.1104292209220.3005@ionos>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 April 2011 Thomas Gleixner wrote:
-> On Fri, 29 Apr 2011, Bruno PrÃ©mont wrote:
-> > On Fri, 29 April 2011 Thomas Gleixner wrote:
-> > > On Thu, 28 Apr 2011, john stultz wrote:
-> > > > On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
-> > > > > /me suspects hrtimer changes to be the real culprit.
-> > > > 
-> > > > I'm not seeing anything on right off, but it does smell like
-> > > > e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
-> > > > would crop up.
-> > > > 
-> > > > Bruno, could you try checking out e06383db9ec, confirming it still
-> > > > occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
-> > > > 
-> > > > I'll keep digging in the meantime.
-> > > 
-> > > I found the bug already. The problem is that sched_init() calls
-> > > init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
-> > > hrtimers_init() is called.
-> > > 
-> > > That was unnoticed so far as the CLOCK id to hrtimer base conversion
-> > > was hardcoded. Now we use a table which is set up at hrtimers_init(),
-> > > so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
-> > > in the bss.
-> > > 
-> > > The patch below fixes this, by providing the table statically rather
-> > > than runtime initialized. Though that whole ordering wants to be
-> > > revisited.
-> > 
-> > Works here as well (applied alone), /proc/$(pidof rcu_kthread)/sched shows
-> > total runtime continuing to increase beyond 950 and slubs continue being
-> > released!
-> 
-> Does the CPU time show up in top/ps as well now ?
+On Thu, Apr 28, 2011 at 5:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 22 Apr 2011, Vaibhav Nagarnaik wrote:
+>>  #include <asm/perf_event.h>
+>>  #include <asm/x86_init.h>
+>> @@ -857,7 +858,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+>>        */
+>>       exit_idle();
+>>       irq_enter();
+>> +     trace_special_irq_entry(LOCAL_TIMER_VECTOR);
+>
+> Gah. trace_special_irq is the worst name you could come up with. It's
+> tracing a vector which is nothing special and nothing x86 specific.
+>
+I will change it to trace_irq_vector_{entry|exit}.
 
-Yes, it does (currently at 0:09 in ps for 9336.075 in
-/proc/$(pidof rcu_kthread)/sched)
+>>  #include <asm/vsyscall.h>
+>>  #include <asm/x86_init.h>
+>> @@ -26,6 +27,8 @@
+>>  volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
+>>  #endif
+>>
+>> +static struct irqaction *irq0_action;
+>> +
+>
+> Ouch! You need an extra pointer for that ? Moving the stupid irq0
+> struct up a few lines would do the trick as well, right ?
+>
+Sure. I will update it.
 
-Thanks,
-Bruno
+>> --- a/include/trace/events/irq.h
+>> +++ b/include/trace/events/irq.h
+>> @@ -139,6 +139,74 @@ DEFINE_EVENT(softirq, softirq_raise,
+>>       TP_ARGS(vec_nr)
+>>  );
+>>
+>> +#ifdef CONFIG_X86
+>> +#include <asm/irq_vectors.h>
+>> +#define special_irq_name(sirq) { sirq, #sirq }
+>> +#define show_special_irq_name(val)                                   \
+>> +     __print_symbolic(val,                                           \
+>> +                      special_irq_name(NMI_VECTOR),                  \
+>> +                      special_irq_name(LOCAL_TIMER_VECTOR),          \
+>> +                      special_irq_name(ERROR_APIC_VECTOR),           \
+>> +                      special_irq_name(RESCHEDULE_VECTOR),           \
+>> +                      special_irq_name(CALL_FUNCTION_VECTOR),        \
+>> +                      special_irq_name(CALL_FUNCTION_SINGLE_VECTOR), \
+>> +                      special_irq_name(THERMAL_APIC_VECTOR),         \
+>> +                      special_irq_name(THRESHOLD_APIC_VECTOR),       \
+>> +                      special_irq_name(REBOOT_VECTOR),               \
+>> +                      special_irq_name(SPURIOUS_APIC_VECTOR),        \
+>> +                      special_irq_name(IRQ_WORK_VECTOR),             \
+>> +                      special_irq_name(X86_PLATFORM_IPI_VECTOR)      \
+>> +                     )
+>> +
+>> +#define IS_INVALIDATE_TLB_VECTOR(__irq) (\
+>> +             __irq >= INVALIDATE_TLB_VECTOR_START && \
+>> +             __irq <= INVALIDATE_TLB_VECTOR_END)
+>
+> No way, really.
+>
+> Interrupt vectors are not x86 specific and they do no need any
+> architecture specific handling at all.
+>
+> The symbolic printout is a nice to have extra, but it can be solved by
+> providing an arch specific lookup table which does not require any of
+> that #ifdef X86 mess. If the table does not exist, then you simply can
+> print the vector number and be done with it.
+>
+I have changed that and now just include the asm/irq_vectors.h so other
+architectures can provide the look up table definitions in their respective
+files.
+
+I have also updated the description to address the use case. We can know when
+the system is moving between kernel and user spaces. How much time is being
+spent for operations and how it affects the running processes.
+
+> Thanks,
+>
+>        tglx
+>
+
+
+Vaibhav Nagarnaik
