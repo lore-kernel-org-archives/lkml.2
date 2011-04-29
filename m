@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab1D2P24 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:28:56 -0400
+	id S1759289Ab1D2P3A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:29:00 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:46165 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759047Ab1D2P2y (ORCPT
+	with ESMTP id S1759202Ab1D2P24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:28:54 -0400
+	Fri, 29 Apr 2011 11:28:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=SN/myqzu8zxokak+gNgK7zoNNHee0bBbpueCOfXionlji86D4QODeS0Py5csO+KvXB
-         5BBbc+UK53sorM19Yhigr/1Y3NPlTp9mrqjqq6V2npdE3OHM6fc2X4JUPXk4RT7VbQt5
-         VH4LlV8a9Xjq8AYc9Wa93a745MvBDXcKSAxAQ=
+        b=RjE2ROcZIAPWxeDv5xo7oiXYOxopjyyiTeGen6UzVabK3C3DnpKR37g8gHWEQYuaHq
+         pgecXYwPLFo4+2uagHj54yQeFBVqZirFz7PhFLOFY5Lr7AXkLRKoBQ/rV3xfAXUnZCtS
+         fw1MrAW6fgDbP+38fmQ0DyKdslS3SBXX18lAI=
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, yinghai@kernel.org, rientjes@google.com,
         tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/25] x86-64, NUMA: Simplify hotadd memory handling
-Date: Fri, 29 Apr 2011 17:28:20 +0200
-Message-Id: <1304090924-8197-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/25] x86-64, NUMA: simplify nodedata allocation
+Date: Fri, 29 Apr 2011 17:28:22 +0200
+Message-Id: <1304090924-8197-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1304090924-8197-1-git-send-email-tj@kernel.org>
 References: <1304090924-8197-1-git-send-email-tj@kernel.org>
@@ -29,30 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only special handling NUMA needs to do for hotadd memory is
-determining the node for the hotadd memory given the address of it and
-there's nothing specific to specific config method used.
+With top-down memblock allocation, the allocation range limits in
+ealry_node_mem() can be simplified - try node-local first, then any
+node but in any case don't allocate below DMA limit.
 
-srat_64.c does somewhat elaborate error checking on
-ACPI_SRAT_MEM_HOT_PLUGGABLE regions, remembers them and implements
-memory_add_physaddr_to_nid() which determines the node for given
-hotadd address.
-
-This is almost completely redundant.  All the information is already
-available to the generic NUMA code which already performs all the
-sanity checking and merging.  All that's necessary is not using
-__initdata from numa_meminfo and providing a function which uses it to
-map address to node.
-
-Drop the specific implementation from srat_64.c and add generic
-memory_add_physaddr_to_nid() in numa_64.c, which is enabled if
-CONFIG_MEMORY_HOTPLUG is set.  Other than dropping the code, srat_64.c
-doesn't need any change as it already calls numa_add_memblk() for hot
-pluggable regions which is enough.
-
-While at it, change CONFIG_MEMORY_HOTPLUG_SPARSE in srat_64.c to
-CONFIG_MEMORY_HOTPLUG, for NUMA on x86-64, the two are always the
-same.
+Remove early_node_mem() and implement simplified allocation directly
+in setup_node_bootmem().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -61,185 +43,95 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/mm/init_64.c |    8 -----
- arch/x86/mm/numa_64.c |   22 +++++++++++++-
- arch/x86/mm/srat_64.c |   78 +------------------------------------------------
- 3 files changed, 22 insertions(+), 86 deletions(-)
+ arch/x86/mm/numa_64.c |   53 +++++++++++++++---------------------------------
+ 1 files changed, 17 insertions(+), 36 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 7942335..0404bb3 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -679,14 +679,6 @@ int arch_add_memory(int nid, u64 start, u64 size)
- }
- EXPORT_SYMBOL_GPL(arch_add_memory);
- 
--#if !defined(CONFIG_ACPI_NUMA) && defined(CONFIG_NUMA)
--int memory_add_physaddr_to_nid(u64 start)
--{
--	return 0;
--}
--EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
--#endif
--
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- static struct kcore_list kcore_vsyscall;
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 13f5b06..c4eecc2 100644
+index 5e0dfc5..59d8a1c 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -28,7 +28,12 @@ EXPORT_SYMBOL(node_data);
- 
- nodemask_t numa_nodes_parsed __initdata;
- 
--static struct numa_meminfo numa_meminfo __initdata;
-+static struct numa_meminfo numa_meminfo
-+#ifndef CONFIG_MEMORY_HOTPLUG
-+__initdata
-+#endif
-+;
-+
+@@ -37,38 +37,6 @@ __initdata
  static int numa_distance_cnt;
  static u8 *numa_distance;
  
-@@ -540,3 +545,18 @@ int __cpuinit numa_cpu_node(int cpu)
- 		return __apicid_to_node[apicid];
- 	return NUMA_NO_NODE;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+int memory_add_physaddr_to_nid(u64 start)
-+{
-+	struct numa_meminfo *mi = &numa_meminfo;
-+	int nid = mi->blk[0].nid;
-+	int i;
-+
-+	for (i = 0; i < mi->nr_blks; i++)
-+		if (mi->blk[i].start <= start && mi->blk[i].end > start)
-+			nid = mi->blk[i].nid;
-+	return nid;
-+}
-+EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
-+#endif
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 8e9d339..9994d2c 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -26,8 +26,6 @@
- 
- int acpi_numa __initdata;
- 
--static struct bootnode nodes_add[MAX_NUMNODES];
--
- static __init int setup_node(int pxm)
- {
- 	return acpi_map_pxm_to_node(pxm);
-@@ -37,7 +35,6 @@ static __init void bad_srat(void)
- {
- 	printk(KERN_ERR "SRAT: SRAT not used.\n");
- 	acpi_numa = -1;
--	memset(nodes_add, 0, sizeof(nodes_add));
- }
- 
- static __init inline int srat_disabled(void)
-@@ -131,67 +128,11 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 	       pxm, apic_id, node);
- }
- 
--#ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
-+#ifdef CONFIG_MEMORY_HOTPLUG
- static inline int save_add_info(void) {return 1;}
- #else
- static inline int save_add_info(void) {return 0;}
- #endif
--/*
-- * Update nodes_add[]
-- * This code supports one contiguous hot add area per node
-- */
--static void __init
--update_nodes_add(int node, unsigned long start, unsigned long end)
+-static void * __init early_node_mem(int nodeid, unsigned long start,
+-				    unsigned long end, unsigned long size,
+-				    unsigned long align)
 -{
--	unsigned long s_pfn = start >> PAGE_SHIFT;
--	unsigned long e_pfn = end >> PAGE_SHIFT;
--	int changed = 0;
--	struct bootnode *nd = &nodes_add[node];
+-	unsigned long mem;
 -
--	/* I had some trouble with strange memory hotadd regions breaking
--	   the boot. Be very strict here and reject anything unexpected.
--	   If you want working memory hotadd write correct SRATs.
+-	/*
+-	 * put it on high as possible
+-	 * something will go with NODE_DATA
+-	 */
+-	if (start < (MAX_DMA_PFN<<PAGE_SHIFT))
+-		start = MAX_DMA_PFN<<PAGE_SHIFT;
+-	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
+-	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+-		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+-	mem = memblock_x86_find_in_range_node(nodeid, start, end, size, align);
+-	if (mem != MEMBLOCK_ERROR)
+-		return __va(mem);
 -
--	   The node size check is a basic sanity check to guard against
--	   mistakes */
--	if ((signed long)(end - start) < NODE_MIN_SIZE) {
--		printk(KERN_ERR "SRAT: Hotplug area too small\n");
--		return;
--	}
+-	/* extend the search scope */
+-	end = max_pfn_mapped << PAGE_SHIFT;
+-	start = MAX_DMA_PFN << PAGE_SHIFT;
+-	mem = memblock_find_in_range(start, end, size, align);
+-	if (mem != MEMBLOCK_ERROR)
+-		return __va(mem);
 -
--	/* This check might be a bit too strict, but I'm keeping it for now. */
--	if (absent_pages_in_range(s_pfn, e_pfn) != e_pfn - s_pfn) {
--		printk(KERN_ERR
--			"SRAT: Hotplug area %lu -> %lu has existing memory\n",
--			s_pfn, e_pfn);
--		return;
--	}
+-	printk(KERN_ERR "Cannot find %lu bytes in node %d\n",
+-		       size, nodeid);
 -
--	/* Looks good */
--
--	if (nd->start == nd->end) {
--		nd->start = start;
--		nd->end = end;
--		changed = 1;
--	} else {
--		if (nd->start == end) {
--			nd->start = start;
--			changed = 1;
--		}
--		if (nd->end == start) {
--			nd->end = end;
--			changed = 1;
--		}
--		if (!changed)
--			printk(KERN_ERR "SRAT: Hotplug zone not continuous. Partly ignored\n");
--	}
--
--	if (changed) {
--		node_set(node, numa_nodes_parsed);
--		printk(KERN_INFO "SRAT: hot plug zone found %Lx - %Lx\n",
--				 nd->start, nd->end);
--	}
+-	return NULL;
 -}
- 
- /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+-
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 				     struct numa_meminfo *mi)
+ {
+@@ -130,6 +98,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
  void __init
-@@ -228,9 +169,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ setup_node_bootmem(int nid, unsigned long start, unsigned long end)
+ {
++	const u64 nd_low = (u64)MAX_DMA_PFN << PAGE_SHIFT;
++	const u64 nd_high = (u64)max_pfn_mapped << PAGE_SHIFT;
+ 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
+ 	unsigned long nd_pa;
+ 	int tnid;
+@@ -146,18 +116,29 @@ setup_node_bootmem(int nid, unsigned long start, unsigned long end)
+ 	printk(KERN_INFO "Initmem setup node %d %016lx-%016lx\n",
+ 	       nid, start, end);
  
- 	printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
- 	       start, end);
--
--	if (ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)
--		update_nodes_add(node, start, end);
- }
+-	node_data[nid] = early_node_mem(nid, start, end, nd_size,
+-					SMP_CACHE_BYTES);
+-	if (node_data[nid] == NULL)
++	/*
++	 * Try to allocate node data on local node and then fall back to
++	 * all nodes.  Never allocate in DMA zone.
++	 */
++	nd_pa = memblock_x86_find_in_range_node(nid, nd_low, nd_high,
++						nd_size, SMP_CACHE_BYTES);
++	if (nd_pa == MEMBLOCK_ERROR)
++		nd_pa = memblock_find_in_range(nd_low, nd_high,
++					       nd_size, SMP_CACHE_BYTES);
++	if (nd_pa == MEMBLOCK_ERROR) {
++		pr_err("Cannot find %lu bytes in node %d\n", nd_size, nid);
+ 		return;
+-	nd_pa = __pa(node_data[nid]);
++	}
+ 	memblock_x86_reserve_range(nd_pa, nd_pa + nd_size, "NODE_DATA");
++
++	/* report and initialize */
+ 	printk(KERN_INFO "  NODE_DATA [%016lx - %016lx]\n",
+ 	       nd_pa, nd_pa + nd_size - 1);
+ 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
+ 	if (tnid != nid)
+ 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
  
- void __init acpi_numa_arch_fixup(void) {}
-@@ -244,17 +182,3 @@ int __init x86_acpi_numa_init(void)
- 		return ret;
- 	return srat_disabled() ? -EINVAL : 0;
- }
--
--#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) || defined(CONFIG_ACPI_HOTPLUG_MEMORY)
--int memory_add_physaddr_to_nid(u64 start)
--{
--	int i, ret = 0;
--
--	for_each_node(i)
--		if (nodes_add[i].start <= start && nodes_add[i].end > start)
--			ret = i;
--
--	return ret;
--}
--EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
--#endif
++	node_data[nid] = __va(nd_pa);
+ 	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
+ 	NODE_DATA(nid)->node_id = nid;
+ 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
 -- 
 1.7.1
 
