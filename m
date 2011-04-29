@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934024Ab1D2WwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:52:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41351 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab1D2WwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:52:15 -0400
-Subject: Re: [RFC] ARM DMA mapping TODO, v1
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110429125613.616f977b@lxorguk.ukuu.org.uk>
-References: <201104212129.17013.arnd@arndb.de>
-	 <20110428093039.GU17290@n2100.arm.linux.org.uk>
-	 <1304024836.2513.198.camel@pasglop> <201104291326.25634.arnd@arndb.de>
-	 <20110429125613.616f977b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Apr 2011 08:51:54 +1000
-Message-ID: <1304117514.2513.266.camel@pasglop>
+	id S934057Ab1D2Ww0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:52:26 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:47640 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934030Ab1D2WwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 18:52:24 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lRvicHOOp53mKRinIKp1hvoQmw5oo0ZCEcz7DY/M1IFwYq1t3S/Q31TIdR24vV/DQ54Dti60IyfRpYdm+1ZoV53zF2t+qcFX9Xea3T5YGowVgJ0IiGNqCHT8Tk2CalgE;
+Date: Fri, 29 Apr 2011 15:52:21 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: <pefoley2@verizon.net>
+Cc: <linux-kernel@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH V2 7/7] kbuild: move docproc from scripts/basic to
+ scripts
+Message-Id: <20110429155221.64e437d7.rdunlap@xenotime.net>
+In-Reply-To: <4DBB3DED.1060508@verizon.net>
+References: <4DBB3DED.1060508@verizon.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-29 at 12:56 +0100, Alan Cox wrote:
-> > I believe that the PC graphics cards that have noncoherent DMA mappings
-> > are all of the unified memory (integrated into the northbridge) kind,
-> > so they are not on the same host bridge as all regular PCI devices,
-> > even if they appear as a PCI device.
+On Fri, 29 Apr 2011 18:38:37 -0400 Peter Foley wrote:
+
+> This patch moves docproc from scripts/basic to scripts.
 > 
-> The AGP GART is not coherent on a lot of systems - not necessarily
-> unified memory though, it can be a plug in AGP card too.
-> The GART is basically an IOMMU (and indeed in the later AMD case used
-> exactly as that)
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+> ---
+>  scripts/{basic => }/docproc.c |    0
+>  1 files changed, 0 insertions(+), 0 deletions(-)
+>  rename scripts/{basic => }/docproc.c (100%)
+> 
+> diff --git a/scripts/basic/docproc.c b/scripts/docproc.c
+> similarity index 100%
+> rename from scripts/basic/docproc.c
+> rename to scripts/docproc.c
+> -- 
 
-Right. Actually there's also the ability for PCIe devices to set a "no
-snoop" bit on transactions and thus behave in a non-coherent manner.
-Hopefully most sane PHBs ignore that bit ...
 
-Cheers,
-Ben.
+patch -p1 -bs --dry-run  < ~/0007-kbuild-move-docproc-from-scripts-basic-to-scripts.patch 
+patch: **** Only garbage was found in the patch input.
 
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
