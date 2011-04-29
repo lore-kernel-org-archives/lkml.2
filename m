@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab1D2P6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:58:13 -0400
-Received: from smtpout03.highway.telekom.at ([195.3.96.115]:51284 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751969Ab1D2P6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:58:11 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.39-rc5
-Date: Fri, 29 Apr 2011 17:58:06 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
-In-Reply-To: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1759640Ab1D2QAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 12:00:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49827 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757912Ab1D2QAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 12:00:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZBxAQlgO8/gzzEBU35eaNxiZO9khmCLS4yYpomN6iRljg+7GLRFouZII8NMxQPqAO5
+         CCzSmFSftKJPzGBBf3F3U5xRCCvW5AL7lbM1S+os1okqEd41voBECmARIB9cEan49VqV
+         phjpYIZ8RgbMoDfnsAQZmltvrV2dwhW80oruE=
+Date: Fri, 29 Apr 2011 18:00:39 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
+Message-ID: <20110429160039.GP16552@htj.dyndns.org>
+References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
+ <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com>
+ <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
+ <201104172135.40189.arnd@arndb.de>
+ <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
+ <20110426131132.GG878@htj.dyndns.org>
+ <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
+ <20110428103036.GB10721@htj.dyndns.org>
+ <BANLkTinK3jZmKewkbtmOn54cRXhszh_5sQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104291758.06975@rk-nord.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinK3jZmKewkbtmOn54cRXhszh_5sQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds -- Wednesday 27 April 2011:
-> Go forth and test,
+Hello,
 
-Doesn't work on my notebook with i915/KMS. But then again, neither did
-2.6.38 or any of its stable releases. The last working version was
-2.6.38-rc8. The problem has been reported[1], but the bug got closed
-in the wrong assumption that the bug is fixed. I reported that, too.
-No reactions to that.
+On Fri, Apr 29, 2011 at 01:56:46AM +0200, Thilo-Alexander Ginkel wrote:
+> On Thu, Apr 28, 2011 at 12:30, Tejun Heo <tj@kernel.org> wrote:
+> > Does your kernel have preemption enabled?
+> 
+> CONFIG_PREEMPT is not set
+> 
+> > If not, does the following patch fix the problem?
+> 
+> Yep, looks good so far (at least in my virtualized test environment):
+> 2.6.39-rc4 with your patch applied survived 100 suspend/resume cycles
+> w/o locking up.
 
-The bug was introduced with commit ba3820ade317ee36e496b9b40d2ec3987dd4aef0
-by Takashi Iwai. The result is that when using KMS my notebook's[2] screen
-remains dark, because the backlight isn't turned on.
+Awesome, I'll forward the patch to mainline and -stable.
 
-Reverting commit ba3820ade317ee36e496b9b40d2ec3987dd4aef0 makes my
-notebook work correctly again as it used to in 2.6.38-rc8 and before.
+> Just out of curiosity: Was this a new issue in 2.6.39-rc4 ord could
+> this fix be backported to 2.6.38?
 
-m.
+This needs to be backported.  It's an issue which has been there from
+the initial implementation of cmwq.  It needs non-preemptive kernel
+and rescuer kicking in at a very bad timing, so not many people seem
+to have been affected by this.  Your setup somehow triggers it
+reliably.
 
+Thank you.
 
-
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=31522
-[2] Acer TravelMate 5735Z-452G32Mnss, using Intel GM45
+-- 
+tejun
