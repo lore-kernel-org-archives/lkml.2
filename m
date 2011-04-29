@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab1D2C6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 22:58:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25568 "EHLO mga02.intel.com"
+	id S1758586Ab1D2DEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 23:04:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41116 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758397Ab1D2C6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 22:58:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,284,1301900400"; 
-   d="scan'208";a="739999644"
-Date: Fri, 29 Apr 2011 10:58:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation
- failures
-Message-ID: <20110429025838.GA13150@localhost>
-References: <BANLkTik8k9A8N8CPk+eXo9c_syxJFRyFCA@mail.gmail.com>
- <BANLkTim0MNgqeh1KTfvpVFuAvebKyQV8Hg@mail.gmail.com>
- <20110426062535.GB19717@localhost>
- <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
- <20110426063421.GC19717@localhost>
- <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
- <20110426092029.GA27053@localhost>
- <20110426124743.e58d9746.akpm@linux-foundation.org>
- <20110428133644.GA12400@localhost>
- <20110429022824.GA8061@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429022824.GA8061@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758390Ab1D2DEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 23:04:21 -0400
+Date: Fri, 29 Apr 2011 13:04:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the final tree (powercp
+ tree related)
+Message-Id: <20110429130410.3e6221ad.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__29_Apr_2011_13_04_10_+1000_7lAyL36NJRb7Lhr+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+--Signature=_Fri__29_Apr_2011_13_04_10_+1000_7lAyL36NJRb7Lhr+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tested the more realistic 100 dd case. The results are
+Hi all,
 
-- nr_alloc_fail: 892 => 146
-- reclaim delay: 4ms => 68ms
+After merging the final tree, today's linux-next build (powerpc64
+allnoconfig) produced this warning:
 
-Thanks,
-Fengguang
----
+WARNING: vmlinux.o(.text+0x907a): Section mismatch in reference from the va=
+riable generic_secondary_common_init to the variable .init.data:boot_cpu_co=
+unt
+The function generic_secondary_common_init() references
+the variable __initdata boot_cpu_count.
+This is often because generic_secondary_common_init lacks a __initdata=20
+annotation or the annotation of boot_cpu_count is wrong.
 
-base kernel, 100 dd
--------------------
+Caused by commit 9d07bc841c97 ("powerpc: Properly handshake CPUs going
+out of boot spin loop").
 
-start time: 3
-total time: 52
-nr_alloc_fail 892
-allocstall 131341
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-2nd run (no reboot):
+--Signature=_Fri__29_Apr_2011_13_04_10_+1000_7lAyL36NJRb7Lhr+
+Content-Type: application/pgp-signature
 
-start time: 3
-total time: 53
-nr_alloc_fail 1555
-allocstall 265718
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJNuiqqAAoJEDMEi1NhKgbs3IoH/iAr9ico38i0LP9rUhQ1LmNs
+qQvds3iqG7PtOmChVxNnCJz9b08DuJxVnH/ugbV4iVH26+p3kFSsDHdQEqlrb1m9
+OFRbvm4v/CWvTDjQhk1OUX5ynbzmKFYg+32PRHjD1SZMDvpLjyqPKJSl6YJwCdB2
+2GUQipxR7YYrr/n1hXZ8I4Jlcq+LO+MVVXzTvsodo3EwPl6yKB4rNpkrP5C7YwFX
+kPV2idaeQ3wLj8SC2T9ol3zGKPDquLhQ+dlaYkrT6TpXSqbPFeVsOpwN8mkEwPIh
+eIWxbXySGlwvNYiVmXMi7+8PwRWR+GUOODVo+yFzm8SOXuLwtWiBy8z5ywgxyOw=
+=mt0M
+-----END PGP SIGNATURE-----
 
-CPU             count     real total  virtual total    delay total
-                  962     3125524848     3113269116    37972729582
-IO              count    delay total  delay average
-                    3       25204838              8ms
-SWAP            count    delay total  delay average
-                    0              0              0ms
-RECLAIM         count    delay total  delay average    
-                 1032     5130797747              4ms  
-
-(IPIs accumulated in two runs)
-CAL:      34898      35428      35182      35553      35320      35291      35298      35102   Function call interrupts
-
-10ms limit, 100 dd
-------------------
-
-start time: 2
-total time: 50
-nr_alloc_fail 146
-allocstall 10598
-
-CPU             count     real total  virtual total    delay total
-                 1038     3349490800     3331087137    40156395960
-IO              count    delay total  delay average
-                    0              0              0ms
-SWAP            count    delay total  delay average
-                    0              0              0ms
-RECLAIM         count    delay total  delay average
-                   84     5795410854             68ms
-dd: read=0, write=0, cancelled_write=0
-
-Thanks,
-Fengguang
+--Signature=_Fri__29_Apr_2011_13_04_10_+1000_7lAyL36NJRb7Lhr+--
