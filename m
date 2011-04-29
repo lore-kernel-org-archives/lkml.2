@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1D2HZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 03:25:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43576 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab1D2HZO convert rfc822-to-8bit (ORCPT
+	id S1756167Ab1D2HfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 03:35:14 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:51204 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763Ab1D2HfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 03:25:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JSPOcQ8IFLksOyAyIApglfMBZqBtwYmWtpw/5JpWVn9biV6ajTuue0uqaANB1zFhcS
-         JVnUpxLEm441W0SIJ3X2agRRpA8YetNS309l9d0aaSCOlOIpl024lZ/XRXoyMmQDcyqE
-         5JR6NyPOY0tOM7WC2jfT20aEbqmURKjAcp+HA=
+	Fri, 29 Apr 2011 03:35:13 -0400
+Subject: [PATCH] dt/irq: add of_irq_domain_add_simple() helper
+To: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 29 Apr 2011 01:35:09 -0600
+Message-ID: <20110429073324.17840.37136.stgit@ponder>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20110429115948.e949234b.sfr@canb.auug.org.au>
-References: <20110429115948.e949234b.sfr@canb.auug.org.au>
-Date: Fri, 29 Apr 2011 09:25:13 +0200
-X-Google-Sender-Auth: vF4R1s4uimmVn_uG4LSDk3jQMAA
-Message-ID: <BANLkTikJ5CVvS+P17T_Mhtqyb29vpDcmvw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the trivial tree with the ux500-core tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/29 Stephen Rothwell <sfr@canb.auug.org.au>:
+of_irq_domain_add_simple() is an easy way to generate an irq translation
+domain for simple irq controllers.  It assumes a flat 1:1 mapping from
+hardware irq number to an offset of the first linux irq number assigned
+to the controller
 
-> Today's linux-next merge of the trivial tree got a conflict in
-> arch/arm/mach-u300/gpio.c between commit 4a5a6e2804a3 ("mach-u300:
-> rewrite gpio driver, move to drivers/gpio") from the ux500-core tree and
-> commit b0c3af5ef0d7 ("arm: mach-u300/gpio: Fix mem_region resource size
-> miscalculations") from the trivial tree.
->
-> The former removed the file updated by the latter.  These updates should
-> be applied to drivers/gpio/u300-gpio.c, now.  Joe, maybe you could update
-> your patch and send it to Linus Walleij.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
 
-I rewrote the driver completely so likely it will rather be dropped, but
-please check! I'll be happy to carry any patches.
+Following on from the irq_domain patch series I posted earlier, here is a simple
+method for registering a 1:1 translation.
 
-Yours,
-Linus Walleij
+g.
+
+ drivers/of/irq.c       |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_irq.h |    2 ++
+ 2 files changed, 46 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 6da0964..641590c 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -24,6 +24,7 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/string.h>
++#include <linux/slab.h>
+ 
+ /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
+ #ifndef NO_IRQ
+@@ -147,6 +148,49 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
+ }
+ EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+ 
++/*
++ * A simple irq domain implementation that 1:1 translates hwirqs to an offset
++ * from the irq_start value
++ */
++struct of_irq_domain_simple {
++	struct of_irq_domain domain;
++	int irq_start;
++	int irq_size;
++};
++
++static unsigned int of_irq_domain_simple_map(struct of_irq_domain *domain,
++					     struct device_node *controller,
++					     const u32 *intspec, u32 intsize)
++{
++	struct of_irq_domain_simple *ds;
++
++	ds = container_of(domain, struct of_irq_domain_simple, domain);
++	if (intspec[0] >= ds->irq_size)
++		return NO_IRQ;
++	return ds->irq_start + intspec[0];
++}
++
++/**
++ * of_irq_domain_create_simple() - Set up a 'simple' translation range
++ */
++void of_irq_domain_add_simple(struct device_node *controller,
++			      int irq_start, int irq_size)
++{
++	struct of_irq_domain_simple *sd;
++
++	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
++	if (!sd) {
++		WARN_ON(1);
++		return;
++	}
++
++	sd->irq_start = irq_start;
++	sd->irq_size = irq_size;
++	sd->domain.controller = of_node_get(controller);
++	sd->domain.map = of_irq_domain_simple_map;
++	of_irq_domain_add(&sd->domain);
++}
++
+ /**
+  * irq_of_parse_and_map - Parse and map an interrupt into linux virq space
+  * @device: Device node of the device whose interrupt is to be mapped
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index 511dbc3..8e49a0e 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -63,6 +63,8 @@ struct of_irq_domain {
+ extern void of_irq_domain_add(struct of_irq_domain *domain);
+ extern void of_irq_set_default_domain(struct of_irq_domain *host);
+ extern struct of_irq_domain *of_irq_domain_find(struct device_node *controller);
++extern void of_irq_domain_add_simple(struct device_node *controller,
++				     int irq_start, int irq_size);
+ 
+ /*
+  * Workarounds only applied to 32bit powermac machines
+
