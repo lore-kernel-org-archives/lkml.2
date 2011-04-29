@@ -1,283 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934078Ab1D2W4i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:56:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934043Ab1D2W4c (ORCPT
+	id S934092Ab1D2W7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:59:21 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47531 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934073Ab1D2W7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:56:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=dKZTGLOQ09l9cODCjJHe5XPrT1iaEN17l3CyGbQb/LrJLeYKfq1PLYTKhJ6JT2X84
-	b0nTxNGYlJYxGCuGJRexw==
-Subject: [PATCH v4 2/3] driver: Google Memory Console
-To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-From: Mike Waychison <mikew@google.com>
-Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Date: Fri, 29 Apr 2011 15:55:56 -0700
-Message-ID: <20110429225556.22013.99287.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110429212328.GA19207@kroah.com>
-References: <20110429212328.GA19207@kroah.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 29 Apr 2011 18:59:17 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=HmBNgx/v92cE+HyvO/YoyuCCm1xdJYbYcocFoMnyTQ4fbdHiVfJrp/cK3L+LWwCBRhWCu43lvOrn5EwMPsqEm7SUICNgEbJGBkEA18yujqIgkSSG9eveznIjmfVl9Nox;
+Date: Fri, 29 Apr 2011 15:59:15 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: <pefoley2@verizon.net>
+Cc: <linux-kernel@vger.kernel.org>, <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to
+ scripts/docproc.c
+Message-Id: <20110429155915.f9059777.rdunlap@xenotime.net>
+In-Reply-To: <4DBB3DD4.9000000@verizon.net>
+References: <4DBB3DD4.9000000@verizon.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the 'memconsole' driver.
+On Fri, 29 Apr 2011 18:38:12 -0400 Peter Foley wrote:
 
-Our firmware gives us access to an in-memory log of the firmware's
-output.   This gives us visibility in a data-center of headless machines
-as to what the firmware is doing.
+> This patchset moves scripts/basic/docproc to scripts/docproc.
+> This causes docproc to only be built for *doc targets rather than every
+> time the kernel is compiled.
+> 
+> Patches also attached as requested by Michal Marek.
 
-The memory console is found by the driver by finding a header block in
-the EBDA.  The buffer is then copied out, and is exported to userland in
-the file /sys/firmware/log.
 
-Signed-off-by: San Mehat <san@google.com>
-Signed-off-by: Mike Waychison <mikew@google.com>
+Please test & fix when using O=output_dir.
+
+$ mkdir DOC1
+$ make -j4 O=DOC1 htmldocs
+
+gives:
+
+for dep in dvb media-entities.tmpl media-indices.tmpl v4l; do \
+		rm -f lnx-2639-rc5/DOC1/Documentation/DocBook/$dep \
+		&& ln -s lnx-2639-rc5/Documentation/DocBook/$dep lnx-2639-rc5/DOC1/Documentation/DocBook/ \
+		|| exit; \
+	done
+  DOCPROC Documentation/DocBook/80211.xml
+  DOCPROC Documentation/DocBook/alsa-driver-api.xml
+  DOCPROC Documentation/DocBook/debugobjects.xml
+/bin/sh: lnx-2639-rc5/DOC1/scripts/docproc: No such file or directory
+/bin/sh: lnx-2639-rc5/DOC1/scripts/docproc: No such file or directory
+make[2]: *** [Documentation/DocBook/alsa-driver-api.xml] Error 1
+make[2]: *** Waiting for unfinished jobs....
+  DOCPROC Documentation/DocBook/device-drivers.xml
+make[2]: *** [Documentation/DocBook/debugobjects.xml] Error 1
+/bin/sh: lnx-2639-rc5/DOC1/scripts/docproc: No such file or directory
+make[2]: *** [Documentation/DocBook/device-drivers.xml] Error 1
+/bin/sh: lnx-2639-rc5/DOC1/scripts/docproc: No such file or directory
+make[2]: *** [Documentation/DocBook/80211.xml] Error 1
+make[1]: *** [htmldocs] Error 2
+make: *** [sub-make] Error 2
+
+
 ---
-Changelog:
-v4:
-   - Re-ordered to be before the introduction of CONFIG_GOOGLE_FIRMWARE.
-v3:
-   - Use dmi_check_system to only load when on a Google board.
-   - Use MODULE_DEVICE_TABLE to export matching DMI strings.
-   - Default to 'n' in the Kconfig.
-   - Fixed Kconfig description to reflect that this change no longer
-     messes with the dmesg.
-v2:
-   - Removed bits that had this driver muck with the kernel's ring
-     dmesg buffer (log_buf).
-   - Introduced the log as /sys/firmware/log, a binary file that isn't
-     interpreted by the kernel.
-   - Don't use C99 fixed width types; use kernel fixed width types.
-   - Added file to Documentation/ABI for /sys/firmware/log
----
- Documentation/ABI/testing/sysfs-firmware-log |    7 +
- drivers/firmware/google/Kconfig              |    8 +
- drivers/firmware/google/Makefile             |    1 
- drivers/firmware/google/memconsole.c         |  166 ++++++++++++++++++++++++++
- 4 files changed, 182 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-log
- create mode 100644 drivers/firmware/google/memconsole.c
-
-diff --git a/Documentation/ABI/testing/sysfs-firmware-log b/Documentation/ABI/testing/sysfs-firmware-log
-new file mode 100644
-index 0000000..9b58e7c
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-firmware-log
-@@ -0,0 +1,7 @@
-+What:		/sys/firmware/log
-+Date:		February 2011
-+Contact:	Mike Waychison <mikew@google.com>
-+Description:
-+		The /sys/firmware/log is a binary file that represents a
-+		read-only copy of the firmware's log if one is
-+		available.
-diff --git a/drivers/firmware/google/Kconfig b/drivers/firmware/google/Kconfig
-index 4a03835..640dc6b 100644
---- a/drivers/firmware/google/Kconfig
-+++ b/drivers/firmware/google/Kconfig
-@@ -7,3 +7,11 @@ config GOOGLE_SMI
- 	  platforms.  This provides an interface for writing to and
- 	  clearing the EFI event log and reading and writing NVRAM
- 	  variables.
-+
-+config GOOGLE_MEMCONSOLE
-+	tristate "Firmware Memory Console"
-+	depends on DMI
-+	help
-+	  This option enables the kernel to search for a firmware log in
-+	  the EBDA on Google servers.  If found, this log is exported to
-+	  userland in the file /sys/firmware/log.
-diff --git a/drivers/firmware/google/Makefile b/drivers/firmware/google/Makefile
-index fb127d7..54a294e 100644
---- a/drivers/firmware/google/Makefile
-+++ b/drivers/firmware/google/Makefile
-@@ -1,2 +1,3 @@
- 
- obj-$(CONFIG_GOOGLE_SMI)		+= gsmi.o
-+obj-$(CONFIG_GOOGLE_MEMCONSOLE)		+= memconsole.o
-diff --git a/drivers/firmware/google/memconsole.c b/drivers/firmware/google/memconsole.c
-new file mode 100644
-index 0000000..2a90ba6
---- /dev/null
-+++ b/drivers/firmware/google/memconsole.c
-@@ -0,0 +1,166 @@
-+/*
-+ * memconsole.c
-+ *
-+ * Infrastructure for importing the BIOS memory based console
-+ * into the kernel log ringbuffer.
-+ *
-+ * Copyright 2010 Google Inc. All rights reserved.
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/sysfs.h>
-+#include <linux/kobject.h>
-+#include <linux/module.h>
-+#include <linux/dmi.h>
-+#include <asm/bios_ebda.h>
-+
-+#define BIOS_MEMCONSOLE_V1_MAGIC	0xDEADBABE
-+#define BIOS_MEMCONSOLE_V2_MAGIC	(('M')|('C'<<8)|('O'<<16)|('N'<<24))
-+
-+struct biosmemcon_ebda {
-+	u32 signature;
-+	union {
-+		struct {
-+			u8  enabled;
-+			u32 buffer_addr;
-+			u16 start;
-+			u16 end;
-+			u16 num_chars;
-+			u8  wrapped;
-+		} __packed v1;
-+		struct {
-+			u32 buffer_addr;
-+			/* Misdocumented as number of pages! */
-+			u16 num_bytes;
-+			u16 start;
-+			u16 end;
-+		} __packed v2;
-+	};
-+} __packed;
-+
-+static char *memconsole_baseaddr;
-+static size_t memconsole_length;
-+
-+static ssize_t memconsole_read(struct file *filp, struct kobject *kobp,
-+			       struct bin_attribute *bin_attr, char *buf,
-+			       loff_t pos, size_t count)
-+{
-+	return memory_read_from_buffer(buf, count, &pos, memconsole_baseaddr,
-+				       memconsole_length);
-+}
-+
-+static struct bin_attribute memconsole_bin_attr = {
-+	.attr = {.name = "log", .mode = 0444},
-+	.read = memconsole_read,
-+};
-+
-+
-+static void found_v1_header(struct biosmemcon_ebda *hdr)
-+{
-+	printk(KERN_INFO "BIOS console v1 EBDA structure found at %p\n", hdr);
-+	printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
-+	       "start = %d, end = %d, num = %d\n",
-+	       hdr->v1.buffer_addr, hdr->v1.start,
-+	       hdr->v1.end, hdr->v1.num_chars);
-+
-+	memconsole_length = hdr->v1.num_chars;
-+	memconsole_baseaddr = phys_to_virt(hdr->v1.buffer_addr);
-+}
-+
-+static void found_v2_header(struct biosmemcon_ebda *hdr)
-+{
-+	printk(KERN_INFO "BIOS console v2 EBDA structure found at %p\n", hdr);
-+	printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
-+	       "start = %d, end = %d, num_bytes = %d\n",
-+	       hdr->v2.buffer_addr, hdr->v2.start,
-+	       hdr->v2.end, hdr->v2.num_bytes);
-+
-+	memconsole_length = hdr->v2.end - hdr->v2.start;
-+	memconsole_baseaddr = phys_to_virt(hdr->v2.buffer_addr
-+					   + hdr->v2.start);
-+}
-+
-+/*
-+ * Search through the EBDA for the BIOS Memory Console, and
-+ * set the global variables to point to it.  Return true if found.
-+ */
-+static bool found_memconsole(void)
-+{
-+	unsigned int address;
-+	size_t length, cur;
-+
-+	address = get_bios_ebda();
-+	if (!address) {
-+		printk(KERN_INFO "BIOS EBDA non-existent.\n");
-+		return false;
-+	}
-+
-+	/* EBDA length is byte 0 of EBDA (in KB) */
-+	length = *(u8 *)phys_to_virt(address);
-+	length <<= 10; /* convert to bytes */
-+
-+	/*
-+	 * Search through EBDA for BIOS memory console structure
-+	 * note: signature is not necessarily dword-aligned
-+	 */
-+	for (cur = 0; cur < length; cur++) {
-+		struct biosmemcon_ebda *hdr = phys_to_virt(address + cur);
-+
-+		/* memconsole v1 */
-+		if (hdr->signature == BIOS_MEMCONSOLE_V1_MAGIC) {
-+			found_v1_header(hdr);
-+			return true;
-+		}
-+
-+		/* memconsole v2 */
-+		if (hdr->signature == BIOS_MEMCONSOLE_V2_MAGIC) {
-+			found_v2_header(hdr);
-+			return true;
-+		}
-+	}
-+
-+	printk(KERN_INFO "BIOS console EBDA structure not found!\n");
-+	return false;
-+}
-+
-+static struct dmi_system_id memconsole_dmi_table[] __initdata = {
-+	{
-+		.ident = "Google Board",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Google, Inc."),
-+		},
-+	},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(dmi, memconsole_dmi_table);
-+
-+static int __init memconsole_init(void)
-+{
-+	int ret;
-+
-+	if (!dmi_check_system(memconsole_dmi_table))
-+		return -ENODEV;
-+
-+	if (!found_memconsole())
-+		return -ENODEV;
-+
-+	memconsole_bin_attr.size = memconsole_length;
-+
-+	ret = sysfs_create_bin_file(firmware_kobj, &memconsole_bin_attr);
-+
-+	return ret;
-+}
-+
-+static void __exit memconsole_exit(void)
-+{
-+	sysfs_remove_bin_file(firmware_kobj, &memconsole_bin_attr);
-+}
-+
-+module_init(memconsole_init);
-+module_exit(memconsole_exit);
-+
-+MODULE_AUTHOR("Google, Inc.");
-+MODULE_LICENSE("GPL");
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
