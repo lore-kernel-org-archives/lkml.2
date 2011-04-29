@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759613Ab1D2Phw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:37:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759230Ab1D2Pht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:37:49 -0400
-Date: Fri, 29 Apr 2011 17:37:39 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jump_label,x86: use text_poke_smp_batch for entries
- update
-Message-ID: <20110429153739.GB1966@jolsa.brq.redhat.com>
-References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
- <20110429151509.GA2545@redhat.com>
+	id S1759455Ab1D2Phr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:37:47 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:23675 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759281Ab1D2Php (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 11:37:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6330"; a="88597185"
+Message-ID: <4DBADB3B.4040402@codeaurora.org>
+Date: Fri, 29 Apr 2011 09:37:31 -0600
+From: Jordan Crouse <jcrouse@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429151509.GA2545@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jerome Glisse <j.glisse@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+References: <201104212129.17013.arnd@arndb.de>	<201104281428.56780.arnd@arndb.de>	<20110428131531.GK17290@n2100.arm.linux.org.uk>	<201104281629.52863.arnd@arndb.de>	<20110428143440.GP17290@n2100.arm.linux.org.uk>	<BANLkTinhm7ar1mf1D-dSMiLtw5hRNY36RA@mail.gmail.com> <20110429134231.GI13402@8bytes.org>
+In-Reply-To: <20110429134231.GI13402@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 11:15:09AM -0400, Jason Baron wrote:
-> On Thu, Apr 28, 2011 at 10:52:41PM +0200, Jiri Olsa wrote:
-> > Changing the jump label update code to use batch processing
-> > for x86 architectures. 
-> > 
-> > Currently each jump label update calls text_poke_smp for each
-> > jump label key entry. Thus one key update ends up calling stop
-> > machine multiple times.
-> > 
-> 
-> cool. Batching the updates is a nice idea.
-> 
-> > This patch is using text_poke_smp_batch, which is called for
-> > all the key's entries.  Ensuring the stop machine is called
-> > only once.
-> > 
-> 
-> Since we walk the modules list per key (calling __jump_label_update()),
-> this is not always the case. I'm wondering then if maybe what we want to do
-> is 'queue' each update from the core code. Then, when the queue fills
-> up, we flush out the queue. In this way, we cover jump labels that might
-> be in both the core kernel and in modules. This also has the side effect
-> of moving code such as:
-> 
-> /*
->  * The entry->code set to 0 invalidates module
->  * init text
->  * sections (see
->  * jump_label_invalidate_module_init).
->  */
-> if (!entry->code || !kernel_text_address(entry->code))
->               continue;
-> 
-> 
-> out of the arch code into the generic code, which in my opinion is a bit
-> cleaner. thoughts?
+On 04/29/2011 07:42 AM, Joerg Roedel wrote:
+> On Thu, Apr 28, 2011 at 03:37:00PM -0400, Jerome Glisse wrote:
+>> As Jesse pointed out already, for performance reasons it's lot better
+>> if you let the driver decide even if you have an iommu capable of
+>> handling coherency for you. My understanding is that each time
+>> coherency is asked for it trigger bus activities of some kind (i think
+>> snoop is the term used for pci) this traffic can slow down both the
+>> cpu and the device. For graphic driver we have a lot of write once and
+>> use (once or more) buffer and it makes a lot of sense to have those
+>> buffer allocated using uncached memory so we can tell the device (in
+>> case of drm driver) that there is no need to trigger snoop activities
+>> for coherency. So i believe the decision should ultimately be in the
+>> driver side.
+>
+> Stupid question: Couldn't these write-once-read-often buffers just stay
+> in the memory of the GPU instead of refetching them every time from main
+> memory? Or is that necessary because of the limited space on some GPUs?
 
-nice, we'd safe another few stop machine calls
-I'll update the patch
+Not all embedded GPUs have their own dedicated memory.  On the MSM architecture
+the devices and the CPU share the same physical pool.
 
-thanks,
-jirka
+Jordan
