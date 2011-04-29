@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab1D2LD1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 07:03:27 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:35783 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751995Ab1D2LD0 (ORCPT
+	id S1756696Ab1D2LVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 07:21:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54596 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab1D2LVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 07:03:26 -0400
-X-Greylist: delayed 2796 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Apr 2011 07:03:26 EDT
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+S2c6u9mLyxlPLsLwazqV
-Date: Fri, 29 Apr 2011 03:16:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [GIT PULL] omap fixes for v2.6.39-rc5
-Message-ID: <20110429101647.GW3755@atomide.com>
+	Fri, 29 Apr 2011 07:21:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Date: Fri, 29 Apr 2011 13:21:16 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <201104212129.17013.arnd@arndb.de> <20110428131531.GK17290@n2100.arm.linux.org.uk> <1304036754.2513.201.camel@pasglop>
+In-Reply-To: <1304036754.2513.201.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104291321.16191.arnd@arndb.de>
+X-Provags-ID: V02:K0:faj4QMQtkOaSSntxnCWZnKaTekN5hCd0Ir51cSwu3e/
+ PiEe1wpI2WaaIO7288IxJwIl2aiU6oHFn1ldnHUb9vYZYRmPET
+ qQ7rZBvm1VeWE+va1SCOcGuTLlke0fsjhJW6fz1bxZWYzEVM7e
+ JMBuTUDgMmwvHXLBvqxry5LNRzQ4Bo7PlB5e5Tb/7bwnVI4CCn
+ paNgmoJSt36WWNEcAEAuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Friday 29 April 2011, Benjamin Herrenschmidt wrote:
+> 
+> > However, dma_alloc_coherent() memory can't be used with the dma_sync_*
+> > API as its return address (unlike other architectures) is not in the
+> > kernel direct mapped memory range.
+> 
+> Well, on non-coherent architectures, dma_sync_* are cache flushes, I
+> don't see the point of doing those on a non-cachable mapping anyways.
+> 
+The point was that you cannot do
 
-Please pull omap fixes from:
+#define dma_alloc_coherent dma_alloc_noncoherent
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+on ARM, as some other architectures do.
 
-Most of the diffstat is fixing clock related flags, the kind
-of stuff that will be eventually coming from device tree as
-discussed earlier. Anyways necessariy fixes for correct clocking
-for the -rc cycle.  
-
-The other patches are quite trivial one liner fixes.
-
-Regards,
-
-Tony
-
-
-The following changes since commit 8e10cd74342c7f5ce259cceca36f6eba084f5d58:
-  Linus Torvalds (1):
-        Linux 2.6.39-rc5
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
-
-Avinash.H.M (1):
-      OMAP2/3: hwmod: fix gpio-reset timeouts seen during bootup.
-
-Benoit Cousson (1):
-      OMAP2+: hwmod data: Fix wrong dma_system end address
-
-Eduardo Valentin (2):
-      OMAP2+: PM: Fix the saving of CM_AUTOIDLE_PLL register on scratchpad area
-      OMAP3: PM: Do not rely on ROM code to restore CM_AUTOIDLE_PLL.AUTO_PERIPH_DPLL
-
-Felipe Contreras (1):
-      omap: rx51: mark reserved memory earlier
-
-Nishanth Menon (1):
-      OMAP3+: voltage: remove initial voltage
-
-Oskar Andero (1):
-      arm: omap2: enable smc instruction for sleep34xx
-
-Shweta Gulati (1):
-      OMAP4: Intialize IVA Device in addition to DSP device.
-
-Tomi Valkeinen (1):
-      OMAP4: clock data: Change DSS clock aliases
-
-Tony Lindgren (1):
-      Merge branch 'for_tony_a_2.6.39rc' of git://git.pwsan.com/linux-2.6 into devel-fixes
-
-omar ramirez (1):
-      OMAP3: l3: fix for "irq 10: nobody cared" message
-
- arch/arm/mach-omap2/Makefile               |    2 +-
- arch/arm/mach-omap2/board-rx51.c           |    9 +++++++--
- arch/arm/mach-omap2/clock44xx_data.c       |    9 ++-------
- arch/arm/mach-omap2/cm2xxx_3xxx.c          |   17 +++++++++++++++++
- arch/arm/mach-omap2/control.c              |    8 +++++++-
- arch/arm/mach-omap2/omap_hwmod_2420_data.c |    6 +++++-
- arch/arm/mach-omap2/omap_hwmod_2430_data.c |    7 ++++++-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 +++++++-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    2 +-
- arch/arm/mach-omap2/omap_l3_smx.c          |    4 ++--
- arch/arm/mach-omap2/pm.c                   |    1 +
- arch/arm/mach-omap2/voltage.c              |    1 -
- 12 files changed, 56 insertions(+), 18 deletions(-)
+	Arnd
