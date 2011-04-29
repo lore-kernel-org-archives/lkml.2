@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760840Ab1D2S1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:27:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53513 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab1D2S07 (ORCPT
+	id S1760853Ab1D2S2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:28:47 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49809 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab1D2S2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:26:59 -0400
-Date: Fri, 29 Apr 2011 20:26:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Frysinger <vapier.adi@gmail.com>
-cc: john stultz <johnstul@us.ibm.com>,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        sedat.dilek@gmail.com, Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <BANLkTinr9J5OQoia-+yH3_hjU6AciAxu9A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1104292026270.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
- <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos> <20110428224444.43107883@neptune.home> <alpine.LFD.2.02.1104282251080.3005@ionos>
- <1304027480.2971.121.camel@work-vm> <alpine.LFD.2.02.1104282353140.3005@ionos> <BANLkTinr9J5OQoia-+yH3_hjU6AciAxu9A@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1972088565-1304101600=:3005"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 29 Apr 2011 14:28:45 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, bp@alien8.de, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
+In-Reply-To: Your message of "Fri, 29 Apr 2011 14:13:11 EDT."
+             <BANLkTimsNF=OeaLSnSt2gFdDaAbJ6tMFng@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <71633.1304013549@localhost> <1304083893-18849-1-git-send-email-mmarek@suse.cz>
+            <BANLkTimsNF=OeaLSnSt2gFdDaAbJ6tMFng@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304101670_56837P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 29 Apr 2011 14:27:50 -0400
+Message-ID: <154175.1304101670@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4DBB032B.0077,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--==_Exmh_1304101670_56837P
+Content-Type: text/plain; charset=us-ascii
 
---8323328-1972088565-1304101600=:3005
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+On Fri, 29 Apr 2011 14:13:11 EDT, Arnaud Lacombe said:
 
-On Fri, 29 Apr 2011, Mike Frysinger wrote:
+> I do not really like that, it would mean that W=123, W=321, W=231 and
+> W=132 would lead to the same result. What about a comma separated
+> string, ala:
 
-> On Thu, Apr 28, 2011 at 18:02, Thomas Gleixner wrote:
-> > -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
-> > +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
-> > +       [CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
-> > +       [CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
-> > +       [CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
-> > +};
-> 
-> this would let us constify the array too
+OK, I'll bite - if W=321 should behaved differently than 123, exactly *how*
+should it be different?
 
-Indeed.
---8323328-1972088565-1304101600=:3005--
+--==_Exmh_1304101670_56837P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNuwMmcC3lWbTT17ARArMwAKCub6CW1fZOFqk7qXknoY0xiJnhXACgiu8/
+MOevDU7/IuwL/frfQrp25f8=
+=kw2C
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304101670_56837P--
+
