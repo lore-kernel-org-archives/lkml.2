@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1D2PGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:06:12 -0400
-Received: from jaguar.mail.utk.edu ([160.36.0.84]:47002 "EHLO
-	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab1D2PGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:06:11 -0400
-Date: Fri, 29 Apr 2011 11:04:46 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: torvalds@linux-foundation.org
-cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Andi Kleen <ak@linux.intel.com>
-Subject: re-enable Nehalem raw Offcore-Events support
-Message-ID: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754267Ab1D2PGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563Ab1D2PGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 11:06:49 -0400
+Date: Fri, 29 Apr 2011 17:06:42 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] x86_64,tracing: multiplexing function tracer
+Message-ID: <20110429150642.GA1966@jolsa.brq.redhat.com>
+References: <1304088194-6214-1-git-send-email-jolsa@redhat.com>
+ <1304089030.18763.257.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304089030.18763.257.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus
+On Fri, Apr 29, 2011 at 10:57:10AM -0400, Steven Rostedt wrote:
+> On Fri, 2011-04-29 at 16:43 +0200, Jiri Olsa wrote:
+> > hi, me again ;)
+> > 
+> > from last RFC email it turned out it'd be good to have support
+> > for more than 1 currently running function tracers. With
+> > the possibility to specify separate filter for each of them.
+> 
+> Jiri, I thought I told you to wait, as I'm basically doing the same
+> thing. Except that I'm gutting the heck out of ftrace.c.
 
-can you revert the commit b52c55c6a25e4515b5e075a989ff346fc251ed09
+yep, I was just keeping busy.. ;)
+looking forward to see your change
 
-This removed functionality from perf_events that allowed raw event access 
-for OFFCORE_EVENTS type events on Nehalem and Westmere cpus.
+jirka
 
-To be fair, this is not technically a regression as the feature was only 
-(finally!) added in the 2.6.39 merge window.  However this is a useful 
-feature and many tools (including the PAPI performance counter library 
-that I work on) had added support for it in anticipation of the 2.6.39 
-release.
-
-Ingo's reasons for removing the feature seem to boil down to
-  1.  "perf" doesn't use the functionality, and any other userspace
-      program that uses the perf_events syscalls don't matter
-  2.  Users are too stupid to use the raw functionality properly;
-      we should only allow a kernel-developer-approved small subset
-      of the features provided by the CPU as described in the intel
-      developers manuals.
-
-#2 seems like a gross misinterpretation of the whole "Linux gives you 
-enough rope to shoot yourself in the foot" policy from days passed, but 
-maybe things have moved on.
-
-Thanks,
-
-Vince
-vweaver1@eecs.utk.edu
+> 
+> I've been working the last several days rewriting this code.
+> 
+> > 
+> > I thought about one way how to do that and put it to the
+> > code for considering. It seems to work properly, though
+> > I was fighting with set_ftrace_filter for a while.. and
+> > it is still not ideal ;)
+> 
+> Soon, set_ftrace_filter will only affect the function tracer and not any
+> other user of function tracing.
+> 
+> I'm almost done. I was hoping to release something today, but it will
+> probably have to wait till next week.
+> 
+> -- Steve
+> 
+> 
