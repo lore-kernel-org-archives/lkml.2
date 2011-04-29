@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab1D2No3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 09:44:29 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46484 "EHLO
+	id S1758718Ab1D2Nog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 09:44:36 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56884 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755785Ab1D2No1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751886Ab1D2Nod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 09:44:27 -0400
-X-Sasl-enc: jVYTBNXMupPmYzOt3whEBaYY4eJPYR16dNRb56VdQdAu 1304084666
+	Fri, 29 Apr 2011 09:44:33 -0400
+X-Sasl-enc: +lz7MMSFr6NDtjb5H5T8YiMYEcOe9/4vMWc1V6M68mJx 1304084672
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -18,56 +18,48 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         selinux@tycho.nsa.gov, viro@zeniv.linux.org.uk,
         john.johansen@canonical.com, apparmor@lists.ubuntu.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 0/4] eCryptfs credentials patches
-Date: Fri, 29 Apr 2011 15:41:48 +0200
-Message-Id: <1304084515-22132-1-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 1/4] fs: preserve S_IMA inode flag in fsstack_copy_attr_all()
+Date: Fri, 29 Apr 2011 15:41:49 +0200
+Message-Id: <1304084515-22132-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1304084515-22132-1-git-send-email-roberto.sassu@polito.it>
+References: <1304084515-22132-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----2B99CDD6946F56D28DFD52FD6EC1B1C3"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----301883DED083AA402FE2AE700D27B7D7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------2B99CDD6946F56D28DFD52FD6EC1B1C3
+------301883DED083AA402FE2AE700D27B7D7
 
-This patch set modifies the credentials presented by eCryptfs to open
-inodes in the lower filesystem. These credentials are initially obtained
-through the function prepare_kernel_cred() and may be overridden in order
-to identify or restrict actions performed by a specific eCryptfs
-filesystem.
+The S_IMA inode flag of the upper inode must be preserved to avoid IMA
+tries to free its own structure for inodes that were not measured before.
 
-More details about how to manage the eCryptfs credentials and how to
-measure eCryptfs files with IMA can be found in the file:
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+---
+ fs/stack.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-'Documentation/filesystems/ecryptfs-security.txt'
-
-Roberto Sassu
-
-
-Roberto Sassu (4):
-  fs: preserve S_IMA inode flag in fsstack_copy_attr_all()
-  eCryptfs: introduce per-filesystem credentials
-  eCryptfs: override prepared credentials
-  eCryptfs: added ima_file_check() call to ecryptfs_init_lower_file()
-
- Documentation/filesystems/ecryptfs-security.txt |   98 +++++++++++
- fs/ecryptfs/Makefile                            |    2 +-
- fs/ecryptfs/crypto.c                            |    1 +
- fs/ecryptfs/ecryptfs_kernel.h                   |   21 +---
- fs/ecryptfs/kthread.c                           |  197 -----------------------
- fs/ecryptfs/main.c                              |   76 ++++++---
- fs/stack.c                                      |    2 +-
- 7 files changed, 155 insertions(+), 242 deletions(-)
- create mode 100644 Documentation/filesystems/ecryptfs-security.txt
- delete mode 100644 fs/ecryptfs/kthread.c
-
+diff --git a/fs/stack.c b/fs/stack.c
+index 4a6f7f4..a6deb1c 100644
+--- a/fs/stack.c
++++ b/fs/stack.c
+@@ -73,7 +73,7 @@ void fsstack_copy_attr_all(struct inode *dest, const struct inode *src)
+ 	dest->i_mtime = src->i_mtime;
+ 	dest->i_ctime = src->i_ctime;
+ 	dest->i_blkbits = src->i_blkbits;
+-	dest->i_flags = src->i_flags;
++	dest->i_flags = (src->i_flags & ~S_IMA) + (dest->i_flags & S_IMA);
+ 	dest->i_nlink = src->i_nlink;
+ }
+ EXPORT_SYMBOL_GPL(fsstack_copy_attr_all);
 -- 
 1.7.4.4
 
 
-------2B99CDD6946F56D28DFD52FD6EC1B1C3
+------301883DED083AA402FE2AE700D27B7D7
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -105,17 +97,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjkxMzQxNTVaMCMGCSqG
-SIb3DQEJBDEWBBSiaZPHMAKNwK7nsMq7w6qBOZe2DTB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA0MjkxMzQyMTdaMCMGCSqG
+SIb3DQEJBDEWBBQwvgOQX8cv4NUUMF5okY56da8CeTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBNLJ+MPDT+vaIVy7A0gYvOloQT
-W5omqF56yl0BsVKM2pjHDg4TamgbAcAP1xGRwNXjo7Ns36LD1bOrgzWUQBsl5K/F
-xzxHPi0wNoVqE9vpAhiu9T4s15AdQQEsOgBUzMUSZxY1lXEYzwmB0bjXwDyaDE6E
-tz1oSdB9r10SYNv6g7n+OFvG7udg1y8SCQtHsNao0u2DgqAh3DLm5PefVb2+a7kb
-7NrLPWb0br+7HbnxJOrGcH0BebIpHoGxDBK63pAiX5oAYAumTUPhtVik0TW4FcpQ
-h+Ma0JB9XBNFXzE3xPSVJGEIiyGLy0gFpZxyXUlwkZf8g/mM3BYEPja1u553
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCuHDKjtR4A5t4JO1JbiKDeU04R
+nW0roybL8syPzdDqhc2fOSwP42Wcm2mQ+VMD7EZ+zBgr38dm3R9JEpgF/pEdrmj1
+pN27wRdgv4fffDtiNX+4tUoyU/qey5hPhBvSwnuaOyMw7jbuzqXRi5YR+HNpmdrS
+1EATew7OzgWETc6pQh6iGRrn8LzF3JK6ZTmMLi1HKGrQU882LB70WScA3vIj0yEg
+b6UJMJ4OaUZgozUVSvHd69C4F5DMyaBb4aNUbImy2aOqgzzXQGW3vg+9cO3DfMg8
+zEPv+Hcgquun4QUgj6L62gRiVdbRdLVq8amCLnCsI3lcgpHelT02ZduU1P97
 
-------2B99CDD6946F56D28DFD52FD6EC1B1C3--
+------301883DED083AA402FE2AE700D27B7D7--
 
 
