@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab1D2TAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:00:49 -0400
-Received: from kroah.org ([198.145.64.141]:35133 "EHLO coco.kroah.org"
+	id S933658Ab1D2TCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:02:39 -0400
+Received: from kroah.org ([198.145.64.141]:50376 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933641Ab1D2S6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:57 2011
-Message-Id: <20110429185657.635894807@clark.kroah.org>
+	id S933406Ab1D2S6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:56 2011
+Message-Id: <20110429185656.425233710@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:15 -0700
+Date: Fri, 29 Apr 2011 11:56:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [52/55] iwl3945: do not deprecate software scan
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: [40/55] oom: use pte pages in OOM score
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 3bda50e3eaf58a4b9c4ce34204e5faa15c8b1b97 upstream.
+commit f755a042d82b51b54f3bdd0890e5ea56c0fb6807 upstream.
 
-Software scanning can be used for workaround some performance problems,
-so do not deprecate it.
+PTE pages eat up memory just like anything else, but we do not account for
+them in any way in the OOM scores.  They are also _guaranteed_ to get
+freed up when a process is OOM killed, while RSS is not.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl3945-base.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ mm/oom_kill.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -3995,8 +3995,7 @@ static int iwl3945_pci_probe(struct pci_
- 	 * "the hard way", rather than using device's scan.
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -172,10 +172,13 @@ unsigned int oom_badness(struct task_str
+ 
+ 	/*
+ 	 * The baseline for the badness score is the proportion of RAM that each
+-	 * task's rss and swap space use.
++	 * task's rss, pagetable and swap space use.
  	 */
- 	if (iwl3945_mod_params.disable_hw_scan) {
--		dev_printk(KERN_DEBUG, &(pdev->dev),
--			"sw scan support is deprecated\n");
-+		IWL_DEBUG_INFO(priv, "Disabling hw_scan\n");
- 		iwl3945_hw_ops.hw_scan = NULL;
- 	}
+-	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+-			totalpages;
++	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
++	points += get_mm_counter(p->mm, MM_SWAPENTS);
++
++	points *= 1000;
++	points /= totalpages;
+ 	task_unlock(p);
  
-@@ -4318,8 +4317,7 @@ MODULE_PARM_DESC(debug, "debug output ma
- #endif
- module_param_named(disable_hw_scan, iwl3945_mod_params.disable_hw_scan,
- 		   int, S_IRUGO);
--MODULE_PARM_DESC(disable_hw_scan,
--		 "disable hardware scanning (default 0) (deprecated)");
-+MODULE_PARM_DESC(disable_hw_scan, "disable hardware scanning (default 0)");
- module_param_named(fw_restart3945, iwl3945_mod_params.restart_fw, int, S_IRUGO);
- MODULE_PARM_DESC(fw_restart3945, "restart firmware in case of error");
- 
+ 	/*
 
 
