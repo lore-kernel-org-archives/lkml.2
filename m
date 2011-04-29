@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab1D2Uc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 16:32:58 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41668
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S933873Ab1D2UdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:33:00 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41663
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933812Ab1D2Uc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933810Ab1D2Uc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Apr 2011 16:32:29 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 05/18] Staging: hv: Cleanup vmbus_probe() function
-Date: Fri, 29 Apr 2011 13:45:03 -0700
-Message-Id: <1304109916-24874-5-git-send-email-kys@microsoft.com>
+Subject: [PATCH 06/18] Staging: hv: Properly handle errors in hv_pci_probe()
+Date: Fri, 29 Apr 2011 13:45:04 -0700
+Message-Id: <1304109916-24874-6-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304109916-24874-1-git-send-email-kys@microsoft.com>
 References: <1304109779-24819-1-git-send-email-kys@microsoft.com>
@@ -25,89 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic for handling probe failure was broken. Now that we have
-cleaned up error handling, get rid of the vmbus_probe_failed_cb()
-function.
+Much of the vmbus driver initialization is done within the hv_pci_probe()
+function. Properly handle errors in hv_pci_probe so that we can
+appropriately deal with loading of the vmbus driver.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus_api.h |    4 ----
- drivers/staging/hv/vmbus_drv.c |   31 ++-----------------------------
- 2 files changed, 2 insertions(+), 33 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |   34 +++++++++++++++++++++++++---------
+ 1 files changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/hv/vmbus_api.h b/drivers/staging/hv/vmbus_api.h
-index 02e3587..14df762 100644
---- a/drivers/staging/hv/vmbus_api.h
-+++ b/drivers/staging/hv/vmbus_api.h
-@@ -105,10 +105,6 @@ struct hv_driver {
- struct hv_device {
- 	char name[64];
- 
--	struct work_struct probe_failed_work_item;
--
--	int probe_error;
--
- 	/* the device type id of this device */
- 	struct hv_guid dev_type;
- 
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 1183459..5f88249 100644
+index 5f88249..8663f64 100644
 --- a/drivers/staging/hv/vmbus_drv.c
 +++ b/drivers/staging/hv/vmbus_drv.c
-@@ -313,27 +313,6 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
- 	return match;
+@@ -54,6 +54,8 @@ EXPORT_SYMBOL(vmbus_loglevel);
+ 	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
+ 	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
+ 
++static int pci_probe_error;
++static struct completion probe_event;
+ 
+ static void get_channel_info(struct hv_device *device,
+ 			     struct hv_device_info *info)
+@@ -722,19 +724,19 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
+ static int __devinit hv_pci_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *ent)
+ {
+-	int err;
+-
+ 	hv_pci_dev = pdev;
+ 
+-	err = pci_enable_device(pdev);
+-	if (err)
+-		return err;
++	pci_probe_error = pci_enable_device(pdev);
++	if (pci_probe_error)
++		goto probe_cleanup;
+ 
+-	err = vmbus_bus_init(pdev);
+-	if (err)
++	pci_probe_error = vmbus_bus_init(pdev);
++	if (pci_probe_error)
+ 		pci_disable_device(pdev);
+ 
+-	return err;
++probe_cleanup:
++	complete(&probe_event);
++	return pci_probe_error;
  }
  
--
--/*
-- * vmbus_probe_failed_cb - Callback when a driver probe failed in vmbus_probe()
-- *
-- * We need a callback because we cannot invoked device_unregister() inside
-- * vmbus_probe() since vmbus_probe() may be invoked inside device_register()
-- * i.e. we cannot call device_unregister() inside device_register()
-- */
--static void vmbus_probe_failed_cb(struct work_struct *context)
--{
--	struct hv_device *device_ctx = (struct hv_device *)context;
--
--	/*
--	 * Kick off the process of unregistering the device.
--	 * This will call vmbus_remove() and eventually vmbus_device_release()
--	 */
--	device_unregister(&device_ctx->device);
--
--	/* put_device(&device_ctx->device); */
--}
--
  /*
-  * vmbus_probe - Add the new vmbus's child device
-  */
-@@ -342,20 +321,14 @@ static int vmbus_probe(struct device *child_device)
- 	int ret = 0;
- 	struct hv_driver *drv =
- 			drv_to_hv_drv(child_device->driver);
--	struct hv_device *dev = device_to_hv_device(child_device);
+@@ -757,7 +759,21 @@ static struct pci_driver hv_bus_driver = {
  
- 	/* Let the specific open-source driver handles the probe if it can */
- 	if (drv->driver.probe) {
--		ret = dev->probe_error =
--		drv->driver.probe(child_device);
--		if (ret != 0) {
-+		ret = drv->driver.probe(child_device);
-+		if (ret != 0)
- 			pr_err("probe failed for device %s (%d)\n",
- 			       dev_name(child_device), ret);
+ static int __init hv_pci_init(void)
+ {
+-	return pci_register_driver(&hv_bus_driver);
++	int ret;
++	init_completion(&probe_event);
++	ret = pci_register_driver(&hv_bus_driver);
++	if (ret)
++		return ret;
++	/*
++	 * All the vmbus initialization occurs within the
++	 * hv_pci_probe() function. Wait for hv_pci_probe()
++	 * to complete.
++	 */
++	wait_for_completion(&probe_event);
++
++	if (pci_probe_error)
++		pci_unregister_driver(&hv_bus_driver);
++	return pci_probe_error;
+ }
  
--			INIT_WORK(&dev->probe_failed_work_item,
--				  vmbus_probe_failed_cb);
--			schedule_work(&dev->probe_failed_work_item);
--		}
- 	} else {
- 		pr_err("probe not set for driver %s\n",
- 		       dev_name(child_device));
+ 
 -- 
 1.7.4.1
 
