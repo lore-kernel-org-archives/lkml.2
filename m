@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab1D2INO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 04:13:14 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40752 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab1D2INK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 04:13:10 -0400
-Date: Fri, 29 Apr 2011 09:12:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        shiraz.hashim@st.com,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 5/5] driver core: let dev_set_drvdata return int
-	instead of void as it can fail
-Message-ID: <20110429081257.GW17290@n2100.arm.linux.org.uk>
-References: <20110420074248.GS31131@pengutronix.de> <1303285486-28598-1-git-send-email-u.kleine-koenig@pengutronix.de> <1303285486-28598-5-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1755551Ab1D2IPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 04:15:54 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45388 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114Ab1D2IPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 04:15:52 -0400
+Message-ID: <4DBA73B6.6040603@kernel.dk>
+Date: Fri, 29 Apr 2011 10:15:50 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1303285486-28598-5-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Amit Shah <amit.shah@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] cdrom: always check_disk_change() on open
+References: <20110406121920.GC4142@mtj.dyndns.org> <20110429060200.GA5107@amit-x200.redhat.com>
+In-Reply-To: <20110429060200.GA5107@amit-x200.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 09:44:46AM +0200, Uwe Kleine-König wrote:
-> Before commit
+On 2011-04-29 08:57, Amit Shah wrote:
+> On (Wed) 06 Apr 2011 [05:20:09], Tejun Heo wrote:
+>> cdrom_open() called check_disk_change() after the rest of open path
+>> succeeded which leads to the following bizarre behavior.
+>>
+>> * After media change, if the device opened without O_NONBLOCK,
+>>   open_for_data() naturally fails with -ENOMEDIA and
+>>   check_disk_change() is never called.  The media is known to be gone
+>>   and the open failure makes it obvious to the userland but device
+>>   invalidation never happens.
+>>
+>> * But if the device is opened with O_NONBLOCK, all the checks are
+>>   bypassed and cdrom_open() doesn't notice that the media is not there
+>>   and check_disk_change() is called and invalidation happens.
+>>
+>> There's nothing to be gained by avoiding calling check_disk_change()
+>> on open failure.  Common cases end up calling check_disk_change()
+>> anyway.  All we get is inconsistent behavior.
+>>
+>> Fix it by moving check_disk_change() invocation to the top of
+>> cdrom_open() so that it always gets called regardless of how the rest
+>> of open proceeds.
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> Reported-by: Amit Shah <amit.shah@redhat.com>
+>> Tested-by: Amit Shah <amit.shah@redhat.com>
 > 
-> 	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
+> Ping?
 > 
-> calling dev_set_drvdata with dev=NULL was an unchecked error. After some
-> discussion about what to return in this case removing the check (and so
-> producing a null pointer exception) seems fine.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/base/dd.c      |    7 +++----
->  include/linux/device.h |    2 +-
->  2 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index da57ee9..f9d69d7 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -408,17 +408,16 @@ void *dev_get_drvdata(const struct device *dev)
->  }
->  EXPORT_SYMBOL(dev_get_drvdata);
->  
-> -void dev_set_drvdata(struct device *dev, void *data)
-> +int dev_set_drvdata(struct device *dev, void *data)
->  {
->  	int error;
->  
-> -	if (!dev)
-> -		return;
->  	if (!dev->p) {
->  		error = device_private_init(dev);
->  		if (error)
-> -			return;
-> +			return error;
->  	}
->  	dev->p->driver_data = data;
-> +	return 0;
+> Also, please mark this for stable-2.6.38.
 
-Who is going to modify all the thousands of drivers we have in the kernel
-tree to check this return value?
+Done, added for 2.6.39 and marked stable for 2.6.38.
 
-If the answer is no one, its pointless returning an error value in the
-first place (which I think is what the original author already thought
-about.)
+-- 
+Jens Axboe
+
