@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933749Ab1D2TKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:10:49 -0400
-Received: from kroah.org ([198.145.64.141]:50164 "EHLO coco.kroah.org"
+	id S932766Ab1D2TLK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:11:10 -0400
+Received: from kroah.org ([198.145.64.141]:50159 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932563Ab1D2S6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:53 2011
-Message-Id: <20110429185652.960135164@clark.kroah.org>
+	id S1760876Ab1D2S6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:52 2011
+Message-Id: <20110429185652.870989164@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:27 -0700
+Date: Fri, 29 Apr 2011 11:55:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Liu Yuan <tailai.ly@taobao.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [04/55] block, blk-sysfs: Fix an err return path in blk_register_queue()
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [03/55] ath: add missing regdomain pair 0x5c mapping
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Yuan <tailai.ly@taobao.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit ed5302d3c25006a9edc7a7fbea97a30483f89ef7 upstream.
+commit bd39a274fb7b43374c797bafdb7f506598f36f77 upstream.
 
-We do not call blk_trace_remove_sysfs() in err return path
-if kobject_add() fails. This path fixes it.
+Joe Culler reported a problem with his AR9170 device:
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> ath: EEPROM regdomain: 0x5c
+> ath: EEPROM indicates we should expect a direct regpair map
+> ath: invalid regulatory domain/country code 0x5c
+> ath: Invalid EEPROM contents
+
+It turned out that the regdomain 'APL7_FCCA' was not mapped yet.
+According to Luis R. Rodriguez [Atheros' engineer] APL7 maps to
+FCC_CTL and FCCA maps to FCC_CTL as well, so the attached patch
+should be correct.
+
+Reported-by: Joe Culler <joe.culler@gmail.com>
+Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-sysfs.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/regd_common.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -511,8 +511,10 @@ int blk_register_queue(struct gendisk *d
- 		return ret;
+--- a/drivers/net/wireless/ath/regd_common.h
++++ b/drivers/net/wireless/ath/regd_common.h
+@@ -195,6 +195,7 @@ static struct reg_dmn_pair_mapping regDo
+ 	{APL9_WORLD, CTL_ETSI, CTL_ETSI},
  
- 	ret = kobject_add(&q->kobj, kobject_get(&dev->kobj), "%s", "queue");
--	if (ret < 0)
-+	if (ret < 0) {
-+		blk_trace_remove_sysfs(dev);
- 		return ret;
-+	}
- 
- 	kobject_uevent(&q->kobj, KOBJ_ADD);
- 
+ 	{APL3_FCCA, CTL_FCC, CTL_FCC},
++	{APL7_FCCA, CTL_FCC, CTL_FCC},
+ 	{APL1_ETSIC, CTL_FCC, CTL_ETSI},
+ 	{APL2_ETSIC, CTL_FCC, CTL_ETSI},
+ 	{APL2_APLD, CTL_FCC, NO_CTL},
 
 
