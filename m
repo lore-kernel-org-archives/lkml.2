@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933751Ab1D2Tc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:32:58 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33173 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932543Ab1D2Tc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:32:57 -0400
-Date: Fri, 29 Apr 2011 21:32:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/1] perf tools: Add missing user space support for
- config1/config2
-Message-ID: <20110429193237.GB15068@elte.hu>
-References: <1303407662-15564-2-git-send-email-acme@infradead.org>
- <20110422063429.GA16643@elte.hu>
- <20110422080604.GA22611@elte.hu>
- <alpine.DEB.2.00.1104251307010.12389@cl320.eecs.utk.edu>
- <20110425175444.GC28239@elte.hu>
- <alpine.DEB.2.00.1104251736220.12389@cl320.eecs.utk.edu>
- <20110426073847.GB30630@elte.hu>
- <alpine.DEB.2.00.1104261648400.32482@cl320.eecs.utk.edu>
- <20110427065241.GF17079@elte.hu>
- <alpine.DEB.2.00.1104281811400.25779@cl320.eecs.utk.edu>
+	id S1760865Ab1D2Tf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:35:29 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:63047 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1D2Tf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 15:35:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6331"; a="88464802"
+Message-ID: <4DBB12EF.9030000@codeaurora.org>
+Date: Fri, 29 Apr 2011 12:35:11 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1104281811400.25779@cl320.eecs.utk.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Colin Cross <ccross@google.com>, Kevin Hilman <khilman@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
+Subject: Re: [Update x2][PATCH 7/9] PM / Runtime: Generic clock manipulation
+ rountines for runtime PM (v5)
+References: <201104130205.26988.rjw@sisk.pl> <201104280306.13262.rjw@sisk.pl> <201104280333.13730.rjw@sisk.pl> <201104282136.26163.rjw@sisk.pl>
+In-Reply-To: <201104282136.26163.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/28/2011 12:36 PM, Rafael J. Wysocki wrote:
+> +/**
+> + * pm_runtime_clk_add - Start using a device clock for runtime PM.
+> + * @dev: Device whose clock is going to be used for runtime PM.
+> + * @con_id: Connection ID of the clock.
+> + *
+> + * Add the clock represented by @con_id to the list of clocks used for
+> + * the runtime PM of @dev.
+> + */
+> +int pm_runtime_clk_add(struct device *dev, const char *con_id)
+> +{
+> +	struct pm_runtime_clk_data *prd = __to_prd(dev);
+> +	struct pm_clock_entry *ce;
+> +
+> +	if (!prd)
+> +		return -EINVAL;
+> +
+> +	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
+> +	if (!ce) {
+> +		dev_err(dev, "Not enough memory for clock entry.\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	if (con_id) {
+> +		ce->con_id = kstrdup(con_id, GFP_KERNEL);
+> +		if (!ce->con_id) {
+> +			dev_err(dev,
+> +				"Not enough memory for clock conection ID.\n");
 
-* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+Missing an 'n' in connection.
 
-> On Wed, 27 Apr 2011, Ingo Molnar wrote:
-> 
-> > Secondly, you are still quite wrong even with your revised opinion. Being able 
-> > to type '-e cycles' and '-e instructions' in perf and get ... cycles and 
-> > instructions counts/events, and the kernel helping that kind of approach is not 
-> > 'abstraction to the extreme', it's called 'common sense'.
-> 
-> by your logic I should be able to delete a file by saying
->
->   echo "delete /tmp/tempfile" > /dev/sdc1
+> +			kfree(ce);
+> +			return -ENOMEM;
+> +		}
+> +	}
+> +
+> +	mutex_lock(&prd->lock);
+> +	list_add_tail(&ce->node, &prd->clock_list);
+> +	mutex_unlock(&prd->lock);
+> +	return 0;
+> +}
+> +
+> +/**
+> + * __pm_runtime_clk_remove - Destroy runtime PM clock entry.
+> + * @ce: Runtime PM clock entry to destroy.
+> + *
+> + * This routine must be called under the mutex protecting the runtime PM list
+> + * of clocks corresponding the the @ce's device.
+> + */
+> +static void __pm_runtime_clk_remove(struct pm_clock_entry *ce)
+> +{
+> +	if (!ce)
+> +		return;
+> +
+> +	list_del(&ce->node);
+> +
+> +	if (!IS_ERR_OR_NULL(ce->clk)) {
 
-> because using unlink() is too low of an abstraction and confusing to the 
-> user.
+NULL is a valid clock so you'll need to figure out some way to handle
+that throughout this code.
 
-Erm, unlink() does not pass magic hexa constants to the disk controller.
+> +		if (ce->clock_enabled)
+> +			clk_disable(ce->clk);
+> +
+> +		clk_put(ce->clk);
+> +	}
+> +
+> +	if (ce->con_id)
+> +		kfree(ce->con_id);
+> +
+> +	kfree(ce);
+> +}
+> +
 
-unlink() is a high level interface that works across a vast range of disk 
-controllers, disks, network mounted filesystems, in-RAM filesystems, in-ROM 
-filesystems, clustered filesystems and other mediums.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Just like that we can tell perf to count 'cycles', 'branches' or 
-'branch-misses' - all of these are relatively high level concepts (in the scope 
-of CPUs) that work across a vast range of CPU types and models.
-
-Similarly, for offcore we want to introduce the concept of 'node local' versus 
-'remote' memory - perhaps with some events for inter-CPU traffic as well - 
-because that probably covers most of the NUMA related memory profiling needs.
-
-Raw events are to perf what ioctls are to the VFS: small details nobody felt 
-worth generalizing. My point in this discussion is that we do not offer new 
-filesystems that support *only* ioctl calls ... Is this simple concept so hard 
-to understand?
-
-Thanks,
-
-	Ingo
