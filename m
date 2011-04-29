@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab1D2ULY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 16:11:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44142 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1D2ULU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 16:11:20 -0400
-Date: Fri, 29 Apr 2011 22:10:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: john stultz <johnstul@us.ibm.com>, sedat.dilek@gmail.com,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
- regression?
-In-Reply-To: <20110429213100.75f771eb@neptune.home>
-Message-ID: <alpine.LFD.2.02.1104292209220.3005@ionos>
-References: <20110426112756.GF4308@linux.vnet.ibm.com> <20110426183859.6ff6279b@neptune.home> <20110426190918.01660ccf@neptune.home> <BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com> <alpine.LFD.2.02.1104262314110.3323@ionos> <20110427081501.5ba28155@pluto.restena.lu>
- <20110427204139.1b0ea23b@neptune.home> <alpine.LFD.2.02.1104272351290.3323@ionos> <alpine.LFD.2.02.1104281051090.19095@ionos> <BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com> <20110428102609.GJ2135@linux.vnet.ibm.com> <1303997401.7819.5.camel@marge.simson.net>
- <BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com> <alpine.LFD.2.02.1104282044120.3005@ionos> <20110428222301.0b745a0a@neptune.home> <alpine.LFD.2.02.1104282227340.3005@ionos> <20110428224444.43107883@neptune.home> <alpine.LFD.2.02.1104282251080.3005@ionos>
- <1304027480.2971.121.camel@work-vm> <alpine.LFD.2.02.1104282353140.3005@ionos> <20110429213100.75f771eb@neptune.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S933758Ab1D2UMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:12:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51311 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756786Ab1D2UMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 16:12:48 -0400
+Date: Fri, 29 Apr 2011 16:12:42 -0400
+From: Dave Jones <davej@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the cpufreq tree
+Message-ID: <20110429201241.GA12256@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110427111024.eb26b6f5.sfr@canb.auug.org.au>
+ <20110427013217.GA30804@redhat.com>
+ <20110427115427.f5a4fac7.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-127621749-1304107849=:3005"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110427115427.f5a4fac7.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Apr 27, 2011 at 11:54:27AM +1000, Stephen Rothwell wrote:
+ > Hi Dave,
+ > 
+ > On Tue, 26 Apr 2011 21:32:17 -0400 Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > As the commit message suggests, per-arch cpufreq drivers are moving to drivers/cpufreq/
+ > > So far, I've only moved the x86 ones.  As a side-effect of this, the 
+ > > source "drivers/cpufreq/Kconfig" is no longer a per-arch thing, as it now gets
+ > > included from kernel/power/Kconfig.
+ > > 
+ > > I suspect the warnings are happening because on the unconverted archs, drivers/cpufreq/Kconfig
+ > > is now getting included twice.  If you kill the 'source' line in kernel/power/Kconfig,
+ > > does this make things go back to normal ?  (Check that cpufreq still shows up in
+ > > the resulting config afterwards)
+ > 
+ > Removing the source line in kernel/power/Kconfig makes the warnings go
+ > away and the only change in the generated config file is this:
 
---8323328-127621749-1304107849=:3005
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+I've moved this work onto a separate move-drivers branch. Could you track that in next too please?
+(Apply after fixes & next)
 
-On Fri, 29 Apr 2011, Bruno Prémont wrote:
-> On Fri, 29 April 2011 Thomas Gleixner wrote:
-> > On Thu, 28 Apr 2011, john stultz wrote:
-> > > On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
-> > > > /me suspects hrtimer changes to be the real culprit.
-> > > 
-> > > I'm not seeing anything on right off, but it does smell like
-> > > e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
-> > > would crop up.
-> > > 
-> > > Bruno, could you try checking out e06383db9ec, confirming it still
-> > > occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
-> > > 
-> > > I'll keep digging in the meantime.
-> > 
-> > I found the bug already. The problem is that sched_init() calls
-> > init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
-> > hrtimers_init() is called.
-> > 
-> > That was unnoticed so far as the CLOCK id to hrtimer base conversion
-> > was hardcoded. Now we use a table which is set up at hrtimers_init(),
-> > so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
-> > in the bss.
-> > 
-> > The patch below fixes this, by providing the table statically rather
-> > than runtime initialized. Though that whole ordering wants to be
-> > revisited.
-> 
-> Works here as well (applied alone), /proc/$(pidof rcu_kthread)/sched shows
-> total runtime continuing to increase beyond 950 and slubs continue being
-> released!
+I'm hoping this branch will be fairly short-lived, but it depends how quickly
+other architecture maintainers move their drivers over too.
 
-Does the CPU time show up in top/ps as well now ?
+thanks,
 
-Thanks,
+	Dave
 
-	tglx
---8323328-127621749-1304107849=:3005--
