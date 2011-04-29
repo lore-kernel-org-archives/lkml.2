@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab1D2P3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:29:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46165 "EHLO
+	id S1759317Ab1D2P3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:29:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54924 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759202Ab1D2P24 (ORCPT
+	with ESMTP id S1759283Ab1D2P3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:28:56 -0400
+	Fri, 29 Apr 2011 11:29:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=RjE2ROcZIAPWxeDv5xo7oiXYOxopjyyiTeGen6UzVabK3C3DnpKR37g8gHWEQYuaHq
-         pgecXYwPLFo4+2uagHj54yQeFBVqZirFz7PhFLOFY5Lr7AXkLRKoBQ/rV3xfAXUnZCtS
-         fw1MrAW6fgDbP+38fmQ0DyKdslS3SBXX18lAI=
+        b=U3LXZSVy5utf2eDgNYhAde5zHknosuLKuW/hRdEG0n4kamFWK9AxJ+MAufzB7Fh3o/
+         Wc2gb+056Adr/8hZ/VNUaf0f7cfR2fXauwqoembGo+QZxEvFVa3/LGwwz8J65PmruHlc
+         xE8H51elAuhgD5d7EBimpU6/dFQmKItpzK4cM=
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, yinghai@kernel.org, rientjes@google.com,
         tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/25] x86-64, NUMA: simplify nodedata allocation
-Date: Fri, 29 Apr 2011 17:28:22 +0200
-Message-Id: <1304090924-8197-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/25] x86-32, NUMA: Make apic->x86_32_numa_cpu_node() optional
+Date: Fri, 29 Apr 2011 17:28:25 +0200
+Message-Id: <1304090924-8197-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1304090924-8197-1-git-send-email-tj@kernel.org>
 References: <1304090924-8197-1-git-send-email-tj@kernel.org>
@@ -29,12 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With top-down memblock allocation, the allocation range limits in
-ealry_node_mem() can be simplified - try node-local first, then any
-node but in any case don't allocate below DMA limit.
-
-Remove early_node_mem() and implement simplified allocation directly
-in setup_node_bootmem().
+NUMAQ is the only meaningful user of this callback and
+setup_local_APIC() the only callsite.  Stop torturing everyone else by
+making the callback optional and removing all the boilerplate
+implementations and assignments.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -43,95 +41,168 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/mm/numa_64.c |   53 +++++++++++++++---------------------------------
- 1 files changed, 17 insertions(+), 36 deletions(-)
+ arch/x86/include/asm/apic.h      |    9 ++++++---
+ arch/x86/kernel/apic/apic.c      |   20 +++-----------------
+ arch/x86/kernel/apic/apic_noop.c |    9 ---------
+ arch/x86/kernel/apic/bigsmp_32.c |    1 -
+ arch/x86/kernel/apic/es7000_32.c |    7 -------
+ arch/x86/kernel/apic/probe_32.c  |    1 -
+ arch/x86/kernel/apic/summit_32.c |    1 -
+ 7 files changed, 9 insertions(+), 39 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 5e0dfc5..59d8a1c 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -37,38 +37,6 @@ __initdata
- static int numa_distance_cnt;
- static u8 *numa_distance;
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 2b7d573..a0c46f0 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -363,7 +363,12 @@ struct apic {
+ 	 */
+ 	int (*x86_32_early_logical_apicid)(int cpu);
  
--static void * __init early_node_mem(int nodeid, unsigned long start,
--				    unsigned long end, unsigned long size,
--				    unsigned long align)
+-	/* determine CPU -> NUMA node mapping */
++	/*
++	 * Optional method called from setup_local_APIC() after logical
++	 * apicid is guaranteed to be known to initialize apicid -> node
++	 * mapping if NUMA initialization hasn't done so already.  Don't
++	 * add new users.
++	 */
+ 	int (*x86_32_numa_cpu_node)(int cpu);
+ #endif
+ };
+@@ -537,8 +542,6 @@ static inline int default_phys_pkg_id(int cpuid_apic, int index_msb)
+ 	return cpuid_apic >> index_msb;
+ }
+ 
+-extern int default_x86_32_numa_cpu_node(int cpu);
+-
+ #endif
+ 
+ static inline unsigned int
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index a6cd02a..0c67b4f 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1245,8 +1245,9 @@ void __cpuinit setup_local_APIC(void)
+ 	 * a bit too late - percpu allocation has already happened without
+ 	 * proper NUMA affinity.
+ 	 */
+-	set_apicid_to_node(early_per_cpu(x86_cpu_to_apicid, cpu),
+-			   apic->x86_32_numa_cpu_node(cpu));
++	if (apic->x86_32_numa_cpu_node)
++		set_apicid_to_node(early_per_cpu(x86_cpu_to_apicid, cpu),
++				   apic->x86_32_numa_cpu_node(cpu));
+ #endif
+ 
+ 	/*
+@@ -2013,21 +2014,6 @@ void default_init_apic_ldr(void)
+ 	apic_write(APIC_LDR, val);
+ }
+ 
+-#ifdef CONFIG_X86_32
+-int default_x86_32_numa_cpu_node(int cpu)
 -{
--	unsigned long mem;
+-#ifdef CONFIG_NUMA
+-	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
 -
--	/*
--	 * put it on high as possible
--	 * something will go with NODE_DATA
--	 */
--	if (start < (MAX_DMA_PFN<<PAGE_SHIFT))
--		start = MAX_DMA_PFN<<PAGE_SHIFT;
--	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
--	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
--		start = MAX_DMA32_PFN<<PAGE_SHIFT;
--	mem = memblock_x86_find_in_range_node(nodeid, start, end, size, align);
--	if (mem != MEMBLOCK_ERROR)
--		return __va(mem);
+-	if (apicid != BAD_APICID)
+-		return __apicid_to_node[apicid];
+-	return NUMA_NO_NODE;
+-#else
+-	return 0;
+-#endif
+-}
+-#endif
 -
--	/* extend the search scope */
--	end = max_pfn_mapped << PAGE_SHIFT;
--	start = MAX_DMA_PFN << PAGE_SHIFT;
--	mem = memblock_find_in_range(start, end, size, align);
--	if (mem != MEMBLOCK_ERROR)
--		return __va(mem);
+ /*
+  * Power management
+  */
+diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+index f1baa2d..775b82b 100644
+--- a/arch/x86/kernel/apic/apic_noop.c
++++ b/arch/x86/kernel/apic/apic_noop.c
+@@ -119,14 +119,6 @@ static void noop_apic_write(u32 reg, u32 v)
+ 	WARN_ON_ONCE(cpu_has_apic && !disable_apic);
+ }
+ 
+-#ifdef CONFIG_X86_32
+-static int noop_x86_32_numa_cpu_node(int cpu)
+-{
+-	/* we're always on node 0 */
+-	return 0;
+-}
+-#endif
 -
--	printk(KERN_ERR "Cannot find %lu bytes in node %d\n",
--		       size, nodeid);
--
--	return NULL;
+ struct apic apic_noop = {
+ 	.name				= "noop",
+ 	.probe				= noop_probe,
+@@ -195,6 +187,5 @@ struct apic apic_noop = {
+ 
+ #ifdef CONFIG_X86_32
+ 	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= noop_x86_32_numa_cpu_node,
+ #endif
+ };
+diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
+index 541a2e4..d84ac5a 100644
+--- a/arch/x86/kernel/apic/bigsmp_32.c
++++ b/arch/x86/kernel/apic/bigsmp_32.c
+@@ -253,5 +253,4 @@ struct apic apic_bigsmp = {
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
+ 
+ 	.x86_32_early_logical_apicid	= bigsmp_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= default_x86_32_numa_cpu_node,
+ };
+diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
+index 3e9de48..70533de 100644
+--- a/arch/x86/kernel/apic/es7000_32.c
++++ b/arch/x86/kernel/apic/es7000_32.c
+@@ -510,11 +510,6 @@ static void es7000_setup_apic_routing(void)
+ 		nr_ioapics, cpumask_bits(es7000_target_cpus())[0]);
+ }
+ 
+-static int es7000_numa_cpu_node(int cpu)
+-{
+-	return 0;
 -}
 -
- static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
- 				     struct numa_meminfo *mi)
+ static int es7000_cpu_present_to_apicid(int mps_cpu)
  {
-@@ -130,6 +98,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
- void __init
- setup_node_bootmem(int nid, unsigned long start, unsigned long end)
- {
-+	const u64 nd_low = (u64)MAX_DMA_PFN << PAGE_SHIFT;
-+	const u64 nd_high = (u64)max_pfn_mapped << PAGE_SHIFT;
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
- 	unsigned long nd_pa;
- 	int tnid;
-@@ -146,18 +116,29 @@ setup_node_bootmem(int nid, unsigned long start, unsigned long end)
- 	printk(KERN_INFO "Initmem setup node %d %016lx-%016lx\n",
- 	       nid, start, end);
+ 	if (!mps_cpu)
+@@ -688,7 +683,6 @@ struct apic __refdata apic_es7000_cluster = {
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
  
--	node_data[nid] = early_node_mem(nid, start, end, nd_size,
--					SMP_CACHE_BYTES);
--	if (node_data[nid] == NULL)
-+	/*
-+	 * Try to allocate node data on local node and then fall back to
-+	 * all nodes.  Never allocate in DMA zone.
-+	 */
-+	nd_pa = memblock_x86_find_in_range_node(nid, nd_low, nd_high,
-+						nd_size, SMP_CACHE_BYTES);
-+	if (nd_pa == MEMBLOCK_ERROR)
-+		nd_pa = memblock_find_in_range(nd_low, nd_high,
-+					       nd_size, SMP_CACHE_BYTES);
-+	if (nd_pa == MEMBLOCK_ERROR) {
-+		pr_err("Cannot find %lu bytes in node %d\n", nd_size, nid);
- 		return;
--	nd_pa = __pa(node_data[nid]);
-+	}
- 	memblock_x86_reserve_range(nd_pa, nd_pa + nd_size, "NODE_DATA");
-+
-+	/* report and initialize */
- 	printk(KERN_INFO "  NODE_DATA [%016lx - %016lx]\n",
- 	       nd_pa, nd_pa + nd_size - 1);
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
- 	if (tnid != nid)
- 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
+ 	.x86_32_early_logical_apicid	= es7000_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= es7000_numa_cpu_node,
+ };
  
-+	node_data[nid] = __va(nd_pa);
- 	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
- 	NODE_DATA(nid)->node_id = nid;
- 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
+ struct apic __refdata apic_es7000 = {
+@@ -752,5 +746,4 @@ struct apic __refdata apic_es7000 = {
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
+ 
+ 	.x86_32_early_logical_apicid	= es7000_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= es7000_numa_cpu_node,
+ };
+diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
+index fc84c7b..6541e47 100644
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -172,7 +172,6 @@ struct apic apic_default = {
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
+ 
+ 	.x86_32_early_logical_apicid	= default_x86_32_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= default_x86_32_numa_cpu_node,
+ };
+ 
+ extern struct apic apic_numaq;
+diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
+index e4b8059..35bcd7d 100644
+--- a/arch/x86/kernel/apic/summit_32.c
++++ b/arch/x86/kernel/apic/summit_32.c
+@@ -551,5 +551,4 @@ struct apic apic_summit = {
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
+ 
+ 	.x86_32_early_logical_apicid	= summit_early_logical_apicid,
+-	.x86_32_numa_cpu_node		= default_x86_32_numa_cpu_node,
+ };
 -- 
 1.7.1
 
