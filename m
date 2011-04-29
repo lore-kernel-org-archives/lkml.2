@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708Ab1D2TEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:04:32 -0400
-Received: from kroah.org ([198.145.64.141]:50323 "EHLO coco.kroah.org"
+	id S933172Ab1D2S6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:31 -0400
+Received: from kroah.org ([198.145.64.141]:50288 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab1D2S6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:32 -0400
+	id S932686Ab1D2S60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:26 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:55 2011
-Message-Id: <20110429185655.570642374@clark.kroah.org>
+Message-Id: <20110429185654.993077106@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:54 -0700
+Date: Fri, 29 Apr 2011 11:55:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [31/55] ath9k_hw: partially revert "fix dma descriptor rx error bit parsing"
+        Maxime Bizon <mbizon@freebox.fr>, Tejun Heo <tj@kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: [25/55] ahci: dont enable port irq before handler is registered
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,84 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Maxime Bizon <mbizon@freebox.fr>
 
-commit 115dad7a7f42e68840392767323ceb9306dbdb36 upstream.
+commit 7b3a24c57d2eeda8dba9c205342b12689c4679f9 upstream.
 
-The rx error bit parsing was changed to consider PHY errors and various
-decryption errors separately. While correct according to the documentation,
-this is causing spurious decryption error reports in some situations.
+The ahci_pmp_attach() & ahci_pmp_detach() unmask port irqs, but they
+are also called during port initialization, before ahci host irq
+handler is registered. On ce4100 platform, this sometimes triggers
+"irq 4: nobody cared" message when loading driver.
 
-Fix this by restoring the original order of the checks in those places,
-where the errors are meant to be mutually exclusive.
+Fixed this by not touching the register if the port is in frozen
+state, and mark all uninitialized port as frozen.
 
-If a CRC error is reported, then MIC failure and decryption errors
-are irrelevant, and a PHY error is unlikely.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_mac.c |    8 ++++----
- drivers/net/wireless/ath/ath9k/mac.c        |   14 ++++++++++----
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/ata/libahci.c     |   17 +++++++++++++++--
+ drivers/ata/libata-core.c |    4 ++--
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-@@ -615,7 +615,7 @@ int ath9k_hw_process_rxdesc_edma(struct
- 		 */
- 		if (rxsp->status11 & AR_CRCErr)
- 			rxs->rs_status |= ATH9K_RXERR_CRC;
--		if (rxsp->status11 & AR_PHYErr) {
-+		else if (rxsp->status11 & AR_PHYErr) {
- 			phyerr = MS(rxsp->status11, AR_PHYErrCode);
- 			/*
- 			 * If we reach a point here where AR_PostDelimCRCErr is
-@@ -638,11 +638,11 @@ int ath9k_hw_process_rxdesc_edma(struct
- 				rxs->rs_phyerr = phyerr;
- 			}
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1897,7 +1897,17 @@ static void ahci_pmp_attach(struct ata_p
+ 	ahci_enable_fbs(ap);
  
--		}
--		if (rxsp->status11 & AR_DecryptCRCErr)
-+		} else if (rxsp->status11 & AR_DecryptCRCErr)
- 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
--		if (rxsp->status11 & AR_MichaelErr)
-+		else if (rxsp->status11 & AR_MichaelErr)
- 			rxs->rs_status |= ATH9K_RXERR_MIC;
+ 	pp->intr_mask |= PORT_IRQ_BAD_PMP;
+-	writel(pp->intr_mask, port_mmio + PORT_IRQ_MASK);
 +
- 		if (rxsp->status11 & AR_KeyMiss)
- 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
- 	}
---- a/drivers/net/wireless/ath/ath9k/mac.c
-+++ b/drivers/net/wireless/ath/ath9k/mac.c
-@@ -690,17 +690,23 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
- 		rs->rs_flags |= ATH9K_RX_DECRYPT_BUSY;
++	/*
++	 * We must not change the port interrupt mask register if the
++	 * port is marked frozen, the value in pp->intr_mask will be
++	 * restored later when the port is thawed.
++	 *
++	 * Note that during initialization, the port is marked as
++	 * frozen since the irq handler is not yet registered.
++	 */
++	if (!(ap->pflags & ATA_PFLAG_FROZEN))
++		writel(pp->intr_mask, port_mmio + PORT_IRQ_MASK);
+ }
  
- 	if ((ads.ds_rxstatus8 & AR_RxFrameOK) == 0) {
-+		/*
-+		 * Treat these errors as mutually exclusive to avoid spurious
-+		 * extra error reports from the hardware. If a CRC error is
-+		 * reported, then decryption and MIC errors are irrelevant,
-+		 * the frame is going to be dropped either way
-+		 */
- 		if (ads.ds_rxstatus8 & AR_CRCErr)
- 			rs->rs_status |= ATH9K_RXERR_CRC;
--		if (ads.ds_rxstatus8 & AR_PHYErr) {
-+		else if (ads.ds_rxstatus8 & AR_PHYErr) {
- 			rs->rs_status |= ATH9K_RXERR_PHY;
- 			phyerr = MS(ads.ds_rxstatus8, AR_PHYErrCode);
- 			rs->rs_phyerr = phyerr;
--		}
--		if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
-+		} else if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
- 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
--		if (ads.ds_rxstatus8 & AR_MichaelErr)
-+		else if (ads.ds_rxstatus8 & AR_MichaelErr)
- 			rs->rs_status |= ATH9K_RXERR_MIC;
+ static void ahci_pmp_detach(struct ata_port *ap)
+@@ -1913,7 +1923,10 @@ static void ahci_pmp_detach(struct ata_p
+ 	writel(cmd, port_mmio + PORT_CMD);
+ 
+ 	pp->intr_mask &= ~PORT_IRQ_BAD_PMP;
+-	writel(pp->intr_mask, port_mmio + PORT_IRQ_MASK);
 +
- 		if (ads.ds_rxstatus8 & AR_KeyMiss)
- 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
- 	}
++	/* see comment above in ahci_pmp_attach() */
++	if (!(ap->pflags & ATA_PFLAG_FROZEN))
++		writel(pp->intr_mask, port_mmio + PORT_IRQ_MASK);
+ }
+ 
+ int ahci_port_resume(struct ata_port *ap)
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5479,8 +5479,8 @@ struct ata_port *ata_port_alloc(struct a
+ 	ap = kzalloc(sizeof(*ap), GFP_KERNEL);
+ 	if (!ap)
+ 		return NULL;
+-	
+-	ap->pflags |= ATA_PFLAG_INITIALIZING;
++
++	ap->pflags |= ATA_PFLAG_INITIALIZING | ATA_PFLAG_FROZEN;
+ 	ap->lock = &host->lock;
+ 	ap->print_id = -1;
+ 	ap->host = host;
 
 
