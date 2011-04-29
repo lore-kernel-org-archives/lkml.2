@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1D2S6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 14:58:12 -0400
-Received: from kroah.org ([198.145.64.141]:50151 "EHLO coco.kroah.org"
+	id S933122Ab1D2S6Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 14:58:25 -0400
+Received: from kroah.org ([198.145.64.141]:50267 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760864Ab1D2S6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:52 2011
-Message-Id: <20110429185652.775598443@clark.kroah.org>
+	id S932686Ab1D2S6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 14:58:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
+Message-Id: <20110429185654.601769517@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:25 -0700
+Date: Fri, 29 Apr 2011 11:55:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amit Kumar Salecha <amit.salecha@qlogic.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [02/55] netxen: limit skb frags for non tso packet
+        =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [21/55] serial/imx: read cts state only after acking cts change irq
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: amit salecha <amit.salecha@qlogic.com>
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
 
-commit c968bdf6912cad6d0fc63d7037cc1c870604a808 upstream.
+commit 5680e94148a86e8c31fdc5cb0ea0d5c6810c05b0 upstream.
 
-Machines are getting deadlock in four node cluster environment.
-All nodes are accessing (find /gfs2 -depth -print|cpio -ocv > /dev/null)
-200 GB storage on a GFS2 filesystem.
-This result in memory fragmentation and driver receives 18 frags for
-1448 byte packets.
-For non tso packet, fw drops the tx request, if it has >14 frags.
+If cts changes between reading the level at the cts input (USR1_RTSS)
+and acking the irq (USR1_RTSD) the last edge doesn't generate an irq and
+uart_handle_cts_change is called with a outdated value for cts.
 
-Fixing it by pulling extra frags.
+The race was introduced by commit
 
-Signed-off-by: Amit Kumar Salecha <amit.salecha@qlogic.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+	ceca629 ([ARM] 2971/1: i.MX uart handle rts irq)
+
+Reported-by: Arwed Springer <Arwed.Springer@de.trumpf.com>
+Tested-by: Arwed Springer <Arwed.Springer@de.trumpf.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/netxen/netxen_nic.h      |    4 ++--
- drivers/net/netxen/netxen_nic_main.c |   17 +++++++++++++++++
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/tty/serial/imx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/netxen/netxen_nic.h
-+++ b/drivers/net/netxen/netxen_nic.h
-@@ -174,7 +174,7 @@
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -382,12 +382,13 @@ static void imx_start_tx(struct uart_por
+ static irqreturn_t imx_rtsint(int irq, void *dev_id)
+ {
+ 	struct imx_port *sport = dev_id;
+-	unsigned int val = readl(sport->port.membase + USR1) & USR1_RTSS;
++	unsigned int val;
+ 	unsigned long flags;
  
- #define	MAX_NUM_CARDS		4
+ 	spin_lock_irqsave(&sport->port.lock, flags);
  
--#define MAX_BUFFERS_PER_CMD	32
-+#define NETXEN_MAX_FRAGS_PER_TX	14
- #define MAX_TSO_HEADER_DESC	2
- #define MGMT_CMD_DESC_RESV	4
- #define TX_STOP_THRESH		((MAX_SKB_FRAGS >> 2) + MAX_TSO_HEADER_DESC \
-@@ -558,7 +558,7 @@ struct netxen_recv_crb {
-  */
- struct netxen_cmd_buffer {
- 	struct sk_buff *skb;
--	struct netxen_skb_frag frag_array[MAX_BUFFERS_PER_CMD + 1];
-+	struct netxen_skb_frag frag_array[MAX_SKB_FRAGS + 1];
- 	u32 frag_count;
- };
- 
---- a/drivers/net/netxen/netxen_nic_main.c
-+++ b/drivers/net/netxen/netxen_nic_main.c
-@@ -1841,6 +1841,8 @@ netxen_nic_xmit_frame(struct sk_buff *sk
- 	struct cmd_desc_type0 *hwdesc, *first_desc;
- 	struct pci_dev *pdev;
- 	int i, k;
-+	int delta = 0;
-+	struct skb_frag_struct *frag;
- 
- 	u32 producer;
- 	int frag_count, no_of_desc;
-@@ -1848,6 +1850,21 @@ netxen_nic_xmit_frame(struct sk_buff *sk
- 
- 	frag_count = skb_shinfo(skb)->nr_frags + 1;
- 
-+	/* 14 frags supported for normal packet and
-+	 * 32 frags supported for TSO packet
-+	 */
-+	if (!skb_is_gso(skb) && frag_count > NETXEN_MAX_FRAGS_PER_TX) {
-+
-+		for (i = 0; i < (frag_count - NETXEN_MAX_FRAGS_PER_TX); i++) {
-+			frag = &skb_shinfo(skb)->frags[i];
-+			delta += frag->size;
-+		}
-+
-+		if (!__pskb_pull_tail(skb, delta))
-+			goto drop_packet;
-+
-+		frag_count = 1 + skb_shinfo(skb)->nr_frags;
-+	}
- 	/* 4 fragments per cmd des */
- 	no_of_desc = (frag_count + 3) >> 2;
+ 	writel(USR1_RTSD, sport->port.membase + USR1);
++	val = readl(sport->port.membase + USR1) & USR1_RTSS;
+ 	uart_handle_cts_change(&sport->port, !!val);
+ 	wake_up_interruptible(&sport->port.state->port.delta_msr_wait);
  
 
 
