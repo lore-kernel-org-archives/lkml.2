@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab1D2U0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 16:26:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51828 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab1D2U0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 16:26:08 -0400
-Date: Fri, 29 Apr 2011 22:26:03 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jiaying Zhang <jiayingz@google.com>
-Subject: Re: [PATCH] trace: Add x86 irq vector entry/exit tracepoints
-In-Reply-To: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
-Message-ID: <alpine.LFD.2.02.1104292218320.3005@ionos>
-References: <1303774907-13099-1-git-send-email-vnagarnaik@google.com> <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S933785Ab1D2U31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 16:29:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37075 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932307Ab1D2U3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 16:29:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [Update x2][PATCH 7/9] PM / Runtime: Generic clock manipulation rountines for runtime PM (v5)
+Date: Fri, 29 Apr 2011 22:29:56 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Colin Cross <ccross@google.com>, Kevin Hilman <khilman@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
+References: <201104130205.26988.rjw@sisk.pl> <201104282136.26163.rjw@sisk.pl> <4DBB12EF.9030000@codeaurora.org>
+In-Reply-To: <4DBB12EF.9030000@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104292229.56518.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011, Vaibhav Nagarnaik wrote:
+On Friday, April 29, 2011, Stephen Boyd wrote:
+> On 04/28/2011 12:36 PM, Rafael J. Wysocki wrote:
+> > +/**
+> > + * pm_runtime_clk_add - Start using a device clock for runtime PM.
+> > + * @dev: Device whose clock is going to be used for runtime PM.
+> > + * @con_id: Connection ID of the clock.
+> > + *
+> > + * Add the clock represented by @con_id to the list of clocks used for
+> > + * the runtime PM of @dev.
+> > + */
+> > +int pm_runtime_clk_add(struct device *dev, const char *con_id)
+> > +{
+> > +	struct pm_runtime_clk_data *prd = __to_prd(dev);
+> > +	struct pm_clock_entry *ce;
+> > +
+> > +	if (!prd)
+> > +		return -EINVAL;
+> > +
+> > +	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
+> > +	if (!ce) {
+> > +		dev_err(dev, "Not enough memory for clock entry.\n");
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	if (con_id) {
+> > +		ce->con_id = kstrdup(con_id, GFP_KERNEL);
+> > +		if (!ce->con_id) {
+> > +			dev_err(dev,
+> > +				"Not enough memory for clock conection ID.\n");
+> 
+> Missing an 'n' in connection.
 
-> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-> index 4b4c7d9..b70383e 100644
-> --- a/include/trace/events/irq.h
-> +++ b/include/trace/events/irq.h
-> @@ -139,6 +139,51 @@ DEFINE_EVENT(softirq, softirq_raise,
->  	TP_ARGS(vec_nr)
->  );
->  
-> +#include <asm/irq_vectors.h>
+Right, thanks!
 
-And how is that supposed to compile on anything else than arch/x86 and
-arch/um ? And no, we don't want an #ifdef x86 for that.
+> > +			kfree(ce);
+> > +			return -ENOMEM;
+> > +		}
+> > +	}
+> > +
+> > +	mutex_lock(&prd->lock);
+> > +	list_add_tail(&ce->node, &prd->clock_list);
+> > +	mutex_unlock(&prd->lock);
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * __pm_runtime_clk_remove - Destroy runtime PM clock entry.
+> > + * @ce: Runtime PM clock entry to destroy.
+> > + *
+> > + * This routine must be called under the mutex protecting the runtime PM list
+> > + * of clocks corresponding the the @ce's device.
+> > + */
+> > +static void __pm_runtime_clk_remove(struct pm_clock_entry *ce)
+> > +{
+> > +	if (!ce)
+> > +		return;
+> > +
+> > +	list_del(&ce->node);
+> > +
+> > +	if (!IS_ERR_OR_NULL(ce->clk)) {
+> 
+> NULL is a valid clock so you'll need to figure out some way to handle
+> that throughout this code.
+
+Well, I didn't know that, thanks!  I'll need to add the "active" flag
+back, then, after all.  In addition to that, I'll need to distinguish between
+the "clk == NULL because it's not initialized" and "clk == NULL becuase it's
+a valid clock" cases. 
+
+I guess I'll use combinations of two flags.
 
 Thanks,
-
-	tglx
+Rafael
