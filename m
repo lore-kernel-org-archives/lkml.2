@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933240Ab1D2THZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:07:25 -0400
-Received: from kroah.org ([198.145.64.141]:50245 "EHLO coco.kroah.org"
+	id S933731Ab1D2THm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:07:42 -0400
+Received: from kroah.org ([198.145.64.141]:51379 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932921Ab1D2S6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 14:58:19 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:54 2011
-Message-Id: <20110429185654.231167341@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:55:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [17/55] drm/radeon/kms: fix bad shift in atom iio table parser
-In-Reply-To: <20110429185706.GA12824@kroah.com>
+	id S932921Ab1D2THk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 15:07:40 -0400
+Date: Fri, 29 Apr 2011 12:07:30 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] STAGING fixes for .39
+Message-ID: <20110429190730.GA13635@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+Here are a number of minor staging driver fixes for your .39-rc tree.
 
-------------------
+Almost all of these fix build errors that have been reported by people.
+There is one usbip bugfix for a runtime issue as well.
 
-From: Alex Deucher <alexdeucher@gmail.com>
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
 
-commit 8e461123f28e6b17456225e70eb834b3b30d28bb upstream.
+All of these patches have been in the mm and -next trees for a while.
 
-Noticed by Patrick Lowry.
+These patches will be sent to the linux driver project list for all to
+see.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+thanks,
 
----
- drivers/gpu/drm/radeon/atom.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+greg k-h
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -135,7 +135,7 @@ static uint32_t atom_iio_execute(struct
- 		case ATOM_IIO_MOVE_INDEX:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((index >> CU8(base + 2)) &
- 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
-@@ -145,7 +145,7 @@ static uint32_t atom_iio_execute(struct
- 		case ATOM_IIO_MOVE_DATA:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((data >> CU8(base + 2)) &
- 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
-@@ -155,7 +155,7 @@ static uint32_t atom_iio_execute(struct
- 		case ATOM_IIO_MOVE_ATTR:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((ctx->
- 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
+--------------
 
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ----
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    3 ---
+ drivers/staging/gma500/Kconfig                     |    2 +-
+ drivers/staging/intel_sst/intelmid_v1_control.c    |    1 +
+ drivers/staging/intel_sst/intelmid_v2_control.c    |    1 +
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1.c         |    1 +
+ drivers/staging/rts_pstor/debug.h                  |    2 +-
+ drivers/staging/rts_pstor/ms.c                     |    1 +
+ drivers/staging/rts_pstor/rtsx_chip.c              |    5 +++--
+ drivers/staging/rts_pstor/rtsx_scsi.c              |    1 +
+ drivers/staging/rts_pstor/sd.c                     |    4 ++--
+ drivers/staging/rts_pstor/trace.h                  |    2 +-
+ drivers/staging/rts_pstor/xd.c                     |    1 +
+ drivers/staging/solo6x10/Kconfig                   |    1 +
+ drivers/staging/usbip/vhci_hcd.c                   |    9 ++++-----
+ drivers/staging/usbip/vhci_sysfs.c                 |    7 ++++---
+ 16 files changed, 23 insertions(+), 22 deletions(-)
+
+---------------
+
+Jeff Mahoney (5):
+      staging: olpc: Add <linux/delay.h>
+      staging: gma500: Depend on X86
+      staging: rts_pstor: Add <linux/vmalloc.h>
+      staging: rts_pstor: use #ifdef instead of #if
+      staging: ft1000: Remove unnecessary EXPORT_SYMBOLs
+
+Max Vozeler (1):
+      staging: usbip: vhci: fix oops on subsequent attach
+
+Peter Foley (1):
+      staging: solo6x10: add select SND_PCM to fix build error
+
+Randy Dunlap (1):
+      staging: intel_sst: intelmid needs delay.h
 
