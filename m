@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab1D2AFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 20:05:04 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40432 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758106Ab1D2AFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 20:05:02 -0400
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-From: john stultz <johnstul@us.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1304034500.2971.160.camel@work-vm>
-References: <alpine.DEB.2.00.1104201317410.31768@chino.kir.corp.google.com>
-	 <1303331695.2796.159.camel@work-vm>
-	 <20110421103009.731B.A69D9226@jp.fujitsu.com>
-	 <1303846026.2816.117.camel@work-vm>
-	 <alpine.DEB.2.00.1104271641350.25369@chino.kir.corp.google.com>
-	 <1303950728.2971.35.camel@work-vm> <1303954193.2971.43.camel@work-vm>
-	 <alpine.DEB.2.00.1104281545590.24536@chino.kir.corp.google.com>
-	 <1304034500.2971.160.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Apr 2011 17:04:55 -0700
-Message-ID: <1304035495.2971.169.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758320Ab1D2AOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 20:14:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58911 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab1D2AOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 20:14:36 -0400
+Date: Fri, 29 Apr 2011 02:14:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH] trace: Add special x86 irq entry/exit tracepoints
+In-Reply-To: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
+Message-ID: <alpine.LFD.2.02.1104290158320.3005@ionos>
+References: <1303512981-26234-1-git-send-email-vnagarnaik@google.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-28 at 16:48 -0700, john stultz wrote:
-> On Thu, 2011-04-28 at 15:48 -0700, David Rientjes wrote:
-> > On Wed, 27 Apr 2011, john stultz wrote:
-> > 
-> > > So thinking further, this can be simplified by adding the seqlock first,
-> > > and then retaining the task_locking only in the set_task_comm path until
-> > > all comm accessors are converted to using get_task_comm.
-> > > 
-> > 
-> > On second thought, I think it would be better to just retain using a 
-> > spinlock but instead of using alloc_lock, introduce a new spinlock to 
-> > task_struct for the sole purpose of protecting comm.
-> > 
-> > And, instead, of using get_task_comm() to write into a preallocated 
-> > buffer, I think it would be easier in the vast majority of cases that 
-> > you'll need to convert to just provide task_comm_lock(p) and 
-> > task_comm_unlock(p) so that p->comm can be dereferenced safely.  
+On Fri, 22 Apr 2011, Vaibhav Nagarnaik wrote:
+>  #include <asm/perf_event.h>
+>  #include <asm/x86_init.h>
+> @@ -857,7 +858,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+>  	 */
+>  	exit_idle();
+>  	irq_enter();
+> +	trace_special_irq_entry(LOCAL_TIMER_VECTOR);
 
-Ok.. trying to find a middle ground here by replying to my own
-concerns. :)
+Gah. trace_special_irq is the worst name you could come up with. It's
+tracing a vector which is nothing special and nothing x86 specific.
 
-> So my concern with this is that it means one more lock that could be
-> mis-nested. By keeping the locking isolated to the get/set_task_comm, we
-> can be sure that won't happen. 
-> 
-> Also tracking new current->comm references will be easier if we just
-> don't allow new ones. Validating that all the comm references are
-> correctly locked becomes more difficult if we need locking at each use
-> site.
+>  #include <asm/vsyscall.h>
+>  #include <asm/x86_init.h>
+> @@ -26,6 +27,8 @@
+>  volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
+>  #endif
+>  
+> +static struct irqaction *irq0_action;
+> +
 
-So maybe we still ban current->comm access and instead have a
-lightweight get_comm_locked() accessor or something that. Then we can
-add debugging options to validate that the lock is properly held
-internally.
+Ouch! You need an extra pointer for that ? Moving the stupid irq0
+struct up a few lines would do the trick as well, right ?
 
-> Further, since I'm not convinced that we never reference current->comm
-> from irq context, if we go with spinlocks, we're going to have to
-> disable irqs in the read path as well. seqlocks were nice for that
-> aspect.
+> --- a/include/trace/events/irq.h
+> +++ b/include/trace/events/irq.h
+> @@ -139,6 +139,74 @@ DEFINE_EVENT(softirq, softirq_raise,
+>  	TP_ARGS(vec_nr)
+>  );
+>  
+> +#ifdef CONFIG_X86
+> +#include <asm/irq_vectors.h>
+> +#define special_irq_name(sirq) { sirq, #sirq }
+> +#define show_special_irq_name(val)					\
+> +	__print_symbolic(val,						\
+> +			 special_irq_name(NMI_VECTOR),			\
+> +			 special_irq_name(LOCAL_TIMER_VECTOR),		\
+> +			 special_irq_name(ERROR_APIC_VECTOR),		\
+> +			 special_irq_name(RESCHEDULE_VECTOR),		\
+> +			 special_irq_name(CALL_FUNCTION_VECTOR),	\
+> +			 special_irq_name(CALL_FUNCTION_SINGLE_VECTOR),	\
+> +			 special_irq_name(THERMAL_APIC_VECTOR),		\
+> +			 special_irq_name(THRESHOLD_APIC_VECTOR),	\
+> +			 special_irq_name(REBOOT_VECTOR),		\
+> +			 special_irq_name(SPURIOUS_APIC_VECTOR),	\
+> +			 special_irq_name(IRQ_WORK_VECTOR),		\
+> +			 special_irq_name(X86_PLATFORM_IPI_VECTOR)	\
+> +			)
+> +
+> +#define IS_INVALIDATE_TLB_VECTOR(__irq) (\
+> +		__irq >= INVALIDATE_TLB_VECTOR_START && \
+> +		__irq <= INVALIDATE_TLB_VECTOR_END)
 
-rwlocks can resolve this concern.
+No way, really.
 
+Interrupt vectors are not x86 specific and they do no need any
+architecture specific handling at all. 
 
-Any other thoughts?
+The symbolic printout is a nice to have extra, but it can be solved by
+providing an arch specific lookup table which does not require any of
+that #ifdef X86 mess. If the table does not exist, then you simply can
+print the vector number and be done with it.
 
--john
+Thanks,
 
+	tglx
