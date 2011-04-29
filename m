@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab1DJTKa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 15:10:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63064 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755140Ab1DJTJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 15:09:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=efDxG5dFSCtAHKR01AIqnDyufDqJEkwX+UOfQU+D9GSWffhqQk/VHL8IoKsjagnogw
-         rKrWGzTmGARTHnoklRxu8mx3AvwNZvQDAQxKJk9E4teLh7VA1BKf6CXBAj4jOgWd4kVd
-         eKhy6ryjFO2+DOxA+KQsRa//vmaaSjJoY7agI=
-Message-ID: <4DA20083.8050208@gmail.com>
-Date: Sun, 10 Apr 2011 21:09:55 +0200
-From: roel <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1755688Ab1DJTZH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 15:25:07 -0400
+Received: from logistix.cr ([201.201.66.140]:14194 "EHLO mail.alsa.co.cr"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754091Ab1DJTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 15:25:05 -0400
+Reply-To: <googleservice@terra.es>
+From: "GET BACK TO ME IMMEDIATELY" <googleservice@terra.es>
+Subject: GET BACK TO ME IMMEDIATELY
+Date: Fri, 29 Apr 2011 05:51:58 +0200
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] ath9k: index out of bounds
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110410152334.1BFB92A35B2A@mail.alsa.co.cr>
+To: undisclosed-recipients:;
+X-Antivirus: Scanned by F-Prot Antivirus (http://www.f-prot.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check whether index is within bounds before testing the element
+Hello 
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- drivers/net/wireless/ath/ath9k/rc.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+I wish to ask for your consent for a partnership project that I would want both of us to execute mutually which is beneficial. However my name is Mr. Rodney Smith. Kindly get back to me to confirm the receipt of this massage so that I will give you full details of the project.
 
-diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
-index 4c0d36a..1809409 100644
---- a/drivers/net/wireless/ath/ath9k/rc.c
-+++ b/drivers/net/wireless/ath/ath9k/rc.c
-@@ -1092,8 +1092,7 @@ static int ath_rc_get_rateindex(const struct ath_rate_table *rate_table,
- 	if (!(rate->flags & IEEE80211_TX_RC_MCS))
- 		return rate->idx;
- 
--	while (rate->idx > mcs_rix_off[i] &&
--	       i < ARRAY_SIZE(mcs_rix_off)) {
-+	while (i < ARRAY_SIZE(mcs_rix_off) && rate->idx > mcs_rix_off[i]) {
- 		rix++; i++;
- 	}
- 
+Send your reply to my private email at rodney_smith@ibibo.com 
+
+I am waiting for your permission.
+
+Warm regards
+Mr. Rodney Smith
+Email:smithrodney@ibibo.com
