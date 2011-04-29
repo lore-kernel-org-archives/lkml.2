@@ -1,287 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab1D2XQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:16:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54857 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131Ab1D2XQT (ORCPT
+	id S934154Ab1D2XQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:16:30 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:39128 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934069Ab1D2XQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:16:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=CW15DlylPVLLooSp5zge/XC/ES9fuodkECb7tLN5xPzuQT8kxyJipzRb8yDL2xT6h
-	oDNv8Bln+TcyXKWWwp/yQ==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Add a free on close control mechanism for buffer_size_kb
-Date: Fri, 29 Apr 2011 16:16:08 -0700
-Message-Id: <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1304106356-11277-1-git-send-email-vnagarnaik@google.com>
-References: <1304106356-11277-1-git-send-email-vnagarnaik@google.com>
+	Fri, 29 Apr 2011 19:16:28 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DBB469F.50804@verizon.net>
+Date: Fri, 29 Apr 2011 19:15:43 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Michal Marek <mmarek@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to scripts/docproc.c
+References: <4DBB3DD4.9000000@verizon.net>	<20110429154649.848f9ba8.rdunlap@xenotime.net>	<4DBB42F9.7070407@suse.cz> <20110429160212.6662c08a.rdunlap@xenotime.net>
+In-Reply-To: <20110429160212.6662c08a.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc file entry buffer_size_kb is used to set the size of tracing
-buffer. The memory to expand the buffer size is kernel memory. Consider
-a use case where tracing is handled by a user space utility, which acts
-as a gate keeper for tracing requests. In an OOM condition, tracing is
-considered a low priority task and if the utility gets killed the ring
-buffer memory cannot be released back to the kernel.
+On 4/29/2011 7:02 PM, Randy Dunlap wrote:
+> On Sat, 30 Apr 2011 01:00:09 +0200 Michal Marek wrote:
+> 
+>> On 30.4.2011 00:46, Randy Dunlap wrote:
+>>> On Fri, 29 Apr 2011 18:38:12 -0400 Peter Foley wrote:
+>>>
+>>>> This patchset moves scripts/basic/docproc to scripts/docproc.
+>>>> This causes docproc to only be built for *doc targets rather than every
+>>>> time the kernel is compiled.
+>>>>
+>>>> Patches also attached as requested by Michal Marek.
+>>>
+>>>
+>>> That's disappointing (the attachments).  Why was this requested?
+>>>
+>>> See Documentation/CodingStyle, section 7:
+>>>
+>>> "No MIME, no links, no compression, no attachments.  Just plain text."
+>>
+>> and a couple of lines later:
+>> "Exception:  If your mailer is mangling patches then someone may ask
+>> you to re-send them using MIME."
+>>
+>> Which is exactly what happened here - the patches had missing or excess
+>> leading space and in some cases a context line was missing. So instead
+>> of manually reconstructing the patches, I asked Peter to resend them as
+>> attachments.
+> 
+> OK, thanks for explaining.
+> 
+>> BUT - I didn't request to split this patch into seven pieces. Splitting
+>> patches into smaller parts is desired, but each part has to be self
+>> contained and not break stuff when the later parts are not applied. So
+>> when moving a .c file, then the corespoding Makefile changes need to be
+>> contained in the same patch. No need to resend the patch now, I'll fold
+>> the patches into one again, but please consider this next time.
+> 
+> Yes, a few of them could be merged IMO.
+> 
+>>> Instead, the saved file contains lines like
+>>> this (below) and each patch 2 times (inline and attachment).
+>>
+>> Yeah, only sending the attachment would be better in this case.
+> 
+> agreed.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
-This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
-When this boolean is enabled, closing buffer_size_kb file will cause
-tracing to stop and free up the ring buffer memory.
+Thanks for all the feedback.
+I'll try to take it into account in the future.
 
-The user space process can then open the buffer_size_kb file to set the
-new buffer size for tracing, enable the boolean through IOCTL and keep
-the file open. Under OOM condition, if the process gets killed, the
-kernel closes the file descriptor for buffer_size_kb. The release
-handler stops the tracing and releases the kernel memory automatically.
+Thanks,
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- include/linux/ftrace.h |    3 +
- kernel/trace/trace.c   |  141 +++++++++++++++++++++++++++++++++++------------
- 2 files changed, 108 insertions(+), 36 deletions(-)
+Peter
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ca29e03..30c8a23 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -114,6 +114,9 @@ struct ftrace_func_command {
- 					char *params, int enable);
- };
- 
-+/* enable/disable auto free ring buffer on file close */
-+#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- int ftrace_arch_code_modify_prepare(void);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d38c16a..06f4458 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2765,7 +2765,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
- 	return t->init(tr);
- }
- 
--static int tracing_resize_ring_buffer(unsigned long size)
-+static int __tracing_resize_ring_buffer(unsigned long size)
- {
- 	int ret;
- 
-@@ -2817,6 +2817,42 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	return ret;
- }
- 
-+static ssize_t tracing_resize_ring_buffer(unsigned long size)
-+{
-+	int cpu, ret = 0;
-+
-+	mutex_lock(&trace_types_lock);
-+
-+	tracing_stop();
-+
-+	/* disable all cpu buffers */
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_inc(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_inc(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	if (size != global_trace.entries)
-+		ret = __tracing_resize_ring_buffer(size);
-+
-+	/* If check pages failed, return ENOMEM */
-+	if (tracing_disabled)
-+		ret = -ENOMEM;
-+
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_dec(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_dec(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	tracing_start();
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
-+}
-+
- 
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-@@ -2834,7 +2870,7 @@ int tracing_update_buffers(void)
- 
- 	mutex_lock(&trace_types_lock);
- 	if (!ring_buffer_expanded)
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 	mutex_unlock(&trace_types_lock);
- 
- 	return ret;
-@@ -2858,7 +2894,7 @@ static int tracing_set_tracer(const char *buf)
- 	mutex_lock(&trace_types_lock);
- 
- 	if (!ring_buffer_expanded) {
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 		if (ret < 0)
- 			goto out;
- 		ret = 0;
-@@ -3399,11 +3435,37 @@ out_err:
- 	goto out;
- }
- 
-+struct ftrace_entries_info {
-+	struct trace_array	*tr;
-+	int			free_buffer_on_close;
-+};
-+
-+static int
-+tracing_entries_open(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	info->tr = (struct trace_array *)inode->i_private;
-+	info->free_buffer_on_close = 0;
-+
-+	filp->private_data = info;
-+
-+	return 0;
-+}
-+
- static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
--	struct trace_array *tr = filp->private_data;
-+	struct ftrace_entries_info *info = filp->private_data;
-+	struct trace_array *tr = info->tr;
- 	char buf[96];
- 	int r;
- 
-@@ -3425,7 +3487,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- {
- 	unsigned long val;
- 	char buf[64];
--	int ret, cpu;
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3443,46 +3505,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	if (!val)
- 		return -EINVAL;
- 
--	mutex_lock(&trace_types_lock);
-+	/* value is in KB */
-+	val <<= 10;
- 
--	tracing_stop();
-+	ret = tracing_resize_ring_buffer(val);
-+	if (ret < 0)
-+		return ret;
- 
--	/* disable all cpu buffers */
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_inc(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_inc(&max_tr.data[cpu]->disabled);
--	}
-+	*ppos += cnt;
- 
--	/* value is in KB */
--	val <<= 10;
-+	return cnt;
-+}
- 
--	if (val != global_trace.entries) {
--		ret = tracing_resize_ring_buffer(val);
--		if (ret < 0) {
--			cnt = ret;
--			goto out;
--		}
-+static long
-+tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	int ret = -ENOIOCTLCMD;
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	switch (cmd) {
-+	case TRACE_RINGBUF_FREE_ON_CLOSE: {
-+		info->free_buffer_on_close = !!arg;
-+		ret = 0;
-+		break;
-+	}
- 	}
- 
--	*ppos += cnt;
-+	return ret;
-+}
- 
--	/* If check pages failed, return ENOMEM */
--	if (tracing_disabled)
--		cnt = -ENOMEM;
-- out:
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_dec(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_dec(&max_tr.data[cpu]->disabled);
-+static int
-+tracing_entries_release(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	if (info->free_buffer_on_close) {
-+		/* disable tracing */
-+		tracing_off();
-+		/* resize the ring buffer to 0 */
-+		tracing_resize_ring_buffer(0);
- 	}
- 
--	tracing_start();
--	mutex_unlock(&trace_types_lock);
-+	kfree(info);
- 
--	return cnt;
-+	return 0;
- }
- 
- static int mark_printk(const char *fmt, ...)
-@@ -3624,9 +3690,12 @@ static const struct file_operations tracing_pipe_fops = {
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_entries_open,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
-+	.unlocked_ioctl	= tracing_entries_ioctl,
-+	.compat_ioctl	= tracing_entries_ioctl,
-+	.release	= tracing_entries_release,
- 	.llseek		= generic_file_llseek,
- };
- 
--- 
-1.7.3.1
+
+
+
 
