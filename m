@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab1D2TBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:01:46 -0400
-Received: from kroah.org ([198.145.64.141]:50388 "EHLO coco.kroah.org"
+	id S933690Ab1D2TBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:01:44 -0400
+Received: from kroah.org ([198.145.64.141]:50392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933598Ab1D2S6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933617Ab1D2S6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Apr 2011 14:58:43 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Apr 29 11:56:56 2011
-Message-Id: <20110429185656.615891595@clark.kroah.org>
+Message-Id: <20110429185656.703014966@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 29 Apr 2011 11:56:05 -0700
+Date: Fri, 29 Apr 2011 11:56:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>
-Subject: [42/55] mm: thp: fix /dev/zero MAP_PRIVATE and vm_flags cleanups
+        Michael Schmitz <schmitz@debian.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [43/55] m68k/mm: Set all online nodes in N_NORMAL_MEMORY
 In-Reply-To: <20110429185706.GA12824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,165 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Michael Schmitz <schmitzmic@googlemail.com>
 
-commit 78f11a255749d09025f54d4e2df4fbcb031530e2 upstream.
+commit 4aac0b4815ba592052758f4b468f253d383dc9d6 upstream.
 
-The huge_memory.c THP page fault was allowed to run if vm_ops was null
-(which would succeed for /dev/zero MAP_PRIVATE, as the f_op->mmap wouldn't
-setup a special vma->vm_ops and it would fallback to regular anonymous
-memory) but other THP logics weren't fully activated for vmas with vm_file
-not NULL (/dev/zero has a not NULL vma->vm_file).
+For m68k, N_NORMAL_MEMORY represents all nodes that have present memory
+since it does not support HIGHMEM.  This patch sets the bit at the time
+node_present_pages has been set by free_area_init_node.
+At the time the node is brought online, the node state would have to be
+done unconditionally since information about present memory has not yet
+been recorded.
 
-So this removes the vm_file checks so that /dev/zero also can safely use
-THP (the other albeit safer approach to fix this bug would have been to
-prevent the THP initial page fault to run if vm_file was set).
+If N_NORMAL_MEMORY is not accurate, slub may encounter errors since it
+uses this nodemask to setup per-cache kmem_cache_node data structures.
 
-After removing the vm_file checks, this also makes huge_memory.c stricter
-in khugepaged for the DEBUG_VM=y case.  It doesn't replace the vm_file
-check with a is_pfn_mapping check (but it keeps checking for VM_PFNMAP
-under VM_BUG_ON) because for a is_cow_mapping() mapping VM_PFNMAP should
-only be allowed to exist before the first page fault, and in turn when
-vma->anon_vma is null (so preventing khugepaged registration).  So I tend
-to think the previous comment saying if vm_file was set, VM_PFNMAP might
-have been set and we could still be registered in khugepaged (despite
-anon_vma was not NULL to be registered in khugepaged) was too paranoid.
-The is_linear_pfn_mapping check is also I think superfluous (as described
-by comment) but under DEBUG_VM it is safe to stay.
+This pach is an alternative to the one proposed by David Rientjes
+<rientjes@google.com> attempting to set node state immediately when
+bringing the node online.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=33682
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reported-by: Caspar Zhang <bugs@casparzhang.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michael Schmitz <schmitz@debian.org>
+Tested-by: Thorsten Glaser <tg@debian.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/huge_mm.h |    2 +-
- include/linux/mm.h      |    3 ++-
- mm/huge_memory.c        |   43 ++++++++++++++++++++++++-------------------
- 3 files changed, 27 insertions(+), 21 deletions(-)
+ arch/m68k/mm/motorola.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -117,7 +117,7 @@ static inline void vma_adjust_trans_huge
- 					 unsigned long end,
- 					 long adjust_next)
- {
--	if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
-+	if (!vma->anon_vma || vma->vm_ops)
- 		return;
- 	__vma_adjust_trans_huge(vma, start, end, adjust_next);
- }
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -137,7 +137,8 @@ extern unsigned int kobjsize(const void
- #define VM_RandomReadHint(v)		((v)->vm_flags & VM_RAND_READ)
- 
- /*
-- * special vmas that are non-mergable, non-mlock()able
-+ * Special vmas that are non-mergable, non-mlock()able.
-+ * Note: mm/huge_memory.c VM_NO_THP depends on this definition.
-  */
- #define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_RESERVED | VM_PFNMAP)
- 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1400,6 +1400,9 @@ out:
- 	return ret;
+--- a/arch/m68k/mm/motorola.c
++++ b/arch/m68k/mm/motorola.c
+@@ -300,6 +300,8 @@ void __init paging_init(void)
+ 		zones_size[ZONE_DMA] = m68k_memory[i].size >> PAGE_SHIFT;
+ 		free_area_init_node(i, zones_size,
+ 				    m68k_memory[i].addr >> PAGE_SHIFT, NULL);
++		if (node_present_pages(i))
++			node_set_state(i, N_NORMAL_MEMORY);
+ 	}
  }
  
-+#define VM_NO_THP (VM_SPECIAL|VM_INSERTPAGE|VM_MIXEDMAP|VM_SAO| \
-+		   VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
-+
- int hugepage_madvise(struct vm_area_struct *vma,
- 		     unsigned long *vm_flags, int advice)
- {
-@@ -1408,11 +1411,7 @@ int hugepage_madvise(struct vm_area_stru
- 		/*
- 		 * Be somewhat over-protective like KSM for now!
- 		 */
--		if (*vm_flags & (VM_HUGEPAGE |
--				 VM_SHARED   | VM_MAYSHARE   |
--				 VM_PFNMAP   | VM_IO      | VM_DONTEXPAND |
--				 VM_RESERVED | VM_HUGETLB | VM_INSERTPAGE |
--				 VM_MIXEDMAP | VM_SAO))
-+		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
- 			return -EINVAL;
- 		*vm_flags &= ~VM_NOHUGEPAGE;
- 		*vm_flags |= VM_HUGEPAGE;
-@@ -1428,11 +1427,7 @@ int hugepage_madvise(struct vm_area_stru
- 		/*
- 		 * Be somewhat over-protective like KSM for now!
- 		 */
--		if (*vm_flags & (VM_NOHUGEPAGE |
--				 VM_SHARED   | VM_MAYSHARE   |
--				 VM_PFNMAP   | VM_IO      | VM_DONTEXPAND |
--				 VM_RESERVED | VM_HUGETLB | VM_INSERTPAGE |
--				 VM_MIXEDMAP | VM_SAO))
-+		if (*vm_flags & (VM_NOHUGEPAGE | VM_NO_THP))
- 			return -EINVAL;
- 		*vm_flags &= ~VM_HUGEPAGE;
- 		*vm_flags |= VM_NOHUGEPAGE;
-@@ -1566,10 +1561,14 @@ int khugepaged_enter_vma_merge(struct vm
- 		 * page fault if needed.
- 		 */
- 		return 0;
--	if (vma->vm_file || vma->vm_ops)
-+	if (vma->vm_ops)
- 		/* khugepaged not yet working on file or special mappings */
- 		return 0;
--	VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
-+	/*
-+	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
-+	 * true too, verify it here.
-+	 */
-+	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (hstart < hend)
-@@ -1818,12 +1817,15 @@ static void collapse_huge_page(struct mm
- 	    (vma->vm_flags & VM_NOHUGEPAGE))
- 		goto out;
- 
--	/* VM_PFNMAP vmas may have vm_ops null but vm_file set */
--	if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
-+	if (!vma->anon_vma || vma->vm_ops)
- 		goto out;
- 	if (is_vma_temporary_stack(vma))
- 		goto out;
--	VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
-+	/*
-+	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
-+	 * true too, verify it here.
-+	 */
-+	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
- 
- 	pgd = pgd_offset(mm, address);
- 	if (!pgd_present(*pgd))
-@@ -2056,13 +2058,16 @@ static unsigned int khugepaged_scan_mm_s
- 			progress++;
- 			continue;
- 		}
--		/* VM_PFNMAP vmas may have vm_ops null but vm_file set */
--		if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
-+		if (!vma->anon_vma || vma->vm_ops)
- 			goto skip;
- 		if (is_vma_temporary_stack(vma))
- 			goto skip;
--
--		VM_BUG_ON(is_linear_pfn_mapping(vma) || is_pfn_mapping(vma));
-+		/*
-+		 * If is_pfn_mapping() is true is_learn_pfn_mapping()
-+		 * must be true too, verify it here.
-+		 */
-+		VM_BUG_ON(is_linear_pfn_mapping(vma) ||
-+			  vma->vm_flags & VM_NO_THP);
- 
- 		hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 		hend = vma->vm_end & HPAGE_PMD_MASK;
 
 
