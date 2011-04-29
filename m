@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab1D2WKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:10:21 -0400
-Received: from zfrontend2.aha.ru ([195.2.83.148]:38704 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932333Ab1D2WKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:10:20 -0400
-From: "werner" <w.landgraf@ru.ru>
-Subject: 2.6.39-rc5-git2 boot crashs
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Fri, 29 Apr 2011 18:10:14 -0400
-Message-ID: <web-515866242@zbackend1.aha.ru>
+	id S932753Ab1D2WQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:16:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44834 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab1D2WQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 18:16:33 -0400
+Date: Fri, 29 Apr 2011 23:15:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        KyongHo Cho <pullip.cho@samsung.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Message-ID: <20110429221554.GD14871@n2100.arm.linux.org.uk>
+References: <201104212129.17013.arnd@arndb.de> <20110429075958.GV17290@n2100.arm.linux.org.uk> <20110429093209.1926c732@jbarnes-desktop> <201104292029.50680.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104292029.50680.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 29, 2011 at 08:29:50PM +0200, Arnd Bergmann wrote:
+> On Friday 29 April 2011 18:32:09 Jesse Barnes wrote:
+> > On Fri, 29 Apr 2011 08:59:58 +0100
+> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > 
+> > > On Fri, Apr 29, 2011 at 07:50:12AM +0200, Thomas Hellstrom wrote:
+> > > > However, we should be able to construct a completely generic api around  
+> > > > these operations, and for architectures that don't support them we need  
+> > > > to determine
+> > > >
+> > > > a)  Whether we want to support them anyway (IIRC the problem with PPC is  
+> > > > that the linear kernel map has huge tlb entries that are very  
+> > > > inefficient to break up?)
+> > > 
+> > > That same issue applies to ARM too - you'd need to stop the entire
+> > > machine, rewrite all processes page tables, flush tlbs, and only
+> > > then restart.  Otherwise there's the possibility of ending up with
+> > > conflicting types of TLB entries, and I'm not sure what the effect
+> > > of having two matching TLB entries for the same address would be.
+> > 
+> > Right, I don't think anyone wants to see this sort of thing happen with
+> > any frequency.  So either a large, uncached region can be set up a boot
+> > time for allocations, or infrequent, large requests and conversions can
+> > be made on demand, with memory being freed back to the main, coherent
+> > pool under pressure.
+> 
+> I'd like to first have an official confirmation from the CPU designers
+> if there is actually a problem with mapping a single page both cacheable
+> and noncacheable.
 
+Everytime this gets discussed, someone says that because they don't
+believe what I say.  OMAP folk confirmed it last time around.
 
-Pid: 5635, comm: mount Tainted: G         C 
- 2.6.39-rc5-git2 #1 System manufacturer System Product 
-Name/M2N8-VMX
-EIP: 0060:[<c12d01fb>] EFLAGS: 00010246 CPU: 0
-EIP is at logfs_drop_inode+0x3c/0x68
-EAX: 00000000 EBX: f4db8000 ECX: f4db81f4 EDX: f4db81f4
-ESI: f521c000 EDI: f5232c00 EBP: f5199e70 ESP: f5199e68
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process mount (pid: 5635, ti=f5198000 task=f523ae50 
-task.ti=f5198000)
-Stack:
-  c1f2344c f4db8000 f5199e84 c10ea544 ffffffea f5232c00 
-f68ac1c0 f5199ec0
-  c12d77cd 00000000 00000000 c10ced5c 00000000 f521c000 
-00000400 f521c000
-  f68a4b40 00000040 000000d0 00000000 f5106cb0 f5106cb0 
-f5199ef8 c10d9b11
-Call Trace:
-  [<c10ea544>] iput+0x5c/0x119
-  [<c12d77cd>] logfs_mount+0x44f/0x5cc
-  [<c10ced5c>] ? __kmalloc_track_caller+0x9b/0x157
-  [<c10d9b11>] mount_fs+0x68/0x13e
-  [<c10b1ce3>] ? kstrdup+0x30/0x41
-  [<c10ee6c3>] vfs_kern_mount+0x53/0x7f
-  [<c10ee747>] do_kern_mount+0x3c/0xbb
-  [<c10eede8>] do_mount+0x622/0x66f
-  [<c10ed9ca>] ? copy_mount_options+0xe/0xe7
-  [<c10b1c15>] ? memdup_user+0x34/0x4b
-  [<c10b1c5d>] ? strndup_user+0x31/0x42
-  [<c10eeea2>] sys_mount+0x6d/0x9b
-  [<c1eba70c>] syscall_call+0x7/0xb
-Code: 8c 01 00 00 b8 30 4e 79 c2 e8 41 a1 be 00 8d 8b f4 
-01 00 00 8b 93 f4 01 00 00 8b 83 f8 01 00 00 89 42 04 89 
-10 8b 86 54 02 00 00
-  48 04 89 83 f4 01 00 00 8d 86 54 02 00 00 89 83 f8 01 00 
-00
-EIP: [<c12d01fb>] logfs_drop_inode+0x3c/0x68 SS:ESP 
-0068:f5199e68
-CR2: 0000000000000004
----[ end trace cd59ca17c20fba5d ]---
----
-Professional hosting for everyone - http://www.host.ru
+I'm getting tired of this.  I'm going to give up with answering any
+further Linux questions until next week and I'll delete my entire
+mailbox this weekend as I really can't be bothered to catch up with all
+the crap that's happened over easter.  I'm really getting pissed off at
+all the shite crap that's flying around at the moment that I'm really
+starting to not care one ounce about Linux, either on ARM or on this
+utterly shite and broken x86 hardware.
+
+Let ARM rot in mainline.  I really don't care anymore.
