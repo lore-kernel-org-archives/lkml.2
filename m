@@ -1,154 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760808Ab1D2T3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 15:29:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34111 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab1D2T3c (ORCPT
+	id S933406Ab1D2TbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 15:31:17 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:57136 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544Ab1D2TbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 15:29:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kmcyC+lo1BhNHfK2TV/wlukSCWN7Z5q+gy2vQZrSdkFxFeSiN6/UbyKVRXkBCszi4I
-         pXcC2xRxg+B7LAdBWJ/sfNstWKImoyxVvtG66Xh4xZSye8uNfFAmb3yWu0gUntodq1MH
-         wWJGls7hrZt9G6Cso95yAQYet6c++lyWi6uNk=
-Message-ID: <4DBB1197.9010501@gmail.com>
-Date: Fri, 29 Apr 2011 13:29:27 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/stat] perf stat: Fail softly on unsupported events
-References: <tip-7y40wib8n006io7hjpn1dsrm@git.kernel.org> <4DBACC5C.1020502@gmail.com> <20110429192347.GA15068@elte.hu>
-In-Reply-To: <20110429192347.GA15068@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Apr 2011 15:31:15 -0400
+Date: Fri, 29 Apr 2011 21:31:00 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>, sedat.dilek@gmail.com,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning,
+ regression?
+Message-ID: <20110429213100.75f771eb@neptune.home>
+In-Reply-To: <alpine.LFD.2.02.1104282353140.3005@ionos>
+References: <20110426112756.GF4308@linux.vnet.ibm.com>
+	<20110426183859.6ff6279b@neptune.home>
+	<20110426190918.01660ccf@neptune.home>
+	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
+	<alpine.LFD.2.02.1104262314110.3323@ionos>
+	<20110427081501.5ba28155@pluto.restena.lu>
+	<20110427204139.1b0ea23b@neptune.home>
+	<alpine.LFD.2.02.1104272351290.3323@ionos>
+	<alpine.LFD.2.02.1104281051090.19095@ionos>
+	<BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
+	<20110428102609.GJ2135@linux.vnet.ibm.com>
+	<1303997401.7819.5.camel@marge.simson.net>
+	<BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
+	<alpine.LFD.2.02.1104282044120.3005@ionos>
+	<20110428222301.0b745a0a@neptune.home>
+	<alpine.LFD.2.02.1104282227340.3005@ionos>
+	<20110428224444.43107883@neptune.home>
+	<alpine.LFD.2.02.1104282251080.3005@ionos>
+	<1304027480.2971.121.camel@work-vm>
+	<alpine.LFD.2.02.1104282353140.3005@ionos>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/29/11 13:23, Ingo Molnar wrote:
+On Fri, 29 April 2011 Thomas Gleixner wrote:
+> On Thu, 28 Apr 2011, john stultz wrote:
+> > On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
+> > > /me suspects hrtimer changes to be the real culprit.
+> > 
+> > I'm not seeing anything on right off, but it does smell like
+> > e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
+> > would crop up.
+> > 
+> > Bruno, could you try checking out e06383db9ec, confirming it still
+> > occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
+> > 
+> > I'll keep digging in the meantime.
 > 
-> * David Ahern <dsahern@gmail.com> wrote:
+> I found the bug already. The problem is that sched_init() calls
+> init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
+> hrtimers_init() is called.
 > 
->>
->>
->> On 04/29/11 08:27, tip-bot for Ingo Molnar wrote:
->>> Commit-ID:  370faf1dd0461ad811852c8abbbcd3d73b1e4fc4
->>> Gitweb:     http://git.kernel.org/tip/370faf1dd0461ad811852c8abbbcd3d73b1e4fc4
->>> Author:     Ingo Molnar <mingo@elte.hu>
->>> AuthorDate: Fri, 29 Apr 2011 16:11:03 +0200
->>> Committer:  Ingo Molnar <mingo@elte.hu>
->>> CommitDate: Fri, 29 Apr 2011 16:22:33 +0200
->>>
->>> perf stat: Fail softly on unsupported events
->>>
->>> David Ahern reported this perf stat failure:
->>>
->>>> # /tmp/build-perf/perf stat -- sleep 1
->>>>   Error: stalled-cycles-frontend event is not supported.
->>>>   Fatal: Not all events could be opened.
->>>>
->>>> This is a Dell R410 with an E5620 processor.
->>>
->>> Fail in a softer fashion on unknown/unsupported events.
->>>
->>> Reported-by: David Ahern <dsahern@gmail.com>
->>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
->>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->>> Link: http://lkml.kernel.org/n/tip-7y40wib8n006io7hjpn1dsrm@git.kernel.org
->>> Signed-off-by: Ingo Molnar <mingo@elte.hu>
->>> ---
->>>  tools/perf/builtin-stat.c |    4 +---
->>>  1 files changed, 1 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
->>> index 9e596ab..c8b535b 100644
->>> --- a/tools/perf/builtin-stat.c
->>> +++ b/tools/perf/builtin-stat.c
->>> @@ -377,7 +377,7 @@ static int run_perf_stat(int argc __used, const char **argv)
->>>  
->>>  	list_for_each_entry(counter, &evsel_list->entries, node) {
->>>  		if (create_perf_stat_counter(counter) < 0) {
->>> -			if (errno == EINVAL || errno == ENOSYS)
->>> +			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT)
->>>  				continue;
->>>  
->>>  			if (errno == EPERM || errno == EACCES) {
->>> @@ -385,8 +385,6 @@ static int run_perf_stat(int argc __used, const char **argv)
->>>  				      "\t Consider tweaking"
->>>  				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
->>>  				      system_wide ? "system-wide " : "");
->>> -			} else if (errno == ENOENT) {
->>> -				error("%s event is not supported. ", event_name(counter));
->>
->> This silently ignores events -- including ones that a user requested. I
->> think a better option is a continue here.
->>
->>  /tmp/build-perf/perf stat -- sleep 1
->>   Error: stalled-cycles-frontend event is not supported.
->>   Error: stalled-cycles-backend event is not supported.
+> That was unnoticed so far as the CLOCK id to hrtimer base conversion
+> was hardcoded. Now we use a table which is set up at hrtimers_init(),
+> so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
+> in the bss.
 > 
-> Ok. Got time to send a patch for that, which prints whichever message you find 
-> the most intuitive? Perhaps word it as:
-> 
->  Info: stalled-cycles-frontend event is not supported by the kernel
-> 
-> to not yell 'error!' at users all the time?
+> The patch below fixes this, by providing the table statically rather
+> than runtime initialized. Though that whole ordering wants to be
+> revisited.
 
-Yes, Error is the wrong prefix, unless the user asked for the event.
-It's also not as simple as a continue; the fd array contains 0 so the
-command blocks trying to read from fd 0. e.g.:
+Works here as well (applied alone), /proc/$(pidof rcu_kthread)/sched shows
+total runtime continuing to increase beyond 950 and slubs continue being
+released!
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 2492a0e..bb1c4dc 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -318,7 +318,7 @@ static int read_counter(struct perf_evsel *counter)
- static int run_perf_stat(int argc __used, const char **argv)
- {
-    unsigned long long t0, t1;
--   struct perf_evsel *counter;
-+   struct perf_evsel *counter, *n;
-    int status = 0;
-    int child_ready_pipe[2], go_pipe[2];
-    const bool forks = (argc > 0);
-@@ -375,7 +375,7 @@ static int run_perf_stat(int argc __used, const char
-**argv)
-        close(child_ready_pipe[0]);
-    }
+Thanks,
+Bruno
 
--   list_for_each_entry(counter, &evsel_list->entries, node) {
-+   list_for_each_entry_safe(counter, n, &evsel_list->entries, node) {
-        if (create_perf_stat_counter(counter) < 0) {
-            if (errno == EINVAL || errno == ENOSYS)
-                continue;
-@@ -387,6 +387,8 @@ static int run_perf_stat(int argc __used, const char
-**argv)
-                      system_wide ? "system-wide " : "");
-            } else if (errno == ENOENT) {
-                error("%s event is not supported. ", event_name(counter));
-+               list_del(&counter->node);
-+               continue;
-            } else {
-                error("open_counter returned with %d (%s). "
-                      "/bin/dmesg may provide additional information.\n",
-
-
-That set the xyarray to -1.
-
-David
-
-> 
 > Thanks,
 > 
-> 	Ingo
+> 	tglx
+> 
+> --- linux-2.6.orig/kernel/hrtimer.c
+> +++ linux-2.6/kernel/hrtimer.c
+> @@ -81,7 +81,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, 
+>  	}
+>  };
+>  
+> -static int hrtimer_clock_to_base_table[MAX_CLOCKS];
+> +static int hrtimer_clock_to_base_table[MAX_CLOCKS] = {
+> +	[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME,
+> +	[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC,
+> +	[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME,
+> +};
+>  
+>  static inline int hrtimer_clockid_to_base(clockid_t clock_id)
+>  {
+> @@ -1722,10 +1726,6 @@ static struct notifier_block __cpuinitda
+>  
+>  void __init hrtimers_init(void)
+>  {
+> -	hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
+> -	hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
+> -	hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
+> -
+>  	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+>  			  (void *)(long)smp_processor_id());
+>  	register_cpu_notifier(&hrtimers_nb);
