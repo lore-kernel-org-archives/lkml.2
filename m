@@ -1,54 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab1D2WiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:38:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53659 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab1D2WiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:38:00 -0400
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        KyongHo Cho <pullip.cho@samsung.com>, linaro-mm-sig@lists.linaro.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <201104292029.50680.arnd@arndb.de>
-References: <201104212129.17013.arnd@arndb.de>
-	 <20110429075958.GV17290@n2100.arm.linux.org.uk>
-	 <20110429093209.1926c732@jbarnes-desktop>
-	 <201104292029.50680.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Apr 2011 08:37:17 +1000
-Message-ID: <1304116637.2513.252.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755988Ab1D2Wi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:38:59 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:51336 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751944Ab1D2Wi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 18:38:58 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DBB3DD4.9000000@verizon.net>
+Date: Fri, 29 Apr 2011 18:38:12 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-kbuild@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH V2 0/7] kbuild: move scripts/basic/docproc.c to scripts/docproc.c
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-29 at 20:29 +0200, Arnd Bergmann wrote:
-> 
-> If that is the case, we can probably work around this by turning the
-> entire
-> linear mapping (except for the kernel binary) into nonexecutable mode,
-> if we don't do that already.
-> This is desirable for security purposes anyway 
+This patchset moves scripts/basic/docproc to scripts/docproc.
+This causes docproc to only be built for *doc targets rather than every
+time the kernel is compiled.
 
-You'd still have an "edge" problem if you use large pages for the linear
-mapping, you can't obviously make part of the kernel text NX and you'd
-have to make sure you 'exclude' from those GPU allocations whatever
-overlaps with your last executable large page.
+Patches also attached as requested by Michal Marek.
 
-In a way, it's a similar problem I have with bolted memory on BookE
-where I can't restrict GPU allocations to memory that isn't bolted :-)
+Thanks,
 
-Cheers,
-Ben.
-
-
+Peter
