@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761005Ab1D2WEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 18:04:23 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41619 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757844Ab1D2WEV (ORCPT
+	id S1761009Ab1D2WFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 18:05:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:13461 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab1D2WFO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 18:04:21 -0400
+	Fri, 29 Apr 2011 18:05:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=PbC7dAak4OLV7CB490zlyK45s9uLxVwUMgXtHq10l9fWzUrhpRP/SlsIbNwV4ohgWB
-         p1mPNPbYf1TZ5K92+MVXbQdqi31oDkiltK4vt99OJ1BDjzzEVYh2tIq7U3aE/6jtcdsF
-         PbEyXVb5hhPo63xk5oXnc+c5j/b3aLwG6J710=
-From: David Ahern <dsahern@gmail.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf stat: tell user about unsupported events in the list
-Date: Fri, 29 Apr 2011 16:04:15 -0600
-Message-Id: <1304114655-10600-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hZFUSqKguECW4TYBw9E75+Ki9O3F0uh2XAwntwD8/sv/5EceHzyRMK/tTEFhWvDScq
+         fwxuoMKI09JaPHMFVvCw==
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1104292218320.3005@ionos>
+References: <1303774907-13099-1-git-send-email-vnagarnaik@google.com>
+ <1304107962-18576-1-git-send-email-vnagarnaik@google.com> <alpine.LFD.2.02.1104292218320.3005@ionos>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Fri, 29 Apr 2011 15:04:35 -0700
+Message-ID: <BANLkTiknxGh5ObC0U=xodswwdFjRkqkhyA@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add x86 irq vector entry/exit tracepoints
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to perf-record, tell user about unsupported events
-that will not be counted if invoked in verbose mode.
+On Fri, Apr 29, 2011 at 1:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 29 Apr 2011, Vaibhav Nagarnaik wrote:
+>
+>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+>> index 4b4c7d9..b70383e 100644
+>> --- a/include/trace/events/irq.h
+>> +++ b/include/trace/events/irq.h
+>> @@ -139,6 +139,51 @@ DEFINE_EVENT(softirq, softirq_raise,
+>>       TP_ARGS(vec_nr)
+>>  );
+>>
+>> +#include <asm/irq_vectors.h>
+>
+> And how is that supposed to compile on anything else than arch/x86 and
+> arch/um ? And no, we don't want an #ifdef x86 for that.
+>
+You are right. I didn't think of other platforms.
 
-e.g.,
-perf stat -e dTLB-prefetch-misses -v -- sleep 1
-dTLB-prefetch-misses event is not supported by the kernel.
-dTLB-prefetch-misses: 0 0 0
+If I include <asm/irq.h>, it should compile on all the platforms. What do you
+think?
 
- Performance counter stats for 'sleep 1':
+The other way is to define the irq_vectors as a separate trace system which
+only gets initialized if the platform files create the tracepoints for it. The
+only difference I see is that the tracepoints would move from under irq/ to
+irq_vectors/.
 
-     <not counted> dTLB-prefetch-misses
+> Thanks,
+>
+>        tglx
+>
 
-        1.001884783  seconds time elapsed
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-stat.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Thanks for your quick responses.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index c8b535b..602c3c9 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -377,8 +377,12 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter) < 0) {
--			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT)
-+			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT) {
-+				if (verbose)
-+					ui__warning("%s event is not supported by the kernel.\n",
-+						    event_name(counter));
- 				continue;
-+			}
- 
- 			if (errno == EPERM || errno == EACCES) {
- 				error("You may not have permission to collect %sstats.\n"
--- 
-1.7.4.4
-
+Vaibhav Nagarnaik
