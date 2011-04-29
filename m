@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab1D2MJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 08:09:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39216 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab1D2MJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 08:09:16 -0400
-Date: Fri, 29 Apr 2011 14:09:13 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH V2 resend 0/7] kbuild: scripts/kconfig/Makefile cleanup
- and fixes
-Message-ID: <20110429120912.GC1619@sepie.suse.cz>
-References: <4DB88BF7.1030905@verizon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB88BF7.1030905@verizon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752060Ab1D2MZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 08:25:27 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50979 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab1D2MZO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 08:25:14 -0400
+From: srinath@mistralsolutions.com
+To: linux-omap@vger.kernel.org
+Cc: jdk@ti.com, tony@atomide.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        khilman@deeprootsystems.com, nm@ti.com, nagendra@mistralsolutions.com,
+        umeshk@mistralsolutions.com, Srinath <srinath@mistralsolutions.com>
+Subject: [PATCH 1/2] AM35xx-Craneboard: USB EHCI: Fix USB ECHI PHY reset
+Date: Fri, 29 Apr 2011 17:11:00 +0530
+Message-Id: <1304077261-17811-1-git-send-email-srinath@mistralsolutions.com>
+X-Mailer: git-send-email 1.7.1.226.g770c5
+In-Reply-To: <[PATCH]>
+References: <[PATCH]>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 05:34:47PM -0400, Peter Foley wrote:
-> This patch set:
-> Changes the update-po-config target to work when make is run from
-> KBUILD_OUTDIR.
-> Changes the update-po-config target to reflect the new layout of arch/um.
-> Adds a check to only build kxgettext when needed.
-> Changes the qconf and gconf targets to change hostprogs-y when they are
-> being built like nconf and mconf instead of defining *-objs.
-> Cleans up the clean-files definitions.
-> Silences comands unless V=1.
-> 
-> I've also attached the patches as requested by Michal Marek.
+From: Srinath <srinath@mistralsolutions.com>
 
-That worked, thanks. Pushed to kbuild-2.6.git#kconfig.
+This patch fixes the EHCI PHY reset issue found on CraneBoard.
 
-Michal
+Signed-off-by: Srinath <srinath@mistralsolutions.com>
+---
+ arch/arm/mach-omap2/board-am3517crane.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+index a890d24..05867b5 100644
+--- a/arch/arm/mach-omap2/board-am3517crane.c
++++ b/arch/arm/mach-omap2/board-am3517crane.c
+@@ -60,7 +60,7 @@ static struct usbhs_omap_board_data usbhs_bdata __initdata = {
+ 	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 
+-	.phy_reset  = true,
++	.phy_reset  = false,
+ 	.reset_gpio_port[0]  = GPIO_USB_NRESET,
+ 	.reset_gpio_port[1]  = -EINVAL,
+ 	.reset_gpio_port[2]  = -EINVAL
+-- 
+1.7.1.226.g770c5
+
