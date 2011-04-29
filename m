@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab1D2Xed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:34:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35718 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759106Ab1D2Xea (ORCPT
+	id S1759027Ab1D2Xge (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:36:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57882 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab1D2Xgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:34:30 -0400
-Date: Fri, 29 Apr 2011 16:28:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>
-Subject: Re: Allow setting of number of raw devices as a module parameter
-Message-Id: <20110429162817.2eb26efb.akpm@linux-foundation.org>
-In-Reply-To: <1304029469-19672-1-git-send-email-jack@suse.cz>
-References: <1304029469-19672-1-git-send-email-jack@suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 29 Apr 2011 19:36:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Jx+uxt3oIh0vRZwCZcSwXYjSu8wnBTYmCSdxUf5SFRI444POcKnIPK0OCyNkZbyuJc
+         ZJFQgJICZh6n8aI8pz1FQBrr7ICm2q5DK23y72WdXmQKjTNeKgfxbGRwIw/pQAq+LB2O
+         pzqTMvbvglSUwfC7A4Hl+ZM840d+/9qK6MkWA=
+Message-ID: <4DBB4B55.7000904@gmail.com>
+Date: Sat, 30 Apr 2011 11:35:49 +1200
+From: Michael Schmitz <schmitzmic@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.8.1.4) Gecko/20070509 Iceape/1.1.2 (Debian-1.1.2-1)
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: David Rientjes <rientjes@google.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] m68k SLUB fix for 2.6.39
+References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg>	<alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com>	<1304026464.2598.36.camel@mulgrave.site>	<alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com> <BANLkTimT4899xDF99Fj37u_CgnkeBzoFzQ@mail.gmail.com>
+In-Reply-To: <BANLkTimT4899xDF99Fj37u_CgnkeBzoFzQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 00:24:29 +0200
-Jan Kara <jack@suse.cz> wrote:
+Geert Uytterhoeven wrote:
+> On Thu, Apr 28, 2011 at 23:41, David Rientjes <rientjes@google.com> wrote:
+>   
+>> On Thu, 28 Apr 2011, James Bottomley wrote:
+>>
+>>     
+>>
+>>> I think what the N_NORMAL_MEMORY patch did is just make it take a whiile
+>>> before you start allocating from that range.  Try executing a memory
+>>> balloon on the platform; that was how we first demonstrated the problem
+>>> on parisc.
+>>>
+>>>       
+>> With parisc, you encountered an oops in add_partial() because the
+>> kmem_cache_node structure for the memory range returned by page_to_nid()
+>> was not allocated.  init_kmem_cache_nodes() takes care of this for all
+>> memory ranges set in N_NORMAL_MEMORY.
+>>
+>> Adding Christoph and Pekka to the cc if there is additional concerns about
+>> slub on this architecture.
+>>     
+>
+> My ARAnyM instance has
+>
+> System Memory:	276480K
+> 	 14 MB at 0x00000000 (ST-RAM)
+> 	256 MB at 0x01000000 (alternate RAM)
+>
+> and 137800KIB of swap, and survived the following program just fine:
+>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <string.h>
+>
+> int main(int argc, char *argv[])
+> {
+>     size_t size = 1048576;
+>     size_t total = 0;
+>     void *p;
+>
+>     while (size) {
+> 	p = malloc(size);
+> 	if (!p) {
+> 	    printf("Failed to allocate %zu bytes\n", size);
+> 	    size /= 2;
+> 	}
+> 	memset(p, 0xaa, size);
+> 	total += size;
+> 	printf("Using %zu / 0x%zx bytes of memory\n", total, total);
+>     }
+>
+>     printf("Finished!\n");
+>     return 0;
+> }
+>
+> i.e. the OOM-killer just killed the program after it consumed all
+> available virtual
+> memory:
+>
+> Out of memory: Kill process 1727 (malloctest) score 854 or sacrifice child
+> Killed process 1727 (malloctest) total-vm:361160kB, anon-rss:224164kB,
+> file-rss:0kB
+> malloctest: page allocation failure. order:0, mode:0x84d0
+>
+> So SLUB really seems to work now.
+>   
+Forgot to mention what I did for tests, on all kernels that I could 
+actually boot: I ran slabinfo -l and slabinfo -T (saved the output in 
+case anyone wants to analyze that), any kernel that survived this was 
+considered good in the original bisect. The current fix was also tested 
+on the actual hardware.
 
-> Allow setting of maximal number of raw devices as a module parameter. This
-> requires changing of static array into a vmalloced one (the array is going to
-> be too large for kmalloc).
-> 
+There were quite a few kernels that initially booted but died on the 
+first slabinfo invocation. They invariably died at the e2fsck stage when 
+rebooted after that.
 
-Changelog failed to describe why the patch is needed.  Lacking that
-information, we have no reason to apply it.
+Using your test, ARAnyM, 14MB/128MB RAM and 134MB swap:
 
-> +static int max_raw_minors = MAX_RAW_MINORS;
+Out of memory: Kill process 1376 (malloctest) score 944 or sacrifice child
+Killed process 1376 (malloctest) total-vm:272756kB, anon-rss:135232kB, 
+file-rss:0kB
 
-I suppose we could remove MAX_RAW_MINORS and use CONFIG_MAX_RAW_DEVS
-directly.
+Falcon CT60, 14MB/512MB no swap:
 
-> +
-> +module_param(max_raw_minors, int, 0);
-> +MODULE_PARM_DESC(max_raw_minors, "Maximum number of raw devices (1-65536)");
-> +
->  /*
->   * Open/close code for raw IO.
->   *
-> @@ -131,7 +137,7 @@ static int bind_set(int number, u64 majo
->  	struct raw_device_data *rawdev;
->  	int err = 0;
->  
-> -	if (number <= 0 || number >= MAX_RAW_MINORS)
-> +	if (number <= 0 || number >= max_raw_minors)
->  		return -EINVAL;
->  
->  	if (MAJOR(dev) != major || MINOR(dev) != minor)
-> @@ -318,12 +324,26 @@ static int __init raw_init(void)
->  	dev_t dev = MKDEV(RAW_MAJOR, 0);
->  	int ret;
->  
-> -	ret = register_chrdev_region(dev, MAX_RAW_MINORS, "raw");
-> +	if (max_raw_minors < 1 || max_raw_minors > 65536) {
-> +		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
-> +			" between 1 and 65536), using %d\n", MAX_RAW_MINORS);
-> +		max_raw_minors = MAX_RAW_MINORS;
-> +	}
-> +
-> +	raw_devices = vmalloc(sizeof(struct raw_device_data) * max_raw_minors);
-> +	if (!raw_devices) {
-> +		printk(KERN_ERR "Not enough memory for raw device structures\n");
-> +		ret = -ENOMEM;
-> +		goto error;
-> +	}
-> +	memset(raw_devices, 0, sizeof(struct raw_device_data) * max_raw_minors);
+Out of memory: Kill process 8644 (malloctest) score 967 or sacrifice child
+Killed process 8644 (malloctest) total-vm:512244kB, anon-rss:510088kB, 
+file-rss:284kB
 
-vzalloc().
+HTH,
+
+  Michael
 
 
