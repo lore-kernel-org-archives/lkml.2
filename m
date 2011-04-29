@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab1D2PPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 11:15:04 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34551 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab1D2PPC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 11:15:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iTYIoYrS4UU2ImlvrHiDOgQYmpyyBs301tk3If2is7S7SdlGVO/kswj/mPA7DzLMp6
-         ZrTy7WbOruVFuc0jH/WIySAyCA8vLXCF/UVgzJCE9BNrDQfHGpYLmc6H3zC/JGnms0yF
-         Khzz3rMKfRHNG42KPs6fMSO/dRu1lLDKten2o=
+	id S1756802Ab1D2PPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 11:15:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754552Ab1D2PPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 11:15:17 -0400
+Date: Fri, 29 Apr 2011 11:15:09 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jump_label,x86: use text_poke_smp_batch for entries
+ update
+Message-ID: <20110429151509.GA2545@redhat.com>
+References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110428084820.GH12437@cmpxchg.org>
-References: <cover.1303833415.git.minchan.kim@gmail.com>
-	<4dc5e63cfc8672426336e43dea29057d5bb6e863.1303833417.git.minchan.kim@gmail.com>
-	<20110428084820.GH12437@cmpxchg.org>
-Date: Sat, 30 Apr 2011 00:15:01 +0900
-Message-ID: <BANLkTina+YuDgACZfDV8T_Lnipo50J6zVA@mail.gmail.com>
-Subject: Re: [RFC 2/8] compaction: make isolate_lru_page with filter aware
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+On Thu, Apr 28, 2011 at 10:52:41PM +0200, Jiri Olsa wrote:
+> Changing the jump label update code to use batch processing
+> for x86 architectures. 
+> 
+> Currently each jump label update calls text_poke_smp for each
+> jump label key entry. Thus one key update ends up calling stop
+> machine multiple times.
+> 
 
-On Thu, Apr 28, 2011 at 5:48 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Wed, Apr 27, 2011 at 01:25:19AM +0900, Minchan Kim wrote:
->> In async mode, compaction doesn't migrate dirty or writeback pages.
->> So, it's meaningless to pick the page and re-add it to lru list.
->>
->> Of course, when we isolate the page in compaction, the page might
->> be dirty or writeback but when we try to migrate the page, the page
->> would be not dirty, writeback. So it could be migrated. But it's
->> very unlikely as isolate and migration cycle is much faster than
->> writeout.
->>
->> So, this patch helps cpu and prevent unnecessary LRU churning.
->>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: Andrea Arcangeli <aarcange@redhat.com>
->> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> ---
->>  mm/compaction.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index dea32e3..9f80b5a 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -335,7 +335,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
->>               }
->>
->>               /* Try isolate the page */
->> -             if (__isolate_lru_page(page, ISOLATE_BOTH, 0, 0, 0) != 0)
->> +             if (__isolate_lru_page(page, ISOLATE_BOTH, 0, !cc->sync, 0) != 0)
->>                       continue;
->
-> With the suggested flags argument from 1/8, this would look like:
->
->        flags = ISOLATE_BOTH;
->        if (!cc->sync)
->                flags |= ISOLATE_CLEAN;
->
-> ?
+cool. Batching the updates is a nice idea.
 
-Yes. I will change it.
+> This patch is using text_poke_smp_batch, which is called for
+> all the key's entries.  Ensuring the stop machine is called
+> only once.
+> 
 
->
-> Anyway, nice change indeed!
+Since we walk the modules list per key (calling __jump_label_update()),
+this is not always the case. I'm wondering then if maybe what we want to do
+is 'queue' each update from the core code. Then, when the queue fills
+up, we flush out the queue. In this way, we cover jump labels that might
+be in both the core kernel and in modules. This also has the side effect
+of moving code such as:
 
-Thanks!
+/*
+ * The entry->code set to 0 invalidates module
+ * init text
+ * sections (see
+ * jump_label_invalidate_module_init).
+ */
+if (!entry->code || !kernel_text_address(entry->code))
+              continue;
 
 
--- 
-Kind regards,
-Minchan Kim
+out of the arch code into the generic code, which in my opinion is a bit
+cleaner. thoughts?
+
+Thanks,
+
+-Jason
