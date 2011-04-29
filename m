@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1D2Aba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Apr 2011 20:31:30 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52005 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab1D2Ab3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Apr 2011 20:31:29 -0400
-Date: Thu, 28 Apr 2011 17:31:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jim Schutt <jaschut@sandia.gov>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: mcelog stalls on 2.6.39-rc5
-Message-ID: <20110429003110.GC2191@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4DB87585.3010607@sandia.gov>
- <20110427230333.GD2135@linux.vnet.ibm.com>
- <4DB97459.3040301@sandia.gov>
- <4DB990A1.8090205@sandia.gov>
+	id S1757839Ab1D2AdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Apr 2011 20:33:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34780 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab1D2AdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Apr 2011 20:33:09 -0400
+Date: Fri, 29 Apr 2011 02:33:04 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH 1/2] trace: Add trap entry/exit tracepoints
+In-Reply-To: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+Message-ID: <alpine.LFD.2.02.1104290215290.3005@ionos>
+References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB990A1.8090205@sandia.gov>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 10:06:57AM -0600, Jim Schutt wrote:
-> Jim Schutt wrote:
-> >Paul E. McKenney wrote:
-> >>On Wed, Apr 27, 2011 at 01:59:01PM -0600, Jim Schutt wrote:
-> >>>Hi,
-> >>>
-> >>>Testing 2.6.39-rc5 is giving me the following stall:
-> >>>
-> >>>    [ 5767.731001] INFO: rcu_sched_state detected stall on CPU
-> >>>1 (t=60001 jiffies)
-> >>>    [ 5767.732001] INFO: rcu_sched_state detected stalls on
-> >>>CPUs/tasks: { 1} (detected by 0, t=60002 jiffies)
-> >>>    [ 5947.763001] INFO: rcu_sched_state detected stall on CPU
-> >>>1 (t=240032 jiffies)
-> >>>    [ 5947.764001] INFO: rcu_sched_state detected stalls on
-> >>>CPUs/tasks: { 1} (detected by 0, t=240034 jiffies)
-> >>>    [ 6024.489362] libceph: mon0 172.17.40.34:6789 socket closed
-> >>>    [ 6121.281139] INFO: task mcelog:6513 blocked for more
-> >>>than 120 seconds.
-> >>>    [ 6121.287575] "echo 0 >
-> >>>/proc/sys/kernel/hung_task_timeout_secs" disables this
-> >>>message.
-> >>>    [ 6121.295397]  ffff880177aefce8 0000000000000082
-> >>>ffffffff810339b6 ffff880226d35a40
-> >>>    [ 6121.302840]  ffff88018226c3b0 ffff88018226c3b0
-> >>>0000000000011e80 ffff880226d35a40
-> >>>    [ 6121.310284]  ffff88018226c760 ffff880177aefe80
-> >>>ffff880177aefd18 ffffffff813af047
-> >>>    [ 6121.317725] Call Trace:
-> >>>    [ 6121.320176]  [<ffffffff810339b6>] ?
-> >>>calc_load_account_idle+0xe/0x1d
-> >>>    [ 6121.326437]  [<ffffffff813af047>] schedule+0x159/0x193
-> >>>    [ 6121.331569]  [<ffffffff813af449>] schedule_timeout+0x36/0xe2
-> >>>    [ 6121.337223]  [<ffffffff810ad9eb>] ? trace_hardirqs_on+0x9/0x20
-> >>>    [ 6121.343047]  [<ffffffff813aee2b>] do_wait_for_common+0x97/0xe3
-> >>>    [ 6121.348967]  [<ffffffff8103e8fa>] ? try_to_wake_up+0x200/0x200
-> >>>    [ 6121.354794]  [<ffffffff8107a4bf>] ? __raw_spin_lock_irq+0x17/0x2f
-> >>>    [ 6121.360878]  [<ffffffff813af2a9>] wait_for_common+0x36/0x4d
-> >>>    [ 6121.366441]  [<ffffffff813af378>] wait_for_completion+0x1d/0x1f
-> >>>    [ 6121.372356]  [<ffffffff8109ae6d>] synchronize_sched+0x40/0x49
-> >>>    [ 6121.378096]  [<ffffffff810635b8>] ? find_get_pid+0x1b/0x1b
-> >>>    [ 6121.383574]  [<ffffffff81015fe5>] mce_read+0x17f/0x25d
-> >>>    [ 6121.388707]  [<ffffffff81111af5>] ? rw_verify_area+0xac/0xdb
-> >>>    [ 6121.394358]  [<ffffffff811121f1>] vfs_read+0xa9/0xe1
-> >>>    [ 6121.399317]  [<ffffffff8111248d>] sys_read+0x4c/0x70
-> >>>    [ 6121.404278]  [<ffffffff813b6deb>] system_call_fastpath+0x16/0x1b
-> >>>    [ 6127.795001] INFO: rcu_sched_state detected stall on CPU
-> >>>1 (t=420064 jiffies)
-> >>>    [ 6127.796001] INFO: rcu_sched_state detected stalls on
-> >>>CPUs/tasks: { 1} (detected by 0, t=420066 jiffies)
-> >>>    [ 6241.410171] INFO: task mcelog:6513 blocked for more
-> >>>than 120 seconds.
-> >>>
-> >>>Reverting commit a4dd99250dc makes the stalls go away:
-> >>>
-> >>>    rcu: create new rcu_access_index() and use in mce
-> >>>
-> >>>    The MCE subsystem needs to sample an RCU-protected index outside of
-> >>>    any protection for that index.  If this was a pointer, we would use
-> >>>    rcu_access_pointer(), but there is no corresponding
-> >>>rcu_access_index().
-> >>>    This commit therefore creates an rcu_access_index() and applies it
-> >>>    to MCE.
-> >>>
-> >>>    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >>>    Tested-by: Zdenek Kabelac <zkabelac@redhat.com>
-> >>
-> >>Wow!  This is just instructions, just wrapping the access in
-> >>ACCESS_ONCE().
-> >>
-> >>Was the original RCU CPU stall repeatable?
-> >
-> >Yes.  I saw it on two different machines.
-> >Both were running as Ceph clients, doing sustained
-> >streaming writes, if that helps any.
-> >
-> >I can attempt to repeat with any extra debugging
-> >you'd like me to try.
-> 
-> Evidently I cannot reproduce this after all, so my revert
-> test was incorrect.
-> 
-> If I can learn how to reproduce this I'll post with details;
-> in the meantime ignore this, and sorry for the noise.
+On Fri, 22 Apr 2011, Vaibhav Nagarnaik wrote:
+>  #include <asm/uaccess.h>
+>  #include <asm/pgtable.h>
+>  #include <asm/system.h>
+> @@ -1330,8 +1332,10 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+>  	struct siginfo info;
+>  
+>  	fill_sigtrap_info(tsk, regs, error_code, si_code, &info);
+> +	trace_trap_entry(tsk->thread.trap_no);
 
-OK -- I must confess that I could not understand how this change
-could cause the problem!  ;-)
+What the heck? How is that a trap? The code is sending SIGTRAP not
+entering a trap at all. What are you trying to measure ? The time it
+takes to send SIGTRAP? So how is that useful as an extra event? 
 
-						Thanx, Paul
+>  	/* Send us the fake SIGTRAP */
+>  	force_sig_info(SIGTRAP, &info, tsk);
+> +	trace_trap_exit(tsk->thread.trap_no);
+>  }
+>  
+>  
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 4857ff6..d450349 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -33,6 +33,9 @@
+>  #include <linux/io.h>
+>  #include <trace/events/irq.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/trap.h>
+> +
+>  #ifdef CONFIG_EISA
+>  #include <linux/ioport.h>
+>  #include <linux/eisa.h>
+> @@ -123,6 +126,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+>  {
+>  	struct task_struct *tsk = current;
+>  
+> +	trace_trap_entry(trapnr);
+
+While the event of do_trap() itself might be interesting, it does not
+matter at all how long it takes to handle it. That code is really not
+so interesting.
+
+> @@ -286,7 +293,9 @@ do_general_protection(struct pt_regs *regs, long error_code)
+>  		printk("\n");
+>  	}
+>  
+> +	trace_trap_entry(tsk->thread.trap_no);
+>  	force_sig(SIGSEGV, tsk);
+> +	trace_trap_exit(tsk->thread.trap_no);
+
+We really do not care how long the force_sig() call takes. It's
+irrelevant. The only interesting thing here is that we ran into a GP
+trap.
+
+> +
+> +dotraplinkage void __kprobes
+> +do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> +{
+> +	trace_trap_entry(14);
+
+Yuck. Magic number 14 ? Why not 42 ?
+
+> +	__do_page_fault(regs, error_code);
+> +	trace_trap_exit(14);
+> +}
+
+That page fault thing is the only interesting event in terms of
+runtime, but I have yet to see a proper rationale for the whole thing
+aside of that completly bogus changelog which tells what output I can
+produce, but not why the hell it is a good idea to add all that trace
+points.
+
+Thanks,
+
+	tglx
+ 
