@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759912Ab1D2QQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 12:16:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47434 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759868Ab1D2QQi (ORCPT
+	id S1759897Ab1D2QSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 12:18:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57673 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759691Ab1D2QS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 12:16:38 -0400
-Message-ID: <4DBAE461.7000307@linutronix.de>
-Date: Fri, 29 Apr 2011 18:16:33 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Fri, 29 Apr 2011 12:18:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=G3y/B5m+22o8XB4s3aX5Z/A4y4FY/25lONW0ZArGHxNPOrMlkostrBt+2thrmL6Gpg
+         iF6/TMejMoI/lOd5HyJF18Gv/+N4Viub4fPRNHRCuaup9jpCZ1/ioHekt8iVuaSbcvKx
+         3acAF9m1MKAXol780Yy6XdxGnDv9BgNQe6cjI=
+Date: Fri, 29 Apr 2011 18:18:24 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: [PATCH] workqueue: fix deadlock in worker_maybe_bind_and_lock()
+Message-ID: <20110429161824.GQ16552@htj.dyndns.org>
+References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
+ <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com>
+ <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
+ <201104172135.40189.arnd@arndb.de>
+ <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
+ <20110426131132.GG878@htj.dyndns.org>
+ <BANLkTin71zQH2qDNiwPp6vQppy3YWhbj2A@mail.gmail.com>
+ <20110428103036.GB10721@htj.dyndns.org>
+ <BANLkTinK3jZmKewkbtmOn54cRXhszh_5sQ@mail.gmail.com>
+ <20110429160039.GP16552@htj.dyndns.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Michal Simek <monstr@monstr.eu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/6] General device tree irq domain infrastructure
-References: <20110428192227.8979.49181.stgit@ponder>
-In-Reply-To: <20110428192227.8979.49181.stgit@ponder>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429160039.GP16552@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> I'd really like to get patches 1-4 merged into 2.6.40.  Please test.
-> I'm also running through build testing here, and when it's complete
-> I'll push it out to a 'devicetree/irq-domain' branch on
-> git://git.secretlab.ca/git/linux-2.6
+>From 5035b20fa5cd146b66f5f89619c20a4177fb736d Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 29 Apr 2011 18:08:37 +0200
 
-I pulled this, built and booted my x86-dt box and nothing exploded so far.
+If a rescuer and stop_machine() bringing down a CPU race with each
+other, they may deadlock on non-preemptive kernel.  The CPU won't
+accept a new task, so the rescuer can't migrate to the target CPU,
+while stop_machine() can't proceed because the rescuer is holding one
+of the CPU retrying migration.  GCWQ_DISASSOCIATED is never cleared
+and worker_maybe_bind_and_lock() retries indefinitely.
 
-If you merge Linus' tree then you will get a conflict (sooner or later) in
-ioapic_of_irq_map() in arch/x86/kernel/devicetree.c:
+This problem can be reproduced semi reliably while the system is
+entering suspend.
 
--       return io_apic_setup_irq_pin_once(*out_hwirq, cpu_to_node(0), &attr);
-  -      if (io_apic_setup_irq_pin(hwirq, cpu_to_node(0), &attr))
-++      if (io_apic_setup_irq_pin_once(hwirq, cpu_to_node(0), &attr))
+ http://thread.gmane.org/gmane.linux.kernel/1122051
 
-Sebastian
+A lot of kudos to Thilo-Alexander for reporting this tricky issue and
+painstaking testing.
+
+stable: This affects all kernels with cmwq, so all kernels since and
+        including v2.6.36 need this fix.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Tested-by: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: stable@kernel.org
+---
+Will soon send pull request to Linus.  Thank you very much.
+
+ kernel/workqueue.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 04ef830..e3378e8 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1291,8 +1291,14 @@ __acquires(&gcwq->lock)
+ 			return true;
+ 		spin_unlock_irq(&gcwq->lock);
+ 
+-		/* CPU has come up inbetween, retry migration */
++		/*
++		 * We've raced with CPU hot[un]plug.  Give it a breather
++		 * and retry migration.  cond_resched() is required here;
++		 * otherwise, we might deadlock against cpu_stop trying to
++		 * bring down the CPU on non-preemptive kernel.
++		 */
+ 		cpu_relax();
++		cond_resched();
+ 	}
+ }
+ 
+-- 
+1.7.1
+
