@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934080Ab1D2XsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 19:48:09 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55260 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757752Ab1D2XsH (ORCPT
+	id S1758966Ab1D2Xsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 19:48:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40990 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756544Ab1D2Xsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 19:48:07 -0400
-Date: Fri, 29 Apr 2011 16:48:05 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Premature -ENOSPC on btrfs?
-Message-ID: <20110429234805.GA20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Fri, 29 Apr 2011 19:48:35 -0400
+Date: Fri, 29 Apr 2011 16:47:36 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Subject: Re: [PATCH v4 1/3] driver: Google EFI SMI
+Message-Id: <20110429164736.fd84f2ae.randy.dunlap@oracle.com>
+In-Reply-To: <20110429225551.22013.65012.stgit@mike.mtv.corp.google.com>
+References: <20110429212328.GA19207@kroah.com>
+	<20110429225551.22013.65012.stgit@mike.mtv.corp.google.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DBB4E1E.005C:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 29 Apr 2011 15:55:51 -0700 Mike Waychison wrote:
 
-I was giving btrfs (2.6.39-rc4) a quick tryout today and noticed some odd
-behavior when running a rather stupid test.
 
-First, I create a 1GB test fs, format it, and mount it.  Then, I run the
-following command to create a huge file, truncate it, rewrite it, and report
-what size file got created.
+> +static int gsmi_die_callback(struct notifier_block *nb,
+> +			     unsigned long reason, void *arg)
+> +{
+> +	if (reason == DIE_NMIWATCHDOG)
+> +		gsmi_shutdown_reason(GSMI_SHUTDOWN_NMIWDT);
+> +	else if (reason == DIE_OOPS)
+> +		gsmi_shutdown_reason(GSMI_SHUTDOWN_OOPS);
+> +	return NOTIFY_DONE;
+> +}
 
-# while true; do dd if=/dev/zero of=/mnt/testfile bs=1024k; done
 
-This is roughly what I see in terms of file size after filtering out all the
-"dd: writing `/mnt/testfile': No space left on device" messages.
+Where is DIE_NMIWATCHDOG defined?
+Do I need more that patches 1,2,3/3 applied?
 
-782237696 bytes (782 MB) copied, 16.5647 s, 47.2 MB/s
-545259520 bytes (545 MB) copied, 14.061 s, 38.8 MB/s
-780140544 bytes (780 MB) copied, 15.2959 s, 51.0 MB/s
-933232640 bytes (933 MB) copied, 15.2241 s, 61.3 MB/s
-827326464 bytes (827 MB) copied, 14.8383 s, 55.8 MB/s
-931135488 bytes (931 MB) copied, 15.1554 s, 61.4 MB/s
-936378368 bytes (936 MB) copied, 2.98301 s, 314 MB/s
-393216000 bytes (393 MB) copied, 12.9202 s, 30.4 MB/s
-387973120 bytes (388 MB) copied, 13.4906 s, 28.8 MB/s
-932184064 bytes (932 MB) copied, 15.3356 s, 60.8 MB/s
-785383424 bytes (785 MB) copied, 14.6429 s, 53.6 MB/s
-927989760 bytes (928 MB) copied, 15.4386 s, 60.1 MB/s
-833617920 bytes (834 MB) copied, 14.6289 s, 57.0 MB/s
-936378368 bytes (936 MB) copied, 3.33651 s, 281 MB/s
-393216000 bytes (393 MB) copied, 12.9689 s, 30.3 MB/s
-389021696 bytes (389 MB) copied, 6.02794 s, 64.5 MB/s
-294649856 bytes (295 MB) copied, 1.05144 s, 280 MB/s
 
-Strangely, df reports that free space remains, and I can even create a second
-file to fill the empty space, so clearly the fs isn't full yet.  Is this the
-intended behavior of btrfs?  ext4/vfat seem to produce the same size file
-every time.
+lnx-2639-rc5/drivers/firmware/google/gsmi.c: In function 'gsmi_die_callback':
+lnx-2639-rc5/drivers/firmware/google/gsmi.c:660: error: 'DIE_NMIWATCHDOG' undeclared (first use in this function)
+lnx-2639-rc5/drivers/firmware/google/gsmi.c:660: error: (Each undeclared identifier is reported only once
+lnx-2639-rc5/drivers/firmware/google/gsmi.c:660: error: for each function it appears in.)
 
---D
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
