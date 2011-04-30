@@ -1,250 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760875Ab1D3A6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 20:58:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37724 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab1D3A6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 20:58:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [Update][RFC][PATCH 2/2] ARM / shmobile: Support for I/O power domains for SH7372 (v2)
-Date: Sat, 30 Apr 2011 02:59:08 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-References: <201104290154.12966.rjw@sisk.pl> <201104290155.41434.rjw@sisk.pl>
-In-Reply-To: <201104290155.41434.rjw@sisk.pl>
+	id S1761099Ab1D3BHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 21:07:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58473 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757532Ab1D3BHm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 21:07:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104300259.08477.rjw@sisk.pl>
+In-Reply-To: <1304123061.30215.38.camel@work-vm>
+References: <tip-304529b1b6f8612ccbb4582e997051b48b94f4a4@git.kernel.org>
+	<BANLkTin12hcs1Q=4E4REdF_-zn08EJXzvw@mail.gmail.com>
+	<1304123061.30215.38.camel@work-vm>
+Date: Fri, 29 Apr 2011 18:07:40 -0700
+Message-ID: <BANLkTimyu3C4o+=S7uhi3D-OmUko-xO6Kg@mail.gmail.com>
+Subject: Re: [tip:timers/core] time: Add timekeeping_inject_sleeptime
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+2011/4/29 John Stultz <john.stultz@linaro.org>:
+> On Fri, 2011-04-29 at 16:28 -0700, Arve Hjønnevåg wrote:
+>> On Fri, Apr 29, 2011 at 10:31 AM, tip-bot for John Stultz
+>> > @@ -85,15 +82,13 @@ static int rtc_resume(struct device *dev)
+>> >                        pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
+>> >                return 0;
+>> >        }
+>> > +       /* calculate the RTC time delta */
+>> > +       set_normalized_timespec(&time, newtime - oldtime, 0);
+>> >
+>> > -       /* restore wall clock using delta against this RTC;
+>> > -        * adjust again for avg 1/2 second RTC sampling error
+>> > -        */
+>> > -       set_normalized_timespec(&time,
+>> > -                               newtime + delta.tv_sec,
+>> > -                               (NSEC_PER_SEC >> 1) + delta.tv_nsec);
+>> > -       do_settimeofday(&time);
+>> > +       /* subtract kernel time between rtc_suspend to rtc_resume */
+>> > +       time = timespec_sub(time, timespec_sub(newts, oldts));
+>>
+>> The delta you got from the rtc can be almost a second to long or
+>> short. Do you do anything to prevent these errors from accumulating?
+>
+> Indeed. Right now we don't do anything.
+>
+> I'm hoping to extend the RTC interface to provide finer resolution where
+> possible, but that won't help on hardware that really only gives us
+> seconds.
+>
+> We could maybe not only track the suspend time but the RTC time deltas
+> for when the system is running as well and utilize those values to avoid
+> accumulating the error long term. But then there can be other
+> complications between the NTP corrected system time and the uncorrected
+> RTC time.
+>
+> Other ideas? I know you've got a patch in the Android tree to try to
+> address this, should I try to adapt it for use here?
+>
 
-Use the generic power domains support introduced by the previous
-patch to implement support for power domains on SH7372.
+Unless you can make the generic code handle this (in case
+read_persistent_clock has the same problem), then I would recommend
+adapting that patch to your new rtc code. We have not noticed the
+problem after applying that patch.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
-
-Hi,
-
-This version of the patch has been modified to make it more
-straightforward to add more power domains to SH7372 in the future.
-
-Thanks,
-Rafael
-
----
- arch/arm/mach-shmobile/Makefile              |    4 +
- arch/arm/mach-shmobile/board-mackerel.c      |    3 
- arch/arm/mach-shmobile/include/mach/sh7372.h |   16 ++++
- arch/arm/mach-shmobile/pm-sh7372.c           |   98 +++++++++++++++++++++++++++
- include/linux/platform_device.h              |   22 +++++-
- 5 files changed, 142 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/board-mackerel.c
-+++ linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-@@ -1215,6 +1215,9 @@ static void __init mackerel_init(void)
- 
- 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
- 
-+	sh7372_add_device_to_domain(SH7372_A4LC, &lcdc_device);
-+	sh7372_add_device_to_domain(SH7372_A4LC, &hdmi_lcdc_device);
-+
- 	hdmi_init_pm_clock();
- }
- 
-Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-===================================================================
---- /dev/null
-+++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -0,0 +1,98 @@
-+/*
-+ * arch/arm/mach-shmobile/pm-sh7372.c
-+ *
-+ * Power domains support code for SH7372
-+ *
-+ * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License v2.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/platform_device.h>
-+
-+#include <mach/sh7372.h>
-+
-+struct sh7372_domain_data {
-+	unsigned int bit_shift;
-+};
-+
-+#define SPDCR 0xe6180008
-+#define SWUCR 0xe6180014
-+#define PSTR 0xe6180080
-+
-+static int pd_power_down(struct dev_power_domain *domain)
-+{
-+	struct sh7372_domain_data *dd = domain->platform_data;
-+	unsigned int mask = 1 << dd->bit_shift;
-+
-+	if (__raw_readl(PSTR) & mask) {
-+		__raw_writel(mask, SPDCR);
-+
-+		while (__raw_readl(SPDCR) & mask) {}
-+
-+		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
-+	}
-+
-+	return 0;
-+}
-+
-+static int pd_power_up(struct dev_power_domain *domain)
-+{
-+	struct sh7372_domain_data *dd = domain->platform_data;
-+	unsigned int mask = 1 << dd->bit_shift;
-+
-+	if (!(__raw_readl(PSTR) & mask)) {
-+		__raw_writel(mask, SWUCR);
-+
-+		while (__raw_readl(SWUCR) & mask) {}
-+
-+		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
-+	}
-+
-+	return 0;
-+}
-+
-+static void sh7372_init_domain(struct generic_power_domain *domain,
-+			       struct sh7372_domain_data *pdata)
-+{
-+	pm_genpd_init(domain, NULL, false);
-+	add_platform_pm_sleep_ops(&domain->domain.ops);
-+	domain->domain.platform_data = pdata;
-+	domain->stop_device = pm_runtime_clk_suspend;
-+	domain->start_device = pm_runtime_clk_resume;
-+	domain->power_off = pd_power_down;
-+	domain->power_on = pd_power_up;
-+}
-+
-+void sh7372_add_device_to_domain(struct generic_power_domain *domain,
-+				 struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+
-+	if (!dev->power.subsys_data) {
-+		pm_runtime_clk_init(dev);
-+		pm_runtime_clk_add(dev, NULL);
-+	}
-+	pm_genpd_add_device(domain, dev);
-+}
-+
-+static struct sh7372_domain_data sh7372_a4lc_domain_data = {
-+	.bit_shift = 1,
-+};
-+
-+struct generic_power_domain sh7372_a4lc_domain;
-+
-+static int __init sh7372_power_domains_init(void)
-+{
-+	sh7372_init_domain(&sh7372_a4lc_domain, &sh7372_a4lc_domain_data);
-+	return 0;
-+}
-+core_initcall(sh7372_power_domains_init);
-Index: linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
-+++ linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-@@ -12,6 +12,7 @@
- #define __ASM_SH7372_H__
- 
- #include <linux/sh_clk.h>
-+#include <linux/pm_domain.h>
- 
- /*
-  * Pin Function Controller:
-@@ -469,4 +470,19 @@ extern struct clk sh7372_fsibck_clk;
- extern struct clk sh7372_fsidiva_clk;
- extern struct clk sh7372_fsidivb_clk;
- 
-+struct platform_device;
-+
-+#ifdef CONFIG_PM
-+extern struct generic_power_domain sh7372_a4lc_domain;
-+#define SH7372_A4LC	(&sh7372_a4lc_domain)
-+
-+extern void sh7372_add_device_to_domain(struct generic_power_domain *domain,
-+					struct platform_device *pdev);
-+#else
-+#define SH7372_A4LC	NULL
-+
-+static inline void sh7372_add_device_to_domain(struct generic_power_domain *dom,
-+					       struct platform_device *pd) {}
-+#endif /* CONFIG_PM */
-+
- #endif /* __ASM_SH7372_H__ */
-Index: linux-2.6/arch/arm/mach-shmobile/Makefile
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/Makefile
-+++ linux-2.6/arch/arm/mach-shmobile/Makefile
-@@ -37,6 +37,10 @@ obj-$(CONFIG_MACH_AP4EVB)	+= board-ap4ev
- obj-$(CONFIG_MACH_AG5EVM)	+= board-ag5evm.o
- obj-$(CONFIG_MACH_MACKEREL)	+= board-mackerel.o
- 
-+# PM objects
-+pm-$(CONFIG_ARCH_SH7372)	+= pm-sh7372.o
-+
- # Framework support
- obj-$(CONFIG_SMP)		+= $(smp-y)
- obj-$(CONFIG_GENERIC_GPIO)	+= $(pfc-y)
-+obj-$(CONFIG_PM)		+= $(pm-y)
-Index: linux-2.6/include/linux/platform_device.h
-===================================================================
---- linux-2.6.orig/include/linux/platform_device.h
-+++ linux-2.6/include/linux/platform_device.h
-@@ -258,8 +258,28 @@ extern int platform_pm_restore_noirq(str
- 	.thaw_noirq = platform_pm_thaw_noirq, \
- 	.poweroff_noirq = platform_pm_poweroff_noirq, \
- 	.restore_noirq = platform_pm_restore_noirq,
-+
-+static inline void add_platform_pm_sleep_ops(struct dev_pm_ops *pm_ops)
-+{
-+	pm_ops->prepare = platform_pm_prepare;
-+	pm_ops->complete = platform_pm_complete;
-+	pm_ops->suspend = platform_pm_suspend;
-+	pm_ops->resume = platform_pm_resume;
-+	pm_ops->freeze = platform_pm_freeze;
-+	pm_ops->thaw = platform_pm_thaw;
-+	pm_ops->poweroff = platform_pm_poweroff;
-+	pm_ops->restore = platform_pm_restore;
-+	pm_ops->suspend_noirq = platform_pm_suspend_noirq;
-+	pm_ops->resume_noirq = platform_pm_resume_noirq;
-+	pm_ops->freeze_noirq = platform_pm_freeze_noirq;
-+	pm_ops->thaw_noirq = platform_pm_thaw_noirq;
-+	pm_ops->poweroff_noirq = platform_pm_poweroff_noirq;
-+	pm_ops->restore_noirq = platform_pm_restore_noirq;
-+}
- #else
- #define USE_PLATFORM_PM_SLEEP_OPS
--#endif
-+
-+static inline void add_platform_pm_sleep_ops(struct dev_pm_ops *pm_ops) {}
-+#endif /* CONFIG_PM_SLEEP */
- 
- #endif /* _PLATFORM_DEVICE_H_ */
+-- 
+Arve Hjønnevåg
