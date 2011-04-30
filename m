@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642Ab1D3D2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 23:28:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48348 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756946Ab1D3D2G (ORCPT
+	id S932299Ab1D3DaE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 23:30:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58103 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849Ab1D3DaC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 23:28:06 -0400
-Date: Sat, 30 Apr 2011 04:27:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joern Engel <joern@logfs.org>, Dave Chinner <dchinner@redhat.com>,
-        werner <w.landgraf@ru.ru>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110430032759.GK9487@ZenIV.linux.org.uk>
-References: <web-515866242@zbackend1.aha.ru>
- <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
- <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
- <20110430025545.GI9487@ZenIV.linux.org.uk>
- <20110430030243.GJ9487@ZenIV.linux.org.uk>
- <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
+	Fri, 29 Apr 2011 23:30:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304128655.30215.80.camel@work-vm>
+References: <tip-304529b1b6f8612ccbb4582e997051b48b94f4a4@git.kernel.org>
+	<BANLkTin12hcs1Q=4E4REdF_-zn08EJXzvw@mail.gmail.com>
+	<alpine.LFD.2.02.1104300220040.3005@ionos>
+	<BANLkTi=9rW=U-Excx+xJb1h3mVvfEaxhKw@mail.gmail.com>
+	<1304128655.30215.80.camel@work-vm>
+Date: Fri, 29 Apr 2011 20:30:00 -0700
+Message-ID: <BANLkTikEwZ84bQbuJxzQNfpNZOrGaq8C7g@mail.gmail.com>
+Subject: Re: [tip:timers/core] time: Add timekeeping_inject_sleeptime
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 08:09:16PM -0700, Linus Torvalds wrote:
-> On Fri, Apr 29, 2011 at 8:02 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Wait a bit; _can_ we get there with non-NULL ->s_master_inode et.al.?
-> > iput(NULL) is a noop... ?I don't think so, since logfs_init_journal()
-> > is not called until after we initialize that list.
-> >
-> > Not that I'd object against taking that initialization earlier, of course,
-> > but there seems to be something else going on... ?Which iput() it is?
-> 
-> Not something I can guess from the oops, sadly. Gcc has inlined
-> everything into logfs_mount, and the "0x44f/0x5cc" offset isn't very
-> helpful (with the same compiler version and config options it would be
-> possible to figure it out).
-> 
-> But looking at it, logfs_init_mapping() is currently called before
-> "s_freeing_list" is initialized, and it sets up at least
-> s_mapping_inode. So if anything fails between that point and the point
-> where we initialize s_freeing_list, I think we're toast.
-> 
-> I didn't check the other inodes, but at least that one does seem to be
-> potentially non-NULL. No?
+2011/4/29 John Stultz <john.stultz@linaro.org>:
+> On Fri, 2011-04-29 at 18:12 -0700, Arve Hjønnevåg wrote:
+>>         /* RTC precision is 1 second; adjust delta for avg 1/2 sec err */
+>> -       set_normalized_timespec(&delta,
+>> +       set_normalized_timespec(&new_delta,
+>>                                 ts.tv_sec - oldtime,
+>>                                 ts.tv_nsec - (NSEC_PER_SEC >> 1));
+>>
+>> +       /* prevent 1/2 sec errors from accumulating */
+>> +       delta_delta = timespec_sub(new_delta, delta);
+>> +       if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2)
+>> +               delta = new_delta;
+>>         return 0;
+>
+> So, the basic idea is to keep the RTC vs CLOCK_REALTIME delta constant
+> (by using the same value as the last time) for each resume cycle
+> assuming it stays within +/-2 seconds.
+>
+> If it changes more then that since the last suspend (due to user running
+> hwclock or the periodic NTP sync or drift of the uncorrected RTC) then
+> throw away the old value and use the new delta.
+>
 
-Ho-hum...  Point.  Let's take that initialization up to the beginning of
-logfs_read_sb(), see if oops goes away and then try to figure out WTF
-we hadn't been seeing it all along.  I don't see anything recent affecting
-that area, but then logfs goes through many odd places during mount (including,
-IIRC, mtd).  So there might be many sources of the failure where we used to
-have none and failure in that spot would, indeed, fuck the things up that
-way...
+Yes.
 
-In any case, taking that initialization to the beginning of logfs_read_sb()
-(if not up to its only caller where we set ->s_op et.al. anyway) seems to be
-the obviously right thing to do.  Unless logfs folks have some subtle
-objections?
+>
+>> @@ -80,6 +87,8 @@ static int rtc_resume(struct device *dev)
+>>                 return 0;
+>>         }
+>>         rtc_tm_to_time(&tm, &newtime);
+>> +       if (delta_delta.tv_sec < -1)
+>> +               newtime++;
+>
+>
+> So this part isn't quite clicking at the moment (forgive my brain, its a
+> sunny friday!). Wouldn't this trigger even if we threw away the old
+> delta (since nothing clears delta_delta)?
+>
+Probably.
+
+> I'll spend some more time looking at it, but if you can clarify why we
+> want to inject a second here (and why there's not a corresponding dec
+> for delta_delta being > 1 sec to make it symmetric) it would help?
+>
+
+I don't remember exactly why I did it this way, but the goal is to
+make sure time does not jump backwards. If the rtc runs slower than
+the clock we are using when awake, then time could jump backwards
+after suspend since we re-sync with the rtc. With your new code, it is
+probably better to just clip the resulting sleep-time to not allow
+negative values.
+
+-- 
+Arve Hjønnevåg
