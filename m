@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1D3GWo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 02:22:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41562 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1D3GWn (ORCPT
+	id S1754199Ab1D3G2M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 02:28:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57128 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab1D3G2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 02:22:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=JprQuLikYRfQD6OHHeAdzA4/vGjYwiZ4j/s0M1buVDNXvNVPTvSLrKDjyxyff3SB5n
-         yTf6ktHE+Y4SFFxe0dlo5h5zrcA5naflXTmoaCfQ7IH1rOAOoyBwM3I8stFlRhmA2jTq
-         XKoY2Cx6clsZG8w/mx3dt1BQc+wIG1b2l351k=
-Date: Sat, 30 Apr 2011 14:22:24 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, randy.dunlap@oracle.com, greg@kroah.com,
-        joe@perches.com, akpm@linux-foundation.org
-Subject: [Oops 2/2]The frame size of xxx bytes is larger than 1024 bytes
-Message-ID: <20110430062222.GB4274@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, trivial@kernel.org,
-	randy.dunlap@oracle.com, greg@kroah.com, joe@perches.com,
-	akpm@linux-foundation.org
+	Sat, 30 Apr 2011 02:28:10 -0400
+Date: Sat, 30 Apr 2011 00:28:06 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/8] arm/dt: Drop irq_create_of_mapping() from arm
+ code.
+Message-ID: <20110430062806.GA3103@ponder.secretlab.ca>
+References: <20110429070135.12522.35745.stgit@ponder>
+ <20110429071553.12522.65073.stgit@ponder>
+ <alpine.LFD.2.00.1104292027560.24613@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1104292027560.24613@xanadu.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi us,
-	A warning disturbs me for a long time.
-It shows like following.
+On Fri, Apr 29, 2011 at 08:28:47PM -0400, Nicolas Pitre wrote:
+> On Fri, 29 Apr 2011, Grant Likely wrote:
+> 
+> > It is now implemented by core code.
+> > 
+> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > ---
+> >  arch/arm/kernel/devtree.c |   14 --------------
+> >  1 files changed, 0 insertions(+), 14 deletions(-)
+> 
+> Maybe this should be folded in the patch that introduced this instead?
 
-[...]
-Warning: the frame size of xxx bytes is larger than 1024 bytes.
-[...]
+Yes, it should; but I've kept it separate for now because I don't have
+an ack from benh to merge the core changes that do this yet.  When
+that happens I'll squish the two patches together.
 
-See http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=report_bug1.png for details.
-	Of course, i wanna fix it. But i have no ways.
-Can anyone do me a favor?
+g.
 
-Thanks.
-Harry Wei.
