@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab1D3UWO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 16:22:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38979 "EHLO ogre.sisk.pl"
+	id S1758886Ab1D3UWc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 16:22:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38998 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758228Ab1D3UWC convert rfc822-to-8bit (ORCPT
+	id S1758503Ab1D3UW3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 16:22:02 -0400
+	Sat, 30 Apr 2011 16:22:29 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Sean Noonan" <Sean.Noonan@twosigma.com>
+        "simon@mungewell.org"@ogre.sisk.pl
 References: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
 In-Reply-To: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <9nxEC7x0HFO.A.JCG.2xGvNB@chimera>
-Subject: [Bug #31982] XFS memory allocation deadlock in 2.6.38
+Message-ID: <9nxEC7x0HFO.A.H8F.zxGvNB@chimera>
+Subject: [Bug #32072] 2.6.38 Regression: Nvidia GeForce8400 + i915 = Crash on Boot
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sat, 30 Apr 2011 22:17:20 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +34,11 @@ introduced between 2.6.37 and 2.6.38.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31982
-Subject		: XFS memory allocation deadlock in 2.6.38
-Submitter	: Sean Noonan <Sean.Noonan@twosigma.com>
-Date		: 2011-03-21 16:19 (41 days old)
-Message-ID	: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
-References	: http://marc.info/?l=linux-kernel&m=130072585111310&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=32072
+Subject		: 2.6.38 Regression: Nvidia GeForce8400 + i915 = Crash on Boot
+Submitter	: simon@mungewell.org
+Date		: 2011-03-24 15:20 (38 days old)
+Message-ID	: <fe471c05897776b7c26b9fd2603e3b76.squirrel@host171.canaca.com>
+References	: http://marc.info/?l=linux-kernel&m=130100955926434&w=2
 
 
