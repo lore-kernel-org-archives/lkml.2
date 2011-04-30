@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab1D3Pod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 11:44:33 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:34563 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab1D3Poa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 11:44:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgGABcuvE1bdWOb/2dsb2JhbACYUY49wXSGAASOeY4k
-X-IronPort-AV: E=Sophos;i="4.64,293,1301868000"; 
-   d="scan'208";a="835750729"
-From: "Javier M. Mellid" <jmunhoz@igalia.com>
-To: gregkh@suse.de
-Cc: wuzhangjin@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, "Javier M. Mellid" <jmunhoz@igalia.com>
-Subject: [PATCH 2/2] staging: sm7xx: minor cleanup
-Date: Sat, 30 Apr 2011 17:44:26 +0200
-Message-Id: <1304178266-10161-2-git-send-email-jmunhoz@igalia.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1304178266-10161-1-git-send-email-jmunhoz@igalia.com>
-References: <1304178266-10161-1-git-send-email-jmunhoz@igalia.com>
+	id S1755552Ab1D3Pqe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 11:46:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53779 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752421Ab1D3Pq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 11:46:29 -0400
+Date: Sat, 30 Apr 2011 08:47:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Allow setting of number of raw devices as a module parameter
+Message-ID: <20110430154733.GA21893@suse.de>
+References: <1304029469-19672-1-git-send-email-jack@suse.cz>
+ <20110429162817.2eb26efb.akpm@linux-foundation.org>
+ <20110430112937.06024368@lxorguk.ukuu.org.uk>
+ <20110430153452.GA21439@suse.de>
+ <20110430164141.55d0ef0a@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430164141.55d0ef0a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sync code comments with TODO, fix some style and format issues
+On Sat, Apr 30, 2011 at 04:41:41PM +0100, Alan Cox wrote:
+> > > A large vmalloc array is very antisocial on a 32bit x86 box. It looks
+> > > like almost all of it would become sane if there was an array of pointers
+> > > to raw devices and the devices were initially allocated on need (even if
+> > > for now only recovered on rmmod)
+> > 
+> > In practice, we've never seen a problem with this[1].  Machines that
+> > want thousands of raw devices have plenty of memory to handle this
+> > situation.
+> > 
+> > I doubt adding the complexity of dynamically allocating the devices
+> > as-needed is worth it for the very few systems that ever use this
+> > driver, compounded with the fact that we keep saying that this code
+> > isn't to be used by "normal" people anyway.
+> 
+> That's no excuse for sloppy code. Making it an array populated on demand
+> is an improvement for everyone, making it vmalloc hurts every access (in
+> TLB misses for one as well as vmalloc overhead).
+> 
+> I note two of us immediately made the same observation. Doing it
+> basically right (array of pointers) is easy. Doing the full works with a
+> hash for the lookups is a bit harder and that I would agree is overkill.
 
-Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
----
- drivers/staging/sm7xx/TODO     |    1 -
- drivers/staging/sm7xx/smtcfb.c |   16 ++++++++--------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+Ah, ok, I was thinking of the latter, I'll work on implementing the
+former next week, unless Jan wants to do it instead?
 
-diff --git a/drivers/staging/sm7xx/TODO b/drivers/staging/sm7xx/TODO
-index a66d9e4..b0f5318 100644
---- a/drivers/staging/sm7xx/TODO
-+++ b/drivers/staging/sm7xx/TODO
-@@ -2,7 +2,6 @@ TODO:
- - Dual head support
- - 2D acceleration support
- - use kernel coding style
--- checkpatch.pl clean
- - refine the code and remove unused code
- - use kernel framebuffer mode setting instead of hard code
- - move it to drivers/video/sm7xx/ or make it be drivers/video/sm7xxfb.c
-diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
-index 976a080..c0d943f 100644
---- a/drivers/staging/sm7xx/smtcfb.c
-+++ b/drivers/staging/sm7xx/smtcfb.c
-@@ -14,15 +14,15 @@
-  *
-  * Version 0.10.26192.21.01
-  *	- Add PowerPC/Big endian support
-- *	- Add 2D support for Lynx
-- *	- Verified on2.6.19.2  Boyod.yang <boyod.yang@siliconmotion.com.cn>
-+ *	- Verified on 2.6.19.2
-+ *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  *
-  * Version 0.09.2621.00.01
-- *	- Only support Linux Kernel's version 2.6.21.
-- *	Boyod.yang  <boyod.yang@siliconmotion.com.cn>
-+ *	- Only support Linux Kernel's version 2.6.21
-+ *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  *
-  * Version 0.09
-- *	- Only support Linux Kernel's version 2.6.12.
-+ *	- Only support Linux Kernel's version 2.6.12
-  *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  */
- 
-@@ -99,17 +99,17 @@ struct vesa_mode_table	{
- static struct vesa_mode_table vesa_mode[] = {
- 	{"0x301", 640,  480,  8},
- 	{"0x303", 800,  600,  8},
--	{"0x305", 1024, 768,	8},
-+	{"0x305", 1024, 768,  8},
- 	{"0x307", 1280, 1024, 8},
- 
- 	{"0x311", 640,  480,  16},
- 	{"0x314", 800,  600,  16},
--	{"0x317", 1024, 768,	16},
-+	{"0x317", 1024, 768,  16},
- 	{"0x31A", 1280, 1024, 16},
- 
- 	{"0x312", 640,  480,  24},
- 	{"0x315", 800,  600,  24},
--	{"0x318", 1024, 768,	24},
-+	{"0x318", 1024, 768,  24},
- 	{"0x31B", 1280, 1024, 24},
- };
- 
--- 
-1.7.4.1
+thanks for the review,
 
+greg k-h
