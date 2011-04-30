@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab1D3Cz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 22:55:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48915 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab1D3Czz (ORCPT
+	id S1756883Ab1D3C5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 22:57:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50065 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab1D3C5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 22:55:55 -0400
-Date: Sat, 30 Apr 2011 03:55:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joern Engel <joern@logfs.org>, Dave Chinner <dchinner@redhat.com>,
-        werner <w.landgraf@ru.ru>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110430025545.GI9487@ZenIV.linux.org.uk>
-References: <web-515866242@zbackend1.aha.ru>
- <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
- <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Apr 2011 22:57:16 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=RvxEdtNnrcQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=FqVyP-TMSJpr_HRYuKgA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [GIT PULL][v2.6.39] ftrace: Only update the function code on write
+ to filter files
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, stable <stable@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Apr 2011 22:57:13 -0400
+Message-ID: <1304132233.25414.1.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 07:47:14PM -0700, Linus Torvalds wrote:
-> On Fri, Apr 29, 2011 at 7:31 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > It looks like a NULL pointer dereference with offset 4, so at a guess,
-> > super->s_freeing_list.next is NULL, and it's the "next->prev = entry"
-> > instruction that faults when inserting into that list.
-> >
-> > How/why would s_freeing_list be NULL? I have no idea. But it looks
-> > like a failed mount, so presumably it was never initialized.
-> 
-> Hmm. super->s_freeing_list is initialized pretty late in
-> logfs_read_sb(), and any error path _before_ that point will result in
-> a "goto err1" in logfs_get_sb_device() which will do various iputs
-> etc. All without that list initialized. That would seem to be the
-> cause of this, possibly triggered by Al's changes to ->mount from
-> read_super.
 
-Then it ought to be reproducible with much ealier kernels.  Say, 2.6.37 or
-so...  That part of ->mount() series went in during last Autumn...
+Ingo,
+
+Please pull the latest tip/perf/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
+
+
+Steven Rostedt (1):
+      ftrace: Only update the function code on write to filter files
+
+----
+ kernel/trace/ftrace.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+---------------------------
+commit 058e297d34a404caaa5ed277de15698d8dc43000
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Apr 29 22:35:33 2011 -0400
+
+    ftrace: Only update the function code on write to filter files
+    
+    If function tracing is enabled, a read of the filter files will
+    cause the call to stop_machine to update the function trace sites.
+    It should only call stop_machine on write.
+    
+    Cc: stable@kernel.org
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index ee24fa1..666880d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2413,14 +2413,16 @@ ftrace_regex_release(struct inode *inode, struct file *file, int enable)
+ 		ftrace_match_records(parser->buffer, parser->idx, enable);
+ 	}
+ 
+-	mutex_lock(&ftrace_lock);
+-	if (ftrace_start_up && ftrace_enabled)
+-		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
+-	mutex_unlock(&ftrace_lock);
+-
+ 	trace_parser_put(parser);
+ 	kfree(iter);
+ 
++	if (file->f_mode & FMODE_WRITE) {
++		mutex_lock(&ftrace_lock);
++		if (ftrace_start_up && ftrace_enabled)
++			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++		mutex_unlock(&ftrace_lock);
++	}
++
+ 	mutex_unlock(&ftrace_regex_lock);
+ 	return 0;
+ }
+
+
