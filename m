@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab1D3Tv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 15:51:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38768 "EHLO ogre.sisk.pl"
+	id S1758126Ab1D3Tvm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 15:51:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38788 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757188Ab1D3TvY convert rfc822-to-8bit (ORCPT
+	id S1752786Ab1D3Tvj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 15:51:24 -0400
+	Sat, 30 Apr 2011 15:51:39 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Maciej Rutecki" <maciej.rutecki@gmail.com>
+        "Christian Kujau" <lists@nerdbynature.de>
 References: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
 In-Reply-To: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <G9uL1cldhmL.A.fAE.TVGvNB@chimera>
-Subject: [Bug #34002] [REGRESSION] [2.6.39-rc3] Wrong resolution in framebuffer and X Window
+Message-ID: <G9uL1cldhmL.A.b6D.QVGvNB@chimera>
+Subject: [Bug #34012] 2.6.39-rc4+: oom-killer busy killing tasks
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sat, 30 Apr 2011 21:46:57 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +34,11 @@ from 2.6.38.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=34002
-Subject		: [REGRESSION] [2.6.39-rc3] Wrong resolution in framebuffer and X Window
-Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
-Date		: 2011-04-17 16:04 (14 days old)
-Message-ID	: <201104171804.04664.maciej.rutecki@gmail.com>
-References	: http://marc.info/?l=linux-fbdev&m=130305625114863&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=34012
+Subject		: 2.6.39-rc4+: oom-killer busy killing tasks
+Submitter	: Christian Kujau <lists@nerdbynature.de>
+Date		: 2011-04-22 1:57 (9 days old)
+Message-ID	: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
+References	: http://marc.info/?l=linux-kernel&m=130343744622331&w=2
 
 
