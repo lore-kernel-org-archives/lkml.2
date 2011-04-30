@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab1D3HOe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 03:14:34 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58891 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab1D3HOd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 03:14:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Nufe+zdmHIA8ILLPUJ5Y5Rh0YOfcRsKJ93DpjxxOb1BB6aQnSfevGPGJ/v4nsPULLi
-         iapJQbFSpKYUT7qVwHDH3dFAvxxAXfh6/89MTbu4RU2lI/8OWwLD14Bc5Ow9XVVixcIF
-         0mzoaqTfmrnsKOCWdevFN8Fdnsh9L9DQEbP2Y=
+	id S1753110Ab1D3HQV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 03:16:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53399 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524Ab1D3HQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 03:16:20 -0400
+Date: Sat, 30 Apr 2011 07:16:01 GMT
+From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
+Message-ID: <tip-eea502ffd4aeef233b5eadbde405a9df92d57a5e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rakib.mullick@gmail.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rakib.mullick@gmail.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1304100062.19359.6.camel@localhost.localdomain>
+References: <1304100062.19359.6.camel@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Use bool type for rq->idle_at_tick
+Git-Commit-ID: eea502ffd4aeef233b5eadbde405a9df92d57a5e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1104292200110.9459@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
-	<20110429164227.GA25491@elte.hu>
-	<alpine.DEB.2.00.1104291353310.23685@cl320.eecs.utk.edu>
-	<20110429185741.GB10217@elte.hu>
-	<alpine.DEB.2.00.1104292200110.9459@cl320.eecs.utk.edu>
-Date: Sat, 30 Apr 2011 10:14:32 +0300
-X-Google-Sender-Auth: Zl4hPNPmYbaL5-FMf8cKLnrnpIY
-Message-ID: <BANLkTimOcaFRxyr=sfdNbe0MXGWu9u1o1w@mail.gmail.com>
-Subject: Re: re-enable Nehalem raw Offcore-Events support
-From: Pekka Enberg <penberg@kernel.org>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Apr 2011 07:16:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vince,
+Commit-ID:  eea502ffd4aeef233b5eadbde405a9df92d57a5e
+Gitweb:     http://git.kernel.org/tip/eea502ffd4aeef233b5eadbde405a9df92d57a5e
+Author:     Rakib Mullick <rakib.mullick@gmail.com>
+AuthorDate: Sat, 30 Apr 2011 00:01:02 +0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 30 Apr 2011 00:17:14 +0200
 
-On Sat, Apr 30, 2011 at 5:17 AM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> But your argument isn't that.  Your argument is that you're blocking raw
-> event access as some sort of punishment because us HPC people aren't
-> providing patches for "generalized" events that we never plan to use.
-> That's not a technical argument, that's some sort of weird power play.
+sched: Use bool type for rq->idle_at_tick
 
-That's not his argument at all and if you fail to see that you really
-have no idea what the concept "working with the maintainer" means.
+Searching over the scheduler code for uses of rq->idle_at_tick
+shows us that it's used for making TRUE/FALSE decision.
 
-Yes, raw event access was reverted from 2.6.39 but that doesn't mean
-it's blocked forever. If you want to keep pushing your feature, please
-tone down your crazy-talk and start acting like a developer who's
-genuinely interested in Linux, not on your own narrow, selfish goals.
+Still its type is 'unsigned char' so using 'bool' would be
+cleaner.
 
-I mean really, I haven't even had the pleasure of interracting a lot
-with you and while I personally don't see the problem with raw event
-access (if done in a well-thought out manner from ABI pov), you've
-already managed to convince me that applying _any_ patch from you is a
-bad idea because the baggage that comes with it is simply not worth
-it.
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1304100062.19359.6.camel@localhost.localdomain
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If you want to alienate other developers, keep doing what you're doing
-- otherwise consider changing your tactics. It's boring to watch you
-repeat the same mistakes over and over again.
-
-                        Pekka
+diff --git a/kernel/sched.c b/kernel/sched.c
+index f11a2a5..a492209 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -505,7 +505,7 @@ struct rq {
+ 
+ 	unsigned long cpu_power;
+ 
+-	unsigned char idle_at_tick;
++	bool idle_at_tick;
+ 	/* For active balancing */
+ 	int post_schedule;
+ 	int active_balance;
