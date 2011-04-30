@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1D3ENd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 00:13:33 -0400
-Received: from zfrontend2.aha.ru ([195.2.83.148]:60360 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750911Ab1D3ENb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 00:13:31 -0400
-From: "werner" <w.landgraf@ru.ru>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Sat, 30 Apr 2011 00:13:24 -0400
-Message-ID: <web-515901951@zbackend1.aha.ru>
-In-Reply-To: <BANLkTi=ujRJYG80F=HKqgz2nPeE5Gro+JA@mail.gmail.com>
-References: <web-515866242@zbackend1.aha.ru>
- <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
- <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
- <20110430025545.GI9487@ZenIV.linux.org.uk>
- <20110430030243.GJ9487@ZenIV.linux.org.uk>
- <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
- <web-515898476@zbackend1.aha.ru>
- <BANLkTi=ujRJYG80F=HKqgz2nPeE5Gro+JA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="KOI8-R"; format="flowed"
-Content-Transfer-Encoding: 8bit
+	id S1753774Ab1D3EOy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 00:14:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31266 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab1D3EOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 00:14:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,292,1301900400"; 
+   d="scan'208";a="636105208"
+Subject: Re: [RESEND PATCH 1/2] perf probe: Fix the missed parameter
+ initialization
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110429173332.GA3273@ghostprotocols.net>
+References: <1304066518-30420-1-git-send-email-ming.m.lin@intel.com>
+	 <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+	 <20110429173332.GA3273@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 30 Apr 2011 12:14:54 +0800
+Message-Id: <1304136894.3761.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem that the computer crashs if zip, unzip or move 
-a big file, started with -rc1
-
-The problem with the secondary reset-resistent crashs 
-after a primary and-of-boot or after-boot crash started 
-with -rc3 or -rc4, at least I perceived it then, but it's 
-possible that it occured also before, at least then I 
-didn't note it
-
-Now I see, that nor the syslog don't contain everything 
-(this was also better with 2.6.38.4).  For example, 
-currently aren't logged these crashs which currently 
-occure during rtc0 initializing (in addition to the other 
-crashs protocolled in the log files). Also, as you can see 
-from my before-last message, with the screen foto of 
-/dev/pts/0 w.r.t. boot_vga, this also don't appear in the 
-log file which was added at the end of the same message.
-
-For being -rc5 , that kernel is rather bad.  I hope you 
-get through to correct it until -rc10
-
-W.Landgraf
-
-  
-
-
-
-=========================================================
-On Fri, 29 Apr 2011 21:00:24 -0700
-  Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Fri, Apr 29, 2011 at 8:39 PM, werner 
-><w.landgraf@ru.ru> wrote:
->>
->> At my reclamation thread about 2.6.39-rc3,4 crashs, I 
->>informed that there
->> was a reset-resistent change of the system after crashs, 
->>so that on
->> subsequent boots (after a 'primary' crash rather at the 
->>end of booting) it
->> happened an early 'secondary' šcrash at the time of 
->>initializing ata0, with
->> funny effects like that the grafic card (or anything 
->>else) was identified as
->> an ata device, with subsequent 'read erros' on it and 
->>crash. This
->> 'secondary' effect repeated and repeated and gone away 
->>only at booting with
->> a normal kernel (2.6.38.4 or 2.6.26.2). But if 
->>afterwards booting again with
->> 2.6.39-rc3 or -rc4 , then at the end of the boot it 
->>crashed, and at
->> subsequent boots again continued this reset-resistent 
->>effect that it crasha
->> again and again with ata0 problems, until I reboot with 
->>2.6.38.4 or 2.6.26.2
->> , or waiting 5 minutes (perhaps until the memory 
->>discharged).
->>
->> All these problems dont happen with 2.6.38.4 or 2.6.26.2
-> 
-> Do you think you could bisect when that odd after-reset 
->behavior started?
-> 
-> It does sound like you have some PCI-level problem (some 
->device that
-> has "sticky" state and doesn't get reset properly). Most 
->likely a
-> hardware "feature" (there is various PCI hardware that 
->allows things
-> like device identifiers to be written to), coupled with 
->a firmware bug
-> that doesn't reset things.
-> 
-> But it would be intriguing to hear when it started 
->happening, so that
-> we can figure out exactly _what_ isn't getting properly 
->reset..
-> 
-> The logfs oops may just be a result of "autodetect any 
->random
-> filesystem" in that confused state. So when the state 
->isn't confused,
-> you'd not see the oops, because nothing ever tries to 
->mount the
-> invalid logfs image.
-> 
->                 Linus
+On Sat, 2011-04-30 at 01:33 +0800, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Apr 29, 2011 at 08:41:57AM +0000, Lin Ming escreveu:
+> > pubname_callback_param::found should be initialized to 0 in fastpath lookup.
 > 
 > 
+> Is this really needed? Or is this just to stress it, for documentational
+> purposes?
 
-"werner" <w.landgraf@ru.ru>
----
-Professional hosting for everyone - http://www.host.ru
+Yes, this is really needed.
+
+It should be initialized to 0, and pubname_search_cb will set it to 1 if
+the function is found.
+
+>  
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  tools/perf/util/probe-finder.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> > index a7c7145..3b9d0b8 100644
+> > --- a/tools/perf/util/probe-finder.c
+> > +++ b/tools/perf/util/probe-finder.c
+> > @@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
+> >  			.file	  = pp->file,
+> >  			.cu_die	  = &pf->cu_die,
+> >  			.sp_die	  = &pf->sp_die,
+> > +			.found	  = 0,
+> >  		};
+> >  		struct dwarf_callback_param probe_param = {
+> >  			.data = pf,
+> > -- 
+> > 1.7.4.4
+
+
