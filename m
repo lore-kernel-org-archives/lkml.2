@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761099Ab1D3BHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 21:07:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58473 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757532Ab1D3BHm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 21:07:42 -0400
+	id S1761115Ab1D3BLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 21:11:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36129 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760644Ab1D3BLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 21:11:24 -0400
+Date: Fri, 29 Apr 2011 18:08:18 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+Subject: Re: [Update][RFC][PATCH 1/2] PM / Runtime: Support for generic I/O
+ power domains (v2)
+Message-ID: <20110430010818.GA32601@suse.de>
+References: <201104290154.12966.rjw@sisk.pl>
+ <201104290154.56145.rjw@sisk.pl>
+ <201104300254.46973.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1304123061.30215.38.camel@work-vm>
-References: <tip-304529b1b6f8612ccbb4582e997051b48b94f4a4@git.kernel.org>
-	<BANLkTin12hcs1Q=4E4REdF_-zn08EJXzvw@mail.gmail.com>
-	<1304123061.30215.38.camel@work-vm>
-Date: Fri, 29 Apr 2011 18:07:40 -0700
-Message-ID: <BANLkTimyu3C4o+=S7uhi3D-OmUko-xO6Kg@mail.gmail.com>
-Subject: Re: [tip:timers/core] time: Add timekeeping_inject_sleeptime
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104300254.46973.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/29 John Stultz <john.stultz@linaro.org>:
-> On Fri, 2011-04-29 at 16:28 -0700, Arve Hjønnevåg wrote:
->> On Fri, Apr 29, 2011 at 10:31 AM, tip-bot for John Stultz
->> > @@ -85,15 +82,13 @@ static int rtc_resume(struct device *dev)
->> >                        pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
->> >                return 0;
->> >        }
->> > +       /* calculate the RTC time delta */
->> > +       set_normalized_timespec(&time, newtime - oldtime, 0);
->> >
->> > -       /* restore wall clock using delta against this RTC;
->> > -        * adjust again for avg 1/2 second RTC sampling error
->> > -        */
->> > -       set_normalized_timespec(&time,
->> > -                               newtime + delta.tv_sec,
->> > -                               (NSEC_PER_SEC >> 1) + delta.tv_nsec);
->> > -       do_settimeofday(&time);
->> > +       /* subtract kernel time between rtc_suspend to rtc_resume */
->> > +       time = timespec_sub(time, timespec_sub(newts, oldts));
->>
->> The delta you got from the rtc can be almost a second to long or
->> short. Do you do anything to prevent these errors from accumulating?
->
-> Indeed. Right now we don't do anything.
->
-> I'm hoping to extend the RTC interface to provide finer resolution where
-> possible, but that won't help on hardware that really only gives us
-> seconds.
->
-> We could maybe not only track the suspend time but the RTC time deltas
-> for when the system is running as well and utilize those values to avoid
-> accumulating the error long term. But then there can be other
-> complications between the NTP corrected system time and the uncorrected
-> RTC time.
->
-> Other ideas? I know you've got a patch in the Android tree to try to
-> address this, should I try to adapt it for use here?
->
+On Sat, Apr 30, 2011 at 02:54:46AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Introcude common headers, helper functions and callbacks allowing
+> platforms to use simple generic power domains for runtime power
+> management.
+> 
+> Introduce struct generic_power_domain to be used for representing
+> power domains that each contain a number of devices and may be
+> master domains or subdomains with respect to other power domains.
+> Among other things, this structure includes callbacks to be
+> provided by platforms for performing specific tasks related to
+> power management (i.e. ->stop_device() may disable a device's
+> clocks, while ->start_device() may enable them, ->power_on() is
+> supposed to remove power from the entire power domain
+> and ->power_off() is supposed to restore it).
+> 
+> Introduce functions that can be used as power domain runtime PM
+> callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
+> as well as helper functions for the initialization of a power
+> domain represented by a struct generic_power_domain object,
+> adding a device to or removing a device from it and adding or
+> removing subdomains.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+> 
+> Hi,
+> 
+> This version of the patch fixes a bug that caused pm_runtime_suspend()
+> (and equivalent) to return -EBUSY erroneously when suspending the last
+> active device in a power domain.  It has been tested on an ARM shmobile
+> system.
+> 
+> Greg, I hope your ACK is still valid. :-)
 
-Unless you can make the generic code handle this (in case
-read_persistent_clock has the same problem), then I would recommend
-adapting that patch to your new rtc code. We have not noticed the
-problem after applying that patch.
+Yes, it is.
 
--- 
-Arve Hjønnevåg
