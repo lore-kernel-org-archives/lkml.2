@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538Ab1D3AOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 20:14:55 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:11753 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab1D3AOx convert rfc822-to-8bit (ORCPT
+	id S1759605Ab1D3AP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 20:15:59 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:34289 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754788Ab1D3AP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 20:14:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AHSWzkFW5tzmt6vGEtFNow/DA1pmn46DzBwqNvDNDYKklkn3BVoOU2m1URIchXsLYn
-         S2a+4kMLkLpbwtVLWiTg==
-MIME-Version: 1.0
-In-Reply-To: <20110429234028.GA28476@kroah.com>
-References: <20110429212328.GA19207@kroah.com> <20110429225551.22013.65012.stgit@mike.mtv.corp.google.com>
- <20110429234028.GA28476@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 29 Apr 2011 17:14:30 -0700
-Message-ID: <BANLkTini9Y-XdKX_VORuMN=M0mqdeTc3TA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] driver: Google EFI SMI
+	Fri, 29 Apr 2011 20:15:56 -0400
+Date: Sat, 30 Apr 2011 00:15:54 +0000 (UTC)
+From: johnlinn@comcast.net
 To: Greg KH <greg@kroah.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, michal simek <michal.simek@petalogix.com>,
+        joe@perches.com, grant likely <grant.likely@secretlab.ca>,
+        John Linn <john.linn@xilinx.com>
+Message-ID: <360432418.2101963.1304122554428.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+In-Reply-To: <20110429233719.GA25417@kroah.com>
+Subject: Re: [PATCH V5] tty/serial: add support for Xilinx PS UART
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [149.199.62.254]
+X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 4:40 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Apr 29, 2011 at 03:55:51PM -0700, Mike Waychison wrote:
->> The "gsmi" driver bridges userland with firmware specific routines for
->> accessing hardware.
->>
->> Currently, this driver only supports NVRAM and eventlog information.
->> Deprecated functions have been removed from the driver, though their
->> op-codes are left in place so that they are not re-used.
->>
->> This driver works by trampolining into the firmware via the smi_command
->> outlined in the FADT table.  Three protocols are used due to various
->> limitations over time, but all are included herein.
->>
->> This driver should only ever load on Google boards, identified by either
->> a "Google, Inc." board vendor string in DMI, or "GOOGLE" in the OEM
->> strings of the FADT ACPI table.  This logic happens in
->> gsmi_system_valid().
->>
->> Signed-off-by: Duncan Laurie <dlaurie@google.com>
->> Signed-off-by: Aaron Durbin <adurbin@google.com>
->> Signed-off-by: Mike Waychison <mikew@google.com>
->
+
+> On Fri, Apr 29, 2011 at 03:59:06PM -0600, johnlinn@comcast.net wrote:
+> > From: John Linn <john.linn@xilinx.com>
+> > 
+> > The Xilinx PS Uart is used on the new ARM based SoC. This
+> > UART is not compatible with others such that a seperate
+> > driver is required.
+> > 
+> > Signed-off-by: John Linn <john.linn@xilinx.com>
+> 
+> That's fine, but:
+> 
+> > 
+> > This email and any attachments are intended for the sole use of the
+> named recipient(s) and contain(s) confidential information that may be
+> proprietary, privileged or copyrighted under applicable law. If you
+> are not the intended recipient, do not read, copy, or forward this
+> email message or any attachments. Delete this email message and any
+> attachments immediately.
+> >
+> 
+> That means I can't apply this patch :(
+> 
 > {sigh}
->
-> I now get this build error with this patch applied:
->
->  CC [M]  drivers/firmware/google/gsmi.o
-> drivers/firmware/google/gsmi.c: In function ‘gsmi_die_callback’:
-> drivers/firmware/google/gsmi.c:660:16: error: ‘DIE_NMIWATCHDOG’ undeclared (first use in this function)
-> drivers/firmware/google/gsmi.c:660:16: note: each undeclared identifier is reported only once for each function it appears in
-> make[3]: *** [drivers/firmware/google/gsmi.o] Error 1
->
->
-> Also, I had to hand edit the drivers/firmware/Makefile and Kconfig parts
-> of this patch to get it to apply, care to respin it against the
-> linux-next tree so I don't have to do that next time around?
->
+> 
+> Please fix this, as it does not allow you to participate in kernel
+> development efforts.
 
-Ya, I'm looking at these now.
+Sorry for trying your patience, V6 is out and shouldn't have that
+nasty issue.
 
-Hmm :(  It seems the nmi watchdog got renamed to the 'hard lockup'
-detector, and we lost the DIE callback in the meantime.
+Your patience is much appreciated as I'm fighting the good fight with
+legal about this and working around it (not real smooth obviously).
 
-I think for the moment, I'm going to respin and drop the NMI bits for
-now.  We can revisit actually calling notify_die() when we panic in
-watchdog_overflow_callback() as a follow on.
+Thanks
+John
+
+> 
+> greg k-h
