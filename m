@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759041Ab1D3UWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 16:22:35 -0400
+	id S1759122Ab1D3UWl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 16:22:41 -0400
 Received: from ogre.sisk.pl ([217.79.144.158]:39004 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758322Ab1D3UWd convert rfc822-to-8bit (ORCPT
+	id S1758967Ab1D3UWf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 16:22:33 -0400
+	Sat, 30 Apr 2011 16:22:35 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Tvrtko Ursulin" <tvrtko@ursulin.net>
+        Florian Mickler <florian@mickler.org>, "" <fhimpe@telenet.be>
 References: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
 In-Reply-To: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <9nxEC7x0HFO.A.Q0F.txGvNB@chimera>
-Subject: [Bug #32202] 2.6.38 hangs on boot until key is pressed
+Message-ID: <9nxEC7x0HFO.A.OuF.qxGvNB@chimera>
+Subject: [Bug #32522] drm:i915_hangcheck_ring_idle after suspend/resume cycle
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sat, 30 Apr 2011 22:17:21 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +33,9 @@ introduced between 2.6.37 and 2.6.38.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=32202
-Subject		: 2.6.38 hangs on boot until key is pressed
-Submitter	: Tvrtko Ursulin <tvrtko@ursulin.net>
-Date		: 2011-03-27 19:18 (35 days old)
-Message-ID	: <1301253485.2500.2.camel@deuteros>
-References	: http://marc.info/?l=linux-kernel&m=130125411116558&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=32522
+Subject		: drm:i915_hangcheck_ring_idle after suspend/resume cycle
+Submitter	:  <fhimpe@telenet.be>
+Date		: 2011-04-02 18:40 (29 days old)
 
 
