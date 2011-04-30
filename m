@@ -1,389 +1,631 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761107Ab1D3Axd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 20:53:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:38412 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1D3AxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 20:53:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=BcBi2r2+BnM71vk7ZdkC9jAjb/cWEord88Egmbbs0zzPfbhW9iWWBGC30Rh+jdUOF
-	GpSn1AGHOFb7hfapbJrlQ==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Aditya Kali <adityakali@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 1/2] x86: Change trap definitions to enumerated values
-Date: Fri, 29 Apr 2011 17:52:52 -0700
-Message-Id: <1304124773-24935-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
-References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+	id S1761019Ab1D3Ayt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 20:54:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37703 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619Ab1D3Ayr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 20:54:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg KH <gregkh@suse.de>
+Subject: [Update][RFC][PATCH 1/2] PM / Runtime: Support for generic I/O power domains (v2)
+Date: Sat, 30 Apr 2011 02:54:46 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+References: <201104290154.12966.rjw@sisk.pl> <201104290154.56145.rjw@sisk.pl>
+In-Reply-To: <201104290154.56145.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104300254.46973.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aditya Kali <adityakali@google.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The traps are referred to by their numbers and it can be difficult to
-understand them while reading the code without context. This patch adds
-enumeration of the trap numbers and replaced the numbers to the correct
-enum for x86.
+Introcude common headers, helper functions and callbacks allowing
+platforms to use simple generic power domains for runtime power
+management.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Introduce struct generic_power_domain to be used for representing
+power domains that each contain a number of devices and may be
+master domains or subdomains with respect to other power domains.
+Among other things, this structure includes callbacks to be
+provided by platforms for performing specific tasks related to
+power management (i.e. ->stop_device() may disable a device's
+clocks, while ->start_device() may enable them, ->power_on() is
+supposed to remove power from the entire power domain
+and ->power_off() is supposed to restore it).
+
+Introduce functions that can be used as power domain runtime PM
+callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
+as well as helper functions for the initialization of a power
+domain represented by a struct generic_power_domain object,
+adding a device to or removing a device from it and adding or
+removing subdomains.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/include/asm/traps.h |   24 ++++++++
- arch/x86/kernel/traps.c      |  121 +++++++++++++++++++++++-------------------
- 2 files changed, 91 insertions(+), 54 deletions(-)
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 0310da6..c561caf 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -87,4 +87,28 @@ asmlinkage void smp_thermal_interrupt(void);
- asmlinkage void mce_threshold_interrupt(void);
- #endif
- 
-+/* Interrupts/Exceptions */
-+enum {
-+	INTR_DIV_BY_ZERO = 0,	/*  0 */
-+	INTR_DEBUG,		/*  1 */
-+	INTR_NMI,		/*  2 */
-+	INTR_BREAKPOINT,	/*  3 */
-+	INTR_OVERFLOW,		/*  4 */
-+	INTR_BOUNDS_CHECK,	/*  5 */
-+	INTR_INVALID_OP,	/*  6 */
-+	INTR_NO_DEV,		/*  7 */
-+	INTR_DBL_FAULT,		/*  8 */
-+	INTR_SEG_OVERRUN,	/*  9 */
-+	INTR_INVALID_TSS,	/* 10 */
-+	INTR_NO_SEG,		/* 11 */
-+	INTR_STACK_FAULT,	/* 12 */
-+	INTR_GPF,		/* 13 */
-+	INTR_PAGE_FAULT,	/* 14 */
-+	INTR_SPURIOUS,		/* 15 */
-+	INTR_COPROCESSOR,	/* 16 */
-+	INTR_ALIGNMENT,		/* 17 */
-+	INTR_MCE,		/* 18 */
-+	INTR_SIMD_COPROCESSOR	/* 19 */
+Hi,
+
+This version of the patch fixes a bug that caused pm_runtime_suspend()
+(and equivalent) to return -EBUSY erroneously when suspending the last
+active device in a power domain.  It has been tested on an ARM shmobile
+system.
+
+Greg, I hope your ACK is still valid. :-)
+
+Thanks,
+Rafael
+
+---
+ drivers/base/power/Makefile |    2 
+ drivers/base/power/domain.c |  439 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pm.h          |    3 
+ include/linux/pm_domain.h   |   83 ++++++++
+ 4 files changed, 525 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- /dev/null
++++ linux-2.6/include/linux/pm_domain.h
+@@ -0,0 +1,83 @@
++/*
++ * pm_domain.h - Definitions and headers related to device power domains.
++ *
++ * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
++ *
++ * This file is released under the GPLv2.
++ */
++
++#ifndef _LINUX_PM_DOMAIN_H
++#define _LINUX_PM_DOMAIN_H
++
++#include <linux/device.h>
++
++struct dev_power_governor {
++	bool (*power_down_ok)(struct dev_power_domain *domain);
 +};
 +
- #endif /* _ASM_X86_TRAPS_H */
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index fbfc162..e058e8b 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -129,7 +129,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 		 * traps 0, 1, 3, 4, and 5 should be forwarded to vm86.
- 		 * On nmi (interrupt 2), do_trap should not be called.
- 		 */
--		if (trapnr < 6)
-+		if (trapnr < INTR_INVALID_OP)
- 			goto vm86_trap;
- 		goto trap_signal;
- 	}
-@@ -213,27 +213,29 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
- }
- 
--DO_ERROR_INFO(0, SIGFPE, "divide error", divide_error, FPE_INTDIV, regs->ip)
--DO_ERROR(4, SIGSEGV, "overflow", overflow)
--DO_ERROR(5, SIGSEGV, "bounds", bounds)
--DO_ERROR_INFO(6, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN, regs->ip)
--DO_ERROR(9, SIGFPE, "coprocessor segment overrun", coprocessor_segment_overrun)
--DO_ERROR(10, SIGSEGV, "invalid TSS", invalid_TSS)
--DO_ERROR(11, SIGBUS, "segment not present", segment_not_present)
-+DO_ERROR_INFO(INTR_DIV_BY_ZERO, SIGFPE, "divide error",    divide_error,    FPE_INTDIV, regs->ip)
-+DO_ERROR_INFO(INTR_ALIGNMENT,   SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
-+DO_ERROR_INFO(INTR_INVALID_OP,  SIGILL, "invalid opcode",  invalid_op,      ILL_ILLOPN, regs->ip)
++struct generic_power_domain {
++	struct dev_power_domain domain;
++	struct list_head node;
++	struct generic_power_domain *master;
++	struct list_head subdomain_list;
++	struct list_head device_list;
++	struct mutex lock;
++	struct dev_power_governor *gov;
++	unsigned int in_progress;
++	bool power_is_off;
++	int (*power_off)(struct dev_power_domain *domain);
++	int (*power_on)(struct dev_power_domain *domain);
++	int (*start_device)(struct device *dev);
++	int (*stop_device)(struct device *dev);
++};
 +
-+DO_ERROR(INTR_OVERFLOW,     SIGSEGV, "overflow",                    overflow)
-+DO_ERROR(INTR_BOUNDS_CHECK, SIGSEGV, "bounds",                      bounds)
-+DO_ERROR(INTR_SEG_OVERRUN,  SIGFPE,  "coprocessor segment overrun", coprocessor_segment_overrun)
-+DO_ERROR(INTR_INVALID_TSS,  SIGSEGV, "invalid TSS",                 invalid_TSS)
-+DO_ERROR(INTR_NO_SEG,       SIGBUS,  "segment not present",         segment_not_present)
- #ifdef CONFIG_X86_32
--DO_ERROR(12, SIGBUS, "stack segment", stack_segment)
-+DO_ERROR(INTR_STACK_FAULT,  SIGBUS,  "stack segment",               stack_segment)
- #endif
--DO_ERROR_INFO(17, SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
- dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
- {
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--			12, SIGBUS) == NOTIFY_STOP)
-+			INTR_STACK_FAULT, SIGBUS) == NOTIFY_STOP)
- 		return;
- 	preempt_conditional_sti(regs);
--	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
-+	do_trap(INTR_STACK_FAULT, SIGBUS, "stack segment", regs, error_code,
-+			NULL);
- 	preempt_conditional_cli(regs);
- }
- 
-@@ -243,10 +245,10 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	struct task_struct *tsk = current;
- 
- 	/* Return not checked because double check cannot be ignored */
--	notify_die(DIE_TRAP, str, regs, error_code, 8, SIGSEGV);
-+	notify_die(DIE_TRAP, str, regs, error_code, INTR_DBL_FAULT, SIGSEGV);
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 8;
-+	tsk->thread.trap_no = INTR_DBL_FAULT;
- 
- 	/*
- 	 * This is always a kernel trap and never fixable (and thus must
-@@ -274,7 +276,7 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		goto gp_in_kernel;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_no = INTR_GPF;
- 
- 	if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
- 			printk_ratelimit()) {
-@@ -301,9 +303,9 @@ gp_in_kernel:
- 		return;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_no = INTR_GPF;
- 	if (notify_die(DIE_GPF, "general protection fault", regs,
--				error_code, 13, SIGSEGV) == NOTIFY_STOP)
-+				error_code, INTR_GPF, SIGSEGV) == NOTIFY_STOP)
- 		return;
- 	die("general protection fault", regs, error_code);
- }
-@@ -372,7 +374,8 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- static notrace __kprobes void
- unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- {
--	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
-+	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, INTR_NMI,
-+				SIGINT) ==
- 			NOTIFY_STOP)
- 		return;
- #ifdef CONFIG_MCA
-@@ -404,7 +407,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	 * NMI, otherwise we may lose it, because the CPU-specific
- 	 * NMI can not be detected/processed on other CPUs.
- 	 */
--	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
-+	if (notify_die(DIE_NMI, "nmi", regs, 0, INTR_NMI, SIGINT) ==
-+			NOTIFY_STOP)
- 		return;
- 
- 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
-@@ -460,22 +464,24 @@ void restart_nmi(void)
- dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
- {
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
--	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
--			== NOTIFY_STOP)
-+	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, INTR_BREAKPOINT,
-+			SIGTRAP) == NOTIFY_STOP)
- 		return;
- #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
- #ifdef CONFIG_KPROBES
--	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
-+	if (notify_die(DIE_INT3, "int3", regs, error_code, INTR_BREAKPOINT,
-+				SIGTRAP)
- 			== NOTIFY_STOP)
- 		return;
- #else
--	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
-+	if (notify_die(DIE_TRAP, "int3", regs, error_code, INTR_BREAKPOINT,
-+				SIGTRAP)
- 			== NOTIFY_STOP)
- 		return;
- #endif
- 
- 	preempt_conditional_sti(regs);
--	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
-+	do_trap(INTR_BREAKPOINT, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
- }
- 
-@@ -574,7 +580,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
- 	if (regs->flags & X86_VM_MASK) {
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
--				error_code, 1);
-+				error_code, INTR_DEBUG);
- 		preempt_conditional_cli(regs);
- 		return;
- 	}
-@@ -602,14 +608,15 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- /*
-  * Note that we play around with the 'TS' bit in an attempt to get
-  * the correct behaviour even in the presence of the asynchronous
-- * IRQ13 behaviour
-+ * INTR_GPF behaviour
++struct dev_list_entry {
++	struct list_head node;
++	struct device *dev;
++};
++
++#ifdef CONFIG_PM_RUNTIME
++extern int pm_genpd_runtime_suspend(struct device *dev);
++extern int pm_genpd_runtime_resume(struct device *dev);
++#else
++#define pm_genpd_runtime_suspend	NULL;
++#define pm_genpd_runtime_resume	NULL;
++#endif
++
++#ifdef CONFIG_PM
++extern int pm_genpd_add_device(struct generic_power_domain *genpd,
++			       struct device *dev);
++extern int pm_genpd_remove_device(struct generic_power_domain *genpd,
++				  struct device *dev);
++extern int pm_genpd_add_subdomain(struct generic_power_domain *genpd,
++				  struct generic_power_domain *new_subdomain);
++extern int pm_genpd_remove_subdomain(struct generic_power_domain *genpd,
++				     struct generic_power_domain *target);
++extern void pm_genpd_init(struct generic_power_domain *genpd,
++			  struct dev_power_governor *gov, bool is_off);
++#else
++static inline int pm_genpd_add_device(struct generic_power_domain *genpd,
++				      struct device *dev)
++{
++	return -ENOSYS;
++}
++static inline int pm_genpd_remove_device(struct generic_power_domain *genpd,
++					 struct device *dev)
++{
++	return -ENOSYS;
++}
++static inline int pm_genpd_add_subdomain(struct generic_power_domain *genpd,
++					 struct generic_power_domain *new_sd)
++{
++	return -ENOSYS;
++}
++static inline int pm_genpd_remove_subdomain(struct generic_power_domain *genpd,
++					    struct generic_power_domain *target)
++{
++	return -ENOSYS;
++}
++static inline void pm_genpd_init(struct generic_power_domain *genpd,
++				 struct dev_power_governor *gov, bool is_off) {}
++#endif
++
++#endif /* _LINUX_PM_DOMAIN_H */
+Index: linux-2.6/include/linux/pm.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -472,7 +472,8 @@ extern void update_pm_runtime_accounting
+  * subsystem-level and driver-level callbacks.
   */
- void math_error(struct pt_regs *regs, int error_code, int trapnr)
- {
- 	struct task_struct *task = current;
- 	siginfo_t info;
- 	unsigned short err;
--	char *str = (trapnr == 16) ? "fpu exception" : "simd exception";
-+	char *str = (trapnr == INTR_COPROCESSOR) ? "fpu exception" :
-+						"simd exception";
+ struct dev_power_domain {
+-	struct dev_pm_ops	ops;
++	struct dev_pm_ops ops;
++	void *platform_data;
+ };
  
- 	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, SIGFPE) == NOTIFY_STOP)
- 		return;
-@@ -634,7 +641,7 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 	info.si_signo = SIGFPE;
- 	info.si_errno = 0;
- 	info.si_addr = (void __user *)regs->ip;
--	if (trapnr == 16) {
-+	if (trapnr == INTR_COPROCESSOR) {
- 		unsigned short cwd, swd;
- 		/*
- 		 * (~cwd & swd) will mask out exceptions that are not set to unmasked
-@@ -678,8 +685,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 		info.si_code = FPE_FLTRES;
- 	} else {
- 		/*
--		 * If we're using IRQ 13, or supposedly even some trap 16
--		 * implementations, it's possible we get a spurious trap...
-+		 * If we're using INTR_GPF, or supposedly even some trap
-+		 * INTR_COPROCESSOR implementations, it's possible we get a
-+		 * spurious trap...
- 		 */
- 		return;		/* Spurious trap, no error */
- 	}
-@@ -692,23 +700,25 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
- 	ignore_fpu_irq = 1;
- #endif
- 
--	math_error(regs, error_code, 16);
-+	math_error(regs, error_code, INTR_COPROCESSOR);
- }
- 
- dotraplinkage void
- do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- {
--	math_error(regs, error_code, 19);
-+	math_error(regs, error_code, INTR_SIMD_COPROCESSOR);
- }
- 
- dotraplinkage void
- do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(INTR_SPURIOUS);
- 	conditional_sti(regs);
- #if 0
- 	/* No need to warn about this any longer. */
- 	printk(KERN_INFO "Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
- #endif
-+	trace_trap_exit(INTR_SPURIOUS);
- }
- 
- asmlinkage void __attribute__((weak)) smp_thermal_interrupt(void)
-@@ -745,7 +755,7 @@ void __math_state_restore(void)
-  * 'math_state_restore()' saves the current math information in the
-  * old math state array, and gets the new ones from the current task
-  *
-- * Careful.. There are problems with IBM-designed IRQ13 behaviour.
-+ * Careful.. There are problems with IBM-designed INTR_GPF behaviour.
-  * Don't touch unless you *really* know how it works.
-  *
-  * Must be called with kernel preemption disabled (in this case,
-@@ -780,6 +790,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
- dotraplinkage void __kprobes
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(INTR_NO_DEV);
- #ifdef CONFIG_MATH_EMULATION
- 	if (read_cr0() & X86_CR0_EM) {
- 		struct math_emu_info info = { };
-@@ -788,6 +799,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- 
- 		info.regs = regs;
- 		math_emulate(&info);
-+		trace_trap_exit(INTR_NO_DEV);
- 		return;
- 	}
- #endif
-@@ -795,6 +807,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- #ifdef CONFIG_X86_32
- 	conditional_sti(regs);
- #endif
-+	trace_trap_exit(INTR_NO_DEV);
- }
- 
- #ifdef CONFIG_X86_32
-@@ -817,10 +830,10 @@ dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
- /* Set of traps needed for early debugging. */
- void __init early_trap_init(void)
- {
--	set_intr_gate_ist(1, &debug, DEBUG_STACK);
-+	set_intr_gate_ist(INTR_DEBUG, &debug, DEBUG_STACK);
- 	/* int3 can be called from all */
--	set_system_intr_gate_ist(3, &int3, DEBUG_STACK);
--	set_intr_gate(14, &page_fault);
-+	set_system_intr_gate_ist(INTR_BREAKPOINT, &int3, DEBUG_STACK);
-+	set_intr_gate(INTR_PAGE_FAULT, &page_fault);
- 	load_idt(&idt_descr);
- }
- 
-@@ -836,30 +849,30 @@ void __init trap_init(void)
- 	early_iounmap(p, 4);
- #endif
- 
--	set_intr_gate(0, &divide_error);
--	set_intr_gate_ist(2, &nmi, NMI_STACK);
-+	set_intr_gate(INTR_DIV_BY_ZERO,     &divide_error);
-+	set_intr_gate_ist(INTR_NMI,         &nmi, NMI_STACK);
- 	/* int4 can be called from all */
--	set_system_intr_gate(4, &overflow);
--	set_intr_gate(5, &bounds);
--	set_intr_gate(6, &invalid_op);
--	set_intr_gate(7, &device_not_available);
-+	set_system_intr_gate(INTR_OVERFLOW, &overflow);
-+	set_intr_gate(INTR_BOUNDS_CHECK,    &bounds);
-+	set_intr_gate(INTR_INVALID_OP,      &invalid_op);
-+	set_intr_gate(INTR_NO_DEV,          &device_not_available);
- #ifdef CONFIG_X86_32
--	set_task_gate(8, GDT_ENTRY_DOUBLEFAULT_TSS);
-+	set_task_gate(INTR_DBL_FAULT,       GDT_ENTRY_DOUBLEFAULT_TSS);
- #else
--	set_intr_gate_ist(8, &double_fault, DOUBLEFAULT_STACK);
-+	set_intr_gate_ist(INTR_DBL_FAULT,   &double_fault, DOUBLEFAULT_STACK);
- #endif
--	set_intr_gate(9, &coprocessor_segment_overrun);
--	set_intr_gate(10, &invalid_TSS);
--	set_intr_gate(11, &segment_not_present);
--	set_intr_gate_ist(12, &stack_segment, STACKFAULT_STACK);
--	set_intr_gate(13, &general_protection);
--	set_intr_gate(15, &spurious_interrupt_bug);
--	set_intr_gate(16, &coprocessor_error);
--	set_intr_gate(17, &alignment_check);
-+	set_intr_gate(INTR_SEG_OVERRUN,     &coprocessor_segment_overrun);
-+	set_intr_gate(INTR_INVALID_TSS,     &invalid_TSS);
-+	set_intr_gate(INTR_NO_SEG,          &segment_not_present);
-+	set_intr_gate_ist(INTR_STACK_FAULT, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(INTR_GPF,             &general_protection);
-+	set_intr_gate(INTR_SPURIOUS,        &spurious_interrupt_bug);
-+	set_intr_gate(INTR_COPROCESSOR,     &coprocessor_error);
-+	set_intr_gate(INTR_ALIGNMENT,       &alignment_check);
- #ifdef CONFIG_X86_MCE
--	set_intr_gate_ist(18, &machine_check, MCE_STACK);
-+	set_intr_gate_ist(INTR_MCE,         &machine_check, MCE_STACK);
- #endif
--	set_intr_gate(19, &simd_coprocessor_error);
-+	set_intr_gate(INTR_SIMD_COPROCESSOR, &simd_coprocessor_error);
- 
- 	/* Reserve all the builtin and the syscall vector: */
- 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
--- 
-1.7.3.1
+ /*
+Index: linux-2.6/drivers/base/power/Makefile
+===================================================================
+--- linux-2.6.orig/drivers/base/power/Makefile
++++ linux-2.6/drivers/base/power/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o
++obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o domain.o
+ obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
+ obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
+ obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- /dev/null
++++ linux-2.6/drivers/base/power/domain.c
+@@ -0,0 +1,439 @@
++/*
++ * drivers/base/power/domain.c - Common code related to device power domains.
++ *
++ * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
++ *
++ * This file is released under the GPLv2.
++ */
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/pm_runtime.h>
++#include <linux/pm_domain.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++
++#ifdef CONFIG_PM_RUNTIME
++
++/**
++ * __pm_genpd_restore_device - Restore a pre-suspend state of a device.
++ * @dev: Device to restore the state of.
++ * @genpd: Power domain the device belongs to.
++ */
++static void __pm_genpd_restore_device(struct device *dev,
++				      struct generic_power_domain *genpd)
++{
++	struct device_driver *drv = dev->driver;
++
++	if (genpd->start_device)
++		genpd->start_device(dev);
++
++	if (drv && drv->pm && drv->pm->runtime_resume)
++		drv->pm->runtime_resume(dev);
++
++	if (genpd->stop_device)
++		genpd->stop_device(dev);
++}
++
++/**
++ * __pm_genpd_poweroff - Remove power from a given power domain.
++ * @genpd: Power domain to power down.
++ *
++ * If all of the @genpd's devices have been suspended and all of its subdomains
++ * have been powered down, run the runtime suspend callbacks provided by all of
++ * the @genpd's devices' drivers and remove power from @genpd.
++ */
++static int __pm_genpd_poweroff(struct generic_power_domain *genpd)
++{
++	struct generic_power_domain *subdomain;
++	struct dev_list_entry *dle;
++	unsigned int not_suspended;
++	int ret;
++
++	if (genpd->power_is_off)
++		return 0;
++
++	not_suspended = 0;
++	list_for_each_entry(dle, &genpd->device_list, node)
++		if (!pm_runtime_suspended(dle->dev))
++			not_suspended++;
++
++	if (not_suspended > genpd->in_progress)
++		return -EBUSY;
++
++	list_for_each_entry_reverse(subdomain, &genpd->subdomain_list, node) {
++		mutex_lock(&subdomain->lock);
++		ret = __pm_genpd_poweroff(subdomain);
++		mutex_unlock(&subdomain->lock);
++		if (ret)
++			return ret;
++	}
++
++	if (genpd->gov && genpd->gov->power_down_ok) {
++		if (!genpd->gov->power_down_ok(&genpd->domain))
++			return -EAGAIN;
++	}
++
++	list_for_each_entry_reverse(dle, &genpd->device_list, node) {
++		struct device *dev = dle->dev;
++		struct device_driver *drv = dev->driver;
++
++		if (genpd->start_device)
++			genpd->start_device(dev);
++
++		if (drv && drv->pm && drv->pm->runtime_suspend)
++			ret = drv->pm->runtime_suspend(dev);
++
++		if (genpd->stop_device)
++			genpd->stop_device(dev);
++
++		if (ret)
++			goto err_dev;
++	}
++
++	if (genpd->power_off)
++		genpd->power_off(&genpd->domain);
++
++	genpd->power_is_off = true;
++
++	return 0;
++
++ err_dev:
++	list_for_each_entry_continue(dle, &genpd->device_list, node)
++		__pm_genpd_restore_device(dle->dev, genpd);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_poweroff - Remove power from a given power domain and its masters.
++ * @genpd: Power domain to power down.
++ *
++ * Try to remove power from @genpd and all of its masters in order to save as
++ * much power as possible.
++ */
++static void pm_genpd_poweroff(struct generic_power_domain *genpd)
++{
++	struct generic_power_domain *master;
++
++	mutex_lock(&genpd->lock);
++	master = genpd->master;
++	if (master) {
++		mutex_unlock(&genpd->lock);
++		pm_genpd_poweroff(master);
++		return;
++	}
++	__pm_genpd_poweroff(genpd);
++	mutex_unlock(&genpd->lock);
++}
++
++/**
++ * pm_genpd_runtime_suspend - Suspend a device belonging to I/O power domain.
++ * @dev: Device to suspend.
++ *
++ * Carry out a runtime suspend of a device under the assumption that its
++ * pwr_domain field points to the domain member of an object of type
++ * struct generic_power_domain representing a power domain consisting of I/O
++ * devices.
++ */
++int pm_genpd_runtime_suspend(struct device *dev)
++{
++	struct generic_power_domain *genpd, *master;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	if (IS_ERR_OR_NULL(dev->pwr_domain))
++		return -EINVAL;
++
++	genpd = container_of(dev->pwr_domain,
++			     struct generic_power_domain, domain);
++
++	mutex_lock(&genpd->lock);
++
++	if (genpd->stop_device) {
++		int ret = genpd->stop_device(dev);
++		if (ret)
++			goto out;
++	}
++	genpd->in_progress++;
++
++	master = genpd->master;
++	if (master) {
++		mutex_unlock(&genpd->lock);
++
++		pm_genpd_poweroff(master);
++
++		mutex_lock(&genpd->lock);
++	} else {
++		__pm_genpd_poweroff(genpd);
++	}
++
++	genpd->in_progress--;
++
++ out:
++	mutex_unlock(&genpd->lock);
++
++	return 0;
++}
++
++/**
++ * __pm_genpd_poweron - Restore power for a given power domain.
++ * @genpd: Power domain to power up.
++ *
++ * Restore power for @genpd and run runtime resume callbacks provided by all of
++ * its devices' drivers.
++ */
++static int __pm_genpd_poweron(struct generic_power_domain *genpd)
++{
++	struct dev_list_entry *dle;
++
++	if (!genpd->power_is_off)
++		return 0;
++
++	if (genpd->power_on) {
++		int ret = genpd->power_on(&genpd->domain);
++		if (ret)
++			return ret;
++	}
++
++	genpd->power_is_off = false;
++
++	list_for_each_entry(dle, &genpd->device_list, node)
++		__pm_genpd_restore_device(dle->dev, genpd);
++
++	return 0;
++}
++
++/**
++ * pm_genpd_poweron - Restore power for a given power domain and its masters.
++ * @genpd: Power domain to power up.
++ *
++ * Restore power for @genpd and all of its masters so that it is possible to
++ * resume a device belonging to it.
++ */
++static int pm_genpd_poweron(struct generic_power_domain *genpd)
++{
++	struct generic_power_domain *master;
++	int ret;
++
++	mutex_lock(&genpd->lock);
++	master = genpd->master;
++	if (master) {
++		mutex_unlock(&genpd->lock);
++
++		ret = pm_genpd_poweron(master);
++		if (ret)
++			return ret;
++
++		mutex_lock(&genpd->lock);
++	}
++	ret = __pm_genpd_poweron(genpd);
++	mutex_unlock(&genpd->lock);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_runtime_resume - Resume a device belonging to I/O power domain.
++ * @dev: Device to suspend.
++ *
++ * Carry out a runtime resume of a device under the assumption that its
++ * pwr_domain field points to the domain member of an object of type
++ * struct generic_power_domain representing a power domain consisting of I/O
++ * devices.
++ */
++int pm_genpd_runtime_resume(struct device *dev)
++{
++	struct generic_power_domain *genpd;
++	int ret;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	if (IS_ERR_OR_NULL(dev->pwr_domain))
++		return -EINVAL;
++
++	genpd = container_of(dev->pwr_domain,
++			     struct generic_power_domain, domain);
++
++	ret = pm_genpd_poweron(genpd);
++	if (ret)
++		return ret;
++
++	if (genpd->start_device)
++		genpd->start_device(dev);
++
++	return 0;
++}
++
++#endif /* CONFIG_PM_RUNTIME */
++
++/**
++ * pm_genpd_add_device - Add a device to an I/O power domain.
++ * @genpd: Power domain to add the device to.
++ * @dev: Device to be added.
++ */
++int pm_genpd_add_device(struct generic_power_domain *genpd, struct device *dev)
++{
++	struct dev_list_entry *dle;
++	int ret = 0;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
++		return -EINVAL;
++
++	mutex_lock(&genpd->lock);
++
++	list_for_each_entry(dle, &genpd->device_list, node)
++		if (dle->dev == dev) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++	dle = kzalloc(sizeof(*dle), GFP_KERNEL);
++	if (!dle) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	dle->dev = dev;
++	list_add_tail(&dle->node, &genpd->device_list);
++
++	spin_lock_irq(&dev->power.lock);
++	dev->pwr_domain = &genpd->domain;
++	spin_unlock_irq(&dev->power.lock);
++
++ out:
++	mutex_unlock(&genpd->lock);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_remove_device - Remove a device from an I/O power domain.
++ * @genpd: Power domain to remove the device from.
++ * @dev: Device to be removed.
++ */
++int pm_genpd_remove_device(struct generic_power_domain *genpd,
++			   struct device *dev)
++{
++	struct dev_list_entry *dle;
++	int ret = -EINVAL;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
++		return -EINVAL;
++
++	mutex_lock(&genpd->lock);
++
++	list_for_each_entry(dle, &genpd->device_list, node) {
++		if (dle->dev != dev)
++			continue;
++
++		spin_lock_irq(&dev->power.lock);
++		dev->pwr_domain = NULL;
++		spin_unlock_irq(&dev->power.lock);
++
++		list_del(&dle->node);
++		kfree(dle);
++
++		ret = 0;
++		break;
++	}
++
++	mutex_unlock(&genpd->lock);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_add_subdomain - Add a subdomain to an I/O power domain.
++ * @genpd: Master power domain to add the subdomain to.
++ * @new_subdomain: Subdomain to be added.
++ */
++int pm_genpd_add_subdomain(struct generic_power_domain *genpd,
++			   struct generic_power_domain *new_subdomain)
++{
++	struct generic_power_domain *subdomain;
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(new_subdomain))
++		return -EINVAL;
++
++	mutex_lock(&genpd->lock);
++
++	list_for_each_entry(subdomain, &genpd->subdomain_list, node)
++		if (subdomain == new_subdomain) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++	mutex_lock(&new_subdomain->lock);
++	list_add_tail(&new_subdomain->node, &genpd->subdomain_list);
++	new_subdomain->master = genpd;
++	mutex_unlock(&new_subdomain->lock);
++
++ out:
++	mutex_unlock(&genpd->lock);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_remove_subdomain - Remove a subdomain from an I/O power domain.
++ * @genpd: Master power domain to remove the subdomain from.
++ * @target: Subdomain to be removed.
++ */
++int pm_genpd_remove_subdomain(struct generic_power_domain *genpd,
++			      struct generic_power_domain *target)
++{
++	struct generic_power_domain *subdomain;
++	int ret = -EINVAL;
++
++	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(target))
++		return -EINVAL;
++
++	mutex_lock(&genpd->lock);
++
++	list_for_each_entry(subdomain, &genpd->subdomain_list, node) {
++		if (subdomain != target)
++			continue;
++
++		mutex_lock(&subdomain->lock);
++		list_del(&subdomain->node);
++		subdomain->master = NULL;
++		mutex_unlock(&subdomain->lock);
++
++		ret = 0;
++		break;
++	}
++
++	mutex_unlock(&genpd->lock);
++
++	return ret;
++}
++
++/**
++ * pm_genpd_init - Initialize an I/O power domain object.
++ * @genpd: Power domain object to initialize.
++ */
++void pm_genpd_init(struct generic_power_domain *genpd,
++		   struct dev_power_governor *gov, bool is_off)
++{
++	if (IS_ERR_OR_NULL(genpd))
++		return;
++
++	INIT_LIST_HEAD(&genpd->node);
++	genpd->master = NULL;
++	INIT_LIST_HEAD(&genpd->device_list);
++	INIT_LIST_HEAD(&genpd->subdomain_list);
++	mutex_init(&genpd->lock);
++	genpd->gov = gov;
++	genpd->in_progress = 0;
++	genpd->power_is_off = is_off;
++	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
++	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
++	genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
++}
 
