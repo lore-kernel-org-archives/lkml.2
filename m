@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1D3WAU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 18:00:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56410 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1D3WAR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 18:00:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type
-         :content-transfer-encoding;
-        b=ukmBzj0wUJKlbAGUhQYG5ky1PIMqKRpwCiRus9VbSDO6SpDxVf2FbMxOKUlwMuaGAq
-         8hw7w5mOuzASAXALoEjrfFH7EtnLX/otYOpqdOwc4HawJ2DtbYiax6dydYV19zjMk+40
-         QZn0EpwCyDTk4ScFp593ER7wGq5etuxc4tI3w=
+	id S1755131Ab1D3WbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 18:31:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753978Ab1D3WbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 18:31:07 -0400
+Message-ID: <4DBC8D9C.2090802@redhat.com>
+Date: Sat, 30 Apr 2011 19:30:52 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
 MIME-Version: 1.0
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Sat, 30 Apr 2011 23:59:35 +0200
-Message-ID: <BANLkTik8RDOP3Z2eYqQknEZXBNeWtvFLhw@mail.gmail.com>
-Subject: [PATCH] bq27x00_battery: Name of cycle count property
-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Rodolfo Giometti <giometti@linux.it>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Florian Mickler <florian@mickler.org>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org, crope@iki.fi,
+        tvboxspy@gmail.com
+Subject: Re: [PATCH 0/5] get rid of on-stack dma buffers (part1)
+References: <1300657852-29318-1-git-send-email-florian@mickler.org> <20110430205405.4beb7d33@schatten.dmk.lab>
+In-Reply-To: <20110430205405.4beb7d33@schatten.dmk.lab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix using correct property POWER_SUPPLY_PROP_CYCLE_COUNT
-for cycle count instead POWER_SUPPLY_PROP_CHARGE_COUNTER
+Hi Florian,
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Em 30-04-2011 15:54, Florian Mickler escreveu:
+> Hi Mauro!
+> 
+> I just saw that you picked up some patches of mine. What about these?
+> These are actually tested...
 
---- a/drivers/power/bq27x00_battery.c	2011-02-27 12:14:56.000000000 +0100
-+++ b/drivers/power/bq27x00_battery.c	2011-04-30 23:50:19.000000000 +0200
-@@ -4,6 +4,7 @@
-  * Copyright (C) 2008 Rodolfo Giometti <giometti@linux.it>
-  * Copyright (C) 2008 Eurotech S.p.A. <info@eurotech.it>
-  * Copyright (C) 2010-2011 Lars-Peter Clausen <lars@metafoo.de>
-+ * Copyright (C) 2011 Pali Rohár <pali.rohar@gmail.com>
-  *
-  * Based on a previous work by Copyright (C) 2008 Texas Instruments, Inc.
-  *
-@@ -76,7 +77,7 @@ struct bq27x00_reg_cache {
- 	int time_to_empty_avg;
- 	int time_to_full;
- 	int charge_full;
--	int charge_counter;
-+	int cycle_count;
- 	int capacity;
- 	int flags;
-
-@@ -115,7 +116,7 @@ static enum power_supply_property bq27x0
- 	POWER_SUPPLY_PROP_CHARGE_FULL,
- 	POWER_SUPPLY_PROP_CHARGE_NOW,
- 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
--	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-+	POWER_SUPPLY_PROP_CYCLE_COUNT,
- 	POWER_SUPPLY_PROP_ENERGY_NOW,
- };
-
-@@ -267,7 +268,7 @@ static void bq27x00_update(struct bq27x0
- 		cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
- 		cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
- 		cache.charge_full = bq27x00_battery_read_lmd(di);
--		cache.charge_counter = bq27x00_battery_read_cyct(di);
-+		cache.cycle_count = bq27x00_battery_read_cyct(di);
-
- 		if (!is_bq27500)
- 			cache.current_now = bq27x00_read(di, BQ27x00_REG_AI, false);
-@@ -496,8 +497,8 @@ static int bq27x00_battery_get_property(
- 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
- 		ret = bq27x00_simple_value(di->charge_design_full, val);
- 		break;
--	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
--		ret = bq27x00_simple_value(di->cache.charge_counter, val);
-+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
-+		ret = bq27x00_simple_value(di->cache.cycle_count, val);
- 		break;
- 	case POWER_SUPPLY_PROP_ENERGY_NOW:
- 		ret = bq27x00_battery_energy(di, val);
+I'm still in process of applying the pending patches. Due to patchwork.kernel.org
+troubles (including the loss of about 270 patches from its SQL database only 
+recovered yesterday[1]), I have a long backlog. So, I'm gradually applying the remaing
+stuff. It will take some time though, and it will depend on patchwork mood, but I intend
+to spend some time during this weekend to minimize the backlog.
 
 
--- 
-Pali Rohár
-pali.rohar@gmail.com
+Cheers,
+Mauro
+
+[1] The recover lost the email's body/SOB, so I've wrote a script to use my email
+queue to get the data, using patchwork just to mark what patches were already
+processed. This increses the time I have to spend on each patch, as I need to run
+a script to match the patchwork patch with the patch ID inside my email queue.
+
+> 
+> Regards,
+> Flo
+> 
+>  On Sun, 20 Mar 2011 22:50:47 +0100
+> Florian Mickler <florian@mickler.org> wrote:
+> 
+>> Hi Mauro!
+>>
+>> These are the patches which got tested already and 
+>> should be good to go. [first batch of patches]
+>>
+>> I have another batch with updated patches (dib0700, gp8psk, vp702x)
+>> where I did some more extensive changes to use preallocated memory.
+>> And a small update to the vp7045 patch.
+>>
+>> Third batch are the patches to opera1, m920x, dw2102, friio,
+>> a800 which I left as is, for the time beeing. 
+>> Regards,
+>> Flo
+>>
+>> Florian Mickler (5):
+>>   [media] ec168: get rid of on-stack dma buffers
+>>   [media] ce6230: get rid of on-stack dma buffer
+>>   [media] au6610: get rid of on-stack dma buffer
+>>   [media] lmedm04: correct indentation
+>>   [media] lmedm04: get rid of on-stack dma buffers
+>>
+>>  drivers/media/dvb/dvb-usb/au6610.c  |   22 ++++++++++++++++------
+>>  drivers/media/dvb/dvb-usb/ce6230.c  |   11 +++++++++--
+>>  drivers/media/dvb/dvb-usb/ec168.c   |   18 +++++++++++++++---
+>>  drivers/media/dvb/dvb-usb/lmedm04.c |   35 +++++++++++++++++++++++------------
+>>  4 files changed, 63 insertions(+), 23 deletions(-)
+>>
+
