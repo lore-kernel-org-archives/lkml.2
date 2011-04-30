@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab1D3LWt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 07:22:49 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52236 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754462Ab1D3LWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 07:22:48 -0400
-X-Sasl-enc: ZAcN5kn/VzG5t2ZXDvtOK7UwXzK6rKCAF0MgZ3qtHMOT 1304162567
-Date: Sat, 30 Apr 2011 08:22:44 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        linux-stable mlist <stable@kernel.org>,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        seto.hidetoshi@jp.fujitsu.com
-Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
-Message-ID: <20110430112244.GA16885@khazad-dum.debian.net>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
- <20110428183434.GG30645@1wt.eu>
- <20110429100200.GB23293@pcnci.linuxbox.cz>
- <20110430093605.GA10529@1wt.eu>
+	id S1755206Ab1D3Le7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 07:34:59 -0400
+Received: from smtpout06.highway.telekom.at ([195.3.96.89]:5597 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753970Ab1D3Le6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 07:34:58 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: i915/kms/backlight-combo mode problem (was: Re: Linux 2.6.39-rc5)
+Date: Sat, 30 Apr 2011 13:34:51 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <201104301032.05271@rk-nord.at> <s5hiptwavar.wl%tiwai@suse.de>
+In-Reply-To: <s5hiptwavar.wl%tiwai@suse.de>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110430093605.GA10529@1wt.eu>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104301334.53928@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Apr 2011, Willy Tarreau wrote:
-> There was a kernel parameter in the past that was used to make jiffies wrap
-> a few minutes after boot, maybe we should revive it to try to reproduce
-> without waiting 7 new months :-/
+Dropping Linus from the CC.
 
-IMHO, such an option should be given a permanent home in KCONFIG, and it
-should be enabled by default.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+* Takashi Iwai -- Saturday 30 April 2011:
+* * At Sat, 30 Apr 2011 10:32:04 +0200, Melchior FRANZ wrote:
+> > Yes, backlight adjustment generally works on this notebook, but only
+> > with "acpi_osi=Linux" on the command line.
+> 
+> acpi_osi quirk should be better added statically, then.
+
+No, I guess the problem here is that acer_wmi doesn't support this
+machine yet. I told the ACER WMI maintainer and sent a DSDT image,
+but this message was thoroughly ignored.
+
+
+  $ dmesg|grep -i acer
+  [    0.000000] DMI: Acer TM5735/BA51_MV, BIOS V1.04 09/23/2010
+  [   71.850534] acer_wmi: Acer Laptop ACPI-WMI Extras
+  [   72.350278] acer_wmi: Unable to detect available WMID devices
+  
+  Machine: Acer Travelmate 5735Z-452G32Mnss
+
+m.
