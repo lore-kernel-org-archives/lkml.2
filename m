@@ -1,103 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1D3J4A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 05:56:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38167 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559Ab1D3Jz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 05:55:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH] ARM / shmobile: Support for power domain A4MP on SH7372
-Date: Sat, 30 Apr 2011 11:56:26 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-References: <201104290154.12966.rjw@sisk.pl> <201104290155.41434.rjw@sisk.pl> <201104300259.08477.rjw@sisk.pl>
-In-Reply-To: <201104300259.08477.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755402Ab1D3KGr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 06:06:47 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50796 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755038Ab1D3KGo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 06:06:44 -0400
+Date: Sat, 30 Apr 2011 11:07:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        platform-driver-x86@vger.kernel.org, linux-serial@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
+ Systems TS-5xxx detection
+Message-ID: <20110430110705.5ca3376b@lxorguk.ukuu.org.uk>
+In-Reply-To: <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104301156.26565.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+> + * ts5xxx_sbcinfo_set() - set the SBC info structure with the current SBC's info
+> + * @sbcinfo:		structure containing SBC info to set.
+> + */
+> +void ts5xxx_sbcinfo_set(struct ts5xxx_sbcinfo *sbcinfo)
+> +{
+> +	memcpy(sbcinfo, &ts_sbcinfo, sizeof(*sbcinfo));
+> +}
+> +EXPORT_SYMBOL(ts5xxx_sbcinfo_set);
 
-Use the power domains support code added by the previous
-patches to implement support for power domain A4MP on SH7372.
+You export this but it's not clear who for or why - and there is also no
+locking, so it seems to be an internal interface ?
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
 
-Hi,
+> +/**
+> + * ts_find_sbc_config() - find a SBC configuration from an id
+> + * @id:			ID of the board to find.
+> + */
+> +static inline struct ts_sbc_config *ts_find_sbc_config(u8 id)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(ts_sbcs_configs); i++)
+> +		if (id == ts_sbcs_configs[i].id)
+> +			return &ts_sbcs_configs[i];
+> +
+> +	return NULL;
+> +}
 
-This patch is on top of https://lkml.org/lkml/2011/4/29/490 .
+gcc will figure out inlines for you in static stuff and normally very well
 
-Thanks,
-Rafael
+> +
+> +/**
+> + * ts_sbcinfo_detect() - detect the TS board
+> + * @sbcinfo:		structure where to store the detected board's info.
+> + */
+> +static int ts_sbcinfo_detect(struct ts5xxx_sbcinfo *sbcinfo)
+> +{
+> +	u8 temp;
+> +	struct ts_sbc_config *sbc;
+> +	int ret = 0;
+> +
+> +	memset(sbcinfo, 0, sizeof(*sbcinfo));
+> +
+> +	if (!request_region(IOADDR_SBCID, 4, "TS-SBC"))
+> +		return -EBUSY;
+> +
+> +	temp = inb(IOADDR_SBCID);
+> +	/* If it is a 3x00 SBC only match against the first 3 bits */
+> +	if (temp & 0x07)
+> +		temp &= 0x07;
 
----
- arch/arm/mach-shmobile/board-mackerel.c      |    2 ++
- arch/arm/mach-shmobile/include/mach/sh7372.h |    3 +++
- arch/arm/mach-shmobile/pm-sh7372.c           |    7 +++++++
- 3 files changed, 12 insertions(+)
+So if this is compiled into a kernel we blindly inb this address and some
+platform just crashed on boot. Is this board like other embedded ones in
+that there is some safe way to check if its such a board first ?
 
-Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -90,9 +90,16 @@ static struct sh7372_domain_data sh7372_
- 
- struct generic_power_domain sh7372_a4lc_domain;
- 
-+static struct sh7372_domain_data sh7372_a4mp_domain_data = {
-+	.bit_shift = 2,
-+};
-+
-+struct generic_power_domain sh7372_a4mp_domain;
-+
- static int __init sh7372_power_domains_init(void)
- {
- 	sh7372_init_domain(&sh7372_a4lc_domain, &sh7372_a4lc_domain_data);
-+	sh7372_init_domain(&sh7372_a4mp_domain, &sh7372_a4mp_domain_data);
- 	return 0;
- }
- core_initcall(sh7372_power_domains_init);
-Index: linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
-+++ linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-@@ -475,11 +475,14 @@ struct platform_device;
- #ifdef CONFIG_PM
- extern struct generic_power_domain sh7372_a4lc_domain;
- #define SH7372_A4LC	(&sh7372_a4lc_domain)
-+extern struct generic_power_domain sh7372_a4mp_domain;
-+#define SH7372_A4MP	(&sh7372_a4mp_domain)
- 
- extern void sh7372_add_device_to_domain(struct generic_power_domain *domain,
- 					struct platform_device *pdev);
- #else
- #define SH7372_A4LC	NULL
-+#define SH7372_A4PM	NULL
- 
- static inline void sh7372_add_device_to_domain(struct generic_power_domain *dom,
- 					       struct platform_device *pd) {}
-Index: linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/board-mackerel.c
-+++ linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-@@ -1218,6 +1218,8 @@ static void __init mackerel_init(void)
- 	sh7372_add_device_to_domain(SH7372_A4LC, &lcdc_device);
- 	sh7372_add_device_to_domain(SH7372_A4LC, &hdmi_lcdc_device);
- 
-+	sh7372_add_device_to_domain(SH7372_A4MP, &fsi_device);
-+
- 	hdmi_init_pm_clock();
- }
- 
+> +
+> +	sbc = ts_find_sbc_config(temp);
+> +	if (!sbc) {
+> +		ret = -ENODEV;
 
+Assuming you've indentified the board properly this case might be worth a
+pr_err giving the fact it seemed to be a TS-5xxx, the config number and
+that it is unknown - that will help anyone with future boards realise
+their config isn't supported.
+
+
+> +
+> +/**
+> + * ts_sbcinfo_proc_read() - function called when a read access is done on
+> + *                          /proc/ts-sbcinfo
+> + */
+> +static int ts_sbcinfo_proc_read(char *page, char **start, off_t off,
+> +				int count, int *eof, void *data)
+> +{
+> +	int to_copy = (procfs_buffer_size <= count) ?
+> +		procfs_buffer_size - off : count;
+
+> +
+> +	if (off + to_copy >= procfs_buffer_size) {
+> +		to_copy = procfs_buffer_size - off;
+> +		*eof = 1;
+> +	}
+
+Suppose off is 0x7FFFFFFF and count = 100
+
+	to_copy = 100
+	off + to_copy >= procfs_buffer_size   [off_t may be 32bit]
+
+	100 + 0x7FFFFFFF (wraps) < buffer size
+
+
+> +static int __init ts5xxx_sbcinfo_init(void)
+> +{
+> +	int err;
+> +
+> +	err = ts_sbcinfo_detect(&ts_sbcinfo);
+> +	if (err < 0) {
+> +		printk(KERN_ERR KBUILD_MODNAME
+> +		       ": Failed to get SBC information\n");
+> +		return err;
+> +	}
+
+Well that will depend why and probably the caller can give the best
+information including silence if the board is just not a ts-5xxx
+
+> +	proc_entry = create_proc_read_entry(PROCFS_NAME, S_IRUGO, NULL,
+> +					    ts_sbcinfo_proc_read, 0);
+> +	if (proc_entry == NULL) {
+> +		printk(KERN_ERR KBUILD_MODNAME
+> +		       ": Failed to create proc entry\n");
+
+pr_err
+
+> +		return -ENOMEM;
+> +	}
+> +
+> +	procfs_buffer_size = ts_sbcinfo_init_buffer(procfs_buffer, &ts_sbcinfo);
+> +	printk(KBUILD_MODNAME ": TS SBC's info driver loaded.\n");
+
+Printk not needed
+
+Alan
