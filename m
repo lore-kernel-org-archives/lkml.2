@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab1D3Dbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 23:31:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58500 "EHLO mga03.intel.com"
+	id S1758391Ab1D3Dbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 23:31:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52679 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757495Ab1D3Dbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 23:31:44 -0400
+	id S1757284Ab1D3Dbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 23:31:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,292,1301900400"; 
-   d="scan'208";a="428139523"
-Message-Id: <20110430033018.169293004@intel.com>
+   d="scan'208";a="686252680"
+Message-Id: <20110430032243.355805181@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sat, 30 Apr 2011 11:22:46 +0800
+Date: Sat, 30 Apr 2011 11:22:43 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 To: Andi Kleen <andi@firstfloor.org>
-cc: Tim Chen <tim.c.chen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Tim Chen <tim.c.chen@intel.com>
 cc: Li Shaohua <shaohua.li@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
 cc: Linux Memory Management List <linux-mm@kvack.org>
-Subject: [PATCH 3/3] readahead: trigger mmap sequential readahead on PG_readahead
-References: <20110430032243.355805181@intel.com>
-Content-Disposition: inline; filename=readahead-no-mmap-prev_pos.patch
+Subject: [PATCH 0/3] reduce readahead overheads on tmpfs mmap page faults v2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously the mmap sequential readahead is triggered by updating
-ra->prev_pos on each page fault and compare it with current page offset.
+Andrew,
 
-It costs dirtying the cache line on each _minor_ page fault.  So remove
-the ra->prev_pos recording, and instead tag PG_readahead to trigger the
-possible sequential readahead. It's not only more simple, but also will
-work more reliably and reduce cache line bouncing on concurrent page
-faults on shared struct file.
+I would like to update the changelogs for patches 2 and 3.
+There are no changes to the code. Sorry for the inconvenience.
 
-Tested-by: Tim Chen <tim.c.chen@intel.com>
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/filemap.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+The original changelog is not accurate: it's solely the ra->mmap_miss updates
+that caused cache line bouncing on tmpfs. ra->prev_pos won't be updated at all
+on tmpfs.
 
---- linux-next.orig/mm/filemap.c	2011-04-23 16:52:21.000000000 +0800
-+++ linux-next/mm/filemap.c	2011-04-24 09:59:08.000000000 +0800
-@@ -1531,8 +1531,7 @@ static void do_sync_mmap_readahead(struc
- 	if (!ra->ra_pages)
- 		return;
- 
--	if (VM_SequentialReadHint(vma) ||
--			offset - 1 == (ra->prev_pos >> PAGE_CACHE_SHIFT)) {
-+	if (VM_SequentialReadHint(vma)) {
- 		page_cache_sync_readahead(mapping, ra, file, offset,
- 					  ra->ra_pages);
- 		return;
-@@ -1555,7 +1554,7 @@ static void do_sync_mmap_readahead(struc
- 	ra_pages = max_sane_readahead(ra->ra_pages);
- 	ra->start = max_t(long, 0, offset - ra_pages / 2);
- 	ra->size = ra_pages;
--	ra->async_size = 0;
-+	ra->async_size = ra_pages / 4;
- 	ra_submit(ra, mapping, file);
- }
- 
-@@ -1661,7 +1660,6 @@ retry_find:
- 		return VM_FAULT_SIGBUS;
- 	}
- 
--	ra->prev_pos = (loff_t)offset << PAGE_CACHE_SHIFT;
- 	vmf->page = page;
- 	return ret | VM_FAULT_LOCKED;
- 
-
+Thanks,
+Fengguang
 
