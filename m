@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab1D3DaE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 23:30:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58103 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab1D3DaC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 23:30:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1304128655.30215.80.camel@work-vm>
-References: <tip-304529b1b6f8612ccbb4582e997051b48b94f4a4@git.kernel.org>
-	<BANLkTin12hcs1Q=4E4REdF_-zn08EJXzvw@mail.gmail.com>
-	<alpine.LFD.2.02.1104300220040.3005@ionos>
-	<BANLkTi=9rW=U-Excx+xJb1h3mVvfEaxhKw@mail.gmail.com>
-	<1304128655.30215.80.camel@work-vm>
-Date: Fri, 29 Apr 2011 20:30:00 -0700
-Message-ID: <BANLkTikEwZ84bQbuJxzQNfpNZOrGaq8C7g@mail.gmail.com>
-Subject: Re: [tip:timers/core] time: Add timekeeping_inject_sleeptime
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932532Ab1D3Dbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 23:31:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7790 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757471Ab1D3Dbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 23:31:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,292,1301900400"; 
+   d="scan'208";a="916381598"
+Message-Id: <20110430033018.057418160@intel.com>
+User-Agent: quilt/0.48-1
+Date: Sat, 30 Apr 2011 11:22:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Tim Chen <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Li Shaohua <shaohua.li@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+cc: Linux Memory Management List <linux-mm@kvack.org>
+Subject: [PATCH 2/3] readahead: reduce unnecessary mmap_miss increases
+References: <20110430032243.355805181@intel.com>
+Content-Disposition: inline; filename=readahead-reduce-mmap_miss-increases.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/29 John Stultz <john.stultz@linaro.org>:
-> On Fri, 2011-04-29 at 18:12 -0700, Arve Hjønnevåg wrote:
->>         /* RTC precision is 1 second; adjust delta for avg 1/2 sec err */
->> -       set_normalized_timespec(&delta,
->> +       set_normalized_timespec(&new_delta,
->>                                 ts.tv_sec - oldtime,
->>                                 ts.tv_nsec - (NSEC_PER_SEC >> 1));
->>
->> +       /* prevent 1/2 sec errors from accumulating */
->> +       delta_delta = timespec_sub(new_delta, delta);
->> +       if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2)
->> +               delta = new_delta;
->>         return 0;
->
-> So, the basic idea is to keep the RTC vs CLOCK_REALTIME delta constant
-> (by using the same value as the last time) for each resume cycle
-> assuming it stays within +/-2 seconds.
->
-> If it changes more then that since the last suspend (due to user running
-> hwclock or the periodic NTP sync or drift of the uncorrected RTC) then
-> throw away the old value and use the new delta.
->
+From: Andi Kleen <ak@linux.intel.com>
 
-Yes.
+The original INT_MAX is too large, reduce it to
 
->
->> @@ -80,6 +87,8 @@ static int rtc_resume(struct device *dev)
->>                 return 0;
->>         }
->>         rtc_tm_to_time(&tm, &newtime);
->> +       if (delta_delta.tv_sec < -1)
->> +               newtime++;
->
->
-> So this part isn't quite clicking at the moment (forgive my brain, its a
-> sunny friday!). Wouldn't this trigger even if we threw away the old
-> delta (since nothing clears delta_delta)?
->
-Probably.
+- avoid unnecessarily dirtying/bouncing the cache line
+- restore mmap read-around faster on changed access pattern
 
-> I'll spend some more time looking at it, but if you can clarify why we
-> want to inject a second here (and why there's not a corresponding dec
-> for delta_delta being > 1 sec to make it symmetric) it would help?
->
+Background: in the mosbench exim benchmark which does multi-threaded
+page faults on shared struct file, the ra->mmap_miss updates are found
+to cause excessive cache line bouncing on tmpfs. The ra state updates
+are needless for tmpfs because it actually disabled readahead totally
+(shmem_backing_dev_info.ra_pages == 0).
 
-I don't remember exactly why I did it this way, but the goal is to
-make sure time does not jump backwards. If the rtc runs slower than
-the clock we are using when awake, then time could jump backwards
-after suspend since we re-sync with the rtc. With your new code, it is
-probably better to just clip the resulting sleep-time to not allow
-negative values.
+Tested-by: Tim Chen <tim.c.chen@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/filemap.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
--- 
-Arve Hjønnevåg
+--- linux-next.orig/mm/filemap.c	2011-04-23 09:01:44.000000000 +0800
++++ linux-next/mm/filemap.c	2011-04-23 09:17:21.000000000 +0800
+@@ -1538,7 +1538,8 @@ static void do_sync_mmap_readahead(struc
+ 		return;
+ 	}
+ 
+-	if (ra->mmap_miss < INT_MAX)
++	/* Avoid banging the cache line if not needed */
++	if (ra->mmap_miss < MMAP_LOTSAMISS * 10)
+ 		ra->mmap_miss++;
+ 
+ 	/*
+
+
