@@ -1,340 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1D3M3a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 08:29:30 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:49762 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756069Ab1D3M27 (ORCPT
+	id S1756425Ab1D3McO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 08:32:14 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57304 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755454Ab1D3McM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 08:28:59 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, dilinger@queued.net,
-        Daniel Drake <dsd@laptop.org>
-Subject: [PATCH 03/11] x86, olpc: rename olpc-xo1 to olpc-xo1-pm
-Date: Sat, 30 Apr 2011 13:32:22 +0100
-Message-Id: <1304166750-31125-4-git-send-email-dsd@laptop.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=WLXhR7_dsqIA:10 a=vJ1w_8FsMGIA:10 a=In_Hgl4hAAAA:8 a=Op-mwl0xAAAA:8 a=eXKRGl7jy5qYCweTZY8A:9 a=8HiQs4rrKmBQ56PTHX8A:7 a=ro211Ng2IWAA:10 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Sat, 30 Apr 2011 08:32:12 -0400
+X-Sasl-enc: tkqdzoY1d1xiqei4g1mCYz3q/uUiMKGrTaXF5F4OdnQM 1304166731
+Date: Sat, 30 Apr 2011 09:32:08 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Willy Tarreau <w@1wt.eu>
+Cc: seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        linux-stable mlist <stable@kernel.org>
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+Message-ID: <20110430123208.GB16885@khazad-dum.debian.net>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz>
+ <20110428183434.GG30645@1wt.eu>
+ <20110429100200.GB23293@pcnci.linuxbox.cz>
+ <20110430093605.GA10529@1wt.eu>
+ <20110430112244.GA16885@khazad-dum.debian.net>
+ <20110430115422.GC10529@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430115422.GC10529@1wt.eu>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on earlier review comments, we'll no longer try to stick all of
-our XO-1 goodies in a single driver. We'll split it into a power management
-driver, and an EC/SCI driver.
+On Sat, 30 Apr 2011, Willy Tarreau wrote:
+> On Sat, Apr 30, 2011 at 08:22:44AM -0300, Henrique de Moraes Holschuh wrote:
+> > On Sat, 30 Apr 2011, Willy Tarreau wrote:
+> > > There was a kernel parameter in the past that was used to make jiffies wrap
+> > > a few minutes after boot, maybe we should revive it to try to reproduce
+> > > without waiting 7 new months :-/
+> > 
+> > IMHO, such an option should be given a permanent home in KCONFIG, and it
+> > should be enabled by default.
+> 
+> Not exactly as it affects uptime.
 
-As a first step, rename olpc-xo1 to olpc-xo1-pm, and make it builtin
-instead of modular.
----
- arch/x86/Kconfig                     |    6 +-
- arch/x86/platform/olpc/Makefile      |    2 +-
- arch/x86/platform/olpc/olpc-xo1-pm.c |  123 ++++++++++++++++++++++++++++++
- arch/x86/platform/olpc/olpc-xo1.c    |  136 ----------------------------------
- 4 files changed, 127 insertions(+), 140 deletions(-)
- create mode 100644 arch/x86/platform/olpc/olpc-xo1-pm.c
- delete mode 100644 arch/x86/platform/olpc/olpc-xo1.c
+Well, the offset to the real uptime is known, is there a way to fudge it
+back that affects only the uptime reporting?
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0945ed8..3db9ca5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2066,11 +2066,11 @@ config OLPC
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
- 
--config OLPC_XO1
--	tristate "OLPC XO-1 support"
-+config OLPC_XO1_PM
-+	bool "OLPC XO-1 Power Management"
- 	depends on OLPC && MFD_CS5535
- 	---help---
--	  Add support for non-essential features of the OLPC XO-1 laptop.
-+	  Add support for poweroff of the OLPC XO-1 laptop.
- 
- endif # X86_32
- 
-diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
-index 81c5e21..cd25038 100644
---- a/arch/x86/platform/olpc/Makefile
-+++ b/arch/x86/platform/olpc/Makefile
-@@ -1,2 +1,2 @@
- obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
--obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
-+obj-$(CONFIG_OLPC_XO1_PM)		+= olpc-xo1-pm.o
-diff --git a/arch/x86/platform/olpc/olpc-xo1-pm.c b/arch/x86/platform/olpc/olpc-xo1-pm.c
-new file mode 100644
-index 0000000..a2a59d3
---- /dev/null
-+++ b/arch/x86/platform/olpc/olpc-xo1-pm.c
-@@ -0,0 +1,123 @@
-+/*
-+ * Support for power management features of the OLPC XO-1 laptop
-+ *
-+ * Copyright (C) 2010 Andres Salomon <dilinger@queued.net>
-+ * Copyright (C) 2010 One Laptop per Child
-+ * Copyright (C) 2006 Red Hat, Inc.
-+ * Copyright (C) 2006 Advanced Micro Devices, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/cs5535.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm.h>
-+#include <linux/mfd/core.h>
-+
-+#include <asm/io.h>
-+#include <asm/olpc.h>
-+
-+#define DRV_NAME "olpc-xo1-pm"
-+
-+static unsigned long acpi_base;
-+static unsigned long pms_base;
-+
-+static void xo1_power_off(void)
-+{
-+	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
-+
-+	/* Enable all of these controls with 0 delay */
-+	outl(0x40000000, pms_base + CS5536_PM_SCLK);
-+	outl(0x40000000, pms_base + CS5536_PM_IN_SLPCTL);
-+	outl(0x40000000, pms_base + CS5536_PM_WKXD);
-+	outl(0x40000000, pms_base + CS5536_PM_WKD);
-+
-+	/* Clear status bits (possibly unnecessary) */
-+	outl(0x0002ffff, pms_base  + CS5536_PM_SSC);
-+	outl(0xffffffff, acpi_base + CS5536_PM_GPE0_STS);
-+
-+	/* Write SLP_EN bit to start the machinery */
-+	outl(0x00002000, acpi_base + CS5536_PM1_CNT);
-+}
-+
-+static int __devinit xo1_pm_probe(struct platform_device *pdev)
-+{
-+	struct resource *res;
-+	int err;
-+
-+	/* don't run on non-XOs */
-+	if (!machine_is_olpc())
-+		return -ENODEV;
-+
-+	err = mfd_cell_enable(pdev);
-+	if (err)
-+		return err;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "can't fetch device resource info\n");
-+		return -EIO;
-+	}
-+	if (strcmp(pdev->name, "cs5535-pms") == 0)
-+		pms_base = res->start;
-+	else if (strcmp(pdev->name, "olpc-xo1-pm-acpi") == 0)
-+		acpi_base = res->start;
-+
-+	/* If we have both addresses, we can override the poweroff hook */
-+	if (pms_base && acpi_base) {
-+		pm_power_off = xo1_power_off;
-+		printk(KERN_INFO "OLPC XO-1 support registered\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devexit xo1_pm_remove(struct platform_device *pdev)
-+{
-+	mfd_cell_disable(pdev);
-+
-+	if (strcmp(pdev->name, "cs5535-pms") == 0)
-+		pms_base = 0;
-+	else if (strcmp(pdev->name, "olpc-xo1-pm-acpi") == 0)
-+		acpi_base = 0;
-+
-+	pm_power_off = NULL;
-+	return 0;
-+}
-+
-+static struct platform_driver cs5535_pms_driver = {
-+	.driver = {
-+		.name = "cs5535-pms",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = xo1_pm_probe,
-+	.remove = __devexit_p(xo1_pm_remove),
-+};
-+
-+static struct platform_driver cs5535_acpi_driver = {
-+	.driver = {
-+		.name = "olpc-xo1-pm-acpi",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = xo1_pm_probe,
-+	.remove = __devexit_p(xo1_pm_remove),
-+};
-+
-+static int __init xo1_pm_init(void)
-+{
-+	int r;
-+
-+	r = platform_driver_register(&cs5535_pms_driver);
-+	if (r)
-+		return r;
-+
-+	r = platform_driver_register(&cs5535_acpi_driver);
-+	if (r)
-+		platform_driver_unregister(&cs5535_pms_driver);
-+
-+	return r;
-+}
-+arch_initcall(xo1_pm_init);
-diff --git a/arch/x86/platform/olpc/olpc-xo1.c b/arch/x86/platform/olpc/olpc-xo1.c
-deleted file mode 100644
-index a63e948..0000000
---- a/arch/x86/platform/olpc/olpc-xo1.c
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/*
-- * Support for features of the OLPC XO-1 laptop
-- *
-- * Copyright (C) 2010 Andres Salomon <dilinger@queued.net>
-- * Copyright (C) 2010 One Laptop per Child
-- * Copyright (C) 2006 Red Hat, Inc.
-- * Copyright (C) 2006 Advanced Micro Devices, Inc.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- */
--
--#include <linux/cs5535.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/pm.h>
--#include <linux/mfd/core.h>
--
--#include <asm/io.h>
--#include <asm/olpc.h>
--
--#define DRV_NAME "olpc-xo1"
--
--static unsigned long acpi_base;
--static unsigned long pms_base;
--
--static void xo1_power_off(void)
--{
--	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
--
--	/* Enable all of these controls with 0 delay */
--	outl(0x40000000, pms_base + CS5536_PM_SCLK);
--	outl(0x40000000, pms_base + CS5536_PM_IN_SLPCTL);
--	outl(0x40000000, pms_base + CS5536_PM_WKXD);
--	outl(0x40000000, pms_base + CS5536_PM_WKD);
--
--	/* Clear status bits (possibly unnecessary) */
--	outl(0x0002ffff, pms_base  + CS5536_PM_SSC);
--	outl(0xffffffff, acpi_base + CS5536_PM_GPE0_STS);
--
--	/* Write SLP_EN bit to start the machinery */
--	outl(0x00002000, acpi_base + CS5536_PM1_CNT);
--}
--
--static int __devinit olpc_xo1_probe(struct platform_device *pdev)
--{
--	struct resource *res;
--	int err;
--
--	/* don't run on non-XOs */
--	if (!machine_is_olpc())
--		return -ENODEV;
--
--	err = mfd_cell_enable(pdev);
--	if (err)
--		return err;
--
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "can't fetch device resource info\n");
--		return -EIO;
--	}
--	if (strcmp(pdev->name, "cs5535-pms") == 0)
--		pms_base = res->start;
--	else if (strcmp(pdev->name, "olpc-xo1-pm-acpi") == 0)
--		acpi_base = res->start;
--
--	/* If we have both addresses, we can override the poweroff hook */
--	if (pms_base && acpi_base) {
--		pm_power_off = xo1_power_off;
--		printk(KERN_INFO "OLPC XO-1 support registered\n");
--	}
--
--	return 0;
--}
--
--static int __devexit olpc_xo1_remove(struct platform_device *pdev)
--{
--	mfd_cell_disable(pdev);
--
--	if (strcmp(pdev->name, "cs5535-pms") == 0)
--		pms_base = 0;
--	else if (strcmp(pdev->name, "olpc-xo1-pm-acpi") == 0)
--		acpi_base = 0;
--
--	pm_power_off = NULL;
--	return 0;
--}
--
--static struct platform_driver cs5535_pms_drv = {
--	.driver = {
--		.name = "cs5535-pms",
--		.owner = THIS_MODULE,
--	},
--	.probe = olpc_xo1_probe,
--	.remove = __devexit_p(olpc_xo1_remove),
--};
--
--static struct platform_driver cs5535_acpi_drv = {
--	.driver = {
--		.name = "olpc-xo1-pm-acpi",
--		.owner = THIS_MODULE,
--	},
--	.probe = olpc_xo1_probe,
--	.remove = __devexit_p(olpc_xo1_remove),
--};
--
--static int __init olpc_xo1_init(void)
--{
--	int r;
--
--	r = platform_driver_register(&cs5535_pms_drv);
--	if (r)
--		return r;
--
--	r = platform_driver_register(&cs5535_acpi_drv);
--	if (r)
--		platform_driver_unregister(&cs5535_pms_drv);
--
--	return r;
--}
--
--static void __exit olpc_xo1_exit(void)
--{
--	platform_driver_unregister(&cs5535_acpi_drv);
--	platform_driver_unregister(&cs5535_pms_drv);
--}
--
--MODULE_AUTHOR("Daniel Drake <dsd@laptop.org>");
--MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:cs5535-pms");
--
--module_init(olpc_xo1_init);
--module_exit(olpc_xo1_exit);
 -- 
-1.7.4.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
