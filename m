@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab1D3QIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 12:08:13 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:51889 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752778Ab1D3QII (ORCPT
+	id S1757408Ab1D3QZO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 12:25:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26440 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab1D3QZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 12:08:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=sedN8W3es18jHCtz3J7Tel6pexxeexBL6zrphluT1S4frW4x/3ixcxBI8VpwoVoBt44NdzwinSMTNBpTjJ5eGjuSqXLh56lbtcqbvkcf7cqXCXBnSzaoIjg287hp0jrm;
-Date: Sat, 30 Apr 2011 09:08:05 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <greg@kroah.com>
-Cc: Nikola Ciprich <nikola.ciprich@linuxbox.cz>, Willy Tarreau <w@1wt.eu>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        linux-stable mlist <stable@kernel.org>
-Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
-Message-Id: <20110430090805.354484ad.rdunlap@xenotime.net>
-In-Reply-To: <20110430155707.GA22021@kroah.com>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	<20110428183434.GG30645@1wt.eu>
-	<20110429100200.GB23293@pcnci.linuxbox.cz>
-	<20110430093605.GA10529@1wt.eu>
-	<20110430120205.GA2459@nik-comp.lan>
-	<20110430155707.GA22021@kroah.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 30 Apr 2011 12:25:11 -0400
+Message-ID: <4DBC37D0.3070408@kernel.org>
+Date: Sat, 30 Apr 2011 09:24:48 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: mingo@redhat.com, rientjes@google.com, tglx@linutronix.de, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/25] x86, NUMA: trivial cleanups
+References: <1304090924-8197-1-git-send-email-tj@kernel.org> <1304090924-8197-9-git-send-email-tj@kernel.org> <4DBAF498.40007@kernel.org> <20110430120307.GE29280@htj.dyndns.org>
+In-Reply-To: <20110430120307.GE29280@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DBC37D6.006B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Apr 2011 08:57:07 -0700 Greg KH wrote:
-
-> On Sat, Apr 30, 2011 at 02:02:05PM +0200, Nikola Ciprich wrote:
-> > > There was a kernel parameter in the past that was used to make jiffies wrap
-> > > a few minutes after boot, maybe we should revive it to try to reproduce
-> > > without waiting 7 new months :-/
-> > hmm, I've googled this up, and it seems to have been 2.5.x patch, so it will
-> > certainly need some porting..
-> > I'll try to have a look on it tonight and report...
+On 04/30/2011 05:03 AM, Tejun Heo wrote:
+> On Fri, Apr 29, 2011 at 10:25:44AM -0700, Yinghai Lu wrote:
+>> On 04/29/2011 08:28 AM, Tejun Heo wrote:
+>>> * Kill no longer used struct bootnode.
+>>>
+>>> * Kill dangling declaration of pxm_to_nid() in numa_32.h.
+>>>
+>>> * Make setup_node_bootmem() static.
+>>
+>> first one and third one should appear in patches that I posted before.
 > 
-> I don't think any patch is needed, I thought we did that by default now,
-> but I can't seem to find the code where it happens...
+> Sorry, can't understand what you mean.  What are you trying to say?
 > 
-> odd.
 
-linux/jiffies.h:
+I posted two patches for 
+Kill no longer used struct bootnode.
+Make setup_node_bootmem() static
 
-/*
- * Have the 32 bit jiffies value wrap 5 minutes after boot
- * so jiffies wrap bugs show up earlier.
- */
-#define INITIAL_JIFFIES ((unsigned long)(unsigned int) (-300*HZ))
+Also setup_node_bootmem now is some misleading, could change to setup_node_data() ?
 
+Thanks
 
-and kernel/timer.c:
-
-u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Yinghai
