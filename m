@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab1D3Le7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 07:34:59 -0400
-Received: from smtpout06.highway.telekom.at ([195.3.96.89]:5597 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753970Ab1D3Le6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 07:34:58 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: i915/kms/backlight-combo mode problem (was: Re: Linux 2.6.39-rc5)
-Date: Sat, 30 Apr 2011 13:34:51 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <201104301032.05271@rk-nord.at> <s5hiptwavar.wl%tiwai@suse.de>
-In-Reply-To: <s5hiptwavar.wl%tiwai@suse.de>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104301334.53928@rk-nord.at>
+	id S1755617Ab1D3Lyu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 07:54:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:35850 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755296Ab1D3Lyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 07:54:50 -0400
+Date: Sat, 30 Apr 2011 13:54:22 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        linux-stable mlist <stable@kernel.org>
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+Message-ID: <20110430115422.GC10529@1wt.eu>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz> <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz> <20110430093605.GA10529@1wt.eu> <20110430112244.GA16885@khazad-dum.debian.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430112244.GA16885@khazad-dum.debian.net>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dropping Linus from the CC.
-
-
-* Takashi Iwai -- Saturday 30 April 2011:
-* * At Sat, 30 Apr 2011 10:32:04 +0200, Melchior FRANZ wrote:
-> > Yes, backlight adjustment generally works on this notebook, but only
-> > with "acpi_osi=Linux" on the command line.
+On Sat, Apr 30, 2011 at 08:22:44AM -0300, Henrique de Moraes Holschuh wrote:
+> On Sat, 30 Apr 2011, Willy Tarreau wrote:
+> > There was a kernel parameter in the past that was used to make jiffies wrap
+> > a few minutes after boot, maybe we should revive it to try to reproduce
+> > without waiting 7 new months :-/
 > 
-> acpi_osi quirk should be better added statically, then.
+> IMHO, such an option should be given a permanent home in KCONFIG, and it
+> should be enabled by default.
 
-No, I guess the problem here is that acer_wmi doesn't support this
-machine yet. I told the ACER WMI maintainer and sent a DSDT image,
-but this message was thoroughly ignored.
+Not exactly as it affects uptime.
 
+Willy
 
-  $ dmesg|grep -i acer
-  [    0.000000] DMI: Acer TM5735/BA51_MV, BIOS V1.04 09/23/2010
-  [   71.850534] acer_wmi: Acer Laptop ACPI-WMI Extras
-  [   72.350278] acer_wmi: Unable to detect available WMID devices
-  
-  Machine: Acer Travelmate 5735Z-452G32Mnss
-
-m.
