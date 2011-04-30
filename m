@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761121Ab1D3Ajx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 20:39:53 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26676 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761048Ab1D3Ajv (ORCPT
+	id S1761146Ab1D3AkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 20:40:00 -0400
+Received: from eastrmfepi104.cox.net ([68.230.241.200]:50542 "EHLO
+	eastrmfepi104.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761100Ab1D3Ajx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 20:39:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=qan1eBRMU45mnBUlA8orPd+lNbvYWphM5sxfgrFhbp7eWnBmrSChnOa6MVcKUa+ls
-	JTXhZV63KzbRSHN2Aw9kA==
-Subject: [PATCH v5 3/3] Introduce CONFIG_GOOGLE_FIRMWARE
-To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-From: Mike Waychison <mikew@google.com>
-Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Date: Fri, 29 Apr 2011 17:39:31 -0700
-Message-ID: <20110430003930.11515.47486.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110429234028.GA28476@kroah.com>
-References: <20110429234028.GA28476@kroah.com>
-User-Agent: StGit/0.15
+	Fri, 29 Apr 2011 20:39:53 -0400
+X-Greylist: delayed 1149 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Apr 2011 20:39:52 EDT
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020205.4DBB55D5.0123,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=CqCpjuelgWbNPRzcWJueaJPEXsSTL/Jl5k1MDlmf59E=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=ous62m1dbVwA:10
+ a=IkcTkHD0fZMA:10 a=W4FTSIjT55UdHar1SjKJ/g==:17 a=3oc9M9_CAAAA:8
+ a=G1WQEarUMX6xXRztCy8A:9 a=QEXdDO2ut3YA:10 a=qQjxbazn9o0A:10
+ a=U8Ie8EnqySEA:10 a=ls9R9JfaFwREyxou:21 a=LriKLmCfspES-lG2:21
+ a=W4FTSIjT55UdHar1SjKJ/g==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110429202037.IG8ZS.235758.imail@eastrmwml43>
+Date: Fri, 29 Apr 2011 20:20:37 -0400
+From: <mcrosft06@cox.net>
+Reply-To: mcrawrdprtmnt@aol.com
+Subject: CONGRATULATIONS
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to keep Google's firmware drivers organized amongst themselves,
-all Google firmware drivers are gated on CONFIG_GOOGLE_FIRMWARE=y, which
-defaults to 'n' in the kernel build.
+Dear Recipient,
 
-Signed-off-by: Mike Waychison <mikew@google.com>
+We are pleased to inform you that you won the sum of 1,000,000.00 Euros on the
+Microsoft Promo Commission.your e-mail address attached to:Ticket Number:03-02-1,
+Reference Number:SL/07/4009,Please acknowledge the receipt of this mail to
+Pastor Alan Jonathan With the details below:
 
----
-Changelog:
-v5:
-   - refreshed to next-20110429
-v4:
-   - Moved to end of series.
-v3:
-   - Removed comment about 'other implementations' in Kconfig message as
-     per gregkh.
----
- drivers/firmware/Makefile       |    2 +-
- drivers/firmware/google/Kconfig |   14 ++++++++++++++
- 2 files changed, 15 insertions(+), 1 deletions(-)
+EMAIL: mcrawrdprtmnt@aol.com
 
-diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
-index d7d6009..47338c9791 100644
---- a/drivers/firmware/Makefile
-+++ b/drivers/firmware/Makefile
-@@ -14,4 +14,4 @@ obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
- obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
- obj-$(CONFIG_SIGMA)		+= sigma.o
- 
--obj-y  += google/
-+obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
-diff --git a/drivers/firmware/google/Kconfig b/drivers/firmware/google/Kconfig
-index 640dc6b..87096b6 100644
---- a/drivers/firmware/google/Kconfig
-+++ b/drivers/firmware/google/Kconfig
-@@ -1,3 +1,15 @@
-+config GOOGLE_FIRMWARE
-+	bool "Google Firmware Drivers"
-+	depends on X86
-+	default n
-+	help
-+	  These firmware drivers are used by Google's servers.  They are
-+	  only useful if you are working directly on one of their
-+	  proprietary servers.  If in doubt, say "N".
-+
-+menu "Google Firmware Drivers"
-+	depends on GOOGLE_FIRMWARE
-+
- config GOOGLE_SMI
- 	tristate "SMI interface for Google platforms"
- 	depends on ACPI && DMI
-@@ -15,3 +27,5 @@ config GOOGLE_MEMCONSOLE
- 	  This option enables the kernel to search for a firmware log in
- 	  the EBDA on Google servers.  If found, this log is exported to
- 	  userland in the file /sys/firmware/log.
-+
-+endmenu
+1.) Name...
+2.) Address..
+3.) Phone...
+4.) Sex...
+5.) Occupation....
+6.) Age...
+7.) Country Of Origin....
 
+Sir Ivan Smith
+Mircosoft © Promo Cordinator
