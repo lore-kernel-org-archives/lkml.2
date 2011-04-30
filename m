@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab1D3JOT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 05:14:19 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:47547 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab1D3JOQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 05:14:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=i3Ln6tOAHscECTv/x/FysCayaIZueRELJVWMOs6dPY/U2JXBAIQYqYhUwRhdyGeGvg
-         XK+X4kNIr3PovQ06VKeb2uiVsCCuNuzioExy7WZWYGB8Z8Y36e1aoVbXfuHXF6DtFInP
-         CEoMWbppPiGQremGx9Kwl3ip50yO3gzYuLzlI=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110429221450.5af5d22b@neptune.home>
-References: <20110426112756.GF4308@linux.vnet.ibm.com>
-	<20110426183859.6ff6279b@neptune.home>
-	<20110426190918.01660ccf@neptune.home>
-	<BANLkTikjuqWP+PAsObJH4EAOyzgr2RbYNA@mail.gmail.com>
-	<alpine.LFD.2.02.1104262314110.3323@ionos>
-	<20110427081501.5ba28155@pluto.restena.lu>
-	<20110427204139.1b0ea23b@neptune.home>
-	<alpine.LFD.2.02.1104272351290.3323@ionos>
-	<alpine.LFD.2.02.1104281051090.19095@ionos>
-	<BANLkTinB5S7q88dch78i-h28jDHx5dvfQw@mail.gmail.com>
-	<20110428102609.GJ2135@linux.vnet.ibm.com>
-	<1303997401.7819.5.camel@marge.simson.net>
-	<BANLkTik4+PAGHF-9KREYk8y+KDQLDAp2Mg@mail.gmail.com>
-	<alpine.LFD.2.02.1104282044120.3005@ionos>
-	<20110428222301.0b745a0a@neptune.home>
-	<alpine.LFD.2.02.1104282227340.3005@ionos>
-	<20110428224444.43107883@neptune.home>
-	<alpine.LFD.2.02.1104282251080.3005@ionos>
-	<1304027480.2971.121.camel@work-vm>
-	<alpine.LFD.2.02.1104282353140.3005@ionos>
-	<20110429213100.75f771eb@neptune.home>
-	<alpine.LFD.2.02.1104292209220.3005@ionos>
-	<20110429221450.5af5d22b@neptune.home>
-Date: Sat, 30 Apr 2011 11:14:15 +0200
-Message-ID: <BANLkTikLoKbVQUQtScW0ihT+by9tu-+Yew@mail.gmail.com>
-Subject: Re: 2.6.39-rc4+: Kernel leaking memory during FS scanning, regression?
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, john stultz <johnstul@us.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754941Ab1D3Jgt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 05:36:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:35817 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753707Ab1D3Jgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 05:36:48 -0400
+Date: Sat, 30 Apr 2011 11:36:05 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        linux-stable mlist <stable@kernel.org>,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        seto.hidetoshi@jp.fujitsu.com
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+Message-ID: <20110430093605.GA10529@1wt.eu>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz> <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429100200.GB23293@pcnci.linuxbox.cz>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 10:14 PM, Bruno Prémont
-<bonbons@linux-vserver.org> wrote:
-> On Fri, 29 April 2011 Thomas Gleixner wrote:
->> On Fri, 29 Apr 2011, Bruno Prémont wrote:
->> > On Fri, 29 April 2011 Thomas Gleixner wrote:
->> > > On Thu, 28 Apr 2011, john stultz wrote:
->> > > > On Thu, 2011-04-28 at 23:04 +0200, Thomas Gleixner wrote:
->> > > > > /me suspects hrtimer changes to be the real culprit.
->> > > >
->> > > > I'm not seeing anything on right off, but it does smell like
->> > > > e06383db9ec591696a06654257474b85bac1f8cb would be where such an issue
->> > > > would crop up.
->> > > >
->> > > > Bruno, could you try checking out e06383db9ec, confirming it still
->> > > > occurs (and then maybe seeing if it goes away at e06383db9ec^1)?
->> > > >
->> > > > I'll keep digging in the meantime.
->> > >
->> > > I found the bug already. The problem is that sched_init() calls
->> > > init_rt_bandwidth() which calls hrtimer_init() _BEFORE_
->> > > hrtimers_init() is called.
->> > >
->> > > That was unnoticed so far as the CLOCK id to hrtimer base conversion
->> > > was hardcoded. Now we use a table which is set up at hrtimers_init(),
->> > > so the bandwith hrtimer ends up on CLOCK_REALTIME because the table is
->> > > in the bss.
->> > >
->> > > The patch below fixes this, by providing the table statically rather
->> > > than runtime initialized. Though that whole ordering wants to be
->> > > revisited.
->> >
->> > Works here as well (applied alone), /proc/$(pidof rcu_kthread)/sched shows
->> > total runtime continuing to increase beyond 950 and slubs continue being
->> > released!
->>
->> Does the CPU time show up in top/ps as well now ?
->
-> Yes, it does (currently at 0:09 in ps for 9336.075 in
-> /proc/$(pidof rcu_kthread)/sched)
->
-> Thanks,
-> Bruno
->
+Hello Nikola,
 
-Just FYI: The patch is now in mainline (2.6.39-rc5-git3).
+On Fri, Apr 29, 2011 at 12:02:00PM +0200, Nikola Ciprich wrote:
+> (another CC added)
+> 
+> Hello Willy!
+> 
+> I made some statistics of our servers regarding kernel version and uptime.
+> Here are some my thoughts:
+> - I'm 100% sure this problem wasn't present in kernels <= 2.6.30.x (we've got a lot of boxes with uptimes >600days)
+> - I'm 90% sure this problem also wasn't present in 2.6.32.16 (we've got 6 boxes running for 235 to 280days)
 
-- Sedat -
+OK those are all precious information.
 
-[1] http://git.us.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=ce31332d3c77532d6ea97ddcb475a2b02dd358b4
-[2] http://www.kernel.org/diff/diffview.cgi?file=/pub/linux/kernel/v2.6/snapshots/patch-2.6.39-rc5-git3.bz2
+> What I'm not sure is, whether this is present in 2.6.19, I have:
+> 2 boxes running 2.6.32.19 for 238days and one 2.6.32.20 for 216days.
+> I also have a bunch ov 2.6.32.23 boxes, which are now getting close to 200days uptime.
+> But I suspect this really is first problematic version, more on it later. 
+> First regarding Your question about CONFIG_HZ - we use 250HZ setting, which leads me to following:
+> 250 * 60 * 60 * 24 * 199 = 4298400000 which is value a little over 2**32! So maybe some unsingned long variable
+> might overflow? Does this make sense?
+
+Yes of course it makes sense, that was also my worries. 2^32 jiffies at
+250 Hz is slightly less than 199 days. Maybe an overflow somewhere keeps
+propagating wrong results on some computations. I remember having encountered
+a lot of funny things when trying to get 2.4 get past the 497 days limit
+using the jiffies64 patch. So I would not be surprized at all that we're
+in a similar situation here.
+
+Also, I've checked the Debian kernel config where we had the divide overflow
+and it was running at 250 Hz too.
+
+> And to my suspicion about 2.6.32.19, there is one commit which maybe is related:
+> 
+> commit 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239
+> Author: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Date:   Wed Dec 2 17:28:07 2009 +0900
+> 
+>     sched, cputime: Introduce thread_group_times()
+>     
+>     This is a real fix for problem of utime/stime values decreasing
+>     described in the thread:
+>     
+>        http://lkml.org/lkml/2009/11/3/522
+>     
+>     Now cputime is accounted in the following way:
+>     
+>      - {u,s}time in task_struct are increased every time when the thread
+>        is interrupted by a tick (timer interrupt).
+>     
+>      - When a thread exits, its {u,s}time are added to signal->{u,s}time,
+>        after adjusted by task_times().
+>     
+>      - When all threads in a thread_group exits, accumulated {u,s}time
+>        (and also c{u,s}time) in signal struct are added to c{u,s}time
+>        in signal struct of the group's parent.
+> .
+> .
+> .
+> 
+> I haven't studied this into detail yet, but it seems to me it might really be related. Hidetoshi-san - do You have some opinion about this?
+> Could this somehow either create or invoke the problem with overflow of some variable which would lead to division by zero or similar problems?
+> 
+> Any other thoughts?
+
+There was a kernel parameter in the past that was used to make jiffies wrap
+a few minutes after boot, maybe we should revive it to try to reproduce
+without waiting 7 new months :-/
+
+Last, the "advantage" with a suspected regression in a stable series is that 
+there are a lot less patches to test.
+
+Regards,
+Willy
+
