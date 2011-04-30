@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1D3OS0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 10:18:26 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:54084 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1D3OSY convert rfc822-to-8bit (ORCPT
+	id S1754311Ab1D3OSp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 10:18:45 -0400
+Received: from www17.your-server.de ([213.133.104.17]:55518 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1D3OSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 10:18:24 -0400
-Date: Sat, 30 Apr 2011 16:18:10 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
-        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
-        Alex Elder <aelder@sgi.com>, Dave Chinner <dchinner@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
-Message-ID: <20110430161810.6ccd2c99@neptune.home>
-In-Reply-To: <20110429213524.449e003b@neptune.home>
-References: <20110423224403.5fd1136a@neptune.home>
-	<20110427050850.GG12436@dastard>
-	<20110427182622.05a068a2@neptune.home>
-	<20110428194528.GA1627@x4.trippels.de>
-	<20110429011929.GA13542@dastard>
-	<20110429151841.GA893@x4.trippels.de>
-	<20110429213524.449e003b@neptune.home>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+	Sat, 30 Apr 2011 10:18:44 -0400
+Subject: [PATCH] Support compat_ioctl get/set termios_locked
+From: Thomas Meyer <thomas@m3y3r.de>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 30 Apr 2011 16:18:32 +0200
+Message-ID: <1304173112.11652.2.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 April 2011 Bruno Prémont wrote:
-> On Fri, 29 April 2011 Markus Trippelsdorf wrote:
-> > On 2011.04.29 at 11:19 +1000, Dave Chinner wrote:
-> > > OK, so the common elements here appears to be root filesystems
-> > > with small log sizes, which means they are tail pushing all the
-> > > time metadata operations are in progress. Definitely seems like a
-> > > race in the AIL workqueue trigger mechanism. I'll see if I can
-> > > reproduce this and cook up a patch to fix it.
-> > 
-> > Hmm, I'm wondering if this issue is somehow related to the hrtimer bug,
-> > that Thomas Gleixner fixed yesterday:
-> > http://git.us.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=commit;h=ce31332d3c77532d6ea97ddcb475a2b02dd358b4
-> > http://thread.gmane.org/gmane.linux.kernel.mm/61909/
-> > 
-> > It also looks similar to the issue that James Bottomley reported
-> > earlier: http://thread.gmane.org/gmane.linux.kernel.mm/62185/ 
-> 
-> I'm going to see, I've applied Thomas' fix on the box seeing XFS freeze (without
-> other changes to kernel).
-> Going to run that kernel for the week-end and beyond if it survives to see what
-> happens.
+plymouth complains about those two missing ioctls.
 
-Happened again (after a few hours of uptime), so it definitely is not
-caused by hrtimer bug that Thomas Gleixner fixed.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+ drivers/tty/n_tty.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-Bruno
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 428f4fe..8d1073f 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -40,6 +40,7 @@
+ #include <linux/tty.h>
+ #include <linux/timer.h>
+ #include <linux/ctype.h>
++#include <linux/compat.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
+@@ -2088,6 +2089,20 @@ static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
+ 	}
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long n_tty_compat_ioctl(struct tty_struct *tty, struct file *file,
++		              unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++	case TIOCGLCKTRMIOS:
++	case TIOCSLCKTRMIOS:
++		return tty_mode_ioctl(tty, file, cmd, (unsigned long) compat_ptr(arg));
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++#endif
++
+ struct tty_ldisc_ops tty_ldisc_N_TTY = {
+ 	.magic           = TTY_LDISC_MAGIC,
+ 	.name            = "n_tty",
+@@ -2098,6 +2113,9 @@ struct tty_ldisc_ops tty_ldisc_N_TTY = {
+ 	.read            = n_tty_read,
+ 	.write           = n_tty_write,
+ 	.ioctl           = n_tty_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl    = n_tty_compat_ioctl,
++#endif
+ 	.set_termios     = n_tty_set_termios,
+ 	.poll            = n_tty_poll,
+ 	.receive_buf     = n_tty_receive_buf,
+-- 
+1.7.4.4
+
+
