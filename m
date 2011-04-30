@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759170Ab1D3UyO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 16:54:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39127 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756129Ab1D3UyN convert rfc822-to-8bit (ORCPT
+	id S1759208Ab1D3U4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 16:56:25 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:59862 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835Ab1D3U4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 16:54:13 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Pavel Kysilka" <goldenfish@linuxsoft.cz>
-References: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
-In-Reply-To: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sat, 30 Apr 2011 16:56:24 -0400
+Date: Sat, 30 Apr 2011 22:56:20 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCH] genirq: Fix typo CONFIG_GENIRC_IRQ_SHOW_LEVEL
+Message-ID: <alpine.DEB.2.00.1104302251370.19068@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <9nxEC7x0HFO.A.vJG.JyGvNB@chimera>
-Subject: [Bug #31572] BUG in vb_alloc() - firewire crash at boot
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 30 Apr 2011 22:17:17 +0200 (CEST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.37 and 2.6.38.
+commit ab7798ffcf98b11a9525cf65bacdae3fd58d357f ("genirq: Expand generic
+show_interrupts()") added the Kconfig option GENERIC_IRQ_SHOW_LEVEL to
+accomodate PowerPC, but this doesn't actually enable the functionality due
+to a typo in the #ifdef check.
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.37 and 2.6.38.  Please verify if it still should
-be listed and let the tracking team know (either way).
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ kernel/irq/proc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index dd201bd..834899f 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -419,7 +419,7 @@ int show_interrupts(struct seq_file *p, void *v)
+ 	} else {
+ 		seq_printf(p, " %8s", "None");
+ 	}
+-#ifdef CONFIG_GENIRC_IRQ_SHOW_LEVEL
++#ifdef CONFIG_GENERIC_IRQ_SHOW_LEVEL
+ 	seq_printf(p, " %-8s", irqd_is_level_type(&desc->irq_data) ? "Level" : "Edge");
+ #endif
+ 	if (desc->name)
+-- 
+1.7.0.4
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31572
-Subject		: BUG in vb_alloc() - firewire crash at boot
-Submitter	: Pavel Kysilka <goldenfish@linuxsoft.cz>
-Date		: 2011-03-21 12:40 (41 days old)
+Gr{oetje,eeting}s,
 
+						Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
