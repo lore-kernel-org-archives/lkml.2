@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab1D3K2e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 06:28:34 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58416 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755518Ab1D3K2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 06:28:32 -0400
-Date: Sat, 30 Apr 2011 11:29:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: Allow setting of number of raw devices as a module parameter
-Message-ID: <20110430112937.06024368@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110429162817.2eb26efb.akpm@linux-foundation.org>
-References: <1304029469-19672-1-git-send-email-jack@suse.cz>
-	<20110429162817.2eb26efb.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1755979Ab1D3KkH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 06:40:07 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45471 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab1D3KkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 06:40:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Milan Oravec <moravec@ukf.sk>
+Subject: Re: [BUG] bluetooth doesn't work from 2.6.39-rc1+ to 2.6.39-rc3+
+Date: Sat, 30 Apr 2011 10:14:08 +0000 (UTC)
+Message-ID: <loom.20110430T121049-666@post.gmane.org>
+References: <BANLkTi=Ei91GRcL2oP0G16LDy7mpLoDEGQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 88.80.241.150 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0) Gecko/20100101 Firefox/4.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 16:28:17 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hui Zhu <teawater <at> gmail.com> writes:
 
-> On Fri, 29 Apr 2011 00:24:29 +0200
-> Jan Kara <jack@suse.cz> wrote:
 > 
-> > Allow setting of maximal number of raw devices as a module parameter. This
-> > requires changing of static array into a vmalloced one (the array is going to
-> > be too large for kmalloc).
+> Cannot connect to any outside devices through bluetooth.
+> 
+> And I think this is not a bug of low level driver.  Because both my
+> laptop and a usb bluetooth card cannot work.
+> 
+> Thanks,
+> Hui
+> 
 
-A large vmalloc array is very antisocial on a 32bit x86 box. It looks
-like almost all of it would become sane if there was an array of pointers
-to raw devices and the devices were initially allocated on need (even if
-for now only recovered on rmmod)
+Hi, I have the same problem here. My usb blue-tooth dongle can not be enabled up
+in .39 kernel series.
+
+In 2.6.38.x and earlier it works fine.
+
+Anny suggestions?
+
+Thank you very much.
+
+Best regards Milan.
+
+
