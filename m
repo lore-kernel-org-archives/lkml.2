@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1D3RwG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 13:52:06 -0400
-Received: from smtpout01.highway.telekom.at ([195.3.96.112]:65241 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750971Ab1D3RwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 13:52:03 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: "Joey Lee" <jlee@novell.com>
-Subject: acer_wmi: "Unable to detect available WMID devices" on Acer_Travelmate_5735Z-452G32Mnss (was: Re: i915/kms/backlight-combo mode problem)
-Date: Sat, 30 Apr 2011 19:51:57 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4; KDE/4.6.0; x86_64; ; )
-Cc: carlos@strangeworlds.co.uk, linux-kernel@vger.kernel.org, tiwai@suse.de
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1754115Ab1D3R5S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 13:57:18 -0400
+Received: from solitude.tty.gr ([95.154.208.37]:60347 "EHLO mx.tty.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab1D3R5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 13:57:16 -0400
+X-Greylist: delayed 1084 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Apr 2011 13:57:16 EDT
+Date: Sat, 30 Apr 2011 20:39:05 +0300
+From: Faidon Liambotis <paravoid@debian.org>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: Nikola Ciprich <nikola.ciprich@linuxbox.cz>, seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Willy Tarreau <w@1wt.eu>, Randy Dunlap <rdunlap@xenotime.net>,
+        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Apollon Oikonomopoulos <apoikos@gmail.com>
+Subject: Re: 2.6.32.21 - uptime related crashes?
+Message-ID: <20110430173905.GA25641@tty.gr>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz>
+ <20110428183434.GG30645@1wt.eu>
+ <20110429100200.GB23293@pcnci.linuxbox.cz>
+ <20110430093605.GA10529@1wt.eu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201104301951.58359@rk-nord.at>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20110430093605.GA10529@1wt.eu>
+FCC: imap://paravoid@mail/Sent
+X-Identity-Key: id5
+Organization: Debian
+X-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16)
+ Gecko/20110307 Icedove/3.0.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+If I may add some, hopefully useful, information to the thread:
 
-* Joey Lee -- Saturday 30 April 2011:
-> 於 六，2011-04-30 於 13:34 +0200，Melchior FRANZ 提到：
-> > * Takashi Iwai -- Saturday 30 April 2011:
-> > * * At Sat, 30 Apr 2011 10:32:04 +0200, Melchior FRANZ wrote:
-> > > > Yes, backlight adjustment generally works on this notebook, but only
-> > > > with "acpi_osi=Linux" on the command line.
-> > > 
-> > > acpi_osi quirk should be better added statically, then.
-> > 
-> > No, I guess the problem here is that acer_wmi doesn't support this
-> > machine yet.
+At work we have an HP c7000 blade enclosure. It's populated with 8 ProLiant
+BL460c G1 (Xeon E5405, constant_tsc but not nonstop_tsc) and 4 ProLiant BL460c
+G6 (Xeon E5504, constant_tsc + nonstop_tsc). All were booted at the same day
+with Debian's 2.6.32-23~bpo50+1 kernel, i.e. upstream 2.6.32.21.
 
-> Could you please attach DSDT on this mail or share your kernel bugzilla
-> number to us?
+We too experienced problems with just the G6 blades at near 215 days 
+uptime (on the 19th of April), all at the same time. From our 
+investigation, it seems that their cpu_clocks jumped suddenly far in the 
+future and then almost immediately rolled over due to wrapping around 
+64-bits.
 
-I've just created the bugzilla entry: #34142. There you find the output of
-dmesg, of acpidump and the DSDT.
+Although all of their (G6s) clocks wrapped around *at the same time*, only one
+of them actually crashed at the time, with a second one crashing just a few
+days later, on the 28th.
 
+Three of them had the following on their logs:
+Apr 18 20:56:07 hn-05 kernel: [17966378.581971] tap0: no IPv6 routers present
+Apr 19 10:15:42 hn-05 kernel: [18446743935.365550] BUG: soft lockup - CPU#4 stuck for 17163091968s! [kvm:25913]
+[...]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447275]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+Apr 19 10:18:32 hn-05 kernel: [   31.587025] bond0.13: received packet with own address as source address
+(full oops at the end of this mail)
 
-Here's in addition a table with the info of debug_dump_wdg=1. The last
-column shows if an ID is already #defined or used as module alias.
+Note that the 17163091968s time stuck was *the same* (+/- 1s) in *all
+three of them*.
 
-                                        obj_id  not_id  res     flags
-F6CB5C3C-9CAE-4EBD-B577-931EA32A2CC0:   MX      4D      58      0x2 ACPI_WMI_METHOD     -
-F28A9357-CF4B-4A1A-8893-BB1F58EEA1AF:   Ñ       D1      00      0x8 ACPI_WMI_EVENT      -
-05901221-D566-11D1-B2F0-00A0C9062910:   XM      58      4D      0x0                     -
-95764E09-FB56-4E83-B31A-37761F60994A:   AA      41      41      0x1 ACPI_WMI_EXPENSIVE  WMID_GUID2
-6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3:   BA      42      41      0x2 ACPI_WMI_METHOD     WMID_GUID1, MODULE_ALIAS
-CC1A61AC-4256-41A3-B9E0-05A445ADE2F5:   0x80    80      00      0x8 ACPI_WMI_EVENT      -
-E78C4453-0227-4861-9EDE-F5600B4A3D39:   BB      42      42      0x2 ACPI_WMI_METHOD     -
-AAE04F7B-B3C5-4865-95D6-9FAC7FF3E92B:   BC      42      43      0x2 ACPI_WMI_METHOD     -
-CFF94C79-6C77-4AF7-AC56-7DD0CE01C997:   BD      42      44      0x2 ACPI_WMI_METHOD     -
-79772EC5-04B1-4BFD-843C-61E7F77B6CC9:   BE      42      45      0x2 ACPI_WMI_METHOD     -
-A7C9A0B7-4C9D-4C72-83BB-53A3459171DF:   BF      42      46      0x2 ACPI_WMI_METHOD     -
-653A064F-A23A-485F-B3D9-13F6532A0182:   BG      42      47      0x2 ACPI_WMI_METHOD     -
-5923DD45-0480-4ED5-B61A-C9EC6C90E26A:   BH      42      48      0x2 ACPI_WMI_METHOD     -
-DB85B1A7-069A-4ABB-A2B5-D186A21B80F1:   0x81    81      00      0x8 ACPI_WMI_EVENT      -
-36916B91-1A64-4583-84D0-53830FB9108D:   0x82    82      00      0x8 ACPI_WMI_EVENT      -
-676AA15E-6A47-4D9F-A2CC-1E6D18D14026:   ¼       BC      00      0x8 ACPI_WMI_EVENT      ACERWMID_EVENT_GUID, MODULE_ALIAS
-61EF69EA-865C-4BC3-A502-A0DEBA0CB531:   AA      41      41      0x2 ACPI_WMI_METHOD     WMID_GUID3
-05901221-D566-11D1-B2F0-00A0C9062910:   AB      41      42      0x0			-
-FAAA1397-1188-448F-8516-9A07987DD38A:   BI      42      49      0x2 ACPI_WMI_METHOD	-
+What's also very strange, although we're not very sure if related, is
+that when we took the first line of the above log entry and substracted
+17966378.581971 from Apr 18 20:56:07, this resulted in a boot-time that
+differed several hours from the actual boot time (the latter being
+verified both with syslog and /proc/bstat's btime, which were both in
+agreement). This was verified post-mortem too, with the date checked to
+be correct.
 
-m.
+IOW, we have some serious clock drift (calcuated it at runtime to
+~0.1s/min) on these machines that hasn't been made apparent probably
+since they all run NTP. Moreover, we also saw that drift on other
+machines (1U, different vendor, different data center, E5520 CPUs) but
+not with the G1 blades. Our investigation showed that the drift is there
+constantly (it's not a one-time event) but we're not really sure if it's
+related with the Apr 18th jump event.  Note that the drift is there even
+if we boot with "clocksource=hpet" but disappears when booted with
+"notsc". Also note that we've verified with 2.6.38 and the drift is
+still there.
+
+Regards,
+Faidon
+
+1: The full backtrace is:
+Apr 18 20:56:07 hn-05 kernel: [17966378.581971] tap0: no IPv6 routers present
+Apr 19 06:25:02 hn-05 kernel: imklog 3.18.6, log source = /proc/kmsg started.
+Apr 19 10:15:42 hn-05 kernel: [18446743935.365550] BUG: soft lockup - CPU#4 stuck for 17163091968s! [kvm:25913]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447056] Modules linked in: xt_pkttype ext2 tun kvm_intel kvm nf_conntrack_ipv6 ip6table_filter ip6_tables xt_tcpudp nf_conntrack_ipv4 nf_
+defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables 8021q garp bridge stp bonding dm_round_robin dm_multipath scsi_dh ipmi_poweroff ipmi_devintf loop snd_pcm snd_ti
+mer snd soundcore bnx2x psmouse snd_page_alloc serio_raw sd_mod crc_t10dif hpilo ipmi_si ipmi_msghandler container evdev crc32c pcspkr shpchp pci_hotplug libcrc32c power_meter mdio
+ button processor ext3 jbd mbcache dm_mirror dm_region_hash dm_log dm_snapshot dm_mod usbhid hid cciss ehci_hcd uhci_hcd qla2xxx scsi_transport_fc usbcore nls_base tg3 libphy scsi_
+tgt scsi_mod thermal fan thermal_sys [last unloaded: scsi_wait_scan]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447111] CPU 4:
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447112] Modules linked in: xt_pkttype ext2 tun kvm_intel kvm nf_conntrack_ipv6 ip6table_filter ip6_tables xt_tcpudp nf_conntrack_ipv4 nf_
+defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables 8021q garp bridge stp bonding dm_round_robin dm_multipath scsi_dh ipmi_poweroff ipmi_devintf loop snd_pcm snd_timer snd soundcore bnx2x psmouse snd_page_alloc serio_raw sd_mod crc_t10dif hpilo ipmi_si ipmi_msghandler container evdev crc32c pcspkr shpchp pci_hotplug libcrc32c power_meter mdio button processor ext3 jbd mbcache dm_mirror dm_region_hash dm_log dm_snapshot dm_mod usbhid hid cciss ehci_hcd uhci_hcd qla2xxx scsi_transport_fc usbcore nls_base tg3 libphy scsi_tgt scsi_mod thermal fan thermal_sys [last unloaded: scsi_wait_scan]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447154] Pid: 25913, comm: kvm Not tainted 2.6.32-bpo.5-amd64 #1 ProLiant BL460c G6
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447157] RIP: 0010:[<ffffffffa02e209a>]  [<ffffffffa02e209a>] kvm_arch_vcpu_ioctl_run+0x785/0xa44 [kvm]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447177] RSP: 0018:ffff88070065fd38  EFLAGS: 00000202
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447179] RAX: ffff88070065ffd8 RBX: ffff8804154ba860 RCX: ffff8804154ba860
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447182] RDX: ffff8804154ba8b9 RSI: ffff81004c818b10 RDI: ffff8100291a7d48
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447184] RBP: ffffffff8101166e R08: 0000000000000000 R09: 0000000000000000
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447187] R10: 00007f1b2a2af078 R11: ffffffff802f3405 R12: 0000000000000001
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447189] R13: 00000000154ba8b8 R14: ffff8804136ac000 R15: ffff8804154bbd48
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447192] FS:  0000000042cbb950(0000) GS:ffff88042e440000(0000) knlGS:0000000000000000
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447195] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447197] CR2: 0000000000000008 CR3: 0000000260c41000 CR4: 00000000000026e0
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447200] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447202] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447205] Call Trace:
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447215]  [<ffffffffa02e2004>] ? kvm_arch_vcpu_ioctl_run+0x6ef/0xa44 [kvm]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447224]  [<ffffffff8100f79c>] ? __switch_to+0x285/0x297
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447231]  [<ffffffffa02d49d1>] ? kvm_vcpu_ioctl+0xf1/0x4e6 [kvm]
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447237]  [<ffffffff810240da>] ? lapic_next_event+0x18/0x1d
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447245]  [<ffffffff8106fb77>] ? tick_dev_program_event+0x2d/0x95
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447251]  [<ffffffff81047e29>] ? finish_task_switch+0x3a/0xaf
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447258]  [<ffffffff810f9f5a>] ? vfs_ioctl+0x21/0x6c
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447261]  [<ffffffff810fa4a8>] ? do_vfs_ioctl+0x48d/0x4cb
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447268]  [<ffffffff81063fcd>] ? sys_timer_settime+0x233/0x283
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447272]  [<ffffffff810fa537>] ? sys_ioctl+0x51/0x70
+Apr 19 10:15:42 hn-05 kernel: [18446743935.447275]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+Apr 19 10:18:32 hn-05 kernel: [   31.587025] bond0.13: received packet with own address as source address
