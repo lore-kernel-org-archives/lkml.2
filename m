@@ -1,194 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab1D3MyQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 08:54:16 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:6140 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754492Ab1D3MyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 08:54:11 -0400
-X-Greylist: delayed 1537 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Apr 2011 08:54:07 EDT
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, dilinger@queued.net,
-        Daniel Drake <dsd@laptop.org>, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 10/11] x86, olpc: Add XO-1 RTC driver
-Date: Sat, 30 Apr 2011 13:32:29 +0100
-Message-Id: <1304166750-31125-11-git-send-email-dsd@laptop.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=vQaFqZN6sNkA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=voM4FWlXAAAA:8 a=XAdfnoSodalRqCE3CN4A:9 a=B3uI7uyBiY6wg5S8LLAA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1756469Ab1D3M7c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 08:59:32 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58830 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838Ab1D3M7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 08:59:30 -0400
+Date: Sat, 30 Apr 2011 05:59:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
+Message-ID: <20110430125928.GJ2297@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
+ <1303984323-3203-2-git-send-email-gleb@redhat.com>
+ <20110429083618.GL2191@linux.vnet.ibm.com>
+ <20110429083904.GA12987@linux.vnet.ibm.com>
+ <20110429180239.GA32566@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429180239.GA32566@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver to configure the XO-1 RTC via CS5536 MSRs, to be used as a
-system wakeup source via olpc-xo1-pm.
+On Fri, Apr 29, 2011 at 09:02:39PM +0300, Gleb Natapov wrote:
+> On Fri, Apr 29, 2011 at 01:39:04AM -0700, Paul E. McKenney wrote:
+> > On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
+> > > On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
+> > > 
+> > > Hmmm....  This is interesting.  KVM being a module, we either expand
+> > > TINY_RCU's size a bit by making rcu_note_context_switch() be a real
+> > > function in rcutiny.c and adding an export, or we expand it by adding
+> > > two exports.
+> > > 
+> > > I would like to solve this without making TINY_RCU larger, and preferably
+> > > by making it smaller.  Any ideas come to mind?  (Other than making
+> > > KVM depend on CONFIG_SMP, which sounds too much like throwing out the
+> > > baby with the bathwater.)
+> > 
+> > Nothing quite like hitting "send" to make an idea show up...
+> > 
+> > In a UP kernel, does it actually help anything to have KVM
+> > tell RCU about executing in a guest?  If not, could we have a
+> > rcu_note_context_switch_kvm() that is a static inline empty function in
+> > TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
+> > 
+> That will work, but does making rcu_note_context_switch() out of line
+> actually increase kernel size? The function is called in two places
+> currently, so by making it out of line we make two calling site smaller.
+> Will measure it next week.
 
-Device detection is based on finding the relevant device tree node.
+One thing to keep in mind...  Calling an out-of-line function from
+KVM requires an export, each of which significantly increases TINY_RCU's
+memory footprint.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: devicetree-discuss@lists.ozlabs.org
----
- .../devicetree/bindings/rtc/olpc-xo1-rtc.txt       |    5 +
- arch/x86/Kconfig                                   |    7 ++
- arch/x86/platform/olpc/Makefile                    |    1 +
- arch/x86/platform/olpc/olpc-xo1-rtc.c              |   82 ++++++++++++++++++++
- include/linux/cs5535.h                             |    5 +
- 5 files changed, 100 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
- create mode 100644 arch/x86/platform/olpc/olpc-xo1-rtc.c
+							Thanx, Paul
 
-diff --git a/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt b/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
-new file mode 100644
-index 0000000..a2891ce
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
-@@ -0,0 +1,5 @@
-+OLPC XO-1 RTC
-+~~~~~~~~~~~~~
-+
-+Required properties:
-+ - compatible : "olpc,xo1-rtc"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 583e1c5..eb9f377 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2072,6 +2072,13 @@ config OLPC_XO1_PM
- 	---help---
- 	  Add support for poweroff and suspend of the OLPC XO-1 laptop.
- 
-+config OLPC_XO1_RTC
-+	bool "OLPC XO-1 Real Time Clock"
-+	depends on OLPC_XO1_PM && RTC_DRV_CMOS
-+	---help---
-+	  Add support for the XO-1 real time clock, which can be used as a
-+	  programmable wakeup source.
-+
- config OLPC_XO1_SCI
- 	bool "OLPC XO-1 SCI extras"
- 	depends on OLPC && OLPC_XO1_PM && POWER_SUPPLY
-diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
-index 1ec5ade..8922b9b 100644
---- a/arch/x86/platform/olpc/Makefile
-+++ b/arch/x86/platform/olpc/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
- obj-$(CONFIG_OLPC_XO1_PM)		+= olpc-xo1-pm.o xo1-wakeup.o
-+obj-$(CONFIG_OLPC_XO1_RTC)	+= olpc-xo1-rtc.o
- obj-$(CONFIG_OLPC_XO1_SCI)	+= olpc-xo1-sci.o
-diff --git a/arch/x86/platform/olpc/olpc-xo1-rtc.c b/arch/x86/platform/olpc/olpc-xo1-rtc.c
-new file mode 100644
-index 0000000..476cc98
---- /dev/null
-+++ b/arch/x86/platform/olpc/olpc-xo1-rtc.c
-@@ -0,0 +1,82 @@
-+/*
-+ * Support for OLPC XO-1 Real Time Clock (RTC)
-+ *
-+ * Copyright (C) 2011 One Laptop per Child
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/mc146818rtc.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/of.h>
-+
-+#include <asm/msr.h>
-+#include <asm/olpc.h>
-+
-+static void rtc_wake_on(struct device *dev)
-+{
-+	olpc_xo1_pm_wakeup_set(CS5536_PM_RTC);
-+}
-+
-+static void rtc_wake_off(struct device *dev)
-+{
-+	olpc_xo1_pm_wakeup_clear(CS5536_PM_RTC);
-+}
-+
-+static struct resource rtc_platform_resource[] = {
-+	[0] = {
-+		.start	= RTC_PORT(0),
-+		.end	= RTC_PORT(1),
-+		.flags	= IORESOURCE_IO,
-+	},
-+	[1] = {
-+		.start	= RTC_IRQ,
-+		.end	= RTC_IRQ,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+static struct cmos_rtc_board_info rtc_info = {
-+	.rtc_day_alarm = 0,
-+	.rtc_mon_alarm = 0,
-+	.rtc_century = 0,
-+	.wake_on = rtc_wake_on,
-+	.wake_off = rtc_wake_off,
-+};
-+
-+static struct platform_device xo1_rtc_device = {
-+	.name = "rtc_cmos",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(rtc_platform_resource),
-+	.dev.platform_data = &rtc_info,
-+	.resource = rtc_platform_resource,
-+};
-+
-+static int __init xo1_rtc_init(void)
-+{
-+	int r;
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "olpc,xo1-rtc");
-+	if (!node)
-+		return 0;
-+	of_node_put(node);
-+
-+	pr_info("olpc-xo1-rtc: Initializing OLPC XO-1 RTC\n");
-+	rdmsrl(MSR_RTC_DOMA_OFFSET, rtc_info.rtc_day_alarm);
-+	rdmsrl(MSR_RTC_MONA_OFFSET, rtc_info.rtc_mon_alarm);
-+	rdmsrl(MSR_RTC_CEN_OFFSET, rtc_info.rtc_century);
-+
-+	r = platform_device_register(&xo1_rtc_device);
-+	if (r)
-+		return r;
-+
-+	device_init_wakeup(&xo1_rtc_device.dev, 1);
-+	return 0;
-+}
-+arch_initcall(xo1_rtc_init);
-+
-diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
-index f2b4a2f..3f98d81 100644
---- a/include/linux/cs5535.h
-+++ b/include/linux/cs5535.h
-@@ -38,6 +38,10 @@
- #define MSR_MFGPT_NR		0x51400029
- #define MSR_MFGPT_SETUP		0x5140002B
- 
-+#define MSR_RTC_DOMA_OFFSET	0x51400055
-+#define MSR_RTC_MONA_OFFSET	0x51400056
-+#define MSR_RTC_CEN_OFFSET	0x51400057
-+
- #define MSR_LX_SPARE_MSR	0x80000011	/* DC-specific */
- 
- #define MSR_GX_GLD_MSR_CONFIG	0xC0002001
-@@ -81,6 +85,7 @@
- 
- /* CS5536_PM1_EN bits */
- #define CS5536_PM_PWRBTN	(1 << 8)
-+#define CS5536_PM_RTC		(1 << 10)
- 
- /* CS5536_PM_GPE0_STS bits */
- #define CS5536_GPIOM7_PME_FLAG	(1 << 31)
--- 
-1.7.4.4
-
+> > > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > > > ---
+> > > >  include/linux/rcutiny.h |    6 +-----
+> > > >  kernel/rcutiny.c        |    7 +++++++
+> > > >  kernel/rcutree.c        |    1 +
+> > > >  3 files changed, 9 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+> > > > index 30ebd7c..8e5f7cf 100644
+> > > > --- a/include/linux/rcutiny.h
+> > > > +++ b/include/linux/rcutiny.h
+> > > > @@ -93,11 +93,7 @@ static inline int rcu_needs_cpu(int cpu)
+> > > > 
+> > > >  #endif /* #else #ifdef CONFIG_TINY_RCU */
+> > > > 
+> > > > -static inline void rcu_note_context_switch(int cpu)
+> > > > -{
+> > > > -	rcu_sched_qs(cpu);
+> > > > -	rcu_preempt_note_context_switch();
+> > > > -}
+> > > > +extern void rcu_note_context_switch(int cpu);
+> > > > 
+> > > >  /*
+> > > >   * Return the number of grace periods.
+> > > > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> > > > index 0c343b9..3d715a4 100644
+> > > > --- a/kernel/rcutiny.c
+> > > > +++ b/kernel/rcutiny.c
+> > > > @@ -78,6 +78,13 @@ void rcu_exit_nohz(void)
+> > > > 
+> > > >  #endif /* #ifdef CONFIG_NO_HZ */
+> > > > 
+> > > > +void rcu_note_context_switch(int cpu)
+> > > > +{
+> > > > +	rcu_sched_qs(cpu);
+> > > > +	rcu_preempt_note_context_switch();
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+> > > > +
+> > > >  /*
+> > > >   * Helper function for rcu_qsctr_inc() and rcu_bh_qsctr_inc().
+> > > >   * Also disable irqs to avoid confusion due to interrupt handlers
+> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > index dd4aea8..0837d63 100644
+> > > > --- a/kernel/rcutree.c
+> > > > +++ b/kernel/rcutree.c
+> > > > @@ -124,6 +124,7 @@ void rcu_note_context_switch(int cpu)
+> > > >  	rcu_sched_qs(cpu);
+> > > >  	rcu_preempt_note_context_switch(cpu);
+> > > >  }
+> > > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+> > > > 
+> > > >  #ifdef CONFIG_NO_HZ
+> > > >  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+> > > > -- 
+> > > > 1.7.2.3
+> > > > 
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> 			Gleb.
