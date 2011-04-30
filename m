@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1D3SAs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 14:00:48 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58459 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1D3SAp (ORCPT
+	id S1755391Ab1D3SOu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 14:14:50 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47122 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751029Ab1D3SOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 14:00:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=C+g1goOzYXDW/koaBdiR9LiU596iXk/Nr1Dl7qxU0bYJ8iuVGiXKh9oF6lOgSmgEFF
-         T1WR+1I71NRTe66WJ/jkZP63uYyyxuTmtJCHaKNNuQ9U+BpqUo0eZ/lJIhzuAyNmwe/5
-         GEEsh05WMSj8IPbZD5jlvGvBKzm0i3wIDUxoc=
+	Sat, 30 Apr 2011 14:14:49 -0400
+X-Sasl-enc: F//c1+tcLGSHJtyS7nhmQSvGb0SamXBjeJUB9qTuppzq 1304187288
+Date: Sat, 30 Apr 2011 15:14:46 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <greg@kroah.com>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        linux-stable mlist <stable@kernel.org>
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+Message-ID: <20110430181446.GB21084@khazad-dum.debian.net>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz>
+ <20110428183434.GG30645@1wt.eu>
+ <20110429100200.GB23293@pcnci.linuxbox.cz>
+ <20110430093605.GA10529@1wt.eu>
+ <20110430120205.GA2459@nik-comp.lan>
+ <20110430155707.GA22021@kroah.com>
+ <20110430090805.354484ad.rdunlap@xenotime.net>
+ <20110430164958.GE10529@1wt.eu>
 MIME-Version: 1.0
-In-Reply-To: <4DBC37D0.3070408@kernel.org>
-References: <1304090924-8197-1-git-send-email-tj@kernel.org>
-	<1304090924-8197-9-git-send-email-tj@kernel.org>
-	<4DBAF498.40007@kernel.org>
-	<20110430120307.GE29280@htj.dyndns.org>
-	<4DBC37D0.3070408@kernel.org>
-Date: Sat, 30 Apr 2011 20:00:44 +0200
-X-Google-Sender-Auth: VTKCfYBPbY3j2rFbEyE7_MVB-p4
-Message-ID: <BANLkTimaDnFZbSAitJOPdKb2fuuHKS0HpQ@mail.gmail.com>
-Subject: Re: [PATCH 08/25] x86, NUMA: trivial cleanups
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@redhat.com, rientjes@google.com, tglx@linutronix.de, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430164958.GE10529@1wt.eu>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, 30 Apr 2011, Willy Tarreau wrote:
+> So that would mean that wrapping jiffies should be unrelated to the
+> reported panics. Let's wait for Hidetoshi-san's analysis then.
 
-On Sat, Apr 30, 2011 at 6:24 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> I posted two patches for
-> Kill no longer used struct bootnode.
-> Make setup_node_bootmem() static
+Err, it actually could be a problem when it wraps twice, OR it could be
+related to conditions that didn't happen yet right after boot.
 
-Ah, okay.  Do you mind resending them to me?  I'll integrate it with
-the patchset.
-
-> Also setup_node_bootmem now is some misleading, could change to setup_node_data() ?
-
-Sure, I don't like the current name either.  Do you mind sending a
-patch for that too?
-
-Thanks.
+But that's less likely, of course.
 
 -- 
-tejun
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
