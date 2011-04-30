@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab1D3Dbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 23:31:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7788 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756849Ab1D3Dbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 23:31:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,292,1301900400"; 
-   d="scan'208";a="740455729"
-Message-Id: <20110430033017.923224207@intel.com>
-User-Agent: quilt/0.48-1
-Date: Sat, 30 Apr 2011 11:22:44 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Tim Chen <tim.c.chen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Li Shaohua <shaohua.li@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-cc: Linux Memory Management List <linux-mm@kvack.org>
-Subject: [PATCH 1/3] readahead: return early when readahead is disabled
-References: <20110430032243.355805181@intel.com>
-Content-Disposition: inline; filename=readahead-early-abort-mmap-around.patch
+	id S1757801Ab1D3DjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 23:39:09 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:55195 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755853Ab1D3DjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 23:39:07 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Fri, 29 Apr 2011 23:39:06 -0400
+Message-ID: <web-515898476@zbackend1.aha.ru>
+In-Reply-To: <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
+References: <web-515866242@zbackend1.aha.ru>
+ <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
+ <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
+ <20110430025545.GI9487@ZenIV.linux.org.uk>
+ <20110430030243.GJ9487@ZenIV.linux.org.uk>
+ <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce readahead overheads by returning early in
-do_sync_mmap_readahead().
+At my reclamation thread about 2.6.39-rc3,4 crashs, I 
+informed that there was a reset-resistent change of the 
+system after crashs, so that on subsequent boots (after a 
+'primary' crash rather at the end of booting) it happened 
+an early 'secondary'  crash at the time of initializing 
+ata0, with funny effects like that the grafic card (or 
+anything else) was identified as an ata device, with 
+subsequent 'read erros' on it and crash. This 'secondary' 
+effect repeated and repeated and gone away only at booting 
+with a normal kernel (2.6.38.4 or 2.6.26.2). But if 
+afterwards booting again with 2.6.39-rc3 or -rc4 , then at 
+the end of the boot it crashed, and at subsequent boots 
+again continued this reset-resistent effect that it crasha 
+again and again with ata0 problems, until I reboot with 
+2.6.38.4 or 2.6.26.2 , or waiting 5 minutes (perhaps until 
+the memory discharged).
 
-tmpfs has ra_pages=0 and it can page fault really fast
-(not constraint by IO if not swapping).
+All these problems dont happen with 2.6.38.4 or 2.6.26.2
 
-Tested-by: Tim Chen <tim.c.chen@intel.com>
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Werner Landgraf
+
+
+================================================
+On Fri, 29 Apr 2011 20:09:16 -0700
+  Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Fri, Apr 29, 2011 at 8:02 PM, Al Viro 
+><viro@zeniv.linux.org.uk> wrote:
+>>
+>> Wait a bit; _can_ we get there with non-NULL 
+>>->s_master_inode et.al.?
+>> iput(NULL) is a noop...  I don't think so, since 
+>>logfs_init_journal()
+>> is not called until after we initialize that list.
+>>
+>> Not that I'd object against taking that initialization 
+>>earlier, of course,
+>> but there seems to be something else going on...  Which 
+>>iput() it is?
+> 
+> Not something I can guess from the oops, sadly. Gcc has 
+>inlined
+> everything into logfs_mount, and the "0x44f/0x5cc" 
+>offset isn't very
+> helpful (with the same compiler version and config 
+>options it would be
+> possible to figure it out).
+> 
+> But looking at it, logfs_init_mapping() is currently 
+>called before
+> "s_freeing_list" is initialized, and it sets up at least
+> s_mapping_inode. So if anything fails between that point 
+>and the point
+> where we initialize s_freeing_list, I think we're toast.
+> 
+> I didn't check the other inodes, but at least that one 
+>does seem to be
+> potentially non-NULL. No?
+> 
+>                 Linus
+> 
+> 
+
+"werner" <w.landgraf@ru.ru>
 ---
- mm/filemap.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
---- linux-next.orig/mm/filemap.c	2011-04-23 08:56:59.000000000 +0800
-+++ linux-next/mm/filemap.c	2011-04-23 09:01:44.000000000 +0800
-@@ -1528,6 +1528,8 @@ static void do_sync_mmap_readahead(struc
- 	/* If we don't want any read-ahead, don't bother */
- 	if (VM_RandomReadHint(vma))
- 		return;
-+	if (!ra->ra_pages)
-+		return;
- 
- 	if (VM_SequentialReadHint(vma) ||
- 			offset - 1 == (ra->prev_pos >> PAGE_CACHE_SHIFT)) {
-@@ -1550,12 +1552,10 @@ static void do_sync_mmap_readahead(struc
- 	 * mmap read-around
- 	 */
- 	ra_pages = max_sane_readahead(ra->ra_pages);
--	if (ra_pages) {
--		ra->start = max_t(long, 0, offset - ra_pages/2);
--		ra->size = ra_pages;
--		ra->async_size = 0;
--		ra_submit(ra, mapping, file);
--	}
-+	ra->start = max_t(long, 0, offset - ra_pages / 2);
-+	ra->size = ra_pages;
-+	ra->async_size = 0;
-+	ra_submit(ra, mapping, file);
- }
- 
- /*
-
-
+Professional hosting for everyone - http://www.host.ru
