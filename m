@@ -1,131 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1D3NBh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 09:01:37 -0400
+	id S932188Ab1D3NBw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 09:01:52 -0400
 Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:9429 "EHLO
 	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756848Ab1D3NBa (ORCPT
+	by vger.kernel.org with ESMTP id S1756775Ab1D3NB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 09:01:30 -0400
+	Sat, 30 Apr 2011 09:01:26 -0400
 From: Daniel Drake <dsd@laptop.org>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, dilinger@queued.net,
         Daniel Drake <dsd@laptop.org>
-Subject: [PATCH 11/11] x86, olpc: Add XO-1.5 SCI driver
-Date: Sat, 30 Apr 2011 13:32:30 +0100
-Message-Id: <1304166750-31125-12-git-send-email-dsd@laptop.org>
+Subject: [PATCH 07/11] x86, olpc-xo1-sci: Add GPE handler and ebook switch functionality
+Date: Sat, 30 Apr 2011 13:32:26 +0100
+Message-Id: <1304166750-31125-8-git-send-email-dsd@laptop.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1304166750-31125-1-git-send-email-dsd@laptop.org>
 References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=WouihnivXlgA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=YmEKrBQnXbTnUyvlkEEA:9 a=yvSa7Q4rvyF-hhZtxNcA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=lP9hPYfWmvkA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=8pUI9j0R9x75pM3QE4EA:9 a=5Pw5yg4cXYNAtHwa-0wA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver for the ACPI-based EC event interface found on the
-OLPC XO-1.5 laptop. This enables notification of battery/AC power events,
-and enables various devices to be used as wakeup sources through regular
-ACPI mechanisms.
-
-This driver can't be built as a module, because some drivers need to know
-at boot-time if SCI-based functionality is available via
-olpc_ec_wakeup_available().
+The EC in the OLPC XO-1 delivers GPE events to provide various
+notifications. Add the basic code for GPE/EC event processing and
+enable the ebook switch, which can be used as a wakeup source.
 
 Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- arch/x86/Kconfig                       |    9 ++
- arch/x86/platform/olpc/Makefile        |    1 +
- arch/x86/platform/olpc/olpc-xo15-sci.c |  168 ++++++++++++++++++++++++++++++++
- arch/x86/platform/olpc/olpc.c          |    9 ++
- 4 files changed, 187 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/platform/olpc/olpc-xo15-sci.c
+ arch/x86/Kconfig                      |    2 +
+ arch/x86/include/asm/olpc.h           |    5 +-
+ arch/x86/platform/olpc/olpc-xo1-sci.c |  170 ++++++++++++++++++++++++++++++++-
+ include/linux/cs5535.h                |    8 ++
+ 4 files changed, 182 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index eb9f377..b0bbe86 100644
+index c273c62..0e62cd5 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -2091,6 +2091,15 @@ config OLPC_XO1_SCI
- 	   - AC adapter status updates
- 	   - Battery status updates
- 
-+config OLPC_XO15_SCI
-+	bool "OLPC XO-1.5 SCI extras"
-+	depends on OLPC && ACPI && POWER_SUPPLY
-+	---help---
-+	  Add support for SCI-based features of the OLPC XO-1.5 laptop:
+@@ -2077,7 +2077,9 @@ config OLPC_XO1_SCI
+ 	depends on OLPC && OLPC_XO1_PM
+ 	---help---
+ 	  Add support for SCI-based features of the OLPC XO-1 laptop:
 +	   - EC-driven system wakeups
-+	   - AC adapter status updates
-+	   - Battery status updates
-+
+ 	   - Power button
++	   - Ebook switch
+ 
  endif # X86_32
  
- config AMD_NB
-diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
-index 8922b9b..fd332c5 100644
---- a/arch/x86/platform/olpc/Makefile
-+++ b/arch/x86/platform/olpc/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
- obj-$(CONFIG_OLPC_XO1_PM)		+= olpc-xo1-pm.o xo1-wakeup.o
- obj-$(CONFIG_OLPC_XO1_RTC)	+= olpc-xo1-rtc.o
- obj-$(CONFIG_OLPC_XO1_SCI)	+= olpc-xo1-sci.o
-+obj-$(CONFIG_OLPC_XO15_SCI)	+= olpc-xo15-sci.o
-diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
-new file mode 100644
-index 0000000..a5990eb
---- /dev/null
-+++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
-@@ -0,0 +1,168 @@
-+/*
-+ * Support for OLPC XO-1.5 System Control Interrupts (SCI)
-+ *
-+ * Copyright (C) 2009-2010 One Laptop per Child
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
+diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
+index 0e56d01..87bdbca 100644
+--- a/arch/x86/include/asm/olpc.h
++++ b/arch/x86/include/asm/olpc.h
+@@ -111,6 +111,7 @@ extern int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
+ #define EC_WRITE_SCI_MASK		0x1b
+ #define EC_WAKE_UP_WLAN			0x24
+ #define EC_WLAN_LEAVE_RESET		0x25
++#define EC_READ_EB_MODE			0x2a
+ #define EC_SET_SCI_INHIBIT		0x32
+ #define EC_SET_SCI_INHIBIT_RELEASE	0x34
+ #define EC_WLAN_ENTER_RESET		0x35
+@@ -144,7 +145,7 @@ extern int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
+ #define OLPC_GPIO_SMB_CLK      14
+ #define OLPC_GPIO_SMB_DATA     15
+ #define OLPC_GPIO_WORKAUX	geode_gpio(24)
+-#define OLPC_GPIO_LID		geode_gpio(26)
+-#define OLPC_GPIO_ECSCI		geode_gpio(27)
++#define OLPC_GPIO_LID		26
++#define OLPC_GPIO_ECSCI		27
+ 
+ #endif /* _ASM_X86_OLPC_H */
+diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
+index 8fbf961..9de2a00 100644
+--- a/arch/x86/platform/olpc/olpc-xo1-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
+@@ -12,12 +12,15 @@
+  */
+ 
+ #include <linux/cs5535.h>
 +#include <linux/device.h>
-+#include <linux/slab.h>
++#include <linux/gpio.h>
+ #include <linux/input.h>
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm.h>
+ #include <linux/mfd/core.h>
+ #include <linux/suspend.h>
 +#include <linux/workqueue.h>
-+#include <linux/power_supply.h>
+ 
+ #include <asm/io.h>
+ #include <asm/msr.h>
+@@ -28,8 +31,60 @@
+ 
+ static unsigned long acpi_base;
+ static struct input_dev *power_button_idev;
++static struct input_dev *ebook_switch_idev;
 +
-+#include <acpi/acpi_bus.h>
-+#include <acpi/acpi_drivers.h>
-+#include <asm/olpc.h>
-+
-+#define DRV_NAME			"olpc-xo15-sci"
-+#define PFX				DRV_NAME ": "
-+#define XO15_SCI_CLASS			DRV_NAME
-+#define XO15_SCI_DEVICE_NAME		"OLPC XO-1.5 SCI"
-+
-+static unsigned long xo15_sci_gpe;
-+
-+static void battery_status_changed(void)
+ static int sci_irq;
+ 
++/* Report current ebook switch state through input layer */
++static void send_ebook_state(void)
 +{
-+	struct power_supply *psy = power_supply_get_by_name("olpc-battery");
++	unsigned char state;
 +
-+	if (psy) {
-+		power_supply_changed(psy);
-+		put_device(psy->dev);
++	if (olpc_ec_cmd(EC_READ_EB_MODE, NULL, 0, &state, 1)) {
++		pr_err(PFX "failed to get ebook state\n");
++		return;
 +	}
++
++	input_report_switch(ebook_switch_idev, SW_TABLET_MODE, state);
++	input_sync(ebook_switch_idev);
 +}
 +
-+static void ac_status_changed(void)
++/*
++ * Process all items in the EC's SCI queue.
++ *
++ * This is handled in a workqueue because olpc_ec_cmd can be slow (and
++ * can even timeout).
++ *
++ * If propagate_events is false, the queue is drained without events being
++ * generated for the interrupts.
++ */
++static void process_sci_queue(bool propagate_events)
 +{
-+	struct power_supply *psy = power_supply_get_by_name("olpc-ac");
-+
-+	if (psy) {
-+		power_supply_changed(psy);
-+		put_device(psy->dev);
-+	}
-+}
-+
-+static void process_sci_queue(void)
-+{
-+	u16 data;
 +	int r;
++	u16 data;
 +
 +	do {
 +		r = olpc_ec_sci_query(&data);
@@ -134,17 +133,8 @@ index 0000000..a5990eb
 +
 +		pr_debug(PFX "SCI 0x%x received\n", data);
 +
-+		switch (data) {
-+		case EC_SCI_SRC_BATERR:
-+		case EC_SCI_SRC_BATSOC:
-+		case EC_SCI_SRC_BATTERY:
-+		case EC_SCI_SRC_BATCRIT:
-+			battery_status_changed();
-+			break;
-+		case EC_SCI_SRC_ACPWR:
-+			ac_status_changed();
-+			break;
-+		}
++		if (data == EC_SCI_SRC_EBOOK && propagate_events)
++			send_ebook_state();
 +	} while (data);
 +
 +	if (r)
@@ -153,116 +143,207 @@ index 0000000..a5990eb
 +
 +static void process_sci_queue_work(struct work_struct *work)
 +{
-+	process_sci_queue();
++	process_sci_queue(true);
 +}
 +
 +static DECLARE_WORK(sci_work, process_sci_queue_work);
 +
-+static u32 xo15_sci_gpe_handler(acpi_handle gpe_device, u32 gpe, void *context)
-+{
-+	schedule_work(&sci_work);
-+	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
-+}
+ static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
+ {
+ 	struct platform_device *pdev = dev_id;
+@@ -51,6 +106,11 @@ static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
+ 		input_sync(power_button_idev);
+ 	}
+ 
++	if (gpe & CS5536_GPIOM7_PME_FLAG) { /* EC GPIO */
++		cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_NEGATIVE_EDGE_STS);
++		schedule_work(&sci_work);
++	}
 +
-+static int xo15_sci_add(struct acpi_device *device)
-+{
-+	unsigned long long tmp;
-+	acpi_status status;
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -60,6 +120,19 @@ static int xo1_sci_suspend(struct platform_device *pdev, pm_message_t state)
+ 		olpc_xo1_pm_wakeup_set(CS5536_PM_PWRBTN);
+ 	else
+ 		olpc_xo1_pm_wakeup_clear(CS5536_PM_PWRBTN);
 +
-+	if (!device)
-+		return -EINVAL;
-+
-+	strcpy(acpi_device_name(device), XO15_SCI_DEVICE_NAME);
-+	strcpy(acpi_device_class(device), XO15_SCI_CLASS);
-+
-+	/* Get GPE bit assignment (EC events). */
-+	status = acpi_evaluate_integer(device->handle, "_GPE", NULL, &tmp);
-+	if (ACPI_FAILURE(status))
-+		return -EINVAL;
-+
-+	xo15_sci_gpe = tmp;
-+	status = acpi_install_gpe_handler(NULL, xo15_sci_gpe,
-+					  ACPI_GPE_EDGE_TRIGGERED,
-+					  xo15_sci_gpe_handler, device);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
-+
-+	dev_info(&device->dev, "Initialized, GPE = 0x%lx\n", xo15_sci_gpe);
-+
-+	/* Flush queue, and enable all SCI events */
-+	process_sci_queue();
-+	olpc_ec_mask_write(EC_SCI_SRC_ALL);
-+
-+	acpi_enable_gpe(NULL, xo15_sci_gpe);
-+
-+	/* Enable wake-on-EC */
-+	if (device->wakeup.flags.valid)
-+		device_set_wakeup_enable(&device->dev, true);
++	if (device_may_wakeup(&ebook_switch_idev->dev))
++		olpc_ec_wakeup_set(EC_SCI_SRC_EBOOK);
++	else
++		olpc_ec_wakeup_clear(EC_SCI_SRC_EBOOK);
 +
 +	return 0;
 +}
 +
-+static int xo15_sci_remove(struct acpi_device *device, int type)
-+{
-+	acpi_disable_gpe(NULL, xo15_sci_gpe);
-+	acpi_remove_gpe_handler(NULL, xo15_sci_gpe, xo15_sci_gpe_handler);
-+	cancel_work_sync(&sci_work);
-+	return 0;
-+}
-+
-+static int xo15_sci_resume(struct acpi_device *device)
++static int xo1_sci_resume(struct platform_device *pdev)
 +{
 +	/* Enable all EC events */
 +	olpc_ec_mask_write(EC_SCI_SRC_ALL);
+ 	return 0;
+ }
+ 
+@@ -104,6 +177,37 @@ static int __devinit setup_sci_interrupt(struct platform_device *pdev)
+ 	return r;
+ }
+ 
++static int __devinit setup_ec_sci(void)
++{
++	int r;
 +
-+	/* Power/battery status might have changed */
-+	battery_status_changed();
-+	ac_status_changed();
++	r = gpio_request(OLPC_GPIO_ECSCI, "OLPC-ECSCI");
++	if (r)
++		return r;
++
++	gpio_direction_input(OLPC_GPIO_ECSCI);
++
++	/* Clear pending EC SCI events */
++	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_NEGATIVE_EDGE_STS);
++	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_POSITIVE_EDGE_STS);
++
++	/* Enable EC SCI events */
++	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_EVENTS_ENABLE);
++
++	/* Set the SCI to cause a PME event on group 7 */
++	cs5535_gpio_setup_event(OLPC_GPIO_ECSCI, 7, 1);
++
++	/* And have group 7 also fire the SCI interrupt */
++	cs5535_gpio_set_irq(7, sci_irq);
 +
 +	return 0;
 +}
 +
-+static const struct acpi_device_id xo15_sci_device_ids[] = {
-+	{"XO15EC", 0},
-+	{"", 0},
-+};
-+
-+static struct acpi_driver xo15_sci_drv = {
-+	.name = DRV_NAME,
-+	.class = XO15_SCI_CLASS,
-+	.ids = xo15_sci_device_ids,
-+	.ops = {
-+		.add = xo15_sci_add,
-+		.remove = xo15_sci_remove,
-+		.resume = xo15_sci_resume,
-+	},
-+};
-+
-+static int __init xo15_sci_init(void)
++static void free_ec_sci(void)
 +{
-+	return acpi_bus_register_driver(&xo15_sci_drv);
++	gpio_free(OLPC_GPIO_ECSCI);
 +}
-+device_initcall(xo15_sci_init);
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index 72fd041..8b9940e 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -222,6 +222,15 @@ bool olpc_ec_wakeup_available(void)
- 		return true;
- #endif
- 
-+	/*
-+	 * XO-1.5 EC wakeups are available when olpc-xo15-sci driver is
-+	 * compiled in
-+	 */
-+#ifdef CONFIG_OLPC_XO15_SCI
-+	if (olpc_platform_info.boardrev >= olpc_board_pre(0xd0)) /* XO-1.5 */
-+		return true;
-+#endif
 +
- 	return false;
+ static int __devinit setup_power_button(struct platform_device *pdev)
+ {
+ 	int r;
+@@ -135,6 +239,37 @@ static void free_power_button(void)
+ 	input_free_device(power_button_idev);
  }
- EXPORT_SYMBOL_GPL(olpc_ec_wakeup_available);
+ 
++static int __devinit setup_ebook_switch(struct platform_device *pdev)
++{
++	int r;
++
++	ebook_switch_idev = input_allocate_device();
++	if (!ebook_switch_idev)
++		return -ENOMEM;
++
++	ebook_switch_idev->name = "EBook Switch";
++	ebook_switch_idev->phys = DRV_NAME "/input1";
++	set_bit(EV_SW, ebook_switch_idev->evbit);
++	set_bit(SW_TABLET_MODE, ebook_switch_idev->swbit);
++
++	ebook_switch_idev->dev.parent = &pdev->dev;
++	device_set_wakeup_capable(&ebook_switch_idev->dev, true);
++
++	r = input_register_device(ebook_switch_idev);
++	if (r) {
++		dev_err(&pdev->dev, "failed to register ebook switch: %d\n", r);
++		input_free_device(ebook_switch_idev);
++	}
++
++	return r;
++}
++
++static void free_ebook_switch(void)
++{
++	input_unregister_device(ebook_switch_idev);
++	input_free_device(ebook_switch_idev);
++}
++
+ static int __devinit xo1_sci_probe(struct platform_device *pdev)
+ {
+ 	struct resource *res;
+@@ -159,10 +294,39 @@ static int __devinit xo1_sci_probe(struct platform_device *pdev)
+ 	if (r)
+ 		return r;
+ 
++	r = setup_ebook_switch(pdev);
++	if (r)
++		goto err_ebook;
++
++	r = setup_ec_sci();
++	if (r)
++		goto err_ecsci;
++
++	/* Enable PME generation for EC-generated events */
++	outl(CS5536_GPIOM7_PME_EN, acpi_base + CS5536_PM_GPE0_EN);
++
++	/* Clear pending events */
++	outl(0xffffffff, acpi_base + CS5536_PM_GPE0_STS);
++	process_sci_queue(false);
++
++	/* Initial sync */
++	send_ebook_state();
++
+ 	r = setup_sci_interrupt(pdev);
+ 	if (r)
+-		free_power_button();
++		goto err_sci;
+ 
++	/* Enable all EC events */
++	olpc_ec_mask_write(EC_SCI_SRC_ALL);
++
++	return r;
++
++err_sci:
++	free_ec_sci();
++err_ecsci:
++	free_ebook_switch();
++err_ebook:
++	free_power_button();
+ 	return r;
+ }
+ 
+@@ -170,6 +334,9 @@ static int __devexit xo1_sci_remove(struct platform_device *pdev)
+ {
+ 	mfd_cell_disable(pdev);
+ 	free_irq(sci_irq, pdev);
++	cancel_work_sync(&sci_work);
++	free_ec_sci();
++	free_ebook_switch();
+ 	free_power_button();
+ 	acpi_base = 0;
+ 	return 0;
+@@ -182,6 +349,7 @@ static struct platform_driver xo1_sci_driver = {
+ 	.probe = xo1_sci_probe,
+ 	.remove = __devexit_p(xo1_sci_remove),
+ 	.suspend = xo1_sci_suspend,
++	.resume = xo1_sci_resume,
+ };
+ 
+ static int __init xo1_sci_init(void)
+diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
+index 6f78235..95c16ac 100644
+--- a/include/linux/cs5535.h
++++ b/include/linux/cs5535.h
+@@ -73,6 +73,7 @@
+ #define CS5536_PM1_EN		0x02
+ #define CS5536_PM1_CNT		0x08
+ #define CS5536_PM_GPE0_STS	0x18
++#define CS5536_PM_GPE0_EN	0x1c
+ 
+ /* CS5536_PM1_STS bits */
+ #define CS5536_WAK_FLAG		(1 << 15)
+@@ -81,6 +82,13 @@
+ /* CS5536_PM1_EN bits */
+ #define CS5536_PM_PWRBTN	(1 << 8)
+ 
++/* CS5536_PM_GPE0_STS bits */
++#define CS5536_GPIOM7_PME_FLAG	(1 << 31)
++#define CS5536_GPIOM6_PME_FLAG	(1 << 30)
++
++/* CS5536_PM_GPE0_EN bits */
++#define CS5536_GPIOM7_PME_EN	(1 << 31)
++
+ /* VSA2 magic values */
+ #define VSA_VRC_INDEX		0xAC1C
+ #define VSA_VRC_DATA		0xAC1E
 -- 
 1.7.4.4
 
