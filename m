@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab1D3EOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 00:14:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31266 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab1D3EOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 00:14:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,292,1301900400"; 
-   d="scan'208";a="636105208"
-Subject: Re: [RESEND PATCH 1/2] perf probe: Fix the missed parameter
- initialization
-From: Lin Ming <ming.m.lin@intel.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110429173332.GA3273@ghostprotocols.net>
-References: <1304066518-30420-1-git-send-email-ming.m.lin@intel.com>
-	 <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
-	 <20110429173332.GA3273@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Apr 2011 12:14:54 +0800
-Message-Id: <1304136894.3761.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753997Ab1D3EUw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 00:20:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54430 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751882Ab1D3EUv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 00:20:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <web-515901951@zbackend1.aha.ru>
+References: <web-515866242@zbackend1.aha.ru> <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
+ <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com> <20110430025545.GI9487@ZenIV.linux.org.uk>
+ <20110430030243.GJ9487@ZenIV.linux.org.uk> <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
+ <web-515898476@zbackend1.aha.ru> <BANLkTi=ujRJYG80F=HKqgz2nPeE5Gro+JA@mail.gmail.com>
+ <web-515901951@zbackend1.aha.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 29 Apr 2011 21:20:29 -0700
+Message-ID: <BANLkTi=o7NynvukkzE5ZhRHPu43=OV0_Ow@mail.gmail.com>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: werner <w.landgraf@ru.ru>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-30 at 01:33 +0800, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Apr 29, 2011 at 08:41:57AM +0000, Lin Ming escreveu:
-> > pubname_callback_param::found should be initialized to 0 in fastpath lookup.
-> 
-> 
-> Is this really needed? Or is this just to stress it, for documentational
-> purposes?
+2011/4/29 werner <w.landgraf@ru.ru>:
+> The problem that the computer crashs if zip, unzip or move a big file,
+> started with -rc1
 
-Yes, this is really needed.
+Please do try to bisect..
 
-It should be initialized to 0, and pubname_search_cb will set it to 1 if
-the function is found.
+> For being -rc5 , that kernel is rather bad. šI hope you get through to
+> correct it until -rc10
 
->  
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  tools/perf/util/probe-finder.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> > index a7c7145..3b9d0b8 100644
-> > --- a/tools/perf/util/probe-finder.c
-> > +++ b/tools/perf/util/probe-finder.c
-> > @@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
-> >  			.file	  = pp->file,
-> >  			.cu_die	  = &pf->cu_die,
-> >  			.sp_die	  = &pf->sp_die,
-> > +			.found	  = 0,
-> >  		};
-> >  		struct dwarf_callback_param probe_param = {
-> >  			.data = pf,
-> > -- 
-> > 1.7.4.4
+Quite frankly, right now I think you're the only one that has reported
+these kinds of problems, so we will need to rely on you to figure out
+what is so odd about your setup.
 
+If you can pinpoint when the crashes happened, that would help a lot.
 
+Also, the crash that happens not-at-boot is in many ways way more
+important. Clearly you have something odd going on after a reboot, and
+I'd love to figure that out too, but in many ways the unzip one is way
+more important.
+
+Sadly, your previous mail had a nice picture, but the important
+information had scrolled off the screen because of the ata1 exception
+and command failed printouts. Any chance you could get a picture of
+just the oops? If worst comes to worst, you might even have to disable
+those ata debug printouts (normally they are really important, but if
+they make the earlier oops scroll off the screen, they hurt more than
+they help).
+
+Oh, and please do an lspci -vvxx and a working dmesg too for that machine.
+
+                  Linus
