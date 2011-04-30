@@ -1,277 +1,837 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab1D3SZP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 14:25:15 -0400
-Received: from the.earth.li ([46.43.34.31]:46322 "EHLO the.earth.li"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752106Ab1D3SZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 14:25:13 -0400
-Date: Sat, 30 Apr 2011 11:25:12 -0700
-From: Jonathan McDowell <noodles@earth.li>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cleanup pc87413 watchdog driver to use
- request_muxed_region for SuperIO area
-Message-ID: <20110430182512.GK4835@earth.li>
-References: <20110414190238.GI4835@earth.li>
+	id S1756682Ab1D3SbN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 14:31:13 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:55849 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755625Ab1D3SbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 14:31:08 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Sat, 30 Apr 2011 14:31:03 -0400
+Message-ID: <web-516065216@zbackend1.aha.ru>
+In-Reply-To: <BANLkTimu=XAj5JDewT9OGTCNHZBf2Oa5+Q@mail.gmail.com>
+References: <web-515866242@zbackend1.aha.ru>
+ <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
+ <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com>
+ <20110430025545.GI9487@ZenIV.linux.org.uk>
+ <20110430030243.GJ9487@ZenIV.linux.org.uk>
+ <BANLkTi=9Zq8AdGMyfwyp1nwyjD+PCGQydA@mail.gmail.com>
+ <web-515898476@zbackend1.aha.ru>
+ <BANLkTi=ujRJYG80F=HKqgz2nPeE5Gro+JA@mail.gmail.com>
+ <web-515901951@zbackend1.aha.ru>
+ <BANLkTi=o7NynvukkzE5ZhRHPu43=OV0_Ow@mail.gmail.com>
+ <web-515904487@zbackend1.aha.ru>
+ <BANLkTimDHTB+NF8EzjvjBvu0e+MHt8tP1Q@mail.gmail.com>
+ <web-515907842@zbackend1.aha.ru>
+ <BANLkTimu=XAj5JDewT9OGTCNHZBf2Oa5+Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414190238.GI4835@earth.li>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I haven't seen any response to the below. Did I send it to the correct
-places?
+Since years it's all the time that I compile the kernel 
+with everything enabled, because these kernel builds are 
+for a distro, and should work on any computer.  Normally, 
+things going stable at -rc3 or -rc4 , often already at 
+-rc2.
 
-On Thu, Apr 14, 2011 at 12:02:38PM -0700, Jonathan McDowell wrote:
-> Inspired by Nat Gurumoorthy's recent patches for cleaning up the it87
-> drivers to use request_muxed_region for accessing the SuperIO area on
-> these chips, and the fact I have a GPIO driver for the pc8741x basically
-> ready for submission, here is a patch to cleanup the pc87413 watchdog
-> driver to use request_muxed_region for accessing the SuperIO area.
-> 
-> It also pulls out the details about the SWC IO area on initial driver
-> load, and properly does a request_region for that area - there's no
-> requirement to touch the SuperIO area after doing the initial watchdog
-> enable and IO base retrieval.
-> 
-> While I have hardware with a pc87413 on it it is not wired in a way that
-> allows the watchdog to reboot the machine, so I have not been able to
-> fully test these changes - I have checked that the driver correctly
-> initialises itself still and requests the SWC io region ok.
-> 
-> Signed-Off-By: Jonathan McDowell <noodles@earth.li>
-> 
-> -------
-> diff --git a/drivers/watchdog/pc87413_wdt.c b/drivers/watchdog/pc87413_wdt.c
-> index b7c1390..e78d899 100644
-> --- a/drivers/watchdog/pc87413_wdt.c
-> +++ b/drivers/watchdog/pc87413_wdt.c
-> @@ -56,6 +56,7 @@
->  #define IO_DEFAULT	0x2E		/* Address used on Portwell Boards */
->  
->  static int io = IO_DEFAULT;
-> +static int swc_base_addr = -1;
->  
->  static int timeout = DEFAULT_TIMEOUT;	/* timeout value */
->  static unsigned long timer_enabled;	/* is the timer enabled? */
-> @@ -116,9 +117,8 @@ static inline void pc87413_enable_swc(void)
->  
->  /* Read SWC I/O base address */
->  
-> -static inline unsigned int pc87413_get_swc_base(void)
-> +static void pc87413_get_swc_base_addr(void)
->  {
-> -	unsigned int  swc_base_addr = 0;
->  	unsigned char addr_l, addr_h = 0;
->  
->  	/* Step 3: Read SWC I/O Base Address */
-> @@ -136,12 +136,11 @@ static inline unsigned int pc87413_get_swc_base(void)
->  		"Read SWC I/O Base Address: low %d, high %d, res %d\n",
->  						addr_l, addr_h, swc_base_addr);
->  #endif
-> -	return swc_base_addr;
->  }
->  
->  /* Select Bank 3 of SWC */
->  
-> -static inline void pc87413_swc_bank3(unsigned int swc_base_addr)
-> +static inline void pc87413_swc_bank3(void)
->  {
->  	/* Step 4: Select Bank3 of SWC */
->  	outb_p(inb(swc_base_addr + 0x0f) | 0x03, swc_base_addr + 0x0f);
-> @@ -152,8 +151,7 @@ static inline void pc87413_swc_bank3(unsigned int swc_base_addr)
->  
->  /* Set watchdog timeout to x minutes */
->  
-> -static inline void pc87413_programm_wdto(unsigned int swc_base_addr,
-> -					 char pc87413_time)
-> +static inline void pc87413_programm_wdto(char pc87413_time)
->  {
->  	/* Step 5: Programm WDTO, Twd. */
->  	outb_p(pc87413_time, swc_base_addr + WDTO);
-> @@ -164,7 +162,7 @@ static inline void pc87413_programm_wdto(unsigned int swc_base_addr,
->  
->  /* Enable WDEN */
->  
-> -static inline void pc87413_enable_wden(unsigned int swc_base_addr)
-> +static inline void pc87413_enable_wden(void)
->  {
->  	/* Step 6: Enable WDEN */
->  	outb_p(inb(swc_base_addr + WDCTL) | 0x01, swc_base_addr + WDCTL);
-> @@ -174,7 +172,7 @@ static inline void pc87413_enable_wden(unsigned int swc_base_addr)
->  }
->  
->  /* Enable SW_WD_TREN */
-> -static inline void pc87413_enable_sw_wd_tren(unsigned int swc_base_addr)
-> +static inline void pc87413_enable_sw_wd_tren(void)
->  {
->  	/* Enable SW_WD_TREN */
->  	outb_p(inb(swc_base_addr + WDCFG) | 0x80, swc_base_addr + WDCFG);
-> @@ -185,7 +183,7 @@ static inline void pc87413_enable_sw_wd_tren(unsigned int swc_base_addr)
->  
->  /* Disable SW_WD_TREN */
->  
-> -static inline void pc87413_disable_sw_wd_tren(unsigned int swc_base_addr)
-> +static inline void pc87413_disable_sw_wd_tren(void)
->  {
->  	/* Disable SW_WD_TREN */
->  	outb_p(inb(swc_base_addr + WDCFG) & 0x7f, swc_base_addr + WDCFG);
-> @@ -196,7 +194,7 @@ static inline void pc87413_disable_sw_wd_tren(unsigned int swc_base_addr)
->  
->  /* Enable SW_WD_TRG */
->  
-> -static inline void pc87413_enable_sw_wd_trg(unsigned int swc_base_addr)
-> +static inline void pc87413_enable_sw_wd_trg(void)
->  {
->  	/* Enable SW_WD_TRG */
->  	outb_p(inb(swc_base_addr + WDCTL) | 0x80, swc_base_addr + WDCTL);
-> @@ -207,7 +205,7 @@ static inline void pc87413_enable_sw_wd_trg(unsigned int swc_base_addr)
->  
->  /* Disable SW_WD_TRG */
->  
-> -static inline void pc87413_disable_sw_wd_trg(unsigned int swc_base_addr)
-> +static inline void pc87413_disable_sw_wd_trg(void)
->  {
->  	/* Disable SW_WD_TRG */
->  	outb_p(inb(swc_base_addr + WDCTL) & 0x7f, swc_base_addr + WDCTL);
-> @@ -222,18 +220,13 @@ static inline void pc87413_disable_sw_wd_trg(unsigned int swc_base_addr)
->  
->  static void pc87413_enable(void)
->  {
-> -	unsigned int swc_base_addr;
-> -
->  	spin_lock(&io_lock);
->  
-> -	pc87413_select_wdt_out();
-> -	pc87413_enable_swc();
-> -	swc_base_addr = pc87413_get_swc_base();
-> -	pc87413_swc_bank3(swc_base_addr);
-> -	pc87413_programm_wdto(swc_base_addr, timeout);
-> -	pc87413_enable_wden(swc_base_addr);
-> -	pc87413_enable_sw_wd_tren(swc_base_addr);
-> -	pc87413_enable_sw_wd_trg(swc_base_addr);
-> +	pc87413_swc_bank3();
-> +	pc87413_programm_wdto(timeout);
-> +	pc87413_enable_wden();
-> +	pc87413_enable_sw_wd_tren();
-> +	pc87413_enable_sw_wd_trg();
->  
->  	spin_unlock(&io_lock);
->  }
-> @@ -242,17 +235,12 @@ static void pc87413_enable(void)
->  
->  static void pc87413_disable(void)
->  {
-> -	unsigned int swc_base_addr;
-> -
->  	spin_lock(&io_lock);
->  
-> -	pc87413_select_wdt_out();
-> -	pc87413_enable_swc();
-> -	swc_base_addr = pc87413_get_swc_base();
-> -	pc87413_swc_bank3(swc_base_addr);
-> -	pc87413_disable_sw_wd_tren(swc_base_addr);
-> -	pc87413_disable_sw_wd_trg(swc_base_addr);
-> -	pc87413_programm_wdto(swc_base_addr, 0);
-> +	pc87413_swc_bank3();
-> +	pc87413_disable_sw_wd_tren();
-> +	pc87413_disable_sw_wd_trg();
-> +	pc87413_programm_wdto(0);
->  
->  	spin_unlock(&io_lock);
->  }
-> @@ -261,20 +249,15 @@ static void pc87413_disable(void)
->  
->  static void pc87413_refresh(void)
->  {
-> -	unsigned int swc_base_addr;
-> -
->  	spin_lock(&io_lock);
->  
-> -	pc87413_select_wdt_out();
-> -	pc87413_enable_swc();
-> -	swc_base_addr = pc87413_get_swc_base();
-> -	pc87413_swc_bank3(swc_base_addr);
-> -	pc87413_disable_sw_wd_tren(swc_base_addr);
-> -	pc87413_disable_sw_wd_trg(swc_base_addr);
-> -	pc87413_programm_wdto(swc_base_addr, timeout);
-> -	pc87413_enable_wden(swc_base_addr);
-> -	pc87413_enable_sw_wd_tren(swc_base_addr);
-> -	pc87413_enable_sw_wd_trg(swc_base_addr);
-> +	pc87413_swc_bank3();
-> +	pc87413_disable_sw_wd_tren();
-> +	pc87413_disable_sw_wd_trg();
-> +	pc87413_programm_wdto(timeout);
-> +	pc87413_enable_wden();
-> +	pc87413_enable_sw_wd_tren();
-> +	pc87413_enable_sw_wd_trg();
->  
->  	spin_unlock(&io_lock);
->  }
-> @@ -528,7 +511,8 @@ static int __init pc87413_init(void)
->  	printk(KERN_INFO PFX "Version " VERSION " at io 0x%X\n",
->  							WDT_INDEX_IO_PORT);
->  
-> -	/* request_region(io, 2, "pc87413"); */
-> +	if (!request_muxed_region(io, 2, MODNAME))
-> +		return -EBUSY;
->  
->  	ret = register_reboot_notifier(&pc87413_notifier);
->  	if (ret != 0) {
-> @@ -541,12 +525,32 @@ static int __init pc87413_init(void)
->  		printk(KERN_ERR PFX
->  			"cannot register miscdev on minor=%d (err=%d)\n",
->  			WATCHDOG_MINOR, ret);
-> -		unregister_reboot_notifier(&pc87413_notifier);
-> -		return ret;
-> +		goto reboot_unreg;
->  	}
->  	printk(KERN_INFO PFX "initialized. timeout=%d min \n", timeout);
-> +
-> +	pc87413_select_wdt_out();
-> +	pc87413_enable_swc();
-> +	pc87413_get_swc_base_addr();
-> +
-> +	if (!request_region(swc_base_addr, 0x20, MODNAME)) {
-> +		printk(KERN_ERR PFX
-> +			"cannot request SWC region at 0x%x\n", swc_base_addr);
-> +		ret = -EBUSY;
-> +		goto misc_unreg;
-> +	}
-> +
->  	pc87413_enable();
-> +
-> +	release_region(io, 2);
->  	return 0;
-> +
-> +misc_unreg:
-> +	misc_deregister(&pc87413_miscdev);
-> +reboot_unreg:
-> +	unregister_reboot_notifier(&pc87413_notifier);
-> +	release_region(io, 2);
-> +	return ret;
->  }
->  
->  /**
-> @@ -569,7 +573,7 @@ static void __exit pc87413_exit(void)
->  
->  	misc_deregister(&pc87413_miscdev);
->  	unregister_reboot_notifier(&pc87413_notifier);
-> -	/* release_region(io, 2); */
-> +	release_region(swc_base_addr, 0x20);
->  
->  	printk(KERN_INFO MODNAME " watchdog component driver removed.\n");
->  }
-> 
-> -------
+Beside of with my computer, essentially the same problems 
+also happens with a laptop of a friend.
 
-J.
+Also, a big problem are the (after-boot-) crashs if 
+zipping / unzipping big files.  Packages I can build only 
+with 2.6.38.4, not with 2.6.39-rcX
 
--- 
-/-\                             |  Do you believe in happy endings?
-|@/  Debian GNU/Linux Developer |
-\-                              |
+Below is the diff between the config of 2.6.38.4 and 2.6 
+39-rc5-git3 .  You could inspect them what potentially 
+could explain the reported problems.  But I think at least 
+the problems which happens on my computer, and on that of 
+the friend, are regressions, because none of the new 
+staging drivers we use.
+
+wl
+
+===============
+3,4c3,4
+< # Linux/i386 2.6.38.4 Kernel Configuration
+< # Thu Apr 21 22:06:47 2011
+---
+> # Linux/i386 2.6.39-rc5-git2 Kernel Configuration
+> # Fri Apr 29 15:48:26 2011
+22c22
+< # CONFIG_NEED_DMA_MAP_STATE is not set
+---
+> CONFIG_NEED_DMA_MAP_STATE=y
+48a49
+> CONFIG_HAVE_INTEL_TXT=y
+51d51
+< CONFIG_X86_TRAMPOLINE=y
+64d63
+< CONFIG_LOCK_KERNEL=y
+85a85
+> # CONFIG_FHANDLE is not set
+97d96
+< # CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED is not set
+99a99
+> CONFIG_GENERIC_IRQ_SHOW=y
+101,103c101
+< # CONFIG_AUTO_IRQ_AFFINITY is not set
+< # CONFIG_IRQ_PER_CPU is not set
+< # CONFIG_HARDIRQS_SW_RESEND is not set
+---
+> CONFIG_IRQ_FORCED_THREADING=y
+119c117,129
+< # CONFIG_CGROUPS is not set
+---
+> CONFIG_CGROUPS=y
+> # CONFIG_CGROUP_DEBUG is not set
+> # CONFIG_CGROUP_NS is not set
+> # CONFIG_CGROUP_FREEZER is not set
+> # CONFIG_CGROUP_DEVICE is not set
+> # CONFIG_CPUSETS is not set
+> # CONFIG_CGROUP_CPUACCT is not set
+> # CONFIG_RESOURCE_COUNTERS is not set
+> # CONFIG_CGROUP_PERF is not set
+> CONFIG_CGROUP_SCHED=y
+> CONFIG_FAIR_GROUP_SCHED=y
+> # CONFIG_RT_GROUP_SCHED is not set
+> # CONFIG_BLK_CGROUP is not set
+126c136
+< # CONFIG_SCHED_AUTOGROUP is not set
+---
+> CONFIG_SCHED_AUTOGROUP=y
+140d149
+< CONFIG_EMBEDDED=y
+157a167
+> CONFIG_EMBEDDED=y
+275c285
+< CONFIG_X86_32_IRIS=m
+---
+> CONFIG_X86_32_IRIS=y
+287d296
+< CONFIG_X86_CPU=y
+311c320
+< # CONFIG_IOMMU_API is not set
+---
+> CONFIG_IOMMU_API=y
+411,414d419
+< CONFIG_PM=y
+< # CONFIG_PM_DEBUG is not set
+< CONFIG_PM_SLEEP_SMP=y
+< CONFIG_PM_SLEEP=y
+416a422
+> CONFIG_HIBERNATE_CALLBACKS=y
+418a425,426
+> CONFIG_PM_SLEEP=y
+> CONFIG_PM_SLEEP_SMP=y
+420c428,429
+< CONFIG_PM_OPS=y
+---
+> CONFIG_PM=y
+> # CONFIG_PM_DEBUG is not set
+448a458
+> # CONFIG_ACPI_APEI_PCIEAER is not set
+508c518
+< # CONFIG_INTEL_IDLE is not set
+---
+> CONFIG_INTEL_IDLE=y
+524a535,537
+> CONFIG_DMAR=y
+> CONFIG_DMAR_DEFAULT_ON=y
+> CONFIG_DMAR_FLOPPY_WA=y
+534c547
+< # CONFIG_PCI_MSI is not set
+---
+> CONFIG_PCI_MSI=y
+538a552
+> CONFIG_PCI_LABEL=y
+553,554d566
+< CONFIG_OLPC_OPENFIRMWARE=y
+< CONFIG_OLPC_OPENFIRMWARE_DT=y
+586a599,607
+> CONFIG_RAPIDIO=y
+> CONFIG_RAPIDIO_DISC_TIMEOUT=30
+> CONFIG_RAPIDIO_ENABLE_RX_TX_PORTS=y
+> CONFIG_RAPIDIO_TSI57X=y
+> CONFIG_RAPIDIO_CPS_XX=y
+> CONFIG_RAPIDIO_TSI568=y
+> CONFIG_RAPIDIO_CPS_GEN2=y
+> CONFIG_RAPIDIO_TSI500=y
+> CONFIG_RAPIDIO_DEBUG=y
+616,618c637
+< CONFIG_ASK_IP_FIB_HASH=y
+< # CONFIG_IP_FIB_TRIE is not set
+< CONFIG_IP_FIB_HASH=y
+---
+> CONFIG_IP_FIB_TRIE_STATS=y
+621a641
+> CONFIG_IP_ROUTE_CLASSID=y
+626c646
+< CONFIG_NET_IPIP=m
+---
+> CONFIG_NET_IPIP=y
+640c660
+< CONFIG_INET_TUNNEL=m
+---
+> CONFIG_INET_TUNNEL=y
+645,646c665,666
+< CONFIG_INET_DIAG=m
+< CONFIG_INET_TCP_DIAG=m
+---
+> CONFIG_INET_DIAG=y
+> CONFIG_INET_TCP_DIAG=y
+664c684
+< CONFIG_IPV6=m
+---
+> CONFIG_IPV6=y
+705a726
+> # CONFIG_NF_CONNTRACK_TIMESTAMP is not set
+713a735
+> CONFIG_NF_CONNTRACK_BROADCAST=m
+714a737
+> CONFIG_NF_CONNTRACK_SNMP=m
+727a751
+> # CONFIG_NETFILTER_XT_SET is not set
+731a756
+> CONFIG_NETFILTER_XT_TARGET_AUDIT=m
+753a779
+> CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=m
+761a788
+> CONFIG_NETFILTER_XT_MATCH_DEVGROUP=m
+790a818,829
+> CONFIG_IP_SET=m
+> CONFIG_IP_SET_MAX=256
+> CONFIG_IP_SET_BITMAP_IP=m
+> CONFIG_IP_SET_BITMAP_IPMAC=m
+> CONFIG_IP_SET_BITMAP_PORT=m
+> CONFIG_IP_SET_HASH_IP=m
+> CONFIG_IP_SET_HASH_IPPORT=m
+> CONFIG_IP_SET_HASH_IPPORTIP=m
+> CONFIG_IP_SET_HASH_IPPORTNET=m
+> CONFIG_IP_SET_HASH_NET=m
+> CONFIG_IP_SET_HASH_NETPORT=m
+> CONFIG_IP_SET_LIST_SET=m
+835d873
+< # CONFIG_IP_NF_MATCH_ADDRTYPE is not set
+929c967
+< CONFIG_IP_SCTP=m
+---
+> CONFIG_IP_SCTP=y
+941d978
+< CONFIG_TIPC_NODES=255
+945,946c982,983
+< CONFIG_ATM=m
+< CONFIG_ATM_CLIP=m
+---
+> CONFIG_ATM=y
+> CONFIG_ATM_CLIP=y
+948,949c985,986
+< CONFIG_ATM_LANE=m
+< CONFIG_ATM_MPOA=m
+---
+> CONFIG_ATM_LANE=y
+> CONFIG_ATM_MPOA=y
+992c1029
+< CONFIG_WAN_ROUTER=m
+---
+> CONFIG_WAN_ROUTER=y
+994d1030
+< # CONFIG_PHONET_PIPECTRLR is not set
+1007a1044
+> # CONFIG_NET_SCH_SFB is not set
+1014a1052,1053
+> # CONFIG_NET_SCH_MQPRIO is not set
+> # CONFIG_NET_SCH_CHOKE is not set
+1024d1062
+< CONFIG_NET_CLS_ROUTE=y
+1031a1070
+> # CONFIG_NET_CLS_CGROUP is not set
+1050a1090
+> CONFIG_RFS_ACCEL=y
+1102a1143,1144
+> CONFIG_CAN_C_CAN=m
+> CONFIG_CAN_C_CAN_PLATFORM=m
+1170,1171c1212,1213
+< CONFIG_BT_L2CAP=m
+< CONFIG_BT_SCO=m
+---
+> CONFIG_BT_L2CAP=y
+> CONFIG_BT_SCO=y
+1200a1243
+> CONFIG_BT_WILINK=m
+1239c1282
+< CONFIG_RFKILL=m
+---
+> CONFIG_RFKILL=y
+1267a1311
+> CONFIG_ARCH_NO_SYSDEV_OPS=y
+1273d1316
+< # CONFIG_MTD_CONCAT is not set
+1296c1339
+< CONFIG_SM_FTL=m
+---
+> CONFIG_SM_FTL=y
+1297a1341
+> CONFIG_MTD_SWAP=y
+1338a1383
+> CONFIG_MTD_SC520CDP=y
+1355a1401
+> CONFIG_MTD_LATCH_ADDR=y
+1392a1439,1440
+> CONFIG_MTD_NAND_BCH=y
+> CONFIG_MTD_NAND_ECC_BCH=y
+1425,1428d1472
+< 
+< #
+< # UBI debugging options
+< #
+1444a1489
+> CONFIG_OF_PCI=y
+1521c1566
+< # CONFIG_BLK_DEV_HD is not set
+---
+> CONFIG_BLK_DEV_HD=y
+1522a1568
+> CONFIG_SENSORS_LIS3LV02D=y
+1540c1586
+< CONFIG_ISL29020=m
+---
+> CONFIG_ISL29020=y
+1572a1619
+> CONFIG_SENSORS_LIS3_I2C=m
+1698d1744
+< CONFIG_SCSI_SAS_LIBSAS_DEBUG=y
+1705c1751
+< CONFIG_SCSI_CXGB4_ISCSI=m
+---
+> CONFIG_SCSI_CXGB4_ISCSI=y
+1706a1753
+> CONFIG_SCSI_BNX2X_FCOE=y
+1709c1756
+< CONFIG_SCSI_HPSA=m
+---
+> CONFIG_SCSI_HPSA=y
+1711c1758
+< CONFIG_SCSI_3W_SAS=m
+---
+> CONFIG_SCSI_3W_SAS=y
+1751c1798
+< CONFIG_VMWARE_PVSCSI=m
+---
+> CONFIG_VMWARE_PVSCSI=y
+1813c1860
+< CONFIG_SCSI_PM8001=m
+---
+> CONFIG_SCSI_PM8001=y
+1873a1921
+> CONFIG_PATA_ARASAN_CF=y
+1956c2004,2010
+< # CONFIG_TARGET_CORE is not set
+---
+> CONFIG_DM_FLAKEY=y
+> CONFIG_TARGET_CORE=m
+> CONFIG_TCM_IBLOCK=m
+> CONFIG_TCM_FILEIO=m
+> CONFIG_TCM_PSCSI=m
+> CONFIG_LOOPBACK_TARGET=m
+> # CONFIG_LOOPBACK_TARGET_CDB_DEBUG is not set
+2155d2208
+< # CONFIG_R8169_VLAN is not set
+2178d2230
+< CONFIG_CHELSIO_T3_DEPENDS=y
+2180,2182c2232
+< CONFIG_CHELSIO_T4_DEPENDS=y
+< CONFIG_CHELSIO_T4=m
+< CONFIG_CHELSIO_T4VF_DEPENDS=y
+---
+> CONFIG_CHELSIO_T4=y
+2187a2238
+> CONFIG_IXGBEVF=m
+2243a2295
+> # CONFIG_ATH5K_TRACER is not set
+2294c2346,2362
+< # CONFIG_IWLWIFI is not set
+---
+> CONFIG_IWLAGN=m
+> 
+> #
+> # Debugging Options
+> #
+> # CONFIG_IWLWIFI_DEBUG is not set
+> CONFIG_IWLWIFI_DEVICE_TRACING=y
+> CONFIG_IWL_P2P=y
+> CONFIG_IWLWIFI_LEGACY=m
+> 
+> #
+> # Debugging Options
+> #
+> # CONFIG_IWLWIFI_LEGACY_DEBUG is not set
+> # CONFIG_IWLWIFI_LEGACY_DEVICE_TRACING is not set
+> CONFIG_IWL4965=m
+> CONFIG_IWL3945=m
+2327a2396
+> CONFIG_RT2800PCI_RT53XX=y
+2343a2413
+> CONFIG_RTL8192CU=m
+2344a2415
+> CONFIG_RTL8192C_COMMON=m
+2400a2472
+> CONFIG_USB_VL600=m
+2444c2516
+< CONFIG_ATM_DUMMY=m
+---
+> # CONFIG_ATM_DUMMY is not set
+2481a2554,2556
+> CONFIG_RIONET=m
+> CONFIG_RIONET_TX_SIZE=128
+> CONFIG_RIONET_RX_SIZE=128
+2489c2564
+< CONFIG_PLIP=m
+---
+> CONFIG_PLIP=y
+2500c2575
+< CONFIG_PPPOATM=m
+---
+> CONFIG_PPPOATM=y
+2511c2586
+< # CONFIG_NETPOLL_TRAP is not set
+---
+> CONFIG_NETPOLL_TRAP=y
+2693a2769
+> CONFIG_KEYBOARD_QT1070=y
+2776a2853
+> CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+2793d2869
+< # CONFIG_TOUCHSCREEN_QT602240 is not set
+2796a2873
+> CONFIG_TOUCHSCREEN_WM831X=y
+2819a2897
+> CONFIG_TOUCHSCREEN_TSC2005=y
+2883c2961,2964
+< CONFIG_DEVKMEM=y
+---
+> CONFIG_UNIX98_PTYS=y
+> CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+> CONFIG_LEGACY_PTYS=y
+> CONFIG_LEGACY_PTY_COUNT=256
+2885d2965
+< CONFIG_COMPUTONE=m
+2889d2968
+< CONFIG_DIGIEPCA=m
+2892d2970
+< CONFIG_ISI=m
+2895a2974,2975
+> CONFIG_NOZOMI=m
+> CONFIG_ISI=m
+2898,2899c2978
+< CONFIG_RISCOM8=m
+< CONFIG_SPECIALIX=m
+---
+> CONFIG_DEVKMEM=y
+2901,2903d2979
+< CONFIG_STALLION=m
+< CONFIG_ISTALLION=m
+< CONFIG_NOZOMI=m
+2939c3015
+< # CONFIG_SERIAL_OF_PLATFORM is not set
+---
+> CONFIG_SERIAL_OF_PLATFORM=m
+2941d3016
+< # CONFIG_SERIAL_GRLIB_GAISLER_APBUART is not set
+2948,2951d3022
+< CONFIG_UNIX98_PTYS=y
+< CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+< CONFIG_LEGACY_PTYS=y
+< CONFIG_LEGACY_PTY_COUNT=256
+2953c3024
+< CONFIG_PRINTER=m
+---
+> CONFIG_PRINTER=y
+3053a3125,3126
+> CONFIG_I2C_PXA=m
+> CONFIG_I2C_PXA_PCI=y
+3060a3134
+> CONFIG_I2C_DIOLAN_U2C=m
+3083a3158
+> CONFIG_SPI_ALTERA=m
+3087a3163
+> CONFIG_SPI_OC_TINY=m
+3210a3287,3288
+> CONFIG_BATTERY_BQ27X00_I2C=y
+> CONFIG_BATTERY_BQ27X00_PLATFORM=y
+3261a3340
+> CONFIG_SENSORS_LINEAGE=m
+3274a3354
+> CONFIG_SENSORS_LTC4151=m
+3280a3361
+> CONFIG_SENSORS_MAX6639=m
+3284a3366,3370
+> CONFIG_PMBUS=m
+> CONFIG_SENSORS_PMBUS=m
+> CONFIG_SENSORS_MAX16064=m
+> CONFIG_SENSORS_MAX34440=m
+> CONFIG_SENSORS_MAX8688=m
+3294a3381,3382
+> CONFIG_SENSORS_SCH5627=m
+> CONFIG_SENSORS_ADS1015=m
+3301a3390
+> # CONFIG_SENSORS_TWL4030_MADC is not set
+3318d3406
+< CONFIG_SENSORS_LIS3_I2C=m
+3326d3413
+< CONFIG_SENSORS_LIS3LV02D=m
+3421a3509
+> CONFIG_TPS6105X=m
+3424a3513
+> CONFIG_TWL4030_MADC=m
+3432a3522
+> CONFIG_MFD_MAX8997=y
+3451a3542
+> CONFIG_AB8500_GPADC=y
+3463c3554
+< # CONFIG_REGULATOR_DUMMY is not set
+---
+> CONFIG_REGULATOR_DUMMY=y
+3472a3564
+> CONFIG_REGULATOR_MAX8997=m
+3487a3580
+> CONFIG_REGULATOR_TPS6105X=m
+3500a3594
+> CONFIG_MEDIA_CONTROLLER=y
+3502a3597
+> CONFIG_VIDEO_V4L2_SUBDEV_API=y
+3523a3619
+> CONFIG_IR_ITE_CIR=m
+3562a3659,3661
+> CONFIG_VIDEOBUF2_CORE=m
+> CONFIG_VIDEOBUF2_MEMOPS=m
+> CONFIG_VIDEOBUF2_VMALLOC=m
+3660a3760
+> CONFIG_MEDIA_ALTERA_CI=m
+3669a3770
+> CONFIG_VIDEO_NOON010PC30=m
+3683a3785
+> CONFIG_SOC_CAMERA_OV9740=m
+3699a3802
+> CONFIG_USB_GSPCA_NW80X=m
+3725a3829
+> CONFIG_USB_GSPCA_VICAM=m
+3778a3883,3887
+> 
+> #
+> # Texas Instruments WL128x FM driver (ST based)
+> #
+> CONFIG_RADIO_WL128X=m
+3829a3939
+> CONFIG_DVB_USB_TECHNISAT_USB2=m
+3861a3972,3975
+> 
+> #
+> # Supported FireWire (IEEE 1394) Adapters
+> #
+3863,3864d3976
+< CONFIG_DVB_FIREDTV_FIREWIRE=y
+< # CONFIG_DVB_FIREDTV_IEEE1394 is not set
+3945a4058
+> CONFIG_DVB_DIB9000=m
+3948a4062
+> CONFIG_DVB_STV0367=m
+4028d4141
+< # CONFIG_DRM_I830 is not set
+4069a4183
+> CONFIG_FB_CYBER2000_DDC=y
+4157a4272
+> CONFIG_LCD_LD9040=m
+4164c4279
+< # CONFIG_BACKLIGHT_MBP_NVIDIA is not set
+---
+> CONFIG_BACKLIGHT_APPLE=m
+4391a4507,4510
+> CONFIG_SND_USB_6FIRE=m
+> CONFIG_SND_FIREWIRE=y
+> CONFIG_SND_FIREWIRE_LIB=m
+> CONFIG_SND_FIREWIRE_SPEAKERS=m
+4411a4531
+> CONFIG_SND_SOC_CS4271=m
+4414a4535
+> CONFIG_SND_SOC_DFBMCS320=m
+4415a4537
+> CONFIG_SND_SOC_MAX9850=m
+4416a4539
+> CONFIG_SND_SOC_SGTL5000=m
+4420a4544
+> CONFIG_SND_SOC_TVL320AIC32X4=m
+4457a4582
+> CONFIG_SND_SOC_WM8991=m
+4461a4587
+> CONFIG_SND_SOC_LM4857=m
+4503c4629
+< CONFIG_HID_3M_PCT=m
+---
+> CONFIG_HID_3M_PCT=y
+4509c4635
+< CONFIG_HID_CANDO=m
+---
+> CONFIG_HID_CANDO=y
+4517d4642
+< # CONFIG_HID_EGALAX is not set
+4519a4645
+> CONFIG_HID_KEYTOUCH=y
+4521,4522c4647,4648
+< CONFIG_HID_UCLOGIC=m
+< CONFIG_HID_WALTOP=m
+---
+> CONFIG_HID_UCLOGIC=y
+> CONFIG_HID_WALTOP=y
+4525a4652
+> CONFIG_HID_LCPOWER=y
+4533c4660
+< CONFIG_HID_MOSART=m
+---
+> CONFIG_HID_MOSART=y
+4535c4662
+< CONFIG_HID_MULTITOUCH=m
+---
+> CONFIG_HID_MULTITOUCH=y
+4537c4664
+< CONFIG_HID_ORTEK=m
+---
+> CONFIG_HID_ORTEK=y
+4546,4550c4673,4680
+< CONFIG_HID_QUANTA=m
+< CONFIG_HID_ROCCAT=m
+< CONFIG_HID_ROCCAT_KONE=m
+< CONFIG_HID_ROCCAT_KONEPLUS=m
+< CONFIG_HID_ROCCAT_PYRA=m
+---
+> CONFIG_HID_QUANTA=y
+> CONFIG_HID_ROCCAT=y
+> CONFIG_HID_ROCCAT_COMMON=y
+> CONFIG_HID_ROCCAT_ARVO=y
+> CONFIG_HID_ROCCAT_KONE=y
+> CONFIG_HID_ROCCAT_KONEPLUS=y
+> CONFIG_HID_ROCCAT_KOVAPLUS=y
+> CONFIG_HID_ROCCAT_PYRA=y
+4553c4683
+< CONFIG_HID_STANTUM=m
+---
+> CONFIG_HID_STANTUM=y
+4620c4750
+< CONFIG_USB_TMC=m
+---
+> CONFIG_USB_TMC=y
+4630a4761
+> CONFIG_USB_STORAGE_REALTEK=y
+4641a4773
+> CONFIG_USB_STORAGE_ENE_UB6250=y
+4744a4877
+> # CONFIG_USB_GADGET_FUSB300 is not set
+4749c4882,4883
+< # CONFIG_USB_GADGET_CI13XXX_PCI is not set
+---
+> CONFIG_USB_GADGET_CI13XXX_PCI=y
+> CONFIG_USB_CI13XXX_PCI=m
+4752,4753c4886
+< CONFIG_USB_GADGET_LANGWELL=y
+< CONFIG_USB_LANGWELL=m
+---
+> # CONFIG_USB_GADGET_LANGWELL is not set
+4818c4951
+< CONFIG_MMC_SDHCI_OF=m
+---
+> CONFIG_MMC_SDHCI_OF=y
+4822c4955
+< CONFIG_MMC_SDRICOH_CS=m
+---
+> CONFIG_MMC_SDRICOH_CS=y
+4825c4958
+< CONFIG_MMC_USHC=m
+---
+> CONFIG_MMC_USHC=y
+4839a4973
+> CONFIG_MEMSTICK_R592=y
+4846a4981
+> CONFIG_LEDS_LM3530=m
+5017,5020c5152,5155
+< CONFIG_INTEL_MID_DMAC=m
+< CONFIG_INTEL_IOATDMA=m
+< CONFIG_TIMB_DMA=m
+< CONFIG_PCH_DMA=m
+---
+> CONFIG_INTEL_MID_DMAC=y
+> CONFIG_INTEL_IOATDMA=y
+> CONFIG_TIMB_DMA=y
+> CONFIG_PCH_DMA=y
+5028,5029c5163,5164
+< CONFIG_DMATEST=m
+< CONFIG_DCA=m
+---
+> # CONFIG_DMATEST is not set
+> CONFIG_DCA=y
+5045a5181,5186
+> CONFIG_STALLION=m
+> CONFIG_ISTALLION=m
+> CONFIG_DIGIEPCA=m
+> CONFIG_RISCOM8=m
+> CONFIG_SPECIALIX=m
+> CONFIG_COMPUTONE=m
+5064,5066c5205
+< # CONFIG_USB_DABUSB is not set
+< # CONFIG_USB_SE401 is not set
+< # CONFIG_USB_VICAM is not set
+---
+> CONFIG_DVB_CXD2099=m
+5075c5214
+< # CONFIG_BRCM80211_PCI is not set
+---
+> CONFIG_BRCMSMAC=y
+5076a5216
+> CONFIG_BRCMDBG=y
+5205a5346,5348
+> CONFIG_FB_OLPC_DCON=m
+> CONFIG_FB_OLPC_DCON_1=y
+> CONFIG_FB_OLPC_DCON_1_5=y
+5215a5359,5360
+> CONFIG_RTS_PSTOR=m
+> # CONFIG_RTS_PSTOR_DEBUG is not set
+5220d5364
+< # CONFIG_AUTOFS_FS is not set
+5264a5409
+> CONFIG_IIO_KFIFO_BUF=m
+5277a5423,5424
+> CONFIG_LIS3L02DQ_BUF_KFIFO=y
+> # CONFIG_LIS3L02DQ_BUF_RING_SW is not set
+5289a5437,5439
+> CONFIG_AD7606=m
+> CONFIG_AD7606_IFACE_PARALLEL=m
+> CONFIG_AD7606_IFACE_SPI=m
+5311a5462
+> CONFIG_MAX517=m
+5331d5481
+< # CONFIG_ADIS16251 is not set
+5377a5528
+> CONFIG_IIO_SYSFS_TRIGGER=m
+5378a5530
+> CONFIG_XVMALLOC=y
+5379a5532
+> # CONFIG_ZRAM_DEBUG is not set
+5382d5534
+< CONFIG_SAMSUNG_LAPTOP=m
+5389,5393d5540
+< 
+< #
+< # Texas Instruments shared transport line discipline
+< #
+< # CONFIG_ST_BT is not set
+5399,5400d5545
+< # CONFIG_LIRC_IT87 is not set
+< # CONFIG_LIRC_ITE8709 is not set
+5408d5552
+< # CONFIG_SMB_FS is not set
+5409a5554,5556
+> CONFIG_EASYCAP_SND=y
+> # CONFIG_EASYCAP_OSS is not set
+> # CONFIG_EASYCAP_DEBUG is not set
+5436a5584
+> CONFIG_FT1000_PCMCIA=m
+5458a5607,5612
+> CONFIG_DRM_PSB=m
+> 
+> #
+> # Altera FPGA firmware download module
+> #
+> # CONFIG_ALTERA_STAPL is not set
+5460,5461c5614,5615
+< CONFIG_ACER_WMI=m
+< CONFIG_ACERHDF=m
+---
+> CONFIG_ACER_WMI=y
+> CONFIG_ACERHDF=y
+5464c5618,5619
+< CONFIG_FUJITSU_LAPTOP=m
+---
+> CONFIG_DELL_WMI_AIO=y
+> CONFIG_FUJITSU_LAPTOP=y
+5467,5468c5622,5624
+< CONFIG_HP_WMI=m
+< CONFIG_MSI_LAPTOP=m
+---
+> CONFIG_HP_ACCEL=y
+> CONFIG_HP_WMI=y
+> CONFIG_MSI_LAPTOP=y
+5470,5471c5626,5627
+< CONFIG_COMPAL_LAPTOP=m
+< CONFIG_SONY_LAPTOP=m
+---
+> CONFIG_COMPAL_LAPTOP=y
+> CONFIG_SONY_LAPTOP=y
+5473,5475c5629,5630
+< CONFIG_IDEAPAD_LAPTOP=m
+< CONFIG_THINKPAD_ACPI=m
+< CONFIG_THINKPAD_ACPI_ALSA_SUPPORT=y
+---
+> CONFIG_IDEAPAD_LAPTOP=y
+> CONFIG_THINKPAD_ACPI=y
+5481c5636
+< CONFIG_SENSORS_HDAPS=m
+---
+> CONFIG_SENSORS_HDAPS=y
+5483,5484c5638,5641
+< CONFIG_EEEPC_LAPTOP=m
+< CONFIG_EEEPC_WMI=m
+---
+> CONFIG_EEEPC_LAPTOP=y
+> CONFIG_ASUS_WMI=y
+> CONFIG_ASUS_NB_WMI=y
+> CONFIG_EEEPC_WMI=y
+5489c5646
+< CONFIG_ACPI_TOSHIBA=m
+---
+> CONFIG_ACPI_TOSHIBA=y
+5491,5494c5648,5653
+< CONFIG_ACPI_CMPC=m
+< CONFIG_INTEL_IPS=m
+< CONFIG_IBM_RTL=m
+< CONFIG_XO1_RFKILL=m
+---
+> CONFIG_ACPI_CMPC=y
+> CONFIG_INTEL_IPS=y
+> CONFIG_IBM_RTL=y
+> CONFIG_XO1_RFKILL=y
+> CONFIG_XO15_EBOOK=y
+> CONFIG_SAMSUNG_LAPTOP=y
+5505a5665
+> CONFIG_DMI_SYSFS=y
+5507a5668
+> # CONFIG_SIGMA is not set
+5661c5822
+< CONFIG_LOGFS=m
+---
+> CONFIG_LOGFS=y
+5679a5841
+> CONFIG_PSTORE=y
+5710c5872
+< CONFIG_RPCSEC_GSS_KRB5=y
+---
+> CONFIG_RPCSEC_GSS_KRB5=m
+5816a5979
+> CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+5824a5988
+> # CONFIG_DEBUG_SECTION_MISMATCH is not set
+5829d5992
+< CONFIG_BKL=y
+5912a6076
+> # CONFIG_INTEL_TXT is not set
+6101a6266
+> CONFIG_BCH=y
+6110a6276
+> CONFIG_CPU_RMAP=y
+---
+Professional hosting for everyone - http://www.host.ru
