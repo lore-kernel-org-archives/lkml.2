@@ -1,349 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab1D3NBw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 09:01:52 -0400
-Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:9429 "EHLO
-	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756775Ab1D3NB0 (ORCPT
+	id S1757292Ab1D3NvZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 09:51:25 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:24987 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756878Ab1D3NvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 09:01:26 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, dilinger@queued.net,
-        Daniel Drake <dsd@laptop.org>
-Subject: [PATCH 07/11] x86, olpc-xo1-sci: Add GPE handler and ebook switch functionality
-Date: Sat, 30 Apr 2011 13:32:26 +0100
-Message-Id: <1304166750-31125-8-git-send-email-dsd@laptop.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=lP9hPYfWmvkA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=8pUI9j0R9x75pM3QE4EA:9 a=5Pw5yg4cXYNAtHwa-0wA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Sat, 30 Apr 2011 09:51:14 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v3 5/5] dmaengine: at_hdmac: specialize AHB interfaces to optimize transfers
+Date: Sat, 30 Apr 2011 16:57:49 +0200
+Message-Id: <f06c2971acd55337156c6c251749c346d06a9185.1304174965.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1303791881.896.18.camel@vkoul-udesk3>
+References: <1303791881.896.18.camel@vkoul-udesk3>
+In-Reply-To: <35f32b2bdf51d9d5867ca352ce96d786c74a58eb.1304174965.git.nicolas.ferre@atmel.com>
+References: <35f32b2bdf51d9d5867ca352ce96d786c74a58eb.1304174965.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EC in the OLPC XO-1 delivers GPE events to provide various
-notifications. Add the basic code for GPE/EC event processing and
-enable the ebook switch, which can be used as a wakeup source.
+DMA controller has two AHB interfaces on the SOC internal
+matrix.
+It is more efficient to specialize each interface as the
+access to memory can introduce latencies that are not compatible
+with peripheral accesses requirements.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/x86/Kconfig                      |    2 +
- arch/x86/include/asm/olpc.h           |    5 +-
- arch/x86/platform/olpc/olpc-xo1-sci.c |  170 ++++++++++++++++++++++++++++++++-
- include/linux/cs5535.h                |    8 ++
- 4 files changed, 182 insertions(+), 3 deletions(-)
+ drivers/dma/at_hdmac.c      |   26 +++++++++++++++-----------
+ drivers/dma/at_hdmac_regs.h |    4 ++++
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c273c62..0e62cd5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2077,7 +2077,9 @@ config OLPC_XO1_SCI
- 	depends on OLPC && OLPC_XO1_PM
- 	---help---
- 	  Add support for SCI-based features of the OLPC XO-1 laptop:
-+	   - EC-driven system wakeups
- 	   - Power button
-+	   - Ebook switch
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 65bd52a..f52c9e3 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -37,8 +37,8 @@
  
- endif # X86_32
+ #define	ATC_DEFAULT_CFG		(ATC_FIFOCFG_HALFFIFO)
+ #define	ATC_DEFAULT_CTRLA	(0)
+-#define	ATC_DEFAULT_CTRLB	(ATC_SIF(0)	\
+-				|ATC_DIF(1))
++#define	ATC_DEFAULT_CTRLB	(ATC_SIF(AT_DMA_MEM_IF) \
++				|ATC_DIF(AT_DMA_MEM_IF))
  
-diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
-index 0e56d01..87bdbca 100644
---- a/arch/x86/include/asm/olpc.h
-+++ b/arch/x86/include/asm/olpc.h
-@@ -111,6 +111,7 @@ extern int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
- #define EC_WRITE_SCI_MASK		0x1b
- #define EC_WAKE_UP_WLAN			0x24
- #define EC_WLAN_LEAVE_RESET		0x25
-+#define EC_READ_EB_MODE			0x2a
- #define EC_SET_SCI_INHIBIT		0x32
- #define EC_SET_SCI_INHIBIT_RELEASE	0x34
- #define EC_WLAN_ENTER_RESET		0x35
-@@ -144,7 +145,7 @@ extern int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
- #define OLPC_GPIO_SMB_CLK      14
- #define OLPC_GPIO_SMB_DATA     15
- #define OLPC_GPIO_WORKAUX	geode_gpio(24)
--#define OLPC_GPIO_LID		geode_gpio(26)
--#define OLPC_GPIO_ECSCI		geode_gpio(27)
-+#define OLPC_GPIO_LID		26
-+#define OLPC_GPIO_ECSCI		27
+ /*
+  * Initial number of descriptors to allocate for each channel. This could
+@@ -693,14 +693,15 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	reg_width = atslave->reg_width;
  
- #endif /* _ASM_X86_OLPC_H */
-diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
-index 8fbf961..9de2a00 100644
---- a/arch/x86/platform/olpc/olpc-xo1-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
-@@ -12,12 +12,15 @@
-  */
+ 	ctrla = ATC_DEFAULT_CTRLA | atslave->ctrla;
+-	ctrlb = ATC_DEFAULT_CTRLB | ATC_IEN;
++	ctrlb = ATC_IEN;
  
- #include <linux/cs5535.h>
-+#include <linux/device.h>
-+#include <linux/gpio.h>
- #include <linux/input.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
- #include <linux/mfd/core.h>
- #include <linux/suspend.h>
-+#include <linux/workqueue.h>
+ 	switch (direction) {
+ 	case DMA_TO_DEVICE:
+ 		ctrla |=  ATC_DST_WIDTH(reg_width);
+ 		ctrlb |=  ATC_DST_ADDR_MODE_FIXED
+ 			| ATC_SRC_ADDR_MODE_INCR
+-			| ATC_FC_MEM2PER;
++			| ATC_FC_MEM2PER
++			| ATC_SIF(AT_DMA_MEM_IF) | ATC_DIF(AT_DMA_PER_IF);
+ 		reg = atslave->tx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct at_desc	*desc;
+@@ -741,7 +742,8 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		ctrla |=  ATC_SRC_WIDTH(reg_width);
+ 		ctrlb |=  ATC_DST_ADDR_MODE_INCR
+ 			| ATC_SRC_ADDR_MODE_FIXED
+-			| ATC_FC_PER2MEM;
++			| ATC_FC_PER2MEM
++			| ATC_SIF(AT_DMA_PER_IF) | ATC_DIF(AT_DMA_MEM_IF);
  
- #include <asm/io.h>
- #include <asm/msr.h>
-@@ -28,8 +31,60 @@
+ 		reg = atslave->rx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+@@ -846,20 +848,22 @@ atc_dma_cyclic_fill_desc(struct at_dma_slave *atslave, struct at_desc *desc,
+ 		desc->lli.saddr = buf_addr + (period_len * period_index);
+ 		desc->lli.daddr = atslave->tx_reg;
+ 		desc->lli.ctrla = ctrla;
+-		desc->lli.ctrlb = ATC_DEFAULT_CTRLB
+-				| ATC_DST_ADDR_MODE_FIXED
++		desc->lli.ctrlb = ATC_DST_ADDR_MODE_FIXED
+ 				| ATC_SRC_ADDR_MODE_INCR
+-				| ATC_FC_MEM2PER;
++				| ATC_FC_MEM2PER
++				| ATC_SIF(AT_DMA_MEM_IF)
++				| ATC_DIF(AT_DMA_PER_IF);
+ 		break;
  
- static unsigned long acpi_base;
- static struct input_dev *power_button_idev;
-+static struct input_dev *ebook_switch_idev;
-+
- static int sci_irq;
+ 	case DMA_FROM_DEVICE:
+ 		desc->lli.saddr = atslave->rx_reg;
+ 		desc->lli.daddr = buf_addr + (period_len * period_index);
+ 		desc->lli.ctrla = ctrla;
+-		desc->lli.ctrlb = ATC_DEFAULT_CTRLB
+-				| ATC_DST_ADDR_MODE_INCR
++		desc->lli.ctrlb = ATC_DST_ADDR_MODE_INCR
+ 				| ATC_SRC_ADDR_MODE_FIXED
+-				| ATC_FC_PER2MEM;
++				| ATC_FC_PER2MEM
++				| ATC_SIF(AT_DMA_PER_IF)
++				| ATC_DIF(AT_DMA_MEM_IF);
+ 		break;
  
-+/* Report current ebook switch state through input layer */
-+static void send_ebook_state(void)
-+{
-+	unsigned char state;
+ 	default:
+diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+index c79a9e0..ae3056d 100644
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -103,6 +103,10 @@
+ /* Bitfields in CTRLB */
+ #define	ATC_SIF(i)		(0x3 & (i))	/* Src tx done via AHB-Lite Interface i */
+ #define	ATC_DIF(i)		((0x3 & (i)) <<  4)	/* Dst tx done via AHB-Lite Interface i */
++				  /* Specify AHB interfaces */
++#define AT_DMA_MEM_IF		0 /* interface 0 as memory interface */
++#define AT_DMA_PER_IF		1 /* interface 1 as peripheral interface */
 +
-+	if (olpc_ec_cmd(EC_READ_EB_MODE, NULL, 0, &state, 1)) {
-+		pr_err(PFX "failed to get ebook state\n");
-+		return;
-+	}
-+
-+	input_report_switch(ebook_switch_idev, SW_TABLET_MODE, state);
-+	input_sync(ebook_switch_idev);
-+}
-+
-+/*
-+ * Process all items in the EC's SCI queue.
-+ *
-+ * This is handled in a workqueue because olpc_ec_cmd can be slow (and
-+ * can even timeout).
-+ *
-+ * If propagate_events is false, the queue is drained without events being
-+ * generated for the interrupts.
-+ */
-+static void process_sci_queue(bool propagate_events)
-+{
-+	int r;
-+	u16 data;
-+
-+	do {
-+		r = olpc_ec_sci_query(&data);
-+		if (r || !data)
-+			break;
-+
-+		pr_debug(PFX "SCI 0x%x received\n", data);
-+
-+		if (data == EC_SCI_SRC_EBOOK && propagate_events)
-+			send_ebook_state();
-+	} while (data);
-+
-+	if (r)
-+		pr_err(PFX "Failed to clear SCI queue");
-+}
-+
-+static void process_sci_queue_work(struct work_struct *work)
-+{
-+	process_sci_queue(true);
-+}
-+
-+static DECLARE_WORK(sci_work, process_sci_queue_work);
-+
- static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
- {
- 	struct platform_device *pdev = dev_id;
-@@ -51,6 +106,11 @@ static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
- 		input_sync(power_button_idev);
- 	}
- 
-+	if (gpe & CS5536_GPIOM7_PME_FLAG) { /* EC GPIO */
-+		cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_NEGATIVE_EDGE_STS);
-+		schedule_work(&sci_work);
-+	}
-+
- 	return IRQ_HANDLED;
- }
- 
-@@ -60,6 +120,19 @@ static int xo1_sci_suspend(struct platform_device *pdev, pm_message_t state)
- 		olpc_xo1_pm_wakeup_set(CS5536_PM_PWRBTN);
- 	else
- 		olpc_xo1_pm_wakeup_clear(CS5536_PM_PWRBTN);
-+
-+	if (device_may_wakeup(&ebook_switch_idev->dev))
-+		olpc_ec_wakeup_set(EC_SCI_SRC_EBOOK);
-+	else
-+		olpc_ec_wakeup_clear(EC_SCI_SRC_EBOOK);
-+
-+	return 0;
-+}
-+
-+static int xo1_sci_resume(struct platform_device *pdev)
-+{
-+	/* Enable all EC events */
-+	olpc_ec_mask_write(EC_SCI_SRC_ALL);
- 	return 0;
- }
- 
-@@ -104,6 +177,37 @@ static int __devinit setup_sci_interrupt(struct platform_device *pdev)
- 	return r;
- }
- 
-+static int __devinit setup_ec_sci(void)
-+{
-+	int r;
-+
-+	r = gpio_request(OLPC_GPIO_ECSCI, "OLPC-ECSCI");
-+	if (r)
-+		return r;
-+
-+	gpio_direction_input(OLPC_GPIO_ECSCI);
-+
-+	/* Clear pending EC SCI events */
-+	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_NEGATIVE_EDGE_STS);
-+	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_POSITIVE_EDGE_STS);
-+
-+	/* Enable EC SCI events */
-+	cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_EVENTS_ENABLE);
-+
-+	/* Set the SCI to cause a PME event on group 7 */
-+	cs5535_gpio_setup_event(OLPC_GPIO_ECSCI, 7, 1);
-+
-+	/* And have group 7 also fire the SCI interrupt */
-+	cs5535_gpio_set_irq(7, sci_irq);
-+
-+	return 0;
-+}
-+
-+static void free_ec_sci(void)
-+{
-+	gpio_free(OLPC_GPIO_ECSCI);
-+}
-+
- static int __devinit setup_power_button(struct platform_device *pdev)
- {
- 	int r;
-@@ -135,6 +239,37 @@ static void free_power_button(void)
- 	input_free_device(power_button_idev);
- }
- 
-+static int __devinit setup_ebook_switch(struct platform_device *pdev)
-+{
-+	int r;
-+
-+	ebook_switch_idev = input_allocate_device();
-+	if (!ebook_switch_idev)
-+		return -ENOMEM;
-+
-+	ebook_switch_idev->name = "EBook Switch";
-+	ebook_switch_idev->phys = DRV_NAME "/input1";
-+	set_bit(EV_SW, ebook_switch_idev->evbit);
-+	set_bit(SW_TABLET_MODE, ebook_switch_idev->swbit);
-+
-+	ebook_switch_idev->dev.parent = &pdev->dev;
-+	device_set_wakeup_capable(&ebook_switch_idev->dev, true);
-+
-+	r = input_register_device(ebook_switch_idev);
-+	if (r) {
-+		dev_err(&pdev->dev, "failed to register ebook switch: %d\n", r);
-+		input_free_device(ebook_switch_idev);
-+	}
-+
-+	return r;
-+}
-+
-+static void free_ebook_switch(void)
-+{
-+	input_unregister_device(ebook_switch_idev);
-+	input_free_device(ebook_switch_idev);
-+}
-+
- static int __devinit xo1_sci_probe(struct platform_device *pdev)
- {
- 	struct resource *res;
-@@ -159,10 +294,39 @@ static int __devinit xo1_sci_probe(struct platform_device *pdev)
- 	if (r)
- 		return r;
- 
-+	r = setup_ebook_switch(pdev);
-+	if (r)
-+		goto err_ebook;
-+
-+	r = setup_ec_sci();
-+	if (r)
-+		goto err_ecsci;
-+
-+	/* Enable PME generation for EC-generated events */
-+	outl(CS5536_GPIOM7_PME_EN, acpi_base + CS5536_PM_GPE0_EN);
-+
-+	/* Clear pending events */
-+	outl(0xffffffff, acpi_base + CS5536_PM_GPE0_STS);
-+	process_sci_queue(false);
-+
-+	/* Initial sync */
-+	send_ebook_state();
-+
- 	r = setup_sci_interrupt(pdev);
- 	if (r)
--		free_power_button();
-+		goto err_sci;
- 
-+	/* Enable all EC events */
-+	olpc_ec_mask_write(EC_SCI_SRC_ALL);
-+
-+	return r;
-+
-+err_sci:
-+	free_ec_sci();
-+err_ecsci:
-+	free_ebook_switch();
-+err_ebook:
-+	free_power_button();
- 	return r;
- }
- 
-@@ -170,6 +334,9 @@ static int __devexit xo1_sci_remove(struct platform_device *pdev)
- {
- 	mfd_cell_disable(pdev);
- 	free_irq(sci_irq, pdev);
-+	cancel_work_sync(&sci_work);
-+	free_ec_sci();
-+	free_ebook_switch();
- 	free_power_button();
- 	acpi_base = 0;
- 	return 0;
-@@ -182,6 +349,7 @@ static struct platform_driver xo1_sci_driver = {
- 	.probe = xo1_sci_probe,
- 	.remove = __devexit_p(xo1_sci_remove),
- 	.suspend = xo1_sci_suspend,
-+	.resume = xo1_sci_resume,
- };
- 
- static int __init xo1_sci_init(void)
-diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
-index 6f78235..95c16ac 100644
---- a/include/linux/cs5535.h
-+++ b/include/linux/cs5535.h
-@@ -73,6 +73,7 @@
- #define CS5536_PM1_EN		0x02
- #define CS5536_PM1_CNT		0x08
- #define CS5536_PM_GPE0_STS	0x18
-+#define CS5536_PM_GPE0_EN	0x1c
- 
- /* CS5536_PM1_STS bits */
- #define CS5536_WAK_FLAG		(1 << 15)
-@@ -81,6 +82,13 @@
- /* CS5536_PM1_EN bits */
- #define CS5536_PM_PWRBTN	(1 << 8)
- 
-+/* CS5536_PM_GPE0_STS bits */
-+#define CS5536_GPIOM7_PME_FLAG	(1 << 31)
-+#define CS5536_GPIOM6_PME_FLAG	(1 << 30)
-+
-+/* CS5536_PM_GPE0_EN bits */
-+#define CS5536_GPIOM7_PME_EN	(1 << 31)
-+
- /* VSA2 magic values */
- #define VSA_VRC_INDEX		0xAC1C
- #define VSA_VRC_DATA		0xAC1E
+ #define	ATC_SRC_PIP		(0x1 <<  8)	/* Source Picture-in-Picture enabled */
+ #define	ATC_DST_PIP		(0x1 << 12)	/* Destination Picture-in-Picture enabled */
+ #define	ATC_SRC_DSCR_DIS	(0x1 << 16)	/* Src Descriptor fetch disable */
 -- 
-1.7.4.4
+1.7.3
 
