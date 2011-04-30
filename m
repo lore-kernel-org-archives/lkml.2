@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab1D3Tvm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 15:51:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38788 "EHLO ogre.sisk.pl"
+	id S1757379Ab1D3Tv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 15:51:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38764 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab1D3Tvj convert rfc822-to-8bit (ORCPT
+	id S1756261Ab1D3TvZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 15:51:39 -0400
+	Sat, 30 Apr 2011 15:51:25 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Christian Kujau" <lists@nerdbynature.de>
+        "Ben Greear" <greearb@candelatech.com>
 References: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
 In-Reply-To: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <G9uL1cldhmL.A.b6D.QVGvNB@chimera>
-Subject: [Bug #34012] 2.6.39-rc4+: oom-killer busy killing tasks
+Message-ID: <G9uL1cldhmL.A.5gE.yVGvNB@chimera>
+Subject: [Bug #33432] WARNING at libata-core.c:5015 in 2.6.39-rc3-wl+, then lockup.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 30 Apr 2011 21:46:57 +0200 (CEST)
+Date: Sat, 30 Apr 2011 21:46:55 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +34,11 @@ from 2.6.38.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=34012
-Subject		: 2.6.39-rc4+: oom-killer busy killing tasks
-Submitter	: Christian Kujau <lists@nerdbynature.de>
-Date		: 2011-04-22 1:57 (9 days old)
-Message-ID	: <alpine.DEB.2.01.1104211841510.18728@trent.utfs.org>
-References	: http://marc.info/?l=linux-kernel&m=130343744622331&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=33432
+Subject		: WARNING at libata-core.c:5015 in 2.6.39-rc3-wl+, then lockup.
+Submitter	: Ben Greear <greearb@candelatech.com>
+Date		: 2011-04-13 16:29 (18 days old)
+Message-ID	: <4DA5CF81.4070908@candelatech.com>
+References	: http://marc.info/?l=linux-kernel&m=130271220809443&w=2
 
 
