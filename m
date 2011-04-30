@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1D3Mfc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 08:35:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63000 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab1D3Mfa (ORCPT
+	id S1756654Ab1D3MmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 08:42:09 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:60223 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756186Ab1D3MmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 08:35:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MmPzp341Bz3OHkeK3BbjUe3Um8/UEVtMUde4bGOhDCLNdaFrFaluNYzzi6/RDGV5QL
-         09QYcAdPWVB/qwC4ZVzkp7h0BuODzHUM4YxuicHfwu39FwJkPO2kDpcjnc61QNnqmo1x
-         HP3k0sUibBlT52Fe5nZonv9gk3B1mFDcpg/E0=
-Date: Sat, 30 Apr 2011 14:35:26 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@redhat.com, rientjes@google.com, tglx@linutronix.de, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, NUMA: Fix empty memblk detection in
- numa_cleanup_meminfo()
-Message-ID: <20110430123526.GH29280@htj.dyndns.org>
-References: <1304090924-8197-1-git-send-email-tj@kernel.org>
- <4DBB1C16.3070307@kernel.org>
- <20110430121734.GF29280@htj.dyndns.org>
- <20110430123330.GG29280@htj.dyndns.org>
+	Sat, 30 Apr 2011 08:42:04 -0400
+X-AuditID: 12074423-b7b8eae000003d4f-25-4dbc03a02e98
+Message-ID: <4DBC038F.3080004@mit.edu>
+Date: Sat, 30 Apr 2011 08:41:51 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110422 Fedora/3.1.9-7.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110430123330.GG29280@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, greg@kroah.com,
+        joe@perches.com, randy.dunlap@oracle.com, trivial@kernel.org
+Subject: Re: [Oops 1/2]Something wrong with copy_from_user() function
+References: <20110430061336.GA4274@gmail.com>
+In-Reply-To: <20110430061336.GA4274@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsUixCmqrbuAeY+vwbmbNhZz1q9hszi3YAaj
+	xez7j1ksLu+aw2axfMk2Nov3+y8zObB5bFrVyebx9mGAx4kZv1k8Pj69xeLxZdU1Zo/Pm+QC
+	2KK4bFJSczLLUov07RK4MnqP/mcreMdWsWlSC0sD42HWLkZODgkBE4n37buYIWwxiQv31rN1
+	MXJxCAnsY5TYt3M+M4SzgVGi994/VgjnLZPEy++3mUBaeAXUJF78u8MIYrMIqEr8mH4BbCyb
+	gIpEx9IHYDWiAuUSp19PY4aoF5Q4OfMJC8ggEYFJjBInzjwDSwgLuErMP3sPrEFIQFdi1qR3
+	YDangJ7Ez4/3gW7i4GAWsJb4trsIJMwsIC+x/e0c5gmMArOQjJ2FUDULSdUCRuZVjLIpuVW6
+	uYmZOcWpybrFyYl5ealFumZ6uZkleqkppZsYQUHP7qK8g/HPQaVDjAIcjEo8vN6/dvkKsSaW
+	FVfmHmKU5GBSEuVlZdrjK8SXlJ9SmZFYnBFfVJqTWnyIUYKDWUmE1/EsUDlvSmJlVWpRPkxK
+	moNFSZx3rqS6r5BAemJJanZqakFqEUxWhoNDSYL3JchQwaLU9NSKtMycEoQ0EwcnyHAeoOGm
+	wCQhxFtckJhbnJkOkT/FqCglzisBkhAASWSU5sH1wpLSK0ZxoFeEec1AqniACQ2u+xXQYCag
+	wfeLdoIMLklESEk1MB4x2J257QqXXu6nXreZ+XM+iT0UunOX6cKMihkn/s7x2GWy26I49cGT
+	okUP8viqt026vobj2yYBm5YuwcgHx3ZeDJweXLnYRsjnd0T54hvOc2uSimU/feV0ey7jKqok
+	PGeFfeurTxO4jDZqLp58TYL9VLPRs2L3kIJlxn9C/2qtsvUwezi70V+JpTgj0VCLuag4EQAM
+	vR9UJQMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 30, 2011 at 02:33:30PM +0200, Tejun Heo wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
-> 
-> numa_cleanup_meminfo() trims each memblk between low (0) and high
-> (max_pfn) limits and discard empty ones.  However, the emptiness
-> detection incorrectly used equality test.  If the start of a memblk is
-> higher than max_pfn, it is empty but fails the equality test and
-> doesn't get discarded.
-> 
-> Fix it by using >= instead of ==.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
-> So, something like this.  Does this fix the problem you see?
+On 04/30/2011 02:13 AM, Harry Wei wrote:
+> Hi us,
+> 	When i was compiling 2.6.38.2 kernel. Something wrong happend to me.
+> It shows like following.
+>
+> [...]
+> Warning: call to 'copy_from_user_overflow' declared with attribute warning:
+> copy_from_user buffer size is not provably correct.
+> [...]
+>
+> See http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=report_bug.png for details.
+> 	I tried to fix this warning, but i don't know how to deal with
+> it. Can anyone help me.
 
-Ooh, this is before the code is moved to numa.c, so please test the
-previous patch against numa.c.
+That's a bug (maybe) in drivers/staging/vt6656/wpactl.c, which is a 
+staging driver and therefore liable to be imperfect.  You could ignore 
+it or fix it and submit a patch.
 
-Thanks.
+(The bug isn't in copy_from_user -- it's an intentional warning in there 
+to indicate that something might be wrong with the caller.)
 
--- 
-tejun
+--Andy
+
+>
+> Thanks.
+> Harry Wei.
+
