@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761153Ab1D3BMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Apr 2011 21:12:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52900 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760998Ab1D3BMH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Apr 2011 21:12:07 -0400
+	id S1761165Ab1D3BXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Apr 2011 21:23:30 -0400
+Received: from kroah.org ([198.145.64.141]:50302 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756461Ab1D3BX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Apr 2011 21:23:28 -0400
+Date: Fri, 29 Apr 2011 18:23:24 -0700
+From: Greg KH <greg@kroah.com>
+To: johnlinn@comcast.net
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, michal simek <michal.simek@petalogix.com>,
+        joe@perches.com, grant likely <grant.likely@secretlab.ca>,
+        John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH V5] tty/serial: add support for Xilinx PS UART
+Message-ID: <20110430012324.GA12003@kroah.com>
+References: <20110430002720.GB1818@kroah.com>
+ <297990190.2103989.1304125884176.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1104300220040.3005@ionos>
-References: <tip-304529b1b6f8612ccbb4582e997051b48b94f4a4@git.kernel.org>
-	<BANLkTin12hcs1Q=4E4REdF_-zn08EJXzvw@mail.gmail.com>
-	<alpine.LFD.2.02.1104300220040.3005@ionos>
-Date: Fri, 29 Apr 2011 18:12:05 -0700
-Message-ID: <BANLkTi=9rW=U-Excx+xJb1h3mVvfEaxhKw@mail.gmail.com>
-Subject: Re: [tip:timers/core] time: Add timekeeping_inject_sleeptime
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        john.stultz@linaro.org, arnd@arndb.de,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <297990190.2103989.1304125884176.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/29 Thomas Gleixner <tglx@linutronix.de>:
-> On Fri, 29 Apr 2011, Arve Hjønnevåg wrote:
->> On Fri, Apr 29, 2011 at 10:31 AM, tip-bot for John Stultz
->> <john.stultz@linaro.org> wrote:
->> > -       set_normalized_timespec(&time,
->> > -                               newtime + delta.tv_sec,
->> > -                               (NSEC_PER_SEC >> 1) + delta.tv_nsec);
->> > -       do_settimeofday(&time);
->> > +       /* subtract kernel time between rtc_suspend to rtc_resume */
->> > +       time = timespec_sub(time, timespec_sub(newts, oldts));
->>
->> The delta you got from the rtc can be almost a second to long or
->> short. Do you do anything to prevent these errors from accumulating?
->
-> By using the the magic crystal ball to avoid it or what do you have in
-> mind ?
->
+On Sat, Apr 30, 2011 at 01:11:24AM +0000, johnlinn@comcast.net wrote:
+> 
+> > On Sat, Apr 30, 2011 at 12:15:54AM +0000, johnlinn@comcast.net wrote:
+> > > 
+> > > > On Fri, Apr 29, 2011 at 03:59:06PM -0600, johnlinn@comcast.net
+> > wrote:
+> > > > > From: John Linn <john.linn@xilinx.com>
+> > > > > 
+> > > > > The Xilinx PS Uart is used on the new ARM based SoC. This
+> > > > > UART is not compatible with others such that a seperate
+> > > > > driver is required.
+> > > > > 
+> > > > > Signed-off-by: John Linn <john.linn@xilinx.com>
+> > > > 
+> > > > That's fine, but:
+> > > > 
+> > > > > 
+> > > > > This email and any attachments are intended for the sole use of
+> > the
+> > > > named recipient(s) and contain(s) confidential information that
+> > may be
+> > > > proprietary, privileged or copyrighted under applicable law. If
+> > you
+> > > > are not the intended recipient, do not read, copy, or forward
+> > this
+> > > > email message or any attachments. Delete this email message and
+> > any
+> > > > attachments immediately.
+> > > > >
+> > > > 
+> > > > That means I can't apply this patch :(
+> > > > 
+> > > > {sigh}
+> > > > 
+> > > > Please fix this, as it does not allow you to participate in
+> > kernel
+> > > > development efforts.
+> > > 
+> > > Sorry for trying your patience, V6 is out and shouldn't have that
+> > > nasty issue.
+> > > 
+> > > Your patience is much appreciated as I'm fighting the good fight
+> > with
+> > > legal about this and working around it (not real smooth obviously).
+> > 
+> > You need to do what everyone else does in this situation (Intel,
+> > Microsoft, IBM, etc.) and set up a Linux email server somewhere in
+> > your
+> > company and use it instead, to get your patches out and participate
+> > properly in the Linux kernel community.
+> > 
+> > Sadly, it's quite common to have to do this :(
+> 
+> I will work on the issue, but since this is ready to go in, I'm going to resend
+> V6 from home later if possible to avoid the BS.
+> 
+> Again, my apologies, I didn't realize it was doing this all along.
+> 
+> My bosses are asking if there's anything specific in that crap that is the offending
+> part such that part of it can be left?  
 
-This is how we worked around the problem with the old code:
+None of it can be left, sorry.
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 09b4437..e55828a 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -42,25 +42,32 @@ static void rtc_device_release(struct device *dev)
-  */
+> I owe you some beer sometime for sure.
 
- static struct timespec delta;
-+static struct timespec delta_delta;
- static time_t          oldtime;
+I will be glad to take you up on it :)
 
- static int rtc_suspend(struct device *dev, pm_message_t mesg)
- {
-        struct rtc_device       *rtc = to_rtc_device(dev);
-        struct rtc_time         tm;
--       struct timespec         ts = current_kernel_time();
-+       struct timespec         ts;
-+       struct timespec         new_delta;
-
-        if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
-                return 0;
-
-+       getnstimeofday(&ts);
-        rtc_read_time(rtc, &tm);
-        rtc_tm_to_time(&tm, &oldtime);
-
-        /* RTC precision is 1 second; adjust delta for avg 1/2 sec err */
--       set_normalized_timespec(&delta,
-+       set_normalized_timespec(&new_delta,
-                                ts.tv_sec - oldtime,
-                                ts.tv_nsec - (NSEC_PER_SEC >> 1));
-
-+       /* prevent 1/2 sec errors from accumulating */
-+       delta_delta = timespec_sub(new_delta, delta);
-+       if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2)
-+               delta = new_delta;
-        return 0;
- }
-
-@@ -80,6 +87,8 @@ static int rtc_resume(struct device *dev)
-                return 0;
-        }
-        rtc_tm_to_time(&tm, &newtime);
-+       if (delta_delta.tv_sec < -1)
-+               newtime++;
-        if (newtime <= oldtime) {
-                if (newtime < oldtime)
-                        pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
-
-
-
--- 
-Arve Hjønnevåg
+greg k-h
