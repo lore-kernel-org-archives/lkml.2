@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab1D3VJe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 17:09:34 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:35452 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756429Ab1D3VJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 17:09:33 -0400
-Content-Type: text/plain; charset="utf-8"
-Date: Sat, 30 Apr 2011 23:09:30 +0200
-From: "Cedric Sodhi" <ManDay@gmx.net>
-Message-ID: <20110430210930.268900@gmx.net>
+	id S1759950Ab1D3VNO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 17:13:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48154 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab1D3VNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 17:13:13 -0400
+Date: Sat, 30 Apr 2011 23:13:10 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, greg@kroah.com,
+        joe@perches.com, randy.dunlap@oracle.com
+Subject: Re: [Oops 1/2]Something wrong with copy_from_user() function
+In-Reply-To: <20110430061336.GA4274@gmail.com>
+Message-ID: <alpine.LNX.2.00.1104302311530.12035@pobox.suse.cz>
+References: <20110430061336.GA4274@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Subject: Status of vgaswitcheroo - Devastating!
-To: linux-kernel@vger.kernel.org
-X-Authenticated: #19862253
-X-Flags: 0001
-X-Mailer: WWW-Mail 6100 (Global Message Exchange)
-X-Priority: 3
-X-Provags-ID: V01U2FsdGVkX1+m1Cx1cSOm3CAyodiZyEbskrcHTTGi7zpA+Jg/x5
- BYdKRV/OgWdn+yvTZQNboFQJTbINYVRetnSg== 
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: sk2PeUgbf2IsBrp7Q21omrV4dWxlcxZj
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear list,
+On Sat, 30 Apr 2011, Harry Wei wrote:
 
-for more and more people it becomes either very difficult or, like for me, practically impossible to boot on a Dual-Card setup.
+> Hi us,
+> 	When i was compiling 2.6.38.2 kernel. Something wrong happend to me.
+> It shows like following.
+> 
+> [...]
+> Warning: call to 'copy_from_user_overflow' declared with attribute warning:
+> copy_from_user buffer size is not provably correct.
+> [...]
+> 
+> See http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=report_bug.png for details.
+> 	I tried to fix this warning, but i don't know how to deal with
+> it. Can anyone help me.
 
-If you look arround the Ubuntu forums and many many other communties you will find that most, if not all users with such setups experience great problems, many of them receive blank screens, kernel panics, black screens, etc.
+wpa_set_keys() function (from staging drivers) in your kernel uses 
+copy_from_user() without proper bounds checking, and thus can overflow and 
+corrupt memory.
 
-I for my part have a HP Touchsmart tm2 laptop with the Intel/ATI kind of setup and thought the commit message in GIT says that this is the exact type that is meant to be supported, I find myself unable to boot into my system.
-
-Some live distros work (I've made the best experience with Mint 10 x64), but even for them the results are kind of random. In some cases the system boots, in some the screen remains blank or black, sometimes closing the screen and opening it again helps, sometimes I can reboot with Ctrl-Alt-Del, sometimes through SysReq, it's rather random.
-
-To my consternation, the one and only commit related to switcheroo is over a year old and I have found no indication whatsoever that this is being further addressed.
-
-I would very much dislike having to use Windows in order to use this PC, just because I can't even get it to boot.
-
-I partially blame HPs atrocious BIOS for this desaster, so I really don't know how far this can possibly be resolved, but I hope it can, because according to the commit message it was at least possible on a different computer with a similar setup.
-
-Please help!
 -- 
-NEU: FreePhone - kostenlos mobil telefonieren und surfen!			
-Jetzt informieren: http://www.gmx.net/de/go/freephone
+Jiri Kosina
+SUSE Labs, Novell Inc.
