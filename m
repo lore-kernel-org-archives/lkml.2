@@ -1,128 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab1D3M7c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 08:59:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58830 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab1D3M7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 08:59:30 -0400
-Date: Sat, 30 Apr 2011 05:59:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
-Message-ID: <20110430125928.GJ2297@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-2-git-send-email-gleb@redhat.com>
- <20110429083618.GL2191@linux.vnet.ibm.com>
- <20110429083904.GA12987@linux.vnet.ibm.com>
- <20110429180239.GA32566@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110429180239.GA32566@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756733Ab1D3NBY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 09:01:24 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:9429 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753970Ab1D3NBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 09:01:22 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, dilinger@queued.net,
+        Daniel Drake <dsd@laptop.org>, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 01/11] x86, olpc: add missing elements to device tree
+Date: Sat, 30 Apr 2011 13:32:20 +0100
+Message-Id: <1304166750-31125-2-git-send-email-dsd@laptop.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1304166750-31125-1-git-send-email-dsd@laptop.org>
+References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=SiokrnJFZegA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=In_Hgl4hAAAA:8 a=voM4FWlXAAAA:8 a=l36xFLkRdiNPo7M4uIgA:9 a=AJVk3Ui3S8xBU9uoZUQA:7 a=d4CUUju0HPYA:10 a=ro211Ng2IWAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 09:02:39PM +0300, Gleb Natapov wrote:
-> On Fri, Apr 29, 2011 at 01:39:04AM -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
-> > > 
-> > > Hmmm....  This is interesting.  KVM being a module, we either expand
-> > > TINY_RCU's size a bit by making rcu_note_context_switch() be a real
-> > > function in rcutiny.c and adding an export, or we expand it by adding
-> > > two exports.
-> > > 
-> > > I would like to solve this without making TINY_RCU larger, and preferably
-> > > by making it smaller.  Any ideas come to mind?  (Other than making
-> > > KVM depend on CONFIG_SMP, which sounds too much like throwing out the
-> > > baby with the bathwater.)
-> > 
-> > Nothing quite like hitting "send" to make an idea show up...
-> > 
-> > In a UP kernel, does it actually help anything to have KVM
-> > tell RCU about executing in a guest?  If not, could we have a
-> > rcu_note_context_switch_kvm() that is a static inline empty function in
-> > TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
-> > 
-> That will work, but does making rcu_note_context_switch() out of line
-> actually increase kernel size? The function is called in two places
-> currently, so by making it out of line we make two calling site smaller.
-> Will measure it next week.
+In response to new device tree code in the kernel, OLPC will start
+using it for probing of certain devices. However, some firmware fixes
+are needed to put the devicetree into a usable state.
 
-One thing to keep in mind...  Calling an out-of-line function from
-KVM requires an export, each of which significantly increases TINY_RCU's
-memory footprint.
+Retain compatibility with old firmware by fixing up the device tree
+at boot-time if it does not contain the new nodes/properties that
+we need for probing. This is the same approach taken on PPC platforms.
 
-							Thanx, Paul
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+---
+ arch/x86/platform/olpc/olpc_dt.c |  103 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 103 insertions(+), 0 deletions(-)
 
-> > > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > > > ---
-> > > >  include/linux/rcutiny.h |    6 +-----
-> > > >  kernel/rcutiny.c        |    7 +++++++
-> > > >  kernel/rcutree.c        |    1 +
-> > > >  3 files changed, 9 insertions(+), 5 deletions(-)
-> > > > 
-> > > > diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-> > > > index 30ebd7c..8e5f7cf 100644
-> > > > --- a/include/linux/rcutiny.h
-> > > > +++ b/include/linux/rcutiny.h
-> > > > @@ -93,11 +93,7 @@ static inline int rcu_needs_cpu(int cpu)
-> > > > 
-> > > >  #endif /* #else #ifdef CONFIG_TINY_RCU */
-> > > > 
-> > > > -static inline void rcu_note_context_switch(int cpu)
-> > > > -{
-> > > > -	rcu_sched_qs(cpu);
-> > > > -	rcu_preempt_note_context_switch();
-> > > > -}
-> > > > +extern void rcu_note_context_switch(int cpu);
-> > > > 
-> > > >  /*
-> > > >   * Return the number of grace periods.
-> > > > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> > > > index 0c343b9..3d715a4 100644
-> > > > --- a/kernel/rcutiny.c
-> > > > +++ b/kernel/rcutiny.c
-> > > > @@ -78,6 +78,13 @@ void rcu_exit_nohz(void)
-> > > > 
-> > > >  #endif /* #ifdef CONFIG_NO_HZ */
-> > > > 
-> > > > +void rcu_note_context_switch(int cpu)
-> > > > +{
-> > > > +	rcu_sched_qs(cpu);
-> > > > +	rcu_preempt_note_context_switch();
-> > > > +}
-> > > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > > > +
-> > > >  /*
-> > > >   * Helper function for rcu_qsctr_inc() and rcu_bh_qsctr_inc().
-> > > >   * Also disable irqs to avoid confusion due to interrupt handlers
-> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > index dd4aea8..0837d63 100644
-> > > > --- a/kernel/rcutree.c
-> > > > +++ b/kernel/rcutree.c
-> > > > @@ -124,6 +124,7 @@ void rcu_note_context_switch(int cpu)
-> > > >  	rcu_sched_qs(cpu);
-> > > >  	rcu_preempt_note_context_switch(cpu);
-> > > >  }
-> > > > +EXPORT_SYMBOL_GPL(rcu_note_context_switch);
-> > > > 
-> > > >  #ifdef CONFIG_NO_HZ
-> > > >  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
-> > > > -- 
-> > > > 1.7.2.3
-> > > > 
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > > the body of a message to majordomo@vger.kernel.org
-> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> 			Gleb.
+diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
+index d39f63d..d6ee929 100644
+--- a/arch/x86/platform/olpc/olpc_dt.c
++++ b/arch/x86/platform/olpc/olpc_dt.c
+@@ -165,6 +165,107 @@ static struct of_pdt_ops prom_olpc_ops __initdata = {
+ 	.pkg2path = olpc_dt_pkg2path,
+ };
+ 
++static phandle __init olpc_dt_finddevice(const char *path)
++{
++	phandle node;
++	const void *args[] = { path };
++	void *res[] = { &node };
++
++	if (olpc_ofw("finddevice", args, res)) {
++		pr_err("olpc_dt: finddevice failed!\n");
++		return 0;
++	}
++
++	if ((s32) node == -1)
++		return 0;
++
++	return node;
++}
++
++static int __init olpc_dt_interpret(const char *words)
++{
++	int result;
++	const void *args[] = { words };
++	void *res[] = { &result };
++
++	if (olpc_ofw("interpret", args, res)) {
++		pr_err("olpc_dt: interpret failed!\n");
++		return -1;
++	}
++
++	return result;
++}
++
++/*
++ * Extract board revision directly from OFW device tree.
++ * We can't use olpc_platform_info because that hasn't been set up yet.
++ */
++static u32 __init olpc_dt_get_board_revision(void)
++{
++	phandle node;
++	__be32 rev;
++	int r;
++
++	node = olpc_dt_finddevice("/");
++	if (!node)
++		return 0;
++
++	r = olpc_dt_getproperty(node, "board-revision-int",
++				(char *) &rev, sizeof(rev));
++	if (r < 0)
++		return 0;
++
++	return be32_to_cpu(rev);
++}
++
++void __init olpc_dt_fixup(void)
++{
++	int r;
++	char buf[64];
++	phandle node;
++	u32 board_rev;
++
++	node = olpc_dt_finddevice("/battery@0");
++	if (!node)
++		return;
++
++	/*
++	 * If the battery node has a compatible property, we are running a new
++	 * enough firmware and don't have fixups to make.
++	 */
++	r = olpc_dt_getproperty(node, "compatible", buf, sizeof(buf));
++	if (r > 0)
++		return;
++
++	pr_info("PROM DT: Old firmware detected, applying fixes\n");
++
++	/* Add olpc,xo1-battery compatible marker to battery node */
++	olpc_dt_interpret("\" /battery@0\" find-device"
++		" \" olpc,xo1-battery\" +compatible"
++		" device-end");
++
++	board_rev = olpc_dt_get_board_revision();
++	if (!board_rev)
++		return;
++
++	if (board_rev >= olpc_board_pre(0xd0)) {
++		/* XO-1.5: add dcon device */
++		olpc_dt_interpret("\" /pci/display@1\" find-device"
++			" new-device"
++			" \" dcon\" device-name \" olpc,xo1-dcon\" +compatible"
++			" finish-device device-end");
++	} else {
++		/* XO-1: add dcon device, mark RTC as olpc,xo1-rtc */
++		olpc_dt_interpret("\" /pci/display@1,1\" find-device"
++			" new-device"
++			" \" dcon\" device-name \" olpc,xo1-dcon\" +compatible"
++			" finish-device device-end"
++			" \" /rtc\" find-device"
++			" \" olpc,xo1-rtc\" +compatible"
++			" device-end");
++	}
++}
++
+ void __init olpc_dt_build_devicetree(void)
+ {
+ 	phandle root;
+@@ -172,6 +273,8 @@ void __init olpc_dt_build_devicetree(void)
+ 	if (!olpc_ofw_is_installed())
+ 		return;
+ 
++	olpc_dt_fixup();
++
+ 	root = olpc_dt_getsibling(0);
+ 	if (!root) {
+ 		pr_err("PROM: unable to get root node from OFW!\n");
+-- 
+1.7.4.4
+
