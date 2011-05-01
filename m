@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab1EANXF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:23:05 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38469 "EHLO e6.ny.us.ibm.com"
+	id S1760145Ab1EANcj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:32:39 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38387 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758381Ab1EANW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:22:56 -0400
+	id S1756810Ab1EANWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:22:33 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 52/86] net,rcu: convert call_rcu(ip_mc_socklist_reclaim) to kfree_rcu()
-Date: Sun,  1 May 2011 06:21:32 -0700
-Message-Id: <1304256126-26015-52-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 53/86] net,rcu: convert call_rcu(free_dm_hw_stat) to kfree_rcu()
+Date: Sun,  1 May 2011 06:21:33 -0700
+Message-Id: <1304256126-26015-53-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -26,53 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback ip_mc_socklist_reclaim() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(ip_mc_socklist_reclaim).
+The rcu callback free_dm_hw_stat() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(free_dm_hw_stat).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- net/ipv4/igmp.c |   12 ++----------
+ net/core/drop_monitor.c |   12 ++----------
  1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 85a6e5d..8f62d66 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1850,14 +1850,6 @@ static int ip_mc_leave_src(struct sock *sk, struct ip_mc_socklist *iml,
- 	return err;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index 706502f..7f36b38 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -207,14 +207,6 @@ static void trace_napi_poll_hit(void *ignore, struct napi_struct *napi)
+ 	rcu_read_unlock();
  }
  
 -
--static void ip_mc_socklist_reclaim(struct rcu_head *rp)
+-static void free_dm_hw_stat(struct rcu_head *head)
 -{
--	kfree(container_of(rp, struct ip_mc_socklist, rcu));
--	/* sk_omem_alloc should have been decreased by the caller*/
+-	struct dm_hw_stat_delta *n;
+-	n = container_of(head, struct dm_hw_stat_delta, rcu);
+-	kfree(n);
 -}
 -
--
- /*
-  *	Ask a socket to leave a group.
-  */
-@@ -1897,7 +1889,7 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
- 		rtnl_unlock();
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
--		call_rcu(&iml->rcu, ip_mc_socklist_reclaim);
-+		kfree_rcu(iml, rcu);
- 		return 0;
- 	}
- 	if (!in_dev)
-@@ -2312,7 +2304,7 @@ void ip_mc_drop_socket(struct sock *sk)
- 			ip_mc_dec_group(in_dev, iml->multi.imr_multiaddr.s_addr);
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
--		call_rcu(&iml->rcu, ip_mc_socklist_reclaim);
-+		kfree_rcu(iml, rcu);
- 	}
- 	rtnl_unlock();
- }
+ static int set_all_monitor_traces(int state)
+ {
+ 	int rc = 0;
+@@ -245,7 +237,7 @@ static int set_all_monitor_traces(int state)
+ 		list_for_each_entry_safe(new_stat, temp, &hw_stats_list, list) {
+ 			if (new_stat->dev == NULL) {
+ 				list_del_rcu(&new_stat->list);
+-				call_rcu(&new_stat->rcu, free_dm_hw_stat);
++				kfree_rcu(new_stat, rcu);
+ 			}
+ 		}
+ 		break;
+@@ -314,7 +306,7 @@ static int dropmon_net_event(struct notifier_block *ev_block,
+ 				new_stat->dev = NULL;
+ 				if (trace_state == TRACE_OFF) {
+ 					list_del_rcu(&new_stat->list);
+-					call_rcu(&new_stat->rcu, free_dm_hw_stat);
++					kfree_rcu(new_stat, rcu);
+ 					break;
+ 				}
+ 			}
 -- 
 1.7.3.2
 
