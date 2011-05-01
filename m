@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761369Ab1EAUJk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 16:09:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7813 "EHLO mx1.redhat.com"
+	id S1761349Ab1EAUNX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 16:13:23 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:63302 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761356Ab1EAUJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 16:09:34 -0400
-Date: Sun, 1 May 2011 22:08:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] signal: sys_sigprocmask() needs
-	retarget_shared_pending()
-Message-ID: <20110501200802.GB13831@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com> <20110426195002.GF8520@redhat.com> <BANLkTinp8FGQu2D1NVVc7xfEsqopook7Hg@mail.gmail.com> <20110501200738.GA13831@redhat.com>
+	id S1754425Ab1EAUNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 16:13:22 -0400
+Date: Sun, 1 May 2011 22:13:06 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: [PATCH] timer: apply_slack: fix algorithm to always get best result
+Message-ID: <20110501201306.GA17568@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110501200738.GA13831@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sys_sigprocmask() changes current->blocked by hand. Convert this code
-to use set_current_blocked().
+The current implementation of apply_slack() will select the most
+aligned value for "expires" only if the original value was not aligned.
+However, if the initial value is already aligned, the current
+algorithm will select the increased value. For example, betweem 1024
+and 1025, 1025 is selected.  Using "expires - 1" in the xor fixes the
+behaviour.  The short-circuit return is not really needed, as
+the following math will return the original value in any case.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Explanation:
+
+If the original "expires" value is aligned in some way (i.e., it ends
+with at least one 0 bit), then "expires-1" has the "aligned" bits set;
+thus they are good bits to be zeroed in the result, and the
+algorithm will do that because the xor will preserve the most significant
+bit that is already 0 on "expires" and is not 0 in "expires_limit".
+
+If "expires" is not aligned "expires-1" has less bits and will contribute
+at most bit number 0 to the xor. But bit 0 has no effect on the result:
+if it is the only bit, the resulting mask "(1 << bit) - 1" is 0; if there
+are other bits in the xor (i.e., expires_limit is not equal to expires),
+using "expires - 1" in the xor has the same effect as using "expires"
+and the most aligned value in the range will be chosen.
+
+With 1023 and 1025 (or any greater value), both versions return 1024,
+but with 1024 and 1025 this patch returns 1024, whereas original code
+returned 1025 -- in general it returned the most aligned between
+"expires+1" and "expires_limit", never returning "expires" itself,
+irrespective of its good alignment.
+
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 ---
 
- kernel/signal.c |   22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ kernel/timer.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- sigprocmask/kernel/signal.c~14_old_sigprocmask_retarget	2011-04-30 19:07:11.000000000 +0200
-+++ sigprocmask/kernel/signal.c	2011-05-01 21:34:51.000000000 +0200
-@@ -2900,7 +2900,7 @@ SYSCALL_DEFINE3(sigprocmask, int, how, o
- 		old_sigset_t __user *, oset)
- {
- 	old_sigset_t old_set, new_set;
--	int error;
-+	sigset_t new_blocked;
- 
- 	old_set = current->blocked.sig[0];
- 
-@@ -2909,27 +2909,23 @@ SYSCALL_DEFINE3(sigprocmask, int, how, o
- 			return -EFAULT;
- 		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
- 
--		error = 0;
--		spin_lock_irq(&current->sighand->siglock);
-+		new_blocked = current->blocked;
-+
- 		switch (how) {
--		default:
--			error = -EINVAL;
--			break;
- 		case SIG_BLOCK:
--			sigaddsetmask(&current->blocked, new_set);
-+			sigaddsetmask(&new_blocked, new_set);
- 			break;
- 		case SIG_UNBLOCK:
--			sigdelsetmask(&current->blocked, new_set);
-+			sigdelsetmask(&new_blocked, new_set);
- 			break;
- 		case SIG_SETMASK:
--			current->blocked.sig[0] = new_set;
-+			new_blocked.sig[0] = new_set;
- 			break;
-+		default:
-+			return -EINVAL;
- 		}
- 
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
--		if (error)
--			return error;
-+		set_current_blocked(&new_blocked);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index fd61986..b48ddbe 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -760,9 +760,9 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 		if (time_after(expires, now))
+ 			expires_limit = expires + (expires - now)/256;
  	}
+-	mask = expires ^ expires_limit;
+-	if (mask == 0)
++	if (expires_limit == expires)
+ 		return expires;
++	mask = (expires - 1) ^ expires_limit;
  
- 	if (oset) {
-
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ 
+-- 
+1.5.6.5
