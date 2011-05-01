@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab1EAP7v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:59:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1EAP7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:59:49 -0400
-Message-ID: <4DBD8367.6010901@redhat.com>
-Date: Sun, 01 May 2011 12:59:35 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+	id S1760891Ab1EAQAY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 12:00:24 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59804 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760858Ab1EAP75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 11:59:57 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Sun, 1 May 2011 08:59:35 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 45/86] net,act_police,rcu: remove
+ rcu_barrier()
+Message-ID: <20110501155935.GH14829@feather>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-45-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Florian Mickler <florian@mickler.org>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org, crope@iki.fi,
-        tvboxspy@gmail.com
-Subject: Re: [PATCH 0/5] get rid of on-stack dma buffers (part1)
-References: <1300657852-29318-1-git-send-email-florian@mickler.org>	<20110430205405.4beb7d33@schatten.dmk.lab>	<4DBC8D9C.2090802@redhat.com> <20110501123851.0ab6b799@schatten.dmk.lab>
-In-Reply-To: <20110501123851.0ab6b799@schatten.dmk.lab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304256126-26015-45-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 01-05-2011 07:38, Florian Mickler escreveu:
-> On Sat, 30 Apr 2011 19:30:52 -0300
-> Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+On Sun, May 01, 2011 at 06:21:25AM -0700, Paul E. McKenney wrote:
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
 > 
->> Hi Florian,
->>
->> Em 30-04-2011 15:54, Florian Mickler escreveu:
->>> Hi Mauro!
->>>
->>> I just saw that you picked up some patches of mine. What about these?
->>> These are actually tested...
->>
->> I'm still in process of applying the pending patches. Due to patchwork.kernel.org
->> troubles (including the loss of about 270 patches from its SQL database only 
->> recovered yesterday[1]), I have a long backlog. So, I'm gradually applying the remaing
->> stuff. It will take some time though, and it will depend on patchwork mood, but I intend
->> to spend some time during this weekend to minimize the backlog.
->>
->>
->> Cheers,
->> Mauro
->>
->> [1] The recover lost the email's body/SOB, so I've wrote a script to use my email
->> queue to get the data, using patchwork just to mark what patches were already
->> processed. This increses the time I have to spend on each patch, as I need to run
->> a script to match the patchwork patch with the patch ID inside my email queue.
->>
+> There is no callback of this module maybe queued
+> since we use kfree_rcu(), we can safely remove the rcu_barrier().
 > 
-> Ah ok, no time pressure over here.. just wanted to make sure
-> that these don't get lost.
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Acked-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  net/sched/act_police.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sched/act_police.c b/net/sched/act_police.c
+> index d6bcd64..b3b9b32 100644
+> --- a/net/sched/act_police.c
+> +++ b/net/sched/act_police.c
+> @@ -396,7 +396,6 @@ static void __exit
+>  police_cleanup_module(void)
+>  {
+>  	tcf_unregister_action(&act_police_ops);
+> -	rcu_barrier(); /* Wait for completion of call_rcu()'s (tcf_police_free_rcu) */
+>  }
 
-I think I've applied your series yesterday. Yet, patchwork is currently at bad mood, and it is
-not allowing to mark your patches as applied (and the previous series as superseded).
+Very nice side-effect of having common callback code.  Seems worth doing
+a review of other callers of rcu_barrier as well, to see if they still
+need to do so.
 
-I suspect that I'll need to completely abandon patchwork and work on a new way for handling it
-that doesn't depend (nor will update) patchwork.kernel.org.
-
-Mauro.
+- Josh Triplett
