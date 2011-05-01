@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab1EAN1X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:27:23 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:60597 "EHLO e3.ny.us.ibm.com"
+	id S1757329Ab1EAN1j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:27:39 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38411 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757334Ab1EANWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757283Ab1EANWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 May 2011 09:22:37 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 68/86] net,rcu: convert call_rcu(wq_free_rcu) to kfree_rcu()
-Date: Sun,  1 May 2011 06:21:48 -0700
-Message-Id: <1304256126-26015-68-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 69/86] net/mac80211,rcu: convert call_rcu(work_free_rcu) to kfree_rcu()
+Date: Sun,  1 May 2011 06:21:49 -0700
+Message-Id: <1304256126-26015-69-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -26,45 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback wq_free_rcu() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(wq_free_rcu).
+The rcu callback work_free_rcu() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(work_free_rcu).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: "John W. Linville" <linville@tuxdriver.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- net/socket.c |   11 +----------
- 1 files changed, 1 insertions(+), 10 deletions(-)
+ net/mac80211/work.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
-diff --git a/net/socket.c b/net/socket.c
-index 310d16b..c2ed7c9 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -263,15 +263,6 @@ static struct inode *sock_alloc_inode(struct super_block *sb)
- 	return &ei->vfs_inode;
+diff --git a/net/mac80211/work.c b/net/mac80211/work.c
+index e73c8ca..ac35496 100644
+--- a/net/mac80211/work.c
++++ b/net/mac80211/work.c
+@@ -65,17 +65,9 @@ static void run_again(struct ieee80211_local *local,
+ 		mod_timer(&local->work_timer, timeout);
  }
  
--
--
--static void wq_free_rcu(struct rcu_head *head)
+-static void work_free_rcu(struct rcu_head *head)
 -{
--	struct socket_wq *wq = container_of(head, struct socket_wq, rcu);
+-	struct ieee80211_work *wk =
+-		container_of(head, struct ieee80211_work, rcu_head);
 -
--	kfree(wq);
+-	kfree(wk);
 -}
 -
- static void sock_destroy_inode(struct inode *inode)
+ void free_work(struct ieee80211_work *wk)
  {
- 	struct socket_alloc *ei;
-@@ -279,7 +270,7 @@ static void sock_destroy_inode(struct inode *inode)
- 
- 	ei = container_of(inode, struct socket_alloc, vfs_inode);
- 	wq = rcu_dereference_protected(ei->socket.wq, 1);
--	call_rcu(&wq->rcu, wq_free_rcu);
-+	kfree_rcu(wq, rcu);
- 	kmem_cache_free(sock_inode_cachep, ei);
+-	call_rcu(&wk->rcu_head, work_free_rcu);
++	kfree_rcu(wk, rcu_head);
  }
  
+ static int ieee80211_compatible_rates(const u8 *supp_rates, int supp_rates_len,
 -- 
 1.7.3.2
 
