@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab1EAKqB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 06:46:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53916 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab1EAKqA (ORCPT
+	id S1754109Ab1EALHl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 07:07:41 -0400
+Received: from 232.Red-88-26-245.staticIP.rima-tde.net ([88.26.245.232]:42748
+	"HELO sysvalve.homelinux.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753268Ab1EALHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 06:46:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=KOWNFbE/XihlY5mLTxWKqsett9omXfcrS/G5YlOgYA3HNcnVB7iz35rvLbCCdT6SMM
-         1kxc/NMSU2mi2mhL5EOXcyolebl+ZuHlrTWaQ5jMUSzp7arwL18ZJlJQg3llbjuyruhI
-         M+6FaEy4usHTc8A23+BU0atJUdK3DWAIwqAJ8=
-Date: Sun, 1 May 2011 12:45:55 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH tip:x86/urgent] x86, NUMA: Fix empty memblk detection in
- numa_cleanup_meminfo()
-Message-ID: <20110501104555.GN29280@htj.dyndns.org>
+	Sun, 1 May 2011 07:07:39 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 May 2011 07:07:38 EDT
+From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+To: linux-kernel@vger.kernel.org
+Cc: dgiagio@gmail.com, dborca@yahoo.com, davem@davemloft.net,
+        pmcenery@gmail.com, david.hill@ubisoft.com,
+        linux-usb@vger.kernel.org (open list:USB SUBSYSTEM),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+Subject: [PATCH] ipheth.c: Enable IP header alignment
+Date: Sun,  1 May 2011 13:00:55 +0200
+Message-Id: <1304247656-21086-1-git-send-email-agimenez@sysvalve.es>
+X-Mailer: git-send-email 1.7.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: David Hill <david.hill@ubisoft.com>
 
-numa_cleanup_meminfo() trims each memblk between low (0) and high
-(max_pfn) limits and discards empty ones.  However, the emptiness
-detection incorrectly used equality test.  If the start of a memblk is
-higher than max_pfn, it is empty but fails the equality test and
-doesn't get discarded.
+Since commit ea812ca1b06113597adcd8e70c0f84a413d97544, NET_IP_ALIGN changed from
+2 to 0. Some people have reported that tethering stopped working and David Hill
+submited a patch that seems to fix the problem.
 
-Fix it by using >= instead of ==.
+I have no more an iPhone device to test it, so it is only compile-tested.
 
-tj: Extracted the actual fix from the original patch and rewrote patch
-    description.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
 ---
-Ingo, can you please push this to mainline?  Once it hits x86/urgent,
-I'll regenerate the 32bit NUMA unification branch on top of it with
-Yinghai's other patches and send pull request for x86/mm.
+ drivers/net/usb/ipheth.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Thank you.
-
- arch/x86/mm/numa_64.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: work/arch/x86/mm/numa_64.c
-===================================================================
---- work.orig/arch/x86/mm/numa_64.c
-+++ work/arch/x86/mm/numa_64.c
-@@ -191,7 +191,7 @@ int __init numa_cleanup_meminfo(struct n
- 		bi->end = min(bi->end, high);
+diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+index 7d42f9a..711346b 100644
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -54,6 +54,9 @@
+ #include <linux/usb.h>
+ #include <linux/workqueue.h>
  
- 		/* and there's no empty block */
--		if (bi->start == bi->end) {
-+		if (bi->start >= bi->end) {
- 			numa_remove_memblk_from(i--, mi);
- 			continue;
- 		}
++#undef  NET_IP_ALIGN
++#define NET_IP_ALIGN 2
++
+ #define USB_VENDOR_APPLE        0x05ac
+ #define USB_PRODUCT_IPHONE      0x1290
+ #define USB_PRODUCT_IPHONE_3G   0x1292
+-- 
+1.7.5
+
