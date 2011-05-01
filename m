@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab1EANVt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:21:49 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:49711 "EHLO e7.ny.us.ibm.com"
+	id S1760559Ab1EAN13 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:27:29 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:45030 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab1EANVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:21:48 -0400
-Date: Sun, 1 May 2011 06:21:42 -0700
+	id S1757307Ab1EANWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:22:37 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,66 +13,69 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@lnaro.org
-Subject: [PATCH tip/core/rcu 0/6] Preview of RCU patches for 2.6.40
-Message-ID: <20110501132142.GA25494@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 62/86] net,rcu: convert call_rcu(netlbl_unlhsh_free_addr6) to kfree_rcu()
+Date: Sun,  1 May 2011 06:21:42 -0700
+Message-Id: <1304256126-26015-62-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-This patchset introduces RCU_TREE priority boosting, a new "fire and
-forget" kfree_rcu() API, numerous uses of kfree_rcu(), plus a number
-of other fixes and improvements.  The patches are as follows:
+The rcu callback netlbl_unlhsh_free_addr6() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(netlbl_unlhsh_free_addr6).
 
-1.	Remove conditional compilation for RCU CPU stall warnings, which
-	are now controlled only by the boot command line and sysfs.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Paul Moore <paul.moore@hp.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ net/netlabel/netlabel_unlabeled.c |   22 +---------------------
+ 1 files changed, 1 insertions(+), 21 deletions(-)
 
-2.	Reworks RCU dyntick-idle interface to better tolerate theoretical
-	races introduced by expedited grace periods.
+diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+index 4e5ad90..9c38658 100644
+--- a/net/netlabel/netlabel_unlabeled.c
++++ b/net/netlabel/netlabel_unlabeled.c
+@@ -153,26 +153,6 @@ static const struct nla_policy netlbl_unlabel_genl_policy[NLBL_UNLABEL_A_MAX + 1
+  * Unlabeled Connection Hash Table Functions
+  */
+ 
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-/**
+- * netlbl_unlhsh_free_addr6 - Frees an IPv6 address entry from the hash table
+- * @entry: the entry's RCU field
+- *
+- * Description:
+- * This function is designed to be used as a callback to the call_rcu()
+- * function so that memory allocated to a hash table address entry can be
+- * released safely.
+- *
+- */
+-static void netlbl_unlhsh_free_addr6(struct rcu_head *entry)
+-{
+-	struct netlbl_unlhsh_addr6 *ptr;
+-
+-	ptr = container_of(entry, struct netlbl_unlhsh_addr6, rcu);
+-	kfree(ptr);
+-}
+-#endif /* IPv6 */
+-
+ /**
+  * netlbl_unlhsh_free_iface - Frees an interface entry from the hash table
+  * @entry: the entry's RCU field
+@@ -611,7 +591,7 @@ static int netlbl_unlhsh_remove_addr6(struct net *net,
+ 	if (entry == NULL)
+ 		return -ENOENT;
+ 
+-	call_rcu(&entry->rcu, netlbl_unlhsh_free_addr6);
++	kfree_rcu(entry, rcu);
+ 	return 0;
+ }
+ #endif /* IPv6 */
+-- 
+1.7.3.2
 
-3-9.	Introduce RCU priority boosting for TREE_RCU.
-
-10-19.	Upgrace TREE_RCU tracing to accommodate RCU priority boosting
-	and update documentation.
-
-20-23.	Make DEBUG_OBJECTS_RCU_HEAD work from !PREEMPT (thanks to
-	Mathieu Desnoyers).
-
-24.	Switch to this_cpu() primitives (thanks to Christoph Lameter).
-
-25-27.	Apply TREE_RCU priority-boosting lessons learned to TINY_RCU.
-
-28.	Avoid spurious diagnostics by moving from rcu_read_unlock() to
-	__rcu_read_unlock() in exit() patch (thanks to Lai Jiangshan).
-
-29.	Settle on "preemptible" spelling vs. "preemptable".
-
-30.	Introduce kfree_rcu() (thanks to Lai Jiangshan).
-
-31.	"Nice" down processes in rcu_yield(), which is called by RCU's
-	per-CPU kthreads to avoid monopolizing the CPU.
-
-32.	Improve latency by having call_rcu() avoid diving into the
-	RCU core code when called with irqs disabled.
-
-33.	Further reduce TINY_RCU's memory footprint (thanks to Eric
-	Dumazet).
-
-34-70.	Use kfree_rcu() throughout the kernel.  This set of patches has
-	Acked-by's, so will go up -tip.
-
-71-86.	Ditto, but lacking Acked-by's.
-
-For a testing-only version of this patchset from git, please see the
-following subject-to-rebase branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-
-							Thanx, Paul
