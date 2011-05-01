@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761310Ab1EASHi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 14:07:38 -0400
-Received: from zfrontend1.aha.ru ([195.2.83.147]:39259 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755062Ab1EASHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 14:07:37 -0400
-From: "werner" <w.landgraf@ru.ru>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Sun, 01 May 2011 14:07:33 -0400
-Message-ID: <web-516277136@zbackend1.aha.ru>
-In-Reply-To: <BANLkTimda-mi2rjgnX0jqg7Pg-J6HSDb6w@mail.gmail.com>
-References: <web-516164730@zbackend1.aha.ru>
- <BANLkTimda-mi2rjgnX0jqg7Pg-J6HSDb6w@mail.gmail.com>
+	id S1761312Ab1EASIk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 14:08:40 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:52362 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab1EASIi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 14:08:38 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Topic: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Thread-Index: AQHMBGnbOdiUysHbTUGr026Sn7cwwZRw2pzQgADfZgD//9dIkIAAhckAgALsDiCAAIGrgIADE/mA//+K1cCAAHyegP//qoFA
+Date: Sun, 1 May 2011 18:08:37 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DF2A0@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427064550.GA597@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427121856.GA20633@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110429164025.GA7698@kroah.com> <20110501154041.GB15210@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF253@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501160721.GA8195@infradead.org>
+In-Reply-To: <20110501160721.GA8195@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, my kernel compiling / packaging / lilo.conf-writing 
-script   always do this: it makes 3 manners for boot: 
- normal/grafics, text, initrd;  for this it makes an 
-initrd too.  See below.  Normally this also works without 
-any problem. This is necessary if someone want to make an 
-installer. And just because of this, I compile plenty 
-things inside vmlinuz , not as modules, because nowadays 
-people have any kind of devices with touchpad, touchscreen 
-etc.  And, last night, I tested all these boot methods, 
-but in all attempts happened that error, that it didnt 
-find the boot device, and then crashs, more strange 
-because there also is a bootwait option in the command 
-line (see below) (because nowadays people often have 
-installed my distro on an usb key, or on an eee pc just 
-the starter is on the internel flash chip, and the system 
-with root fs is on an usb harddisk what takes time to be 
-discovered).
 
 
-But, now, the 2nd compilation, I made with the slackware 
-huge configuration. And this works !! It boots normally, 
-and it also don't crash  if unzipping big files.  So you 
-were right, to use a more little config, for find out 
-better the reason.   However, remember, at the end (until 
--rc20) also the everythingyes config should work, because 
-this always was the case, and have to work because 
-nowadays people have all kinds of computers, laptops, 
-phones, coffe machines, washmachines etc etc running Linux 
-and the distro kernel have to run ANYWAY on ANY DEVICE.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Sunday, May 01, 2011 12:07 PM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; Greg KH; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+> 
+> On Sun, May 01, 2011 at 03:46:23PM +0000, KY Srinivasan wrote:
+> > What is the issue here? This is no different than what is done in other
+> > Virtualization platforms. For instance, the Xen blkfront driver is no
+> > different - if you specify the block device to be presented to the guest
+> > as an ide device, it will register for the appropriate ide major number.
+> 
+> No, it won't - at least not in mainline just because it's so buggy.
+> If distros keep that crap around I can only recommed you to not use
+> them.
 
+Christoph,
 
-That successful slackware huge config is in the middle 
-between the slackware smp config explained above which 
-didnt boot, and between my normal everythingyes 
-configuration which gave plenty problems.  So,  the 
-differences to both sides can make it more easy to find 
-out, a) why the slackware smp config didnt boot at all, 
-not finding the root fs,    and to the other side, why b) 
-my everythingyes config, which all the time worked (also 
-on 2.6.34.8), give so many problems with 2.6.39-rcX.
+Could you elaborate on the problems/issues when the block driver registers for the 
+IDE majors. On the Qemu side, we have a mechanism to disable the emulation when 
+PV drivers load. I don't think there is an equivalent mechanism on the Windows side.
+So, as far as I know, registering for the IDE majors is the only way to also prevent native
+drivers in Linux from taking control of the emulated device. 
 
-Pls find, enclosed, as the 2nd file, the successful config 
-which is still running on my computer and didnt crash yet 
-(entering with slackware huge smp into menuconfig end 
-going out without changes).  Also, as the 3rd file, is the 
-difference of this to my everythingyes config used for 
--git2 to -git4; from tese differences it should be 
-possible to find better what cause the many problems in 
-the sense of comparison b) above.
+Regards,
 
-However, I should mention, that this successful config has 
-a problem with the grafics. On the laptop of my neighbour, 
-it switched to a wrong text mode where the characters are 
-little and 3 times on the top of the screen. And on my 
-computer, I cannot change to the text screen with 
-CTRL-ALT-F1 etc.
+K. Y 
 
-
-wl
-
-
-
----
-Professional hosting for everyone - http://www.host.ru
