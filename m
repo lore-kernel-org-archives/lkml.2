@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab1EANNd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:13:33 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33182 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab1EANNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:13:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC 4/8] Make clear description of putback_lru_page
-Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <20110428084500.GG12437@cmpxchg.org>
-References: <BANLkTik2FTKgSSYkyP4XT4pkhOYvpjgSTA@mail.gmail.com> <20110428084500.GG12437@cmpxchg.org>
-Message-Id: <20110501221459.75E4.A69D9226@jp.fujitsu.com>
+	id S1754250Ab1EANST (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:18:19 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:51704 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab1EANSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:18:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Sun,  1 May 2011 22:13:28 +0900 (JST)
+Message-ID: <19901.23958.812431.852315@pilspetsen.it.uu.se>
+Date: Sun, 1 May 2011 15:18:14 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Mikael Pettersson" <mikpe@it.uu.se>
+Subject: Re: [Bug #33492] [bug] 2.6.39-rc3 fails to boot on Alpha
+In-Reply-To: <G9uL1cldhmL.A.aUE.kVGvNB@chimera>
+References: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
+	<G9uL1cldhmL.A.aUE.kVGvNB@chimera>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 28, 2011 at 08:20:32AM +0900, Minchan Kim wrote:
-> > On Wed, Apr 27, 2011 at 5:11 PM, KAMEZAWA Hiroyuki
-> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > On Wed, 27 Apr 2011 01:25:21 +0900
-> > > Minchan Kim <minchan.kim@gmail.com> wrote:
-> > >
-> > >> Commonly, putback_lru_page is used with isolated_lru_page.
-> > >> The isolated_lru_page picks the page in middle of LRU and
-> > >> putback_lru_page insert the lru in head of LRU.
-> > >> It means it could make LRU churning so we have to be very careful.
-> > >> Let's clear description of putback_lru_page.
-> > >>
-> > >> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > >> Cc: Mel Gorman <mgorman@suse.de>
-> > >> Cc: Rik van Riel <riel@redhat.com>
-> > >> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> > >
-> > > seems good...
-> > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > >
-> > > But is there consensus which side of LRU is tail? head?
-> > 
-> > I don't know. I used to think it's head.
-> > If other guys raise a concern as well, let's talk about it. :)
-> > Thanks
+On Sat, 30 Apr 2011 21:46:56 +0200 (CEST), "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> The following bug entry is on the current list of known regressions
+> from 2.6.38.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> I suppose we add new pages to the head of the LRU and reclaim old
-> pages from the tail.
 > 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=33492
+> Subject		: [bug] 2.6.39-rc3 fails to boot on Alpha
+> Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+> Date		: 2011-04-17 15:13 (14 days old)
+> Message-ID	: <19883.912.266127.538215@pilspetsen.it.uu.se>
+> References	: http://marc.info/?l=linux-kernel&m=130305321212360&w=2
 
-So, It would be better if isolate_lru_page() also have "LRU tail blah blah blah"
-comments.
+Fixed in 2.6.39-rc5.
 
-anyway,
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-
+/Mikael
