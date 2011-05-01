@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1EAJay (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 05:30:54 -0400
+	id S1753762Ab1EAJbL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 05:31:11 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:52691 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab1EAJav (ORCPT
+	with ESMTP id S1753067Ab1EAJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 05:30:51 -0400
+	Sun, 1 May 2011 05:31:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=j2GDEe5FSRFP6EBNd5Mj0XrpeEGaRZ/CEianhgtJqGsPWW3rDNjYdPd89TCFr3DF/z
-         n5p4DrrxsvkuArtDQ+yIJkGccJOLtSsBX/l7DGNLcL1DA4gJSO7JBcnvHormgIzZVVz/
-         SRnchWxdijBsVU+UXi803ZpzLv3RRS4tbOfYA=
-Date: Sun, 1 May 2011 04:30:46 -0500
+        b=rst+VpfQ2lSAtRnuo+nMip/9bYluqsr8FxBntipMZMfRLlEBkubh9+e0u4C9JaPl/4
+         6WWweZDsJXPg4YPZd2M2UvxB6/chTWYUSPIhjEyBFmDX4dA4zEPcNhLq+nfKJ2Ry27hW
+         1cLnhuMtvdGMZ0bVJiQ4h+V3+44VBj/uqccVg=
+Date: Sun, 1 May 2011 04:31:04 -0500
 From: Jonathan Nieder <jrnieder@gmail.com>
 To: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
         Dan Carpenter <error27@gmail.com>, Hans Verkuil <hverkuil@xs4all.nl>,
         Andi Huber <hobrom@gmx.at>, Marlon de Boer <marlon@hyves.nl>,
         Damien Churchill <damoxc@gmail.com>
-Subject: [PATCH 5/7] [media] cx88: gracefully reject attempts to use
- unregistered cx88-blackbird driver
-Message-ID: <20110501093046.GE18380@elie>
+Subject: [PATCH 6/7] [media] cx88: don't use atomic_t for core->mpeg_users
+Message-ID: <20110501093104.GF18380@elie>
 References: <20110501091710.GA18263@elie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,77 +33,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should not be possible to enter mpeg_open and acquire core->lock
-without the blackbird driver being registered, so just error out if it
-is not.  This makes the code more readable and should prevent the bug
-fixed by the patch "hold device lock during sub-driver initialization"
-from resurfacing again.
-
-Similarly, if we enter mpeg_release and acquire core->lock then either
-the blackbird driver is registered (since open files keep it loaded)
-or the sysadmin forced the driver's removal.  In the latter case the
-state will be inconsistent and this is worth a loud warning.
+mpeg_users is always read or written with core->lock held except
+in mpeg_release (where it looks like a bug).  A plain int is simpler
+and faster.
 
 Tested-by: Andi Huber <hobrom@gmx.at>
 Tested-by: Marlon de Boer <marlon@hyves.nl>
 Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
- drivers/media/video/cx88/cx88-blackbird.c |   25 ++++++++++++++-----------
- 1 files changed, 14 insertions(+), 11 deletions(-)
+ drivers/media/video/cx88/cx88-blackbird.c |   11 ++++++-----
+ drivers/media/video/cx88/cx88.h           |    2 +-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/media/video/cx88/cx88-blackbird.c b/drivers/media/video/cx88/cx88-blackbird.c
-index f637d34..fa8e347 100644
+index fa8e347..11e49bb 100644
 --- a/drivers/media/video/cx88/cx88-blackbird.c
 +++ b/drivers/media/video/cx88/cx88-blackbird.c
-@@ -1060,18 +1060,21 @@ static int mpeg_open(struct file *file)
- 
- 	/* Make sure we can acquire the hardware */
- 	drv = cx8802_get_driver(dev, CX88_MPEG_BLACKBIRD);
--	if (drv) {
--		err = drv->request_acquire(drv);
--		if(err != 0) {
--			dprintk(1,"%s: Unable to acquire hardware, %d\n", __func__, err);
--			mutex_unlock(&dev->core->lock);
--			return err;
--		}
-+	if (!drv) {
-+		dprintk(1, "%s: blackbird driver is not loaded\n", __func__);
-+		mutex_unlock(&dev->core->lock);
-+		return -ENODEV;
-+	}
-+
-+	err = drv->request_acquire(drv);
-+	if (err != 0) {
-+		dprintk(1,"%s: Unable to acquire hardware, %d\n", __func__, err);
-+		mutex_unlock(&dev->core->lock);
-+		return err;
+@@ -1073,7 +1073,7 @@ static int mpeg_open(struct file *file)
+ 		return err;
  	}
  
- 	if (!atomic_read(&dev->core->mpeg_users) && blackbird_initialize_codec(dev) < 0) {
--		if (drv)
--			drv->request_release(drv);
-+		drv->request_release(drv);
+-	if (!atomic_read(&dev->core->mpeg_users) && blackbird_initialize_codec(dev) < 0) {
++	if (!dev->core->mpeg_users && blackbird_initialize_codec(dev) < 0) {
+ 		drv->request_release(drv);
  		mutex_unlock(&dev->core->lock);
  		return -EINVAL;
- 	}
-@@ -1080,8 +1083,7 @@ static int mpeg_open(struct file *file)
- 	/* allocate + initialize per filehandle data */
- 	fh = kzalloc(sizeof(*fh),GFP_KERNEL);
- 	if (NULL == fh) {
--		if (drv)
--			drv->request_release(drv);
-+		drv->request_release(drv);
- 		mutex_unlock(&dev->core->lock);
- 		return -ENOMEM;
- 	}
-@@ -1125,6 +1127,7 @@ static int mpeg_release(struct file *file)
+@@ -1101,7 +1101,7 @@ static int mpeg_open(struct file *file)
+ 	cx88_set_scale(dev->core, dev->width, dev->height,
+ 			fh->mpegq.field);
  
- 	/* Make sure we release the hardware */
- 	drv = cx8802_get_driver(dev, CX88_MPEG_BLACKBIRD);
-+	WARN_ON(!drv);
+-	atomic_inc(&dev->core->mpeg_users);
++	dev->core->mpeg_users++;
+ 	mutex_unlock(&dev->core->lock);
+ 	return 0;
+ }
+@@ -1112,7 +1112,9 @@ static int mpeg_release(struct file *file)
+ 	struct cx8802_dev *dev = fh->dev;
+ 	struct cx8802_driver *drv = NULL;
+ 
+-	if (dev->mpeg_active && atomic_read(&dev->core->mpeg_users) == 1)
++	mutex_lock(&dev->core->lock);
++
++	if (dev->mpeg_active && dev->core->mpeg_users == 1)
+ 		blackbird_stop_codec(dev);
+ 
+ 	cx8802_cancel_buffers(fh->dev);
+@@ -1121,7 +1123,6 @@ static int mpeg_release(struct file *file)
+ 
+ 	videobuf_mmap_free(&fh->mpegq);
+ 
+-	mutex_lock(&dev->core->lock);
+ 	file->private_data = NULL;
+ 	kfree(fh);
+ 
+@@ -1131,7 +1132,7 @@ static int mpeg_release(struct file *file)
  	if (drv)
  		drv->request_release(drv);
  
+-	atomic_dec(&dev->core->mpeg_users);
++	dev->core->mpeg_users--;
+ 
+ 	mutex_unlock(&dev->core->lock);
+ 
+diff --git a/drivers/media/video/cx88/cx88.h b/drivers/media/video/cx88/cx88.h
+index 93a94bf..09e329f 100644
+--- a/drivers/media/video/cx88/cx88.h
++++ b/drivers/media/video/cx88/cx88.h
+@@ -384,7 +384,7 @@ struct cx88_core {
+ 	/* various v4l controls */
+ 	u32                        freq;
+ 	atomic_t		   users;
+-	atomic_t                   mpeg_users;
++	int                        mpeg_users;
+ 
+ 	/* cx88-video needs to access cx8802 for hybrid tuner pll access. */
+ 	struct cx8802_dev          *dvbdev;
 -- 
 1.7.5
 
