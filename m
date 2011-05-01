@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab1EAP3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:29:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61283 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab1EAP3L convert rfc822-to-8bit (ORCPT
+	id S1756463Ab1EAPfE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:35:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51740 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab1EAPfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:29:11 -0400
+	Sun, 1 May 2011 11:35:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kaPGNhfyYqHXlZitkhQp9QSN+3Q1fcQvrUP1M5sIGc2hEo+W/9r3OIW/uWnQGBNr2p
-         U69f7HwenUuildfpPiXLrdDnWcPU9EkiEoqq8pAYBh7Pdjs+ZaRukbUMqSoMxgXIW7WM
-         lQYbDHRwawcHozkQ5/DfbngnrNkc0us9DmNXo=
-MIME-Version: 1.0
-In-Reply-To: <20110501224844.75EC.A69D9226@jp.fujitsu.com>
-References: <51e7412097fa62f86656c77c1934e3eb96d5eef6.1303833417.git.minchan.kim@gmail.com>
-	<20110428110623.GU4658@suse.de>
-	<20110501224844.75EC.A69D9226@jp.fujitsu.com>
-Date: Mon, 2 May 2011 00:29:10 +0900
-Message-ID: <BANLkTikHf+3vhnXFu3ubWXOXkCkD4j206Q@mail.gmail.com>
-Subject: Re: [RFC 6/8] In order putback lru core
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Sq5dZZF0X3k4vBMRdUrBnv77WpDNEzxT/hfaukZETLTU8k5rr38wCxjXPDNgvdkfbz
+         wUTHamkAJo4kgZFeX9hIZCafWGlH7Y3gPk3aqjJxzGazVDmMF9/qx0IQSy73hPM35zRw
+         y+CPGyzmejarU1CZSqqkLALRb0e31EOyMwPZc=
+Subject: [PATCH] hwmon: twl4030-madc-hwmon: Return proper error if
+ hwmon_device_register fails
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: J Keerthy <j-keerthy@ti.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 May 2011 23:34:55 +0800
+Message-ID: <1304264095.2327.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 1, 2011 at 10:47 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> > +/* This structure is used for keeping LRU ordering of isolated page */
->> > +struct pages_lru {
->> > +        struct page *page;      /* isolated page */
->> > +        struct page *prev_page; /* previous page of isolate page as LRU order */
->> > +        struct page *next_page; /* next page of isolate page as LRU order */
->> > +        struct list_head lru;
->> > +};
->> >  /*
->>
->> So this thing has to be allocated from somewhere. We can't put it
->> on the stack as we're already in danger there so we must be using
->> kmalloc. In the reclaim paths, this should be avoided obviously.
->> For compaction, we might hurt the compaction success rates if pages
->> are pinned with control structures. It's something to be wary of.
->>
->> At LSF/MM, I stated a preference for swapping the source and
->> destination pages in the LRU. This unfortunately means that the LRU
->> now contains a page in the process of being migrated to and the backout
->> paths for migration failure become a lot more complex. Reclaim should
->> be ok as it'll should fail to lock the page and recycle it in the list.
->> This avoids allocations but I freely admit that I'm not in the position
->> to implement such a thing right now :(
->
-> I like swaping to fake page. one way pointer might become dangerous. vmscan can
-> detect fake page and ignore it.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hwmon/twl4030-madc-hwmon.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-
-I guess it means swapping between migrated-from page and migrated-to page.
-Right? If so, migrated-from page is already removed from LRU list and
-migrated-to page isn't LRU as it's page allocated newly so they don't
-have any LRU information. How can we swap them? We need space keeps
-LRU information before removing the page from LRU list. :(
-
-Could you explain in detail about swapping if I miss something?
-
-About one way pointer, I think it's no problem. Worst case I imagine
-is to put the page in head of LRU list. It means it's same issue now.
-So it doesn't make worse than now.
-
->
-> ie,
-> is_fake_page(page)
-> {
->        if (is_stack_addr((void*)page))
->                return true;
->        return false;
-> }
->
-> Also, I like to use stack rather than kmalloc in compaction.
->
-
-Compaction is a procedure of reclaim. As you know, we had a problem
-about using of stack during reclaim path.
-I admit kmalloc-thing isn't good.
-I will try to solve the issue as TODO.
-
-Thanks for the review, KOSAKI.
-
-
+diff --git a/drivers/hwmon/twl4030-madc-hwmon.c b/drivers/hwmon/twl4030-madc-hwmon.c
+index de58191..5724074 100644
+--- a/drivers/hwmon/twl4030-madc-hwmon.c
++++ b/drivers/hwmon/twl4030-madc-hwmon.c
+@@ -98,7 +98,6 @@ static const struct attribute_group twl4030_madc_group = {
+ static int __devinit twl4030_madc_hwmon_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+-	int status;
+ 	struct device *hwmon;
+ 
+ 	ret = sysfs_create_group(&pdev->dev.kobj, &twl4030_madc_group);
+@@ -107,7 +106,7 @@ static int __devinit twl4030_madc_hwmon_probe(struct platform_device *pdev)
+ 	hwmon = hwmon_device_register(&pdev->dev);
+ 	if (IS_ERR(hwmon)) {
+ 		dev_err(&pdev->dev, "hwmon_device_register failed.\n");
+-		status = PTR_ERR(hwmon);
++		ret = PTR_ERR(hwmon);
+ 		goto err_reg;
+ 	}
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.1
+
+
+
