@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab1EAV7Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 17:59:16 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:40008 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab1EAV7O convert rfc822-to-8bit (ORCPT
+	id S1752883Ab1EAWKe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 18:10:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48391 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab1EAWKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 17:59:14 -0400
-From: gene heskett <gheskett@wdtv.com>
-To: linux-kernel@vger.kernel.org
-Subject: Nother silly Q
-Date: Sun, 1 May 2011 17:59:03 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.4-pclos1.pae; KDE/4.6.2; i686; ; )
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105011759.03189.gheskett@wdtv.com>
+	Sun, 1 May 2011 18:10:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IJL16dhsKegJORt8jlLhT3vMytg+j+oDL2tMu1M0rxLRfdkabNZ4EhWu0+xTaqw1Z3
+         DErHHlBIY6uP7hvts/SVwd98o3xnow6R5rKaKsZ6L0Hl12FZsb5QicHLdTQKGv8oLMsw
+         TQ2r4Sy1VnKwprOBzu9MqMYA42ovmNOOzf5MU=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Cc: linux-ide@vger.kernel.org
+Subject: [PATCH] ide/ide-scan-pci.c: Use for_each_pci_dev().
+Date: Sun,  1 May 2011 19:10:25 -0300
+Message-Id: <1304287825-8023-1-git-send-email-tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc2.5.g60e19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings;
+Use for_each_pci_dev() to simplify the code.
 
-Apparently, as of 2.6.38.4, sane and xsane are dead, cannot find any 
-devices.
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ drivers/ide/ide-scan-pci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->From dmesg: an Epson NX515 MFP which includes a scanner
-usb 1-4: new high speed USB device using ehci_hcd and address 4
-usb 1-4: New USB device found, idVendor=04b8, idProduct=0856
-usb 1-4: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-usb 1-4: Product: USB2.0 MFP(Hi-Speed)
-usb 1-4: Manufacturer: EPSON
-usb 1-4: SerialNumber: 4C454C593037313524
-usb 1-4: usbfs: interface 2 claimed by usb-storage while 'usb' sets config 
-#1
-
-And from dmesg: an Epson 1250-u flatbed scanner:
-usb 2-7: new full speed USB device using ohci_hcd and address 4
-usb 2-7: New USB device found, idVendor=04b8, idProduct=010f
-usb 2-7: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-usb 2-7: Product: EPSON Scanner 010F
-usb 2-7: Manufacturer: EPSON
-
-lspci & lsusb outputs look ok.  As recently as 2.6.38 final, xsane was 
-showing me a menu that included these 2 scanners plus my pcHDTV-3000 card 
-as possible src's.
-
-What do I need to do to fix this?
-
-Thanks.
-
+diff --git a/drivers/ide/ide-scan-pci.c b/drivers/ide/ide-scan-pci.c
+index 0e79eff..c3da53e 100644
+--- a/drivers/ide/ide-scan-pci.c
++++ b/drivers/ide/ide-scan-pci.c
+@@ -88,7 +88,7 @@ static int __init ide_scan_pcibus(void)
+ 	struct list_head *l, *n;
+ 
+ 	pre_init = 0;
+-	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)))
++	for_each_pci_dev(dev)
+ 		ide_scan_pcidev(dev);
+ 
+ 	/*
 -- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-<http://tinyurl.com/ddg5bz>
-<http://www.cantrip.org/gatto.html>
-General notions are generally wrong.
-		-- Lady M.W. Montagu
+1.7.5.rc2.5.g60e19
+
