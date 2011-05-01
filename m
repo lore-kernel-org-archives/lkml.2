@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab1EAJ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 05:29:25 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41482 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1EAJ3X (ORCPT
+	id S1753404Ab1EAJ3v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 05:29:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56519 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab1EAJ3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 05:29:23 -0400
+	Sun, 1 May 2011 05:29:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=HVyu/cnakr8alCCXkqkfbwWSaNa9z64dJj+2vfKUNGT7280QqjviLUpLwVEwY754fH
-         4AqWfpgWpxqMAgWMBnpzhcgkpSo1ACmkEwo8DWw43U4CJf7lQrAOv9RorImot+60PSsB
-         YlcXqytWO/Caac9KldsCuDx4GQH9fGTPg/8K8=
-Date: Sun, 1 May 2011 04:29:16 -0500
+        b=TuPuZ+EZryMDnlL2SjcQpLD6I1TJ2wS6+ILM6X8CdMj0sxmeNN69NMi49uP67B0Zh1
+         VHorjfq7l/jKhx/TPOUksJGnV9UrLFneZxyBASFc+VrquXsCqiNLtqTPphlFQUyFEXWX
+         reEMlxunqfgz6KqfvBxdkd7IpMwidjIdYGZtk=
+Date: Sun, 1 May 2011 04:29:37 -0500
 From: Jonathan Nieder <jrnieder@gmail.com>
 To: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
         Dan Carpenter <error27@gmail.com>, Hans Verkuil <hverkuil@xs4all.nl>,
         Andi Huber <hobrom@gmx.at>, Marlon de Boer <marlon@hyves.nl>,
         Damien Churchill <damoxc@gmail.com>
-Subject: [PATCH 1/7] [media] cx88: protect per-device driver list with device
- lock
-Message-ID: <20110501092859.GA18380@elie>
+Subject: [PATCH 2/7] [media] cx88: fix locking of sub-driver operations
+Message-ID: <20110501092937.GB18380@elie>
 References: <20110501091710.GA18263@elie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,163 +33,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BKL conversion of this driver seems to have gone wrong.  Various
-uses of the sub-device and driver lists appear to be subject to race
-conditions.
+The BKL conversion of this driver seems to have gone wrong.
+Loading the cx88-blackbird driver deadlocks.
 
-In particular, some functions access drvlist without a relevant lock
-held, which will race against removal of drivers.  Let's start with
-that --- clean up by consistently protecting dev->drvlist with
-dev->core->lock, noting driver functions that require the device lock
-to be held or not to be held.
-
-After this patch, there are still some races --- e.g.,
-cx8802_blackbird_remove can run between the time the blackbird driver
-is acquired and the time it is used in mpeg_release, and there's a
-similar race in cx88_dvb_bus_ctrl.  Later patches will address the
-remaining known races and the deadlock noticed by Andi.  This patch
-just makes the semantics clearer in preparation for those later
-changes.
+The cause: mpeg_ops::open in the cx2388x blackbird driver acquires the
+device lock and calls the sub-driver's request_acquire, which tries to
+acquire the lock again.  Fix it by clarifying the semantics of
+request_acquire, request_release, advise_acquire, and advise_release:
+now all will rely on the caller to acquire the device lock.
 
 Based on work by Ben Hutchings <ben@decadent.org.uk>.
 
+Reported-by: Andi Huber <hobrom@gmx.at>
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=31962
 Tested-by: Andi Huber <hobrom@gmx.at>
 Tested-by: Marlon de Boer <marlon@hyves.nl>
 Cc: stable@kernel.org
 Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
- drivers/media/video/cx88/cx88-blackbird.c |    3 ++-
- drivers/media/video/cx88/cx88-dvb.c       |    3 +++
- drivers/media/video/cx88/cx88-mpeg.c      |   11 +++++++----
- drivers/media/video/cx88/cx88.h           |    9 ++++++++-
- 4 files changed, 20 insertions(+), 6 deletions(-)
+ drivers/media/video/cx88/cx88-blackbird.c |    4 ++--
+ drivers/media/video/cx88/cx88-dvb.c       |    3 +--
+ drivers/media/video/cx88/cx88-mpeg.c      |    4 ----
+ drivers/media/video/cx88/cx88.h           |    3 ++-
+ 4 files changed, 5 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/media/video/cx88/cx88-blackbird.c b/drivers/media/video/cx88/cx88-blackbird.c
-index bca307e..b93fbd3 100644
+index b93fbd3..a6f7d53 100644
 --- a/drivers/media/video/cx88/cx88-blackbird.c
 +++ b/drivers/media/video/cx88/cx88-blackbird.c
-@@ -1122,10 +1122,11 @@ static int mpeg_release(struct file *file)
- 	mutex_lock(&dev->core->lock);
- 	file->private_data = NULL;
- 	kfree(fh);
--	mutex_unlock(&dev->core->lock);
+@@ -1125,13 +1125,13 @@ static int mpeg_release(struct file *file)
  
  	/* Make sure we release the hardware */
  	drv = cx8802_get_driver(dev, CX88_MPEG_BLACKBIRD);
-+	mutex_unlock(&dev->core->lock);
-+
+-	mutex_unlock(&dev->core->lock);
+-
  	if (drv)
  		drv->request_release(drv);
  
-diff --git a/drivers/media/video/cx88/cx88-dvb.c b/drivers/media/video/cx88/cx88-dvb.c
-index 90717ee..88a1507 100644
---- a/drivers/media/video/cx88/cx88-dvb.c
-+++ b/drivers/media/video/cx88/cx88-dvb.c
-@@ -132,7 +132,10 @@ static int cx88_dvb_bus_ctrl(struct dvb_frontend* fe, int acquire)
- 		return -EINVAL;
- 	}
+ 	atomic_dec(&dev->core->mpeg_users);
  
-+	mutex_lock(&dev->core->lock);
- 	drv = cx8802_get_driver(dev, CX88_MPEG_DVB);
 +	mutex_unlock(&dev->core->lock);
 +
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/video/cx88/cx88-dvb.c b/drivers/media/video/cx88/cx88-dvb.c
+index 88a1507..5eccd02 100644
+--- a/drivers/media/video/cx88/cx88-dvb.c
++++ b/drivers/media/video/cx88/cx88-dvb.c
+@@ -134,8 +134,6 @@ static int cx88_dvb_bus_ctrl(struct dvb_frontend* fe, int acquire)
+ 
+ 	mutex_lock(&dev->core->lock);
+ 	drv = cx8802_get_driver(dev, CX88_MPEG_DVB);
+-	mutex_unlock(&dev->core->lock);
+-
  	if (drv) {
  		if (acquire){
  			dev->frontends.active_fe_id = fe_id;
+@@ -145,6 +143,7 @@ static int cx88_dvb_bus_ctrl(struct dvb_frontend* fe, int acquire)
+ 			dev->frontends.active_fe_id = 0;
+ 		}
+ 	}
++	mutex_unlock(&dev->core->lock);
+ 
+ 	return ret;
+ }
 diff --git a/drivers/media/video/cx88/cx88-mpeg.c b/drivers/media/video/cx88/cx88-mpeg.c
-index addf954..918172b 100644
+index 918172b..9147c16 100644
 --- a/drivers/media/video/cx88/cx88-mpeg.c
 +++ b/drivers/media/video/cx88/cx88-mpeg.c
-@@ -748,6 +748,8 @@ int cx8802_unregister_driver(struct cx8802_driver *drv)
- 		       dev->pci->subsystem_device, dev->core->board.name,
- 		       dev->core->boardnr);
+@@ -624,13 +624,11 @@ static int cx8802_request_acquire(struct cx8802_driver *drv)
  
-+		mutex_lock(&dev->core->lock);
-+
- 		list_for_each_entry_safe(d, dtmp, &dev->drvlist, drvlist) {
- 			/* only unregister the correct driver type */
- 			if (d->type_id != drv->type_id)
-@@ -755,15 +757,14 @@ int cx8802_unregister_driver(struct cx8802_driver *drv)
- 
- 			err = d->remove(d);
- 			if (err == 0) {
--				mutex_lock(&drv->core->lock);
- 				list_del(&d->drvlist);
--				mutex_unlock(&drv->core->lock);
- 				kfree(d);
- 			} else
- 				printk(KERN_ERR "%s/2: cx8802 driver remove "
- 				       "failed (%d)\n", dev->core->name, err);
+ 	if (drv->advise_acquire)
+ 	{
+-		mutex_lock(&drv->core->lock);
+ 		core->active_ref++;
+ 		if (core->active_type_id == CX88_BOARD_NONE) {
+ 			core->active_type_id = drv->type_id;
+ 			drv->advise_acquire(drv);
  		}
+-		mutex_unlock(&drv->core->lock);
  
-+		mutex_unlock(&dev->core->lock);
+ 		mpeg_dbg(1,"%s() Post acquire GPIO=%x\n", __func__, cx_read(MO_GP0_IO));
  	}
+@@ -643,14 +641,12 @@ static int cx8802_request_release(struct cx8802_driver *drv)
+ {
+ 	struct cx88_core *core = drv->core;
  
- 	return err;
-@@ -827,6 +828,8 @@ static void __devexit cx8802_remove(struct pci_dev *pci_dev)
- 
- 	flush_request_modules(dev);
- 
-+	mutex_lock(&dev->core->lock);
-+
- 	if (!list_empty(&dev->drvlist)) {
- 		struct cx8802_driver *drv, *tmp;
- 		int err;
-@@ -838,9 +841,7 @@ static void __devexit cx8802_remove(struct pci_dev *pci_dev)
- 		list_for_each_entry_safe(drv, tmp, &dev->drvlist, drvlist) {
- 			err = drv->remove(drv);
- 			if (err == 0) {
--				mutex_lock(&drv->core->lock);
- 				list_del(&drv->drvlist);
--				mutex_unlock(&drv->core->lock);
- 			} else
- 				printk(KERN_ERR "%s/2: cx8802 driver remove "
- 				       "failed (%d)\n", dev->core->name, err);
-@@ -848,6 +849,8 @@ static void __devexit cx8802_remove(struct pci_dev *pci_dev)
- 		}
+-	mutex_lock(&drv->core->lock);
+ 	if (drv->advise_release && --core->active_ref == 0)
+ 	{
+ 		drv->advise_release(drv);
+ 		core->active_type_id = CX88_BOARD_NONE;
+ 		mpeg_dbg(1,"%s() Post release GPIO=%x\n", __func__, cx_read(MO_GP0_IO));
  	}
+-	mutex_unlock(&drv->core->lock);
  
-+	mutex_unlock(&dev->core->lock);
-+
- 	/* Destroy any 8802 reference. */
- 	dev->core->dvbdev = NULL;
- 
+ 	return 0;
+ }
 diff --git a/drivers/media/video/cx88/cx88.h b/drivers/media/video/cx88/cx88.h
-index c9981e7..6ff34c7 100644
+index 6ff34c7..e912919 100644
 --- a/drivers/media/video/cx88/cx88.h
 +++ b/drivers/media/video/cx88/cx88.h
-@@ -496,7 +496,11 @@ struct cx8802_driver {
- 	int (*resume)(struct pci_dev *pci_dev);
- 
- 	/* MPEG 8802 -> mini driver - Driver probe and configuration */
-+
-+	/* Caller must _not_ hold core->lock */
+@@ -500,7 +500,8 @@ struct cx8802_driver {
+ 	/* Caller must _not_ hold core->lock */
  	int (*probe)(struct cx8802_driver *drv);
+ 
+-	/* Caller must hold core->lock */
++	/* Callers to the following functions must hold core->lock */
 +
-+	/* Caller must hold core->lock */
  	int (*remove)(struct cx8802_driver *drv);
  
  	/* MPEG 8802 -> mini driver - Access for hardware control */
-@@ -551,8 +555,9 @@ struct cx8802_dev {
- 	/* for switching modulation types */
- 	unsigned char              ts_gen_cntrl;
- 
--	/* List of attached drivers */
-+	/* List of attached drivers; must hold core->lock to access */
- 	struct list_head	   drvlist;
-+
- 	struct work_struct	   request_module_wk;
- };
- 
-@@ -675,6 +680,8 @@ int cx88_audio_thread(void *data);
- 
- int cx8802_register_driver(struct cx8802_driver *drv);
- int cx8802_unregister_driver(struct cx8802_driver *drv);
-+
-+/* Caller must hold core->lock */
- struct cx8802_driver * cx8802_get_driver(struct cx8802_dev *dev, enum cx88_board_type btype);
- 
- /* ----------------------------------------------------------- */
 -- 
 1.7.5
 
