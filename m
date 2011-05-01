@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1EACyt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 22:54:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46155 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750941Ab1EACys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 22:54:48 -0400
+	id S1753152Ab1EADZN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 23:25:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61548 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab1EADZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 23:25:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,296,1301900400"; 
+   d="scan'208";a="686573595"
+Date: Sun, 1 May 2011 11:25:07 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mmotm: fix hang at startup
+Message-ID: <20110501032507.GA21118@localhost>
+References: <201104300002.p3U02Ma2026266@imap1.linux-foundation.org>
+ <alpine.LSU.2.00.1104301929520.1343@sister.anvils>
 MIME-Version: 1.0
-In-Reply-To: <web-516109980@zbackend1.aha.ru>
-References: <web-515866242@zbackend1.aha.ru> <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
- <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com> <web-515897851@zbackend1.aha.ru>
- <BANLkTi==L3vDQ0jF9jP1hzhU-WmToBh=uA@mail.gmail.com> <20110430114332.GC29280@htj.dyndns.org>
- <4DBC09C7.9080205@fusionio.com> <BANLkTimGJiugYaXW8c77dspjADrF+m4VHA@mail.gmail.com>
- <web-516074613@zbackend1.aha.ru> <BANLkTin8wf0T9nD9zmdh=4-rmj6WCy86cA@mail.gmail.com>
- <web-516109980@zbackend1.aha.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Apr 2011 19:53:57 -0700
-Message-ID: <BANLkTi=POnnoNLy=iaubARMYG4L4CxEOLQ@mail.gmail.com>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-To: werner <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
-Content-Type: text/plain; charset=KOI8-R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1104301929520.1343@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/30 werner <w.landgraf@ru.ru>:
+On Sun, May 01, 2011 at 10:35:38AM +0800, Hugh Dickins wrote:
+> Yesterday's mmotm hangs at startup, and with lockdep it reports:
+> BUG: spinlock recursion on CPU#1, blkid/284 - with bdi_lock_two()
+> called from bdev_inode_switch_bdi() in the backtrace.  It appears
+> that this function is sometimes called with new the same as old.
 >
-> On the other hand, there occurs also ocasional crashs during booting in an
-> earlier stage. See the 2nd foto anexed.
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Oh, you have KMEMLEAK enabled too.
+Thanks!
 
-Disable it. It is very useful when looking for leaks and when it
-works, but it often doesn't work, and just leads to problems.
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 
-                  Linus
+> Fix to
+> writeback-split-inode_wb_list_lock-into-bdi_writebacklist_lock.patch
+> 
+>  fs/block_dev.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> --- 2.6.39-rc5-mm1/fs/block_dev.c	2011-04-29 18:20:09.183314733 -0700
+> +++ linux/fs/block_dev.c	2011-04-30 17:55:45.718785263 -0700
+> @@ -57,6 +57,8 @@ static void bdev_inode_switch_bdi(struct
+>  {
+>  	struct backing_dev_info *old = inode->i_data.backing_dev_info;
+>  
+> +	if (dst == old)
+> +		return;
+
+nitpick: it could help to add a comment
+
+        /* avoid spinlock recursion */
+
+to indicate that's not merely an optional optimization, but indeed
+required for correctness.
+
+Thanks,
+Fengguang
+
+>  	bdi_lock_two(&old->wb, &dst->wb);
+>  	spin_lock(&inode->i_lock);
+>  	inode->i_data.backing_dev_info = dst;
