@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317Ab1EAN0D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:26:03 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:45050 "EHLO e1.ny.us.ibm.com"
+	id S1760098Ab1EAN0F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:26:05 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38426 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757728Ab1EANWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757724Ab1EANWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 May 2011 09:22:39 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -16,9 +16,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@gmail.com>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH tip/core/rcu 85/86] vmalloc,rcu: convert call_rcu(rcu_free_va) to kfree_rcu()
-Date: Sun,  1 May 2011 06:22:05 -0700
-Message-Id: <1304256126-26015-85-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 86/86] vmalloc,rcu: convert call_rcu(rcu_free_vb) to kfree_rcu()
+Date: Sun,  1 May 2011 06:22:06 -0700
+Message-Id: <1304256126-26015-86-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -28,12 +28,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback rcu_free_va() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(rcu_free_va).
+The rcu callback rcu_free_vb() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(rcu_free_vb).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: David Rientjes <rientjes@google.com>
 ---
@@ -41,32 +41,32 @@ Cc: David Rientjes <rientjes@google.com>
  1 files changed, 1 insertions(+), 8 deletions(-)
 
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5d60302..73f56c8 100644
+index 73f56c8..6540116 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
-@@ -452,13 +452,6 @@ overflow:
- 	return ERR_PTR(-EBUSY);
+@@ -830,13 +830,6 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
+ 	return vb;
  }
  
--static void rcu_free_va(struct rcu_head *head)
+-static void rcu_free_vb(struct rcu_head *head)
 -{
--	struct vmap_area *va = container_of(head, struct vmap_area, rcu_head);
+-	struct vmap_block *vb = container_of(head, struct vmap_block, rcu_head);
 -
--	kfree(va);
+-	kfree(vb);
 -}
 -
- static void __free_vmap_area(struct vmap_area *va)
+ static void free_vmap_block(struct vmap_block *vb)
  {
- 	BUG_ON(RB_EMPTY_NODE(&va->rb_node));
-@@ -491,7 +484,7 @@ static void __free_vmap_area(struct vmap_area *va)
- 	if (va->va_end > VMALLOC_START && va->va_end <= VMALLOC_END)
- 		vmap_area_pcpu_hole = max(vmap_area_pcpu_hole, va->va_end);
+ 	struct vmap_block *tmp;
+@@ -849,7 +842,7 @@ static void free_vmap_block(struct vmap_block *vb)
+ 	BUG_ON(tmp != vb);
  
--	call_rcu(&va->rcu_head, rcu_free_va);
-+	kfree_rcu(va, rcu_head);
+ 	free_vmap_area_noflush(vb->va);
+-	call_rcu(&vb->rcu_head, rcu_free_vb);
++	kfree_rcu(vb, rcu_head);
  }
  
- /*
+ static void purge_fragmented_blocks(int cpu)
 -- 
 1.7.3.2
 
