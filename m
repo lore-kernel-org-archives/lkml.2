@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761304Ab1EASBL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 14:01:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52128 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755358Ab1EASBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 14:01:08 -0400
-Date: Sun, 1 May 2011 20:00:38 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Carl Love <carll@us.ibm.com>
-Subject: Re: re-enable Nehalem raw Offcore-Events support
-Message-ID: <20110501180038.GB27830@elte.hu>
-References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu>
- <BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com>
- <20110429172525.GA2745@tassilo.jf.intel.com>
- <alpine.LFD.2.02.1104291938240.3005@ionos>
- <4DBC6BC1.5090102@linux.vnet.ibm.com>
- <20110501044551.GB16177@alboin.amr.corp.intel.com>
+	id S1761310Ab1EASHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 14:07:38 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:39259 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755062Ab1EASHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 14:07:37 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Sun, 01 May 2011 14:07:33 -0400
+Message-ID: <web-516277136@zbackend1.aha.ru>
+In-Reply-To: <BANLkTimda-mi2rjgnX0jqg7Pg-J6HSDb6w@mail.gmail.com>
+References: <web-516164730@zbackend1.aha.ru>
+ <BANLkTimda-mi2rjgnX0jqg7Pg-J6HSDb6w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110501044551.GB16177@alboin.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yes, my kernel compiling / packaging / lilo.conf-writing 
+script   always do this: it makes 3 manners for boot: 
+ normal/grafics, text, initrd;  for this it makes an 
+initrd too.  See below.  Normally this also works without 
+any problem. This is necessary if someone want to make an 
+installer. And just because of this, I compile plenty 
+things inside vmlinuz , not as modules, because nowadays 
+people have any kind of devices with touchpad, touchscreen 
+etc.  And, last night, I tested all these boot methods, 
+but in all attempts happened that error, that it didnt 
+find the boot device, and then crashs, more strange 
+because there also is a bootwait option in the command 
+line (see below) (because nowadays people often have 
+installed my distro on an usb key, or on an eee pc just 
+the starter is on the internel flash chip, and the system 
+with root fs is on an usb harddisk what takes time to be 
+discovered).
 
-* Andi Kleen <ak@linux.intel.com> wrote:
 
-> > I would say that most if not all of the events are not generalizable
-> > in the sense that you are talking about; the events are very
-> > specific to the Torrent chip.  For example, the Torrent chip
-> 
-> It's similar also on Intel chips. [...]
+But, now, the 2nd compilation, I made with the slackware 
+huge configuration. And this works !! It boots normally, 
+and it also don't crash  if unzipping big files.  So you 
+were right, to use a more little config, for find out 
+better the reason.   However, remember, at the end (until 
+-rc20) also the everythingyes config should work, because 
+this always was the case, and have to work because 
+nowadays people have all kinds of computers, laptops, 
+phones, coffe machines, washmachines etc etc running Linux 
+and the distro kernel have to run ANYWAY on ANY DEVICE.
 
-You seem to be seriously misinformed about Intel CPUs.
 
-There are a fair number of events on Intel CPUs that can be generalized and 
-which we have already generalized. Here's a selection:
+That successful slackware huge config is in the middle 
+between the slackware smp config explained above which 
+didnt boot, and between my normal everythingyes 
+configuration which gave plenty problems.  So,  the 
+differences to both sides can make it more easy to find 
+out, a) why the slackware smp config didnt boot at all, 
+not finding the root fs,    and to the other side, why b) 
+my everythingyes config, which all the time worked (also 
+on 2.6.34.8), give so many problems with 2.6.39-rcX.
 
- Performance counter stats for './fill_1b':
+Pls find, enclosed, as the 2nd file, the successful config 
+which is still running on my computer and didnt crash yet 
+(entering with slackware huge smp into menuconfig end 
+going out without changes).  Also, as the 3rd file, is the 
+difference of this to my everythingyes config used for 
+-git2 to -git4; from tese differences it should be 
+possible to find better what cause the many problems in 
+the sense of comparison b) above.
 
-       2829.562519 task-clock               #    0.994 CPUs utilized          
-                27 context-switches         #    0.000 M/sec                  
-                52 CPU-migrations           #    0.000 M/sec                  
-                99 page-faults              #    0.000 M/sec                  
-     8,559,062,611 cycles                   #    3.025 GHz                      (20.02%)
-     2,530,761,381 stalled-cycles-frontend  #   29.57% frontend cycles idle     (30.03%)
-       423,070,037 stalled-cycles-backend   #    4.94% backend  cycles idle     (40.04%)
-    18,043,436,126 instructions             #    2.11  insns per cycle        
-                                            #    0.14  stalled cycles per insn  (50.04%)
-     1,007,704,770 branches                 #  356.134 M/sec                    (60.04%)
-           521,894 branch-misses            #    0.05% of all branches          (60.02%)
-         9,424,849 L1-dcache-loads          #    3.331 M/sec                    (50.03%)
-         1,028,884 L1-dcache-load-misses    #   10.92% of all L1-dcache hits    (50.02%)
-           490,266 LLC-loads                #    0.173 M/sec                    (39.99%)
-           133,226 LLC-load-misses          #    0.047 M/sec                    (10.01%)
+However, I should mention, that this successful config has 
+a problem with the grafics. On the laptop of my neighbour, 
+it switched to a wrong text mode where the characters are 
+little and 3 times on the top of the screen. And on my 
+computer, I cannot change to the text screen with 
+CTRL-ALT-F1 etc.
 
-        2.846836822  seconds time elapsed
 
-Thanks,
+wl
 
-	Ingo
+
+
+---
+Professional hosting for everyone - http://www.host.ru
