@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760710Ab1EANeq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:34:46 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38374 "EHLO e6.ny.us.ibm.com"
+	id S1756565Ab1EANWc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:22:32 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53834 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756412Ab1EANWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:22:31 -0400
+	id S1755185Ab1EANWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:22:24 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,9 +15,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 17/86] rcu: fix boost-tracing bug and update tracing documentation
-Date: Sun,  1 May 2011 06:20:57 -0700
-Message-Id: <1304256126-26015-17-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 18/86] rcu: add grace-period age to tracing
+Date: Sun,  1 May 2011 06:20:58 -0700
+Message-Id: <1304256126-26015-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -27,236 +27,211 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul E. McKenney <paul.mckenney@linaro.org>
 
+This commit adds the age in jiffies of the current grace period along
+with the duration in jiffies of the longest grace period since boot
+to the rcu/rcugp debugfs file.
+
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/trace.txt |  169 +++++++++++++++++++++++++++++++++++++------
- kernel/rcutree_plugin.h     |    2 +-
- 2 files changed, 149 insertions(+), 22 deletions(-)
+ Documentation/RCU/trace.txt |   12 ++++++++++--
+ kernel/rcutree.c            |   10 ++++++++++
+ kernel/rcutree.h            |    7 +++++--
+ kernel/rcutree_trace.c      |   37 +++++++++++++++++++++++++++++--------
+ 4 files changed, 54 insertions(+), 12 deletions(-)
 
 diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index 5aefd5f..0346d3c 100644
+index 0346d3c..77f5bda 100644
 --- a/Documentation/RCU/trace.txt
 +++ b/Documentation/RCU/trace.txt
-@@ -10,34 +10,37 @@ for rcutree and next for rcutiny.
- 
- CONFIG_TREE_RCU and CONFIG_TREE_PREEMPT_RCU debugfs Files and Formats
- 
--These implementations of RCU provides five debugfs files under the
-+These implementations of RCU provides seven debugfs files under the
- top-level directory RCU: rcu/rcudata (which displays fields in struct
- rcu_data), rcu/rcudata.csv (which is a .csv spreadsheet version of
- rcu/rcudata), rcu/rcugp (which displays grace-period counters),
--rcu/rcuhier (which displays the struct rcu_node hierarchy), and
-+rcu/rcuhier (which displays the struct rcu_node hierarchy),
- rcu/rcu_pending (which displays counts of the reasons that the
--rcu_pending() function decided that there was core RCU work to do).
-+rcu_pending() function decided that there was core RCU work to do),
-+rcu/rcutorture (which displays rcutorture test progress), and, if the
-+kernel is built with CONFIG_RCU_BOOST, rcu/rcuboost (which displays RCU
-+boosting statistics).
- 
- The output of "cat rcu/rcudata" looks as follows:
- 
- rcu_sched:
--  0!c=423090 g=423091 pq=1 pqc=423090 qp=1 dt=86475/1/0 df=16319 of=163 ri=1519 ql=0 qs=.... b=10 ci=1460693 co=1648 ca=6448
--  1!c=423329 g=423330 pq=1 pqc=423329 qp=1 dt=90875/1/0 df=16231 of=157 ri=1249 ql=0 qs=.... b=10 ci=1459002 co=1614 ca=3310
--  2!c=423370 g=423371 pq=1 pqc=423370 qp=1 dt=69661/1/0 df=16125 of=163 ri=1469 ql=0 qs=.... b=10 ci=1610701 co=2015 ca=2378
--  3!c=422967 g=422968 pq=1 pqc=422967 qp=1 dt=70349/1/0 df=12528 of=163 ri=1450 ql=0 qs=.... b=10 ci=1427543 co=1430 ca=897
--  4!c=423196 g=423197 pq=1 pqc=423196 qp=0 dt=38935/1/0 df=10959 of=177 ri=1657 ql=0 qs=.... b=10 ci=1562249 co=1896 ca=533
--  5!c=422950 g=422951 pq=1 pqc=422950 qp=0 dt=25127/1/0 df=5895 of=167 ri=1549 ql=0 qs=.... b=10 ci=1777260 co=2137 ca=274
--  6!c=423396 g=423397 pq=1 pqc=423396 qp=1 dt=22639/1/0 df=4590 of=149 ri=1572 ql=0 qs=.... b=10 ci=1471186 co=1530 ca=243
--  7 c=460203 g=460203 pq=1 pqc=460202 qp=0 dt=937087/1/0 df=3298 of=149 ri=1584 ql=6 qs=N.W. b=10 ci=4026154 co=1948 ca=135
-+  0!c=423090 g=423091 pq=1 pqc=423090 qp=1 dt=86475/1/0 df=16319 of=163 ri=1519 ql=0 qs=.... kt=0/W b=10 ci=1460693 co=1648 ca=6448
-+  1!c=423329 g=423330 pq=1 pqc=423329 qp=1 dt=90875/1/0 df=16231 of=157 ri=1249 ql=0 qs=.... kt=0/W b=10 ci=1459002 co=1614 ca=3310
-+  2!c=423370 g=423371 pq=1 pqc=423370 qp=1 dt=69661/1/0 df=16125 of=163 ri=1469 ql=0 qs=.... kt=0/W b=10 ci=1610701 co=2015 ca=2378
-+  3!c=422967 g=422968 pq=1 pqc=422967 qp=1 dt=70349/1/0 df=12528 of=163 ri=1450 ql=0 qs=.... kt=0/W b=10 ci=1427543 co=1430 ca=897
-+  4!c=423196 g=423197 pq=1 pqc=423196 qp=0 dt=38935/1/0 df=10959 of=177 ri=1657 ql=0 qs=.... kt=0/W b=10 ci=1562249 co=1896 ca=533
-+  5!c=422950 g=422951 pq=1 pqc=422950 qp=0 dt=25127/1/0 df=5895 of=167 ri=1549 ql=0 qs=.... kt=0/W b=10 ci=1777260 co=2137 ca=274
-+  6!c=423396 g=423397 pq=1 pqc=423396 qp=1 dt=22639/1/0 df=4590 of=149 ri=1572 ql=0 qs=.... kt=0/W b=10 ci=1471186 co=1530 ca=243
-+  7 c=460203 g=460203 pq=1 pqc=460202 qp=0 dt=937087/1/0 df=3298 of=149 ri=1584 ql=6 qs=N.W. kt=0/W b=10 ci=4026154 co=1948 ca=135
- rcu_bh:
--  0!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=86475/1/0 df=11 of=0 ri=0 ql=0 qs=.... b=10 ci=112 co=0 ca=0
--  1!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=90875/1/0 df=15 of=0 ri=0 ql=0 qs=.... b=10 ci=143 co=0 ca=0
--  2!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=69661/1/0 df=21 of=0 ri=1 ql=0 qs=.... b=10 ci=88 co=0 ca=0
--  3!c=18446744073709551494 g=18446744073709551494 pq=1 pqc=18446744073709551493 qp=0 dt=70349/1/0 df=13 of=0 ri=0 ql=0 qs=....  b=10 ci=100 co=0 ca=0
--  4!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=38935/1/0 df=17 of=0 ri=0 ql=0 qs=....  b=10 ci=36 co=0 ca=0
--  5!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=25127/1/0 df=7 of=0 ri=0 ql=0 qs=....  b=10 ci=32 co=0 ca=0
--  6!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=22639/1/0 df=9 of=0 ri=0 ql=0 qs=....  b=10 ci=44 co=0 ca=0
--  7 c=182 g=182 pq=1 pqc=181 qp=0 dt=937087/1/0 df=14 of=0 ri=1 ql=0 qs=....  b=10 ci=627 co=0 ca=0
-+  0!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=86475/1/0 df=11 of=0 ri=0 ql=0 qs=.... kt=0/W b=10 ci=112 co=0 ca=0
-+  1!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=90875/1/0 df=15 of=0 ri=0 ql=0 qs=.... kt=0/W b=10 ci=143 co=0 ca=0
-+  2!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=69661/1/0 df=21 of=0 ri=1 ql=0 qs=.... kt=0/W b=10 ci=88 co=0 ca=0
-+  3!c=18446744073709551494 g=18446744073709551494 pq=1 pqc=18446744073709551493 qp=0 dt=70349/1/0 df=13 of=0 ri=0 ql=0 qs=....  kt=0/W b=10 ci=100 co=0 ca=0
-+  4!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=38935/1/0 df=17 of=0 ri=0 ql=0 qs=....  kt=0/W b=10 ci=36 co=0 ca=0
-+  5!c=18446744073709551494 g=18446744073709551494 pq=0 pqc=18446744073709551493 qp=1 dt=25127/1/0 df=7 of=0 ri=0 ql=0 qs=....  kt=0/W b=10 ci=32 co=0 ca=0
-+  6!c=18446744073709551496 g=18446744073709551496 pq=1 pqc=18446744073709551495 qp=0 dt=22639/1/0 df=9 of=0 ri=0 ql=0 qs=....  kt=0/W b=10 ci=44 co=0 ca=0
-+  7 c=182 g=182 pq=1 pqc=181 qp=0 dt=937087/1/0 df=14 of=0 ri=1 ql=0 qs=....  kt=0/W b=10 ci=627 co=0 ca=0
- 
- The first section lists the rcu_data structures for rcu_sched, the second
- for rcu_bh.  Note that CONFIG_TREE_PREEMPT_RCU kernels will have an
-@@ -146,6 +149,23 @@ o	"qs" gives an indication of the state of the callback queue
- 	If there are no callbacks in a given one of the above states,
+@@ -150,8 +150,8 @@ o	"qs" gives an indication of the state of the callback queue
  	the corresponding character is replaced by ".".
  
-+o	"kt" is the per-CPU kernel-thread state.  The digit preceding
-+	the slash is zero if there is no work pending and 1 otherwise.
-+	The character after the slash is as follows:
+ o	"kt" is the per-CPU kernel-thread state.  The digit preceding
+-	the slash is zero if there is no work pending and 1 otherwise.
+-	The character after the slash is as follows:
++	the first slash is zero if there is no work pending and 1
++	otherwise.  The character between the slashes is as follows:
+ 
+ 	"S"	The kernel thread is stopped, in other words, all
+ 		CPUs corresponding to this rcu_node structure are
+@@ -162,10 +162,18 @@ o	"kt" is the per-CPU kernel-thread state.  The digit preceding
+ 	"W"	The kernel thread is waiting because there is no work
+ 		for it to do.
+ 
++	"O"	The kernel thread is waiting because it has been
++		forced off of its designated CPU or because its
++		->cpus_allowed mask permits it to run on other than
++		its designated CPU.
 +
-+	"S"	The kernel thread is stopped, in other words, all
-+		CPUs corresponding to this rcu_node structure are
-+		offline.
-+
-+	"R"	The kernel thread is running.
-+
-+	"W"	The kernel thread is waiting because there is no work
-+		for it to do.
-+
-+	"Y"	The kernel thread is yielding to avoid hogging CPU.
-+
-+	"?"	Unknown value, indicates a bug.
+ 	"Y"	The kernel thread is yielding to avoid hogging CPU.
+ 
+ 	"?"	Unknown value, indicates a bug.
+ 
++	The number after the final slash is the CPU that the kthread
++	is actually running on.
 +
  o	"b" is the batch limit for this CPU.  If more than this number
  	of RCU callbacks is ready to invoke, then the remainder will
  	be deferred.
-@@ -356,6 +376,113 @@ o	"nn" is the number of times that this CPU needed nothing.  Alert
- 	is due to short-circuit evaluation in rcu_pending().
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index c1f5434..8cf0307 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -92,6 +92,7 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+  */
+ static DEFINE_PER_CPU(struct task_struct *, rcu_cpu_kthread_task);
+ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
++DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
+ static DEFINE_PER_CPU(wait_queue_head_t, rcu_cpu_wq);
+ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+ static char rcu_kthreads_spawnable;
+@@ -888,6 +889,8 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+ {
++	unsigned long gp_duration;
++
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
  
+ 	/*
+@@ -895,6 +898,9 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	 * is seen before the assignment to rsp->completed.
+ 	 */
+ 	smp_mb(); /* See above block comment. */
++	gp_duration = jiffies - rsp->gp_start;
++	if (gp_duration > rsp->gp_max)
++		rsp->gp_max = gp_duration;
+ 	rsp->completed = rsp->gpnum;
+ 	rsp->signaled = RCU_GP_IDLE;
+ 	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
+@@ -1583,12 +1589,15 @@ static int rcu_cpu_kthread_should_stop(int cpu)
+ 	       smp_processor_id() != cpu) {
+ 		if (kthread_should_stop())
+ 			return 1;
++		per_cpu(rcu_cpu_kthread_status, cpu) = RCU_KTHREAD_OFFCPU;
++		per_cpu(rcu_cpu_kthread_cpu, cpu) = raw_smp_processor_id();
+ 		local_bh_enable();
+ 		schedule_timeout_uninterruptible(1);
+ 		if (!cpumask_equal(&current->cpus_allowed, cpumask_of(cpu)))
+ 			set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 		local_bh_disable();
+ 	}
++	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+ 	return 0;
+ }
  
-+The output of "cat rcu/rcutorture" looks as follows:
-+
-+rcutorture test sequence: 0 (test in progress)
-+rcutorture update version number: 615
-+
-+The first line shows the number of rcutorture tests that have completed
-+since boot.  If a test is currently running, the "(test in progress)"
-+string will appear as shown above.  The second line shows the number of
-+update cycles that the current test has started, or zero if there is
-+no test in progress.
-+
-+
-+The output of "cat rcu/rcuboost" looks as follows:
-+
-+0:5 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=2f95 bt=300f
-+     balk: nt=0 egt=989 bt=0 nb=0 ny=0 nos=16
-+6:7 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=2f95 bt=300f
-+     balk: nt=0 egt=225 bt=0 nb=0 ny=0 nos=6
-+
-+This information is output only for rcu_preempt.  Each two-line entry
-+corresponds to a leaf rcu_node strcuture.  The fields are as follows:
-+
-+o	"n:m" is the CPU-number range for the corresponding two-line
-+	entry.  In the sample output above, the first entry covers
-+	CPUs zero through five and the second entry covers CPUs 6
-+	and 7.
-+
-+o	"tasks=TNEB" gives the state of the various segments of the
-+	rnp->blocked_tasks list:
-+
-+	"T"	This indicates that there are some tasks that blocked
-+		while running on one of the corresponding CPUs while
-+		in an RCU read-side critical section.
-+
-+	"N"	This indicates that some of the blocked tasks are preventing
-+		the current normal (non-expedited) grace period from
-+		completing.
-+
-+	"E"	This indicates that some of the blocked tasks are preventing
-+		the current expedited grace period from completing.
-+
-+	"B"	This indicates that some of the blocked tasks are in
-+		need of RCU priority boosting.
-+
-+	Each character is replaced with "." if the corresponding
-+	condition does not hold.
-+
-+o	"kt" is the state of the RCU priority-boosting kernel
-+	thread associated with the corresponding rcu_node structure.
-+	The state can be one of the following:
-+
-+	"S"	The kernel thread is stopped, in other words, all
-+		CPUs corresponding to this rcu_node structure are
-+		offline.
-+
-+	"R"	The kernel thread is running.
-+
-+	"W"	The kernel thread is waiting because there is no work
-+		for it to do.
-+
-+	"Y"	The kernel thread is yielding to avoid hogging CPU.
-+
-+	"?"	Unknown value, indicates a bug.
-+
-+o	"ntb" is the number of tasks boosted.
-+
-+o	"neb" is the number of tasks boosted in order to complete an
-+	expedited grace period.
-+
-+o	"nnb" is the number of tasks boosted in order to complete a
-+	normal (non-expedited) grace period.  When boosting a task
-+	that was blocking both an expedited and a normal grace period,
-+	it is counted against the expedited total above.
-+
-+o	"j" is the low-order 16 bits of the jiffies counter in
-+	hexadecimal.
-+
-+o	"bt" is the low-order 16 bits of the value that the jiffies
-+	counter will have when we next start boosting, assuming that
-+	the current grace period does not end beforehand.  This is
-+	also in hexadecimal.
-+
-+o	"balk: nt" counts the number of times we didn't boost (in
-+	other words, we balked) even though it was time to boost because
-+	there were no blocked tasks to boost.  This situation occurs
-+	when there is one blocked task on one rcu_node structure and
-+	none on some other rcu_node structure.
-+
-+o	"egt" counts the number of times we balked because although
-+	there were blocked tasks, none of them were blocking the
-+	current grace period, whether expedited or otherwise.
-+
-+o	"bt" counts the number of times we balked because boosting
-+	had already been initiated for the current grace period.
-+
-+o	"nb" counts the number of times we balked because there
-+	was at least one task blocking the current non-expedited grace
-+	period that never had blocked.  If it is already running, it
-+	just won't help to boost its priority!
-+
-+o	"ny" counts the number of times we balked because it was
-+	not yet time to start boosting.
-+
-+o	"nos" counts the number of times we balked for other
-+	reasons, e.g., the grace period ended first.
-+
-+
- CONFIG_TINY_RCU and CONFIG_TINY_PREEMPT_RCU debugfs Files and Formats
+@@ -1656,6 +1665,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	kthread_bind(t, cpu);
++	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+ 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+ 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
+ 	wake_up_process(t);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 67341db..37502a2 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -93,8 +93,9 @@ struct rcu_dynticks {
+ #define RCU_KTHREAD_STOPPED  0
+ #define RCU_KTHREAD_RUNNING  1
+ #define RCU_KTHREAD_WAITING  2
+-#define RCU_KTHREAD_YIELDING 3
+-#define RCU_KTHREAD_MAX      3
++#define RCU_KTHREAD_OFFCPU   3
++#define RCU_KTHREAD_YIELDING 4
++#define RCU_KTHREAD_MAX      4
  
- These implementations of RCU provides a single debugfs file under the
-@@ -422,9 +549,9 @@ o	"neb" is the number of expedited grace periods that have had
- o	"nnb" is the number of normal grace periods that have had
- 	to resort to RCU priority boosting since boot.
+ /*
+  * Definition for node within the RCU grace-period-detection hierarchy.
+@@ -383,6 +384,8 @@ struct rcu_state {
+ 						/*  but in jiffies. */
+ 	unsigned long jiffies_stall;		/* Time at which to check */
+ 						/*  for CPU stalls. */
++	unsigned long gp_max;			/* Maximum GP duration in */
++						/*  jiffies. */
+ 	char *name;				/* Name of structure. */
+ };
  
--o	"j" is the low-order 12 bits of the jiffies counter in hexadecimal.
-+o	"j" is the low-order 16 bits of the jiffies counter in hexadecimal.
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index 3baa235..564b8fe 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -47,13 +47,14 @@
+ #include "rcutree.h"
  
--o	"bt" is the low-order 12 bits of the value that the jiffies counter
-+o	"bt" is the low-order 16 bits of the value that the jiffies counter
- 	will have at the next time that boosting is scheduled to begin.
+ DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
++DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_cpu);
+ DECLARE_PER_CPU(char, rcu_cpu_has_work);
  
- o	In the line beginning with "normal balk", the fields are as follows:
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 22a6a46..a21413d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1086,7 +1086,7 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
- 	else if (rnp->gp_tasks != NULL && rnp->qsmask != 0)
- 		rnp->n_balk_notblocked++;
- 	else if (rnp->gp_tasks != NULL &&
--		 ULONG_CMP_GE(jiffies, rnp->boost_time))
-+		 ULONG_CMP_LT(jiffies, rnp->boost_time))
- 		rnp->n_balk_notyet++;
- 	else
- 		rnp->n_balk_nos++;
+ static char convert_kthread_status(unsigned int kthread_status)
+ {
+ 	if (kthread_status > RCU_KTHREAD_MAX)
+ 		return '?';
+-	return "SRWY"[kthread_status];
++	return "SRWOY"[kthread_status];
+ }
+ 
+ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+@@ -74,7 +75,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->dynticks_fqs);
+ #endif /* #ifdef CONFIG_NO_HZ */
+ 	seq_printf(m, " of=%lu ri=%lu", rdp->offline_fqs, rdp->resched_ipi);
+-	seq_printf(m, " ql=%ld qs=%c%c%c%c kt=%d/%c b=%ld",
++	seq_printf(m, " ql=%ld qs=%c%c%c%c kt=%d/%c/%d b=%ld",
+ 		   rdp->qlen,
+ 		   ".N"[rdp->nxttail[RCU_NEXT_READY_TAIL] !=
+ 			rdp->nxttail[RCU_NEXT_TAIL]],
+@@ -86,6 +87,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 		   per_cpu(rcu_cpu_has_work, rdp->cpu),
+ 		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
+ 					  rdp->cpu)),
++		   per_cpu(rcu_cpu_kthread_cpu, rdp->cpu),
+ 		   rdp->blimit);
+ 	seq_printf(m, " ci=%lu co=%lu ca=%lu\n",
+ 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+@@ -312,16 +314,35 @@ static const struct file_operations rcuhier_fops = {
+ 	.release = single_release,
+ };
+ 
++static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
++{
++	unsigned long flags;
++	unsigned long completed;
++	unsigned long gpnum;
++	unsigned long gpage;
++	unsigned long gpmax;
++	struct rcu_node *rnp = &rsp->node[0];
++
++	raw_spin_lock_irqsave(&rnp->lock, flags);
++	completed = rsp->completed;
++	gpnum = rsp->gpnum;
++	if (rsp->completed == rsp->gpnum)
++		gpage = 0;
++	else
++		gpage = jiffies - rsp->gp_start;
++	gpmax = rsp->gp_max;
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	seq_printf(m, "%s: completed=%ld  gpnum=%lu  age=%ld  max=%ld\n",
++		   rsp->name, completed, gpnum, gpage, gpmax);
++}
++
+ static int show_rcugp(struct seq_file *m, void *unused)
+ {
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_printf(m, "rcu_preempt: completed=%ld  gpnum=%lu\n",
+-		   rcu_preempt_state.completed, rcu_preempt_state.gpnum);
++	show_one_rcugp(m, &rcu_preempt_state);
+ #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_printf(m, "rcu_sched: completed=%ld  gpnum=%lu\n",
+-		   rcu_sched_state.completed, rcu_sched_state.gpnum);
+-	seq_printf(m, "rcu_bh: completed=%ld  gpnum=%lu\n",
+-		   rcu_bh_state.completed, rcu_bh_state.gpnum);
++	show_one_rcugp(m, &rcu_sched_state);
++	show_one_rcugp(m, &rcu_bh_state);
+ 	return 0;
+ }
+ 
 -- 
 1.7.3.2
 
