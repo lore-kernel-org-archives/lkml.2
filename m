@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1EAPqo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:46:44 -0400
-Received: from kroah.org ([198.145.64.141]:57495 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab1EAPqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:46:43 -0400
-Date: Sun, 1 May 2011 08:47:51 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-Message-ID: <20110501154751.GA14040@kroah.com>
-References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
- <20110426232843.GA31184@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110427064550.GA597@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110427121856.GA20633@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110501153920.GA15210@infradead.org>
+	id S1760834Ab1EAPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:49:25 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47597 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab1EAPtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 11:49:23 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Sun, 1 May 2011 08:48:58 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 09/86] rcu: avoid hammering sched with yet
+ another bound RT kthread
+Message-ID: <20110501154858.GE14829@feather>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-9-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110501153920.GA15210@infradead.org>
+In-Reply-To: <1304256126-26015-9-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 01, 2011 at 11:39:21AM -0400, Christoph Hellwig wrote:
-> On Fri, Apr 29, 2011 at 04:32:35PM +0000, KY Srinivasan wrote:
-> > On the host-side, as part of configuring a guest  you can specify block devices
-> > as being under an IDE controller or under a
-> > SCSI controller. Those are the only options you have. Devices configured under
-> > the IDE controller cannot be seen in the guest under the emulated SCSI front-end which is
-> > the scsi driver (storvsc_drv). So, when you do a bus scan in the emulated scsi front-end,
-> > the devices enumerated will not include block devices configured under the IDE 
-> > controller. So, it is not clear to me how I can do what you are proposing given the 
-> > restrictions imposed by the host.
+On Sun, May 01, 2011 at 06:20:49AM -0700, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
 > 
-> Just because a device is not reported by REPORT_LUNS doesn't mean you
-> can't talk to it using a SCSI LLDD.  We have SCSI transports with all
-> kinds of strange ways to discover devices.  Using scsi_add_device you
-> can add LUNs found by your own discovery methods, and use all the
-> existing scsi command handling.
+> The scheduler does not appear to take kindly to having multiple
+> real-time threads bound to a CPU that is going offline.  So this
+> commit is a temporary hack-around to avoid that happening.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutorture.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> index c224da4..4d256db 100644
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -163,11 +163,11 @@ static int stutter_pause_test;
+>  #endif
+>  int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+>  
+> -#ifdef CONFIG_RCU_BOOST
+> +#if defined(CONFIG_RCU_BOOST) && !defined(CONFIG_HOTPLUG_CPU)
+>  #define rcu_can_boost() 1
+> -#else /* #ifdef CONFIG_RCU_BOOST */
+> +#else /* #if defined(CONFIG_RCU_BOOST) && !defined(CONFIG_HOTPLUG_CPU) */
+>  #define rcu_can_boost() 0
+> -#endif /* #else #ifdef CONFIG_RCU_BOOST */
+> +#endif /* #else #if defined(CONFIG_RCU_BOOST) && !defined(CONFIG_HOTPLUG_CPU) */
 
-Yeah, it seems to me that no matter how the user specifies the disk
-"type" for the guest configuration, we should use the same Linux driver,
-with the same naming scheme for both ways.
+So, this disables boosting entirely when CONFIG_HOTPLUG_CPU=y?  Other
+patches in this series take various steps to un-bound or un-realtime the
+RCU threads on a CPU when it goes offline; do those fix this problem?
+Which patch disables this hack-around?
 
-As Christoph points out, it's just a matter of hooking the device up to
-the scsi subsystem.  We do that today for ide, usb, scsi, and loads of
-other types of devices all with the common goal of making it easier for
-userspace to handle the devices in a standard manner.
+Also, it seems like your patch series introduces boosting, and then
+disables it for CONFIG_HOTPLUG_CPU=y, which suggests that in the middle
+of this patch series you can have a broken kernel if you build with
+CONFIG_HOTPLUG_CPU=y and CONFIG_RCU_BOOST=y.  Please consider reordering
+the patches (and possibly merging this patch into the original
+introduction of RCU boosting) to make sure that kernels in the middle of
+the patch series don't have this potential brokenness.
 
-thanks,
-
-greg k-h
+- Josh Triplett
