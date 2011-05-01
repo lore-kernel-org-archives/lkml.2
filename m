@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761236Ab1EARVO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 13:21:14 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49034 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1EARVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 13:21:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=KSNMz77qL3w9x2AGQAvsEmyLm66jetR3TJHR6SUMeLzN4oarY7c2wn2Z6EJl/FUwLf
-         3ylcnMscnmd/+IevrXPEVDhNK24bicZsMBtZcXoXNe9mn4bg0qGb49PW5gwHICvbPBep
-         txzwc6n/8Po+zVYCfzlcIb645z5eXvUov++/4=
+	id S1761254Ab1EARef (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 13:34:35 -0400
+Received: from mail.nettoday.co.th ([61.19.251.237]:2602 "EHLO nettoday.co.th"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755360Ab1EARec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 13:34:32 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 May 2011 13:34:31 EDT
+Message-ID: <20110502002744.s9m87n8focs8c0k0@webmail.kppacific.com>
+Date: Mon, 02 May 2011 00:27:44 +0700
+From: "Mr.collins mark" <info@loanagent.com>
+Reply-to: money-lender@9.cn
+To: undisclosed-recipients:;
+Subject: MONEY LENDER
 MIME-Version: 1.0
-In-Reply-To: <20110501164013.GA4188@spotteswoode.de.eu.org>
-References: <BANLkTin7Nw1ZjK8UHfypHXY5ZuzafXnJbQ@mail.gmail.com>
-	<20110428201527.GA3738@spotteswoode.de.eu.org>
-	<BANLkTimi4cUzS5-r_ofzLnjbVtNNjwD69Q@mail.gmail.com>
-	<20110429211548.GA4351@spotteswoode.de.eu.org>
-	<BANLkTi=-4NaMCMEDxj3CVg6iAmS3DGm0Qw@mail.gmail.com>
-	<20110429222548.GC4351@spotteswoode.de.eu.org>
-	<BANLkTimK-i7aBrFJjGfxQkz-YkLd-ftCnA@mail.gmail.com>
-	<20110430014157.GB3719@spotteswoode.de.eu.org>
-	<20110430122115.GA3694@spotteswoode.de.eu.org>
-	<BANLkTimZ7gFiQyiYpo1SBirBhpkT427o2Q@mail.gmail.com>
-	<20110501164013.GA4188@spotteswoode.de.eu.org>
-Date: Mon, 2 May 2011 01:21:08 +0800
-Message-ID: <BANLkTi=zZpZ-qvF8ztvdCf6UtCVfs-ifMw@mail.gmail.com>
-Subject: Re: [PATCH] staging: r8712u: Fix driver to support ad-hoc mode
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: clemens fischer <ino-news@spotteswoode.dnsalias.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, wlanfae@realtek.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 2, 2011 at 12:40 AM, clemens fischer
-<ino-news@spotteswoode.dnsalias.org> wrote:
->> Jeff Chua:
-
->> You wish just came true. To use plain iwconfig with wpa_supplicant,
-
-That was my mistake. It should read "To use plain iwconfig _WITHOUT_
-wpa_supplicant" ...
-
->> here's what you need to do ...
->> just remember that the "order" is important ... you must set the
->> encryption key "before" you bring up the interface!!! This applies to
->> non-realtek devices as well.
 
 
-> This was my reason for prefering iwconfig(8) in the first place after
-> realizing that this little USB WLAN stick cannot be used for WPE, only
-> for Ad-hoc with WPA.
+I am collins mark. a certified, reputable, legitimate & an
+accredited private money lender.I loan money out to individuals
+in need of financial assistance.Do you have a **** credit or
+you are in need of money to pay bills?I want to use this medium
+to inform you that i render reliable beneficiary assistance as
+I'll be glad to offer you a loan from about $1,000 to $500,000.00.
 
-huh? WPE ... do you mean WEP?
+BORROWERS INFORMATION
+Your names:.
+Your  country:.
+State:.
+Phone Number:.
+Monthly Income:.
+You Age:.Sex:.Amount Needed:.
+Duration:.Occupation:.Please E_mail this money-lender@9.cn
 
-Jeff
+Thanks.
+collins mark
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
