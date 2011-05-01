@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761325Ab1EASp3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 14:45:29 -0400
-Received: from liege.fusl.ac.be ([193.190.251.252]:61598 "EHLO
-	liege.fusl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab1EASp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 14:45:26 -0400
-X-Greylist: delayed 1564 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 May 2011 14:45:26 EDT
-Message-ID: <54113.120.141.6.83.1304273957.squirrel@120.141.6.83>
-Date: Sun, 1 May 2011 20:19:17 +0200 (CEST)
-Subject: Western Union Malaysia
-From: "Mr. Garry Moore" <pilo@fusl.ac.be>
-Reply-To: western.uniontransfer@mspil.edu.cn
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1761318Ab1EASUr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 14:20:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56402 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755465Ab1EASUq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 14:20:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
+In-Reply-To: <web-516277136@zbackend1.aha.ru>
+References: <web-516164730@zbackend1.aha.ru> <BANLkTimda-mi2rjgnX0jqg7Pg-J6HSDb6w@mail.gmail.com>
+ <web-516277136@zbackend1.aha.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 1 May 2011 11:20:21 -0700
+Message-ID: <BANLkTin=zhUfceHOg3i3BomYEa2kZm1cjQ@mail.gmail.com>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: werner <w.landgraf@ru.ru>, Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/5/1 werner <w.landgraf@ru.ru>:
+>
+> But, now, the 2nd compilation, I made with the slackware huge configuration.
+> And this works !! It boots normally, and it also don't crash šif unzipping
+> big files. šSo you were right, to use a more little config, for find out
+> better the reason.
 
+Ok, good. Now we have confirmation that it's not the SATA driver
+itself that causes problems, it's some other driver.
 
+So what I'd suggest you try to do is a "config bisect" to see exactly
+_what_ config option it is that makes things break. Steve Rostedt
+wrote a tool ("ktest") for this exact thing, but I'm not entirely sure
+that it will work for your situation. I've added Steve to the email
+participants, and I'd suggest you read up on it:
 
+  http://lwn.net/Articles/414064/
 
-  My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries.
-Here is the information below.
+would seem to be a good starting point.
 
-MTCN Numbers: 6096147516
-Sender Name Is = Patrick Lee Chun
+Of course, you could just try to do it manually too - just turn one
+subsystem at a time from a module in the working slackware config into
+a compiled-in thing, so that eventually you end up with the
+non-working "almost everything compiled in" case. And see which
+subsystem it is that causes problems.
 
-  I told him to keep sending you $7,500 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
+And then when you find the subsystem that makes the problem re-appear,
+you'd need to go back and try each driver at a time.
 
-  A certificate will be made to change the Receivers Name
-to your name as stated by the Malaysian Government, send
-your Full Names and address via Email to: Mr Garry Moore
-to proceed.
-
-                         Note:
-
-  You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Garry Moore.
-Tel: +(60) 136910048.
-
-For more info: www.g20.org
-
+                         Linus
