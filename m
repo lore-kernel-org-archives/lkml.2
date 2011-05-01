@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761242Ab1EAQwx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 12:52:53 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50839 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1EAQwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 12:52:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Zj4BEqLkiTMc+5UYv+sKO3UjLyTXpM6elLIEpId8sex3BvQ6SmwS/h4wOoLPRWB39q
-         qG1avlrtxmF57+72rHzDso3Wi10od9wW7QKySViCTLABBfDng4YWLZ2+m+zGR6lv1hOj
-         6I02ZaHBLHjEWbZXwWhwW8P/GTe3wiKK8t5MU=
-Date: Sun, 1 May 2011 09:52:45 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Panic in input handling
-Message-ID: <20110501165245.GB23240@core.coreip.homeip.net>
-References: <20110429102343.5ee9e34c@jbarnes-desktop>
+	id S1761246Ab1EAQyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 12:54:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50363 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761221Ab1EAQyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 12:54:08 -0400
+Date: Sun, 1 May 2011 18:53:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH tip:x86/urgent] x86, NUMA: Fix empty memblk detection in
+ numa_cleanup_meminfo()
+Message-ID: <20110501165354.GC21833@elte.hu>
+References: <20110501104555.GN29280@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110429102343.5ee9e34c@jbarnes-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110501104555.GN29280@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 10:23:43AM -0700, Jesse Barnes wrote:
-> Just booted up a relatively fresh kernel and hit this when trying to
-> shut down X; maybe it's been fixed already?  I'd be happy to try any
-> patches...
+
+* Tejun Heo <tj@kernel.org> wrote:
+
+> From: Yinghai Lu <yinghai@kernel.org>
 > 
+> numa_cleanup_meminfo() trims each memblk between low (0) and high
+> (max_pfn) limits and discards empty ones.  However, the emptiness
+> detection incorrectly used equality test.  If the start of a memblk is
+> higher than max_pfn, it is empty but fails the equality test and
+> doesn't get discarded.
+> 
+> Fix it by using >= instead of ==.
+> 
+> tj: Extracted the actual fix from the original patch and rewrote patch
+>     description.
 
-Hmm, haven't seen this one yet and that part of code did not change for
-a while. Is it reproducible?
+Well, the bit still missing from the description is why this fix matters for 
+x86/urgent: under what scenarios does this cause problems, how frequent is it, 
+how severe are the prolems, etc. etc. Would be nice to have something about 
+that in the changelog as well.
 
-Thanks.
+Thanks,
 
--- 
-Dmitry
+	Ingo
