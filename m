@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759762Ab1EABjV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 21:39:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62471 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653Ab1EABhu (ORCPT
+	id S1758924Ab1EABr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 21:47:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49864 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab1EABhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 30 Apr 2011 21:37:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=INjzsjEB/SXqzTaZlsjrT9cfPobK9pCFJSLqCQagy9/zo4ogBHQGajz+Tn8mrcZaoa
-         GZNQe4p3f95EOpvYtGViyPBrk0YK3e/wbc00Ce/MSO7k2dQhNingGkxHSrjcdZ5gqAo0
-         uOBqzu9g2XFMLEZ6ShmPx6gdztJh7Ai9FLyYM=
+        b=Q9lMy+QhFzQnZ8xXzqpjOeWCZrYRXdhpVpcS561wmfOjcj40ZgSqu0uNLpye02RZAH
+         5LKquiSRP0QhCTa6KgeSgsFqIJxq+lDSq+BjJd4HuCtYkchvUshhQ1aIkK5JeUMea6uo
+         dNywB+qNqQmTO6ellKTQIGfBLnRw+4L/PAKpM=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 46/69] sysctl: remove .child from pm/ (frv)
-Date: Sun,  1 May 2011 03:36:16 +0200
-Message-Id: <1304213799-10257-47-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 47/69] sysctl: remove .child from frv/
+Date: Sun,  1 May 2011 03:36:17 +0200
+Message-Id: <1304213799-10257-48-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,35 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- arch/frv/kernel/pm.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ arch/frv/kernel/sysctl.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/arch/frv/kernel/pm.c b/arch/frv/kernel/pm.c
-index 5fa3889..bcef945 100644
---- a/arch/frv/kernel/pm.c
-+++ b/arch/frv/kernel/pm.c
-@@ -329,13 +329,9 @@ static struct ctl_table pm_table[] =
- 	{ }
- };
- 
--static struct ctl_table pm_dir_table[] =
-+static const __initdata struct ctl_path pm_path[] =
+diff --git a/arch/frv/kernel/sysctl.c b/arch/frv/kernel/sysctl.c
+index 6c155d6..e5c20a2 100644
+--- a/arch/frv/kernel/sysctl.c
++++ b/arch/frv/kernel/sysctl.c
+@@ -199,14 +199,10 @@ static struct ctl_table frv_table[] =
+  * Use a temporary sysctl number. Horrid, but will be cleaned up in 2.6
+  * when all the PM interfaces exist nicely.
+  */
+-static struct ctl_table frv_dir_table[] =
++static const __initdata struct ctl_path frv_path[] =
  {
 -	{
--		.procname	= "pm",
--		.mode		= 0555,
--		.child		= pm_table,
+-		.procname	= "frv",
+-		.mode 		= 0555,
+-		.child		= frv_table
 -	},
-+	{ .procname = "pm" },
- 	{ }
+-	{}
++	{ .procname = "frv" },
++	{ }
  };
  
-@@ -344,7 +340,7 @@ static struct ctl_table pm_dir_table[] =
+ /*
+@@ -214,7 +210,7 @@ static struct ctl_table frv_dir_table[] =
   */
- static int __init pm_init(void)
+ static int __init frv_sysctl_init(void)
  {
--	register_sysctl_table(pm_dir_table);
-+	register_sysctl_paths(pm_path, pm_table);
+-	register_sysctl_table(frv_dir_table);
++	register_sysctl_paths(frv_path, frv_table);
  	return 0;
  }
  
