@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab1EANWo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:22:44 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44575 "EHLO e8.ny.us.ibm.com"
+	id S1757977Ab1EANWm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:22:42 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:44574 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756313Ab1EANWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756287Ab1EANWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 May 2011 09:22:30 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 36/86] cgroup,rcu: convert call_rcu(__free_css_id_cb) to kfree_rcu()
-Date: Sun,  1 May 2011 06:21:16 -0700
-Message-Id: <1304256126-26015-36-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 37/86] net,rcu: convert call_rcu(tcf_common_free_rcu) to kfree_rcu()
+Date: Sun,  1 May 2011 06:21:17 -0700
+Message-Id: <1304256126-26015-37-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -26,44 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback __free_css_id_cb() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(__free_css_id_cb).
+The rcu callback tcf_common_free_rcu() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(tcf_common_free_rcu).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Paul Menage <menage@google.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/cgroup.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+ net/sched/act_api.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 20451ce..909a355 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4610,14 +4610,6 @@ bool css_is_ancestor(struct cgroup_subsys_state *child,
- 	return ret;
- }
+diff --git a/net/sched/act_api.c b/net/sched/act_api.c
+index 14b42f4..a606025 100644
+--- a/net/sched/act_api.c
++++ b/net/sched/act_api.c
+@@ -26,11 +26,6 @@
+ #include <net/act_api.h>
+ #include <net/netlink.h>
  
--static void __free_css_id_cb(struct rcu_head *head)
+-static void tcf_common_free_rcu(struct rcu_head *head)
 -{
--	struct css_id *id;
--
--	id = container_of(head, struct css_id, rcu_head);
--	kfree(id);
+-	kfree(container_of(head, struct tcf_common, tcfc_rcu));
 -}
 -
- void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css)
+ void tcf_hash_destroy(struct tcf_common *p, struct tcf_hashinfo *hinfo)
  {
- 	struct css_id *id = css->id;
-@@ -4632,7 +4624,7 @@ void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css)
- 	spin_lock(&ss->id_lock);
- 	idr_remove(&ss->idr, id->id);
- 	spin_unlock(&ss->id_lock);
--	call_rcu(&id->rcu_head, __free_css_id_cb);
-+	kfree_rcu(id, rcu_head);
- }
- EXPORT_SYMBOL_GPL(free_css_id);
- 
+ 	unsigned int h = tcf_hash(p->tcfc_index, hinfo->hmask);
+@@ -47,7 +42,7 @@ void tcf_hash_destroy(struct tcf_common *p, struct tcf_hashinfo *hinfo)
+ 			 * gen_estimator est_timer() might access p->tcfc_lock
+ 			 * or bstats, wait a RCU grace period before freeing p
+ 			 */
+-			call_rcu(&p->tcfc_rcu, tcf_common_free_rcu);
++			kfree_rcu(p, tcfc_rcu);
+ 			return;
+ 		}
+ 	}
 -- 
 1.7.3.2
 
