@@ -1,112 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758445Ab1EANhT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:37:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755928Ab1EANhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:37:16 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: ocfs2-devel@oss.oracle.com
-Cc: WANG Cong <amwang@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [Patch] ocfs2: remove the /sys/o2cb symlink
-Date: Sun,  1 May 2011 21:34:16 +0800
-Message-Id: <1304256856-4744-1-git-send-email-amwang@redhat.com>
+	id S1755392Ab1EANp3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:45:29 -0400
+Received: from mx05.syd.iprimus.net.au ([210.50.30.235]:31250 "EHLO
+	mx05.syd.iprimus.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab1EANp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:45:27 -0400
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 May 2011 09:45:26 EDT
+DomainKey-Signature: s=iprimus-dk; d=iprimus.com.au; c=simple; q=dns;
+  h=X-IronPort-Anti-Spam-Filtered:
+   X-IronPort-Anti-Spam-Result:X-IronPort-AV:Received:
+   Received:Date:Message-ID:From:Subject:MIME-Version:
+   Content-Type:Content-Transfer-Encoding;
+  b=jX0eJkwZxt7+uXHuwjvIQejamukfV1CUzRK+xQyuFW5kPI4/Y4HF7CAi
+   cZZXk/CFaiCKbeQ1Gbwg2ZmMb8f7ahibMvJ9IGHD44T7/AImNRHRhDvvJ
+   K1j2J4J63K/sSC9GmrEVw3AklrfoFCzzruy6fnCxDXrZBuoycu6/EVbUm
+   o=;
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am0XACFhvU3AqBRx/2dsb2JhbACHcpBfAYxqgVaIap0InGiEG4FlBI55hBmKCg
+X-IronPort-AV: E=Sophos;i="4.64,297,1301839200"; 
+   d="scan'208";a="250221359"
+Date: Sun, 1 May 2011 14:35:29 +0100
+Message-ID: <4DAF379900009CA4@cpms01.int.iprimus.net.au>
+From: lotto@iprimus.com.au
+Subject: Re:
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is obsoleted since Dec 2005.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
+Send your Names*Address*Phone* to claim your 1,000,000 GBP awarded to
+you.Reply to lotto_agent1@ymail.com for more info
 
----
- Documentation/ABI/obsolete/o2cb            |   11 -----------
- Documentation/ABI/removed/o2cb             |   10 ++++++++++
- Documentation/feature-removal-schedule.txt |   10 ----------
- fs/ocfs2/cluster/sys.c                     |    9 ---------
- 4 files changed, 10 insertions(+), 30 deletions(-)
----
-diff --git a/Documentation/ABI/obsolete/o2cb b/Documentation/ABI/obsolete/o2cb
-deleted file mode 100644
-index 9c49d8e..0000000
---- a/Documentation/ABI/obsolete/o2cb
-+++ /dev/null
-@@ -1,11 +0,0 @@
--What:		/sys/o2cb symlink
--Date:		Dec 2005
--KernelVersion:	2.6.16
--Contact:	ocfs2-devel@oss.oracle.com
--Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink will
--		be removed when new versions of ocfs2-tools which know to look
--		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
--		software to look here, it should try /sys/fs/o2cb instead.
--		See Documentation/ABI/stable/o2cb for more information on usage.
--Users:		ocfs2-tools. It's sufficient to mail proposed changes to
--		ocfs2-devel@oss.oracle.com.
-diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
-new file mode 100644
-index 0000000..7f5daa4
---- /dev/null
-+++ b/Documentation/ABI/removed/o2cb
-@@ -0,0 +1,10 @@
-+What:		/sys/o2cb symlink
-+Date:		May 2011
-+KernelVersion:	2.6.40
-+Contact:	ocfs2-devel@oss.oracle.com
-+Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
-+		removed when new versions of ocfs2-tools which know to look
-+		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
-+		software to look here, it should try /sys/fs/o2cb instead.
-+Users:		ocfs2-tools. It's sufficient to mail proposed changes to
-+		ocfs2-devel@oss.oracle.com.
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 492e81d..5f3561e 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -273,16 +273,6 @@ Who:	Michael Buesch <mb@bu3sch.de>
- 
- ---------------------------
- 
--What:	/sys/o2cb symlink
--When:	January 2010
--Why:	/sys/fs/o2cb is the proper location for this information - /sys/o2cb
--	exists as a symlink for backwards compatibility for old versions of
--	ocfs2-tools. 2 years should be sufficient time to phase in new versions
--	which know to look in /sys/fs/o2cb.
--Who:	ocfs2-devel@oss.oracle.com
--
-----------------------------
--
- What:	Ability for non root users to shm_get hugetlb pages based on mlock
- 	resource limits
- When:	2.6.31
-diff --git a/fs/ocfs2/cluster/sys.c b/fs/ocfs2/cluster/sys.c
-index bc702da..a4b0773 100644
---- a/fs/ocfs2/cluster/sys.c
-+++ b/fs/ocfs2/cluster/sys.c
-@@ -57,7 +57,6 @@ static struct kset *o2cb_kset;
- void o2cb_sys_shutdown(void)
- {
- 	mlog_sys_shutdown();
--	sysfs_remove_link(NULL, "o2cb");
- 	kset_unregister(o2cb_kset);
- }
- 
-@@ -69,14 +68,6 @@ int o2cb_sys_init(void)
- 	if (!o2cb_kset)
- 		return -ENOMEM;
- 
--	/*
--	 * Create this symlink for backwards compatibility with old
--	 * versions of ocfs2-tools which look for things in /sys/o2cb.
--	 */
--	ret = sysfs_create_link(NULL, &o2cb_kset->kobj, "o2cb");
--	if (ret)
--		goto error;
--
- 	ret = sysfs_create_group(&o2cb_kset->kobj, &o2cb_attr_group);
- 	if (ret)
- 		goto error;
