@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760098Ab1EAN0F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:26:05 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38426 "EHLO e6.ny.us.ibm.com"
+	id S1758445Ab1EANhT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:37:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17593 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757724Ab1EANWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:22:39 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH tip/core/rcu 86/86] vmalloc,rcu: convert call_rcu(rcu_free_vb) to kfree_rcu()
-Date: Sun,  1 May 2011 06:22:06 -0700
-Message-Id: <1304256126-26015-86-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
+	id S1755928Ab1EANhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:37:16 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: ocfs2-devel@oss.oracle.com
+Cc: WANG Cong <amwang@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [Patch] ocfs2: remove the /sys/o2cb symlink
+Date: Sun,  1 May 2011 21:34:16 +0800
+Message-Id: <1304256856-4744-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+It is obsoleted since Dec 2005.
 
-The rcu callback rcu_free_vb() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(rcu_free_vb).
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
 ---
- mm/vmalloc.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 73f56c8..6540116 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -830,13 +830,6 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
- 	return vb;
- }
+ Documentation/ABI/obsolete/o2cb            |   11 -----------
+ Documentation/ABI/removed/o2cb             |   10 ++++++++++
+ Documentation/feature-removal-schedule.txt |   10 ----------
+ fs/ocfs2/cluster/sys.c                     |    9 ---------
+ 4 files changed, 10 insertions(+), 30 deletions(-)
+---
+diff --git a/Documentation/ABI/obsolete/o2cb b/Documentation/ABI/obsolete/o2cb
+deleted file mode 100644
+index 9c49d8e..0000000
+--- a/Documentation/ABI/obsolete/o2cb
++++ /dev/null
+@@ -1,11 +0,0 @@
+-What:		/sys/o2cb symlink
+-Date:		Dec 2005
+-KernelVersion:	2.6.16
+-Contact:	ocfs2-devel@oss.oracle.com
+-Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink will
+-		be removed when new versions of ocfs2-tools which know to look
+-		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
+-		software to look here, it should try /sys/fs/o2cb instead.
+-		See Documentation/ABI/stable/o2cb for more information on usage.
+-Users:		ocfs2-tools. It's sufficient to mail proposed changes to
+-		ocfs2-devel@oss.oracle.com.
+diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
+new file mode 100644
+index 0000000..7f5daa4
+--- /dev/null
++++ b/Documentation/ABI/removed/o2cb
+@@ -0,0 +1,10 @@
++What:		/sys/o2cb symlink
++Date:		May 2011
++KernelVersion:	2.6.40
++Contact:	ocfs2-devel@oss.oracle.com
++Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
++		removed when new versions of ocfs2-tools which know to look
++		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
++		software to look here, it should try /sys/fs/o2cb instead.
++Users:		ocfs2-tools. It's sufficient to mail proposed changes to
++		ocfs2-devel@oss.oracle.com.
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 492e81d..5f3561e 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -273,16 +273,6 @@ Who:	Michael Buesch <mb@bu3sch.de>
  
--static void rcu_free_vb(struct rcu_head *head)
--{
--	struct vmap_block *vb = container_of(head, struct vmap_block, rcu_head);
+ ---------------------------
+ 
+-What:	/sys/o2cb symlink
+-When:	January 2010
+-Why:	/sys/fs/o2cb is the proper location for this information - /sys/o2cb
+-	exists as a symlink for backwards compatibility for old versions of
+-	ocfs2-tools. 2 years should be sufficient time to phase in new versions
+-	which know to look in /sys/fs/o2cb.
+-Who:	ocfs2-devel@oss.oracle.com
 -
--	kfree(vb);
--}
+----------------------------
 -
- static void free_vmap_block(struct vmap_block *vb)
+ What:	Ability for non root users to shm_get hugetlb pages based on mlock
+ 	resource limits
+ When:	2.6.31
+diff --git a/fs/ocfs2/cluster/sys.c b/fs/ocfs2/cluster/sys.c
+index bc702da..a4b0773 100644
+--- a/fs/ocfs2/cluster/sys.c
++++ b/fs/ocfs2/cluster/sys.c
+@@ -57,7 +57,6 @@ static struct kset *o2cb_kset;
+ void o2cb_sys_shutdown(void)
  {
- 	struct vmap_block *tmp;
-@@ -849,7 +842,7 @@ static void free_vmap_block(struct vmap_block *vb)
- 	BUG_ON(tmp != vb);
- 
- 	free_vmap_area_noflush(vb->va);
--	call_rcu(&vb->rcu_head, rcu_free_vb);
-+	kfree_rcu(vb, rcu_head);
+ 	mlog_sys_shutdown();
+-	sysfs_remove_link(NULL, "o2cb");
+ 	kset_unregister(o2cb_kset);
  }
  
- static void purge_fragmented_blocks(int cpu)
--- 
-1.7.3.2
-
+@@ -69,14 +68,6 @@ int o2cb_sys_init(void)
+ 	if (!o2cb_kset)
+ 		return -ENOMEM;
+ 
+-	/*
+-	 * Create this symlink for backwards compatibility with old
+-	 * versions of ocfs2-tools which look for things in /sys/o2cb.
+-	 */
+-	ret = sysfs_create_link(NULL, &o2cb_kset->kobj, "o2cb");
+-	if (ret)
+-		goto error;
+-
+ 	ret = sysfs_create_group(&o2cb_kset->kobj, &o2cb_attr_group);
+ 	if (ret)
+ 		goto error;
