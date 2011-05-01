@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1EAJaF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 05:30:05 -0400
+	id S1753573Ab1EAJaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 05:30:24 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:41482 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab1EAJaA (ORCPT
+	with ESMTP id S1752822Ab1EAJaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 05:30:00 -0400
+	Sun, 1 May 2011 05:30:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=X7GLBhK4Mc/jR8iVXhwuJPf3npDDJ28VUx/NqGTqkMA3VVRoPabg6sx6tzds+U1klX
-         ThvR51Z9VbCfVgH5T7htSQZaSQ0CIgSHu6cdBQ9EtR2rupca2ZZYROVVBQjNsJ9ff0D4
-         yswRaJOBtYD0b4nyJy7r3yiZL1rgN+rWsotiY=
-Date: Sun, 1 May 2011 04:29:56 -0500
+        b=rw6Qij3JqtgbP5oPp0kFj53LOangRLAnmAQl1T29tcXX1ibHbF114laEPsA3p8PvaQ
+         JGVw920IYvAgT5/bRyP8lXn6AwAqUVJ1+2SncPKnMUt0brdijQ+9S34eoVmR8yDXJVgH
+         FswGZayOCgrtDFt3/gSBRCxAcG/RwprgxYO7g=
+Date: Sun, 1 May 2011 04:30:14 -0500
 From: Jonathan Nieder <jrnieder@gmail.com>
 To: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
         Dan Carpenter <error27@gmail.com>, Hans Verkuil <hverkuil@xs4all.nl>,
         Andi Huber <hobrom@gmx.at>, Marlon de Boer <marlon@hyves.nl>,
         Damien Churchill <damoxc@gmail.com>
-Subject: [PATCH 3/7] [media] cx88: hold device lock during sub-driver
- initialization
-Message-ID: <20110501092956.GC18380@elie>
+Subject: [PATCH 4/7] [media] cx88: protect cx8802_devlist with a mutex
+Message-ID: <20110501093014.GD18380@elie>
 References: <20110501091710.GA18263@elie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,88 +33,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cx8802_blackbird_probe makes a device node for the mpeg sub-device
-before it has been added to dev->drvlist.  If the device is opened
-during that time, the open succeeds but request_acquire cannot be
-called, so the reference count remains zero.  Later, when the device
-is closed, the reference count becomes negative --- uh oh.
+Add and use a mutex to protect the cx88-mpeg device list.  Previously
+the BKL prevented races.
 
-Close the race by holding core->lock during probe and not releasing
-until the device is in drvlist and initialization finished.
-Previously the BKL prevented this race.
+Based on work by Ben Hutchings <ben@decadent.org.uk>.
 
-Reported-by: Andreas Huber <hobrom@gmx.at>
 Tested-by: Andi Huber <hobrom@gmx.at>
 Tested-by: Marlon de Boer <marlon@hyves.nl>
-Cc: stable@kernel.org
 Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
- drivers/media/video/cx88/cx88-blackbird.c |    2 --
- drivers/media/video/cx88/cx88-mpeg.c      |    5 ++---
- drivers/media/video/cx88/cx88.h           |    7 ++-----
- 3 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/media/video/cx88/cx88-mpeg.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/video/cx88/cx88-blackbird.c b/drivers/media/video/cx88/cx88-blackbird.c
-index a6f7d53..f637d34 100644
---- a/drivers/media/video/cx88/cx88-blackbird.c
-+++ b/drivers/media/video/cx88/cx88-blackbird.c
-@@ -1335,11 +1335,9 @@ static int cx8802_blackbird_probe(struct cx8802_driver *drv)
- 	blackbird_register_video(dev);
- 
- 	/* initial device configuration: needed ? */
--	mutex_lock(&dev->core->lock);
- //	init_controls(core);
- 	cx88_set_tvnorm(core,core->tvnorm);
- 	cx88_video_mux(core,0);
--	mutex_unlock(&dev->core->lock);
- 
- 	return 0;
- 
 diff --git a/drivers/media/video/cx88/cx88-mpeg.c b/drivers/media/video/cx88/cx88-mpeg.c
-index 9147c16..497f26f 100644
+index 497f26f..b18f9fe 100644
 --- a/drivers/media/video/cx88/cx88-mpeg.c
 +++ b/drivers/media/video/cx88/cx88-mpeg.c
-@@ -709,18 +709,17 @@ int cx8802_register_driver(struct cx8802_driver *drv)
- 		drv->request_release = cx8802_request_release;
- 		memcpy(driver, drv, sizeof(*driver));
+@@ -78,6 +78,7 @@ static void flush_request_modules(struct cx8802_dev *dev)
  
-+		mutex_lock(&drv->core->lock);
- 		err = drv->probe(driver);
- 		if (err == 0) {
- 			i++;
--			mutex_lock(&drv->core->lock);
- 			list_add_tail(&driver->drvlist, &dev->drvlist);
--			mutex_unlock(&drv->core->lock);
- 		} else {
- 			printk(KERN_ERR
- 			       "%s/2: cx8802 probe failed, err = %d\n",
- 			       dev->core->name, err);
- 		}
--
-+		mutex_unlock(&drv->core->lock);
+ 
+ static LIST_HEAD(cx8802_devlist);
++static DEFINE_MUTEX(cx8802_mutex);
+ /* ------------------------------------------------------------------ */
+ 
+ static int cx8802_start_dma(struct cx8802_dev    *dev,
+@@ -689,6 +690,8 @@ int cx8802_register_driver(struct cx8802_driver *drv)
+ 		return err;
  	}
  
- 	return i ? 0 : -ENODEV;
-diff --git a/drivers/media/video/cx88/cx88.h b/drivers/media/video/cx88/cx88.h
-index e912919..93a94bf 100644
---- a/drivers/media/video/cx88/cx88.h
-+++ b/drivers/media/video/cx88/cx88.h
-@@ -495,13 +495,10 @@ struct cx8802_driver {
- 	int (*suspend)(struct pci_dev *pci_dev, pm_message_t state);
- 	int (*resume)(struct pci_dev *pci_dev);
- 
-+	/* Callers to the following functions must hold core->lock */
++	mutex_lock(&cx8802_mutex);
 +
- 	/* MPEG 8802 -> mini driver - Driver probe and configuration */
--
--	/* Caller must _not_ hold core->lock */
- 	int (*probe)(struct cx8802_driver *drv);
--
--	/* Callers to the following functions must hold core->lock */
--
- 	int (*remove)(struct cx8802_driver *drv);
+ 	list_for_each_entry(dev, &cx8802_devlist, devlist) {
+ 		printk(KERN_INFO
+ 		       "%s/2: subsystem: %04x:%04x, board: %s [card=%d]\n",
+@@ -698,8 +701,10 @@ int cx8802_register_driver(struct cx8802_driver *drv)
  
- 	/* MPEG 8802 -> mini driver - Access for hardware control */
+ 		/* Bring up a new struct for each driver instance */
+ 		driver = kzalloc(sizeof(*drv),GFP_KERNEL);
+-		if (driver == NULL)
+-			return -ENOMEM;
++		if (driver == NULL) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 
+ 		/* Snapshot of the driver registration data */
+ 		drv->core = dev->core;
+@@ -722,7 +727,10 @@ int cx8802_register_driver(struct cx8802_driver *drv)
+ 		mutex_unlock(&drv->core->lock);
+ 	}
+ 
+-	return i ? 0 : -ENODEV;
++	err = i ? 0 : -ENODEV;
++out:
++	mutex_unlock(&cx8802_mutex);
++	return err;
+ }
+ 
+ int cx8802_unregister_driver(struct cx8802_driver *drv)
+@@ -736,6 +744,8 @@ int cx8802_unregister_driver(struct cx8802_driver *drv)
+ 	       drv->type_id == CX88_MPEG_DVB ? "dvb" : "blackbird",
+ 	       drv->hw_access == CX8802_DRVCTL_SHARED ? "shared" : "exclusive");
+ 
++	mutex_lock(&cx8802_mutex);
++
+ 	list_for_each_entry(dev, &cx8802_devlist, devlist) {
+ 		printk(KERN_INFO
+ 		       "%s/2: subsystem: %04x:%04x, board: %s [card=%d]\n",
+@@ -762,6 +772,8 @@ int cx8802_unregister_driver(struct cx8802_driver *drv)
+ 		mutex_unlock(&dev->core->lock);
+ 	}
+ 
++	mutex_unlock(&cx8802_mutex);
++
+ 	return err;
+ }
+ 
+@@ -799,7 +811,9 @@ static int __devinit cx8802_probe(struct pci_dev *pci_dev,
+ 		goto fail_free;
+ 
+ 	INIT_LIST_HEAD(&dev->drvlist);
++	mutex_lock(&cx8802_mutex);
+ 	list_add_tail(&dev->devlist,&cx8802_devlist);
++	mutex_unlock(&cx8802_mutex);
+ 
+ 	/* now autoload cx88-dvb or cx88-blackbird */
+ 	request_modules(dev);
 -- 
 1.7.5
 
