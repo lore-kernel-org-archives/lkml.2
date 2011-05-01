@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1EAW7v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 18:59:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51654 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab1EAW7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 18:59:50 -0400
-Message-ID: <4DBDE5C0.1030907@zytor.com>
-Date: Sun, 01 May 2011 15:59:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752799Ab1EAXAs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 19:00:48 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49422 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab1EAXAr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 19:00:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SHVRurYL3Udb2CyYX5puHq6yZ4BJ95ax4gn7FQcF846p9paI1uQTMnMo3Q5uGbQHXY
+         SikYammHYeRVKpMaDPD53+I7E0Lk4NWzBU36F6wJ8P89Dyyo6G6Sz767p6mbnxWDfWoY
+         Ctmqm4uAGb4obLPdwJcz/6coA2ttJWK9lyouE=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Hans Rosenfeld <hans.rosenfeld@amd.com>, brgerst@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu, suresh.b.siddha@intel.com,
-        eranian@google.com, robert.richter@amd.com, Andreas.Herrmann3@amd.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fork: avoid weak function arch_dup_task_struct
-References: <2be7032a-e4b6-4ce7-af53-532d77dbfb48@email.android.com>	<1303914395-841373-2-git-send-email-hans.rosenfeld@amd.com> <20110501122559.bbf91079.akpm@linux-foundation.org>
-In-Reply-To: <20110501122559.bbf91079.akpm@linux-foundation.org>
+In-Reply-To: <BANLkTi=c2tBcXJnFi-i4r1_ADiMFebmxMA@mail.gmail.com>
+References: <cover.1304261567.git.minchan.kim@gmail.com>
+	<c7a7b3ceafe4fdc4bc038774374504827c01481f.1304261567.git.minchan.kim@gmail.com>
+	<BANLkTi=c2tBcXJnFi-i4r1_ADiMFebmxMA@mail.gmail.com>
+Date: Mon, 2 May 2011 08:00:46 +0900
+Message-ID: <BANLkTim1k-wGA1j9Cv1scCNR_-5b9BqESQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Check PageUnevictable in lru_deactivate_fn
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Ying Han <yinghan@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2011 12:25 PM, Andrew Morton wrote:
-> On Wed, 27 Apr 2011 16:26:35 +0200 Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
-> 
->> Avoid potential gcc bug by not using a weak function for
->> arch_dup_task_struct. Use an #ifdef'ed static function for
->> archs that don't have a special arch_dup_task_struct implementation.
-> 
-> The patch is unreviewable (and hence unusable) if you don't describe
-> this "potential gcc bug".
+On Mon, May 2, 2011 at 7:10 AM, Ying Han <yinghan@google.com> wrote:
+> On Sun, May 1, 2011 at 8:03 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>> The lru_deactivate_fn should not move page which in on unevictable lru
+>> into inactive list. Otherwise, we can meet BUG when we use isolate_lru_pages
+>> as __isolate_lru_page could return -EINVAL.
+>> It's really BUG and let's fix it.
+>>
+>> Reported-by: Ying Han <yinghan@google.com>
+>> Tested-by: Ying Han <yinghan@google.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  mm/swap.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index a83ec5a..2e9656d 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -429,6 +429,9 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+>>        if (!PageLRU(page))
+>>                return;
+>>
+>> +       if (PageUnevictable(page))
+>> +               return;
+>> +
+>>        /* Some processes are using the page */
+>>        if (page_mapped(page))
+>>                return;
+>> --
+>> 1.7.1
 >
+> Thanks Minchan for the fix, and i haven't been able to reproducing the
+> issue after applying the patch.
 
-http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3202.html
-
-	-hpa
+Thanks for the help, Ying.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Kind regards,
+Minchan Kim
