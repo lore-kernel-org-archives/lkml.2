@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1EAPXT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:23:19 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:20659 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1EAPXR convert rfc822-to-8bit (ORCPT
+	id S1756203Ab1EAPZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:25:36 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:38140 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab1EAPZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:23:17 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: root <root@docs.homelinux.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Error in Hyper-V modules hv_vmbus
-Thread-Topic: Error in Hyper-V modules hv_vmbus
-Thread-Index: AQHMB0SgETUemc5uTUuEnNLkft8sE5R22q3wgAGFHAD//7Zr8A==
-Date: Sun, 1 May 2011 15:23:16 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481DF22B@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <4DBC1F2F.5050205@docs.homelinux.org>
- <6E21E5352C11B742B20C142EB499E0481DF19C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <4DBD53F6.6070603@docs.homelinux.org>
-In-Reply-To: <4DBD53F6.6070603@docs.homelinux.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 May 2011 11:25:34 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Sun, 1 May 2011 08:25:09 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 18/86] rcu: add grace-period age to tracing
+Message-ID: <20110501152509.GB14829@feather>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-18-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304256126-26015-18-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: root [mailto:root@docs.homelinux.org]
-> Sent: Sunday, May 01, 2011 8:37 AM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: Error in Hyper-V modules hv_vmbus
+On Sun, May 01, 2011 at 06:20:58AM -0700, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
 > 
-> 
-> >
-> >> -----Original Message-----
-> >> From: root [mailto:root@docs.homelinux.org]
-> >> Sent: Saturday, April 30, 2011 10:40 AM
-> >> To: linux-kernel@vger.kernel.org; KY Srinivasan
-> >> Subject: Error in Hyper-V modules hv_vmbus
-> >>
-> >> Hello
-> >>
-> >> I have compiled and installed the new 2.6.39-rc5 linux kernel with
-> >> Microsoft Hyper-V modules enabled on my Debian Squeeze system. After a
-> >> reboot I get these errors (sorry can post only screenshots because I
-> >> can't copy the log):
-> > What is the version of the Windows host. I have seen some issues with
-> > older hosts, where the vmbus driver does not get the correct irq. I have
-> > submitted a patch for this (this is yet to be applied by Greg).
-> >
-> > Regards,
-> >
-> > K. Y
-> >
-> 
-> Windows Server Core 2008 R2 with SP2
-Thank you. I will get back to you after some testing locally.
-I have already submitted a patch for dealing with irq allocation 
-on some windows hosts (yet to be applied). I will verify if this patch fixes your problem. 
+> This commit adds the age in jiffies of the current grace period along
+> with the duration in jiffies of the longest grace period since boot
+> to the rcu/rcugp debugfs file.
 
-Regards,
+This change seems to have several other unrelated changes mixed in and
+not documented, related to adding and tracing RCU_KTHREAD_OFFCPU.
 
-K. Y
-
-> 
-> Regards
-> Juan Dos Santos
-
+- Josh Triplett
