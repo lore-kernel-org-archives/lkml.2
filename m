@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760980Ab1EAQhr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 12:37:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41125 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab1EAQhp (ORCPT
+	id S1761082Ab1EAQsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 12:48:42 -0400
+Received: from mailfw02.zoner.fi ([84.34.147.249]:22824 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760992Ab1EAQsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 12:37:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bpxklPcOLrWIUkJcSN/zrqlov2GZi6ldW+V1dcvxpRb0etQJBCt467EB/8Llzhs5em
-         XJKdn9WgXrl7Xqpyn2tOIudpXlNgjgMcYZBjfCcDHn1nqKZgLTFVk40DVnWVHag5ogNV
-         99JOc8y6UFTJmPUPi+c9ZbO6+KM+Xf0C5sEBs=
-Date: Mon, 2 May 2011 01:37:37 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation
- failures
-Message-ID: <20110501163737.GB3204@barrios-desktop>
-References: <20110426062535.GB19717@localhost>
- <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
- <20110426063421.GC19717@localhost>
- <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
- <20110426092029.GA27053@localhost>
- <20110426124743.e58d9746.akpm@linux-foundation.org>
- <20110428133644.GA12400@localhost>
- <20110429022824.GA8061@localhost>
- <20110430141741.GA4511@localhost>
- <20110501163542.GA3204@barrios-desktop>
+	Sun, 1 May 2011 12:48:40 -0400
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 May 2011 12:48:39 EDT
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] XZ decompressor: Fix decoding of empty LZMA2 streams
+Date: Sun, 1 May 2011 19:38:42 +0300
+User-Agent: KMail/1.13.7 (Linux/2.6.38-ARCH; KDE/4.6.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110501163542.GA3204@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105011938.42851.lasse.collin@tukaani.org>
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 01:35:42AM +0900, Minchan Kim wrote:
+From: Lasse Collin <lasse.collin@tukaani.org>
+
+The old code considered valid empty LZMA2 streams to be corrupt.
+Note that a typical empty .xz file has no LZMA2 data at all,
+and thus most .xz files having no uncompressed data are handled
+correctly even without this fix.
+
+Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
+---
+
+ lib/xz/xz_dec_lzma2.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff -uprN linux-2.6.39-rc5-git5.orig/lib/xz/xz_dec_lzma2.c linux-2.6.39-rc5-git5/lib/xz/xz_dec_lzma2.c
+--- linux-2.6.39-rc5-git5.orig/lib/xz/xz_dec_lzma2.c	2011-05-01 17:56:38.000000000 +0300
++++ linux-2.6.39-rc5-git5/lib/xz/xz_dec_lzma2.c	2011-05-01 18:06:03.000000000 +0300
+@@ -969,6 +969,9 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+ 			 */
+ 			tmp = b->in[b->in_pos++];
  
-> Do you see my old patch? The patch want't incomplet but it's not bad for showing an idea.
-                                     ^^^^^^^^^^^^^^^^
-                              typo : wasn't complete
--- 
-Kind regards,
-Minchan Kim
++			if (tmp == 0x00)
++				return XZ_STREAM_END;
++
+ 			if (tmp >= 0xE0 || tmp == 0x01) {
+ 				s->lzma2.need_props = true;
+ 				s->lzma2.need_dict_reset = false;
+@@ -1001,9 +1004,6 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+ 						lzma_reset(s);
+ 				}
+ 			} else {
+-				if (tmp == 0x00)
+-					return XZ_STREAM_END;
+-
+ 				if (tmp > 0x02)
+ 					return XZ_DATA_ERROR;
+ 
