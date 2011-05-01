@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab1EAKjK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 06:39:10 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:50333 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab1EAKjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 06:39:07 -0400
-Date: Sun, 1 May 2011 12:38:51 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org, crope@iki.fi,
-        tvboxspy@gmail.com
-Subject: Re: [PATCH 0/5] get rid of on-stack dma buffers (part1)
-Message-ID: <20110501123851.0ab6b799@schatten.dmk.lab>
-In-Reply-To: <4DBC8D9C.2090802@redhat.com>
-References: <1300657852-29318-1-git-send-email-florian@mickler.org>
-	<20110430205405.4beb7d33@schatten.dmk.lab>
-	<4DBC8D9C.2090802@redhat.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753981Ab1EAKqB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 06:46:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53916 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1EAKqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 06:46:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=KOWNFbE/XihlY5mLTxWKqsett9omXfcrS/G5YlOgYA3HNcnVB7iz35rvLbCCdT6SMM
+         1kxc/NMSU2mi2mhL5EOXcyolebl+ZuHlrTWaQ5jMUSzp7arwL18ZJlJQg3llbjuyruhI
+         M+6FaEy4usHTc8A23+BU0atJUdK3DWAIwqAJ8=
+Date: Sun, 1 May 2011 12:45:55 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH tip:x86/urgent] x86, NUMA: Fix empty memblk detection in
+ numa_cleanup_meminfo()
+Message-ID: <20110501104555.GN29280@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Apr 2011 19:30:52 -0300
-Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+From: Yinghai Lu <yinghai@kernel.org>
 
-> Hi Florian,
-> 
-> Em 30-04-2011 15:54, Florian Mickler escreveu:
-> > Hi Mauro!
-> > 
-> > I just saw that you picked up some patches of mine. What about these?
-> > These are actually tested...
-> 
-> I'm still in process of applying the pending patches. Due to patchwork.kernel.org
-> troubles (including the loss of about 270 patches from its SQL database only 
-> recovered yesterday[1]), I have a long backlog. So, I'm gradually applying the remaing
-> stuff. It will take some time though, and it will depend on patchwork mood, but I intend
-> to spend some time during this weekend to minimize the backlog.
-> 
-> 
-> Cheers,
-> Mauro
-> 
-> [1] The recover lost the email's body/SOB, so I've wrote a script to use my email
-> queue to get the data, using patchwork just to mark what patches were already
-> processed. This increses the time I have to spend on each patch, as I need to run
-> a script to match the patchwork patch with the patch ID inside my email queue.
-> 
+numa_cleanup_meminfo() trims each memblk between low (0) and high
+(max_pfn) limits and discards empty ones.  However, the emptiness
+detection incorrectly used equality test.  If the start of a memblk is
+higher than max_pfn, it is empty but fails the equality test and
+doesn't get discarded.
 
-Ah ok, no time pressure over here.. just wanted to make sure
-that these don't get lost.
+Fix it by using >= instead of ==.
 
-Regards and thanks,
-Flo
+tj: Extracted the actual fix from the original patch and rewrote patch
+    description.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Ingo, can you please push this to mainline?  Once it hits x86/urgent,
+I'll regenerate the 32bit NUMA unification branch on top of it with
+Yinghai's other patches and send pull request for x86/mm.
+
+Thank you.
+
+ arch/x86/mm/numa_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: work/arch/x86/mm/numa_64.c
+===================================================================
+--- work.orig/arch/x86/mm/numa_64.c
++++ work/arch/x86/mm/numa_64.c
+@@ -191,7 +191,7 @@ int __init numa_cleanup_meminfo(struct n
+ 		bi->end = min(bi->end, high);
+ 
+ 		/* and there's no empty block */
+-		if (bi->start == bi->end) {
++		if (bi->start >= bi->end) {
+ 			numa_remove_memblk_from(i--, mi);
+ 			continue;
+ 		}
