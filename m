@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761291Ab1EARou (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 13:44:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32882 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab1EARor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 13:44:47 -0400
-Date: Sun, 1 May 2011 17:44:27 GMT
-From: tip-bot for Bart Van Assche <bvanassche@acm.org>
-Message-ID: <tip-9de4966a4d218f29c68e96e8e7b4d2840dedec79@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        bvanassche@acm.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bvanassche@acm.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <201105011409.21629.bvanassche@acm.org>
-References: <201105011409.21629.bvanassche@acm.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Fix spelling error in the memcpy() source code comment
-Git-Commit-ID: 9de4966a4d218f29c68e96e8e7b4d2840dedec79
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1761293Ab1EARtK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 13:49:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52199 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761273Ab1EARtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 13:49:07 -0400
+Message-ID: <4DBD9D0D.1080503@sieker.io>
+Date: Sun, 01 May 2011 19:49:01 +0200
+From: "Adi J. Sieker" <adi@core.adi.io>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 01 May 2011 17:44:28 +0000 (UTC)
+To: Oliver Neukum <oliver@neukum.org>
+CC: USB list <linux-usb@vger.kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
+References: <4DBC6FA9.3080008@sieker.io> <201105010953.27052.oliver@neukum.org>
+In-Reply-To: <201105010953.27052.oliver@neukum.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9de4966a4d218f29c68e96e8e7b4d2840dedec79
-Gitweb:     http://git.kernel.org/tip/9de4966a4d218f29c68e96e8e7b4d2840dedec79
-Author:     Bart Van Assche <bvanassche@acm.org>
-AuthorDate: Sun, 1 May 2011 14:09:21 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 1 May 2011 19:16:18 +0200
+On 01/05/11 09:53, Oliver Neukum wrote:
+> Am Samstag, 30. April 2011, 22:23:05 schrieb Adi J. Sieker:
+>> Hello,
+>>
+>> the lovely folks from #kernelnewbies suggested I write this mail since
+>> they are at a loss.
+>> I recently got a new USB keyboard which works fine in the BIOS and also
+>> in VBox Windows guests, but not on the host.
+>>
+>> The keyboard is a Keysonic KSK-8003 UX product details here:
+>> http://maxpoint.de/de/products/keyboards.php?pid=1_3_7&we_objectID=1220
+>>
+>> The menu key and the backspace keys do work. The num lock led is on,
+>> though I can't switch num lock off.
+>> If I attch the keyboard to a VirtualBox VM running WindowsXP as a guest,
+>> it works as expected in the VM.
+> This indicates that it is working on the USB level.
+>
+>> I'm running 2.6.32-27-generic #49-Ubuntu. I tried the Ubuntu 10.10
+>> LiveCD and that also didn't work. I haven't tried 11.04 yet though.
+> Do you get anything on the event device? What does udev say when you
+> plug in the device?
+>
 
-x86: Fix spelling error in the memcpy() source code comment
+udevadm monitor output is:
+monitor will print the received events for:
+UDEV - the event which udev sends out after rule processing
+KERNEL - the kernel uevent
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/201105011409.21629.bvanassche@acm.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/lib/memcpy_64.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+KERNEL[1304270944.379238] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3 (usb)
+KERNEL[1304270944.380140] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0 (usb)
+KERNEL[1304270944.380238] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004 
+(hid)
+KERNEL[1304270944.389434] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17 
+(input)
+KERNEL[1304270944.389811] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17/event7 
+(input)
+KERNEL[1304270944.389863] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004/hidraw/hidraw0 
+(hidraw)
+KERNEL[1304270944.389917] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1 (usb)
+KERNEL[1304270944.390031] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1/0003:060B:0230.0005 
+(hid)
+UDEV  [1304270944.396889] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3 (usb)
+UDEV  [1304270944.398067] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1 (usb)
+UDEV  [1304270944.398122] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0 (usb)
+UDEV  [1304270944.400048] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004 
+(hid)
+UDEV  [1304270944.400947] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004/hidraw/hidraw0 
+(hidraw)
+UDEV  [1304270944.401033] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1/0003:060B:0230.0005 
+(hid)
+UDEV  [1304270944.408614] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17 
+(input)
+UDEV  [1304270944.415928] add      
+/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17/event7 
+(input)
 
-diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-index 75ef61e..2a560bb 100644
---- a/arch/x86/lib/memcpy_64.S
-+++ b/arch/x86/lib/memcpy_64.S
-@@ -49,7 +49,7 @@ ENTRY(memcpy)
- 	jb .Lhandle_tail
- 
- 	/*
--	 * We check whether memory false dependece could occur,
-+	 * We check whether memory false dependence could occur,
- 	 * then jump to corresponding copy mode.
- 	 */
- 	cmp  %dil, %sil
+one thing I found out is that this keyboard has some special anti 
+ghosting function for some keys. Where you can press multiple keys 
+simultaneously
+and they are all recognized. This is apparently great for gaming. Which 
+I'm not interested in...
+
+Cheers
+    Adi
+
+
+-- 
+Adi J. Sieker
+Steurentalstr. 2
+79252 Stegen
+mobile: +49 / 178 / 88 5 88 13
+    tel: +49 / 7661 / 91 92 813
+    web: http://sieker.io/profile
+
