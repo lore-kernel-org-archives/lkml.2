@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab1EAPKP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:10:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52679 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab1EAPKN convert rfc822-to-8bit (ORCPT
+	id S1755068Ab1EAPLB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:11:01 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35292 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab1EAPK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:10:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=egIqAj0BZwr7/4a8OMssyBT/xON8zCwDAeCY+/xLRieJI08HHuY5vCLdUS3GDGSiF8
-         HEVaB7cX8nPsFecW27exZ5zM7ew4DS0PyJ698R7SRTts3+5lrR2fC/waNdk7gBjeTX7o
-         y1o3bB7OX4Qas4EtzgBnnMBk4UJ6Mo4gBDyiE=
+	Sun, 1 May 2011 11:10:59 -0400
+X-Originating-IP: 217.70.178.137
+X-Originating-IP: 50.43.15.19
+Date: Sun, 1 May 2011 08:10:35 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 07/86] rcu: Force per-rcu_node kthreads off
+ of the outgoing CPU
+Message-ID: <20110501151034.GA14829@feather>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-7-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110501221459.75E4.A69D9226@jp.fujitsu.com>
-References: <BANLkTik2FTKgSSYkyP4XT4pkhOYvpjgSTA@mail.gmail.com>
-	<20110428084500.GG12437@cmpxchg.org>
-	<20110501221459.75E4.A69D9226@jp.fujitsu.com>
-Date: Mon, 2 May 2011 00:10:12 +0900
-Message-ID: <BANLkTikr+nW=9a9B=HN9PBir=cpKjXnwLA@mail.gmail.com>
-Subject: Re: [RFC 4/8] Make clear description of putback_lru_page
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304256126-26015-7-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 1, 2011 at 10:13 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> On Thu, Apr 28, 2011 at 08:20:32AM +0900, Minchan Kim wrote:
->> > On Wed, Apr 27, 2011 at 5:11 PM, KAMEZAWA Hiroyuki
->> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > > On Wed, 27 Apr 2011 01:25:21 +0900
->> > > Minchan Kim <minchan.kim@gmail.com> wrote:
->> > >
->> > >> Commonly, putback_lru_page is used with isolated_lru_page.
->> > >> The isolated_lru_page picks the page in middle of LRU and
->> > >> putback_lru_page insert the lru in head of LRU.
->> > >> It means it could make LRU churning so we have to be very careful.
->> > >> Let's clear description of putback_lru_page.
->> > >>
->> > >> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> > >> Cc: Mel Gorman <mgorman@suse.de>
->> > >> Cc: Rik van Riel <riel@redhat.com>
->> > >> Cc: Andrea Arcangeli <aarcange@redhat.com>
->> > >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> > >
->> > > seems good...
->> > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > >
->> > > But is there consensus which side of LRU is tail? head?
->> >
->> > I don't know. I used to think it's head.
->> > If other guys raise a concern as well, let's talk about it. :)
->> > Thanks
->>
->> I suppose we add new pages to the head of the LRU and reclaim old
->> pages from the tail.
->>
->> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
->
-> So, It would be better if isolate_lru_page() also have "LRU tail blah blah blah"
-> comments.
+On Sun, May 01, 2011 at 06:20:47AM -0700, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
+> 
+> The scheduler has had some heartburn in the past when too many real-time
+> kthreads were affinitied to the outgoing CPU.  So, this commit lightens
+> the load by forcing the per-rcu_node and the boost kthreads off of the
+> outgoing CPU.  Note that RCU's per-CPU kthread remains on the outgoing
+> CPU until the bitter end, as it must in order to preserve correctness.
+> 
+> Also avoid disabling hardirqs across calls to set_cpus_allowed_ptr(),
+> given that this function can block.
 
-Okay. I will try it.
+This seems like two separate changes in one patch.  The change to
+kernel/rcutree_plugin.h seems entirely separable from the change to
+kernel/rcutree.c here.
 
->
-> anyway,
->        Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Thanks.
+Heh, amusingly this actually seems meaningful, if you intend it as a
+"role" approval.
 
-
--- 
-Kind regards,
-Minchan Kim
+- Josh Triplett
