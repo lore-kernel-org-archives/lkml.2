@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761262Ab1EAQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 12:59:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54820 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761251Ab1EAQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 12:59:31 -0400
-Date: Sun, 1 May 2011 16:58:24 GMT
-From: tip-bot for Boris Ostrovsky <ostr@amd64.org>
-Message-ID: <tip-e20a2d205c05cef6b5783df339a7d54adeb50962@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Boris.Ostrovsky@amd.com, hpa@zytor.com,
-        mingo@redhat.com, jvpeetz@web.de, tglx@linutronix.de, ostr@amd64.org,
-        mingo@elte.hu, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, Boris.Ostrovsky@amd.com,
-        linux-kernel@vger.kernel.org, jvpeetz@web.de, tglx@linutronix.de,
-        ostr@amd64.org, mingo@elte.hu, borislav.petkov@amd.com
-In-Reply-To: <1304113663-6586-1-git-send-email-ostr@amd64.org>
-References: <1304113663-6586-1-git-send-email-ostr@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors
-Git-Commit-ID: e20a2d205c05cef6b5783df339a7d54adeb50962
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1761257Ab1EARB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 13:01:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47934 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761232Ab1EARBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 13:01:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 01 May 2011 16:58:26 +0000 (UTC)
+In-Reply-To: <BANLkTik_aeVn9Jf_cWnoY0fNUm+tjMnixA@mail.gmail.com>
+References: <Xp4OiTz83N.A.O0D.JVGvNB@chimera> <G9uL1cldhmL.A.sNF.dWGvNB@chimera>
+ <BANLkTinZRdGROHZqjLFtr=buEUNwyYhVpQ@mail.gmail.com> <BANLkTik_aeVn9Jf_cWnoY0fNUm+tjMnixA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 1 May 2011 10:01:05 -0700
+Message-ID: <BANLkTimbLpMNzfKpyigH6n3arNUywEGk1w@mail.gmail.com>
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e20a2d205c05cef6b5783df339a7d54adeb50962
-Gitweb:     http://git.kernel.org/tip/e20a2d205c05cef6b5783df339a7d54adeb50962
-Author:     Boris Ostrovsky <ostr@amd64.org>
-AuthorDate: Fri, 29 Apr 2011 17:47:43 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 1 May 2011 18:55:51 +0200
+On Sun, May 1, 2011 at 2:55 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+>
+> There is something else and completely unrelated that is puzzling me though:
+> on two almost identical systems one always recognizes all internal PCIe
+> cards but the other system not. This is something that seldom happened with
+> 2.6.34 but happens frequently with 2.6.38 and 2.6.39-rcx. What I see is that
+> during boot either both InfiniBand PCIe cards are recognized or that one
+> specific card is not recognized and even doesn't show up in the lspci
+> output. A BIOS upgrade didn't help. Any idea where I should start looking to
+> find the cause of this issue ?
 
-x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors
+So it has happened sporadically before, but happens much more commonly
+now? That very much implies some timing issue in PCI probing.
 
-Older AMD K8 processors (Revisions A-E) are affected by erratum
-400 (APIC timer interrupts don't occur in C states greater than
-C1). This, for example, means that X86_FEATURE_ARAT flag should
-not be set for these parts.
+It could be, for example, that the card has a very slow reset
+sequence, and doesn't respond to PCI config cycles until it has
+internally booted fully. If so, a faster boot by the kernel might just
+cause the Linux PCI enumeration to be done before the card is ready.
 
-This addresses regression introduced by commit
-b87cf80af3ba4b4c008b4face3c68d604e1715c6 ("x86, AMD: Set ARAT
-feature on AMD processors") where the system may become
-unresponsive until external interrupt (such as keyboard input)
-occurs. This results, for example, in time not being reported
-correctly, lack of progress on the system and other lockups.
+(That's a really unlikely scenario - I'm not seriously suggesting that
+the card would be quite <i>that</i> stupid and slow. But there might
+be similar issues at a much lower level, ie if the Linux pcie port
+driver might be resetting the port and then trying to read the card
+too quickly afterwards, and you'd want some added delay there).
 
-Reported-by: Joerg-Volker Peetz <jvpeetz@web.de>
-Tested-by: Joerg-Volker Peetz <jvpeetz@web.de>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Boris Ostrovsky <Boris.Ostrovsky@amd.com>
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/1304113663-6586-1-git-send-email-ostr@amd64.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/amd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Have you tried it "pcie_ports=compat" (or "native") makes any difference?
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 3532d3b..bb9eb29 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -698,7 +698,7 @@ cpu_dev_register(amd_cpu_dev);
-  */
- 
- const int amd_erratum_400[] =
--	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-+	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0x0f, 0x4, 0x2, 0xff, 0xf),
- 			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
- EXPORT_SYMBOL_GPL(amd_erratum_400);
- 
+But you should probably contact Jesse Barnes and the linux-pci mailing
+list and see if anybody has any smarter ideas.
+
+                       Linus
