@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759029Ab1EABs1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 21:48:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52252 "EHLO
+	id S1759973Ab1EABri (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 21:47:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61911 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab1EABhp (ORCPT
+	with ESMTP id S1755185Ab1EABhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 21:37:45 -0400
+	Sat, 30 Apr 2011 21:37:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BWJOYucH3N4XsmnuQGriP8C2ITFEpyrxdFkDw2junR1ph7h0YiLIr5YOBPk7Euk/f1
-         1QdypQasJ8tKWqpg1dupzi3U6uQ2Z/eYzQjtRYlp9wBuhPmyZHHCYrikCqbbkU884ScW
-         OtTzuqGpz1XYPdhJAt62NBVXMcK/KfcL4vA4M=
+        b=JXrZfRkk0wHbkZkSyiUaz6tq2xDst2zPxkO/veWE4xXb1zM/+3l0Azv8tqG+2MyBSl
+         j6Hav/iCSAw/WgAxjQcVwqTMgrBQ1TMSAhNaWyS9wZsOK5owna1xJVlYXp91vEYX562U
+         pUxBSgyT+yhp+euhzV4dr+HW9dsd3vcciPTSc=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 41/69] sysctl: remove .child from s390dbf/
-Date: Sun,  1 May 2011 03:36:11 +0200
-Message-Id: <1304213799-10257-42-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 42/69] sysctl: remove .child from vm/ (s390)
+Date: Sun,  1 May 2011 03:36:12 +0200
+Message-Id: <1304213799-10257-43-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,47 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- arch/s390/kernel/debug.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+ arch/s390/mm/cmm.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/arch/s390/kernel/debug.c b/arch/s390/kernel/debug.c
-index 5ad6bc0..384f67b 100644
---- a/arch/s390/kernel/debug.c
-+++ b/arch/s390/kernel/debug.c
-@@ -902,7 +902,7 @@ static struct ctl_table s390dbf_table[] = {
- 		.mode           = S_IRUGO | S_IWUSR,
- 		.proc_handler   = proc_dointvec,
- 	},
--	 {
-+	{
- 		.procname       = "debug_active",
- 		.data		= &debug_active,
- 		.maxlen		= sizeof(int),
-@@ -912,13 +912,8 @@ static struct ctl_table s390dbf_table[] = {
+diff --git a/arch/s390/mm/cmm.c b/arch/s390/mm/cmm.c
+index c66ffd8..0ef5bbf 100644
+--- a/arch/s390/mm/cmm.c
++++ b/arch/s390/mm/cmm.c
+@@ -348,13 +348,8 @@ static struct ctl_table cmm_table[] = {
  	{ }
  };
  
--static struct ctl_table s390dbf_dir_table[] = {
+-static struct ctl_table cmm_dir_table[] = {
 -	{
--		.procname       = "s390dbf",
--		.maxlen         = 0,
--		.mode           = S_IRUGO | S_IXUGO,
--		.child          = s390dbf_table,
+-		.procname	= "vm",
+-		.maxlen		= 0,
+-		.mode		= 0555,
+-		.child		= cmm_table,
 -	},
-+static const __initdata struct ctl_path s390dbf_path[] = {
-+	{ .procname = "s390dbf" },
++static const __initdata struct ctl_path cmm_path[] = {
++	{ .procname = "vm" },
  	{ }
  };
  
-@@ -1071,7 +1066,7 @@ __init debug_init(void)
+@@ -434,7 +429,7 @@ static int __init cmm_init(void)
  {
- 	int rc = 0;
+ 	int rc = -ENOMEM;
  
--	s390dbf_sysctl_header = register_sysctl_table(s390dbf_dir_table);
-+	s390dbf_sysctl_header = register_sysctl_paths(s390dbf_path, s390dbf_table);
- 	mutex_lock(&debug_mutex);
- 	debug_debugfs_root_entry = debugfs_create_dir(DEBUG_DIR_ROOT,NULL);
- 	initialized = 1;
+-	cmm_sysctl_header = register_sysctl_table(cmm_dir_table);
++	cmm_sysctl_header = register_sysctl_paths(cmm_path, cmm_table);
+ 	if (!cmm_sysctl_header)
+ 		goto out_sysctl;
+ #ifdef CONFIG_CMM_IUCV
 -- 
 1.7.5.134.g1c08b
 
