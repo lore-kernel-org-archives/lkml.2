@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab1EABqX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 21:46:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52916 "EHLO
+	id S1760307Ab1EABjj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 21:39:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48544 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078Ab1EABh4 (ORCPT
+	with ESMTP id S932210Ab1EABh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 21:37:56 -0400
+	Sat, 30 Apr 2011 21:37:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ha/StKrUnjl6L+2kYAVx3FBoiGuAMJNLziGh/59n9Oaj3gN3ApwJFFua9WBc/kpSAR
-         Mtox42hjxTjWtuADUH4EDfYgPoKljus26vz8Fc2Vdf44/Hqb029xzinHUd45zkSxwitG
-         dd4RLz8EFYbxW8P4X28TvUVxIE4XuXA8Beon4=
+        b=HXT9v2k36XF5QQv2VCFYryh1JBjC7eHSetGbZY1pF4Px7ZbVQmMsFKJoh4BF69QqGi
+         y4llfPU1LZU6MqnqgEBHnDSydACwki0NrLCuI2WSppZqHymHxwxjl7fGVZI3qAbNqm8Z
+         A0FiUqhNbcBMnnh6bd0Cw+ZnxjIaTn3iBuNoU=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 54/69] sysctl: remove .child from net/llc tables
-Date: Sun,  1 May 2011 03:36:24 +0200
-Message-Id: <1304213799-10257-55-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 55/69] sysctl: no-child: manually register kernel/random
+Date: Sun,  1 May 2011 03:36:25 +0200
+Message-Id: <1304213799-10257-56-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,90 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- net/llc/sysctl_net_llc.c |   55 +++++++++++++++++++++++----------------------
- 1 files changed, 28 insertions(+), 27 deletions(-)
+ drivers/char/random.c |   27 ++++++++++++++++++++++++++-
+ kernel/sysctl.c       |    6 ------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
-diff --git a/net/llc/sysctl_net_llc.c b/net/llc/sysctl_net_llc.c
-index e2ebe35..8977307 100644
---- a/net/llc/sysctl_net_llc.c
-+++ b/net/llc/sysctl_net_llc.c
-@@ -56,48 +56,49 @@ static struct ctl_table llc_station_table[] = {
- 	{ },
- };
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index d4ddeba..8893c4b 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -959,8 +959,15 @@ static void init_std_data(struct entropy_store *r)
+ 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
+ }
  
--static struct ctl_table llc2_dir_timeout_table[] = {
--	{
--		.procname	= "timeout",
--		.mode		= 0555,
--		.child		= llc2_timeout_table,
--	},
--	{ },
--};
++static int __init register_random_sysctls(void);
++
+ static int rand_initialize(void)
+ {
++	int rc;
++	rc = register_random_sysctls();
++	if (!rc)
++		return rc;
++
+ 	init_std_data(&input_pool);
+ 	init_std_data(&blocking_pool);
+ 	init_std_data(&nonblocking_pool);
+@@ -1250,7 +1257,7 @@ static int proc_do_uuid(ctl_table *table, int write,
+ }
  
--static struct ctl_table llc_table[] = {
--	{
--		.procname	= "llc2",
--		.mode		= 0555,
--		.child		= llc2_dir_timeout_table,
--	},
--	{
--		.procname       = "station",
--		.mode           = 0555,
--		.child          = llc_station_table,
--	},
--	{ },
-+static const __initdata struct ctl_path llc2_timeout_path[] = {
-+	{ .procname = "net", },
-+	{ .procname = "llc", },
-+	{ .procname = "llc2", },
-+	{ .procname = "timeout", },
-+	{ }
- };
- 
--static struct ctl_path llc_path[] = {
-+static const __initdata struct ctl_path llc_station_path[] = {
- 	{ .procname = "net", },
- 	{ .procname = "llc", },
-+	{ .procname = "station", },
+ static int sysctl_poolsize = INPUT_POOL_WORDS * 32;
+-ctl_table random_table[] = {
++static struct ctl_table random_table[] = {
+ 	{
+ 		.procname	= "poolsize",
+ 		.data		= &sysctl_poolsize,
+@@ -1298,6 +1305,24 @@ ctl_table random_table[] = {
+ 	},
  	{ }
  };
- 
--static struct ctl_table_header *llc_table_header;
-+static struct ctl_table_header *llc_station_hdr;
-+static struct ctl_table_header *llc2_timeout_hdr;
- 
- int __init llc_sysctl_init(void)
- {
--	llc_table_header = register_sysctl_paths(llc_path, llc_table);
-+	llc_station_hdr = register_sysctl_paths(llc_station_path, llc_station_table);
-+	if (!llc_station_hdr)
-+		return -ENOMEM;
- 
--	return llc_table_header ? 0 : -ENOMEM;
-+	llc2_timeout_hdr = register_sysctl_paths(llc2_timeout_path, llc2_timeout_table);
-+	if (!llc2_timeout_hdr) {
-+		unregister_sysctl_table(llc_station_hdr);
-+		llc_station_hdr = NULL;
-+		return -ENOMEM;
-+	}
 +
++static const __initdata struct ctl_path random_path[] = {
++	{ .procname = "kernel" },
++	{ .procname = "random" },
++	{ }
++};
++
++static struct ctl_table_header *random_header;
++
++static int __init register_random_sysctls(void)
++{
++	random_header = register_sysctl_paths(random_path, random_table);
++	if (!random_header)
++		return -ENOMEM;
 +	return 0;
- }
++}
++#else /* CONFIG_SYSCTL */
++static int __init register_random_sysctls(void) { return 0; }
+ #endif 	/* CONFIG_SYSCTL */
  
- void llc_sysctl_exit(void)
- {
--	if (llc_table_header) {
--		unregister_sysctl_table(llc_table_header);
--		llc_table_header = NULL;
-+	if (llc2_timeout_hdr) {
-+		unregister_sysctl_table(llc2_timeout_hdr);
-+		llc2_timeout_hdr = NULL;
-+	}
-+	if (llc_station_hdr) {
-+		unregister_sysctl_table(llc_station_hdr);
-+		llc_station_hdr = NULL;
- 	}
- }
+ /********************************************************************
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b813724..a3f060c 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -216,7 +216,6 @@ static struct ctl_table vm_table[];
+ static struct ctl_table fs_table[];
+ static struct ctl_table debug_table[];
+ static struct ctl_table dev_table[];
+-extern struct ctl_table random_table[];
+ #ifdef CONFIG_EPOLL
+ extern struct ctl_table epoll_table[];
+ #endif
+@@ -611,11 +610,6 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname	= "random",
+-		.mode		= 0555,
+-		.child		= random_table,
+-	},
+-	{
+ 		.procname	= "overflowuid",
+ 		.data		= &overflowuid,
+ 		.maxlen		= sizeof(int),
 -- 
 1.7.5.134.g1c08b
 
