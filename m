@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761293Ab1EARtK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 13:49:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52199 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761273Ab1EARtH (ORCPT
+	id S1761295Ab1EARvT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 13:51:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:46916 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761271Ab1EARvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 13:49:07 -0400
-Message-ID: <4DBD9D0D.1080503@sieker.io>
-Date: Sun, 01 May 2011 19:49:01 +0200
-From: "Adi J. Sieker" <adi@core.adi.io>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-CC: USB list <linux-usb@vger.kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-References: <4DBC6FA9.3080008@sieker.io> <201105010953.27052.oliver@neukum.org>
-In-Reply-To: <201105010953.27052.oliver@neukum.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 1 May 2011 13:51:18 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+TyhEnzoSTThkNJzAy7AcbUH0TLbqB0fjui9F981
+	yqlkP5cydUKoqQ
+Subject: Re: [PATCH tip/core/rcu 31/86] rcu: further lower priority in
+ rcu_yield()
+From: Mike Galbraith <efault@gmx.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+In-Reply-To: <1304256126-26015-31-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+	 <1304256126-26015-31-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 May 2011 19:51:04 +0200
+Message-ID: <1304272264.7417.20.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/11 09:53, Oliver Neukum wrote:
-> Am Samstag, 30. April 2011, 22:23:05 schrieb Adi J. Sieker:
->> Hello,
->>
->> the lovely folks from #kernelnewbies suggested I write this mail since
->> they are at a loss.
->> I recently got a new USB keyboard which works fine in the BIOS and also
->> in VBox Windows guests, but not on the host.
->>
->> The keyboard is a Keysonic KSK-8003 UX product details here:
->> http://maxpoint.de/de/products/keyboards.php?pid=1_3_7&we_objectID=1220
->>
->> The menu key and the backspace keys do work. The num lock led is on,
->> though I can't switch num lock off.
->> If I attch the keyboard to a VirtualBox VM running WindowsXP as a guest,
->> it works as expected in the VM.
-> This indicates that it is working on the USB level.
->
->> I'm running 2.6.32-27-generic #49-Ubuntu. I tried the Ubuntu 10.10
->> LiveCD and that also didn't work. I haven't tried 11.04 yet though.
-> Do you get anything on the event device? What does udev say when you
-> plug in the device?
->
+On Sun, 2011-05-01 at 06:21 -0700, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
+> 
+> Although rcu_yield() dropped from real-time to normal priority, there
+> is always the possibility that the competing tasks have been niced.
+> So nice to 19 in rcu_yield() to help ensure that other tasks have a
+> better chance of running.
 
-udevadm monitor output is:
-monitor will print the received events for:
-UDEV - the event which udev sends out after rule processing
-KERNEL - the kernel uevent
+But.. that just prolongs the pain of overhead you _have_ to eat, no?  In
+a brief surge, fine, you can spread the cost out.. but how do you know
+when it's ok to yield?
 
-KERNEL[1304270944.379238] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3 (usb)
-KERNEL[1304270944.380140] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0 (usb)
-KERNEL[1304270944.380238] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004 
-(hid)
-KERNEL[1304270944.389434] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17 
-(input)
-KERNEL[1304270944.389811] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17/event7 
-(input)
-KERNEL[1304270944.389863] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004/hidraw/hidraw0 
-(hidraw)
-KERNEL[1304270944.389917] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1 (usb)
-KERNEL[1304270944.390031] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1/0003:060B:0230.0005 
-(hid)
-UDEV  [1304270944.396889] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3 (usb)
-UDEV  [1304270944.398067] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1 (usb)
-UDEV  [1304270944.398122] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0 (usb)
-UDEV  [1304270944.400048] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004 
-(hid)
-UDEV  [1304270944.400947] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/0003:060B:0230.0004/hidraw/hidraw0 
-(hidraw)
-UDEV  [1304270944.401033] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.1/0003:060B:0230.0005 
-(hid)
-UDEV  [1304270944.408614] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17 
-(input)
-UDEV  [1304270944.415928] add      
-/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input17/event7 
-(input)
+(When maintenance threads worrying about their CPU usage is worrisome.)
 
-one thing I found out is that this keyboard has some special anti 
-ghosting function for some keys. Where you can press multiple keys 
-simultaneously
-and they are all recognized. This is apparently great for gaming. Which 
-I'm not interested in...
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 3295c7b..963b4b1 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1561,6 +1561,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+>  	mod_timer(&yield_timer, jiffies + 2);
+>  	sp.sched_priority = 0;
+>  	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+> +	set_user_nice(current, 19);
+>  	schedule();
+>  	sp.sched_priority = RCU_KTHREAD_PRIO;
+>  	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
 
-Cheers
-    Adi
-
-
--- 
-Adi J. Sieker
-Steurentalstr. 2
-79252 Stegen
-mobile: +49 / 178 / 88 5 88 13
-    tel: +49 / 7661 / 91 92 813
-    web: http://sieker.io/profile
 
