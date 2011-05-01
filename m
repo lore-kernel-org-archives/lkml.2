@@ -1,303 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1EAFvV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 01:51:21 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:40129 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1EAFvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 01:51:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oUKAQtMTLpwELS1hUBfPGemFJWYtGX4QrFB6SnmXMOYjlvMUoq+ELrkMIK2JA2guZE
-         xYNpX2kJBiVmI43fGzq214jjKZWD1Ub4N8yGxzxuHmpqbw0Fjr+f6dNdhtECcrmXPIVP
-         ZOOVWMTKwf5cxUlwt2CaHRL7XYWFcaD7Q4IgA=
-From: wanlong.gao@gmail.com
-To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rdunlap@xenotime.net, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] Fix the over time interface of the driver-model docs
-Date: Sun,  1 May 2011 13:50:56 +0800
-Message-Id: <1304229056-5554-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752474Ab1EAHXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 03:23:39 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:32973 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752122Ab1EAHXj (ORCPT
+	<rfc822;groupwise-jlee@novell.com:5:1>);
+	Sun, 1 May 2011 03:23:39 -0400
+Message-Id: <4DBD9716020000230002C094@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Sun, 01 May 2011 01:23:34 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <melchior.franz@gmail.com>
+Cc: "Joey Lee" <JLee@novell.com>, <carlos@strangeworlds.co.uk>,
+        <tiwai@suse.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: acer_wmi: "Unable to detect available WMID devices" on
+ Acer_Travelmate_5735Z-452G32Mnss (was: Re: i915/kms/backlight-combo
+ mode problem)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao<wanlong.gao@gmail.com>
+於 六，2011-04-30 於 19:51 +0200，Melchior FRANZ 提到：
+> Hey,
+> 
+> * Joey Lee -- Saturday 30 April 2011:
+> > 於 六，2011-04-30 於 13:34 +0200，Melchior FRANZ 提到：
+> > > * Takashi Iwai -- Saturday 30 April 2011:
+> > > * * At Sat, 30 Apr 2011 10:32:04 +0200, Melchior FRANZ wrote:
+> > > > > Yes, backlight adjustment generally works on this notebook, but only
+> > > > > with "acpi_osi=Linux" on the command line.
+> > > > 
+> > > > acpi_osi quirk should be better added statically, then.
+> > > 
+> > > No, I guess the problem here is that acer_wmi doesn't support this
+> > > machine yet.
+> 
+> > Could you please attach DSDT on this mail or share your kernel bugzilla
+> > number to us?
+> 
+> I've just created the bugzilla entry: #34142. There you find the output of
+> dmesg, of acpidump and the DSDT.
+> 
+> 
+> Here's in addition a table with the info of debug_dump_wdg=1. The last
+> column shows if an ID is already #defined or used as module alias.
+> 
+>                                         obj_id  not_id  res     flags
+> F6CB5C3C-9CAE-4EBD-B577-931EA32A2CC0:   MX      4D      58      0x2 ACPI_WMI_METHOD     -
+> F28A9357-CF4B-4A1A-8893-BB1F58EEA1AF:   Ñ       D1      00      0x8 ACPI_WMI_EVENT      -
+> 05901221-D566-11D1-B2F0-00A0C9062910:   XM      58      4D      0x0                     -
+> 95764E09-FB56-4E83-B31A-37761F60994A:   AA      41      41      0x1 ACPI_WMI_EXPENSIVE  WMID_GUID2
+> 6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3:   BA      42      41      0x2 ACPI_WMI_METHOD     WMID_GUID1, MODULE_ALIAS
+> CC1A61AC-4256-41A3-B9E0-05A445ADE2F5:   0x80    80      00      0x8 ACPI_WMI_EVENT      -
+> E78C4453-0227-4861-9EDE-F5600B4A3D39:   BB      42      42      0x2 ACPI_WMI_METHOD     -
+> AAE04F7B-B3C5-4865-95D6-9FAC7FF3E92B:   BC      42      43      0x2 ACPI_WMI_METHOD     -
+> CFF94C79-6C77-4AF7-AC56-7DD0CE01C997:   BD      42      44      0x2 ACPI_WMI_METHOD     -
+> 79772EC5-04B1-4BFD-843C-61E7F77B6CC9:   BE      42      45      0x2 ACPI_WMI_METHOD     -
+> A7C9A0B7-4C9D-4C72-83BB-53A3459171DF:   BF      42      46      0x2 ACPI_WMI_METHOD     -
+> 653A064F-A23A-485F-B3D9-13F6532A0182:   BG      42      47      0x2 ACPI_WMI_METHOD     -
+> 5923DD45-0480-4ED5-B61A-C9EC6C90E26A:   BH      42      48      0x2 ACPI_WMI_METHOD     -
+> DB85B1A7-069A-4ABB-A2B5-D186A21B80F1:   0x81    81      00      0x8 ACPI_WMI_EVENT      -
+> 36916B91-1A64-4583-84D0-53830FB9108D:   0x82    82      00      0x8 ACPI_WMI_EVENT      -
+> 676AA15E-6A47-4D9F-A2CC-1E6D18D14026:   ¼       BC      00      0x8 ACPI_WMI_EVENT      ACERWMID_EVENT_GUID, MODULE_ALIAS
+> 61EF69EA-865C-4BC3-A502-A0DEBA0CB531:   AA      41      41      0x2 ACPI_WMI_METHOD     WMID_GUID3
+> 05901221-D566-11D1-B2F0-00A0C9062910:   AB      41      42      0x0			-
+> FAAA1397-1188-448F-8516-9A07987DD38A:   BI      42      49      0x2 ACPI_WMI_METHOD	-
+> 
+> m.
 
-The driver-model documentation seems like out-of-date, Can we
-fix them or rewrite ?
+Thank's for your DSDT, I just added comment on bugzilla.
+This machine support newest WMID GUID3 method but the old WMID_GUID2
+method must be also work. 
 
-Signed-off-by: Wanlong Gao<wanlong.gao@gmail.com>
----
- Documentation/driver-model/bus.txt    |   32 ++++----
- Documentation/driver-model/device.txt |  149 +++++++++++++++++++--------------
- 2 files changed, 104 insertions(+), 77 deletions(-)
+I am tracing DSDT for why the WMID2 method return acpi fail, and maybe
+this machine direct support standard ACPI backlight method.
 
-diff --git a/Documentation/driver-model/bus.txt b/Documentation/driver-model/bus.txt
-index 5001b75..82bca26 100644
---- a/Documentation/driver-model/bus.txt
-+++ b/Documentation/driver-model/bus.txt
-@@ -5,21 +5,23 @@ Definition
- ~~~~~~~~~~
- 
- struct bus_type {
--	char			* name;
-+	const char		*name;
-+	struct bus_attribute	*bus_attrs;
-+	struct device_attribute	*dev_attrs;
-+	struct driver_attribute	*drv_attrs;
- 
--	struct subsystem	subsys;
--	struct kset		drivers;
--	struct kset		devices;
-+	int (*match)(struct device *dev, struct device_driver *drv);
-+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
-+	int (*probe)(struct device *dev);
-+	int (*remove)(struct device *dev);
-+	void (*shutdown)(struct device *dev);
- 
--	struct bus_attribute	* bus_attrs;
--	struct device_attribute	* dev_attrs;
--	struct driver_attribute	* drv_attrs;
-+	int (*suspend)(struct device *dev, pm_message_t state);
-+	int (*resume)(struct device *dev);
- 
--	int		(*match)(struct device * dev, struct device_driver * drv);
--	int		(*hotplug) (struct device *dev, char **envp, 
--				    int num_envp, char *buffer, int buffer_size);
--	int		(*suspend)(struct device * dev, pm_message_t state);
--	int		(*resume)(struct device * dev);
-+	const struct dev_pm_ops *pm;
-+
-+	struct subsys_private *p;
- };
- 
- int bus_register(struct bus_type * bus);
-@@ -127,9 +129,9 @@ hierarchy:
- 
- 	/sys/bus/pci/
- 	|-- devices
--	|   |-- 00:00.0 -> ../../../root/pci0/00:00.0
--	|   |-- 00:01.0 -> ../../../root/pci0/00:01.0
--	|   `-- 00:02.0 -> ../../../root/pci0/00:02.0
-+	|   |-- 00:00.0 -> ../../../devices/pci0/00:00.0
-+	|   |-- 00:01.0 -> ../../../devices/pci0/00:01.0
-+	|   `-- 00:02.0 -> ../../../devices/pci0/00:02.0
- 	`-- drivers
- 
- 
-diff --git a/Documentation/driver-model/device.txt b/Documentation/driver-model/device.txt
-index a124f31..98dca04 100644
---- a/Documentation/driver-model/device.txt
-+++ b/Documentation/driver-model/device.txt
-@@ -3,95 +3,121 @@ The Basic Device Structure
- ~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
- struct device {
--        struct list_head g_list;
--        struct list_head node;
--        struct list_head bus_list;
--        struct list_head driver_list;
--        struct list_head intf_list;
--        struct list_head children;
--        struct device   * parent;
-+	struct device		*parent;
- 
--        char    name[DEVICE_NAME_SIZE];
--        char    bus_id[BUS_ID_SIZE];
-+	struct device_private	*p;
- 
--        spinlock_t      lock;
--        atomic_t        refcount;
-+	struct kobject kobj;
-+	const char		*init_name;
-+	struct device_type	*type;
- 
--        struct bus_type * bus;
--        struct driver_dir_entry dir;
-+	struct mutex		mutex;
-+	struct bus_type	*bus;
-+	struct device_driver *driver;
-+	void		*platform_data;
-+	struct dev_pm_info	power;
-+	struct dev_power_domain	*pwr_domain;
- 
--	u32		class_num;
-+#ifdef CONFIG_NUMA
-+	int		numa_node;
-+#endif
-+	u64		*dma_mask;
-+	u64		coherent_dma_mask;
- 
--        struct device_driver *driver;
--        void            *driver_data;
--        void            *platform_data;
-+	struct device_dma_parameters *dma_parms;
- 
--        u32             current_state;
--        unsigned char *saved_state;
-+	struct list_head	dma_pools;
- 
--        void    (*release)(struct device * dev);
-+	struct dma_coherent_mem	*dma_mem;
-+	struct dev_archdata	archdata;
-+
-+	struct device_node	*of_node;
-+	const struct of_device_id *of_match;
-+
-+	dev_t			devt;
-+
-+	spinlock_t		devres_lock;
-+	struct list_head	devres_head;
-+
-+	struct klist_node	knode_class;
-+	struct class		*class;
-+	const struct attribute_group **groups;
-+
-+	void	(*release)(struct device *dev);
- };
- 
- Fields 
- ~~~~~~
--g_list:	Node in the global device list.
-+parent:		Parent of the device.
-+
-+p:		Hold the private to the driver core portions of the device.
-+		See the comment of the struct device_private for detail.
-+
-+kobj:		A top-level, abstract class from which other classes are derived.
-+
-+init_name:	Initial name of the device.
-+
-+type:		The type of device.
-+		This identifies the device type and carries type-specific
-+		information.
-+
-+mutex:		Mutex to synchronize calls to its driver.
- 
--node:	Node in device's parent's children list.
-+bus:		Type of bus device is on.
- 
--bus_list: Node in device's bus's devices list.
-+platform_data:	Platform data specific to the device.
- 
--driver_list:   Node in device's driver's devices list.
-+		Example:  for devices on custom boards, as typical of embedded
-+		and SOC based hardware, Linux often uses platform_data to point
-+		to board-specific structures describing devices and how they
-+		are wired.  That can include what ports are available, chip
-+		variants, which GPIO pins act in what additional roles, and so
-+		on.  This shrinks the "Board Support Packages" (BSPs) and
-+		minimizes board-specific #ifdefs in drivers.
- 
--intf_list:     List of intf_data. There is one structure allocated for
--	       each interface that the device supports.
-+power:		For device power management.
-+		See the Documentation/power/devices.txt for details.
- 
--children:      List of child devices.
-+dev_power_domain:Provide callbacks that are executed during system suspend,
-+		hibernation, system resume and during runtime PM transitions 
-+		along with subsystem-level and driver-level callbacks.
- 
--parent:        *** FIXME ***
-+numa_node:	NUMA node this device is close to.
- 
--name:	       ASCII description of device. 
--	       Example: " 3Com Corporation 3c905 100BaseTX [Boomerang]"
-+dma_mask:	Dma mask (if dma'ble device).
- 
--bus_id:	       ASCII representation of device's bus position. This 
--	       field should be a name unique across all devices on the
--	       bus type the device belongs to. 
-+coherent_dma_mask:Like dma_mask, but for alloc_coherent mapping as not all
-+		hardware supports 64 bit addresses for consistent allocations
-+		such description.
- 
--	       Example: PCI bus_ids are in the form of
--	       <bus number>:<slot number>.<function number> 
--	       This name is unique across all PCI devices in the system.
-+dma_parms:	A low level driver may set these to teach IOMMU code about
-+		segment limitations.
- 
--lock:	       Spinlock for the device. 
-+dma_pools:	Dma pools (if dma'ble device) .
- 
--refcount:      Reference count on the device.
-+dma_mem:	Internal for coherent mem override.
- 
--bus:	       Pointer to struct bus_type that device belongs to.
-+archdata:	For arch specific additions.
- 
--dir:	       Device's sysfs directory.
-+of_node:	Associated device tree node.
- 
--class_num:     Class-enumerated value of the device.
-+of_match:	Matching of_device_id from driver.
- 
--driver:	       Pointer to struct device_driver that controls the device.
-+devt:		For creating the sysfs "dev".
- 
--driver_data:   Driver-specific data.
-+devres_lock:	Spinlock to protect the resource of the device.
- 
--platform_data: Platform data specific to the device.
-+devres_head:	The resources list of the device.
- 
--	       Example:  for devices on custom boards, as typical of embedded
--	       and SOC based hardware, Linux often uses platform_data to point
--	       to board-specific structures describing devices and how they
--	       are wired.  That can include what ports are available, chip
--	       variants, which GPIO pins act in what additional roles, and so
--	       on.  This shrinks the "Board Support Packages" (BSPs) and
--	       minimizes board-specific #ifdefs in drivers.
-+knode_class:	The node used to add the device to the class list.
- 
--current_state: Current power state of the device.
-+class:		The class of the device.
- 
--saved_state:   Pointer to saved state of the device. This is usable by
--	       the device driver controlling the device.
-+groups:		Optional attribute groups.
- 
--release:       Callback to free the device after all references have 
--	       gone away. This should be set by the allocator of the 
--	       device (i.e. the bus driver that discovered the device).
-+release:	Callback to free the device after all references have 
-+		gone away. This should be set by the allocator of the 
-+		device (i.e. the bus driver that discovered the device).
- 
- 
- Programming Interface
-@@ -104,8 +130,7 @@ int device_register(struct device * dev);
- The bus should initialize the following fields:
- 
-     - parent
--    - name
--    - bus_id
-+    - init_name OR kobj->name
-     - bus
- 
- A device is removed from the core when its reference count goes to
-@@ -120,8 +145,8 @@ removed already).
- 
- A driver can access the lock in the device structure using: 
- 
--void lock_device(struct device * dev);
--void unlock_device(struct device * dev);
-+void device_lock(struct device * dev);
-+void device_unlock(struct device * dev);
- 
- 
- Attributes
-@@ -193,4 +218,4 @@ Then in the module init function is would do:
- 
- And assuming 'dev' is the struct device passed into the probe hook, the driver
- probe function would do something like:
--	create_device(&mydriver_class, dev, chrdev, &private_data, "my_name");
-+	device_create(&mydriver_class, dev->parent, devt, &drvdata, "my_name");
--- 
-1.7.4.1
+Sorry for I didn't follow up this mail loop and maybe lose some
+information.
+Does this machine's backlight control works before 2.6.39 kernel? I mean
+does backlight control works fine on 2.6.38 or 37 or even older kernel ?
+
+
+Thank's a lot!
+Joey Lee
 
