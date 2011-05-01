@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab1EABht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 21:37:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52252 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073Ab1EABhO (ORCPT
+	id S1758175Ab1EABhx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 21:37:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48544 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab1EABhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 21:37:14 -0400
+	Sat, 30 Apr 2011 21:37:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Mzh0jzQ43BLgTZf8+Nzl5c7AN44s/F3WI7nDyid9AKBIRYMDPEuz2VkFQ1kk59tXUV
-         n8or7WgTWCuQainG74ZsYTV7vynbymwtnl+fnjpiO7mfvVcnKebsa0YecHSiPjpP4bWW
-         AEzIQyOISogVV5DF1AkKLYhVBQ2bzly/slWwY=
+        b=QpUrgxmnZyU86xRjcKyg/CjxjWpvhy126ANfLENG85RxhV/Tu63Yd4PNa+YIvEA9/P
+         kzjD5P5SLFZDBz5zBtOC8GkJt6q9LxCurofjm1DthP8MwRxiYqAtq6F+2ZwSdZpLJuPR
+         uFZrbr0yVhdWX6cCARcRaU/GBtbzWTSx6Qf6c=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 06/69] sysctl: remove .child from kernel/vsyscall64 (x86)
-Date: Sun,  1 May 2011 03:35:36 +0200
-Message-Id: <1304213799-10257-7-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 07/69] sysctl: remove .child from abi/vsyscall32 (x86)
+Date: Sun,  1 May 2011 03:35:37 +0200
+Message-Id: <1304213799-10257-8-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,54 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- arch/x86/kernel/vsyscall_64.c |   25 ++++++++++++++-----------
- 1 files changed, 14 insertions(+), 11 deletions(-)
+ arch/x86/vdso/vdso32-setup.c |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index dcbb28c..7d8b83d 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -234,18 +234,21 @@ static long __vsyscall(3) venosys_1(void)
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 468d591..e6ef3b4 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -380,7 +380,7 @@ subsys_initcall(sysenter_setup);
+ /* Register vsyscall32 into the ABI table */
+ #include <linux/sysctl.h>
+ 
+-static ctl_table abi_table2[] = {
++static ctl_table abi_table[] = {
+ 	{
+ 		.procname	= "vsyscall32",
+ 		.data		= &sysctl_vsyscall32,
+@@ -391,18 +391,14 @@ static ctl_table abi_table2[] = {
+ 	{}
+ };
+ 
+-static ctl_table abi_root_table2[] = {
+-	{
+-		.procname = "abi",
+-		.mode = 0555,
+-		.child = abi_table2
+-	},
+-	{}
++static const struct ctl_path abi_root_path[] = {
++	{ .procname = "abi" },
++	{ }
+ };
+ 
+ static __init int ia32_binfmt_init(void)
+ {
+-	register_sysctl_table(abi_root_table2);
++	register_sysctl_paths(abi_root_path, abi_table);
+ 	return 0;
  }
- 
- #ifdef CONFIG_SYSCTL
--static ctl_table kernel_table2[] = {
--	{ .procname = "vsyscall64",
--	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
--	  .mode = 0644,
--	  .proc_handler = proc_dointvec },
--	{}
-+static ctl_table vsyscall64_table[] = {
-+	{
-+		.procname = "vsyscall64",
-+		.data     = &vsyscall_gtod_data.sysctl_enabled,
-+		.maxlen   = sizeof(int),
-+		.mode     = 0644,
-+		.proc_handler = proc_dointvec,
-+	},
-+	{ }
- };
- 
--static ctl_table kernel_root_table2[] = {
--	{ .procname = "kernel", .mode = 0555,
--	  .child = kernel_table2 },
--	{}
-+
-+static struct ctl_path kernel_root_path[] = {
-+	{ .procname = "kernel" },
-+	{ }
- };
- #endif
- 
-@@ -303,7 +306,7 @@ static int __init vsyscall_init(void)
- 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
- 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
- #ifdef CONFIG_SYSCTL
--	register_sysctl_table(kernel_root_table2);
-+	register_sysctl_paths(kernel_root_path, vsyscall64_table);
- #endif
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
+ __initcall(ia32_binfmt_init);
 -- 
 1.7.5.134.g1c08b
 
