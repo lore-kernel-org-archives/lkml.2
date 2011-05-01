@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1EAMhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 08:37:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56781 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab1EAMhT (ORCPT
+	id S1753050Ab1EANNd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:13:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33182 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab1EANNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 08:37:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ut0ydXl+DVQM+S4yGy2fpYRuWNbfg+ktO6w9rWuCyb4UzrtRclMSQhugsv2WyJ7O1i
-         JWHFoj0O5d89APiwzkjh59Mm19/Z5uZKG//ChC8+1uUWlgXvPqRJJnB2dq0oJxKjfBQ8
-         4w/PhjoebqKB/hPqo4WhHsWpK2CF+FndTtqXA=
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Adrian Bunk <bunk@kernel.org>, Chris Wright <chrisw@sous-sol.org>
-Subject: [PATCH] MAINTAINERS: remove stale reference to Chris Wright's LSM tree
-Date: Sun,  1 May 2011 14:37:10 +0200
-Message-Id: <1304253430-5513-1-git-send-email-lucian.grijincu@gmail.com>
-X-Mailer: git-send-email 1.7.5.134.g1c08b
+	Sun, 1 May 2011 09:13:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC 4/8] Make clear description of putback_lru_page
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+In-Reply-To: <20110428084500.GG12437@cmpxchg.org>
+References: <BANLkTik2FTKgSSYkyP4XT4pkhOYvpjgSTA@mail.gmail.com> <20110428084500.GG12437@cmpxchg.org>
+Message-Id: <20110501221459.75E4.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Sun,  1 May 2011 22:13:28 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A quick glance at [1] will show that the tree hasn't been updated
-since June 2008 => No need to have a reference to it.
+> On Thu, Apr 28, 2011 at 08:20:32AM +0900, Minchan Kim wrote:
+> > On Wed, Apr 27, 2011 at 5:11 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > On Wed, 27 Apr 2011 01:25:21 +0900
+> > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > >
+> > >> Commonly, putback_lru_page is used with isolated_lru_page.
+> > >> The isolated_lru_page picks the page in middle of LRU and
+> > >> putback_lru_page insert the lru in head of LRU.
+> > >> It means it could make LRU churning so we have to be very careful.
+> > >> Let's clear description of putback_lru_page.
+> > >>
+> > >> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > >> Cc: Mel Gorman <mgorman@suse.de>
+> > >> Cc: Rik van Riel <riel@redhat.com>
+> > >> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > >
+> > > seems good...
+> > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > >
+> > > But is there consensus which side of LRU is tail? head?
+> > 
+> > I don't know. I used to think it's head.
+> > If other guys raise a concern as well, let's talk about it. :)
+> > Thanks
+> 
+> I suppose we add new pages to the head of the LRU and reclaim old
+> pages from the tail.
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-[1] http://git.kernel.org/?p=linux/kernel/git/chrisw/lsm-2.6.git;a=summary
+So, It would be better if isolate_lru_page() also have "LRU tail blah blah blah"
+comments.
 
-This patch was first sent in Feb 2011, but no one cared about it then.
+anyway,
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-I fount no maintainer for the MAINTAINERS file :)
 
-Adrian: I'm sending this to you as you seem to be the designated Trivial Patch Monkey.
-http://www.kernel.org/pub/linux/kernel/people/rusty/trivial/
-
-Cc: Adrian Bunk <bunk@kernel.org>
-Cc: Chris Wright <chrisw@sous-sol.org>
-
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
----
- MAINTAINERS |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1380312..d7fbac3 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3890,7 +3890,6 @@ F:	drivers/*/*/*pasemi*
- LINUX SECURITY MODULE (LSM) FRAMEWORK
- M:	Chris Wright <chrisw@sous-sol.org>
- L:	linux-security-module@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/chrisw/lsm-2.6.git
- S:	Supported
- 
- LIS3LV02D ACCELEROMETER DRIVER
--- 
-1.7.5.134.g1c08b
 
