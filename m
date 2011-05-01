@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761226Ab1EAStT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 14:49:19 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:35210 "EHLO
+	id S1761275Ab1EASuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 14:50:44 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:35217 "EHLO
 	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab1EAStQ (ORCPT
+	with ESMTP id S1754573Ab1EASun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 14:49:16 -0400
+	Sun, 1 May 2011 14:50:43 -0400
 X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 1 May 2011 20:48:53 +0200
+Date: Sun, 1 May 2011 20:50:31 +0200
 From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 To: linux1394-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 rebased] firewire: core: use non-reentrant workqueue
- with rescuer
-Message-ID: <20110501204853.2060ab25@stein>
+Subject: [PATCH 2/2] firewire: sbp2: parallelize login, reconnect, logout
+Message-ID: <20110501205031.4f20866d@stein>
+In-Reply-To: <20110501204853.2060ab25@stein>
+References: <20110501204853.2060ab25@stein>
 X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,94 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Wed Oct 13 13:39:46 CEST 2010
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+The struct sbp2_logical_unit.work items can all be executed in parallel
+but are not reentrant.  Furthermore, reconnect or re-login work must be
+executed in a WQ_MEM_RECLAIM workqueue.
 
-firewire-core manages the following types of work items:
+Hence replace the old single-threaded firewire-sbp2 workqueue by a
+concurrency-managed but non-reentrant workqueue with rescuer.
+firewire-core already maintains one, hence use this one.
 
-fw_card.br_work:
-  - resets the bus on a card and possibly sends a PHY packet before that
-  - does not sleep for long or not at all
-  - is scheduled via fw_schedule_bus_reset() by
-      - firewire-ohci's pci_probe method
-      - firewire-ohci's set_config_rom method, called by kernelspace
-        protocol drivers and userspace drivers which add/remove
-	Configuration ROM descriptors
-      - userspace drivers which use the bus reset ioctl
-      - itself if the last reset happened less than 2 seconds ago
+In earlier versions of this change, I observed occasional failures of
+parallel INQUIRY to an Initio INIC-2430 FireWire 800 to dual IDE bridge.
+More testing indicates that parallel INQUIRY is not actually a problem,
+but too quick successions of logout and login + INQUIRY, e.g. a quick
+sequence of cable plugout and plugin, can result in failed INQUIRY.
+This does not seem to be something that should or could be addressed by
+serialization.
 
-fw_card.bm_work:
-  - performs bus management duties
-  - usually does not (but may in corner cases) sleep for long
-  - is scheduled via fw_schedule_bm_work() by
-      - firewire-ohci's self-ID-complete IRQ handler tasklet
-      - firewire-core's fw_device.work instances whenever the root node
-        device was (successfully or unsuccessfully) discovered,
-	refreshed, or rediscovered
-      - itself in case of resource allocation failures or in order to
-        obey the 125ms bus manager arbitration interval
+Another dual-LU device to which I currently have access to, an
+OXUF924DSB FireWire 800 to dual SATA bridge with firmware from MacPower,
+has been successfully tested with this too.
 
-fw_device.work:
-  - performs node probe, update, shutdown, revival, removal; including
-    kernel driver probe, update, shutdown and bus reset notification to
-    userspace drivers
-  - usually sleeps moderately long, in corner cases very long
-  - is scheduled by
-      - firewire-ohci's self-ID-complete IRQ handler tasklet via the
-        core's fw_node_event
-      - firewire-ohci's pci_remove method via core's fw_destroy_nodes/
-        fw_node_event
-      - itself during retries, e.g. while a node is powering up
-
-iso_resource.work:
-  - accesses registers at the Isochronous Resource Manager node
-  - usually does not (but may in corner cases) sleep for long
-  - is scheduled via schedule_iso_resource() by
-      - the owning userspace driver at addition and removal of the
-        resource
-      - firewire-core's fw_device.work instances after bus reset
-      - itself in case of resource allocation if necessary to obey the
-        1000ms reallocation period after bus reset
-
-fw_card.br_work instances should not, and instances of the others must
-not, be executed in parallel by multiple CPUs -- but were not protected
-against that.  Hence allocate a non-reentrant workqueue for them.
-
-fw_device.work may be used in the memory reclaim path in case of SBP-2
-device updates.  Hence we need a workqueue with rescuer and cannot use
-system_nrt_wq.
+This change is beneficial to environments with two or more FireWire
+storage devices, especially if they are located on the same bus.
+Management tasks that should be performed as soon and as quickly as
+possible, especially reconnect, are no longer held up by tasks on other
+devices that may take a long time, especially login with INQUIRY and sd
+or sr driver probe.
 
 Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Reviewed-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/firewire/core-card.c        |    6 +++---
+ drivers/firewire/core-card.c        |    4 ++--
  drivers/firewire/core-cdev.c        |    2 +-
- drivers/firewire/core-device.c      |   30 ++++++++++++++++++----------
- drivers/firewire/core-transaction.c |   12 ++++++++++-
- drivers/firewire/core.h             |    2 ++
- 5 files changed, 36 insertions(+), 16 deletions(-)
+ drivers/firewire/core-device.c      |    5 +++--
+ drivers/firewire/core-transaction.c |   12 ++++++------
+ drivers/firewire/core.h             |    2 --
+ drivers/firewire/sbp2.c             |    9 +--------
+ include/linux/firewire.h            |    2 ++
+ 7 files changed, 15 insertions(+), 21 deletions(-)
 
 Index: b/drivers/firewire/core-card.c
 ===================================================================
 --- a/drivers/firewire/core-card.c
 +++ b/drivers/firewire/core-card.c
-@@ -228,8 +228,8 @@ void fw_schedule_bus_reset(struct fw_car
+@@ -228,7 +228,7 @@ void fw_schedule_bus_reset(struct fw_car
  
  	/* Use an arbitrary short delay to combine multiple reset requests. */
  	fw_card_get(card);
--	if (!schedule_delayed_work(&card->br_work,
--				   delayed ? DIV_ROUND_UP(HZ, 100) : 0))
-+	if (!queue_delayed_work(fw_wq, &card->br_work,
-+				delayed ? DIV_ROUND_UP(HZ, 100) : 0))
+-	if (!queue_delayed_work(fw_wq, &card->br_work,
++	if (!queue_delayed_work(fw_workqueue, &card->br_work,
+ 				delayed ? DIV_ROUND_UP(HZ, 100) : 0))
  		fw_card_put(card);
  }
- EXPORT_SYMBOL(fw_schedule_bus_reset);
 @@ -241,7 +241,7 @@ static void br_work(struct work_struct *
  	/* Delay for 2s after last reset per IEEE 1394 clause 8.2.1. */
  	if (card->reset_jiffies != 0 &&
  	    time_before64(get_jiffies_64(), card->reset_jiffies + 2 * HZ)) {
--		if (!schedule_delayed_work(&card->br_work, 2 * HZ))
-+		if (!queue_delayed_work(fw_wq, &card->br_work, 2 * HZ))
+-		if (!queue_delayed_work(fw_wq, &card->br_work, 2 * HZ))
++		if (!queue_delayed_work(fw_workqueue, &card->br_work, 2 * HZ))
  			fw_card_put(card);
  		return;
  	}
@@ -122,8 +92,8 @@ Index: b/drivers/firewire/core-cdev.c
  static void schedule_iso_resource(struct iso_resource *r, unsigned long delay)
  {
  	client_get(r->client);
--	if (!schedule_delayed_work(&r->work, delay))
-+	if (!queue_delayed_work(fw_wq, &r->work, delay))
+-	if (!queue_delayed_work(fw_wq, &r->work, delay))
++	if (!queue_delayed_work(fw_workqueue, &r->work, delay))
  		client_put(r->client);
  }
  
@@ -131,160 +101,59 @@ Index: b/drivers/firewire/core-device.c
 ===================================================================
 --- a/drivers/firewire/core-device.c
 +++ b/drivers/firewire/core-device.c
-@@ -725,6 +725,14 @@ struct fw_device *fw_device_get_by_devt(
+@@ -725,12 +725,13 @@ struct fw_device *fw_device_get_by_devt(
  	return device;
  }
  
-+struct workqueue_struct *fw_wq;
-+
-+static void fw_schedule_device_work(struct fw_device *device,
-+				    unsigned long delay)
-+{
-+	queue_delayed_work(fw_wq, &device->work, delay);
-+}
-+
+-struct workqueue_struct *fw_wq;
++struct workqueue_struct *fw_workqueue;
++EXPORT_SYMBOL(fw_workqueue);
+ 
+ static void fw_schedule_device_work(struct fw_device *device,
+ 				    unsigned long delay)
+ {
+-	queue_delayed_work(fw_wq, &device->work, delay);
++	queue_delayed_work(fw_workqueue, &device->work, delay);
+ }
+ 
  /*
-  * These defines control the retry behavior for reading the config
-  * rom.  It shouldn't be necessary to tweak these; if the device
-@@ -750,7 +758,7 @@ static void fw_device_shutdown(struct wo
- 	if (time_before64(get_jiffies_64(),
- 			  device->card->reset_jiffies + SHUTDOWN_DELAY)
- 	    && !list_empty(&device->card->link)) {
--		schedule_delayed_work(&device->work, SHUTDOWN_DELAY);
-+		fw_schedule_device_work(device, SHUTDOWN_DELAY);
- 		return;
- 	}
- 
-@@ -862,7 +870,7 @@ static int lookup_existing_device(struct
- 		fw_notify("rediscovered device %s\n", dev_name(dev));
- 
- 		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
--		schedule_delayed_work(&old->work, 0);
-+		fw_schedule_device_work(old, 0);
- 
- 		if (current_node == card->root_node)
- 			fw_schedule_bm_work(card, 0);
-@@ -953,7 +961,7 @@ static void fw_device_init(struct work_s
- 		if (device->config_rom_retries < MAX_RETRIES &&
- 		    atomic_read(&device->state) == FW_DEVICE_INITIALIZING) {
- 			device->config_rom_retries++;
--			schedule_delayed_work(&device->work, RETRY_DELAY);
-+			fw_schedule_device_work(device, RETRY_DELAY);
- 		} else {
- 			if (device->node->link_on)
- 				fw_notify("giving up on config rom for node id %x\n",
-@@ -1019,7 +1027,7 @@ static void fw_device_init(struct work_s
- 			   FW_DEVICE_INITIALIZING,
- 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
- 		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
--		schedule_delayed_work(&device->work, SHUTDOWN_DELAY);
-+		fw_schedule_device_work(device, SHUTDOWN_DELAY);
- 	} else {
- 		if (device->config_rom_retries)
- 			fw_notify("created device %s: GUID %08x%08x, S%d00, "
-@@ -1098,7 +1106,7 @@ static void fw_device_refresh(struct wor
- 		if (device->config_rom_retries < MAX_RETRIES / 2 &&
- 		    atomic_read(&device->state) == FW_DEVICE_INITIALIZING) {
- 			device->config_rom_retries++;
--			schedule_delayed_work(&device->work, RETRY_DELAY / 2);
-+			fw_schedule_device_work(device, RETRY_DELAY / 2);
- 
- 			return;
- 		}
-@@ -1131,7 +1139,7 @@ static void fw_device_refresh(struct wor
- 		if (device->config_rom_retries < MAX_RETRIES &&
- 		    atomic_read(&device->state) == FW_DEVICE_INITIALIZING) {
- 			device->config_rom_retries++;
--			schedule_delayed_work(&device->work, RETRY_DELAY);
-+			fw_schedule_device_work(device, RETRY_DELAY);
- 
- 			return;
- 		}
-@@ -1158,7 +1166,7 @@ static void fw_device_refresh(struct wor
-  gone:
- 	atomic_set(&device->state, FW_DEVICE_GONE);
- 	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
--	schedule_delayed_work(&device->work, SHUTDOWN_DELAY);
-+	fw_schedule_device_work(device, SHUTDOWN_DELAY);
-  out:
- 	if (node_id == card->root_node->node_id)
- 		fw_schedule_bm_work(card, 0);
-@@ -1214,7 +1222,7 @@ void fw_node_event(struct fw_card *card,
- 		 * first config rom scan half a second after bus reset.
- 		 */
- 		INIT_DELAYED_WORK(&device->work, fw_device_init);
--		schedule_delayed_work(&device->work, INITIAL_DELAY);
-+		fw_schedule_device_work(device, INITIAL_DELAY);
- 		break;
- 
- 	case FW_NODE_INITIATED_RESET:
-@@ -1230,7 +1238,7 @@ void fw_node_event(struct fw_card *card,
- 			    FW_DEVICE_RUNNING,
- 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
- 			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
--			schedule_delayed_work(&device->work,
-+			fw_schedule_device_work(device,
- 				device->is_local ? 0 : INITIAL_DELAY);
- 		}
- 		break;
-@@ -1245,7 +1253,7 @@ void fw_node_event(struct fw_card *card,
- 		device->generation = card->generation;
- 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
- 			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
--			schedule_delayed_work(&device->work, 0);
-+			fw_schedule_device_work(device, 0);
- 		}
- 		break;
- 
-@@ -1270,7 +1278,7 @@ void fw_node_event(struct fw_card *card,
- 		if (atomic_xchg(&device->state,
- 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
- 			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
--			schedule_delayed_work(&device->work,
-+			fw_schedule_device_work(device,
- 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
- 		}
- 		break;
 Index: b/drivers/firewire/core-transaction.c
 ===================================================================
 --- a/drivers/firewire/core-transaction.c
 +++ b/drivers/firewire/core-transaction.c
-@@ -36,6 +36,7 @@
- #include <linux/string.h>
- #include <linux/timer.h>
- #include <linux/types.h>
-+#include <linux/workqueue.h>
- 
- #include <asm/byteorder.h>
- 
-@@ -1213,13 +1214,21 @@ static int __init fw_core_init(void)
+@@ -1214,21 +1214,21 @@ static int __init fw_core_init(void)
  {
  	int ret;
  
-+	fw_wq = alloc_workqueue(KBUILD_MODNAME,
-+				WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
-+	if (!fw_wq)
-+		return -ENOMEM;
-+
+-	fw_wq = alloc_workqueue(KBUILD_MODNAME,
+-				WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
+-	if (!fw_wq)
++	fw_workqueue = alloc_workqueue("firewire",
++				       WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
++	if (!fw_workqueue)
+ 		return -ENOMEM;
+ 
  	ret = bus_register(&fw_bus_type);
--	if (ret < 0)
-+	if (ret < 0) {
-+		destroy_workqueue(fw_wq);
+ 	if (ret < 0) {
+-		destroy_workqueue(fw_wq);
++		destroy_workqueue(fw_workqueue);
  		return ret;
-+	}
+ 	}
  
  	fw_cdev_major = register_chrdev(0, "firewire", &fw_device_ops);
  	if (fw_cdev_major < 0) {
  		bus_unregister(&fw_bus_type);
-+		destroy_workqueue(fw_wq);
+-		destroy_workqueue(fw_wq);
++		destroy_workqueue(fw_workqueue);
  		return fw_cdev_major;
  	}
  
-@@ -1235,6 +1244,7 @@ static void __exit fw_core_cleanup(void)
+@@ -1244,7 +1244,7 @@ static void __exit fw_core_cleanup(void)
  {
  	unregister_chrdev(fw_cdev_major, "firewire");
  	bus_unregister(&fw_bus_type);
-+	destroy_workqueue(fw_wq);
+-	destroy_workqueue(fw_wq);
++	destroy_workqueue(fw_workqueue);
  	idr_destroy(&fw_device_idr);
  }
  
@@ -292,15 +161,66 @@ Index: b/drivers/firewire/core.h
 ===================================================================
 --- a/drivers/firewire/core.h
 +++ b/drivers/firewire/core.h
-@@ -138,6 +138,8 @@ void fw_cdev_handle_phy_packet(struct fw
+@@ -138,8 +138,6 @@ void fw_cdev_handle_phy_packet(struct fw
  extern struct rw_semaphore fw_device_rwsem;
  extern struct idr fw_device_idr;
  extern int fw_cdev_major;
-+struct workqueue_struct;
-+extern struct workqueue_struct *fw_wq;
+-struct workqueue_struct;
+-extern struct workqueue_struct *fw_wq;
  
  struct fw_device *fw_device_get_by_devt(dev_t devt);
  int fw_device_set_broadcast_channel(struct device *dev, void *gen);
+Index: b/drivers/firewire/sbp2.c
+===================================================================
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -826,8 +826,6 @@ static void sbp2_target_put(struct sbp2_
+ 	kref_put(&tgt->kref, sbp2_release_target);
+ }
+ 
+-static struct workqueue_struct *sbp2_wq;
+-
+ /*
+  * Always get the target's kref when scheduling work on one its units.
+  * Each workqueue job is responsible to call sbp2_target_put() upon return.
+@@ -835,7 +833,7 @@ static struct workqueue_struct *sbp2_wq;
+ static void sbp2_queue_work(struct sbp2_logical_unit *lu, unsigned long delay)
+ {
+ 	sbp2_target_get(lu->tgt);
+-	if (!queue_delayed_work(sbp2_wq, &lu->work, delay))
++	if (!queue_delayed_work(fw_workqueue, &lu->work, delay))
+ 		sbp2_target_put(lu->tgt);
+ }
+ 
+@@ -1645,17 +1643,12 @@ MODULE_ALIAS("sbp2");
+ 
+ static int __init sbp2_init(void)
+ {
+-	sbp2_wq = create_singlethread_workqueue(KBUILD_MODNAME);
+-	if (!sbp2_wq)
+-		return -ENOMEM;
+-
+ 	return driver_register(&sbp2_driver.driver);
+ }
+ 
+ static void __exit sbp2_cleanup(void)
+ {
+ 	driver_unregister(&sbp2_driver.driver);
+-	destroy_workqueue(sbp2_wq);
+ }
+ 
+ module_init(sbp2_init);
+Index: b/include/linux/firewire.h
+===================================================================
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -448,4 +448,6 @@ void fw_iso_resource_manage(struct fw_ca
+ 			    u64 channels_mask, int *channel, int *bandwidth,
+ 			    bool allocate);
+ 
++extern struct workqueue_struct *fw_workqueue;
++
+ #endif /* _LINUX_FIREWIRE_H */
 
 
 -- 
