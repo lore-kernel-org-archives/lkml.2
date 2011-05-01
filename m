@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab1EABiH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 21:38:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48544 "EHLO
+	id S932228Ab1EABiB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 21:38:01 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52916 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab1EABhR (ORCPT
+	with ESMTP id S1754028Ab1EABhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 21:37:17 -0400
+	Sat, 30 Apr 2011 21:37:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=xCnaHs+w5Td/7eodAvyAWpZFlgdCrBzbsRpcfxxeu9h/4Eo1PD6YwLBleOonRim2+3
-         uzfvs48C0AepWdXkKLcOq1Zxik8QZSULgIdGJY/0whf/JONiW+FV/UEBsvNAL+iOaaSU
-         UzgMarkdXubOoOPuNf1JayoGENrGlAwHlUuhc=
+        b=GQtP6Q3FK3chKApcV2a7TKJ8icz7F4RcDWs8ZzQ2m1Ulbd0qyeELB8FT1kvDrPW/uv
+         qyAJ6TQipocJqwMeLrLWcD2XuqpVdpBQI85bb0AvmF6aoK0xvd5HOwxnzawIT6ipnWmu
+         Q76OBAJJtXJceRY+4bWAPU0+moMhftj2b52oA=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 10/69] sysctl: remove .child from dev/hpet/
-Date: Sun,  1 May 2011 03:35:40 +0200
-Message-Id: <1304213799-10257-11-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 11/69] sysctl: remove .child from dev/ipmi/
+Date: Sun,  1 May 2011 03:35:41 +0200
+Message-Id: <1304213799-10257-12-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,67 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- drivers/char/hpet.c |   38 ++++++++++++--------------------------
- 1 files changed, 12 insertions(+), 26 deletions(-)
+ drivers/char/ipmi/ipmi_poweroff.c |   16 ++++------------
+ 1 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 7066e80..303de7e 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -721,33 +721,19 @@ static int hpet_is_known(struct hpet_data *hdp)
- 
- static ctl_table hpet_table[] = {
- 	{
--	 .procname = "max-user-freq",
--	 .data = &hpet_max_freq,
--	 .maxlen = sizeof(int),
--	 .mode = 0644,
--	 .proc_handler = proc_dointvec,
--	 },
--	{}
-+		.procname = "max-user-freq",
-+		.data     = &hpet_max_freq,
-+		.maxlen   = sizeof(int),
-+		.mode     = 0644,
-+		.proc_handler = proc_dointvec,
-+	},
-+	{ }
+diff --git a/drivers/char/ipmi/ipmi_poweroff.c b/drivers/char/ipmi/ipmi_poweroff.c
+index 2efa176..ac71d69 100644
+--- a/drivers/char/ipmi/ipmi_poweroff.c
++++ b/drivers/char/ipmi/ipmi_poweroff.c
+@@ -668,17 +668,9 @@ static ctl_table ipmi_table[] = {
+ 	{ }
  };
  
--static ctl_table hpet_root[] = {
--	{
--	 .procname = "hpet",
--	 .maxlen = 0,
--	 .mode = 0555,
--	 .child = hpet_table,
--	 },
--	{}
+-static ctl_table ipmi_dir_table[] = {
+-	{ .procname	= "ipmi",
+-	  .mode		= 0555,
+-	  .child	= ipmi_table },
+-	{ }
 -};
 -
--static ctl_table dev_root[] = {
--	{
--	 .procname = "dev",
--	 .maxlen = 0,
--	 .mode = 0555,
--	 .child = hpet_root,
--	 },
--	{}
-+static const struct ctl_path hpet_path[] = {
+-static ctl_table ipmi_root_table[] = {
+-	{ .procname	= "dev",
+-	  .mode		= 0555,
+-	  .child	= ipmi_dir_table },
++static const struct ctl_path ipmi_path[] = {
 +	{ .procname = "dev" },
-+	{ .procname = "hpet" },
-+	{ }
++	{ .procname = "ipmi" },
+ 	{ }
  };
  
- static struct ctl_table_header *sysctl_header;
-@@ -1053,7 +1039,7 @@ static int __init hpet_init(void)
- 	if (result < 0)
- 		return -ENODEV;
+@@ -699,7 +691,7 @@ static int __init ipmi_poweroff_init(void)
+ 		printk(KERN_INFO PFX "Power cycle is enabled.\n");
  
--	sysctl_header = register_sysctl_table(dev_root);
-+	sysctl_header = register_sysctl_paths(hpet_path, hpet_table);
- 
- 	result = acpi_bus_register_driver(&hpet_acpi_driver);
- 	if (result < 0) {
+ #ifdef CONFIG_PROC_FS
+-	ipmi_table_header = register_sysctl_table(ipmi_root_table);
++	ipmi_table_header = register_sysctl_paths(ipmi_path, ipmi_table);
+ 	if (!ipmi_table_header) {
+ 		printk(KERN_ERR PFX "Unable to register powercycle sysctl\n");
+ 		rv = -ENOMEM;
 -- 
 1.7.5.134.g1c08b
 
