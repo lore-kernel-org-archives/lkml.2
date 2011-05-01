@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1EAXNH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 19:13:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47444 "EHLO
+	id S1753265Ab1EAXem (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 19:34:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57898 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1EAXNE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750764Ab1EAXek convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 19:13:04 -0400
+	Sun, 1 May 2011 19:34:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=AQmzdLk8QM3WgCltEzLs4QkYW1KFAqbWNfSy84juxVC1ulaUnrfRLvG1JUtTqDW3KO
-         Cl1SXGqUK1BydAfkV9QWbkedWXruMvz34mzao2962YemxmwDuac0IGauRIl6g0C5cGkz
-         PbiTv4wx+f95hkNjf9T0KdcQ1Ejjqs3JAWUP8=
+        b=Jq2IGBCr7XM5/rSIOwDC4fTvsXljQ9+ZrFhtePj/ZZpi5enSxgcvXc6svXANuUOZi7
+         S2ZvhPdnVQFUCHjhM02wTub0yVza/USSDk0mnT6OWBz0T/O7KnaRCYzsPfVu1vOGc9dC
+         NrRIJcQ5vv2mfsxFxfmwPRmhw4rvSkVrI/+Jw=
 MIME-Version: 1.0
 In-Reply-To: <m1r58i2g02.fsf@fess.ebiederm.org>
 References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
  <m1zkn68mpk.fsf@fess.ebiederm.org> <BANLkTi=NcpPQUGkR=pbOMPfMkyL7LiBeoA@mail.gmail.com>
  <m1r58i2g02.fsf@fess.ebiederm.org>
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Mon, 2 May 2011 01:12:41 +0200
-Message-ID: <BANLkTinTMckhNYx1OiyH_YR+hr31naPQHw@mail.gmail.com>
+Date: Mon, 2 May 2011 01:34:19 +0200
+Message-ID: <BANLkTi=JzmOm+Sm+xnY+rT-r8EwxQXO-xw@mail.gmail.com>
 Subject: Re: [PATCH 00/69] faster tree-based sysctl implementation
 To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -35,74 +35,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, May 2, 2011 at 12:49 AM, Eric W. Biederman
 <ebiederm@xmission.com> wrote:
->>> Since we are touching most if not all of the sysctl registrations this
->>> would also be a good time to pass a path string instead of the weird
->>> ctl_path data structure.  We needed ctl_path when we had both binary
->>> and proc paths to worry about but we no longer have that concern.
+>> Patch 60 makes sure that if a directory is not found a
+>> ctl_table_header will be created for it. That directory can be freed
+>> by anyone else when the reference count becomes 0.
+>> E.g. register /newdir/file1, register /newdir/file2, unregister
+>> /newdir/file1, unregister /newdir/file1
+>> - 1st registration created 'newdir' and takes a reference to it.
+>> - 2nd regisitration incs the reference count.
+>> - 1st unregister decs the reference count.
+>> - 2nd unregister decs the reference count which becomes 0 and frees 'newdir'.
 >>
->>
->> I still find good use for it in the next patches (some optimisations).
->> Getting rid of it makes some things more difficult:
->> - I wouldn't like to parse strings into path components at registeration
+>> I may have misunderstood your comment.
 >
-> I don't expect '/' being more difficult to deal with than an array.  In
-> general I expect a single string to be more space efficient and easier
-> for human comprehension.
+> While you can make directory lifetimes work by ref counting.  Making it
+> work by ref counting removes a concept of ownership and makes it hard to
+> see when a sysctl directory should exist.
 
 
-We also use the string from ctl_path as a name for the sysctl
-directory. We would need to either:
-* strdup part of the string for each directory, remember to kfree
-* replace '/' with '\0' in the given string (meaning it can't be put
-in a read-only zone)
+I can do what you want but I see no good reason to this restriction.
+Entities that register sysctls are interested in their files showing
+up there.
+In my previous example if two modules want to add /newdir/file1 and
+/newdir/file2 they must either:
+- find a third party that will register /newdir for them
+- make sure they have a strict dependency relation (only registere
+/newdir/file2 if the first module is loaded and it registered
+/newdir/file1 or at least /newdir)
 
-Also I make use of the ctl_path to add some optimisations that deal
-with the case when there are very many known-to-be-uniquely-named
-sub-directories like for /proc/sys/net/ipv4/conf/DEVICE. IXIACOM which
-sponsored this work has usecases where they need to create 10^3..10^5
-virtual network devices and these optimisations really add up for that
-many interfaces.
-
-For details about the optimisation see patches:
- 61/69 http://thread.gmane.org/gmane.linux.kernel/1133667/focus=1133694 and
- 62/69 http://thread.gmane.org/gmane.linux.kernel/1133667/focus=1133711
+This is why we register an empty directory for "/proc/sys/dev/" (a
+third party that registers the 'dev' dir and all others use it).
 
 
-I will make another function that would take a string, parse it up,
-create a ctl_path array and register it, but I'd really like to keep
-ctl_path both in the implementation and as a means to register a
-table.
+Again, I can do what you ask, but it either means rethinking some of
+my patches, or adding the restriction on top of them.
 
->> - users of the register_sysctl_paths would need to create strings with
->> dynamic components (for example "net/conf/%s/" - where %s is a
->> netdevice-name or "kernel/sched_domain/%s/%s" with cpu-name and
->> domain-name).
+> If we are reforming this we should go all of the way and make strict
+> lifetime rules of directories.  So that it is required to do:
 >
-> This is a good point.
+> register newdir
+> register newdir/file1
+> unregister newdir/file1
+> unregister newdir
 >
-> In the normal proc implementation this is solved by being able to
-> pass the equivalent of a ctl_table_header into the registration
-> function, which allows the use of relative paths in the registration
-> function.
->
-> In the examples you have given relative paths should also work for
-> sysctl.
+> Today there is a WARN_ON in unregister_sysctl_table enforcing the
+> ordering that directories must come first and be removed after
+> the files in those directories.  If we change the table registrations
+> to only include leaves (as your removal of .child patches do) I
+> believe that rule becomes absolute.
 
 
-Hmm, I don't think we're on the same channel here. I don't understand
-what you're trying to say
-- normal proc implementation?
-- the equivalent of a ctl_table_header?
-- relative paths?
+> That WARN_ON came in with Al Viro's last major sweep through the code,
+> and it started moving sysctl in the direction of a normal filesystem.
 
-I was saying that if we are to *replace* the ctl_path based mechanism
-with a string denoting the path, then some other registrants will need
-to allocate memory for those strings because the paths they register
-are computed at runtime. Then I gave two distinct examples where this
-is done. In both of those cases, ctl_path saves us from allocating a
-string before allocation, only to chop it then back to pieces in the
-__register function.
 
+Regarding that: I'm now trying to reproduce a NULL access in
+sysctl_is_seen that I got only once. It's coupled with a
+"rcu_sched_state stall detected" warning from RCU.
+
+
+> For long term maintainability and comprehensibility I think moving
+> sysctl in the direction of a normal filesystem makes a lot of sense.
+
+
+Ok, I agree that a later redesign of sysctl would suffer if there
+would be a mess regarding registration/unregistration of directories
+and no ownership information/enforcement. I'll see how this can be
+addressed in the next respin of this series.
 
 
 -- 
