@@ -1,97 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab1EAOI2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 10:08:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60381 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1EAOIY (ORCPT
+	id S1754363Ab1EAPDx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:03:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49587 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab1EAPDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 10:08:24 -0400
+	Sun, 1 May 2011 11:03:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=wjjLMsbiPhDa0tQlbK/R168yuZezY6UOSzuN9apJZb/olme3BuZegL2mzD+znnUHT5
-         ti2Bxgy7eFYiAaorFM2Sw0CrEPZ1hGJI6nG8L4kwEy7h/Bm64SqeCwXzAOgblKNVNRgw
-         5+0bPUpE+bt++qTBPraVjQAIiVHOQ7HdkoR1M=
-MIME-Version: 1.0
-Date: Sun, 1 May 2011 22:08:23 +0800
-Message-ID: <BANLkTikJfXBYsXpPBJUrOb37aaLCX8PbMw@mail.gmail.com>
-Subject: ask help for analysising oprofile result (higher mwait_idle_with_hints)
-From: zhou rui <zhourui.cn@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-smp@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: jon.zhou@jdsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wn9ODBTWfHWRaIPh89dA6nPMO6N1UsEnudD90HAFL/9z7aofjmv6CIbQl/NkZxL6GO
+         ZfeOeQbKiHKQM9CHwejxADbsaFMj3SQjqp4DJgmd2fCxT1j/mctLTGLCK4IgmeMv2VM2
+         jhMU5dCXxUp2B799uuqIx5UkcVHQ6K4mLVp+M=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Ying Han <yinghan@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH 0/2] Fix an enhance deactive_page
+Date: Mon,  2 May 2011 00:03:29 +0900
+Message-Id: <cover.1304261567.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi
-
-A network application (with its kernel network driver),
-it uses 5-8% cpu(I have tested it on kernel 2.6.34, seen from 'top'),
-but I got 40% cpu usage on kernel 2.6.36
-so that I tried oprofile to see what happen:
-
-opcontrol --vmlinux=/home/kho56208/linux-2.6.36.4/vmlinux
-...
+A few days ago, Ying reported a problem.
+http://marc.info/?l=linux-mm&m=130403310601663&w=2
+After I and Ying dive in problem, We found deactive_page
+has a problem. Apparently, It's a BUG so 
+[1/2] is fix of the problem and [2/2] is enhancement for 
+helping CPU.
 
 
-compared with profile result on kernel 2.6.34, the
-"mwait_idle_with_hints" got a higher "CPU_CLK_UNHALTED " event sample,
+Minchan Kim (2):
+  [1/2] Check PageUnevictable in lru_deactivate_fn
+  [2/2] Filter unevictable page out in deactivate_page
 
-what does it mean? any clue?
+ mm/swap.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-CPU: Intel Architectural Perfmon, speed 2666.01 MHz (estimated)
-Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a
-unit mask of 0x00 (No unit mask) count 100000
-samples  %        symbol name
-115595   17.5906  mwait_idle_with_hints
-27098     4.1236  __alloc_skb
-25992     3.9553  __slab_free
-25707     3.9120  __netif_receive_skb
-18784     2.8584  __kmalloc_node_track_caller
-18223     2.7731  get_partial_node
-17860     2.7178  add_partial
-17662     2.6877  kfree
-17655     2.6866  kmem_cache_alloc_node
-...
-
-(kernel 2.6.34):
-
-CPU: Intel Architectural Perfmon, speed 1600 MHz (estimated)
-Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a
-unit mask of 0x00 (No unit mask) count 100000
-samples  %        symbol name
-389859    7.9392  mwait_idle_with_hints
-306288    6.2374  kfree
-273832    5.5764  kmem_cache_alloc_node
-268486    5.4675  netif_receive_skb
-219047    4.4607  __alloc_skb
-192371    3.9175  kmem_cache_free
-138046    2.8112  memcpy
-133959    2.7280  dev_gro_receive
-
-
-
-system wide profile (2.6.36)
-
-"MY_APPLICATION" got 40%  cpu usage,why it is  only 0.8799% seen from oprofile?
-(the machine has 12 cores, and the oprofile is to measure all cores
-
-CPU: Intel Architectural Perfmon, speed 2666.01 MHz (estimated)
-Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a
-unit mask of 0x00 (No unit mask) count 100000
-CPU_CLK_UNHALT...|
-  samples|      %|
-------------------
-   656980 40.1202 vmlinux
-   473114 28.8919 vmlinux
-   298978 18.2579 MY_KERNEL_DRIVER
-   165838 10.1273 ixgbe
-    14408  0.8799 MY_APPLICATION
-    10443  0.6377 libc-2.11.1.so
-     8251  0.5039 processor
-     4658  0.2845 oprofiled
-     3103  0.1895 libpthread-2.11.1.so
-     1209  0.0738 oprofile
