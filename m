@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760698Ab1EAPqy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 11:46:54 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:7930 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab1EAPqv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 11:46:51 -0400
-Subject: Re: [PATCH] ipheth.c: Enable IP header alignment
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "L. Alberto" =?ISO-8859-1?Q?Gim=E9nez?= <agimenez@sysvalve.es>
-Cc: linux-kernel@vger.kernel.org, dgiagio@gmail.com, dborca@yahoo.com,
-        davem@davemloft.net, pmcenery@gmail.com, david.hill@ubisoft.com,
-        "open list:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
-In-Reply-To: <1304247656-21086-1-git-send-email-agimenez@sysvalve.es>
-References: <1304247656-21086-1-git-send-email-agimenez@sysvalve.es>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Sun, 01 May 2011 16:46:39 +0100
-Message-ID: <1304264799.2833.82.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 01 May 2011 15:46:50.0141 (UTC) FILETIME=[FC4254D0:01CC0816]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18108.005
-X-TM-AS-Result: No--17.440400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1758167Ab1EAPqo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 11:46:44 -0400
+Received: from kroah.org ([198.145.64.141]:57495 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754098Ab1EAPqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 11:46:43 -0400
+Date: Sun, 1 May 2011 08:47:51 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110501154751.GA14040@kroah.com>
+References: <1303834785-4981-1-git-send-email-kys@microsoft.com>
+ <20110426232843.GA31184@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DD185@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427064550.GA597@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427121856.GA20633@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501153920.GA15210@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110501153920.GA15210@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-01 at 13:00 +0200, L. Alberto Giménez wrote:
-> From: David Hill <david.hill@ubisoft.com>
+On Sun, May 01, 2011 at 11:39:21AM -0400, Christoph Hellwig wrote:
+> On Fri, Apr 29, 2011 at 04:32:35PM +0000, KY Srinivasan wrote:
+> > On the host-side, as part of configuring a guest  you can specify block devices
+> > as being under an IDE controller or under a
+> > SCSI controller. Those are the only options you have. Devices configured under
+> > the IDE controller cannot be seen in the guest under the emulated SCSI front-end which is
+> > the scsi driver (storvsc_drv). So, when you do a bus scan in the emulated scsi front-end,
+> > the devices enumerated will not include block devices configured under the IDE 
+> > controller. So, it is not clear to me how I can do what you are proposing given the 
+> > restrictions imposed by the host.
 > 
-> Since commit ea812ca1b06113597adcd8e70c0f84a413d97544, NET_IP_ALIGN changed from
-> 2 to 0. Some people have reported that tethering stopped working and David Hill
-> submited a patch that seems to fix the problem.
-> 
-> I have no more an iPhone device to test it, so it is only compile-tested.
-> 
-> Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
-> ---
->  drivers/net/usb/ipheth.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
-> index 7d42f9a..711346b 100644
-> --- a/drivers/net/usb/ipheth.c
-> +++ b/drivers/net/usb/ipheth.c
-> @@ -54,6 +54,9 @@
->  #include <linux/usb.h>
->  #include <linux/workqueue.h>
->  
-> +#undef  NET_IP_ALIGN
-> +#define NET_IP_ALIGN 2
-> +
->  #define USB_VENDOR_APPLE        0x05ac
->  #define USB_PRODUCT_IPHONE      0x1290
->  #define USB_PRODUCT_IPHONE_3G   0x1292
+> Just because a device is not reported by REPORT_LUNS doesn't mean you
+> can't talk to it using a SCSI LLDD.  We have SCSI transports with all
+> kinds of strange ways to discover devices.  Using scsi_add_device you
+> can add LUNs found by your own discovery methods, and use all the
+> existing scsi command handling.
 
-No, you can't do this.
+Yeah, it seems to me that no matter how the user specifies the disk
+"type" for the guest configuration, we should use the same Linux driver,
+with the same naming scheme for both ways.
 
-If there is some reason to use a fixed alignment of 2 (which I find hard
-to believe; this is a USB device after all) then that should be
-specified as a private constant.
+As Christoph points out, it's just a matter of hooking the device up to
+the scsi subsystem.  We do that today for ide, usb, scsi, and loads of
+other types of devices all with the common goal of making it easier for
+userspace to handle the devices in a standard manner.
 
-Ben.
+thanks,
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+greg k-h
