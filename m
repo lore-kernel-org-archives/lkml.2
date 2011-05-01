@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab1EACxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Apr 2011 22:53:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57874 "EHLO
+	id S1752714Ab1EACyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Apr 2011 22:54:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46155 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750941Ab1EACxF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Apr 2011 22:53:05 -0400
+	by vger.kernel.org with ESMTP id S1750941Ab1EACys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Apr 2011 22:54:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <web-516106572@zbackend1.aha.ru>
-References: <web-516106572@zbackend1.aha.ru>
+In-Reply-To: <web-516109980@zbackend1.aha.ru>
+References: <web-515866242@zbackend1.aha.ru> <BANLkTimfOCwZQP=Hv+NEhFcxMpC51-RhTw@mail.gmail.com>
+ <BANLkTinv38NtVQHrayus6v89BocsK6+iQQ@mail.gmail.com> <web-515897851@zbackend1.aha.ru>
+ <BANLkTi==L3vDQ0jF9jP1hzhU-WmToBh=uA@mail.gmail.com> <20110430114332.GC29280@htj.dyndns.org>
+ <4DBC09C7.9080205@fusionio.com> <BANLkTimGJiugYaXW8c77dspjADrF+m4VHA@mail.gmail.com>
+ <web-516074613@zbackend1.aha.ru> <BANLkTin8wf0T9nD9zmdh=4-rmj6WCy86cA@mail.gmail.com>
+ <web-516109980@zbackend1.aha.ru>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Apr 2011 19:52:11 -0700
-Message-ID: <BANLkTi=_oTLVZUOGXGU_WekyNmO+ArRgCw@mail.gmail.com>
+Date: Sat, 30 Apr 2011 19:53:57 -0700
+Message-ID: <BANLkTi=POnnoNLy=iaubARMYG4L4CxEOLQ@mail.gmail.com>
 Subject: Re: 2.6.39-rc5-git2 boot crashs
 To: werner <w.landgraf@ru.ru>
 Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
 Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 30, 2011 at 6:52 PM, werner <w.landgraf@ru.ru> wrote:
+2011/4/30 werner <w.landgraf@ru.ru>:
 >
-> Enclosed is still the /var/log/debug file.
+> On the other hand, there occurs also ocasional crashs during booting in an
+> earlier stage. See the 2nd foto anexed.
 
-Can you please just do what I asked to, namely do the minimal config.
+Oh, you have KMEMLEAK enabled too.
 
-That will also make it _much_ faster for you to compile the kernel
-(you can probably do it in 10 minutes or less if you just get a really
-nice config that only has the stuff you actually require - on my
-machine I compile my kernel in about 3 minutes from scratch).
+Disable it. It is very useful when looking for leaks and when it
+works, but it often doesn't work, and just leads to problems.
 
-And not only would it tell us something (namely whether the problem
-persists or not), but if it _does_ persist even with a minimal kernel
-that only has the drivers you need, it would make it much more
-feasible to do a bisect because now the compile/test cycle would be
-much shorter.
-
-So please, just do it.  Because quite frankly, by now you're mainly
-just wasting everybody's time.
-
-> šUNFORTUNATELY, IT DONT SHOWS THE
-> KERNEL VERSION (THIS IS SOMETHING WHAT YOU COULD CORRECT !!!)
-
-The kernel version shows up in dmesg as the very first thing. Something like
-
-[    0.000000] Linux version 2.6.39-rc5-00127-g1be6a1f89f13
-(torvalds@i5.linux-foundation.org) (gcc version 4.5.1 20100924 (Red
-Hat 4.5.1-4) (GCC) ) #9 SMP PREEMPT Fri Apr 29 16:28:05 PDT 2011
-
-You've just lost it, possibly because your dmesg file ended up growing
-too large, or possibly because some tool just didn't bother to save
-it.
-
-                        Linus
+                  Linus
