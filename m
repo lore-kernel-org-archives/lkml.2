@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005Ab1EANXK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:23:10 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48599 "EHLO e4.ny.us.ibm.com"
+	id S1757361Ab1EANgv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:36:51 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53867 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758187Ab1EANW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:22:56 -0400
+	id S1755824Ab1EANW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:22:28 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,9 +15,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 15/86] rcu: add tracing for RCU's kthread run states.
-Date: Sun,  1 May 2011 06:20:55 -0700
-Message-Id: <1304256126-26015-15-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 16/86] rcu: make rcutorture version numbers available through debugfs
+Date: Sun,  1 May 2011 06:20:56 -0700
+Message-Id: <1304256126-26015-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -27,226 +27,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-Add tracing to help debugging situations when RCU's kthreads are not
-running but are supposed to be.
+It is not possible to accurately correlate rcutorture output with that
+of debugfs.  This patch therefore adds a debugfs file that prints out
+the rcutorture version number, permitting easy correlation.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |   11 ++++++++++-
- kernel/rcutree.h        |   11 +++++++++++
- kernel/rcutree_plugin.h |    3 +++
- kernel/rcutree_trace.c  |   23 ++++++++++++++++++++---
- 4 files changed, 44 insertions(+), 4 deletions(-)
+ include/linux/rcupdate.h |   13 ++++++++++++-
+ include/linux/rcutree.h  |    3 +++
+ kernel/rcutorture.c      |    8 +++++---
+ kernel/rcutree.c         |   37 +++++++++++++++++++++++++++++++++++++
+ kernel/rcutree_trace.c   |   28 ++++++++++++++++++++++++++++
+ 5 files changed, 85 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index ff422d2..9e169c2 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -47,6 +47,18 @@
+ extern int rcutorture_runnable; /* for sysctl */
+ #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
+ 
++#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
++extern void rcutorture_record_test_transition(void);
++extern void rcutorture_record_progress(unsigned long vernum);
++#else
++static inline void rcutorture_record_test_transition(void)
++{
++}
++static inline void rcutorture_record_progress(unsigned long vernum)
++{
++}
++#endif
++
+ #define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
+ #define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
+ #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+@@ -68,7 +80,6 @@ extern void call_rcu_sched(struct rcu_head *head,
+ extern void synchronize_sched(void);
+ extern void rcu_barrier_bh(void);
+ extern void rcu_barrier_sched(void);
+-extern int sched_expedited_torture_stats(char *page);
+ 
+ static inline void __rcu_read_lock_bh(void)
+ {
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 3a93348..284dad1 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -58,9 +58,12 @@ static inline void synchronize_rcu_bh_expedited(void)
+ 
+ extern void rcu_barrier(void);
+ 
++extern unsigned long rcutorture_testseq;
++extern unsigned long rcutorture_vernum;
+ extern long rcu_batches_completed(void);
+ extern long rcu_batches_completed_bh(void);
+ extern long rcu_batches_completed_sched(void);
++
+ extern void rcu_force_quiescent_state(void);
+ extern void rcu_bh_force_quiescent_state(void);
+ extern void rcu_sched_force_quiescent_state(void);
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index 62ec8ee6..735d172 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -131,7 +131,7 @@ struct rcu_torture {
+ 
+ static LIST_HEAD(rcu_torture_freelist);
+ static struct rcu_torture __rcu *rcu_torture_current;
+-static long rcu_torture_current_version;
++static unsigned long rcu_torture_current_version;
+ static struct rcu_torture rcu_tortures[10 * RCU_TORTURE_PIPE_LEN];
+ static DEFINE_SPINLOCK(rcu_torture_lock);
+ static DEFINE_PER_CPU(long [RCU_TORTURE_PIPE_LEN + 1], rcu_torture_count) =
+@@ -886,7 +886,7 @@ rcu_torture_writer(void *arg)
+ 			old_rp->rtort_pipe_count++;
+ 			cur_ops->deferred_free(old_rp);
+ 		}
+-		rcu_torture_current_version++;
++		rcutorture_record_progress(++rcu_torture_current_version);
+ 		oldbatch = cur_ops->completed();
+ 		rcu_stutter_wait("rcu_torture_writer");
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+@@ -1066,7 +1066,7 @@ rcu_torture_printk(char *page)
+ 	}
+ 	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
+ 	cnt += sprintf(&page[cnt],
+-		       "rtc: %p ver: %ld tfle: %d rta: %d rtaf: %d rtf: %d "
++		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d "
+ 		       "rtmbe: %d rtbke: %ld rtbre: %ld "
+ 		       "rtbf: %ld rtb: %ld nt: %ld",
+ 		       rcu_torture_current,
+@@ -1329,6 +1329,7 @@ rcu_torture_cleanup(void)
+ 	int i;
+ 
+ 	mutex_lock(&fullstop_mutex);
++	rcutorture_record_test_transition();
+ 	if (fullstop == FULLSTOP_SHUTDOWN) {
+ 		printk(KERN_WARNING /* but going down anyway, so... */
+ 		       "Concurrent 'rmmod rcutorture' and shutdown illegal!\n");
+@@ -1622,6 +1623,7 @@ rcu_torture_init(void)
+ 		}
+ 	}
+ 	register_reboot_notifier(&rcutorture_shutdown_nb);
++	rcutorture_record_test_transition();
+ 	mutex_unlock(&fullstop_mutex);
+ 	return 0;
+ 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index eca6f05..a591694 100644
+index a591694..c1f5434 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -91,8 +91,9 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
-  * handle all flavors of RCU.
-  */
- static DEFINE_PER_CPU(struct task_struct *, rcu_cpu_kthread_task);
-+DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
- static DEFINE_PER_CPU(wait_queue_head_t, rcu_cpu_wq);
--static DEFINE_PER_CPU(char, rcu_cpu_has_work);
-+DEFINE_PER_CPU(char, rcu_cpu_has_work);
- static char rcu_kthreads_spawnable;
+@@ -102,6 +102,18 @@ static void invoke_rcu_cpu_kthread(void);
+ #define RCU_KTHREAD_PRIO 1	/* RT priority for per-CPU kthreads. */
  
- static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
-@@ -1563,11 +1564,13 @@ static int rcu_cpu_kthread(void *arg)
- 	int cpu = (int)(long)arg;
- 	unsigned long flags;
- 	int spincnt = 0;
-+	unsigned int *statusp = &per_cpu(rcu_cpu_kthread_status, cpu);
- 	wait_queue_head_t *wqp = &per_cpu(rcu_cpu_wq, cpu);
- 	char work;
- 	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
- 
- 	for (;;) {
-+		*statusp = RCU_KTHREAD_WAITING;
- 		wait_event_interruptible(*wqp,
- 					 *workp != 0 || kthread_should_stop());
- 		local_bh_disable();
-@@ -1575,6 +1578,7 @@ static int rcu_cpu_kthread(void *arg)
- 			local_bh_enable();
- 			break;
- 		}
-+		*statusp = RCU_KTHREAD_RUNNING;
- 		local_irq_save(flags);
- 		work = *workp;
- 		*workp = 0;
-@@ -1587,10 +1591,12 @@ static int rcu_cpu_kthread(void *arg)
- 		else
- 			spincnt = 0;
- 		if (spincnt > 10) {
-+			*statusp = RCU_KTHREAD_YIELDING;
- 			rcu_yield(rcu_cpu_kthread_timer, (unsigned long)cpu);
- 			spincnt = 0;
- 		}
- 	}
-+	*statusp = RCU_KTHREAD_STOPPED;
- 	return 0;
- }
- 
-@@ -1637,10 +1643,12 @@ static int rcu_node_kthread(void *arg)
- 	struct task_struct *t;
- 
- 	for (;;) {
-+		rnp->node_kthread_status = RCU_KTHREAD_WAITING;
- 		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
- 						       kthread_should_stop());
- 		if (kthread_should_stop())
- 			break;
-+		rnp->node_kthread_status = RCU_KTHREAD_RUNNING;
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		mask = rnp->wakemask;
- 		rnp->wakemask = 0;
-@@ -1661,6 +1669,7 @@ static int rcu_node_kthread(void *arg)
- 			preempt_enable();
- 		}
- 	}
-+	rnp->node_kthread_status = RCU_KTHREAD_STOPPED;
- 	return 0;
- }
- 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index d49046c..67341db 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -89,6 +89,13 @@ struct rcu_dynticks {
- 	atomic_t dynticks;	/* Even value for dynticks-idle, else odd. */
- };
- 
-+/* RCU's kthread states for tracing. */
-+#define RCU_KTHREAD_STOPPED  0
-+#define RCU_KTHREAD_RUNNING  1
-+#define RCU_KTHREAD_WAITING  2
-+#define RCU_KTHREAD_YIELDING 3
-+#define RCU_KTHREAD_MAX      3
+ /*
++ * Track the rcutorture test sequence number and the update version
++ * number within a given test.  The rcutorture_testseq is incremented
++ * on every rcutorture module load and unload, so has an odd value
++ * when a test is running.  The rcutorture_vernum is set to zero
++ * when rcutorture starts and is incremented on each rcutorture update.
++ * These variables enable correlating rcutorture output with the
++ * RCU tracing information.
++ */
++unsigned long rcutorture_testseq;
++unsigned long rcutorture_vernum;
 +
++/*
+  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+  * permit this function to be invoked without holding the root rcu_node
+  * structure's ->lock, but of course results can be subject to change.
+@@ -193,6 +205,31 @@ void rcu_bh_force_quiescent_state(void)
+ EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
+ 
  /*
-  * Definition for node within the RCU grace-period-detection hierarchy.
++ * Record the number of times rcutorture tests have been initiated and
++ * terminated.  This information allows the debugfs tracing stats to be
++ * correlated to the rcutorture messages, even when the rcutorture module
++ * is being repeatedly loaded and unloaded.  In other words, we cannot
++ * store this state in rcutorture itself.
++ */
++void rcutorture_record_test_transition(void)
++{
++	rcutorture_testseq++;
++	rcutorture_vernum = 0;
++}
++EXPORT_SYMBOL_GPL(rcutorture_record_test_transition);
++
++/*
++ * Record the number of writer passes through the current rcutorture test.
++ * This is also used to correlate debugfs tracing stats with the rcutorture
++ * messages.
++ */
++void rcutorture_record_progress(unsigned long vernum)
++{
++	rcutorture_vernum++;
++}
++EXPORT_SYMBOL_GPL(rcutorture_record_progress);
++
++/*
+  * Force a quiescent state for RCU-sched.
   */
-@@ -152,6 +159,8 @@ struct rcu_node {
- 	wait_queue_head_t boost_wq;
- 				/* Wait queue on which to park the boost */
- 				/*  kthread. */
-+	unsigned int boost_kthread_status;
-+				/* State of boost_kthread_task for tracing. */
- 	unsigned long n_tasks_boosted;
- 				/* Total number of tasks boosted. */
- 	unsigned long n_exp_boosts;
-@@ -179,6 +188,8 @@ struct rcu_node {
- 	wait_queue_head_t node_wq;
- 				/* Wait queue on which to park the per-node */
- 				/*  kthread. */
-+	unsigned int node_kthread_status;
-+				/* State of node_kthread_task for tracing. */
- } ____cacheline_internodealigned_in_smp;
- 
- /*
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 07d3464..22a6a46 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1198,11 +1198,13 @@ static int rcu_boost_kthread(void *arg)
- 	int more2boost;
- 
- 	for (;;) {
-+		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
- 		wait_event_interruptible(rnp->boost_wq, rnp->boost_tasks ||
- 							rnp->exp_tasks ||
- 							kthread_should_stop());
- 		if (kthread_should_stop())
- 			break;
-+		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
- 		more2boost = rcu_boost(rnp);
- 		if (more2boost)
- 			spincnt++;
-@@ -1213,6 +1215,7 @@ static int rcu_boost_kthread(void *arg)
- 			spincnt = 0;
- 		}
- 	}
-+	rnp->boost_kthread_status = RCU_KTHREAD_STOPPED;
- 	return 0;
- }
- 
+ void rcu_sched_force_quiescent_state(void)
 diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index afd262f..fc40e89 100644
+index fc40e89..3baa235 100644
 --- a/kernel/rcutree_trace.c
 +++ b/kernel/rcutree_trace.c
-@@ -46,6 +46,16 @@
- #define RCU_TREE_NONCORE
- #include "rcutree.h"
+@@ -394,6 +394,29 @@ static const struct file_operations rcu_pending_fops = {
+ 	.release = single_release,
+ };
  
-+DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
-+DECLARE_PER_CPU(char, rcu_cpu_has_work);
-+
-+static char convert_kthread_status(unsigned int kthread_status)
++static int show_rcutorture(struct seq_file *m, void *unused)
 +{
-+	if (kthread_status > RCU_KTHREAD_MAX)
-+		return '?';
-+	return "SRWY"[kthread_status];
++	seq_printf(m, "rcutorture test sequence: %lu %s\n",
++		   rcutorture_testseq >> 1,
++		   (rcutorture_testseq & 0x1) ? "(test in progress)" : "");
++	seq_printf(m, "rcutorture update version number: %lu\n",
++		   rcutorture_vernum);
++	return 0;
 +}
 +
- static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- {
- 	if (!rdp->beenonline)
-@@ -64,7 +74,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->dynticks_fqs);
- #endif /* #ifdef CONFIG_NO_HZ */
- 	seq_printf(m, " of=%lu ri=%lu", rdp->offline_fqs, rdp->resched_ipi);
--	seq_printf(m, " ql=%ld qs=%c%c%c%c b=%ld",
-+	seq_printf(m, " ql=%ld qs=%c%c%c%c kt=%d/%c b=%ld",
- 		   rdp->qlen,
- 		   ".N"[rdp->nxttail[RCU_NEXT_READY_TAIL] !=
- 			rdp->nxttail[RCU_NEXT_TAIL]],
-@@ -73,6 +83,9 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- 		   ".W"[rdp->nxttail[RCU_DONE_TAIL] !=
- 			rdp->nxttail[RCU_WAIT_TAIL]],
- 		   ".D"[&rdp->nxtlist != rdp->nxttail[RCU_DONE_TAIL]],
-+		   per_cpu(rcu_cpu_has_work, rdp->cpu),
-+		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
-+					  rdp->cpu)),
- 		   rdp->blimit);
- 	seq_printf(m, " ci=%lu co=%lu ca=%lu\n",
- 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
-@@ -130,7 +143,7 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->dynticks_fqs);
- #endif /* #ifdef CONFIG_NO_HZ */
- 	seq_printf(m, ",%lu,%lu", rdp->offline_fqs, rdp->resched_ipi);
--	seq_printf(m, ",%ld,\"%c%c%c%c\",%ld", rdp->qlen,
-+	seq_printf(m, ",%ld,\"%c%c%c%c\",%d,\"%c\",%ld", rdp->qlen,
- 		   ".N"[rdp->nxttail[RCU_NEXT_READY_TAIL] !=
- 			rdp->nxttail[RCU_NEXT_TAIL]],
- 		   ".R"[rdp->nxttail[RCU_WAIT_TAIL] !=
-@@ -138,6 +151,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
- 		   ".W"[rdp->nxttail[RCU_DONE_TAIL] !=
- 			rdp->nxttail[RCU_WAIT_TAIL]],
- 		   ".D"[&rdp->nxtlist != rdp->nxttail[RCU_DONE_TAIL]],
-+		   per_cpu(rcu_cpu_has_work, rdp->cpu),
-+		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
-+					  rdp->cpu)),
- 		   rdp->blimit);
- 	seq_printf(m, ",%lu,%lu,%lu\n",
- 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
-@@ -178,13 +194,14 @@ static const struct file_operations rcudata_csv_fops = {
++static int rcutorture_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, show_rcutorture, NULL);
++}
++
++static const struct file_operations rcutorture_fops = {
++	.owner = THIS_MODULE,
++	.open = rcutorture_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
+ static struct dentry *rcudir;
  
- static void print_one_rcu_node_boost(struct seq_file *m, struct rcu_node *rnp)
- {
--	seq_printf(m,  "%d:%d tasks=%c%c%c%c ntb=%lu neb=%lu nnb=%lu "
-+	seq_printf(m,  "%d:%d tasks=%c%c%c%c kt=%c ntb=%lu neb=%lu nnb=%lu "
- 		   "j=%04x bt=%04x\n",
- 		   rnp->grplo, rnp->grphi,
- 		   "T."[list_empty(&rnp->blkd_tasks)],
- 		   "N."[!rnp->gp_tasks],
- 		   "E."[!rnp->exp_tasks],
- 		   "B."[!rnp->boost_tasks],
-+		   convert_kthread_status(rnp->boost_kthread_status),
- 		   rnp->n_tasks_boosted, rnp->n_exp_boosts,
- 		   rnp->n_normal_boosts,
- 		   (int)(jiffies & 0xffff),
+ static int __init rcutree_trace_init(void)
+@@ -430,6 +453,11 @@ static int __init rcutree_trace_init(void)
+ 						NULL, &rcu_pending_fops);
+ 	if (!retval)
+ 		goto free_out;
++
++	retval = debugfs_create_file("rcutorture", 0444, rcudir,
++						NULL, &rcutorture_fops);
++	if (!retval)
++		goto free_out;
+ 	return 0;
+ free_out:
+ 	debugfs_remove_recursive(rcudir);
 -- 
 1.7.3.2
 
