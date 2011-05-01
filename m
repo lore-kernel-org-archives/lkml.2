@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760667Ab1EANcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 09:32:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44610 "EHLO e8.ny.us.ibm.com"
+	id S1760518Ab1EANbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 09:31:35 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:60582 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756725Ab1EANWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 09:22:33 -0400
+	id S1757046Ab1EANWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 May 2011 09:22:35 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 49/86] net,rcu: convert call_rcu(__gen_kill_estimator) to kfree_rcu()
-Date: Sun,  1 May 2011 06:21:29 -0700
-Message-Id: <1304256126-26015-49-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 50/86] net,rcu: convert call_rcu(ip_mc_list_reclaim) to kfree_rcu()
+Date: Sun,  1 May 2011 06:21:30 -0700
+Message-Id: <1304256126-26015-50-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110501132142.GA25494@linux.vnet.ibm.com>
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
@@ -26,43 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback __gen_kill_estimator() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(__gen_kill_estimator).
+The rcu callback ip_mc_list_reclaim() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(ip_mc_list_reclaim).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- net/core/gen_estimator.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+ net/ipv4/igmp.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/net/core/gen_estimator.c b/net/core/gen_estimator.c
-index 7c23733..43b03dd 100644
---- a/net/core/gen_estimator.c
-+++ b/net/core/gen_estimator.c
-@@ -249,13 +249,6 @@ int gen_new_estimator(struct gnet_stats_basic_packed *bstats,
- }
- EXPORT_SYMBOL(gen_new_estimator);
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 1fd3d9c..f22f30e 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -149,17 +149,11 @@ static void ip_mc_clear_src(struct ip_mc_list *pmc);
+ static int ip_mc_add_src(struct in_device *in_dev, __be32 *pmca, int sfmode,
+ 			 int sfcount, __be32 *psfsrc, int delta);
  
--static void __gen_kill_estimator(struct rcu_head *head)
+-
+-static void ip_mc_list_reclaim(struct rcu_head *head)
 -{
--	struct gen_estimator *e = container_of(head,
--					struct gen_estimator, e_rcu);
--	kfree(e);
+-	kfree(container_of(head, struct ip_mc_list, rcu));
 -}
 -
- /**
-  * gen_kill_estimator - remove a rate estimator
-  * @bstats: basic statistics
-@@ -279,7 +272,7 @@ void gen_kill_estimator(struct gnet_stats_basic_packed *bstats,
- 		write_unlock(&est_lock);
- 
- 		list_del_rcu(&e->list);
--		call_rcu(&e->e_rcu, __gen_kill_estimator);
-+		kfree_rcu(e, e_rcu);
+ static void ip_ma_put(struct ip_mc_list *im)
+ {
+ 	if (atomic_dec_and_test(&im->refcnt)) {
+ 		in_dev_put(im->interface);
+-		call_rcu(&im->rcu, ip_mc_list_reclaim);
++		kfree_rcu(im, rcu);
  	}
- 	spin_unlock_bh(&est_tree_lock);
  }
+ 
 -- 
 1.7.3.2
 
