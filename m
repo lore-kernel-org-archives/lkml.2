@@ -1,90 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1EBJDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 05:03:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37980 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab1EBJDJ (ORCPT
+	id S1756982Ab1EBJEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 05:04:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60130 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab1EBJEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 05:03:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=O1z5lUY/Ai/rv+Zm2H2qzrQoPRk1OiBunkAI1jTZCErcSjIcaDx2ObtXS5SIbckYGK
-         NQcfEu5n1a77vSaJX6Y6YD4X4nSQXT4MaRGwpxNnH//Uwl/LkumL61Cby0xbLVSzRQ3w
-         C6IAWRHwoOWU48OUHGn06oxpV+yinK62vfWYU=
-Subject: Re: [PATCH] Fix the over time interface of the driver-model docs
-From: "wanlong.gao" <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110502032906.GA1553@kroah.com>
-References: <1304229056-5554-1-git-send-email-wanlong.gao@gmail.com>
-	 <20110501195939.c0ae66cc.rdunlap@xenotime.net>
-	 <20110502032906.GA1553@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Linux kernel
-Date: Mon, 02 May 2011 17:02:59 +0800
-Message-ID: <1304326979.1777.1.camel@Tux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 2 May 2011 05:04:43 -0400
+Date: Mon, 2 May 2011 11:04:26 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Koul, Vinod" <vinod.koul@intel.com>
+cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH 2/2] dmaengine: shdma: add runtime- and system-level
+ power management
+In-Reply-To: <1304323391.1589.9.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1105021056231.13244@axis700.grange>
+References: <Pine.LNX.4.64.1104291901200.17813@axis700.grange> 
+ <Pine.LNX.4.64.1104291908090.17813@axis700.grange> <1304323391.1589.9.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:W0g7AQyum49Dp3ymVgFN9zI5qZID7NrHHwg5kPLWf2W
+ j4vcQJS3maBPubueDV7oMwDzMgTX05SwvN4PELGQ9Q+U9/tN5R
+ zPEHpa4XIHmryduJASlofVuAZLnPA4n571v0g80OU1cfXsPGRA
+ zrlgF18C+7Yr25Tt2A8Ynwk93PbVkrgeM9KztS9O/tXYW4p5tA
+ nESx1GeDDSOXRhuuYTnvmGWqwKAbd9UhbYNG3lxZIU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2011-05-01日的 20:29 -0700，Greg KH写道：
-> On Sun, May 01, 2011 at 07:59:39PM -0700, Randy Dunlap wrote:
-> > On Sun,  1 May 2011 13:50:56 +0800 wanlong.gao@gmail.com wrote:
-> > 
-> > > From: Wanlong Gao<wanlong.gao@gmail.com>
-> > > 
-> > > The driver-model documentation seems like out-of-date, Can we
-> > > fix them or rewrite ?
-> > 
-> > GregKH should get this patch.......
-> > 
-> > 
-> > > Signed-off-by: Wanlong Gao<wanlong.gao@gmail.com>
-> > > ---
-> > >  Documentation/driver-model/bus.txt    |   32 ++++----
-> > >  Documentation/driver-model/device.txt |  149 +++++++++++++++++++--------------
-> > >  2 files changed, 104 insertions(+), 77 deletions(-)
-> > > 
-> > > diff --git a/Documentation/driver-model/bus.txt b/Documentation/driver-model/bus.txt
-> > > index 5001b75..82bca26 100644
-> > > --- a/Documentation/driver-model/bus.txt
-> > > +++ b/Documentation/driver-model/bus.txt
-> > > @@ -5,21 +5,23 @@ Definition
-> > >  ~~~~~~~~~~
-> > >  
-> > >  struct bus_type {
-> > > -	char			* name;
-> > > +	const char		*name;
-> > > +	struct bus_attribute	*bus_attrs;
-> > > +	struct device_attribute	*dev_attrs;
-> > > +	struct driver_attribute	*drv_attrs;
-> 
-> 
-> <snip>
-> 
-> This should almost all removed from these files and moved to be
-> kerneldoc in the device.h file instead.  That will keep things up to
-> date and provide a better way to document this stuff.
-> 
-> Wanlong, can you do that instead?
-> 
-> thanks,
-> 
-> greg k-h
+On Mon, 2 May 2011, Koul, Vinod wrote:
 
-Greg:
-I see, I'll try to do it .
+> On Fri, 2011-04-29 at 19:09 +0200, Guennadi Liakhovetski wrote:
+> > This patch extends and fixes runtime power management in the shdma
+> > driver to support powering down the DMA controller and adds support
+> > for system-level suspend and resume.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> >  drivers/dma/shdma.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/dma/shdma.h |    1 +
+> >  2 files changed, 69 insertions(+), 0 deletions(-)
+> > 
+> 
+> >  
+> > +static int sh_dmae_runtime_suspend(struct device *dev)
+> > +{
+> > +	return 0;
+> > +}
+> Don't you need to initialize you device on resume...????
+
+Hm, yes, but this is suspend... Resume is below. Sorry, I probably don't 
+understand your question.
+
+> > +
+> > +static int sh_dmae_runtime_resume(struct device *dev)
+> > +{
+> > +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
+> > +
+> > +	return sh_dmae_rst(shdev);
+> > +}
+> > +
+> > +#ifdef CONFIG_PM
+> This should be removed...
+
+You mean, these functions just won't be called, but this way we save a 
+couple of bytes if PM is not set, don't we?
+
+> > +static int sh_dmae_suspend(struct device *dev)
+> > +{
+> > +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
+> > +	int i;
+> > +
+> > +	for (i = 0; i < shdev->pdata->channel_num; i++) {
+> > +		struct sh_dmae_chan *sh_chan = shdev->chan[i];
+> > +		if (sh_chan->descs_allocated)
+> > +			sh_chan->pm_error = pm_runtime_put_sync(dev);
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int sh_dmae_resume(struct device *dev)
+> > +{
+> > +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
+> > +	int i;
+> > +
+> > +	for (i = 0; i < shdev->pdata->channel_num; i++) {
+> > +		struct sh_dmae_chan *sh_chan = shdev->chan[i];
+> > +		struct sh_dmae_slave *param = sh_chan->common.private;
+> > +
+> > +		if (!sh_chan->descs_allocated)
+> > +			continue;
+> > +
+> > +		if (!sh_chan->pm_error)
+> > +			pm_runtime_get_sync(dev);
+> > +
+> > +		if (param) {
+> > +			const struct sh_dmae_slave_config *cfg = param->config;
+> > +			dmae_set_dmars(sh_chan, cfg->mid_rid);
+> > +			dmae_set_chcr(sh_chan, cfg->chcr);
+> > +		} else {
+> > +			dmae_init(sh_chan);
+> > +		}
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +#else
+> > +#define sh_dmae_suspend NULL
+> > +#define sh_dmae_resume NULL
+> > +#endif
+> > +
+> > +const struct dev_pm_ops sh_dmae_pm = {
+> > +	.suspend		= sh_dmae_suspend,
+> > +	.resume			= sh_dmae_resume,
+> > +	.runtime_suspend	= sh_dmae_runtime_suspend,
+> > +	.runtime_resume		= sh_dmae_runtime_resume,
+> > +};
+> > +
+> >  static struct platform_driver sh_dmae_driver = {
+> >  	.remove		= __exit_p(sh_dmae_remove),
+> >  	.shutdown	= sh_dmae_shutdown,
+> >  	.driver = {
+> >  		.owner	= THIS_MODULE,
+> >  		.name	= "sh-dma-engine",
+> > +		.pm	= &sh_dmae_pm,
+> >  	},
+> >  };
+> >  
+> > diff --git a/drivers/dma/shdma.h b/drivers/dma/shdma.h
+> > index 52e4fb1..3f9d3cd 100644
+> > --- a/drivers/dma/shdma.h
+> > +++ b/drivers/dma/shdma.h
+> > @@ -37,6 +37,7 @@ struct sh_dmae_chan {
+> >  	int id;				/* Raw id of this channel */
+> >  	u32 __iomem *base;
+> >  	char dev_id[16];		/* unique name per DMAC of channel */
+> > +	int pm_error;
+> >  };
+> >  
+> >  struct sh_dmae_device {
+> 
+> And please remember to CC maintainers...
+
+Sorry, will try to remember.
+
 Thanks
-Best regards
-
-Wanlong Gao
-
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
