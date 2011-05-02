@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab1EBRHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:07:25 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:36122 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab1EBRHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:07:23 -0400
-X-ASG-Debug-ID: 1304353401-03d6a50f2b05640001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DBEDA78.7020502@fusionio.com>
-Date: Mon, 2 May 2011 10:23:20 -0600
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1757362Ab1EBQd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:33:58 -0400
+Received: from mail.palosanto.com ([200.93.199.101]:38188 "EHLO
+	pbx.palosanto.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753343Ab1EBQdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 12:33:55 -0400
+Message-ID: <4DBEDC84.5010903@fiec.espol.edu.ec>
+Date: Mon, 02 May 2011 11:32:04 -0500
+From: =?UTF-8?B?QWxleCBWaWxsYWPDrcKtcyBMYXNzbw==?= 
+	<avillaci@fiec.espol.edu.ec>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Lukas Czerner <lczerner@redhat.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Monakhov <dmonakhov@openvz.org>, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in  blkdev_issue_discard()
-References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in  blkdev_issue_discard()
-In-Reply-To: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail0.int.fusionio.com[10.101.1.20]
-X-Barracuda-Start-Time: 1304353401
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.62573
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+Subject: Re: [Bug #28522] Unable to mount FAT-formatted floppy on /dev/fd0,
+ plus WARN_ON when using /dev/fd0u1440
+References: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera> <9nxEC7x0HFO.A.VFH.O0GvNB@chimera>
+In-Reply-To: <9nxEC7x0HFO.A.VFH.O0GvNB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-02 08:17, Lukas Czerner wrote:
-> Currently we are waiting for every submitted REQ_DISCARD bio separately,
-> but it can have unwanted consequences of repeatedly flushing the queue,
-> so we rather submit bios in batches and wait for the entire batch, hence
-> narrowing the window of other ios going in.
-> 
-> Use bio_batch_end_io() and struct bio_batch for that purpose, the same
-> is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
-> always set !BIO_UPTODATE in the case of error and remove the check for
-> bb, since we are the only user of this function and we always set this.
-> 
-> Remove bio_get()/bio_put() from the blkdev_issue_discard() since
-> bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
-> not needed anymore.
-> 
-> I have done simple dd testing with surprising results. The script I have
-> used is:
-> 
-> for i in $(seq 10); do
->         echo $i
->         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
->         sleep 5
-> done
-> /usr/bin/time -f %e ./blkdiscard /dev/sdc1
-> 
-> Running time of BLKDISCARD on the whole device:
-> with patch              without patch
-> 0.95                    15.58
-> 
-> So we can see that in this artificial test the kernel with the patch
-> applied is approx 16x faster in discarding the device.
-
-Good results. It'd be more efficient to add the vectored discard support
-and use it for this too though, and it would get rid of the need to wait
-on the batches since there'd be just one discard bio for the ranges.
-
--- 
-Jens Axboe
-
+El 30/04/11 15:17, Rafael J. Wysocki escribió:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.37 and 2.6.38.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.37 and 2.6.38.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28522
+> Subject		: Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+> Submitter	: Alex Villacis Lasso<avillaci@ceibo.fiec.espol.edu.ec>
+> Date		: 2011-02-07 17:21 (83 days old)
+>
+>
+>
+Still present witn 2.6.39-rc5.
