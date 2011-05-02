@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab1EBIae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 04:30:34 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54070 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab1EBIac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 04:30:32 -0400
-Date: Mon, 2 May 2011 01:30:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 16/86] rcu: make rcutorture version
- numbers available through debugfs
-Message-ID: <20110502083024.GX2297@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-16-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501152903.GC14829@feather>
+	id S1756523Ab1EBIbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 04:31:21 -0400
+Received: from mail-in-13.arcor-online.net ([151.189.21.53]:44257 "EHLO
+	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753920Ab1EBIbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 04:31:20 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-05.arcor-online.net 947F1E4055
+Date: Mon, 2 May 2011 10:31:17 +0200
+From: Klaus Dittrich <kladit@arcor.de>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38.5-rc1 usb problem
+Message-ID: <20110502083117.GA1968@df1tl.local.here>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110501152903.GC14829@feather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 01, 2011 at 08:29:03AM -0700, Josh Triplett wrote:
-> On Sun, May 01, 2011 at 06:20:56AM -0700, Paul E. McKenney wrote:
-> > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > 
-> > It is not possible to accurately correlate rcutorture output with that
-> > of debugfs.  This patch therefore adds a debugfs file that prints out
-> > the rcutorture version number, permitting easy correlation.
-> 
-> You can't accurately correlate debugfs values with each
-> other, either, right?  The rcutorture version number can change between
-> accesses to different debugfs files.
+With 2.6.38.5-rc1 my usb-scanner will be not detected, with 2.6.38.4 it
+will.
 
-True, but this is OK given the use case.
+System is Intel Q9550 SMP 64-bit
 
-The problem that I used to have was that an automated test run would get
-a grace-period hang somewhere in the middle of a long run.  Now, in a
-grace-period hang, most of the interesting debugfs output is static,
-so it is not necessary to line them up exactly.  All that is needed is
-for the corellation to be good enough for me to ignore the debugfs
-output that came a long time before the hang started.
+/var/log/messages ..
 
-Also, if there is an RCU grace-period hang, the rcutorture version number
-will stop changing once it has the entire array waiting for a grace period,
-which normally happens in a few seconds.
+May  2 10:07:12 x1 klogd: [ 3030.380011] usb 3-1: new full speed USB device using uhci_hcd and address 16
+May  2 10:07:27 x1 klogd: [ 3045.500013] usb 3-1: device descriptor read/64, error -110
+May  2 10:07:42 x1 klogd: [ 3060.730008] usb 3-1: device descriptor read/64, error -110
+May  2 10:07:42 x1 klogd: [ 3060.960012] usb 3-1: new full speed USB device using uhci_hcd and address 17
+May  2 10:07:57 x1 klogd: [ 3076.080010] usb 3-1: device descriptor read/64, error -110
+May  2 10:08:13 x1 klogd: [ 3091.310011] usb 3-1: device descriptor read/64, error -110
+May  2 10:08:13 x1 klogd: [ 3091.540009] usb 3-1: new full speed USB device using uhci_hcd and address 18
+May  2 10:08:23 x1 klogd: [ 3101.960009] usb 3-1: device not accepting address 18, error -110
+May  2 10:08:23 x1 klogd: [ 3102.080009] usb 3-1: new full speed USB device using uhci_hcd and address 19
+May  2 10:08:34 x1 klogd: [ 3112.500010] usb 3-1: device not accepting address 19, error -110
+May  2 10:08:34 x1 klogd: [ 3112.500024] hub 3-0:1.0: unable to enumerate USB device on port 1
 
-Make sense, or am I missing your point?
 
-							Thanx, Paul
+/var/log/messages of 2.6.38.4
+
+May  2 10:17:56 x1 klogd: [   61.308007] usb 7-2: new full speed USB device using uhci_hcd and address 2
+May  2 10:17:57 x1 klogd: [   61.472210] usb 7-2: New USB device found, idVendor=10c4, idProduct=ea60
+May  2 10:17:57 x1 klogd: [   61.472213] usb 7-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+May  2 10:17:57 x1 klogd: [   61.472215] usb 7-2: Product: CP2102 USB to UART Bridge Controller
+May  2 10:17:57 x1 klogd: [   61.472217] usb 7-2: Manufacturer: Silicon Labs May  2 10:17:57 x1 klogd: [   61.472219] usb 7-2: SerialNumber: 0001
+May  2 10:18:08 x1 klogd: [   73.328009] usb 3-1: new full speed USB device using uhci_hcd and address 4
+May  2 10:18:09 x1 klogd: [   73.842237] usb 3-1: New USB device found, idVendor=04b8, idProduct=010a
+May  2 10:18:09 x1 klogd: [   73.842239] usb 3-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+May  2 10:18:09 x1 klogd: [   73.842242] usb 3-1: Product: Perfection1640 May  2 10:18:09 x1 klogd: [   73.842243] usb 3-1: Manufacturer: EPSON
+
+
+Please cc me, I am not subscribed.
+
+-- 
+Klaus
