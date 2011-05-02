@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1EBTDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:03:03 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:60587 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab1EBTDC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 15:03:02 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 00/69] faster tree-based sysctl implementation
-References: <1304213799-10257-1-git-send-email-lucian.grijincu@gmail.com>
-	<m1zkn68mpk.fsf@fess.ebiederm.org>
-	<BANLkTi=NcpPQUGkR=pbOMPfMkyL7LiBeoA@mail.gmail.com>
-	<m1r58i2g02.fsf@fess.ebiederm.org>
-	<BANLkTinTMckhNYx1OiyH_YR+hr31naPQHw@mail.gmail.com>
-	<m1aaf5yf64.fsf@fess.ebiederm.org>
-	<BANLkTi=PazFJ2QAXArCK52X7JM-xq5Ca5w@mail.gmail.com>
-Date: Mon, 02 May 2011 12:02:55 -0700
-In-Reply-To: <BANLkTi=PazFJ2QAXArCK52X7JM-xq5Ca5w@mail.gmail.com> (Lucian
-	Adrian Grijincu's message of "Mon, 2 May 2011 09:44:05 +0200")
-Message-ID: <m1aaf5vsbk.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1758337Ab1EBTRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:17:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53474 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab1EBTQu (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 2 May 2011 15:16:50 -0400
+Date: Mon, 2 May 2011 15:08:43 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Daniel Stodden <daniel.stodden@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad@kernel.org" <konrad@kernel.org>
+Subject: Re: [Xen-devel] Re: [PATCH] xen block backend driver. - proper
+ flush/barrier/fua support missing.
+Message-ID: <20110502190843.GA29913@dumpdata.com>
+References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
+ <1303333543-5915-2-git-send-email-konrad.wilk@oracle.com>
+ <20110421034016.GB11501@infradead.org>
+ <1303412592.9571.126.camel@agari.van.xensource.com>
+ <20110421190606.GA10793@infradead.org>
+ <1303413277.9571.133.camel@agari.van.xensource.com>
+ <20110422090904.GA29246@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+pCzah5+ges5GQwresMHDdYA4bWch2hw0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422090904.GA29246@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DBF02FD.01B4:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
+On Fri, Apr 22, 2011 at 05:09:04AM -0400, Christoph Hellwig wrote:
+> On Thu, Apr 21, 2011 at 12:14:37PM -0700, Daniel Stodden wrote:
+> > > There is a huge userbase of guests out there that does rely on it.
+> > 
+> > Which ones? Old blkfront would have make a difference back then when
+> > barriers used to be an option, but it never actually declared it, right?
+> 
+> Pre-Linux 2.6.37 guests using reiserfs actually relied on the queue
+> flushing.  This includes a lot of SLES installation which are still
+> in common use.  There's only two options to make sure they work:
+> 
+>  (1) keep the original barrier semantics and flush the queue
+>  (2) do not advertize "barrier" support at all, and make sure to submit
+>    every I/O we get with the FUA bit.
+> 
+> In practice (2) is going to be faster for most real-life workloads.  So
+> maybe you should just drop the old "barrier" support and just send
+> requests with the FUA bit set for now, until you have proper flush
+> and fua support in the protocol.
 
-> On Mon, May 2, 2011 at 5:06 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> In particular I was referring to create_proc_entry.  It takes
->> a path and an optional parent directory.
->
-> I did something like that in this patch series I sent a month ago
-> which was mostly ignored (except for a call from David Miller for
-> feedback on the patches):
-> http://thread.gmane.org/gmane.linux.kernel/1121889
->
-> I'll see how I can add the optional parent directory in this patch series.
->
-> Could you please take a look at a few patches in the above series?
->
-> The ones that have "cookie:" add a cookie pointer to the
-> ctl_table_header making it possible to skip duplicating ctl_table
-> arrays in a few places in the kernel. After finishing this series I'll
-> send one with the cookie..
+Let me play with both options and see how they pan out.
 
-The cookie changes seem particularly intrusive, and if I read your
-patches properly the cookies are only useful for table sharing when
-implementing network namespaces.  At first glance those changes seem
-pretty horrible.
+Christoph,
 
-Do you also have a lot of network namespaces in the workloads you care
-about?
+Is there a good tool to unmask barrier bugs? I found this one:
+http://lwn.net/Articles/283169/
 
-Eric
-
+but not sure if that still applies to this case? Or does
+running bonnie++ expose the potential issues?
