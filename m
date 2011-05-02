@@ -1,125 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab1EBKya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 06:54:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39481 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab1EBKy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 06:54:27 -0400
-Date: Mon, 2 May 2011 13:53:48 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 3/8] Add userspace buffers support in skb
-Message-ID: <20110502105348.GA21706@redhat.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
- <1303328877.19336.28.camel@localhost.localdomain>
+	id S1757895Ab1EBKza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 06:55:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39121 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab1EBKz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 06:55:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't update tsk->rt.nr_cpus_allowed
+Cc: kosaki.motohiro@jp.fujitsu.com, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+In-Reply-To: <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+References: <20110428161149.GA15658@redhat.com> <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+Message-Id: <20110502195657.2D68.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303328877.19336.28.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon,  2 May 2011 19:55:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 12:47:57PM -0700, Shirley Ma wrote:
-> This patch adds userspace buffers support in skb. A new struct
-> skb_ubuf_info is needed to maintain the userspace buffers argument
-> and index, a callback is used to notify userspace to release the
-> buffers once lower device has done DMA (Last reference to that skb
-> has gone).
-> 
-> Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> ---
-> 
->  include/linux/skbuff.h |   14 ++++++++++++++
->  net/core/skbuff.c      |   15 ++++++++++++++-
->  2 files changed, 28 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index d0ae90a..47a187b 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -189,6 +189,16 @@ enum {
->  	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
->  };
->  
-> +/* The callback notifies userspace to release buffers when skb DMA is done in
-> + * lower device, the desc is used to track userspace buffer index.
-> + */
-> +struct skb_ubuf_info {
-> +	/* support buffers allocation from userspace */
-> +	void		(*callback)(struct sk_buff *);
-> +	void		*arg;
-> +	size_t		desc;
-> +};
-> +
->  /* This data is invariant across clones and lives at
->   * the end of the header data, ie. at skb->end.
->   */
-> @@ -211,6 +221,10 @@ struct skb_shared_info {
->  	/* Intermediate layers must ensure that destructor_arg
->  	 * remains valid until skb destructor */
->  	void *		destructor_arg;
-> +
-> +	/* DMA mapping from/to userspace buffers */
-> +	struct skb_ubuf_info ubuf;
-> +
->  	/* must be last field, see pskb_expand_head() */
->  	skb_frag_t	frags[MAX_SKB_FRAGS];
->  };
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 7ebeed0..822c07d 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
->  	shinfo = skb_shinfo(skb);
->  	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
->  	atomic_set(&shinfo->dataref, 1);
-> +	shinfo->ubuf.callback = NULL;
-> +	shinfo->ubuf.arg = NULL;
->  	kmemcheck_annotate_variable(shinfo->destructor_arg);
->  
->  	if (fclone) {
-> @@ -327,7 +329,15 @@ static void skb_release_data(struct sk_buff *skb)
->  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
->  				put_page(skb_shinfo(skb)->frags[i].page);
->  		}
-> -
-> +		/*
-> +		 * if skb buf is from userspace, we need to notify the caller
-> +		 * the lower device DMA has done;
-> +		 */
-> +		if (skb_shinfo(skb)->ubuf.callback) {
-> +			skb_shinfo(skb)->ubuf.callback(skb);
-> +			skb_shinfo(skb)->ubuf.callback = NULL;
-> +			skb_shinfo(skb)->ubuf.arg = NULL;
-> +		}
->  		if (skb_has_frag_list(skb))
->  			skb_drop_fraglist(skb);
->  
+The rule is, we have to update tsk->rt.nr_cpus_allowed too if we change
+tsk->cpus_allowed. Otherwise RT scheduler may confuse.
 
-We probably don't need to touch arg if callback is NULL?
+This patch fixes it.
 
-> @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
->  	if (irqs_disabled())
->  		return false;
->  
-> +	if (shinfo->ubuf.callback)
-> +		return false;
-> +
->  	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
->  		return false;
+btw, system_state checking is very important. current boot sequence is (1) smp_init
+(ie secondary cpus up and created cpu bound kthreads). (2) sched_init_smp().
+Then following bad scenario can be happen,
 
-This is not the only API unsupported for these skbs, is it?
-Probably need to check and fail there as well.
+(1) cpuup call notifier(CPU_UP_PREPARE)
+(2) A cpu notifier consumer create FIFO kthread
+(3) It call kthread_bind()
+   ... but, now secondary cpu haven't ONLINE
+(3) schedule() makes fallback and cpuset_cpus_allowed_fallback
+    change task->cpus_allowed
+(4) find_lowest_rq() touch local_cpu_mask if task->rt.nr_cpus_allowed != 1,
+    but it haven't been initialized.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+RCU folks plan to introduce such FIFO kthread and our testing hitted the
+above issue. Then this patch also protect it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/cpuset.h |    1 +
+ kernel/cpuset.c        |    1 +
+ kernel/sched.c         |    4 ++++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index f20eb8f..42dcbdc 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -147,6 +147,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+ static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
+ {
+ 	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
++	p->rt.nr_cpus_allowed = cpumask_weight(&p->cpus_allowed);
+ 	return cpumask_any(cpu_active_mask);
+ }
+ 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 1ceeb04..6e5bbe8 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2220,6 +2220,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ 		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
+ 		cpu = cpumask_any(cpu_active_mask);
+ 	}
++	tsk->rt.nr_cpus_allowed = cpumask_weight(&tsk->cpus_allowed);
+ 
+ 	return cpu;
+ }
+diff --git a/kernel/sched.c b/kernel/sched.c
+index fd4625f..bfcd219 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2352,6 +2352,10 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+ 	if (dest_cpu < nr_cpu_ids)
+ 		return dest_cpu;
+ 
++	/* Don't worry. It's temporary mismatch. */
++	if (system_state < SYSTEM_RUNNING)
++		return cpu;
++
+ 	/* No more Mr. Nice Guy. */
+ 	dest_cpu = cpuset_cpus_allowed_fallback(p);
+ 	/*
+-- 
+1.7.3.1
+
+
+
