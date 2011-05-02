@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab1EBVGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:06:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:60040 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754587Ab1EBVGT (ORCPT
+	id S1757017Ab1EBVHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:07:34 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:60178 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab1EBVHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:06:19 -0400
-Date: Mon, 2 May 2011 17:06:19 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Adi J. Sieker" <adi@core.adi.io>
-cc: Oliver Neukum <oliver@neukum.org>, USB list <linux-usb@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-In-Reply-To: <4DBF16D8.8040209@sieker.io>
-Message-ID: <Pine.LNX.4.44L0.1105021657440.2106-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 2 May 2011 17:07:32 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic Systems TS-5xxx detection
+In-reply-to: <20110429233230.GB24864@kroah.com>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com> <20110429233230.GB24864@kroah.com>
+Date: Mon, 02 May 2011 17:07:29 -0400
+Message-Id: <1304368433-sup-4264@sfl>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011, Adi J. Sieker wrote:
+Hi,
 
-> Attached is the usbmon trace when I plug the keyboard in.
+Thanks you all for your comments, I'll consider them carefully.
+
+Excerpts from Greg KH's message of 2011-04-29 19:32:30 -0400:
+> On Fri, Apr 29, 2011 at 06:21:48PM -0400, Vivien Didelot wrote:
+> > +/proc filesystem
+> > +----------------
+> > +
+> > +Information about the TS board is available through the /proc/ts-sbcinfo.
 > 
-> lsusb shows the keyboard as:
-> Bus 002 Device 008: ID 060b:0230 Solid Year
+> Really?  Why?
 > 
-> Relevant section from /sys/kernel/debug/usb/devices
-> T:  Bus=02 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  8 Spd=1.5 MxCh= 0
-> D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-> P:  Vendor=060b ProdID=0230 Rev= 2.20
-> S:  Manufacturer=KB
-> S:  Product=USB Keyboard
-> C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=100mA
-> I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
-> E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
-> I:* If#= 1 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
-> E:  Ad=82(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
+> As you now have added a new kernel/user ABI, it must be documented in
+> Documentation/ABI/
+> 
+> Please include that in your next patch.
+> 
+> But first off, why a new proc file?  What is it used for?
 
-Interestingly, the usbmon trace shows that the interrupt endpoint for
-interface 1 isn't being used by usbhid.  I don't know why, but it
-shouldn't make much difference for your purposes since that interface
-appears to be associated with the gaming interface.  But maybe I'm
-wrong and it is important somehow...
+I think it could be useful for the user to know what option is available
+or not on the board.
 
-The other noticeable thing is that the keyboard didn't accept the 
-Set-Idle request for interface 1.
+> 
+> > +static int ts_sbcinfo_init_buffer(char *buf, struct ts5xxx_sbcinfo *sbcinfo)
+> > +{
+> > +    char *pos = buf;
+> > +
+> > +    pos += ts_addbuf(pos, "Board ID", "TS-%d", sbcinfo->board_id);
+> > +    pos += ts_addbuf(pos, "RS485", "%s", sbcinfo->rs485 ? "yes" : "no");
+> > +    pos += ts_addbuf(pos, "AnalogToDigital", "%s",
+> > +             sbcinfo->adc ? "yes" : "no");
+> > +    pos += ts_addbuf(pos, "Auto485", "%s", sbcinfo->auto485 ? "yes" : "no");
+> > +    pos += ts_addbuf(pos, "SRAM", "%s", sbcinfo->sram ? "yes" : "no");
+> > +    pos += ts_addbuf(pos, "External Reset", "%s",
+> > +             sbcinfo->external_reset ? "yes" : "no");
+> 
+> Most of these look like they should be simple "one value per file" sysfs
+> files for your system.  That would make things much easier on your
+> userspace tools to handle parsing them properly, right?
+> 
+> Why not do that instead?
 
-You said before that the keyboard worked okay when driven by a guest 
-Windows OS, right?  Can you collect an equivalent usbmon trace for 
-that?  Comparing the two traces may be instructive.
+I had a look at other drivers, and /sys/devices/platform/ts/ seems to be
+a good place to hold those entries (one per options as you suggested).
+Do you agree with that?
 
-Alan Stern
+By the way, as they would be sysfs attributes, is Documentation/ABI the
+best place to add the documentation file?
 
+> 
+> thanks,
+> 
+> greg k-h
+
+Regards,
+Vivien.
