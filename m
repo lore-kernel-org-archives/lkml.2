@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab1EBRfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:35:52 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45616 "EHLO
+	id S1755530Ab1EBRfb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 13:35:31 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45583 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab1EBRfs (ORCPT
+	with ESMTP id S1751630Ab1EBRf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:35:48 -0400
+	Mon, 2 May 2011 13:35:28 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
@@ -17,9 +17,9 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
         EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 2/4] perf: Add persistent event facilities
-Date: Mon,  2 May 2011 19:34:49 +0200
-Message-Id: <1304357691-14354-3-git-send-email-bp@amd64.org>
+Subject: [PATCH 3/4] x86, mce: Add persistent MCE event
+Date: Mon,  2 May 2011 19:34:50 +0200
+Message-Id: <1304357691-14354-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1304357691-14354-1-git-send-email-bp@amd64.org>
 References: <1304357691-14354-1-git-send-email-bp@amd64.org>
@@ -29,231 +29,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add a barebones implementation for registering persistent events with
-perf. For that, we don't destroy the buffers when they're unmapped;
-also, we map them read-only so that multiple agents can access them.
+Add the necessary glue to enable the mce_record tracepoint on boot,
+turning it into a persistent event. This exports the MCE buffer through
+a debugfs per-CPU file which a userspace daemon can read and then
+process the received error data further.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- include/linux/perf_event.h |   22 +++++++++++++++-
- kernel/events/Makefile     |    2 +-
- kernel/events/core.c       |   29 ++++++++++++++++++---
- kernel/events/persistent.c |   59 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 105 insertions(+), 7 deletions(-)
- create mode 100644 kernel/events/persistent.c
+ arch/x86/include/asm/mce.h       |    8 +++
+ arch/x86/kernel/cpu/mcheck/mce.c |   89 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 97 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 9eec53d..18f2a68 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -216,8 +216,9 @@ struct perf_event_attr {
- 				precise_ip     :  2, /* skid constraint       */
- 				mmap_data      :  1, /* non-exec mmap data    */
- 				sample_id_all  :  1, /* sample_type all events */
-+				persistent     :  1, /* event always on */
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..40cc9bc 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -115,6 +115,14 @@ struct mce_log {
  
--				__reserved_1   : 45;
-+				__reserved_1   : 44;
+ #ifdef __KERNEL__
  
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-@@ -1158,6 +1159,15 @@ extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern void perf_event_task_tick(void);
-+extern struct perf_buffer *
-+perf_buffer_alloc(int nr_pages, long watermark, int cpu, int flags);
-+extern void perf_buffer_put(struct perf_buffer *buffer);
-+extern struct perf_event *
-+perf_enable_persistent_event(struct perf_event_attr *attr,
-+			     int cpu, unsigned bufsz);
-+extern void perf_disable_persistent_event(struct perf_event *event, int cpu);
-+extern int perf_persistent_open(struct inode *inode, struct file *file);
-+extern const struct file_operations perf_pers_fops;
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *task)			{ }
-@@ -1192,6 +1202,16 @@ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
- static inline void perf_event_task_tick(void)				{ }
-+static inline struct perf_buffer *
-+perf_buffer_alloc(int nr_pages, long watermark, int cpu, int flags)	{ return NULL; }
-+static inline void perf_buffer_put(struct perf_buffer *buffer)		{}
-+static inline struct perf_event *
-+perf_enable_persistent_event(struct perf_event_attr *attr, int cpu,
-+			     unsigned bufsz)				{ return -EINVAL; }
-+static inline void
-+perf_disable_persistent_event(struct perf_event *event, int cpu)	{}
-+static inline int
-+perf_persistent_open(struct inode *inode, struct file *file)		{ return -1; }
- #endif
- 
- #define perf_output_put(handle, x) \
-diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-index 26c00e4..e2d4d8e 100644
---- a/kernel/events/Makefile
-+++ b/kernel/events/Makefile
-@@ -2,4 +2,4 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_core.o = -pg
- endif
- 
--obj-y += core.o
-+obj-y += core.o persistent.o
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 440bc48..2d8b1af 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2898,7 +2898,7 @@ static void free_event_rcu(struct rcu_head *head)
- 	kfree(event);
- }
- 
--static void perf_buffer_put(struct perf_buffer *buffer);
-+void perf_buffer_put(struct perf_buffer *buffer);
- 
- static void free_event(struct perf_event *event)
- {
-@@ -3458,7 +3458,7 @@ static void *perf_mmap_alloc_page(int cpu)
- 	return page_address(page);
- }
- 
--static struct perf_buffer *
-+struct perf_buffer *
- perf_buffer_alloc(int nr_pages, long watermark, int cpu, int flags)
- {
- 	struct perf_buffer *buffer;
-@@ -3575,7 +3575,7 @@ static void perf_buffer_free(struct perf_buffer *buffer)
- 	schedule_work(&buffer->work);
- }
- 
--static struct perf_buffer *
-+struct perf_buffer *
- perf_buffer_alloc(int nr_pages, long watermark, int cpu, int flags)
- {
- 	struct perf_buffer *buffer;
-@@ -3676,7 +3676,7 @@ static struct perf_buffer *perf_buffer_get(struct perf_event *event)
- 	return buffer;
- }
- 
--static void perf_buffer_put(struct perf_buffer *buffer)
-+void perf_buffer_put(struct perf_buffer *buffer)
- {
- 	if (!atomic_dec_and_test(&buffer->refcount))
- 		return;
-@@ -3695,6 +3695,11 @@ static void perf_mmap_close(struct vm_area_struct *vma)
- {
- 	struct perf_event *event = vma->vm_file->private_data;
- 
-+	if (event->attr.persistent) {
-+		atomic_dec(&event->mmap_count);
-+		return;
-+	}
-+
- 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
- 		unsigned long size = perf_data_size(event->buffer);
- 		struct user_struct *user = event->mmap_user;
-@@ -3737,7 +3742,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	if (event->cpu == -1 && event->attr.inherit)
- 		return -EINVAL;
- 
--	if (!(vma->vm_flags & VM_SHARED))
-+	if (!(vma->vm_flags & VM_SHARED) && !event->attr.persistent)
- 		return -EINVAL;
- 
- 	vma_size = vma->vm_end - vma->vm_start;
-@@ -3846,6 +3851,16 @@ static const struct file_operations perf_fops = {
- 	.fasync			= perf_fasync,
- };
- 
-+const struct file_operations perf_pers_fops = {
-+	.llseek		= no_llseek,
-+	.open		= perf_persistent_open,
-+	.poll		= perf_poll,
-+	.unlocked_ioctl	= perf_ioctl,
-+	.compat_ioctl	= perf_ioctl,
-+	.mmap		= perf_mmap,
-+	.fasync		= perf_fasync,
++/*
++ * a per-CPU descriptor of the persistent MCE tracepoint
++ */
++struct mce_tp_desc {
++	struct perf_event *event;
++	struct dentry *debugfs_entry;
 +};
 +
+ extern struct atomic_notifier_head x86_mce_decoder_chain;
+ 
+ #include <linux/percpu.h>
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..9589ebf 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -96,6 +96,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
+ static DEFINE_PER_CPU(struct mce, mces_seen);
++static DEFINE_PER_CPU(struct mce_tp_desc, mce_event);
+ static int			cpu_missing;
+ 
  /*
-  * Perf event wakeup
-  *
-@@ -6756,6 +6771,10 @@ __perf_event_exit_task(struct perf_event *child_event,
- 		raw_spin_unlock_irq(&child_ctx->lock);
+@@ -2055,6 +2056,91 @@ static void __cpuinit mce_reenable_cpu(void *h)
  	}
+ }
  
-+	/* do not remove persistent events on task exit */
-+	if (child_event->attr.persistent)
-+		return;
++static struct perf_event_attr pattr = {
++	.type		= PERF_TYPE_TRACEPOINT,
++	.size		= sizeof(pattr),
++	.sample_type	= PERF_SAMPLE_RAW,
++	.persistent	= 1,
++};
 +
- 	perf_remove_from_context(child_event);
- 
- 	/*
-diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-new file mode 100644
-index 0000000..e52752a
---- /dev/null
-+++ b/kernel/events/persistent.c
-@@ -0,0 +1,59 @@
-+#include <linux/perf_event.h>
-+
-+/*
-+ * Create and enable the perf event described by @attr.
-+ *
-+ * Returns the @event pointer which receives the allocated event from
-+ * perf on success. Make sure to check return code before touching @event
-+ * any further.
-+ *
-+ * @attr: perf attr template
-+ * @cpu: on which cpu
-+ * @nr_pages: perf buffer size in pages
-+ *
-+ */
-+struct perf_event *perf_enable_persistent_event(struct perf_event_attr *attr,
-+						int cpu, unsigned nr_pages)
++static struct dentry *mce_add_event_debugfs(struct perf_event *event, int cpu)
 +{
-+	struct perf_buffer *buffer;
-+	struct perf_event *event;
++	char buf[14];
 +
-+	event = perf_event_create_kernel_counter(attr, cpu, NULL, NULL);
-+	if (IS_ERR(event))
-+		return event;
++	sprintf(buf, "mce_record%d", cpu);
 +
-+	buffer = perf_buffer_alloc(nr_pages, 0, cpu, PERF_BUFFER_WRITABLE);
-+	if (IS_ERR(buffer))
-+		goto err;
-+
-+	rcu_assign_pointer(event->buffer, buffer);
-+	perf_event_enable(event);
-+
-+	return event;
-+
-+err:
-+	perf_event_release_kernel(event);
-+	return ERR_PTR(-EINVAL);
++	return debugfs_create_file(buf, S_IRUGO | S_IWUSR,
++				   mce_get_debugfs_dir(),
++				   event, &perf_pers_fops);
 +}
 +
-+void perf_disable_persistent_event(struct perf_event *event, int cpu)
++#define MCE_BUF_PAGES	4
++
++static int mce_enable_perf_event_on_cpu(int cpu)
 +{
-+	if (!event)
-+		return;
++	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
++	int err = -EINVAL;
 +
-+	perf_event_disable(event);
-+
-+	if (event->buffer) {
-+		perf_buffer_put(event->buffer);
-+		rcu_assign_pointer(event->buffer, NULL);
++	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
++	if (IS_ERR(d->event)) {
++		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
++		goto ret;
 +	}
 +
-+	perf_event_release_kernel(event);
-+}
-+
-+int perf_persistent_open(struct inode *inode, struct file *file)
-+{
-+	file->private_data = inode->i_private;
++	d->debugfs_entry = mce_add_event_debugfs(d->event, cpu);
++	if (!d->debugfs_entry) {
++		printk(KERN_ERR "MCE: Error adding event debugfs entry on cpu %d\n", cpu);
++		goto disable;
++	}
 +
 +	return 0;
++
++disable:
++	perf_disable_persistent_event(d->event, cpu);
++
++ret:
++	return err;
 +}
++
++static void mce_disable_perf_event_on_cpu(int cpu)
++{
++	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
++	debugfs_remove(d->debugfs_entry);
++	perf_disable_persistent_event(d->event, cpu);
++}
++
++static __init int mcheck_init_persistent_event(void)
++{
++	int cpu, err = 0;
++
++	get_online_cpus();
++
++	pattr.config = event_mce_record.event.type;
++	pattr.sample_period = 1;
++	pattr.wakeup_events = 1;
++
++	for_each_online_cpu(cpu)
++		if (mce_enable_perf_event_on_cpu(cpu))
++			goto err_unwind;
++
++	goto unlock;
++
++err_unwind:
++	err = -EINVAL;
++	for (--cpu; cpu >= 0; cpu--)
++		mce_disable_perf_event_on_cpu(cpu);
++
++unlock:
++	put_online_cpus();
++
++	return err;
++}
++
++/*
++ * This has to run after event_trace_init()
++ */
++device_initcall(mcheck_init_persistent_event);
++
+ /* Get notified when a cpu comes on/off. Be hotplug friendly. */
+ static int __cpuinit
+ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+@@ -2068,6 +2154,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		mce_create_device(cpu);
+ 		if (threshold_cpu_callback)
+ 			threshold_cpu_callback(action, cpu);
++		mce_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -2077,6 +2164,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
++		mce_disable_perf_event_on_cpu(cpu);
+ 		del_timer_sync(t);
+ 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+ 		break;
+@@ -2088,6 +2176,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			add_timer_on(t, cpu);
+ 		}
+ 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
++		mce_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_POST_DEAD:
+ 		/* intentionally ignoring frozen here */
 -- 
 1.7.4.rc2
 
