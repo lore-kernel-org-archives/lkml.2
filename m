@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab1EBVuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:50:18 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:33277 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756157Ab1EBVuR (ORCPT
+	id S1757633Ab1EBVvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:51:21 -0400
+Received: from mail-px0-f170.google.com ([209.85.212.170]:64127 "EHLO
+	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab1EBVvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:50:17 -0400
-Date: Mon, 2 May 2011 21:50:11 +0000 (UTC)
-From: johnlinn@comcast.net
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: nicolas pitre <nicolas.pitre@linaro.org>, linux@arm.linux.org.uk,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant likely <grant.likely@secretlab.ca>,
-        john linn <john.linn@xilinx.com>, linux-arm-kernel@lists.infradead.org
-Message-ID: <1319927287.2232106.1304373011082.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <90477150.2231869.1304372815517.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
+	Mon, 2 May 2011 17:51:20 -0400
+Date: Mon, 2 May 2011 15:51:18 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tony Lindgren <tony@atomide.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/8] arm/dt: probe for platforms via the device tree
+Message-ID: <20110502215118.GD10097@ponder.secretlab.ca>
+References: <20110429070135.12522.35745.stgit@ponder>
+ <20110429071548.12522.56929.stgit@ponder>
+ <20110502151542.GG2092@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [149.199.62.254]
-X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502151542.GG2092@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On Monday 02 May 2011 23:27:04 johnlinn@comcast.net wrote:
-> > Yes we could explain hard coded numbers.  Ideally GIC driver would
-> support
-> > device tree it seems like to me.
+On Mon, May 02, 2011 at 08:15:42AM -0700, Tony Lindgren wrote:
+> Also, not counting the separate DT append issues, I got things booting
+> with these patches (and the dts files) on omaps. So for patches 1 - 5,
+> and patch 8:
 > 
-> > 
-> > Seems like the GIC driver could remap it's own memory but maybe that
-> won't
-> > work across all platforms and then the platform would need to do
-> it.
-> 
-> Why not just add a stub in the xilinx platform for now that remaps
-> the
-> memory using ioremap and calls the regular GIC initialization?
+> Tested-by: Tony Lindgren <tony@atomide.com>
 
-Seems easy enough assuming we don't need the SCU early for the core count
-and can get that from the device tree.
+Seeing as Documentation isn't actually executable, I'll interpret that
+as an "Acked-by" for the 8th patch.  :-)
 
-Since the SCU and part of the GIC end up in the same 4K page they need to be
-together (unless I'm thinking about that wrong).
+g.
 
-SCU 0xF8000000
-GIC_CPU 0xF8000100
-GIC_DIS 0xF8001000
-
--- John
-
-> 
-> That function can then easily be moved to common code when another
-> platform uses it.
-> 
-> 	Arnd
