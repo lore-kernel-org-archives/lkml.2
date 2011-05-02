@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab1EBXqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:46:52 -0400
-Received: from lucidpixels.com ([75.144.35.66]:56473 "EHLO lucidpixels.com"
+	id S1757476Ab1EBXtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:49:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:1139 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab1EBXqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:46:50 -0400
-Date: Mon, 2 May 2011 19:46:49 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-cc: Roland Dreier <roland@kernel.org>, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
-In-Reply-To: <alpine.DEB.2.02.1104261923390.3894@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1105021944560.14515@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <alpine.DEB.2.02.1104251432560.23304@p34.internal.lan> <BANLkTimV4Nse58oQsWZWKzMbC7Ldm4mRLA@mail.gmail.com> <alpine.DEB.2.02.1104260619420.8361@p34.internal.lan> <alpine.DEB.2.02.1104261753210.3894@p34.internal.lan>
- <4DB74788.2000908@lwfinger.net> <alpine.DEB.2.02.1104261923390.3894@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752146Ab1EBXtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 19:49:23 -0400
+From: Joe Perches <joe@perches.com>
+To: Dan Williams <dcbw@redhat.com>, libertas-dev@lists.infradead.org
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] libertas: cleanup logging styles
+Date: Mon,  2 May 2011 16:49:13 -0700
+Message-Id: <cover.1304379925.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.5.rc3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joe Perches (2):
+  libertas: Convert lbs_pr_<level> to pr_<level>
+  libertas: Use netdev_<level> or dev_<level> where possible
 
+Compiled but otherwise untested.
 
-On Tue, 26 Apr 2011, Justin Piszcz wrote:
+ drivers/net/wireless/libertas/cfg.c     |   16 +++---
+ drivers/net/wireless/libertas/cmd.c     |   40 +++++++++------
+ drivers/net/wireless/libertas/cmdresp.c |   27 ++++++----
+ drivers/net/wireless/libertas/debugfs.c |    5 +-
+ drivers/net/wireless/libertas/defs.h    |    7 ---
+ drivers/net/wireless/libertas/if_cs.c   |   57 ++++++++++++---------
+ drivers/net/wireless/libertas/if_sdio.c |   37 +++++++-------
+ drivers/net/wireless/libertas/if_spi.c  |   83 +++++++++++++++++--------------
+ drivers/net/wireless/libertas/if_usb.c  |   44 +++++++++-------
+ drivers/net/wireless/libertas/main.c    |   42 +++++++++-------
+ drivers/net/wireless/libertas/mesh.c    |    8 ++-
+ drivers/net/wireless/libertas/rx.c      |    7 ++-
+ 12 files changed, 206 insertions(+), 167 deletions(-)
 
->
->
-> On Tue, 26 Apr 2011, Larry Finger wrote:
->
->>> 
->>> I am trying a different driver now: rt2870sta
->>> I've read a few reports this may be the 'proper' one to use.
->>> So far so good, no lag or anything and I did not have to set power off
->>> either.
->> 
->> Driver rtl2870sta is not the proper one to use. In fact, a patch to delete 
->> rt2860sta and rt2870sta from the kernel was queued yesterday, and they will 
->> be gone by the time 2.6.40 is released.
->> 
->> New firmware for rt2800usb was just accepted into the linux-firmware git 
->> tree. Please obtain a copy and try it.
->> 
->> Larry
->>
-
-Hi,
-
-Just an update, this driver has been solid so far:
-rt2870sta
-
-With the Media Link 150 USB stick, not a single crash yet--
-The rt2800usb driver is laggy and crashes the kernel (as of 2.6.38.x)--
-Is there a possiblity to get rtl2870sta into the mainline?
-It is the best wireless driver I've used for Linux with various usb wifi
-adapters--
-
-# uptime
-  19:44:28 up 4 days, 10:16,  2 users,  load average: 1.51, 1.56, 1.25
-
-Justin.
-
+-- 
+1.7.5.rc3.dirty
