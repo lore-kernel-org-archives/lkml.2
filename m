@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541Ab1EBXJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:09:40 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab1EBXJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:09:29 -0400
-X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
-Message-Id: <201105022254.p42MsQcn030354@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 2 May 2011 15:22:18 -0400
-Subject: [PATCH] arch/tile: disable SD_WAKE_AFFINE flag on CPU/NODE scheduling domain
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 02 May 2011 22:54:26.0221 (UTC) FILETIME=[E2E335D0:01CC091B]
+	id S1754215Ab1EBTXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:23:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58543 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883Ab1EBTW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:22:58 -0400
+Date: Mon, 2 May 2011 21:22:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Allow setting of number of raw devices as a module parameter
+Message-ID: <20110502192256.GL4556@quack.suse.cz>
+References: <1304029469-19672-1-git-send-email-jack@suse.cz>
+ <20110429162817.2eb26efb.akpm@linux-foundation.org>
+ <20110430112937.06024368@lxorguk.ukuu.org.uk>
+ <20110430153452.GA21439@suse.de>
+ <20110430164141.55d0ef0a@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430164141.55d0ef0a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows processes to spread more effectively to multiple cores
-(particularly important on 64-core chips!).
+On Sat 30-04-11 16:41:41, Alan Cox wrote:
+> > > A large vmalloc array is very antisocial on a 32bit x86 box. It looks
+> > > like almost all of it would become sane if there was an array of pointers
+> > > to raw devices and the devices were initially allocated on need (even if
+> > > for now only recovered on rmmod)
+> > 
+> > In practice, we've never seen a problem with this[1].  Machines that
+> > want thousands of raw devices have plenty of memory to handle this
+> > situation.
+> > 
+> > I doubt adding the complexity of dynamically allocating the devices
+> > as-needed is worth it for the very few systems that ever use this
+> > driver, compounded with the fact that we keep saying that this code
+> > isn't to be used by "normal" people anyway.
+> 
+> That's no excuse for sloppy code. Making it an array populated on demand
+> is an improvement for everyone, making it vmalloc hurts every access (in
+> TLB misses for one as well as vmalloc overhead).
+> 
+> I note two of us immediately made the same observation. Doing it
+> basically right (array of pointers) is easy. Doing the full works with a
+> hash for the lookups is a bit harder and that I would agree is overkill.
+  Alan, I might be missing something but is there a significant advantage
+in creating the array of pointers? Note that struct raw_device_data which
+is what the array is from is:
+struct raw_device_data {
+        struct block_device *binding;
+        int inuse;
+};
+So 16 bytes on 64-bit arch. You can make it 8 bytes by the
+array-of-pointers idea but people requesting this feature want to run with
+8192 or even 16384 raw devices in the system (yes, they might be insane).
+That gives you 16 to 32 pages for array of pointers which seems too much
+to me for kmalloc() anyway.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/include/asm/topology.h |   75 +++++++++++++++++++++++++++++---------
- 1 files changed, 57 insertions(+), 18 deletions(-)
+So if people don't like vmalloc() (which I can understand), then I see no
+other option than dynamically allocating struct raw_device_data.
 
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index 343172d..6fdd0c8 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -44,25 +44,64 @@ static inline const struct cpumask *cpumask_of_node(int node)
- /* For now, use numa node -1 for global allocation. */
- #define pcibus_to_node(bus)		((void)(bus), -1)
- 
-+/*
-+ * TILE architecture has many cores integrated in one processor, so we need
-+ * setup bigger balance_interval for both CPU/NODE scheduling domains to
-+ * reduce process scheduling costs.
-+ */
-+
-+/* sched_domains SD_CPU_INIT for TILE architecture */
-+#define SD_CPU_INIT (struct sched_domain) {				\
-+	.min_interval		= 4,					\
-+	.max_interval		= 128,					\
-+	.busy_factor		= 64,					\
-+	.imbalance_pct		= 125,					\
-+	.cache_nice_tries	= 1,					\
-+	.busy_idx		= 2,					\
-+	.idle_idx		= 1,					\
-+	.newidle_idx		= 0,					\
-+	.wake_idx		= 0,					\
-+	.forkexec_idx		= 0,					\
-+									\
-+	.flags			= 1*SD_LOAD_BALANCE			\
-+				| 1*SD_BALANCE_NEWIDLE			\
-+				| 1*SD_BALANCE_EXEC			\
-+				| 1*SD_BALANCE_FORK			\
-+				| 0*SD_BALANCE_WAKE			\
-+				| 0*SD_WAKE_AFFINE			\
-+				| 0*SD_PREFER_LOCAL			\
-+				| 0*SD_SHARE_CPUPOWER			\
-+				| 0*SD_SHARE_PKG_RESOURCES		\
-+				| 0*SD_SERIALIZE			\
-+				,					\
-+	.last_balance		= jiffies,				\
-+	.balance_interval	= 32,					\
-+}
-+
- /* sched_domains SD_NODE_INIT for TILE architecture */
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.min_interval		= 8,			\
--	.max_interval		= 32,			\
--	.busy_factor		= 32,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 1,			\
--	.busy_idx		= 3,			\
--	.idle_idx		= 1,			\
--	.newidle_idx		= 2,			\
--	.wake_idx		= 1,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_NEWIDLE	\
--				| SD_BALANCE_EXEC	\
--				| SD_BALANCE_FORK	\
--				| SD_WAKE_AFFINE	\
--				| SD_SERIALIZE,		\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
-+#define SD_NODE_INIT (struct sched_domain) {				\
-+	.min_interval		= 16,					\
-+	.max_interval		= 512,					\
-+	.busy_factor		= 32,					\
-+	.imbalance_pct		= 125,					\
-+	.cache_nice_tries	= 1,					\
-+	.busy_idx		= 3,					\
-+	.idle_idx		= 1,					\
-+	.newidle_idx		= 2,					\
-+	.wake_idx		= 1,					\
-+	.flags			= 1*SD_LOAD_BALANCE			\
-+				| 1*SD_BALANCE_NEWIDLE			\
-+				| 1*SD_BALANCE_EXEC			\
-+				| 1*SD_BALANCE_FORK			\
-+				| 0*SD_BALANCE_WAKE			\
-+				| 0*SD_WAKE_AFFINE			\
-+				| 0*SD_PREFER_LOCAL			\
-+				| 0*SD_SHARE_CPUPOWER			\
-+				| 0*SD_SHARE_PKG_RESOURCES		\
-+				| 1*SD_SERIALIZE			\
-+				,					\
-+	.last_balance		= jiffies,				\
-+	.balance_interval	= 128,					\
- }
- 
- /* By definition, we create nodes based on online memory. */
+								Honza
 -- 
-1.6.5.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
