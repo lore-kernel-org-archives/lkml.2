@@ -1,45 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab1EBUf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 16:35:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46348 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164Ab1EBUf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 16:35:57 -0400
-Message-ID: <4DBF15AE.6020201@suse.cz>
-Date: Mon, 02 May 2011 22:35:58 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: boris@alien8.de, Sam Ravnborg <sam@ravnborg.org>,
-        =?ISO-8859-1?Q?Am=E9?= =?ISO-8859-1?Q?rico_Wang?= 
-	<xiyou.wangcong@gmail.com>,
-        valdis.kletnieks@vt.edu, bp@alien8.de, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
-References: <71633.1304013549@localhost>	<1304083893-18849-1-git-send-email-mmarek@suse.cz>	<BANLkTikMf4x0e3UhabUH+c_xnWJMQ3rkvg@mail.gmail.com>	<20110502170736.GB18740@merkur.ravnborg.org>	<BANLkTi==Tx6sXcA2Bk6Cp7wc1DY-7c1V3g@mail.gmail.com>	<2b5d75ba05bd7889ac80514015e36ad2.squirrel@www.skyhub.de> <BANLkTikQ6b8BMYXZcFzmavx-geqzqVvrvA@mail.gmail.com>
-In-Reply-To: <BANLkTikQ6b8BMYXZcFzmavx-geqzqVvrvA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753976Ab1EBXLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:11:05 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306Ab1EBXJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 19:09:35 -0400
+X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
+Message-Id: <201105022254.p42MsRn7030360@farm-0023.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 2 May 2011 16:36:48 -0400
+Subject: [PATCH] arch/tile: clarify flush_buffer()/finv_buffer() function names
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 02 May 2011 22:54:27.0565 (UTC) FILETIME=[E3B049D0:01CC091B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2.5.2011 20:45, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Mon, May 2, 2011 at 2:03 PM,  <boris@alien8.de> wrote:
->> This is exactly why we're trying to get a feeling of this by _running_
->> it and _then_ _bitching_ about it.
->>
-> This is just what I did, might you consider it bullshit or not. I
-> really do _dislike_ Michal's interface. I proposed a solution, Americo
-> did too. I guess that unless a patch is submitted, this will go
-> nowhere.
+They are only applicable for locally-homecached memory ranges, so
+change their names to {flush,finv}_buffer_local().  Change inv_buffer()
+to just do an mf instead of any kind of fancier barrier, since you're
+obviously not going to be waiting for anything once the local homecache
+is invalidated.
 
-Yes, feel free to submit a patch that does things better. Nothing is set
-in stone yet, the code isn't even merged into Linus' tree, let alone
-part of some official release.
+Fix tilepro.c network driver not to bother calling finv_buffer when
+stopping the EPP, but just mf after memset to ensure that it will not
+see any packet data after we finish stopping; use finv_buffer_remote()
+when doing exit-time cleanup.
 
-Michal
+This also fixes a (not very interesting) generic Linux build failure
+where drivers/scsi/st.c declares its own flush_buffer().
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/asm/cacheflush.h |   18 ++++++++++++------
+ drivers/net/tile/tilepro.c         |    8 +++-----
+ 2 files changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/arch/tile/include/asm/cacheflush.h b/arch/tile/include/asm/cacheflush.h
+index 12fb0fb..e925f4b 100644
+--- a/arch/tile/include/asm/cacheflush.h
++++ b/arch/tile/include/asm/cacheflush.h
+@@ -116,22 +116,28 @@ static inline void __finv_buffer(void *buffer, size_t size)
+ }
+ 
+ 
+-/* Invalidate a VA range, then memory fence. */
++/* Invalidate a VA range and wait for it to be complete. */
+ static inline void inv_buffer(void *buffer, size_t size)
+ {
+ 	__inv_buffer(buffer, size);
+-	mb_incoherent();
++	mb();
+ }
+ 
+-/* Flush a VA range, then memory fence. */
+-static inline void flush_buffer(void *buffer, size_t size)
++/*
++ * Flush a locally-homecached VA range and wait for the evicted
++ * cachelines to hit memory.
++ */
++static inline void flush_buffer_local(void *buffer, size_t size)
+ {
+ 	__flush_buffer(buffer, size);
+ 	mb_incoherent();
+ }
+ 
+-/* Flush & invalidate a VA range, then memory fence. */
+-static inline void finv_buffer(void *buffer, size_t size)
++/*
++ * Flush and invalidate a locally-homecached VA range and wait for the
++ * evicted cachelines to hit memory.
++ */
++static inline void finv_buffer_local(void *buffer, size_t size)
+ {
+ 	__finv_buffer(buffer, size);
+ 	mb_incoherent();
+diff --git a/drivers/net/tile/tilepro.c b/drivers/net/tile/tilepro.c
+index 0825db6..314f7e7 100644
+--- a/drivers/net/tile/tilepro.c
++++ b/drivers/net/tile/tilepro.c
+@@ -1658,11 +1658,9 @@ static int tile_net_stop(struct net_device *dev)
+ 	while (tile_net_lepp_free_comps(dev, true))
+ 		/* loop */;
+ 
+-	/* Wipe the EPP queue. */
++	/* Wipe the EPP queue, and wait till the stores hit the EPP. */
+ 	memset(priv->eq, 0, sizeof(lepp_queue_t));
+-
+-	/* Evict the EPP queue. */
+-	finv_buffer(priv->eq, EQ_SIZE);
++	mb();
+ 
+ 	return 0;
+ }
+@@ -2398,7 +2396,7 @@ static void tile_net_cleanup(void)
+ 			struct net_device *dev = tile_net_devs[i];
+ 			struct tile_net_priv *priv = netdev_priv(dev);
+ 			unregister_netdev(dev);
+-			finv_buffer(priv->eq, EQ_SIZE);
++			finv_buffer_remote(priv->eq, EQ_SIZE, 0);
+ 			__free_pages(priv->eq_pages, EQ_ORDER);
+ 			free_netdev(dev);
+ 		}
+-- 
+1.6.5.2
+
