@@ -1,63 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab1EBJ0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 05:26:23 -0400
-Received: from trent.utfs.org ([194.246.123.103]:40257 "EHLO trent.utfs.org"
+	id S1757300Ab1EBJ1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 05:27:44 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:60291 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab1EBJ0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 05:26:20 -0400
-Date: Mon, 2 May 2011 02:26:17 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        minchan.kim@gmail.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110501080149.GD13542@dastard>
-Message-ID: <alpine.DEB.2.01.1105020210160.18728@trent.utfs.org>
-References: <alpine.DEB.2.01.1104242245090.18728@trent.utfs.org> <alpine.DEB.2.01.1104250015480.18728@trent.utfs.org> <20110427022655.GE12436@dastard> <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard>
- <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org> <20110428233751.GR12436@dastard> <alpine.DEB.2.01.1104291250480.18728@trent.utfs.org> <20110429201701.GA13166@x4.trippels.de> <alpine.DEB.2.01.1104291710340.18728@trent.utfs.org>
- <20110501080149.GD13542@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754816Ab1EBJ1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 05:27:43 -0400
+Date: Mon, 2 May 2011 10:27:34 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: eric.y.miao@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
+Message-ID: <20110502092734.GV15795@trinity.fluff.org>
+References: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 May 2011 at 18:01, Dave Chinner wrote:
-> I really don't know why the xfs inode cache is not being trimmed. I
-> really, really need to know if the XFS inode cache shrinker is
-> getting blocked or not running - do you have those sysrq-w traces
-> when near OOM I asked for a while back?
+On Thu, Apr 28, 2011 at 11:15:44PM +0800, Haojian Zhuang wrote:
+> Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+> cores are sharing one pair of I2C pins.
+> 
+> In order to keep I2C transaction operated with atomic, hardware lock
+> (RIPC) is required. Because of this, bus lock in AP side can't afford
+> this requirement. Now hardware lock is appended.
+> 
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Jean Delvare <khali@linux-fr.org>
 
-Here's another attempt at getting those:
+Right, this looks like a reasonable explanation of what is going on here
+and if Jean is happy with the core changes I'll look at where the driver
+change can go.
 
-  http://nerdbynature.de/bits/2.6.39-rc4/oom/
-  * messages-11.txt.gz & slabinfo-11.txt.bz2
-    - oom-killer at 00:05:04
-    - last sysrq-w to succeed at 00:05:03
+> ---
+>  drivers/i2c/i2c-core.c |   22 ++++++++++++++++++----
+>  include/linux/i2c.h    |    3 +++
+>  2 files changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 045ba6e..132d46c 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -448,8 +448,11 @@ void i2c_lock_adapter(struct i2c_adapter *adapter)
+>  
+>  	if (parent)
+>  		i2c_lock_adapter(parent);
+> -	else
+> +	else {
+>  		rt_mutex_lock(&adapter->bus_lock);
+> +		if (adapter->hardware_lock)
+> +			adapter->hardware_lock(adapter);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>  
+> @@ -460,11 +463,19 @@ EXPORT_SYMBOL_GPL(i2c_lock_adapter);
+>  static int i2c_trylock_adapter(struct i2c_adapter *adapter)
+>  {
+>  	struct i2c_adapter *parent = i2c_parent_is_i2c_adapter(adapter);
+> +	int ret = 0;
+>  
+>  	if (parent)
+>  		return i2c_trylock_adapter(parent);
+> -	else
+> -		return rt_mutex_trylock(&adapter->bus_lock);
+> +	else {
+> +		ret = rt_mutex_trylock(&adapter->bus_lock);
+> +		if (ret && adapter->hardware_trylock) {
+> +			ret = adapter->hardware_trylock(adapter);
+> +			if (!ret)
+> +				i2c_unlock_adapter(adapter);
+> +		}
+> +		return ret;
+> +	}
+>  }
+>  
+>  /**
+> @@ -477,8 +488,11 @@ void i2c_unlock_adapter(struct i2c_adapter *adapter)
+>  
+>  	if (parent)
+>  		i2c_unlock_adapter(parent);
+> -	else
+> +	else {
+> +		if (adapter->hardware_unlock)
+> +			adapter->hardware_unlock(adapter);
+>  		rt_mutex_unlock(&adapter->bus_lock);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(i2c_unlock_adapter);
+>  
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 06a8d9c..f4ef5b0 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -361,6 +361,9 @@ struct i2c_adapter {
+>  
+>  	/* data fields that are valid for all devices	*/
+>  	struct rt_mutex bus_lock;
+> +	void (*hardware_lock)(struct i2c_adapter *);
+> +	void (*hardware_unlock)(struct i2c_adapter *);
+> +	int (*hardware_trylock)(struct i2c_adapter *);
+>  
+>  	int timeout;			/* in jiffies */
+>  	int retries;
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-  * messages-12.txt.gz & slabinfo-12.txt.bz2, along
-    with meminfo-post-oom-12.txt & sysrq-w_post-oom-12.jpg could
-    be more interesting:
-    - last sysrq-w to succeed at 01:27:08
-    - oom-killer at 01:27:11
-
-   ...but after the OOM-killer was killing quite a few processes, MemFree
-   showed 511236 kB free memory, yet ssh logins were still being killed.
-   Finally I got a root shell on the box, issued sysrq-w again and even
-   executed /bin/sync, which came back. But looking at the logs now 
-   nothing went to the disk (/var/log resides on / which is a ext4 fs).
-   See sysrq-w_post-oom-12.jpg for a sysrq-w I took 2381s after boot time,
-   or 01:32 - syslog stopped on 01:27.
-
-I shall try again with netconsole loggin or something...
-
-HTH & thanks for looking into this,
-Christian.
 -- 
-BOFH excuse #176:
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
 
-vapors from evaporating sticky-note adhesives
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+
