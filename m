@@ -1,73 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab1EBKSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 06:18:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46153 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756906Ab1EBKSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 06:18:38 -0400
-Date: Mon, 2 May 2011 12:18:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [GIT PULL tip:x86/mm] Unify 32 and 64bit NUMA init paths
-Message-ID: <20110502101828.GB27072@elte.hu>
-References: <20110502091334.GB22117@htj.dyndns.org>
+	id S1757545Ab1EBKWe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 06:22:34 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:43767 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab1EBKWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 06:22:33 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFHiy0KFkQ=
+X-RZG-CLASS-ID: mo00
+Date: Mon, 2 May 2011 12:22:30 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: dynamic oldmem in kdump kernel
+Message-ID: <20110502102230.GA9497@aepfle.de>
+References: <20110407095646.GA30788@aepfle.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110502091334.GB22117@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110407095646.GA30788@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 07, Olaf Hering wrote:
 
-* Tejun Heo <tj@kernel.org> wrote:
+> Recently kdump for pv-on-hvm Xen guests was implemented by me.
+> 
+> One issue remains:
+> The xen_balloon driver in the guest frees guest pages and gives them
+> back to the hypervisor. These pages are marked as mmio in the
+> hypervisor. During a read of such a page via the /proc/vmcore interface
+> the hypervisor calls the qemu-dm process. qemu-dm tries to map the page,
+> this attempt fails because the page is not backed by ram and 0xff is
+> returned. All this generates high load in dom0 because the reads come
+> as 8byte requests.
+> 
+> There seems to be no way to make the crash kernel aware of the state of
+> individual pages in the crashed kernel, it is not aware of memory
+> ballooning. And doing that from within the "kernel to crash" seems error
+> prone. Since over time the fragmentation will increase, it would be best
+> if the crash kernel itself queries the state of oldmem pages. 
 
-> Hello, Ingo.
-> 
-> Please pull from the following branch to receive unification of 32 and
-> 64bit NUMA init paths.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
->  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-> 
-> Other than addition of two patches from Yinghai and rebasing on top of
-> x86/urgent, nothing has changed from the initial posting[1].
-> 
-> Please note that the tree is on top of
-> 
->   x86/mm	c7a7b814c9dca9ee01b38e63b4a46de87156d3b6
-> + x86/numa	993ba1585cbb03fab012e41d1a5d24330a283b31
-> + x86/urgent	2be19102b71c1a45d37fec50303791daa1a06869
-> 
-> x86/urgent was needed for the following two NUMA fix commits.
-> 
->  2be19102b7 "x86, NUMA: Fix empty memblk detection in numa_cleanup_meminfo()"
->  765af22da8 "x86-32, NUMA: Fix ACPI NUMA init broken by recent x86-64 change"
-> 
-> I can regenerate tree such that it's x86/mm + x86/numa + cherry pick
-> of the above two patches.  If that's preferred, please let me know.
 
-Yeah, it's fine to me if you do merges, but could you please do a x86/mm tree 
-where all your merge commit messages are amended with a 'Merge reason' 
-explanation?
+Here is a version that works for me.
 
-See commit a4c98f8bbeafee12c979c90743f6fda94f7515c7 for an example of how Merge 
-reason lines look like.
+A hook is called for each pfn. If the hook returns 0 the pfn is not ram,
+and the range is cleared, for sparse vmcore files.
+Otherwise the pfn is handled as ram. In the worst case each read attempt
+will be handled by qemu-dm process which causes just some load in dom0.
 
-This is what we do for all merge commits in the -tip tree - that way it's clear 
-in retrospect why a particular merge was done.
 
-Thanks,
+This patch still lacks locking.
+How can I make sure unregister_oldmem_pfn_is_ram() is not called while
+the loop in read_from_oldmem() is still active?
+Is there an example of similar code already in the kernel?
 
-	Ingo
+Olaf
+
+---
+ fs/proc/vmcore.c           |   29 ++++++++++++++++++++++++++---
+ include/linux/crash_dump.h |    5 +++++
+ 2 files changed, 31 insertions(+), 3 deletions(-)
+
+Index: linux-2.6.39-rc5/fs/proc/vmcore.c
+===================================================================
+--- linux-2.6.39-rc5.orig/fs/proc/vmcore.c
++++ linux-2.6.39-rc5/fs/proc/vmcore.c
+@@ -35,6 +35,22 @@ static u64 vmcore_size;
+ 
+ static struct proc_dir_entry *proc_vmcore = NULL;
+ 
++/* returns > 0 for RAM pages, 0 for non-RAM pages, < 0 on error */
++static int (*oldmem_pfn_is_ram)(unsigned long pfn);
++
++void register_oldmem_pfn_is_ram(int (*fn)(unsigned long))
++{
++	oldmem_pfn_is_ram = fn;
++}
++
++void unregister_oldmem_pfn_is_ram(void)
++{
++	oldmem_pfn_is_ram = NULL;
++}
++
++EXPORT_SYMBOL_GPL(register_oldmem_pfn_is_ram);
++EXPORT_SYMBOL_GPL(unregister_oldmem_pfn_is_ram);
++
+ /* Reads a page from the oldmem device from given offset. */
+ static ssize_t read_from_oldmem(char *buf, size_t count,
+ 				u64 *ppos, int userbuf)
+@@ -42,6 +58,7 @@ static ssize_t read_from_oldmem(char *bu
+ 	unsigned long pfn, offset;
+ 	size_t nr_bytes;
+ 	ssize_t read = 0, tmp;
++	int (*fn)(unsigned long);
+ 
+ 	if (!count)
+ 		return 0;
+@@ -55,9 +72,15 @@ static ssize_t read_from_oldmem(char *bu
+ 		else
+ 			nr_bytes = count;
+ 
+-		tmp = copy_oldmem_page(pfn, buf, nr_bytes, offset, userbuf);
+-		if (tmp < 0)
+-			return tmp;
++		fn = oldmem_pfn_is_ram;
++		/* if pfn is not ram, return zeros for spares dump files */
++		if (fn && fn(pfn) == 0)
++			memset(buf, 0, nr_bytes);
++		else {
++			tmp = copy_oldmem_page(pfn, buf, nr_bytes, offset, userbuf);
++			if (tmp < 0)
++				return tmp;
++		}
+ 		*ppos += nr_bytes;
+ 		count -= nr_bytes;
+ 		buf += nr_bytes;
+Index: linux-2.6.39-rc5/include/linux/crash_dump.h
+===================================================================
+--- linux-2.6.39-rc5.orig/include/linux/crash_dump.h
++++ linux-2.6.39-rc5/include/linux/crash_dump.h
+@@ -66,6 +66,11 @@ static inline void vmcore_unusable(void)
+ 	if (is_kdump_kernel())
+ 		elfcorehdr_addr = ELFCORE_ADDR_ERR;
+ }
++
++#define HAVE_OLDMEM_PFN_IS_RAM 1
++extern void register_oldmem_pfn_is_ram(int (*fn)(unsigned long));
++extern void unregister_oldmem_pfn_is_ram(void);
++
+ #else /* !CONFIG_CRASH_DUMP */
+ static inline int is_kdump_kernel(void) { return 0; }
+ #endif /* CONFIG_CRASH_DUMP */
