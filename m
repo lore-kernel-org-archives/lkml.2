@@ -1,85 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab1EBOKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:10:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37005 "EHLO mx1.redhat.com"
+	id S1759053Ab1EBORm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:17:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759090Ab1EBOKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:10:05 -0400
-Date: Mon, 2 May 2011 17:10:03 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
-Message-ID: <20110502141002.GK18376@redhat.com>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-2-git-send-email-gleb@redhat.com>
- <20110429083618.GL2191@linux.vnet.ibm.com>
- <20110429083904.GA12987@linux.vnet.ibm.com>
- <20110429180239.GA32566@redhat.com>
- <20110430125928.GJ2297@linux.vnet.ibm.com>
- <20110502105612.GJ18376@redhat.com>
- <20110502133608.GA4197@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502133608.GA4197@linux.vnet.ibm.com>
+	id S1755930Ab1EBORl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:17:41 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 1/3] blkdev: Submit discard bio in batches in blkdev_issue_discard()
+Date: Mon,  2 May 2011 16:17:19 +0200
+Message-Id: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 06:36:08AM -0700, Paul E. McKenney wrote:
-> On Mon, May 02, 2011 at 01:56:12PM +0300, Gleb Natapov wrote:
-> > On Sat, Apr 30, 2011 at 05:59:28AM -0700, Paul E. McKenney wrote:
-> > > On Fri, Apr 29, 2011 at 09:02:39PM +0300, Gleb Natapov wrote:
-> > > > On Fri, Apr 29, 2011 at 01:39:04AM -0700, Paul E. McKenney wrote:
-> > > > > On Fri, Apr 29, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> > > > > > On Thu, Apr 28, 2011 at 12:52:02PM +0300, Gleb Natapov wrote:
-> > > > > > 
-> > > > > > Hmmm....  This is interesting.  KVM being a module, we either expand
-> > > > > > TINY_RCU's size a bit by making rcu_note_context_switch() be a real
-> > > > > > function in rcutiny.c and adding an export, or we expand it by adding
-> > > > > > two exports.
-> > > > > > 
-> > > > > > I would like to solve this without making TINY_RCU larger, and preferably
-> > > > > > by making it smaller.  Any ideas come to mind?  (Other than making
-> > > > > > KVM depend on CONFIG_SMP, which sounds too much like throwing out the
-> > > > > > baby with the bathwater.)
-> > > > > 
-> > > > > Nothing quite like hitting "send" to make an idea show up...
-> > > > > 
-> > > > > In a UP kernel, does it actually help anything to have KVM
-> > > > > tell RCU about executing in a guest?  If not, could we have a
-> > > > > rcu_note_context_switch_kvm() that is a static inline empty function in
-> > > > > TINY_RCU and maps to rcu_note_context_switch() for TREE_RCU?
-> > > > > 
-> > > > That will work, but does making rcu_note_context_switch() out of line
-> > > > actually increase kernel size? The function is called in two places
-> > > > currently, so by making it out of line we make two calling site smaller.
-> > > > Will measure it next week.
-> > > 
-> > > One thing to keep in mind...  Calling an out-of-line function from
-> > > KVM requires an export, each of which significantly increases TINY_RCU's
-> > > memory footprint.
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > How significantly? As I wrote in other mail I compiled two TINY_RCU
-> > kernel with and without the patch and I didn't see memory footprint
-> > increase at all. May be I measure it incorrectly, but what I see is that
-> > with out of line function + export text section becomes 64 byte bigger, but
-> > data section becomes 64 byte smaller:
-> > 
-> >    text    data     bss     dec     hex filename
-> > 4544134  590596 2023424 7158154  6d398a vmlinux     inline
-> > 4544198  590532 2023424 7158154  6d398a vmlinux.ol  out of line
-> 
-> Did you add the exports that would be needed to allow KVM to call
-> the functions in the inline case?
-> 
-Yes, this is with and without patch applied. When patch is applied the
-function is out of line and exported.
+Currently we are waiting for every submitted REQ_DISCARD bio separately,
+but it can have unwanted consequences of repeatedly flushing the queue,
+so we rather submit bios in batches and wait for the entire batch, hence
+narrowing the window of other ios going in.
 
---
-			Gleb.
+Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+always set !BIO_UPTODATE in the case of error and remove the check for
+bb, since we are the only user of this function and we always set this.
+
+Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+not needed anymore.
+
+I have done simple dd testing with surprising results. The script I have
+used is:
+
+for i in $(seq 10); do
+        echo $i
+        dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+        sleep 5
+done
+/usr/bin/time -f %e ./blkdiscard /dev/sdc1
+
+Running time of BLKDISCARD on the whole device:
+with patch              without patch
+0.95                    15.58
+
+So we can see that in this artificial test the kernel with the patch
+applied is approx 16x faster in discarding the device.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Jens Axboe <jaxboe@fusionio.com>
+CC: Jeff Moyer <jmoyer@redhat.com>
+---
+ block/blk-lib.c |   69 +++++++++++++++++++++++-------------------------------
+ 1 files changed, 29 insertions(+), 40 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 25de73e..9260cb0 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -9,17 +9,23 @@
+ 
+ #include "blk.h"
+ 
+-static void blkdev_discard_end_io(struct bio *bio, int err)
++struct bio_batch {
++	atomic_t		done;
++	unsigned long		flags;
++	struct completion	*wait;
++};
++
++static void bio_batch_end_io(struct bio *bio, int err)
+ {
++	struct bio_batch *bb = bio->bi_private;
++
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+-		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++			set_bit(BIO_EOPNOTSUPP, &bb->flags);
++		clear_bit(BIO_UPTODATE, &bb->flags);
+ 	}
+-
+-	if (bio->bi_private)
+-		complete(bio->bi_private);
+-
++	if (atomic_dec_and_test(&bb->done))
++		complete(bb->wait);
+ 	bio_put(bio);
+ }
+ 
+@@ -41,6 +47,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+ 	unsigned int max_discard_sectors;
++	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+ 
+@@ -67,7 +74,11 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		type |= REQ_SECURE;
+ 	}
+ 
+-	while (nr_sects && !ret) {
++	atomic_set(&bb.done, 1);
++	bb.flags = 1 << BIO_UPTODATE;
++	bb.wait = &wait;
++
++	while (nr_sects) {
+ 		bio = bio_alloc(gfp_mask, 1);
+ 		if (!bio) {
+ 			ret = -ENOMEM;
+@@ -75,9 +86,9 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		}
+ 
+ 		bio->bi_sector = sector;
+-		bio->bi_end_io = blkdev_discard_end_io;
++		bio->bi_end_io = bio_batch_end_io;
+ 		bio->bi_bdev = bdev;
+-		bio->bi_private = &wait;
++		bio->bi_private = &bb;
+ 
+ 		if (nr_sects > max_discard_sectors) {
+ 			bio->bi_size = max_discard_sectors << 9;
+@@ -88,45 +99,23 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 			nr_sects = 0;
+ 		}
+ 
+-		bio_get(bio);
++		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
++	}
+ 
++	/* Wait for bios in-flight */
++	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion(&wait);
+ 
+-		if (bio_flagged(bio, BIO_EOPNOTSUPP))
+-			ret = -EOPNOTSUPP;
+-		else if (!bio_flagged(bio, BIO_UPTODATE))
+-			ret = -EIO;
+-		bio_put(bio);
+-	}
++	if (test_bit(BIO_EOPNOTSUPP, &bb.flags))
++		ret = -EOPNOTSUPP;
++	else if (!test_bit(BIO_UPTODATE, &bb.flags))
++		ret = -EIO;
+ 
+ 	return ret;
+ }
+ EXPORT_SYMBOL(blkdev_issue_discard);
+ 
+-struct bio_batch
+-{
+-	atomic_t 		done;
+-	unsigned long 		flags;
+-	struct completion 	*wait;
+-};
+-
+-static void bio_batch_end_io(struct bio *bio, int err)
+-{
+-	struct bio_batch *bb = bio->bi_private;
+-
+-	if (err) {
+-		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bb->flags);
+-		else
+-			clear_bit(BIO_UPTODATE, &bb->flags);
+-	}
+-	if (bb)
+-		if (atomic_dec_and_test(&bb->done))
+-			complete(bb->wait);
+-	bio_put(bio);
+-}
+-
+ /**
+  * blkdev_issue_zeroout - generate number of zero filed write bios
+  * @bdev:	blockdev to issue
+-- 
+1.7.4.4
+
