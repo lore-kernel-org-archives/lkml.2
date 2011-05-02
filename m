@@ -1,62 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab1EBL0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 07:26:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51743 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1EBL0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 07:26:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Brown <davidb@codeaurora.org>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Date: Mon, 2 May 2011 13:26:09 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linaro-mm-sig@lists.linaro.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        KyongHo Cho <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-References: <201104212129.17013.arnd@arndb.de> <20110429221554.GD14871@n2100.arm.linux.org.uk> <8yapqo1ogrk.fsf@huya.qualcomm.com>
-In-Reply-To: <8yapqo1ogrk.fsf@huya.qualcomm.com>
+	id S1758250Ab1EBLde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 07:33:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab1EBLda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 07:33:30 -0400
+Date: Mon, 2 May 2011 13:33:27 +0200
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.19.1
+Message-ID: <20110502113327.GU29492@nb.net.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105021326.09725.arnd@arndb.de>
-X-Provags-ID: V02:K0:lB071iEUBTwrPUo6S7fxhOelZc+EwCM+cBQ/t2JdqeM
- E+W9kvV5ZGi0OIC9WMUrWQm9DAnPR2YbvhcyosV1ZWEQLi+ptx
- poHoDCOj+bH2AhiDr/VBzQgeHBRWOrsN9PYo96UK/VhKh/9+im
- uDQp46QHt55Nt4yBERuFbG69NnkPsyqBut7IeiKg/UEtXCy+vB
- T7ojosH1rKLUSD4eBLNow==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 May 2011, David Brown wrote:
-> I'll confirm this from the Qualcomm side as well.  You cannot have
-> multiple inconsistent mappings of the same page without having difficult
-> to find problems.
 
-I believe Catalin was referring to the case where you have only
-one nonconsistent (cacheable) mapping plus multiple consistent
-(cacheable) mappings. I don't think anyone has suggested doing
-DMA to a page that has multiple nonconsistent mappings with
-virtually indexed caches.
+The bugfix release util-linux-n 2.19.1 is available at
 
-> The spec clarifications appear to give ways of dealing with it if it
-> happens, and bounds on what can go wrong, but I wouldn't call it
-> something we want to do normally.  Corrupt data is arguably less of a
-> problem than nasal demons, but still a problem.
+   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.19/
 
-Anything that has a theoretical chance of corrupting data is not an
-option, but I'd really like to see what the clarified spec says
-about this. Even if there is a way to legally leave a page for
-dma_alloc_coherent in the linear mapping, it might turn out to
-be harder to do than using highmem pages or unmapping supersections
-at run time as was suggested.
+Feedback and bug reports, as always, are welcomed.
 
-	Arnd
+	Karel
+
+
+util-linux 2.19.1 Release Notes
+===============================
+
+Changes since v2.19
+-------------------
+
+ For more details see ChangeLog files at:
+ ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.19/
+
+blkid:
+   - don't ignore -i  [Karel Zak]
+   - fix double free [coverity scan]  [Karel Zak]
+   - small fix for safe_print()  [Sergey Gusarov]
+build-sys:
+   - don't build lsblk on Linux without openat()  [Karel Zak]
+   - non-linux fixup  [Samuel Thibault]
+chsh:
+   - fix gcc link() warn_unused_result warning  [Karel Zak]
+   - fix small memory leak  [Karel Zak]
+ddate:
+   - remove non-ascii chars from ddate  [Karel Zak]
+docs:
+   - update AUTHORS file  [Karel Zak]
+fdisk:
+   - check index before access to array [coverity scan]  [Karel Zak]
+   - more robust whole-disk detection  [Karel Zak]
+findmnt:
+   - check mnt_tab_next_fs() return code [coverity scan]  [Karel Zak]
+fsck:
+   - fix -C parsing  [Karel Zak]
+include:
+   - [at.h]  include c.h for PATH_MAX  [Karel Zak]
+   - [c.h]  typeof to __typeof__ fix  [Sami Kerola]
+   - [c.h] add definition wrappers for old libc versions  [Davidlohr Bueso]
+lib:
+   - [strutils.c] more robust strtol checks  [Karel Zak]
+   - [strutils] avoid integer overflow on large values  [Dave Reisner]
+   - [tt.c] dereferencing data before a null check [coverity scan]  [Karel Zak]
+libblkid:
+   - add PART_ENTRY_* to docs  [Karel Zak]
+   - fix EFI GPT uuid byte order  [Karel Zak]
+   - fix gcc warnings  [Karel Zak]
+   - fix typo in *_to_cpu() usage in raid detection [coverity scan]  [Karel Zak]
+   - remove test for non-zero head count in FAT superblock probe.  [Nick Holloway]
+   - try to detect if PT is newer than LVM  [Karel Zak]
+   - use blkid_probe_get_buffer() more carefully  [Karel Zak]
+libmount:
+   - add fallbacks for old systems without umount2() syscall  [Karel Zak]
+   - avoid redundant declaration of mnt_context_do_umount  [Jan Engelhardt]
+   - block signals when update utab  [Karel Zak]
+   - block signals when writing to mtab  [Karel Zak]
+   - cleanup *_do_[u]mount() return codes and docs  [Karel Zak]
+   - create a default lock for mtab update  [Karel Zak]
+   - fix memory leak in cache  [Karel Zak]
+   - fix parsing of mountinfo from 2.6.39  [Karel Zak]
+   - keep code more readable for analyzers [coverity scan]  [Karel Zak]
+   - more robust mtab and utab update (CVE-2011-1676, CVE-2011-1677)  [Karel Zak]
+   - remove unused variable from test  [Karel Zak]
+   - replace mkostmps() with more portable mkstemp()  [Karel Zak]
+   - small lock code cleanup  [Karel Zak]
+   - support /run/mount rather than /dev/.mount  [Karel Zak]
+libuuid:
+   - do not use invalid file descriptor  [Petr Uzel]
+   - fix test in get_clock()  [Petr Uzel]
+   - manpage spelling fixes  [Petr Uzel]
+logger:
+   - fix variable type compiler warning  [Sami Kerola]
+login:
+   - does not ignore setgid() return code for non-roots  [Karel Zak]
+   - fix checktty test to compile with old glibc  [Karel Zak]
+lsblk:
+   - bitwise or TT_FL_ASCII with tt_flags instead of setting  [Dave Reisner]
+   - fix readlink() usage  [Karel Zak]
+   - fix strtoul() usage [coverity scan]  [Karel Zak]
+   - use ssize_t for readlink() return code  [Karel Zak]
+lscpu:
+   - detect sun4{u,v} in /proc/cpuinfo for sparc64  [Karel Zak]
+   - fix op-mode for /{sys,proc} dumps  [Karel Zak]
+   - fix threads-per-core calculation  [Karel Zak]
+mount:
+   - add note about blank lines to fstab.5  [Karel Zak]
+   - remove unused variable  [Karel Zak]
+   - update mtab on "-f" and compiled with libmount  [Karel Zak]
+   - use fflush() and temporary file for mtab updates (CVE-2011-1089)  [Karel Zak]
+   - use lock from mnt_update_table()  [Karel Zak]
+partx, lsblk:
+   - fix gettext calls  [Karel Zak]
+po:
+   - merge changes  [Karel Zak]
+   - update da.po (from translationproject.org)  [Joe Hansen]
+   - update fr.po (from translationproject.org)  [David Prévot]
+readprofile:
+   - don't stop parsing at __init_end  [Po-Yu Chuang]
+rev:
+   - memory leak fix  [Sami Kerola]
+script:
+   - fix compiler warnings  [Sami Kerola]
+scriptreplay:
+   - bug in argument check  [Sami Kerola]
+setterm:
+   - segfault with long dump file name  [Sami Kerola]
+tailf:
+   - fix open() return value check [coverity scan]  [Karel Zak]
+   - support --lines 0  [Karel Zak]
+tests:
+   - add test for RLIMIT_FSIZE issue  [Karel Zak]
+   - add tests for [u]mount regular file  [Karel Zak]
+   - don't run mount/regfile test on old kernel  [Karel Zak]
+   - update GPT test  [Karel Zak]
+   - use libmount tab update tests for UID=0 only  [Karel Zak]
+umount:
+   - allow unmounting loopdev specified by associated file  [Petr Uzel]
+   - block signals when umounting and updating mtab (CVE-2011-1676, CVE-2011-1677)  [Karel Zak]
+   - segfaults with inconsistent entry in /etc/fstab  [Karel Zak]
+   - support non-canonical devnames in mtab  [Karel Zak]
+   - use UMOUNT_NOFOLLOW for non-root users  [Karel Zak]
+uuidd:
+   - fix manpage  libuuid(3) does not exist  [Petr Uzel]
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
