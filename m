@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab1EBEmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 00:42:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43854 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1EBEmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 00:42:10 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6333"; a="88723634"
-From: David Brown <davidb@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        KyongHo Cho <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-In-Reply-To: <20110429221554.GD14871@n2100.arm.linux.org.uk> (Russell King's
-	message of "Fri, 29 Apr 2011 23:15:54 +0100")
-References: <201104212129.17013.arnd@arndb.de>
-	<20110429075958.GV17290@n2100.arm.linux.org.uk>
-	<20110429093209.1926c732@jbarnes-desktop>
-	<201104292029.50680.arnd@arndb.de>
-	<20110429221554.GD14871@n2100.arm.linux.org.uk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Sun, 01 May 2011 21:42:07 -0700
-Message-ID: <8yapqo1ogrk.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752254Ab1EBEoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 00:44:20 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44888 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab1EBEoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 00:44:19 -0400
+Date: Mon, 2 May 2011 14:44:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Jones <davej@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: linux-next: build warning after merge of the kbuild tree
+Message-Id: <20110502144414.e0adfc69.sfr@canb.auug.org.au>
+In-Reply-To: <20110502040216.GC11804@redhat.com>
+References: <20110502121817.645d544e.sfr@canb.auug.org.au>
+	<20110502022417.GA11804@redhat.com>
+	<20110502134524.40da4245.sfr@canb.auug.org.au>
+	<20110502040216.GC11804@redhat.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_May_2011_14_44_14_+1000_6ueHkQ6AVjw3icyN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29 2011, Russell King - ARM Linux wrote:
+--Signature=_Mon__2_May_2011_14_44_14_+1000_6ueHkQ6AVjw3icyN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, Apr 29, 2011 at 08:29:50PM +0200, Arnd Bergmann wrote:
+Hi Dave,
 
->> I'd like to first have an official confirmation from the CPU designers
->> if there is actually a problem with mapping a single page both cacheable
->> and noncacheable.
+On Mon, 2 May 2011 00:02:16 -0400 Dave Jones <davej@redhat.com> wrote:
 >
-> Everytime this gets discussed, someone says that because they don't
-> believe what I say.  OMAP folk confirmed it last time around.
+> Subtly different from what I wrote.. the version I wrote did this ..
+>=20
+> +KBUILD_EXTRA_WARNINGS +=3D $(call cc-option, -Wunused-but-set-variable)
 
-I'll confirm this from the Qualcomm side as well.  You cannot have
-multiple inconsistent mappings of the same page without having difficult
-to find problems.
+Due to other changes in the kbuild tree, I suspect.  However, as you say,
+this part is not relevant to the warning I am getting.
 
-The spec clarifications appear to give ways of dealing with it if it
-happens, and bounds on what can go wrong, but I wouldn't call it
-something we want to do normally.  Corrupt data is arguably less of a
-problem than nasal demons, but still a problem.
+> I just tested with the gcc 4.4.5 on master.kernel.org, with a tip of Linu=
+s'
+> tree with my original diff, and it didn't complain at all.
 
-David
+Also see my other email.  For a i386 defconfig build, I get this warning
+only twice, for a sparc64 defconfig I get 4 and for a sparc32 defconfig,
+none:
 
-> I'm getting tired of this.  I'm going to give up with answering any
-> further Linux questions until next week and I'll delete my entire
-> mailbox this weekend as I really can't be bothered to catch up with all
-> the crap that's happened over easter.  I'm really getting pissed off at
-> all the shite crap that's flying around at the moment that I'm really
-> starting to not care one ounce about Linux, either on ARM or on this
-> utterly shite and broken x86 hardware.
->
-> Let ARM rot in mainline.  I really don't care anymore.
->
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+At top level:
+cc1: warning: unrecognized command line option "-Wno-unused-but-set-variabl=
+e"
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> What does gcc -v say ?
+> gcc version 4.4.5 20101112 (Red Hat 4.4.5-2) (GCC)  seems to be fine.
+
+$ /opt/cross/gcc-4.4.5-nolibc/x86_64-linux/bin/x86_64-linux-gcc -v
+Using built-in specs.
+Target: x86_64-linux
+Configured with: /home/tony/buildall/src/gcc/configure --target=3Dx86_64-li=
+nux --enable-targets=3Dall --prefix=3D/home/tony/buildall/cross.x86_64/gcc-=
+4.4.5-nolibc/x86_64-linux/ --enable-languages=3Dc --with-newlib --without-h=
+eaders --with-system-libunwind --disable-nls --disable-threads --disable-sh=
+ared --disable-libmudflap --disable-libssp --disable-libgomp --disable-deci=
+mal-float --enable-checking=3Drelease --with-mpfr=3D/home/tony/buildall/src=
+/sys-x86_64 --with-gmp=3D/home/tony/buildall/src/sys-x86_64 --disable-boots=
+trap
+Thread model: single
+gcc version 4.4.5 (GCC)=20
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__2_May_2011_14_44_14_+1000_6ueHkQ6AVjw3icyN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNvjaeAAoJEDMEi1NhKgbs1q4IAIG5vW1gmwfjq7w2+rftXlao
+Fyjpu3fS3b0BmH1Wvvvz08E2Ml3iUD5j77r+YGBf+Ejp7vteyGzH4yvgIIA/owUF
+C9fysu2I1sX1PIhipoTsPWYdkLrUmPydLB0VEcatrHiEwpeYZJdW286fLKqQiVDO
+D/mkQmCBUha7jYYjCMXpO4/O3Y7cDMMuKur3hswDkjOR7TbEBB8pEau7iiqe3x9h
+NwseyNV4oBghzClknjnMjwEK0YaLWm2aNWuP4KyzWYOK6jOgRFItzVLyLoQLndi2
+m8T1jz6hsi+lXeZQ9koag45QAVZvUscI9MKrq/otOrfmcAgS5ZPv5DObR67Mylc=
+=1l+7
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_May_2011_14_44_14_+1000_6ueHkQ6AVjw3icyN--
