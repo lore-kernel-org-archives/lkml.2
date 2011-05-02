@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab1EBT75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:59:57 -0400
-Received: from trent.utfs.org ([194.246.123.103]:41915 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756999Ab1EBT7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 15:59:53 -0400
-Date: Mon, 2 May 2011 12:59:50 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        minchan.kim@gmail.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110502121958.GA2978@dastard>
-Message-ID: <alpine.DEB.2.01.1105021247410.18728@trent.utfs.org>
-References: <20110427022655.GE12436@dastard> <alpine.DEB.2.01.1104270042510.18728@trent.utfs.org> <20110427102824.GI12436@dastard> <alpine.DEB.2.01.1104281008320.18728@trent.utfs.org> <20110428233751.GR12436@dastard> <alpine.DEB.2.01.1104291250480.18728@trent.utfs.org>
- <20110429201701.GA13166@x4.trippels.de> <alpine.DEB.2.01.1104291710340.18728@trent.utfs.org> <20110501080149.GD13542@dastard> <alpine.DEB.2.01.1105012135260.18728@trent.utfs.org> <20110502121958.GA2978@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1757371Ab1EBUAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 16:00:20 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51112 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab1EBUAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 16:00:16 -0400
+Date: Mon, 2 May 2011 16:00:12 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Greg KH <greg@kroah.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110502200012.GA21619@infradead.org>
+References: <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110427121856.GA20633@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110429164025.GA7698@kroah.com>
+ <20110501154041.GB15210@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF253@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501160721.GA8195@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF2A0@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501205315.GC1017@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF543@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DF543@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011 at 22:19, Dave Chinner wrote:
-> Yes. Try 2 orders of magnitude as a start. i.e change it to 10000...
+On Mon, May 02, 2011 at 07:48:38PM +0000, KY Srinivasan wrote:
+> By setting up appropriate modprobe rules, this can be addressed.
 
-I've run the -12 test with vfs_cache_pressure=200 and now the -13 test 
-with vfs_cache_pressure=10000. The OOM killer still kicks in, but the 
-machine seems to be more usable afterwards and does not get totally stuck:
+That assumes libata is a module, which it is not for many popular
+distributions.
 
-  http://nerdbynature.de/bits/2.6.39-rc4/oom/
-  - messages-12.txt.gz & slabinfo-12.txt.bz2
-    * oom-debug.sh invoked oom-killer at 01:27:11
-    * sysrq-w works until 01:27:08, but got killed by oom
-
-  - messages-13.txt.gz & slabinfo-13.txt.bz2 
-    * find invoked oom-killer at 08:44:07
-    * sysrq-w works until 08:45:48 (listing jbd2/hda6-8), then
-      my debug script got killed
-
-Thanks,
-Christian.
--- 
-BOFH excuse #224:
-
-Jan  9 16:41:27 huber su: 'su root' succeeded for .... on /dev/pts/1
