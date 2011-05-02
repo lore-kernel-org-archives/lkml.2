@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab1EBBTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 21:19:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:46823 "EHLO
+	id S1756550Ab1EBBXC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 21:23:02 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54568 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab1EBBTi (ORCPT
+	with ESMTP id S1754808Ab1EBBTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 21:19:38 -0400
+	Sun, 1 May 2011 21:19:53 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=wrdgJtVbipv6IcS8xY2tCNk3nNDPCVUlZXonk6fvUNZRZuNbtZzRi1hmgAlsvFJWH
-	SU/0G7TxS+TgpgofnW5NQ==
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=Hm/9MDWQy2pVkuuu3dTRfWrtlymbvSj7ZfcxzNgoyUic9ChHAyZ0Z37YiiElRxuUj
+	6Up0XpWWVSyyZ5AMcBYaw==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
@@ -19,202 +19,311 @@ Cc: linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v1 00/19] Increase resolution of load weights
-Date: Sun,  1 May 2011 18:18:58 -0700
-Message-Id: <1304299157-25769-1-git-send-email-ncrao@google.com>
+Subject: [PATCH v1 01/19] sched: introduce SCHED_POWER_SCALE to scale cpu_power calculations
+Date: Sun,  1 May 2011 18:18:59 -0700
+Message-Id: <1304299157-25769-2-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1304299157-25769-1-git-send-email-ncrao@google.com>
+References: <1304299157-25769-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+SCHED_LOAD_SCALE is used to increase nice resolution and to scale cpu_power
+calculations in the scheduler. This patch introduces SCHED_POWER_SCALE and
+converts all uses of SCHED_LOAD_SCALE for scaling cpu_power to use
+SCHED_POWER_SCALE instead.
 
-Please find attached v1 of the patchset to increase the resolution of load
-weights. The motivation for this patchset and requirements were described in
-the first RFC sent to LKML (see http://thread.gmane.org/gmane.linux.kernel/1129232
-for more info).
+This is a preparatory patch for increasing the resolution of SCHED_LOAD_SCALE,
+and there is no need to increase resolution for cpu_power calculations.
 
-This version of the patchset is more stable than the previous RFC and more
-suitable for testing. I have attached some test results below that show the
-impact/improvements of the patchset on 32-bit machines and 64-bit kernels.
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+---
+ include/linux/sched.h |   13 +++++++----
+ kernel/sched.c        |   11 ++++-----
+ kernel/sched_fair.c   |   52 +++++++++++++++++++++++++-----------------------
+ 3 files changed, 40 insertions(+), 36 deletions(-)
 
-These patches apply cleanly on top of v2.6.39-rc5. Please note that there is
-a merge conflict when applied to -tip; I could send out another patchset that
-applies to -tip (not sure what is standard protocol here).
-
-Changes since v0:
-- Scale down reference load weight by SCHED_LOAD_RESOLUTION in
-  calc_delta_mine() (thanks to Nikunj Dadhania)
-- Detect overflow in update_cfs_load() and cap avg_load update to ~0ULL
-- Fixed all power calculations to use SCHED_POWER_SHIFT instead of
-  SCHED_LOAD_SHIFT (also thanks to Stephan Barwolf for identifying this)
-- Convert atomic ops to use atomic64_t instead of atomic_t
-
-Experiments:
-
-1. Performance costs
-
-Ran 50 iterations of Ingo's pipe-test-100k program (100k pipe ping-pongs). See
-http://thread.gmane.org/gmane.linux.kernel/1129232/focus=1129389 for more info.
-
-64-bit build.
-
-  2.6.39-rc5 (baseline):
-
-    Performance counter stats for './pipe-test-100k' (50 runs):
-
-       905,034,914 instructions             #      0.345 IPC     ( +-   0.016% )
-     2,623,924,516 cycles                     ( +-   0.759% )
-
-        1.518543478  seconds time elapsed   ( +-   0.513% )
-
-  2.6.39-rc5 + patchset:
-
-    Performance counter stats for './pipe-test-100k' (50 runs):
-
-       905,351,545 instructions             #      0.343 IPC     ( +-   0.018% )
-     2,638,939,777 cycles                     ( +-   0.761% )
-
-        1.509101452  seconds time elapsed   ( +-   0.537% )
-
-There is a marginal increase in instruction retired, about 0.034%; and marginal
-increase in cycles counted, about 0.57%.
-
-32-bit build.
-
-  2.6.39-rc5 (baseline):
-
-    Performance counter stats for './pipe-test-100k' (50 runs):
-
-     1,025,151,722 instructions             #      0.238 IPC     ( +-   0.018% )
-     4,303,226,625 cycles                     ( +-   0.524% )
-
-        2.133056844  seconds time elapsed   ( +-   0.619% )
-
-  2.6.39-rc5 + patchset:
-
-    Performance counter stats for './pipe-test-100k' (50 runs):
-
-     1,070,610,068 instructions             #      0.239 IPC     ( +-   1.369% )
-     4,478,912,974 cycles                     ( +-   1.011% )
-
-        2.293382242  seconds time elapsed   ( +-   0.144% )
-
-On 32-bit kernels, instructions retired increases by about 4.4% with this
-patchset. CPU cycles also increases by about 4%.
-
-2. Fairness tests
-
-Test setup: run 5 soaker threads bound to a single cpu. Measure usage over 10s
-for each thread and calculate mean, stdev and coeff of variation (stdev/mean)
-for each set of reading. Coeff of variation is averaged over 10 such readings.
-
-As you can see in the data below, there is no significant difference in coeff
-of variation between the two kernels on 64-bit or 32-bit builds.
-
-64-bit build.
-
-  2.6.39-rc5 (baseline):
-    cv=0.007374042
-
-  2.6.39-rc5 + patchset:
-    cv=0.006942042
-
-32-bit-build.
-
-  2.6.39-rc5 (baseline)
-    cv=0.002547
-
-  2.6.39-rc5 + patchset:
-    cv=0.002426
-
-3. Load balancing low-weight task groups
-
-Test setup: run 50 tasks with random sleep/busy times (biased around 100ms) in
-a low weight container (with cpu.shares = 2). Measure %idle as reported by
-mpstat over a 10s window.
-
->From the data below, the patchset applied to v2.6.39-rc5 keeps the busy fully
-utilized with tasks in the low weight container. These measurements are for a
-64-bit kernel.
-
-2.6.39-rc5 (baseline):
-
-04:08:27 PM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest   %idle    intr/s
-04:08:28 PM  all   98.75    0.00    0.00    0.00    0.00    0.00    0.00    0.00    1.25  16475.00
-04:08:29 PM  all   99.31    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.69  16447.00
-04:08:30 PM  all   99.44    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.56  16445.00
-04:08:31 PM  all   99.19    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.81  16447.00
-04:08:32 PM  all   99.50    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.50  16523.00
-04:08:33 PM  all   99.81    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.19  16516.00
-04:08:34 PM  all   99.81    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.19  16517.00
-04:08:35 PM  all   99.13    0.00    0.44    0.00    0.00    0.00    0.00    0.00    0.44  17624.00
-04:08:36 PM  all   97.00    0.00    0.31    0.00    0.00    0.12    0.00    0.00    2.56  17608.00
-04:08:37 PM  all   99.31    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.69  16517.00
-Average:     all   99.13    0.00    0.07    0.00    0.00    0.01    0.00    0.00    0.79  16711.90
-
-2.6.39-rc5 + patchset:
-
-04:06:26 PM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest   %idle    intr/s
-04:06:27 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16573.00
-04:06:28 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16554.00
-04:06:29 PM  all   99.69    0.00    0.25    0.00    0.00    0.06    0.00    0.00    0.00  17496.00
-04:06:30 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16542.00
-04:06:31 PM  all   99.94    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.06  16624.00
-04:06:32 PM  all   99.88    0.00    0.06    0.00    0.00    0.00    0.00    0.00    0.06  16671.00
-04:06:33 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16605.00
-04:06:34 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16580.00
-04:06:35 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16646.00
-04:06:36 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16533.00
-Average:     all   99.94    0.00    0.04    0.00    0.00    0.01    0.00    0.00    0.01  16682.40
-
-4. Sizes of vmlinux (32-bit builds)
-
-Sizes of vmlinux compiled with 'make defconfig ARCH=i386' below.
-
-2.6.39-rc5 (baseline):
-   text	   data	    bss	    dec	    hex	filename
-8144777	1077556	1085440	10307773	 9d48bd	vmlinux-v2.6.39-rc5
-
-2.6.39-rc5 + patchset:
-   text	   data	    bss	    dec	    hex	filename
-8144846	1077620	1085440	10307906	 9d4942	vmlinux
-
-Negligible increase in text, data size (less than 0.01%).
-
--Thanks,
-Nikhil
-
-Nikhil Rao (19):
-  sched: introduce SCHED_POWER_SCALE to scale cpu_power calculations
-  sched: increase SCHED_LOAD_SCALE resolution
-  sched: use u64 for load_weight fields
-  sched: update cpu_load to be u64
-  sched: update this_cpu_load() to return u64 value
-  sched: update source_load(), target_load() and weighted_cpuload() to
-    use u64
-  sched: update find_idlest_cpu() to use u64 for load
-  sched: update find_idlest_group() to use u64
-  sched: update division in cpu_avg_load_per_task to use div_u64
-  sched: update wake_affine path to use u64, s64 for weights
-  sched: update update_sg_lb_stats() to use u64
-  sched: Update update_sd_lb_stats() to use u64
-  sched: update f_b_g() to use u64 for weights
-  sched: change type of imbalance to be u64
-  sched: update h_load to use u64
-  sched: update move_task() and helper functions to use u64 for weights
-  sched: update f_b_q() to use u64 for weighted cpuload
-  sched: update shares distribution to use u64
-  sched: convert atomic ops in shares update to use atomic64_t ops
-
- drivers/cpuidle/governors/menu.c |    5 +-
- include/linux/sched.h            |   22 ++--
- kernel/sched.c                   |   70 ++++++------
- kernel/sched_debug.c             |   14 +-
- kernel/sched_fair.c              |  234 ++++++++++++++++++++------------------
- kernel/sched_stats.h             |    2 +-
- 6 files changed, 182 insertions(+), 165 deletions(-)
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 18d63ce..8d1ff2b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -792,17 +792,20 @@ enum cpu_idle_type {
+ };
+ 
+ /*
+- * sched-domains (multiprocessor balancing) declarations:
+- */
+-
+-/*
+  * Increase resolution of nice-level calculations:
+  */
+ #define SCHED_LOAD_SHIFT	10
+ #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
+ 
+-#define SCHED_LOAD_SCALE_FUZZ	SCHED_LOAD_SCALE
++/*
++ * Increase resolution of cpu_power calculations
++ */
++#define SCHED_POWER_SHIFT	10
++#define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
+ 
++/*
++ * sched-domains (multiprocessor balancing) declarations:
++ */
+ #ifdef CONFIG_SMP
+ #define SD_LOAD_BALANCE		0x0001	/* Do load balancing on this domain. */
+ #define SD_BALANCE_NEWIDLE	0x0002	/* Balance when about to become idle */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 312f8b9..f4b4679 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1302,8 +1302,7 @@ static void sched_avg_update(struct rq *rq)
+  * delta *= weight / lw
+  */
+ static unsigned long
+-calc_delta_mine(unsigned long delta_exec, unsigned long weight,
+-		struct load_weight *lw)
++calc_delta_mine(unsigned long delta_exec, u64 weight, struct load_weight *lw)
+ {
+ 	u64 tmp;
+ 
+@@ -6468,7 +6467,7 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
+ 		cpulist_scnprintf(str, sizeof(str), sched_group_cpus(group));
+ 
+ 		printk(KERN_CONT " %s", str);
+-		if (group->cpu_power != SCHED_LOAD_SCALE) {
++		if (group->cpu_power != SCHED_POWER_SCALE) {
+ 			printk(KERN_CONT " (cpu_power = %d)",
+ 				group->cpu_power);
+ 		}
+@@ -7176,7 +7175,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 	sd->groups->cpu_power = 0;
+ 
+ 	if (!child) {
+-		power = SCHED_LOAD_SCALE;
++		power = SCHED_POWER_SCALE;
+ 		weight = cpumask_weight(sched_domain_span(sd));
+ 		/*
+ 		 * SMT siblings share the power of a single core.
+@@ -7187,7 +7186,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 		if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+ 			power *= sd->smt_gain;
+ 			power /= weight;
+-			power >>= SCHED_LOAD_SHIFT;
++			power >>= SCHED_POWER_SHIFT;
+ 		}
+ 		sd->groups->cpu_power += power;
+ 		return;
+@@ -8224,7 +8223,7 @@ void __init sched_init(void)
+ #ifdef CONFIG_SMP
+ 		rq->sd = NULL;
+ 		rq->rd = NULL;
+-		rq->cpu_power = SCHED_LOAD_SCALE;
++		rq->cpu_power = SCHED_POWER_SCALE;
+ 		rq->post_schedule = 0;
+ 		rq->active_balance = 0;
+ 		rq->next_balance = jiffies;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 6fa833a..1a9340c 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1557,7 +1557,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ 		}
+ 
+ 		/* Adjust by relative CPU power of the group */
+-		avg_load = (avg_load * SCHED_LOAD_SCALE) / group->cpu_power;
++		avg_load = (avg_load * SCHED_POWER_SCALE) / group->cpu_power;
+ 
+ 		if (local_group) {
+ 			this_load = avg_load;
+@@ -1692,7 +1692,7 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
+ 				nr_running += cpu_rq(i)->cfs.nr_running;
+ 			}
+ 
+-			capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
++			capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
+ 
+ 			if (tmp->flags & SD_POWERSAVINGS_BALANCE)
+ 				nr_running /= 2;
+@@ -2534,7 +2534,7 @@ static inline int check_power_save_busiest_group(struct sd_lb_stats *sds,
+ 
+ unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu)
+ {
+-	return SCHED_LOAD_SCALE;
++	return SCHED_POWER_SCALE;
+ }
+ 
+ unsigned long __weak arch_scale_freq_power(struct sched_domain *sd, int cpu)
+@@ -2571,10 +2571,10 @@ unsigned long scale_rt_power(int cpu)
+ 		available = total - rq->rt_avg;
+ 	}
+ 
+-	if (unlikely((s64)total < SCHED_LOAD_SCALE))
+-		total = SCHED_LOAD_SCALE;
++	if (unlikely((s64)total < SCHED_POWER_SCALE))
++		total = SCHED_POWER_SCALE;
+ 
+-	total >>= SCHED_LOAD_SHIFT;
++	total >>= SCHED_POWER_SHIFT;
+ 
+ 	return div_u64(available, total);
+ }
+@@ -2582,7 +2582,7 @@ unsigned long scale_rt_power(int cpu)
+ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ {
+ 	unsigned long weight = sd->span_weight;
+-	unsigned long power = SCHED_LOAD_SCALE;
++	unsigned long power = SCHED_POWER_SCALE;
+ 	struct sched_group *sdg = sd->groups;
+ 
+ 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+@@ -2591,7 +2591,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 		else
+ 			power *= default_scale_smt_power(sd, cpu);
+ 
+-		power >>= SCHED_LOAD_SHIFT;
++		power >>= SCHED_POWER_SHIFT;
+ 	}
+ 
+ 	sdg->cpu_power_orig = power;
+@@ -2601,10 +2601,10 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 	else
+ 		power *= default_scale_freq_power(sd, cpu);
+ 
+-	power >>= SCHED_LOAD_SHIFT;
++	power >>= SCHED_POWER_SHIFT;
+ 
+ 	power *= scale_rt_power(cpu);
+-	power >>= SCHED_LOAD_SHIFT;
++	power >>= SCHED_POWER_SHIFT;
+ 
+ 	if (!power)
+ 		power = 1;
+@@ -2646,7 +2646,7 @@ static inline int
+ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+ {
+ 	/*
+-	 * Only siblings can have significantly less than SCHED_LOAD_SCALE
++	 * Only siblings can have significantly less than SCHED_POWER_SCALE
+ 	 */
+ 	if (sd->level != SD_LV_SIBLING)
+ 		return 0;
+@@ -2734,7 +2734,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 	}
+ 
+ 	/* Adjust by relative CPU power of the group */
+-	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
++	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->cpu_power;
+ 
+ 	/*
+ 	 * Consider the group unbalanced when the imbalance is larger
+@@ -2751,7 +2751,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 	if ((max_cpu_load - min_cpu_load) >= avg_load_per_task && max_nr_running > 1)
+ 		sgs->group_imb = 1;
+ 
+-	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
++	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power,
++						SCHED_POWER_SCALE);
+ 	if (!sgs->group_capacity)
+ 		sgs->group_capacity = fix_small_capacity(sd, group);
+ 	sgs->group_weight = group->group_weight;
+@@ -2925,7 +2926,7 @@ static int check_asym_packing(struct sched_domain *sd,
+ 		return 0;
+ 
+ 	*imbalance = DIV_ROUND_CLOSEST(sds->max_load * sds->busiest->cpu_power,
+-				       SCHED_LOAD_SCALE);
++				       SCHED_POWER_SCALE);
+ 	return 1;
+ }
+ 
+@@ -2954,7 +2955,7 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
+ 			cpu_avg_load_per_task(this_cpu);
+ 
+ 	scaled_busy_load_per_task = sds->busiest_load_per_task
+-						 * SCHED_LOAD_SCALE;
++					 * SCHED_POWER_SCALE;
+ 	scaled_busy_load_per_task /= sds->busiest->cpu_power;
+ 
+ 	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+@@ -2973,10 +2974,10 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
+ 			min(sds->busiest_load_per_task, sds->max_load);
+ 	pwr_now += sds->this->cpu_power *
+ 			min(sds->this_load_per_task, sds->this_load);
+-	pwr_now /= SCHED_LOAD_SCALE;
++	pwr_now /= SCHED_POWER_SCALE;
+ 
+ 	/* Amount of load we'd subtract */
+-	tmp = (sds->busiest_load_per_task * SCHED_LOAD_SCALE) /
++	tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+ 		sds->busiest->cpu_power;
+ 	if (sds->max_load > tmp)
+ 		pwr_move += sds->busiest->cpu_power *
+@@ -2984,15 +2985,15 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
+ 
+ 	/* Amount of load we'd add */
+ 	if (sds->max_load * sds->busiest->cpu_power <
+-		sds->busiest_load_per_task * SCHED_LOAD_SCALE)
++		sds->busiest_load_per_task * SCHED_POWER_SCALE)
+ 		tmp = (sds->max_load * sds->busiest->cpu_power) /
+ 			sds->this->cpu_power;
+ 	else
+-		tmp = (sds->busiest_load_per_task * SCHED_LOAD_SCALE) /
++		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+ 			sds->this->cpu_power;
+ 	pwr_move += sds->this->cpu_power *
+ 			min(sds->this_load_per_task, sds->this_load + tmp);
+-	pwr_move /= SCHED_LOAD_SCALE;
++	pwr_move /= SCHED_POWER_SCALE;
+ 
+ 	/* Move if we gain throughput */
+ 	if (pwr_move > pwr_now)
+@@ -3034,7 +3035,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
+ 		load_above_capacity = (sds->busiest_nr_running -
+ 						sds->busiest_group_capacity);
+ 
+-		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_LOAD_SCALE);
++		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+ 
+ 		load_above_capacity /= sds->busiest->cpu_power;
+ 	}
+@@ -3054,7 +3055,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
+ 	/* How much load to actually move to equalise the imbalance */
+ 	*imbalance = min(max_pull * sds->busiest->cpu_power,
+ 		(sds->avg_load - sds->this_load) * sds->this->cpu_power)
+-			/ SCHED_LOAD_SCALE;
++			/ SCHED_POWER_SCALE;
+ 
+ 	/*
+ 	 * if *imbalance is less than the average load per runnable task
+@@ -3123,7 +3124,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+ 		goto out_balanced;
+ 
+-	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
++	sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
+ 
+ 	/*
+ 	 * If the busiest group is imbalanced the below checks don't
+@@ -3202,7 +3203,8 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
+ 
+ 	for_each_cpu(i, sched_group_cpus(group)) {
+ 		unsigned long power = power_of(i);
+-		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
++		unsigned long capacity = DIV_ROUND_CLOSEST(power,
++							   SCHED_POWER_SCALE);
+ 		unsigned long wl;
+ 
+ 		if (!capacity)
+@@ -3227,7 +3229,7 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
+ 		 * the load can be moved away from the cpu that is potentially
+ 		 * running at a lower capacity.
+ 		 */
+-		wl = (wl * SCHED_LOAD_SCALE) / power;
++		wl = (wl * SCHED_POWER_SCALE) / power;
+ 
+ 		if (wl > max_load) {
+ 			max_load = wl;
 -- 
 1.7.3.1
 
