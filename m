@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab1EBOCZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:02:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61144 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab1EBOCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:02:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nrnaASw/MsEn/IpnJTTYAwBiww8gs2Rc4Hijktt7pnYlgRBk3RP3njPXW07m0bUWBl
-         2YW8a9J5J1LghaGQXKQf4PuC/wvG+SMeTRr5XciD+aIbGuylc5IhN/yUZvsyRddTtlMO
-         qm339DqbbNzckIUEkk3LETwvS3g7VjkHrAiVg=
-Message-ID: <4DBEB96A.8000309@openvz.org>
-Date: Mon, 02 May 2011 18:02:18 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1759025Ab1EBODe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:03:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32379 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab1EBODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:03:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,303,1301900400"; 
+   d="scan'208";a="428890522"
+Date: Mon, 2 May 2011 22:02:57 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] getdelays: show average CPU/IO/SWAP/RECLAIM delays
+Message-ID: <20110502140257.GA12780@localhost>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using cluster
- groups v4
-References: <20110502113445.751391656@openvz.org> <20110502114024.222582172@openvz.org> <20110502132232.GA3873@elte.hu>
-In-Reply-To: <20110502132232.GA3873@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2011 05:22 PM, Ingo Molnar wrote:
-> 
-> * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
->> In the case of x2apic cluster mode we can group
->> IPI register writes based on the cluster group
->> instead of individual per-cpu destiantion messages.
-> 
-> typo.
-> 
+I find it very handy to show the average delays in milliseconds.
 
-ok, will fix, thanks.
+Example output (on 100 concurrent dd reading sparse files):
 
->> This reduces the apic register writes and reduces
->> the amount of IPI messages (in the best case we can
->> reduce it by a factor of 16).
->>
->> With this change, microbenchmark measuring the cost
->> of flush_tlb_others(), with the flush tlb IPI being
->> sent from a cpu in the socket-1 to all the logical
->> cpus in socket-2 (on a Westmere-EX system that has
->> 20 logical cpus in a socket) is 3x times better now
->> (compared to the former 'send one-by-one' algorithm).
-> 
-> What kind of microbenchmark was this, could the actual results and measurement 
-> methods be shared as well?
+CPU             count     real total  virtual total    delay total  delay average
+                  986     3223509952     3207643301    38863410579         39.415ms
+IO              count    delay total  delay average
+                    0              0              0ms
+SWAP            count    delay total  delay average
+                    0              0              0ms
+RECLAIM         count    delay total  delay average
+                 1059     5131834899              4ms
+dd: read=0, write=0, cancelled_write=0
 
-Suresh, could you please post the microbenchmark?
-...
->> Index: tip-linux-2.6/arch/x86/kernel/apic/probe_64.c
->> ===================================================================
->> --- tip-linux-2.6.orig/arch/x86/kernel/apic/probe_64.c
->> +++ tip-linux-2.6/arch/x86/kernel/apic/probe_64.c
->> @@ -55,6 +55,15 @@ static int apicid_phys_pkg_id(int initia
->>  void __init default_setup_apic_routing(void)
->>  {
->>  
->> +	/*
->> +	 * FIXME:
->> +	 *
->> +	 * Cleanup the apic routing selection by having an apic driver specific
->> +	 * selection routine. Then all we need to do here is iterate through
->> +	 * them to finalize the apic selection. That would get rid of the
->> +	 * ifdef mess and most of the code here.
->> +	 */
->> +
->>  	enable_IR_x2apic();
->>  
->>  #ifdef CONFIG_X86_X2APIC
->> @@ -71,7 +80,9 @@ void __init default_setup_apic_routing(v
->>  #endif
->>  
->>  	if (apic == &apic_flat && num_possible_cpus() > 8)
->> -			apic = &apic_physflat;
->> +		apic = &apic_physflat;
->> +	else if (apic == &apic_x2apic_cluster)
->> +		x2apic_init_cpu_notifier();
-> 
-> 
-> Why is there an x2apic specific function in the generic 
-> default_setup_apic_routing() function?
-> 
-> Instead of that it would be cleaner to extend the apic driver functions with an 
-> init method, which would be filled in for x2apic and left NULL for the others.
-> 
-> Thanks,
-> 
-> 	Ingo
+CC: Mel Gorman <mel@linux.vnet.ibm.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ Documentation/accounting/getdelays.c |   33 +++++++++++++++----------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
-  Ingo, the idea was to merge probe_x.c completely, and put all this not into init()
-but rather into apic->probe() or something like that. I don't have a clear picture
-in mind yet what the best way would be, so instead of fast designed method I thought
-to leave it opencoded with fixme note.
-
-  So lets wait until Suresh post the benchmark and I will make apic->init() meanwhile.
-
--- 
-    Cyrill
+--- linux-next.orig/Documentation/accounting/getdelays.c	2011-05-02 11:33:44.000000000 +0800
++++ linux-next/Documentation/accounting/getdelays.c	2011-05-02 21:36:45.000000000 +0800
+@@ -191,30 +191,37 @@ static int get_family_id(int sd)
+ 	return id;
+ }
+ 
++#define average_ms(t, c) (t / 1000000ULL / (c ? c : 1))
++
+ static void print_delayacct(struct taskstats *t)
+ {
+-	printf("\n\nCPU   %15s%15s%15s%15s\n"
+-	       "      %15llu%15llu%15llu%15llu\n"
+-	       "IO    %15s%15s\n"
+-	       "      %15llu%15llu\n"
+-	       "SWAP  %15s%15s\n"
+-	       "      %15llu%15llu\n"
+-	       "RECLAIM  %12s%15s\n"
+-	       "      %15llu%15llu\n",
+-	       "count", "real total", "virtual total", "delay total",
++	printf("\n\nCPU   %15s%15s%15s%15s%15s\n"
++	       "      %15llu%15llu%15llu%15llu%15.3fms\n"
++	       "IO    %15s%15s%15s\n"
++	       "      %15llu%15llu%15llums\n"
++	       "SWAP  %15s%15s%15s\n"
++	       "      %15llu%15llu%15llums\n"
++	       "RECLAIM  %12s%15s%15s\n"
++	       "      %15llu%15llu%15llums\n",
++	       "count", "real total", "virtual total",
++	       "delay total", "delay average",
+ 	       (unsigned long long)t->cpu_count,
+ 	       (unsigned long long)t->cpu_run_real_total,
+ 	       (unsigned long long)t->cpu_run_virtual_total,
+ 	       (unsigned long long)t->cpu_delay_total,
+-	       "count", "delay total",
++	       average_ms((double)t->cpu_delay_total, t->cpu_count),
++	       "count", "delay total", "delay average",
+ 	       (unsigned long long)t->blkio_count,
+ 	       (unsigned long long)t->blkio_delay_total,
+-	       "count", "delay total",
++	       average_ms(t->blkio_delay_total, t->blkio_count),
++	       "count", "delay total", "delay average",
+ 	       (unsigned long long)t->swapin_count,
+ 	       (unsigned long long)t->swapin_delay_total,
+-	       "count", "delay total",
++	       average_ms(t->swapin_delay_total, t->swapin_count),
++	       "count", "delay total", "delay average",
+ 	       (unsigned long long)t->freepages_count,
+-	       (unsigned long long)t->freepages_delay_total);
++	       (unsigned long long)t->freepages_delay_total,
++	       average_ms(t->freepages_delay_total, t->freepages_count));
+ }
+ 
+ static void task_context_switch_counts(struct taskstats *t)
