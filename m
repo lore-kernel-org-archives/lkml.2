@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab1EBOXx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:23:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53369 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759183Ab1EBOXv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:23:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=GSCE/huQ3gLRMdFK002YOEtqpAGG0+8wmt+3QbjtRpdG/7MuOrq0VVGstglRkR88YP
-         iwhF+9A46iQjK6I0zlajcTA2k8cyl+s6FSbIedEsmq5KNBe3um2u3PRnUFZbhILm04Ri
-         z0C+RxMkKKZKH7Odm+k7TS/BJ8HoOsl8P94TA=
-Message-ID: <4DBEBE72.3040702@gmail.com>
-Date: Mon, 02 May 2011 18:23:46 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1759389Ab1EBO3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:29:09 -0400
+Received: from nocko.org ([173.245.73.87]:52940 "EHLO nocko.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756136Ab1EBO3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:29:05 -0400
+From: Shawn Nock <nock@nocko.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: rtlwifi: regression 39-rc5 (rtl8192ce)
+References: <fa.edeGRjft5wqQRP07grcwfUVPlIA@ifi.uio.no>
+	<fa.0KaksBH9ogj3psmzYEvXzvHxClw@ifi.uio.no>
+Date: Mon, 02 May 2011 10:26:01 -0400
+In-Reply-To: <fa.0KaksBH9ogj3psmzYEvXzvHxClw@ifi.uio.no> (Larry Finger's
+	message of "Sun, 01 May 2011 20:12:21 UTC")
+Message-ID: <m3d3k1b2me.fsf@nocko.org>
+User-Agent: Gnus/5.110016 (No Gnus v0.16) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using cluster
- groups v4
-References: <20110502113445.751391656@openvz.org> <20110502114024.222582172@openvz.org> <20110502132232.GA3873@elte.hu> <4DBEB96A.8000309@openvz.org>
-In-Reply-To: <4DBEB96A.8000309@openvz.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2011 06:02 PM, Cyrill Gorcunov wrote:
-...
-> 
->   Ingo, the idea was to merge probe_x.c completely, and put all this not into init()
-> but rather into apic->probe() or something like that. I don't have a clear picture
-> in mind yet what the best way would be, so instead of fast designed method I thought
-> to leave it opencoded with fixme note.
-> 
->   So lets wait until Suresh post the benchmark and I will make apic->init() meanwhile.
-> 
+Larry Finger <Larry.Finger@lwfinger.net> writes:
 
-  Ingo, would it be fine to make apic->init() either _before_ this series or on
-top of them (because if I introduce it inside this particular patch it would contain
-some unrelated code snippets such as .init = NULL for all apics declaration).
+> On 05/01/2011 12:59 PM, Shawn Nock wrote:
+>> During heavy network traffic (esp. flash video) I see the attached
+>> NULL pointer dereference in 2.6.39-rc5 on an IBM Thinkpad
+>> x120e. Immediately afterward a "scheduling while atomic" bug is
+>> reported and the system becomes unresponsive. I am unable to produce
+>> this problem in 2.6.38.4.
+>> See attached backtrace and dmesg. Please let me know what I can
+>> collect to make this problem easier to troubleshoot.
+>
+> Could you also supply the instruction byte sequence for the oops? It
+> is the "Code:" line of the dump.
+
+I had not been able to capture that, as the scheduler oops was triggered
+during the call stack dump (before the Code line).
+
+> I think you are using a 32-bit system. Is that correct?
+
+Correct.
+
+> Is there one URL that exposes this problem? If so, please sent that as
+> well.
+
+It had been speedtest.net (which *used* to crash this all the
+time). I've since re-configured the kernel to allow it to build faster
+(fedora .config trimmed to remove a lot of the unneeded modules). I can
+no longer trigger this BUG.
+
+I originally thought that this may be because I enabled the 8192CU
+driver, but clean kernel without it also doesn't trigger the bug. My new
+hypothesis is that building the kernel for the AMD processor type was a
+mistake (the only other significant change was that I went back to
+Pentium Pro as the CPU target).
+
+As far as I can tell this problem is resolved (20+ hours without issue,
+less than 20 min previously) and probably due to GCC not being aware of
+this (newish) AMD processor.
+
+Sorry for the false alarm and thanks,
+Shawn
 
 -- 
-Thanks,
-  Cyrill
+Shawn Nock (OpenPGP: 0x8132E623)
