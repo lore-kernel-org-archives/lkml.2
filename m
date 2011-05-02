@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab1EBTRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:17:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53474 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab1EBTQu (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 2 May 2011 15:16:50 -0400
-Date: Mon, 2 May 2011 15:08:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad@kernel.org" <konrad@kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH] xen block backend driver. - proper
- flush/barrier/fua support missing.
-Message-ID: <20110502190843.GA29913@dumpdata.com>
-References: <1303333543-5915-1-git-send-email-konrad.wilk@oracle.com>
- <1303333543-5915-2-git-send-email-konrad.wilk@oracle.com>
- <20110421034016.GB11501@infradead.org>
- <1303412592.9571.126.camel@agari.van.xensource.com>
- <20110421190606.GA10793@infradead.org>
- <1303413277.9571.133.camel@agari.van.xensource.com>
- <20110422090904.GA29246@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110422090904.GA29246@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DBF02FD.01B4:SCFMA4539811,ss=1,fgs=0
+	id S1756146Ab1EBTKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:10:34 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33052 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab1EBTKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:10:33 -0400
+Subject: Re: Long timeout when booting >= 2.6.38
+From: john stultz <johnstul@us.ibm.com>
+To: Christian Hoffmann <email@christianhoffmann.info>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DBEFCBA.3070501@christianhoffmann.info>
+References: <4DBEFCBA.3070501@christianhoffmann.info>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 May 2011 12:09:35 -0700
+Message-ID: <1304363375.3226.5.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 22, 2011 at 05:09:04AM -0400, Christoph Hellwig wrote:
-> On Thu, Apr 21, 2011 at 12:14:37PM -0700, Daniel Stodden wrote:
-> > > There is a huge userbase of guests out there that does rely on it.
-> > 
-> > Which ones? Old blkfront would have make a difference back then when
-> > barriers used to be an option, but it never actually declared it, right?
+On Mon, 2011-05-02 at 20:49 +0200, Christian Hoffmann wrote:
+> I have a strange hang/timeout when booting kernel 2.6.38 and newer. It 
+> hangs after a few initialization steps and then after 145 seconds, it 
+> continues to boot.
 > 
-> Pre-Linux 2.6.37 guests using reiserfs actually relied on the queue
-> flushing.  This includes a lot of SLES installation which are still
-> in common use.  There's only two options to make sure they work:
+> I bisected kernel and found that offensive revision is:
 > 
->  (1) keep the original barrier semantics and flush the queue
->  (2) do not advertize "barrier" support at all, and make sure to submit
->    every I/O we get with the FUA bit.
+> 08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+> "x86: Improve TSC calibration using a delayed workqueue"
 > 
-> In practice (2) is going to be faster for most real-life workloads.  So
-> maybe you should just drop the old "barrier" support and just send
-> requests with the FUA bit set for now, until you have proper flush
-> and fua support in the protocol.
+> Older kernels before above revision work fine.
+> 
+> When passing acpi=off to kernel, the problem seems to disappear.
 
-Let me play with both options and see how they pan out.
+Hrm. So, on older kernels, what do you see from:
+$ cat /sys/devices/system/clocksource/clocksource0/current_clocksource 
+$ cat /sys/devices/system/clocksource/clocksource0/available_clocksource 
 
-Christoph,
 
-Is there a good tool to unmask barrier bugs? I found this one:
-http://lwn.net/Articles/283169/
+> Dmesg output below where you can see the jump from 1.47 to 146.85.
+> 
+> The mainboard is an Asus M4A89GTD PRO/USB3 (latest BIOS revision).
+> 
+> Kind regards,
+> Chris
+> 
+> PS: the problem has also been reported to ubuntu where more hw 
+> information is attached.
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/765230
+> PSS: dmesg output
 
-but not sure if that still applies to this case? Or does
-running bonnie++ expose the potential issues?
+Hrm. The delay in the dmesg logs doesn't really seem to correlate that
+closely with the delayed tsc calibration. Hrmm..
+
+thanks
+-john
+
+
