@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab1EBPTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 11:19:54 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:40293 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757510Ab1EBPTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 11:19:51 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=kNjbDBwc3JDsrxuM5ygvhUIci4FK7YOIljZkkZmGSj2sP4nevsQBGMjpQH+1BJIXqTQPeoc1qXbi+AxUtekKyU+aNvO5rJKXnQlh2w4yIhcOmPltQpp6OPAf6iXSeoc1;
-Date: Mon, 2 May 2011 08:19:48 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kbuild@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, sam@ravnborg.org
-Subject: Re: linux-next: Tree for May 2 (uml builds fail)
-Message-Id: <20110502081948.1ccb9aef.rdunlap@xenotime.net>
-In-Reply-To: <20110502150150.d932642f.sfr@canb.auug.org.au>
-References: <20110502150150.d932642f.sfr@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1759762Ab1EBPXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 11:23:50 -0400
+Received: from kroah.org ([198.145.64.141]:42391 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757510Ab1EBPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 11:23:47 -0400
+Date: Mon, 2 May 2011 08:23:37 -0700
+From: Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com, joe@perches.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH]Remove a warning for drivers/staging/wlan-ng/cfg80211.c
+Message-ID: <20110502152337.GA7364@kroah.com>
+References: <20110502143845.GA4952@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502143845.GA4952@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Mon, May 02, 2011 at 10:38:49PM +0800, Harry Wei wrote:
+> From: Harry Wei <harryxiyou@gmail.com>
+>   
+> 	When i was compiling kernel, a warning happened to me.
+>   The warning said like following.
 > 
-> Changes since 20110429:
+> drivers/staging/wlan-ng/cfg80211.c:709: warning: initialization from
+> incompatible pointer type.
+> 
+> See http://s1202.photobucket.com/albums/bb364/harrywei/?action=view&current=patched2.png
+> for more details.
+> 
+> So i patch like following.
+> 
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  drivers/staging/wlan-ng/cfg80211.c |    2 +-
 
+I'm pretty sure this was included in the set of patches sent to Linux
+last week, right?
 
-uml builds on i386 or x86_64 fail with: (I'm using O=outputdir if it matters)
+thanks,
 
-  GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-scripts/kconfig/conf --silentoldconfig arch/um/Kconfig.x86
-  GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-/lnx/src/NEXT/linux-next-20110502/scripts/Makefile.asm-generic:9: /lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild: No such file or directory
-make[2]: *** No rule to make target `/lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild'.  Stop.
-
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
