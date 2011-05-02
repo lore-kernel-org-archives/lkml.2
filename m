@@ -1,146 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab1EBUuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 16:50:03 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:63556 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab1EBUuA (ORCPT
+	id S1756717Ab1EBUwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 16:52:15 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14403 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab1EBUwN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 16:50:00 -0400
-Message-ID: <4DBF18F2.80103@sieker.io>
-Date: Mon, 02 May 2011 22:49:54 +0200
-From: "Adi J. Sieker" <adi@core.adi.io>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	Mon, 2 May 2011 16:52:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 02 May 2011 13:52:09 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Mon, 2 May 2011 13:52:05 -0700
+Subject: RE: [PATCH 1/4] drivers: create a pinmux subsystem
+Thread-Topic: [PATCH 1/4] drivers: create a pinmux subsystem
+Thread-Index: AcwI/Y7VJi2thbgTSMG27Y/Kb2UFngACRUmQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0497F1B201@HQMAIL01.nvidia.com>
+References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: USB list <linux-usb@vger.kernel.org>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-References: <Pine.LNX.4.44L0.1105021622510.2106-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105021622510.2106-100000@iolanthe.rowland.org>
-Content-Type: multipart/mixed;
- boundary="------------080000090500070705090107"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080000090500070705090107
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Linus Walleij wrote at Monday, May 02, 2011 1:16 PM:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This creates a subsystem for handling of pinmux devices. These are
+> devices that enable and disable groups of pins on primarily PGA and
+> BGA type of chip packages and common in embedded systems.
 
-On 02/05/11 22:27, Alan Stern wrote:
-> On Mon, 2 May 2011, Adi J. Sieker wrote:
->
->>> Something else that might help is a usbmon trace showing what happens
->>> when you plug in the keyboard.  Instructions are in the kernel source
->>> file Documentation/usb/usbmon.txt.  In particular, while running the
->>> test try pressing some of the normal keys that don't work.
->>>
->>
->> The attached file usbmon-working.out is the output when I pressed the
->> backspace key. When I press any of the non working keys which is
->> everything but the backspace and menu key. I don't get any output even
->> when using 0u.
->
-> Sorry, I wasn't clear enough.  I meant for you to start the usbmon
-> trace _before_ plugging in the keyboard, so we can see what happens as
-> the keyboard is initialized and probed.
->
+I would avoid any references to particular package types; I've seen
+pinmuxing applied to PLCC and DIP/DIL too, and in general, it's possible
+irrespective of package type.
 
-You were clear enough, I just couldn't read. :)
+> This is being done to depopulate the arch/arm/* directory of such
+> custom drivers and try to abstract the infrastructure they all
+> need. See the Documentation/pinmux.txt file that is part of this
+> patch for more details.
 
-Attached is the usbmon trace when I plug the keyboard in.
+> diff --git a/Documentation/pinmux.txt b/Documentation/pinmux.txt
+>...
+> +The mux settings are:
+> +
+> +- Oriented around enumerated physical pins or pads denoted by unsigned
+> +  integers in the range 0..MAX_INT. Every pin on your system (or atleast
+> +  every pin that can be muxed) should have a unique number. The numberspace
 
-lsusb shows the keyboard as:
-Bus 002 Device 008: ID 060b:0230 Solid Year
+Does this imply a model where each pin's "special function" can be
+controlled independently? I think reading through the document that
+isn't the case, but I just wanted to be sure.
 
-Relevant section from /sys/kernel/debug/usb/devices
-T:  Bus=02 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  8 Spd=1.5 MxCh= 0
-D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-P:  Vendor=060b ProdID=0230 Rev= 2.20
-S:  Manufacturer=KB
-S:  Product=USB Keyboard
-C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
-E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
-I:* If#= 1 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
-E:  Ad=82(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
+In particular, NVIDIA Tegra has a setup where:
 
+* Pinmux configuration for "special functions" is at a "pad-group"
+  level, where there may be 1..N pins in a pad-group, and there is a
+  single register field that defines the current special function routed
+  to/from all pins in that pad-group at once.
 
-Cheers
-    Adi
+* Each pad group can be assigned 1 of N special functions (none might be
+  an option in some/all cases too)
 
---------------080000090500070705090107
-Content-Type: text/plain;
- name="usbmon.out"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="usbmon.out"
+* Some special functions may be assignable to multiple pad groups,
+  although obviously only 1 pad group per function at a time.
 
-f7290780 1275690550 C Ii:2:002:1 0:2048 2 = 0200
-f7290780 1275690564 S Ii:2:002:1 -115:2048 2 <
-ed799a80 1275690577 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275690733 C Ci:2:002:0 0 4 = 01010100
-ed799a80 1275690760 S Co:2:002:0 s 23 01 0010 0001 0000 0
-ed799a80 1275690874 C Co:2:002:0 0 0
-ed799a80 1275690896 S Co:2:002:0 s 23 03 0016 0001 0000 0
-ed799a80 1275690994 C Co:2:002:0 0 0
-ed799a80 1275691013 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275691108 C Ci:2:002:0 0 4 = 01010000
-ed799a80 1275721328 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275721498 C Ci:2:002:0 0 4 = 01010000
-ed799a80 1275753292 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275753488 C Ci:2:002:0 0 4 = 01010000
-ed799a80 1275785291 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275785487 C Ci:2:002:0 0 4 = 01010000
-ed799a80 1275817293 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275817494 C Ci:2:002:0 0 4 = 01010000
-ed799a80 1275817523 S Co:2:002:0 s 23 03 0004 0001 0000 0
-ed799a80 1275817611 C Co:2:002:0 0 0
-ed799a80 1275833290 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275833487 C Ci:2:002:0 0 4 = 03031000
-ed799a80 1275889293 S Co:2:002:0 s 23 01 0014 0001 0000 0
-ed799a80 1275889496 C Co:2:002:0 0 0
-ed799a80 1275889532 S Ci:2:000:0 s 80 06 0100 0000 0040 64 <
-ed799a80 1275892102 C Ci:2:000:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-ed799a80 1275892117 S Co:2:002:0 s 23 03 0004 0001 0000 0
-ed799a80 1275892202 C Co:2:002:0 0 0
-ed799a80 1275909792 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ed799a80 1275910014 C Ci:2:002:0 0 4 = 03031000
-f7290780 1275946520 C Ii:2:002:1 0:2048 2 = 0200
-f7290780 1275946525 S Ii:2:002:1 -115:2048 2 <
-ed799a80 1275965292 S Co:2:002:0 s 23 01 0014 0001 0000 0
-ed799a80 1275965488 C Co:2:002:0 0 0
-ed799a80 1275965498 S Co:2:000:0 s 00 05 0008 0000 0000 0
-ed799a80 1275966256 C Co:2:000:0 0 0
-ed799a80 1275985295 S Ci:2:008:0 s 80 06 0100 0000 0012 18 <
-ed799a80 1275988172 C Ci:2:008:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-ed799a80 1275988197 S Ci:2:008:0 s 80 06 0200 0000 0009 9 <
-ed799a80 1275990297 C Ci:2:008:0 0 9 = 09023b00 020100a0 32
-ed799a80 1275990322 S Ci:2:008:0 s 80 06 0200 0000 003b 59 <
-ed799a80 1275996802 C Ci:2:008:0 0 59 = 09023b00 020100a0 32090400 00010301 01000921 10010001 224b0007 05810308
-ed799a80 1275996831 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-ed799a80 1275998034 C Ci:2:008:0 0 4 = 04030904
-ed799a80 1275998059 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-ed799a80 1276001661 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-ed799a80 1276001690 S Ci:2:008:0 s 80 06 0301 0409 00ff 255 <
-ed799a80 1276002925 C Ci:2:008:0 0 6 = 06034b00 4200
-ed799a80 1276003106 S Co:2:008:0 s 00 09 0001 0000 0000 0
-ed799a80 1276004260 C Co:2:008:0 0 0
-ed799a80 1276004420 S Co:2:008:0 s 21 0a 0000 0000 0000 0
-ed799a80 1276005203 C Co:2:008:0 0 0
-ed799a80 1276005225 S Ci:2:008:0 s 81 06 2200 0000 004b 75 <
-ed799a80 1276013206 C Ci:2:008:0 0 75 = 05010906 a1010507 19e029e7 15002501 75019508 81029501 75088101 95037501
-ee1bd480 1276013657 S Co:2:008:0 s 21 09 0200 0000 0001 1 = 00
-ee1bd280 1276013838 S Ii:2:008:1 -115:8 8 <
-ee1bdb00 1276014194 S Co:2:008:0 s 21 0a 0000 0001 0000 0
-ee1bd480 1276014952 C Co:2:008:0 0 1 >
-ee1bdb00 1276015579 C Co:2:008:0 -32 0
-ee1bdb00 1276015635 S Ci:2:008:0 s 81 06 2200 0001 006c 108 <
-ee1bdb00 1276026705 C Ci:2:008:0 0 108 = 05010980 a1018501 19812983 15002501 95037501 81029501 75058101 c0050c09
-ee11ad80 1276027069 S Ci:2:002:0 s a3 00 0000 0001 0004 4 <
-ee11ad80 1276027199 C Ci:2:002:0 0 4 = 03030000
-ee1bd480 1276051645 S Co:2:008:0 s 21 09 0200 0000 0001 1 = 01
-ee1bd480 1276052955 C Co:2:008:0 0 1 >
+* GPIO selection is at per-pin granularity; individual pins may be used
+  as a GPIO irrespective of what SFR is selected for the pad group
+  containing the pin.
 
---------------080000090500070705090107--
+* There are also other configurations associated with pinmuxing, such
+  as drive strength, pull up/down enables, etc.
+
+Also, some of our drivers use "dynamic pinmuxing". For example, our
+downstream I2C driver exposes N I2C busses and reprograms the pinmux
+at runtime to attach the actual I2C controller to different sets of
+pins, essentially multi-plexing the control across N physical busses.
+
+> diff --git a/include/linux/pinmux.h b/include/linux/pinmux.h
+> new file mode 100644
+> index 0000000..9bdcc33
+> --- /dev/null
+> +++ b/include/linux/pinmux.h
+
+> +/**
+> + * struct pinmux_map - boards/machines shall provide this map for devices
+> + * @node: list node - only for internal use
+
+Node isn't in the structure.
+
+> + * @function: a functional name for this mapping so it can be passed down
+> + *	to the driver to invoke that function and be referenced by this ID
+> + *	in e.g. pinmux_get()
+> + * @dev: the device using this specific mapping, may be NULL if you provide
+> + *	.dev_name instead (this is more common)
+> + * @dev_name: the name of the device using this specific mapping, the name
+> + *	must be the same that will return your struct device*
+> + */
+> +struct pinmux_map {
+> +	const char *function;
+> +	struct device *dev;
+> +	const char *dev_name;
+> +};
+
+> +/*
+> + * The pin number is a global pin number space, nominally the arch shall define
+> + * the number of pins in *total* across all chips in the arch/system.
+> + *
+> + * Example: if your arch has two chips with 64 pins each, you have
+> + * 8*3 = 24 MACH_NR_PINS.
+
+2*64 = 128 MACH_NR_PINS ?
+
+> +struct pinmux_dev;
+> +
+> +/**
+> + * struct pinmux_ops - pinmux operations, to be implemented by drivers
+> + * @request: called by the core to see if a certain pin can be muxed in
+> + *	and made available in a certain mux setting The driver is allowed
+> + *	to answer "no" by returning a negative error code
+> + * @list_functions: list the number of selectable named functions available
+> + *	in this pinmux driver, the core will begin on 0 and call this
+> + *	repeatedly as long as it returns >= 0 to enumerate mux settings
+> + * @get_function_name: return the function name of the muxing selector,
+> + *	called by the core to figure out which mux setting it shall map a
+> + *	certain device to
+> + * @get_function_pins: return an array of pins corresponding to a certain
+> + *	function selector in @pins, and the size of the array in @num_pins
+> + * @enable: enable a certain muxing enumerator. The driver does not need to
+> + *	figure out whether enabling this function conflicts some other use
+> + *	of the pins, such collisions are handled by the pinmux subsystem
+> + * @disable: disable a certain muxing enumerator
+> + * @gpio_request_enable: requests and enables GPIO on a certain pin.
+> + *	Implement this only if you can mux every pin individually as GPIO. If
+> + *	your gpio assignments are grouped, so you cannot control the GPIO
+> + *	muxing of every indvidual pin.
+> + * @dbg_show: optional debugfs display hook that will provide per-device
+> + *	info for a certain pin in debugfs
+> + */
+> +struct pinmux_ops {
+> +	int (*request) (struct pinmux_dev *pmxdev, unsigned offset);
+
+s/offset/pin/? I assume that's what it means. Same for gpio_request_enable
+below too.
+
+> +	int (*free) (struct pinmux_dev *pmxdev, unsigned offset);
+> +	int (*list_functions) (struct pinmux_dev *pmxdev, unsigned selector);
+> +	const char *(*get_function_name) (struct pinmux_dev *pmxdev,
+> +					unsigned selector);
+> +	int (*get_function_pins) (struct pinmux_dev *pmxdev, unsigned selector,
+> +			unsigned ** const pins, unsigned * const num_pins);
+> +	int (*enable) (struct pinmux_dev *pmxdev, unsigned selector);
+> +	void (*disable) (struct pinmux_dev *pmxdev, unsigned selector);
+> +	int (*gpio_request_enable) (struct pinmux_dev *pmxdev, unsigned offset);
+> +	void (*dbg_show) (struct pinmux_dev *pmxdev, struct seq_file *s,
+> +			  unsigned offset);
+> +};
+> +
+> +/**
+> + * struct pinmux_desc - pinmux descriptor, register this to pinmux subsystem
+> + * @name: name for the pinmux
+> + * @ops: pinmux operation table
+> + * @owner: module providing the pinmux, used for refcounting
+> + * @base: the number of the first pin handled by this pinmux, in the global
+> + *	pin space, subtracted from a given pin to get the offset into the range
+> + *	of a certain pinmux
+> + * @no_pin_settings: the number of pins handled by this pinmux - note that
+
+That's npins below.
+
+> + *	this is the number of possible pin settings, if your driver handles
+> + *	8 pins that each can be muxed in 3 different ways, you reserve 24
+> + *	pins in the global pin space and set this to 24
+> + */
+> +struct pinmux_desc {
+> +	const char *name;
+> +	struct pinmux_ops *ops;
+> +	struct module *owner;
+> +	int base;
+> +	int npins;
+> +};
+
+> +/* External interface to pinmux */
+> +extern int pinmux_request_gpio(int pin, unsigned gpio);
+> +extern void pinmux_free_gpio(int pin);
+
+Is there (or should there be) any automatic interaction with gpiolib?
+
+> +extern int pinmux_register_mappings(struct pinmux_map const *map,
+> +				    unsigned num_maps);
+> +extern struct pinmux *pinmux_get(struct device *dev, const char *func);
+
+I feel slightly uneasy tying the pinmux API to devices rather than
+Letting it be more free-form. I've seen this pattern for clocks too,
+but IIRC there is an override there allowing specification of a NULL
+device in order to look up a clock by raw clock name instead of
+device + sub-clock-name right?
+
+Still, I'm a relative neophyte regarding internal Linux kernel APIs,
+so my opinion here may not be particularly relevant.
+
+-- 
+nvpublic
+
