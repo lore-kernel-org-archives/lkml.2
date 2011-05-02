@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab1EBQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:33:58 -0400
-Received: from mail.palosanto.com ([200.93.199.101]:38188 "EHLO
-	pbx.palosanto.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753343Ab1EBQdz (ORCPT
+	id S1754945Ab1EBQdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:33:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23986 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab1EBQdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:33:55 -0400
-Message-ID: <4DBEDC84.5010903@fiec.espol.edu.ec>
-Date: Mon, 02 May 2011 11:32:04 -0500
-From: =?UTF-8?B?QWxleCBWaWxsYWPDrcKtcyBMYXNzbw==?= 
-	<avillaci@fiec.espol.edu.ec>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Subject: Re: [Bug #28522] Unable to mount FAT-formatted floppy on /dev/fd0,
- plus WARN_ON when using /dev/fd0u1440
-References: <QbBtx5c9v1J.A.JaF.PxGvNB@chimera> <9nxEC7x0HFO.A.VFH.O0GvNB@chimera>
-In-Reply-To: <9nxEC7x0HFO.A.VFH.O0GvNB@chimera>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 2 May 2011 12:33:19 -0400
+Date: Mon, 2 May 2011 09:32:44 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, randy.dunlap@oracle.com,
+        greg@kroah.com, joe@perches.com, akpm@linux-foundation.org
+Subject: Re: [Oops 2/2]The frame size of xxx bytes is larger than 1024 bytes
+Message-Id: <20110502093244.7594a929.randy.dunlap@oracle.com>
+In-Reply-To: <20110430062222.GB4274@gmail.com>
+References: <20110430062222.GB4274@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DBEDCB3.0008:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 30/04/11 15:17, Rafael J. Wysocki escribió:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.37 and 2.6.38.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.37 and 2.6.38.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28522
-> Subject		: Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
-> Submitter	: Alex Villacis Lasso<avillaci@ceibo.fiec.espol.edu.ec>
-> Date		: 2011-02-07 17:21 (83 days old)
->
->
->
-Still present witn 2.6.39-rc5.
+On Sat, 30 Apr 2011 14:22:24 +0800 Harry Wei wrote:
+
+> Hi us,
+> 	A warning disturbs me for a long time.
+> It shows like following.
+> 
+> [...]
+> Warning: the frame size of xxx bytes is larger than 1024 bytes.
+> [...]
+> 
+> See http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=report_bug1.png for details.
+> 	Of course, i wanna fix it. But i have no ways.
+> Can anyone do me a favor?
+
+Hi Harry,
+
+It looks like drivers/staging/rt28[67]0/ has all been removed, so no need to fix
+these warnings.  However, there are other frame size warnings still in the kernel
+tree if you want to fix them.
+
+Also it would be better just to insert the warnings in your email instead of
+posting a photo of them.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
