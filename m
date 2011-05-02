@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1EBVhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:37:08 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:56412 "EHLO e1.ny.us.ibm.com"
+	id S932300Ab1EBVhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:37:20 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35837 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757433Ab1EBVg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:36:56 -0400
-Date: Mon, 2 May 2011 09:19:37 -0700
+	id S932245Ab1EBVhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 17:37:16 -0400
+Date: Mon, 2 May 2011 09:21:06 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Josh Triplett <josh@joshtriplett.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -15,142 +15,253 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 17/86] rcu: fix boost-tracing bug and
- update tracing documentation
-Message-ID: <20110502161937.GC6524@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 18/86] rcu: add grace-period age to tracing
+Message-ID: <20110502162106.GD6524@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-17-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501154310.GD14829@feather>
- <20110502083301.GY2297@linux.vnet.ibm.com>
- <20110502161824.GB6524@linux.vnet.ibm.com>
+ <1304256126-26015-18-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110501152509.GB14829@feather>
+ <20110502083407.GZ2297@linux.vnet.ibm.com>
+ <20110502105243.GE2297@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110502161824.GB6524@linux.vnet.ibm.com>
+In-Reply-To: <20110502105243.GE2297@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 09:18:24AM -0700, Paul E. McKenney wrote:
-> On Mon, May 02, 2011 at 01:33:01AM -0700, Paul E. McKenney wrote:
-> > On Sun, May 01, 2011 at 08:43:10AM -0700, Josh Triplett wrote:
-> > > The bugfix here should really go in a separate commit from the updated
-> > > documentation.  Also:
+On Mon, May 02, 2011 at 03:52:43AM -0700, Paul E. McKenney wrote:
+> On Mon, May 02, 2011 at 01:34:07AM -0700, Paul E. McKenney wrote:
+> > On Sun, May 01, 2011 at 08:25:09AM -0700, Josh Triplett wrote:
+> > > On Sun, May 01, 2011 at 06:20:58AM -0700, Paul E. McKenney wrote:
+> > > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > 
+> > > > This commit adds the age in jiffies of the current grace period along
+> > > > with the duration in jiffies of the longest grace period since boot
+> > > > to the rcu/rcugp debugfs file.
 > > > 
-> > > On Sun, May 01, 2011 at 06:20:57AM -0700, Paul E. McKenney wrote:
-> > > > --- a/Documentation/RCU/trace.txt
-> > > > +++ b/Documentation/RCU/trace.txt
-> > > > @@ -10,34 +10,37 @@ for rcutree and next for rcutiny.
-> > > >  
-> > > >  CONFIG_TREE_RCU and CONFIG_TREE_PREEMPT_RCU debugfs Files and Formats
-> > > >  
-> > > > -These implementations of RCU provides five debugfs files under the
-> > > > +These implementations of RCU provides seven debugfs files under the
-> > > 
-> > > s/seven/several/, so this doesn't continue to need updates as you add
-> > > more tracing?  It doesn't seem entirely accurate even now, given that
-> > > the set of files available now depends on CONFIG_RCU_BOOST.
+> > > This change seems to have several other unrelated changes mixed in and
+> > > not documented, related to adding and tracing RCU_KTHREAD_OFFCPU.
 > > 
-> > Good point, will fix.
+> > Hmmm...  I do have two commits worth of stuff in there, don't I?
 > > 
-> > > >  top-level directory RCU: rcu/rcudata (which displays fields in struct
-> > > 
-> > > RCU or rcu?
-> > 
-> > Indeed, "rcu".  Will fix.
-> > 
-> > > >  rcu_data), rcu/rcudata.csv (which is a .csv spreadsheet version of
-> > > >  rcu/rcudata), rcu/rcugp (which displays grace-period counters),
-> > > > -rcu/rcuhier (which displays the struct rcu_node hierarchy), and
-> > > > +rcu/rcuhier (which displays the struct rcu_node hierarchy),
-> > > >  rcu/rcu_pending (which displays counts of the reasons that the
-> > > > -rcu_pending() function decided that there was core RCU work to do).
-> > > > +rcu_pending() function decided that there was core RCU work to do),
-> > > > +rcu/rcutorture (which displays rcutorture test progress), and, if the
-> > > > +kernel is built with CONFIG_RCU_BOOST, rcu/rcuboost (which displays RCU
-> > > > +boosting statistics).
-> > > 
-> > > I think this would work better as a list:
-> > > 
-> > > rcu/rcudata:
-> > >     Displays fields in struct rcu_data.
-> > > rcu/rcudata.csv:
-> > >     Comma-separated values spreadsheet version of rcudata.
-> > > rcu/rcugp:
-> > >     Displays grace-period counters.
-> > > rcu/rcuhier
-> > >     Displays the struct rcu_node hierarchy.
-> > > rcu/rcu_pending:
-> > >     Displays counts of the reasons rcu_pending() decided that RCU had
-> > >     work to do.
-> > > rcu/rcutorture:
-> > >     Displays rcutorture test progress.
-> > > rcu/rcuboost
-> > >     Displays RCU boosting statistics. Only present if
-> > >     CONFIG_RCU_BOOST=y.
-> > > 
-> > > Feel free to put the descriptions on the same lines as the filenames if
-> > > you prefer; however, I thought this style worked better for the
-> > > descriptions longer than one line.
-> > 
-> > Makes sense, will do a list.
-> > 
-> > > Also, does rcu/rcutorture appear with rcutorture not loaded?  Hopefully
-> > > not, since rcutorture shouldn't take up any additional resources when
-> > > not loaded.
-> > 
-> > Not much choice, unfortunately.  If I put the info into rcutorture, then
-> > I lose it when rcutorture is unloaded.  This is problematic in automated
-> > tests that repeatedly load and unload rcutorture.
-> > 
-> > But the amount of data is small, and I set things up so that TINY_RCU
-> > can omit this.  TREE_RCU is big enough that it doesn't really matter.
-> > 
-> > > > --- a/kernel/rcutree_plugin.h
-> > > > +++ b/kernel/rcutree_plugin.h
-> > > > @@ -1086,7 +1086,7 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
-> > > >  	else if (rnp->gp_tasks != NULL && rnp->qsmask != 0)
-> > > >  		rnp->n_balk_notblocked++;
-> > > >  	else if (rnp->gp_tasks != NULL &&
-> > > > -		 ULONG_CMP_GE(jiffies, rnp->boost_time))
-> > > > +		 ULONG_CMP_LT(jiffies, rnp->boost_time))
-> > > >  		rnp->n_balk_notyet++;
-> > > >  	else
-> > > >  		rnp->n_balk_nos++;
-> > > 
-> > > This bugfix should go in a separate commit.
-> > 
-> > Excellent point, will fix.
+> > Good catch, will fix!
 > 
-> Here is the updated documentation update.
+> But after reviewing again, it looks like the best fix is to make the
+> commit log better reflect what is happening.  All the changes are adding
+> more tracing, so no need to split the commit.  After all, it is not like
+> this series is particularly short on commits...  ;-)
 
-And here is the bug fix.
+And here it is with updated commit message.
 
 							Thanx, Paul
 
 ------------------------------------------------------------------------
 
-rcu: fix tracing bug thinko on boost-balk attribution
+rcu: add grace-period age and more kthread state to tracing
 
-The rcu_initiate_boost_trace() function mis-attributed refusals to
-initiate RCU priority boosting that were in fact due to its not yet
-being time to boost.  This patch fixes the faulty comparison.
+This commit adds the age in jiffies of the current grace period along
+with the duration in jiffies of the longest grace period since boot
+to the rcu/rcugp debugfs file.  It also adds an additional "O" state
+to kthread tracing to differentiate between the kthread waiting due to
+having nothing to do on the one hand and waiting due to being on the
+wrong CPU on the other hand.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 22a6a46..a21413d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1086,7 +1086,7 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
- 	else if (rnp->gp_tasks != NULL && rnp->qsmask != 0)
- 		rnp->n_balk_notblocked++;
- 	else if (rnp->gp_tasks != NULL &&
--		 ULONG_CMP_GE(jiffies, rnp->boost_time))
-+		 ULONG_CMP_LT(jiffies, rnp->boost_time))
- 		rnp->n_balk_notyet++;
- 	else
- 		rnp->n_balk_nos++;
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index 40b530d..fd4bffb 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -159,8 +159,8 @@ o	"qs" gives an indication of the state of the callback queue
+ 	the corresponding character is replaced by ".".
+ 
+ o	"kt" is the per-CPU kernel-thread state.  The digit preceding
+-	the slash is zero if there is no work pending and 1 otherwise.
+-	The character after the slash is as follows:
++	the first slash is zero if there is no work pending and 1
++	otherwise.  The character between the slashes is as follows:
+ 
+ 	"S"	The kernel thread is stopped, in other words, all
+ 		CPUs corresponding to this rcu_node structure are
+@@ -171,10 +171,18 @@ o	"kt" is the per-CPU kernel-thread state.  The digit preceding
+ 	"W"	The kernel thread is waiting because there is no work
+ 		for it to do.
+ 
++	"O"	The kernel thread is waiting because it has been
++		forced off of its designated CPU or because its
++		->cpus_allowed mask permits it to run on other than
++		its designated CPU.
++
+ 	"Y"	The kernel thread is yielding to avoid hogging CPU.
+ 
+ 	"?"	Unknown value, indicates a bug.
+ 
++	The number after the final slash is the CPU that the kthread
++	is actually running on.
++
+ o	"b" is the batch limit for this CPU.  If more than this number
+ 	of RCU callbacks is ready to invoke, then the remainder will
+ 	be deferred.
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index c1f5434..8cf0307 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -92,6 +92,7 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+  */
+ static DEFINE_PER_CPU(struct task_struct *, rcu_cpu_kthread_task);
+ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
++DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
+ static DEFINE_PER_CPU(wait_queue_head_t, rcu_cpu_wq);
+ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+ static char rcu_kthreads_spawnable;
+@@ -888,6 +889,8 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+ {
++	unsigned long gp_duration;
++
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 
+ 	/*
+@@ -895,6 +898,9 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	 * is seen before the assignment to rsp->completed.
+ 	 */
+ 	smp_mb(); /* See above block comment. */
++	gp_duration = jiffies - rsp->gp_start;
++	if (gp_duration > rsp->gp_max)
++		rsp->gp_max = gp_duration;
+ 	rsp->completed = rsp->gpnum;
+ 	rsp->signaled = RCU_GP_IDLE;
+ 	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
+@@ -1583,12 +1589,15 @@ static int rcu_cpu_kthread_should_stop(int cpu)
+ 	       smp_processor_id() != cpu) {
+ 		if (kthread_should_stop())
+ 			return 1;
++		per_cpu(rcu_cpu_kthread_status, cpu) = RCU_KTHREAD_OFFCPU;
++		per_cpu(rcu_cpu_kthread_cpu, cpu) = raw_smp_processor_id();
+ 		local_bh_enable();
+ 		schedule_timeout_uninterruptible(1);
+ 		if (!cpumask_equal(&current->cpus_allowed, cpumask_of(cpu)))
+ 			set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 		local_bh_disable();
+ 	}
++	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+ 	return 0;
+ }
+ 
+@@ -1656,6 +1665,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	kthread_bind(t, cpu);
++	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+ 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+ 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
+ 	wake_up_process(t);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 67341db..37502a2 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -93,8 +93,9 @@ struct rcu_dynticks {
+ #define RCU_KTHREAD_STOPPED  0
+ #define RCU_KTHREAD_RUNNING  1
+ #define RCU_KTHREAD_WAITING  2
+-#define RCU_KTHREAD_YIELDING 3
+-#define RCU_KTHREAD_MAX      3
++#define RCU_KTHREAD_OFFCPU   3
++#define RCU_KTHREAD_YIELDING 4
++#define RCU_KTHREAD_MAX      4
+ 
+ /*
+  * Definition for node within the RCU grace-period-detection hierarchy.
+@@ -383,6 +384,8 @@ struct rcu_state {
+ 						/*  but in jiffies. */
+ 	unsigned long jiffies_stall;		/* Time at which to check */
+ 						/*  for CPU stalls. */
++	unsigned long gp_max;			/* Maximum GP duration in */
++						/*  jiffies. */
+ 	char *name;				/* Name of structure. */
+ };
+ 
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index 3baa235..564b8fe 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -47,13 +47,14 @@
+ #include "rcutree.h"
+ 
+ DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
++DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_cpu);
+ DECLARE_PER_CPU(char, rcu_cpu_has_work);
+ 
+ static char convert_kthread_status(unsigned int kthread_status)
+ {
+ 	if (kthread_status > RCU_KTHREAD_MAX)
+ 		return '?';
+-	return "SRWY"[kthread_status];
++	return "SRWOY"[kthread_status];
+ }
+ 
+ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+@@ -74,7 +75,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->dynticks_fqs);
+ #endif /* #ifdef CONFIG_NO_HZ */
+ 	seq_printf(m, " of=%lu ri=%lu", rdp->offline_fqs, rdp->resched_ipi);
+-	seq_printf(m, " ql=%ld qs=%c%c%c%c kt=%d/%c b=%ld",
++	seq_printf(m, " ql=%ld qs=%c%c%c%c kt=%d/%c/%d b=%ld",
+ 		   rdp->qlen,
+ 		   ".N"[rdp->nxttail[RCU_NEXT_READY_TAIL] !=
+ 			rdp->nxttail[RCU_NEXT_TAIL]],
+@@ -86,6 +87,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 		   per_cpu(rcu_cpu_has_work, rdp->cpu),
+ 		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
+ 					  rdp->cpu)),
++		   per_cpu(rcu_cpu_kthread_cpu, rdp->cpu),
+ 		   rdp->blimit);
+ 	seq_printf(m, " ci=%lu co=%lu ca=%lu\n",
+ 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+@@ -312,16 +314,35 @@ static const struct file_operations rcuhier_fops = {
+ 	.release = single_release,
+ };
+ 
++static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
++{
++	unsigned long flags;
++	unsigned long completed;
++	unsigned long gpnum;
++	unsigned long gpage;
++	unsigned long gpmax;
++	struct rcu_node *rnp = &rsp->node[0];
++
++	raw_spin_lock_irqsave(&rnp->lock, flags);
++	completed = rsp->completed;
++	gpnum = rsp->gpnum;
++	if (rsp->completed == rsp->gpnum)
++		gpage = 0;
++	else
++		gpage = jiffies - rsp->gp_start;
++	gpmax = rsp->gp_max;
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	seq_printf(m, "%s: completed=%ld  gpnum=%lu  age=%ld  max=%ld\n",
++		   rsp->name, completed, gpnum, gpage, gpmax);
++}
++
+ static int show_rcugp(struct seq_file *m, void *unused)
+ {
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_printf(m, "rcu_preempt: completed=%ld  gpnum=%lu\n",
+-		   rcu_preempt_state.completed, rcu_preempt_state.gpnum);
++	show_one_rcugp(m, &rcu_preempt_state);
+ #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_printf(m, "rcu_sched: completed=%ld  gpnum=%lu\n",
+-		   rcu_sched_state.completed, rcu_sched_state.gpnum);
+-	seq_printf(m, "rcu_bh: completed=%ld  gpnum=%lu\n",
+-		   rcu_bh_state.completed, rcu_bh_state.gpnum);
++	show_one_rcugp(m, &rcu_sched_state);
++	show_one_rcugp(m, &rcu_bh_state);
+ 	return 0;
+ }
+ 
