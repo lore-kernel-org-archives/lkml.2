@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1EBQkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:40:06 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60600 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750988Ab1EBQkC (ORCPT
+	id S1753668Ab1EBQwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:52:13 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:60047 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab1EBQwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:40:02 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/URrhnvBHpdAGtY5bL/4vl
-Date: Mon, 2 May 2011 19:39:54 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/8] arm/dt: probe for platforms via the device tree
-Message-ID: <20110502163951.GC9243@atomide.com>
-References: <20110429070135.12522.35745.stgit@ponder>
- <20110429071548.12522.56929.stgit@ponder>
- <20110502151542.GG2092@atomide.com>
- <BANLkTikue6jMUcQMv9GD4cZ=o5EEW7QDqQ@mail.gmail.com>
+	Mon, 2 May 2011 12:52:11 -0400
+Date: Mon, 2 May 2011 18:52:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kbuild@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 2 (uml builds fail)
+Message-ID: <20110502165208.GA18740@merkur.ravnborg.org>
+References: <20110502150150.d932642f.sfr@canb.auug.org.au> <20110502081948.1ccb9aef.rdunlap@xenotime.net> <20110502160405.GE15769@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikue6jMUcQMv9GD4cZ=o5EEW7QDqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110502160405.GE15769@sepie.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely <grant.likely@secretlab.ca> [110502 18:31]:
-> On Mon, May 2, 2011 at 9:15 AM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Grant Likely <grant.likely@secretlab.ca> [110429 00:13]:
-> >> +
-> >> +/**
-> >> + * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
-> >> + * @dt_phys: physical address of dt blob
-> >> + *
-> >> + * If a dtb was passed to the kernel in r2, then use it to choose the
-> >> + * correct machine_desc and to setup the system.
-> >> + */
-> >> +struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
-> >> +{
-> > ...
-> >
-> >> +
-> >> +     /* Retrieve various information from the /chosen node */
-> >> +     of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-> >
-> > Just to make sure we're considering properly what this change means..
-> >
-> > Does this patch require using CONFIG_CMDLINE_FORCE for older bootloaders
-> > with the device tree append patch?
+On Mon, May 02, 2011 at 06:04:05PM +0200, Michal Marek wrote:
+> On Mon, May 02, 2011 at 08:19:48AM -0700, Randy Dunlap wrote:
+> > On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > Changes since 20110429:
+> > 
+> > 
+> > uml builds on i386 or x86_64 fail with: (I'm using O=outputdir if it matters)
+> > 
+> >   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
+> > scripts/kconfig/conf --silentoldconfig arch/um/Kconfig.x86
+> >   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
+> > /lnx/src/NEXT/linux-next-20110502/scripts/Makefile.asm-generic:9: /lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild: No such file or directory
+> > make[2]: *** No rule to make target `/lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild'.  Stop.
 > 
-> With the current patch?  Yes, but there is a follow-on patch that was
-> posted a while ago[1] that will copy ATAG data into the device tree in
-> the bootloader.  I've not been pushing to include that change since it
-> adds a lot of code to the wrapper and I'm not sure how deeply we want
-> to support that use case.  Basically I want to have a better idea what
-> the supported use cases are before pushing something like that.
+> This patch should fix it.
+> 
+> Michal
+> 
+> Subject: [PATCH] kbuild: Fix Makefile.asm-generic for um
+> 
+> Do nothing if arch/$(SRCARCH)/include/asm/Kbuild does not exist, which
+> is the case of um.
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-OK. Maybe that could be made simpler if we only copy the cmdline?
+Makes sense - sorry for not catchign the um case!
 
-The cmdline is something that bootloaders typically allow to configure,
-while the other ATAGs are static and should be in the .dts file.
- 
-> Adding a default command line to the .dts file instead of using
-> CONFIG_CMDLINE_FORCE also works.
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-But that requires carrying extra patches for something that should
-be user configured.. So not so nice for distros.
 
-Tony
- 
-> [1] http://lists.ozlabs.org/pipermail/devicetree-discuss/2011-March/004652.html
+	Sam
