@@ -1,55 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab1EBKw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 06:52:59 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:34609 "EHLO e2.ny.us.ibm.com"
+	id S1757884Ab1EBKya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 06:54:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39481 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755358Ab1EBKw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 06:52:56 -0400
-Date: Mon, 2 May 2011 03:52:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 18/86] rcu: add grace-period age to tracing
-Message-ID: <20110502105243.GE2297@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-18-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501152509.GB14829@feather>
- <20110502083407.GZ2297@linux.vnet.ibm.com>
+	id S1754166Ab1EBKy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 06:54:27 -0400
+Date: Mon, 2 May 2011 13:53:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/8] Add userspace buffers support in skb
+Message-ID: <20110502105348.GA21706@redhat.com>
+References: <1303328216.19336.18.camel@localhost.localdomain>
+ <1303328877.19336.28.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110502083407.GZ2297@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1303328877.19336.28.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 01:34:07AM -0700, Paul E. McKenney wrote:
-> On Sun, May 01, 2011 at 08:25:09AM -0700, Josh Triplett wrote:
-> > On Sun, May 01, 2011 at 06:20:58AM -0700, Paul E. McKenney wrote:
-> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > 
-> > > This commit adds the age in jiffies of the current grace period along
-> > > with the duration in jiffies of the longest grace period since boot
-> > > to the rcu/rcugp debugfs file.
-> > 
-> > This change seems to have several other unrelated changes mixed in and
-> > not documented, related to adding and tracing RCU_KTHREAD_OFFCPU.
+On Wed, Apr 20, 2011 at 12:47:57PM -0700, Shirley Ma wrote:
+> This patch adds userspace buffers support in skb. A new struct
+> skb_ubuf_info is needed to maintain the userspace buffers argument
+> and index, a callback is used to notify userspace to release the
+> buffers once lower device has done DMA (Last reference to that skb
+> has gone).
 > 
-> Hmmm...  I do have two commits worth of stuff in there, don't I?
+> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> ---
 > 
-> Good catch, will fix!
+>  include/linux/skbuff.h |   14 ++++++++++++++
+>  net/core/skbuff.c      |   15 ++++++++++++++-
+>  2 files changed, 28 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index d0ae90a..47a187b 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -189,6 +189,16 @@ enum {
+>  	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
+>  };
+>  
+> +/* The callback notifies userspace to release buffers when skb DMA is done in
+> + * lower device, the desc is used to track userspace buffer index.
+> + */
+> +struct skb_ubuf_info {
+> +	/* support buffers allocation from userspace */
+> +	void		(*callback)(struct sk_buff *);
+> +	void		*arg;
+> +	size_t		desc;
+> +};
+> +
+>  /* This data is invariant across clones and lives at
+>   * the end of the header data, ie. at skb->end.
+>   */
+> @@ -211,6 +221,10 @@ struct skb_shared_info {
+>  	/* Intermediate layers must ensure that destructor_arg
+>  	 * remains valid until skb destructor */
+>  	void *		destructor_arg;
+> +
+> +	/* DMA mapping from/to userspace buffers */
+> +	struct skb_ubuf_info ubuf;
+> +
+>  	/* must be last field, see pskb_expand_head() */
+>  	skb_frag_t	frags[MAX_SKB_FRAGS];
+>  };
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 7ebeed0..822c07d 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+>  	shinfo = skb_shinfo(skb);
+>  	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
+>  	atomic_set(&shinfo->dataref, 1);
+> +	shinfo->ubuf.callback = NULL;
+> +	shinfo->ubuf.arg = NULL;
+>  	kmemcheck_annotate_variable(shinfo->destructor_arg);
+>  
+>  	if (fclone) {
+> @@ -327,7 +329,15 @@ static void skb_release_data(struct sk_buff *skb)
+>  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+>  				put_page(skb_shinfo(skb)->frags[i].page);
+>  		}
+> -
+> +		/*
+> +		 * if skb buf is from userspace, we need to notify the caller
+> +		 * the lower device DMA has done;
+> +		 */
+> +		if (skb_shinfo(skb)->ubuf.callback) {
+> +			skb_shinfo(skb)->ubuf.callback(skb);
+> +			skb_shinfo(skb)->ubuf.callback = NULL;
+> +			skb_shinfo(skb)->ubuf.arg = NULL;
+> +		}
+>  		if (skb_has_frag_list(skb))
+>  			skb_drop_fraglist(skb);
+>  
 
-But after reviewing again, it looks like the best fix is to make the
-commit log better reflect what is happening.  All the changes are adding
-more tracing, so no need to split the commit.  After all, it is not like
-this series is particularly short on commits...  ;-)
+We probably don't need to touch arg if callback is NULL?
 
-							Thanx, Paul
+> @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
+>  	if (irqs_disabled())
+>  		return false;
+>  
+> +	if (shinfo->ubuf.callback)
+> +		return false;
+> +
+>  	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
+>  		return false;
+
+This is not the only API unsupported for these skbs, is it?
+Probably need to check and fail there as well.
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
