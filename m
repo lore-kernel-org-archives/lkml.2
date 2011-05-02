@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab1EBVko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:40:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59867 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab1EBVhE (ORCPT
+	id S1758224Ab1EBVk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:40:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:56664 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab1EBVkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:37:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
-Date: Mon, 2 May 2011 23:36:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: johnlinn@comcast.net, nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, john.linn@xilinx.com
-References: <538266033.2230575.1304371624720.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <538266033.2230575.1304371624720.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+	Mon, 2 May 2011 17:40:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=OatCop9WISBNI56lxQnNTfW5Pu0ZN/JykmJSF4E9yRAkbmVbtV6lNg+aJ4wSJbtJVO
+         22YKDoclMI/nwIEc9fZQ==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105022336.52663.arnd@arndb.de>
-X-Provags-ID: V02:K0:/PlYifJc7wXShyM3DDzjiyNXlTPRJvm1vKthxk3vpSE
- coZWiedMzhXZmOhHng7H/RZDoM51+uZNMq76VHqYs4d83sbTjd
- L1L2yiN3aIRVPJg5nusHAZwPJ6mXYhg5vMZi7wEUvX/lSybOhP
- vASbKARuAsNVOiqZKeF2GgxJ5ExCFpFW5fuZVhIW1OWnmKMPa4
- gLyq0iJDJIH5pLI0opNqg==
+In-Reply-To: <1304365095.6400.20.camel@macbook.infradead.org>
+References: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com> <1304365095.6400.20.camel@macbook.infradead.org>
+From: Mike Waychison <mikew@google.com>
+Date: Mon, 2 May 2011 14:40:33 -0700
+Message-ID: <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
+Subject: Re: linux-firmware tree
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 May 2011 23:27:04 johnlinn@comcast.net wrote:
-> Yes we could explain hard coded numbers.  Ideally GIC driver would support
-> device tree it seems like to me.
+On Mon, May 2, 2011 at 12:38 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Mon, 2011-05-02 at 19:57 +0100, Mike Waychison wrote:
+>> Hi David,
+>>
+>> I'm trying to understand the purpose of the linux-firmware tree.
+>> Forgive me if this is a stupid question, but the only information
+>> about it I could find was your original post back in 2008:
+>> https://lwn.net/Articles/294308/
+>>
+>> Will the Linux kernel sources always continue to have the firmware
+>> blobs and the linux-firmware tree is only for those users of distros
+>> that strip the firmware out?
+>
+> No, the legacy firmware images from the kernel tree are going to be
+> removed. They were only kept for backward compatibility.
+>
+> The linux-firmware tree has a lot of things that were never included in
+> the kernel source; no *new* firmware images are being (or at least
+> should be) added to the kernel source itself.
+>
+> Everyone should be using the linux-firmware tree by now.
 
-> 
-> Seems like the GIC driver could remap it's own memory but maybe that won't
-> work across all platforms and then the platform would need to do it.
+Fair enough.  We haven't actually hit a case where the firmware
+required by any of the drivers we use isn't already present in the
+tree.
 
-Why not just add a stub in the xilinx platform for now that remaps the
-memory using ioremap and calls the regular GIC initialization?
+I'm trying to figure out how we could ship firmware blobs on our
+systems going forward.  Currently, we let firmware get installed to
+our install root via the modules_install target, and then package up
+the install root.  If drivers are going to request firmware blobs from
+userland without them being picked up in-tree by
+fw-shipped-$(CONFIG_FOO), we'll need to know at build time which
+firmware blobs to package up.
 
-That function can then easily be moved to common code when another
-platform uses it.
+I don't see anything in the build (looking at scripts/Makefile.fwinst
+in particular) that allows the build to enumerate out-of-tree firmware
+files required by drivers.  Do you have any thoughts on how this could
+be enumerated? (if it isn't already?)
 
-	Arnd
+
+The alternative would be to ship the whole of the linux-firmware tree
+on every machine we have, but that seems like a bad idea as it is only
+going to grow with time and we don't have the MiB budget for such a
+thing.
