@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab1EBVhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:37:03 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:50353 "EHLO e5.ny.us.ibm.com"
+	id S1757831Ab1EBVhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:37:00 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:50351 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757505Ab1EBVg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757476Ab1EBVg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 May 2011 17:36:57 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,13 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/7] sysctl,rcu: convert call_rcu(free_head) to kfree
-Date: Mon,  2 May 2011 09:13:39 -0700
-Message-Id: <1304352824-6563-2-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Sven Eckelmann <sven@narfation.org>
+Subject: [PATCH tip/core/rcu 3/7] batman,rcu: convert call_rcu(gw_node_free_rcu) to kfree_rcu
+Date: Mon,  2 May 2011 09:13:40 -0700
+Message-Id: <1304352824-6563-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110502161321.GA6537@linux.vnet.ibm.com>
 References: <20110502161321.GA6537@linux.vnet.ibm.com>
@@ -24,50 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RCU callback free_head just calls kfree(), so we can use kfree_rcu()
-instead of call_rcu().
+The RCU callback gw_node_free_rcu() just calls kfree(), so we can use
+kfree_rcu() instead of call_rcu().
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marek Lindner <lindner_marek@yahoo.de>
+Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Cc: Sven Eckelmann <sven@narfation.org>
 ---
- kernel/sysctl.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+ net/batman-adv/gateway_client.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c0bb324..39dbad0 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1574,16 +1574,11 @@ void sysctl_head_get(struct ctl_table_header *head)
- 	spin_unlock(&sysctl_lock);
- }
+diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
+index 3cc4355..150b6ce 100644
+--- a/net/batman-adv/gateway_client.c
++++ b/net/batman-adv/gateway_client.c
+@@ -28,18 +28,10 @@
+ #include <linux/udp.h>
+ #include <linux/if_vlan.h>
  
--static void free_head(struct rcu_head *rcu)
+-static void gw_node_free_rcu(struct rcu_head *rcu)
 -{
--	kfree(container_of(rcu, struct ctl_table_header, rcu));
+-	struct gw_node *gw_node;
+-
+-	gw_node = container_of(rcu, struct gw_node, rcu);
+-	kfree(gw_node);
 -}
 -
- void sysctl_head_put(struct ctl_table_header *head)
+ static void gw_node_free_ref(struct gw_node *gw_node)
  {
- 	spin_lock(&sysctl_lock);
- 	if (!--head->count)
--		call_rcu(&head->rcu, free_head);
-+		kfree_rcu(head, rcu);
- 	spin_unlock(&sysctl_lock);
+ 	if (atomic_dec_and_test(&gw_node->refcount))
+-		call_rcu(&gw_node->rcu, gw_node_free_rcu);
++		kfree_rcu(gw_node, rcu);
  }
  
-@@ -1955,10 +1950,10 @@ void unregister_sysctl_table(struct ctl_table_header * header)
- 	start_unregistering(header);
- 	if (!--header->parent->count) {
- 		WARN_ON(1);
--		call_rcu(&header->parent->rcu, free_head);
-+		kfree_rcu(header->parent, rcu);
- 	}
- 	if (!--header->count)
--		call_rcu(&header->rcu, free_head);
-+		kfree_rcu(header, rcu);
- 	spin_unlock(&sysctl_lock);
- }
- 
+ void *gw_get_selected(struct bat_priv *bat_priv)
 -- 
 1.7.3.2
 
