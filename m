@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab1EBU1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 16:27:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50516 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753597Ab1EBU13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 16:27:29 -0400
-Date: Mon, 2 May 2011 16:27:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Adi J. Sieker" <adi@core.adi.io>
-cc: Oliver Neukum <oliver@neukum.org>, USB list <linux-usb@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-In-Reply-To: <4DBF077B.8080903@sieker.io>
-Message-ID: <Pine.LNX.4.44L0.1105021622510.2106-100000@iolanthe.rowland.org>
+	id S1756423Ab1EBUdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 16:33:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46313 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755345Ab1EBUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 16:33:22 -0400
+Message-ID: <4DBF1509.2000702@suse.cz>
+Date: Mon, 02 May 2011 22:33:13 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kbuild@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 2 (uml builds fail)
+References: <20110502150150.d932642f.sfr@canb.auug.org.au> <20110502081948.1ccb9aef.rdunlap@xenotime.net> <20110502160405.GE15769@sepie.suse.cz> <20110502165208.GA18740@merkur.ravnborg.org>
+In-Reply-To: <20110502165208.GA18740@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011, Adi J. Sieker wrote:
-
-> > Something else that might help is a usbmon trace showing what happens
-> > when you plug in the keyboard.  Instructions are in the kernel source
-> > file Documentation/usb/usbmon.txt.  In particular, while running the
-> > test try pressing some of the normal keys that don't work.
-> >
+On 2.5.2011 18:52, Sam Ravnborg wrote:
+> On Mon, May 02, 2011 at 06:04:05PM +0200, Michal Marek wrote:
+>> On Mon, May 02, 2011 at 08:19:48AM -0700, Randy Dunlap wrote:
+>>> On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
+>>>
+>>>> Hi all,
+>>>>
+>>>> Changes since 20110429:
+>>>
+>>>
+>>> uml builds on i386 or x86_64 fail with: (I'm using O=outputdir if it matters)
+>>>
+>>>   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
+>>> scripts/kconfig/conf --silentoldconfig arch/um/Kconfig.x86
+>>>   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
+>>> /lnx/src/NEXT/linux-next-20110502/scripts/Makefile.asm-generic:9: /lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild: No such file or directory
+>>> make[2]: *** No rule to make target `/lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild'.  Stop.
+>>
+>> This patch should fix it.
+>>
+>> Michal
+>>
+>> Subject: [PATCH] kbuild: Fix Makefile.asm-generic for um
+>>
+>> Do nothing if arch/$(SRCARCH)/include/asm/Kbuild does not exist, which
+>> is the case of um.
+>>
+>> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
 > 
-> The attached file usbmon-working.out is the output when I pressed the 
-> backspace key. When I press any of the non working keys which is 
-> everything but the backspace and menu key. I don't get any output even 
-> when using 0u.
-
-Sorry, I wasn't clear enough.  I meant for you to start the usbmon
-trace _before_ plugging in the keyboard, so we can see what happens as
-the keyboard is initialized and probed.
-
-> > Also, it would help to see the output from "lsusb -v" for this device
-> > -- but you'll have to unbind it from the usbhid driver first.
-> >
+> Makes sense - sorry for not catchign the um case!
 > 
-> When attaching the keyboard I get 2 devices in
-> /sys/bus/usb/drivers/usbhid/2-1.1:1.0  and
-> /sys/bus/usb/drivers/usbhid/2-1.1:1.1
-> 
-> The output is in the attached lsusb.txt.
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-The output looks good.  It doesn't mean much to me, but the people on 
-the linux-input mailing list should be able to get something out of it.
+Thanks, pushed to kbuild-2.6.git#kbuild.
 
-Alan Stern
-
+Michal
