@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758454Ab1EBWV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 18:21:58 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:41470 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040Ab1EBWV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 18:21:57 -0400
-Date: Mon, 2 May 2011 15:21:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 45/86] net,act_police,rcu: remove
- rcu_barrier()
-Message-ID: <20110502222147.GL2294@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-45-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501155935.GH14829@feather>
- <20110502083618.GB2297@linux.vnet.ibm.com>
- <20110502175011.GC24574@feather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502175011.GC24574@feather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758701Ab1EBWWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 18:22:45 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38239 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1EBWWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 18:22:44 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Mike Waychison <mikew@google.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-firmware tree
+In-Reply-To: Your message of "Mon, 02 May 2011 14:40:33 PDT."
+             <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com> <1304365095.6400.20.camel@macbook.infradead.org>
+            <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304374925_5156P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 02 May 2011 18:22:05 -0400
+Message-ID: <33956.1304374925@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4DBF2E8E.00CF,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 10:50:11AM -0700, Josh Triplett wrote:
-> On Mon, May 02, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> > On Sun, May 01, 2011 at 08:59:35AM -0700, Josh Triplett wrote:
-> > > On Sun, May 01, 2011 at 06:21:25AM -0700, Paul E. McKenney wrote:
-> > > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > 
-> > > > There is no callback of this module maybe queued
-> > > > since we use kfree_rcu(), we can safely remove the rcu_barrier().
-> > > > 
-> > > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > Acked-by: David S. Miller <davem@davemloft.net>
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > ---
-> > > >  net/sched/act_police.c |    1 -
-> > > >  1 files changed, 0 insertions(+), 1 deletions(-)
-> > > > 
-> > > > diff --git a/net/sched/act_police.c b/net/sched/act_police.c
-> > > > index d6bcd64..b3b9b32 100644
-> > > > --- a/net/sched/act_police.c
-> > > > +++ b/net/sched/act_police.c
-> > > > @@ -396,7 +396,6 @@ static void __exit
-> > > >  police_cleanup_module(void)
-> > > >  {
-> > > >  	tcf_unregister_action(&act_police_ops);
-> > > > -	rcu_barrier(); /* Wait for completion of call_rcu()'s (tcf_police_free_rcu) */
-> > > >  }
-> > > 
-> > > Very nice side-effect of having common callback code.  Seems worth doing
-> > > a review of other callers of rcu_barrier as well, to see if they still
-> > > need to do so.
-> > 
-> > Agreed, and good point on the review.  /me wonders how this review could
-> > be automated...
-> 
-> Build everything as a module, and for each module check whether it uses
-> the symbol rcu_barrier but not the symbol call_rcu.  Same for the
-> corresponding call_rcu_sched and call_rcu_bh.
+--==_Exmh_1304374925_5156P
+Content-Type: text/plain; charset=us-ascii
 
-Good point -- I will give this a shot when I find AC power.
+On Mon, 02 May 2011 14:40:33 PDT, Mike Waychison said:
 
-> Also, Coccinelle could likely handle simple cases of
-> call_rcu(function_that_calls_container_of_then_kfree), at least when
-> the call and the function appear in the same source file.
+> I don't see anything in the build (looking at scripts/Makefile.fwinst
+> in particular) that allows the build to enumerate out-of-tree firmware
+> files required by drivers.  Do you have any thoughts on how this could
+> be enumerated? (if it isn't already?)
 
-Good point -- it wasn't too hard by hand this time, but it would be
-a good addition to RCU checking.
+MODULE_FIRMWARE tags in the drivers, combined with (possibly)
+the CONFIG_EXTRA_FIRMWARE and CONFIG_EXTRA_FIRMWARE_DIR
+Kconfig variables if the needed bits aren't in /lib/firmware?
 
-							Thanx, Paul
+--==_Exmh_1304374925_5156P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNvy6NcC3lWbTT17ARAumOAJ9ZrsveQ4vz7fLg5i6xd3TXjmgqCACg96NO
+jpz5f5bLspLM+vYIQ4v22mw=
+=rQlF
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304374925_5156P--
+
