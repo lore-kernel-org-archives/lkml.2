@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab1EBKni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 06:43:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712Ab1EBKnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 06:43:35 -0400
-Date: Mon, 2 May 2011 13:42:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-Message-ID: <20110502104257.GA21625@redhat.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
- <1303328648.19336.24.camel@localhost.localdomain>
+	id S1757662Ab1EBKvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 06:51:38 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:39213 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab1EBKvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 06:51:37 -0400
+Date: Mon, 2 May 2011 19:51:31 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH 0/2] locking power management for shdma dmaengine driver
+Message-ID: <20110502105128.GA32576@verge.net.au>
+References: <Pine.LNX.4.64.1104291901200.17813@axis700.grange>
+ <20110502072044.GC3980@verge.net.au>
+ <Pine.LNX.4.64.1105020959040.13244@axis700.grange>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1303328648.19336.24.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.64.1105020959040.13244@axis700.grange>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 20, 2011 at 12:44:08PM -0700, Shirley Ma wrote:
-> This zerocopy flag is used to support device DMA userspace buffers.
+On Mon, May 02, 2011 at 09:59:55AM +0200, Guennadi Liakhovetski wrote:
+> On Mon, 2 May 2011, Simon Horman wrote:
 > 
-> Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> ---
+> > On Fri, Apr 29, 2011 at 07:09:17PM +0200, Guennadi Liakhovetski wrote:
+> > > Two improvements and enhancements for the shdma driver.
+> > 
+> > Hi Geunnadi,
+> > 
+> > which tree are these based on?
+> > I am not having any luck applying them
+> > on top of 2.6.39-rc5.
 > 
->  include/linux/netdevice.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> index 0249fe7..0998d3d 100644
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1067,6 +1067,9 @@ struct net_device {
->  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
->  #define NETIF_F_RXCSUM		(1 << 29) /* Receive checksumming offload */
->  
-> +/* bit 29 is for device to map userspace buffers -- zerocopy */
+> Sorry, you also need another patch before these two, that I have just sent 
+> to the list cc: you.
 
-This comment should specify what exactly is the promise the
-device makes by setting this flag. Specifically, the
-condition is that no skb fragments are used
-after the uinfo callback has been called.
-
-The way it's implemented, it probably means the device
-should not use any of skb_clone, expand head etc.
-
-> +#define NETIF_F_ZEROCOPY	(1 << 29)
-> +
->  	/* Segmentation offload features */
->  #define NETIF_F_GSO_SHIFT	16
->  #define NETIF_F_GSO_MASK	0x00ff0000
-> 
+Thanks, got it.
