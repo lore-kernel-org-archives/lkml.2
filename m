@@ -1,163 +1,1053 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab1EBVTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:19:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34249 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab1EBVTY (ORCPT
+	id S1758044Ab1EBVTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:19:55 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:38391 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757390Ab1EBVTx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:19:24 -0400
-Message-ID: <4DBF1FD6.1000809@sieker.io>
-Date: Mon, 02 May 2011 23:19:18 +0200
-From: "Adi J. Sieker" <adi@core.adi.io>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Oliver Neukum <oliver@neukum.org>, USB list <linux-usb@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-References: <Pine.LNX.4.44L0.1105021657440.2106-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105021657440.2106-100000@iolanthe.rowland.org>
-Content-Type: multipart/mixed;
- boundary="------------090403040409000000030605"
+	Mon, 2 May 2011 17:19:53 -0400
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCHv6 1/4] MFD: TPS65910: Add new mfd device for TPS65910
+Date: Mon, 2 May 2011 16:19:46 -0500
+Message-Id: <4803954D-278F-4686-994A-99221FBD94B0@slimlogic.co.uk>
+Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com,
+        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca,
+        sameo@linux.intel.com
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090403040409000000030605
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Graeme Gregory <gg@slimlogic.co.uk>
 
-On 02/05/11 23:06, Alan Stern wrote:
-> On Mon, 2 May 2011, Adi J. Sieker wrote:
->
->> Attached is the usbmon trace when I plug the keyboard in.
->>
->> lsusb shows the keyboard as:
->> Bus 002 Device 008: ID 060b:0230 Solid Year
->>
->> Relevant section from /sys/kernel/debug/usb/devices
->> T:  Bus=02 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  8 Spd=1.5 MxCh= 0
->> D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
->> P:  Vendor=060b ProdID=0230 Rev= 2.20
->> S:  Manufacturer=KB
->> S:  Product=USB Keyboard
->> C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=100mA
->> I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
->> E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
->> I:* If#= 1 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
->> E:  Ad=82(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
->
-> Interestingly, the usbmon trace shows that the interrupt endpoint for
-> interface 1 isn't being used by usbhid.  I don't know why, but it
-> shouldn't make much difference for your purposes since that interface
-> appears to be associated with the gaming interface.  But maybe I'm
-> wrong and it is important somehow...
->
-> The other noticeable thing is that the keyboard didn't accept the
-> Set-Idle request for interface 1.
->
-> You said before that the keyboard worked okay when driven by a guest
-> Windows OS, right?  Can you collect an equivalent usbmon trace for
-> that?  Comparing the two traces may be instructive.
+The TPS65910 chip is a power management IC for multimedia and handheld
+devices. It contains the following components:
 
-I hope this is what you meant. :)
-Attached is a usbmon trace when I attach the keyboard to a VBox VM 
-running a Windows XP guest. I have no idea how to get a USB trace from 
-within Windows. The last block is when I pressed h twice in the Windows 
-XP guest.
+- Regulators
+- GPIO controller
+- RTC
 
-Cheers
-    Adi
+The tps65910 core driver is registered as a platform driver and provides
+communication through I2C with the host device for the different
+components.
 
---------------090403040409000000030605
-Content-Type: text/plain;
- name="usbmon-guest.out"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="usbmon-guest.out"
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+---
+ drivers/mfd/Kconfig          |    8 +
+ drivers/mfd/Makefile         |    1 +
+ drivers/mfd/tps65910.c       |  208 ++++++++++++
+ include/linux/mfd/tps65910.h |  753 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 970 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/tps65910.c
+ create mode 100644 include/linux/mfd/tps65910.h
 
-e6283180 3528948156 S Ci:2:008:0 s 80 06 0100 0000 0012 18 <
-e6283180 3528950914 C Ci:2:008:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-e6283180 3528950988 S Ci:2:008:0 s 80 06 0200 0000 0009 9 <
-e6283180 3528953041 C Ci:2:008:0 0 9 = 09023b00 020100a0 32
-e6283180 3528953062 S Ci:2:008:0 s 80 06 0200 0000 003b 59 <
-e6283180 3528959915 C Ci:2:008:0 0 59 = 09023b00 020100a0 32090400 00010301 01000921 10010001 224b0007 05810308
-ee1bd280 3528959982 C Ii:2:008:1 -108:8 0
-f0267b00 3529284981 S Ci:2:008:0 s 80 06 0100 0000 0040 64 <
-f0267b00 3529287920 C Ci:2:008:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-f0267b00 3529361757 S Ci:2:008:0 s 80 06 0100 0000 0012 18 <
-f0267b00 3529364171 C Ci:2:008:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-f0267b00 3529365746 S Ci:2:008:0 s 80 06 0200 0000 0009 9 <
-f0267b00 3529367546 C Ci:2:008:0 0 9 = 09023b00 020100a0 32
-f0267b00 3529373770 S Ci:2:008:0 s 80 06 0200 0000 00ff 255 <
-f0267b00 3529380045 C Ci:2:008:0 0 59 = 09023b00 020100a0 32090400 00010301 01000921 10010001 224b0007 05810308
-f0267b00 3529383566 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529384668 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529387503 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529390916 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529394743 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529395919 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529398208 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529401543 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529423701 S Ci:2:008:0 s 80 06 0100 0000 0012 18 <
-f0267b00 3529426169 C Ci:2:008:0 0 18 = 12011001 00000008 0b063002 20020102 0001
-f0267b00 3529429749 S Ci:2:008:0 s 80 06 0200 0000 0009 9 <
-f0267b00 3529431541 C Ci:2:008:0 0 9 = 09023b00 020100a0 32
-f0267b00 3529437362 S Ci:2:008:0 s 80 06 0200 0000 003b 59 <
-f0267b00 3529443919 C Ci:2:008:0 0 59 = 09023b00 020100a0 32090400 00010301 01000921 10010001 224b0007 05810308
-f0267b00 3529481095 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529482543 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529485739 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529489045 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529491035 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529492419 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529494747 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529498043 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529644847 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529646170 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529649463 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529652916 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529654618 S Ci:2:008:0 s 80 06 0300 0000 00ff 255 <
-f0267b00 3529655796 C Ci:2:008:0 0 4 = 04030904
-f0267b00 3529657753 S Ci:2:008:0 s 80 06 0302 0409 00ff 255 <
-f0267b00 3529661043 C Ci:2:008:0 0 26 = 1a035500 53004200 20004b00 65007900 62006f00 61007200 6400
-f0267b00 3529664864 S Co:2:008:0 s 21 0a 0000 0000 0000 0
-f0267b00 3529665920 C Co:2:008:0 0 0
-f0267b00 3529666626 S Ci:2:008:0 s 81 06 2200 0000 008b 139 <
-f0267b00 3529674418 C Ci:2:008:0 0 75 = 05010906 a1010507 19e029e7 15002501 75019508 81029501 75088101 95037501
-f0267b00 3529693746 S Co:2:008:0 s 21 0a 0000 0001 0000 0
-f0267b00 3529694542 C Co:2:008:0 -32 0
-f0267b00 3529702370 S Ci:2:008:0 s 81 06 2200 0001 00ac 172 <
-f0267b00 3529713044 C Ci:2:008:0 0 108 = 05010980 a1018501 19812983 15002501 95037501 81029501 75058101 c0050c09
-f0267b00 3529718373 S Ii:2:008:2 -115:8 8 <
-f0267b80 3529725741 S Ii:2:008:1 -115:8 8 <
-f0267b00 3529733548 C Ii:2:008:2 0:8 8 = 03000000 00000000
-f0267b00 3529733614 S Ii:2:008:2 -115:8 8 <
-d8b15500 3530739916 S Co:2:008:0 s 21 09 0200 0000 0001 1 = 01
-d8b15500 3530741428 C Co:2:008:0 0 1 >
-eea26600 3531740815 S Co:2:008:0 s 21 09 0200 0000 0001 1 = 01
-eea26600 3531741804 C Co:2:008:0 0 1 >
-eea26c80 3532773340 S Co:2:008:0 s 21 09 0200 0000 0001 1 = 01
-eea26c80 3532774436 C Co:2:008:0 0 1 >
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index e2fea58..65930a7 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -671,6 +671,14 @@ config MFD_OMAP_USB_HOST
+ 	  This MFD driver does the required setup functionalities for
+ 	  OMAP USB Host drivers.
+ 
++config MFD_TPS65910
++	tristate "TPS65910 Power Management chip"
++	depends on I2C &&  GPIOLIB
++	select MFD_CORE
++	help
++	  if you say yes here you get support for the TPS65910 series of
++	  Power Management chips.
++
+ endif # MFD_SUPPORT
+ 
+ menu "Multimedia Capabilities Port drivers"
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 419caa9..3afb7ac 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -88,3 +88,4 @@ obj-$(CONFIG_MFD_VX855)		+= vx855.o
+ obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
+ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+ obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
++obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+new file mode 100644
+index 0000000..dbcdfb5
+--- /dev/null
++++ b/drivers/mfd/tps65910.c
+@@ -0,0 +1,208 @@
++/*
++ * tps65910.c  --  TI TPS6591x
++ *
++ * Copyright 2010 Texas Instruments Inc.
++ *
++ * Author: Graeme Gregory <gg@slimlogic.co.uk>
++ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/tps65910.h>
++
++static struct mfd_cell tps65910s[] = {
++	{
++		.name = "tps65910-pmic",
++	},
++	{
++		.name = "tps65910-rtc",
++	},
++	{
++		.name = "tps65910-power",
++	},
++};
++
++
++static int tps65910_i2c_read(struct tps65910 *tps65910, u8 reg,
++				  int bytes, void *dest)
++{
++	struct i2c_client *i2c = tps65910->i2c_client;
++	struct i2c_msg xfer[2];
++	int ret;
++
++	/* Write register */
++	xfer[0].addr = i2c->addr;
++	xfer[0].flags = 0;
++	xfer[0].len = 1;
++	xfer[0].buf = &reg;
++
++	/* Read data */
++	xfer[1].addr = i2c->addr;
++	xfer[1].flags = I2C_M_RD;
++	xfer[1].len = bytes;
++	xfer[1].buf = dest;
++
++	ret = i2c_transfer(i2c->adapter, xfer, 2);
++	if (ret == 2)
++		ret = 0;
++	else if (ret >= 0)
++		ret = -EIO;
++
++	return ret;
++}
++
++static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
++				   int bytes, void *src)
++{
++	struct i2c_client *i2c = tps65910->i2c_client;
++	/* we add 1 byte for device register */
++	u8 msg[TPS65910_MAX_REGISTER + 1];
++	int ret;
++
++	if (bytes > (TPS65910_MAX_REGISTER + 1))
++		return -EINVAL;
++
++	msg[0] = reg;
++	memcpy(&msg[1], src, bytes);
++
++	ret = i2c_master_send(i2c, msg, bytes + 1);
++	if (ret < 0)
++		return ret;
++	if (ret != bytes + 1)
++		return -EIO;
++	return 0;
++}
++
++int tps65910_set_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
++{
++	u8 data;
++	int err;
++
++	mutex_lock(&tps65910->io_mutex);
++	err = tps65910_i2c_read(tps65910, reg, 1, &data);
++	if (err) {
++		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
++		goto out;
++	}
++
++	data |= mask;
++	err = tps65910_i2c_write(tps65910, reg, 1, &data);
++	if (err)
++		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
++
++out:
++	mutex_unlock(&tps65910->io_mutex);
++	return err;
++}
++EXPORT_SYMBOL_GPL(tps65910_set_bits);
++
++int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
++{
++	u8 data;
++	int err;
++
++	mutex_lock(&tps65910->io_mutex);
++	err = tps65910_i2c_read(tps65910, reg, 1, &data);
++	if (err) {
++		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
++		goto out;
++	}
++
++	data &= mask;
++	err = tps65910_i2c_write(tps65910, reg, 1, &data);
++	if (err)
++		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
++
++out:
++	mutex_unlock(&tps65910->io_mutex);
++	return err;
++}
++EXPORT_SYMBOL_GPL(tps65910_clear_bits);
++
++static int tps65910_i2c_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct tps65910 *tps65910;
++	int ret = 0;
++
++	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
++	if (tps65910 == NULL)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, tps65910);
++	tps65910->dev = &i2c->dev;
++	tps65910->i2c_client = i2c;
++	tps65910->read = tps65910_i2c_read;
++	tps65910->write = tps65910_i2c_write;
++	mutex_init(&tps65910->io_mutex);
++
++	ret = mfd_add_devices(tps65910->dev, -1,
++			      tps65910s, ARRAY_SIZE(tps65910s),
++			      NULL, 0);
++	if (ret < 0)
++		goto err;
++
++	return ret;
++
++err:
++	mfd_remove_devices(tps65910->dev);
++	kfree(tps65910);
++	return ret;
++}
++
++static int tps65910_i2c_remove(struct i2c_client *i2c)
++{
++	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(tps65910->dev);
++	kfree(tps65910);
++
++	return 0;
++}
++
++static const struct i2c_device_id tps65910_i2c_id[] = {
++       { "tps65910", 0 },
++       { }
++};
++MODULE_DEVICE_TABLE(i2c, tps65910_i2c_id);
++
++
++static struct i2c_driver tps65910_i2c_driver = {
++	.driver = {
++		   .name = "tps65910",
++		   .owner = THIS_MODULE,
++	},
++	.probe = tps65910_i2c_probe,
++	.remove = tps65910_i2c_remove,
++	.id_table = tps65910_i2c_id,
++};
++
++static int __init tps65910_i2c_init(void)
++{
++	return i2c_add_driver(&tps65910_i2c_driver);
++}
++/* init early so consumer devices can complete system boot */
++subsys_initcall(tps65910_i2c_init);
++
++static void __exit tps65910_i2c_exit(void)
++{
++	i2c_del_driver(&tps65910_i2c_driver);
++}
++module_exit(tps65910_i2c_exit);
++
++MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
++MODULE_AUTHOR("Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>");
++MODULE_DESCRIPTION("TPS6591x chip family multi-function driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+new file mode 100644
+index 0000000..fa1b029
+--- /dev/null
++++ b/include/linux/mfd/tps65910.h
+@@ -0,0 +1,753 @@
++/*
++ * tps65910.h  --  TI TPS6591x
++ *
++ * Copyright 2010-2011 Texas Instruments Inc.
++ *
++ * Author: Graeme Gregory <gg@slimlogic.co.uk>
++ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
++ * Author: Arnaud Deconinck <a-deconinck@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#ifndef __LINUX_MFD_TPS65910_H
++#define __LINUX_MFD_TPS65910_H
++
++/*
++ * List of registers for component TPS65910
++ *
++ */
++
++#define TPS65910_SECONDS				0x0
++#define TPS65910_MINUTES				0x1
++#define TPS65910_HOURS					0x2
++#define TPS65910_DAYS					0x3
++#define TPS65910_MONTHS					0x4
++#define TPS65910_YEARS					0x5
++#define TPS65910_WEEKS					0x6
++#define TPS65910_ALARM_SECONDS				0x8
++#define TPS65910_ALARM_MINUTES				0x9
++#define TPS65910_ALARM_HOURS				0xA
++#define TPS65910_ALARM_DAYS				0xB
++#define TPS65910_ALARM_MONTHS				0xC
++#define TPS65910_ALARM_YEARS				0xD
++#define TPS65910_RTC_CTRL				0x10
++#define TPS65910_RTC_STATUS				0x11
++#define TPS65910_RTC_INTERRUPTS				0x12
++#define TPS65910_RTC_COMP_LSB				0x13
++#define TPS65910_RTC_COMP_MSB				0x14
++#define TPS65910_RTC_RES_PROG				0x15
++#define TPS65910_RTC_RESET_STATUS			0x16
++#define TPS65910_BCK1					0x17
++#define TPS65910_BCK2					0x18
++#define TPS65910_BCK3					0x19
++#define TPS65910_BCK4					0x1A
++#define TPS65910_BCK5					0x1B
++#define TPS65910_PUADEN					0x1C
++#define TPS65910_REF					0x1D
++#define TPS65910_VRTC					0x1E
++#define TPS65910_VIO					0x20
++#define TPS65910_VDD1					0x21
++#define TPS65910_VDD1_OP				0x22
++#define TPS65910_VDD1_SR				0x23
++#define TPS65910_VDD2					0x24
++#define TPS65910_VDD2_OP				0x25
++#define TPS65910_VDD2_SR				0x26
++#define TPS65910_VDD3					0x27
++#define TPS65910_VDIG1					0x30
++#define TPS65910_VDIG2					0x31
++#define TPS65910_VAUX1					0x32
++#define TPS65910_VAUX2					0x33
++#define TPS65910_VAUX33					0x34
++#define TPS65910_VMMC					0x35
++#define TPS65910_VPLL					0x36
++#define TPS65910_VDAC					0x37
++#define TPS65910_THERM					0x38
++#define TPS65910_BBCH					0x39
++#define TPS65910_DCDCCTRL				0x3E
++#define TPS65910_DEVCTRL				0x3F
++#define TPS65910_DEVCTRL2				0x40
++#define TPS65910_SLEEP_KEEP_LDO_ON			0x41
++#define TPS65910_SLEEP_KEEP_RES_ON			0x42
++#define TPS65910_SLEEP_SET_LDO_OFF			0x43
++#define TPS65910_SLEEP_SET_RES_OFF			0x44
++#define TPS65910_EN1_LDO_ASS				0x45
++#define TPS65910_EN1_SMPS_ASS				0x46
++#define TPS65910_EN2_LDO_ASS				0x47
++#define TPS65910_EN2_SMPS_ASS				0x48
++#define TPS65910_EN3_LDO_ASS				0x49
++#define TPS65910_SPARE					0x4A
++#define TPS65910_INT_STS				0x50
++#define TPS65910_INT_MSK				0x51
++#define TPS65910_INT_STS2				0x52
++#define TPS65910_INT_MSK2				0x53
++#define TPS65910_INT_STS3				0x54
++#define TPS65910_INT_MSK3				0x55
++#define TPS65910_GPIO0					0x60
++#define TPS65910_GPIO1					0x61
++#define TPS65910_GPIO2					0x62
++#define TPS65910_GPIO3					0x63
++#define TPS65910_GPIO4					0x64
++#define TPS65910_GPIO5					0x65
++#define TPS65910_JTAGVERNUM				0x80
++#define TPS65910_MAX_REGISTER				0x80
++
++/*
++ * List of register bitfields for component TPS65910
++ *
++ */
++
++
++/*Register BCK1  (0x80) register.RegisterDescription */
++#define BCK1_BCKUP_MASK					0xFF
++#define BCK1_BCKUP_SHIFT				0
++
++
++/*Register BCK2  (0x80) register.RegisterDescription */
++#define BCK2_BCKUP_MASK					0xFF
++#define BCK2_BCKUP_SHIFT				0
++
++
++/*Register BCK3  (0x80) register.RegisterDescription */
++#define BCK3_BCKUP_MASK					0xFF
++#define BCK3_BCKUP_SHIFT				0
++
++
++/*Register BCK4  (0x80) register.RegisterDescription */
++#define BCK4_BCKUP_MASK					0xFF
++#define BCK4_BCKUP_SHIFT				0
++
++
++/*Register BCK5  (0x80) register.RegisterDescription */
++#define BCK5_BCKUP_MASK					0xFF
++#define BCK5_BCKUP_SHIFT				0
++
++
++/*Register PUADEN  (0x80) register.RegisterDescription */
++#define PUADEN_EN3P_MASK				0x80
++#define PUADEN_EN3P_SHIFT				7
++#define PUADEN_I2CCTLP_MASK				0x40
++#define PUADEN_I2CCTLP_SHIFT				6
++#define PUADEN_I2CSRP_MASK				0x20
++#define PUADEN_I2CSRP_SHIFT				5
++#define PUADEN_PWRONP_MASK				0x10
++#define PUADEN_PWRONP_SHIFT				4
++#define PUADEN_SLEEPP_MASK				0x08
++#define PUADEN_SLEEPP_SHIFT				3
++#define PUADEN_PWRHOLDP_MASK				0x04
++#define PUADEN_PWRHOLDP_SHIFT				2
++#define PUADEN_BOOT1P_MASK				0x02
++#define PUADEN_BOOT1P_SHIFT				1
++#define PUADEN_BOOT0P_MASK				0x01
++#define PUADEN_BOOT0P_SHIFT				0
++
++
++/*Register REF	(0x80) register.RegisterDescription */
++#define REF_VMBCH_SEL_MASK				0x0C
++#define REF_VMBCH_SEL_SHIFT				2
++#define REF_ST_MASK					0x03
++#define REF_ST_SHIFT					0
++
++
++/*Register VRTC  (0x80) register.RegisterDescription */
++#define VRTC_VRTC_OFFMASK_MASK				0x08
++#define VRTC_VRTC_OFFMASK_SHIFT				3
++#define VRTC_ST_MASK					0x03
++#define VRTC_ST_SHIFT					0
++
++
++/*Register VIO	(0x80) register.RegisterDescription */
++#define VIO_ILMAX_MASK					0xC0
++#define VIO_ILMAX_SHIFT					6
++#define VIO_SEL_MASK					0x0C
++#define VIO_SEL_SHIFT					2
++#define VIO_ST_MASK					0x03
++#define VIO_ST_SHIFT					0
++
++
++/*Register VDD1  (0x80) register.RegisterDescription */
++#define VDD1_VGAIN_SEL_MASK				0xC0
++#define VDD1_VGAIN_SEL_SHIFT				6
++#define VDD1_ILMAX_MASK					0x20
++#define VDD1_ILMAX_SHIFT				5
++#define VDD1_TSTEP_MASK					0x1C
++#define VDD1_TSTEP_SHIFT				2
++#define VDD1_ST_MASK					0x03
++#define VDD1_ST_SHIFT					0
++
++
++/*Register VDD1_OP  (0x80) register.RegisterDescription */
++#define VDD1_OP_CMD_MASK				0x80
++#define VDD1_OP_CMD_SHIFT				7
++#define VDD1_OP_SEL_MASK				0x7F
++#define VDD1_OP_SEL_SHIFT				0
++
++
++/*Register VDD1_SR  (0x80) register.RegisterDescription */
++#define VDD1_SR_SEL_MASK				0x7F
++#define VDD1_SR_SEL_SHIFT				0
++
++
++/*Register VDD2  (0x80) register.RegisterDescription */
++#define VDD2_VGAIN_SEL_MASK				0xC0
++#define VDD2_VGAIN_SEL_SHIFT				6
++#define VDD2_ILMAX_MASK					0x20
++#define VDD2_ILMAX_SHIFT				5
++#define VDD2_TSTEP_MASK					0x1C
++#define VDD2_TSTEP_SHIFT				2
++#define VDD2_ST_MASK					0x03
++#define VDD2_ST_SHIFT					0
++
++
++/*Register VDD2_OP  (0x80) register.RegisterDescription */
++#define VDD2_OP_CMD_MASK				0x80
++#define VDD2_OP_CMD_SHIFT				7
++#define VDD2_OP_SEL_MASK				0x7F
++#define VDD2_OP_SEL_SHIFT				0
++
++
++/*Register VDD2_SR  (0x80) register.RegisterDescription */
++#define VDD2_SR_SEL_MASK				0x7F
++#define VDD2_SR_SEL_SHIFT				0
++
++
++/*Register VDD3  (0x80) register.RegisterDescription */
++#define VDD3_CKINEN_MASK				0x04
++#define VDD3_CKINEN_SHIFT				2
++#define VDD3_ST_MASK					0x03
++#define VDD3_ST_SHIFT					0
++
++
++/*Register VDIG1  (0x80) register.RegisterDescription */
++#define VDIG1_SEL_MASK					0x0C
++#define VDIG1_SEL_SHIFT					2
++#define VDIG1_ST_MASK					0x03
++#define VDIG1_ST_SHIFT					0
++
++
++/*Register VDIG2  (0x80) register.RegisterDescription */
++#define VDIG2_SEL_MASK					0x0C
++#define VDIG2_SEL_SHIFT					2
++#define VDIG2_ST_MASK					0x03
++#define VDIG2_ST_SHIFT					0
++
++
++/*Register VAUX1  (0x80) register.RegisterDescription */
++#define VAUX1_SEL_MASK					0x0C
++#define VAUX1_SEL_SHIFT					2
++#define VAUX1_ST_MASK					0x03
++#define VAUX1_ST_SHIFT					0
++
++
++/*Register VAUX2  (0x80) register.RegisterDescription */
++#define VAUX2_SEL_MASK					0x0C
++#define VAUX2_SEL_SHIFT					2
++#define VAUX2_ST_MASK					0x03
++#define VAUX2_ST_SHIFT					0
++
++
++/*Register VAUX33  (0x80) register.RegisterDescription */
++#define VAUX33_SEL_MASK					0x0C
++#define VAUX33_SEL_SHIFT				2
++#define VAUX33_ST_MASK					0x03
++#define VAUX33_ST_SHIFT					0
++
++
++/*Register VMMC  (0x80) register.RegisterDescription */
++#define VMMC_SEL_MASK					0x0C
++#define VMMC_SEL_SHIFT					2
++#define VMMC_ST_MASK					0x03
++#define VMMC_ST_SHIFT					0
++
++
++/*Register VPLL  (0x80) register.RegisterDescription */
++#define VPLL_SEL_MASK					0x0C
++#define VPLL_SEL_SHIFT					2
++#define VPLL_ST_MASK					0x03
++#define VPLL_ST_SHIFT					0
++
++
++/*Register VDAC  (0x80) register.RegisterDescription */
++#define VDAC_SEL_MASK					0x0C
++#define VDAC_SEL_SHIFT					2
++#define VDAC_ST_MASK					0x03
++#define VDAC_ST_SHIFT					0
++
++
++/*Register THERM  (0x80) register.RegisterDescription */
++#define THERM_THERM_HD_MASK				0x20
++#define THERM_THERM_HD_SHIFT				5
++#define THERM_THERM_TS_MASK				0x10
++#define THERM_THERM_TS_SHIFT				4
++#define THERM_THERM_HDSEL_MASK				0x0C
++#define THERM_THERM_HDSEL_SHIFT				2
++#define THERM_RSVD1_MASK				0x02
++#define THERM_RSVD1_SHIFT				1
++#define THERM_THERM_STATE_MASK				0x01
++#define THERM_THERM_STATE_SHIFT				0
++
++
++/*Register BBCH  (0x80) register.RegisterDescription */
++#define BBCH_BBSEL_MASK					0x06
++#define BBCH_BBSEL_SHIFT				1
++#define BBCH_BBCHEN_MASK				0x01
++#define BBCH_BBCHEN_SHIFT				0
++
++
++/*Register DCDCCTRL  (0x80) register.RegisterDescription */
++#define DCDCCTRL_VDD2_PSKIP_MASK			0x20
++#define DCDCCTRL_VDD2_PSKIP_SHIFT			5
++#define DCDCCTRL_VDD1_PSKIP_MASK			0x10
++#define DCDCCTRL_VDD1_PSKIP_SHIFT			4
++#define DCDCCTRL_VIO_PSKIP_MASK				0x08
++#define DCDCCTRL_VIO_PSKIP_SHIFT			3
++#define DCDCCTRL_DCDCCKEXT_MASK				0x04
++#define DCDCCTRL_DCDCCKEXT_SHIFT			2
++#define DCDCCTRL_DCDCCKSYNC_MASK			0x03
++#define DCDCCTRL_DCDCCKSYNC_SHIFT			0
++
++
++/*Register DEVCTRL  (0x80) register.RegisterDescription */
++#define DEVCTRL_RTC_PWDN_MASK				0x40
++#define DEVCTRL_RTC_PWDN_SHIFT				6
++#define DEVCTRL_CK32K_CTRL_MASK				0x20
++#define DEVCTRL_CK32K_CTRL_SHIFT			5
++#define DEVCTRL_SR_CTL_I2C_SEL_MASK			0x10
++#define DEVCTRL_SR_CTL_I2C_SEL_SHIFT			4
++#define DEVCTRL_DEV_OFF_RST_MASK			0x08
++#define DEVCTRL_DEV_OFF_RST_SHIFT			3
++#define DEVCTRL_DEV_ON_MASK				0x04
++#define DEVCTRL_DEV_ON_SHIFT				2
++#define DEVCTRL_DEV_SLP_MASK				0x02
++#define DEVCTRL_DEV_SLP_SHIFT				1
++#define DEVCTRL_DEV_OFF_MASK				0x01
++#define DEVCTRL_DEV_OFF_SHIFT				0
++
++
++/*Register DEVCTRL2  (0x80) register.RegisterDescription */
++#define DEVCTRL2_TSLOT_LENGTH_MASK			0x30
++#define DEVCTRL2_TSLOT_LENGTH_SHIFT			4
++#define DEVCTRL2_SLEEPSIG_POL_MASK			0x08
++#define DEVCTRL2_SLEEPSIG_POL_SHIFT			3
++#define DEVCTRL2_PWON_LP_OFF_MASK			0x04
++#define DEVCTRL2_PWON_LP_OFF_SHIFT			2
++#define DEVCTRL2_PWON_LP_RST_MASK			0x02
++#define DEVCTRL2_PWON_LP_RST_SHIFT			1
++#define DEVCTRL2_IT_POL_MASK				0x01
++#define DEVCTRL2_IT_POL_SHIFT				0
++
++
++/*Register SLEEP_KEEP_LDO_ON  (0x80) register.RegisterDescription */
++#define SLEEP_KEEP_LDO_ON_VDAC_KEEPON_MASK		0x80
++#define SLEEP_KEEP_LDO_ON_VDAC_KEEPON_SHIFT		7
++#define SLEEP_KEEP_LDO_ON_VPLL_KEEPON_MASK		0x40
++#define SLEEP_KEEP_LDO_ON_VPLL_KEEPON_SHIFT		6
++#define SLEEP_KEEP_LDO_ON_VAUX33_KEEPON_MASK		0x20
++#define SLEEP_KEEP_LDO_ON_VAUX33_KEEPON_SHIFT		5
++#define SLEEP_KEEP_LDO_ON_VAUX2_KEEPON_MASK		0x10
++#define SLEEP_KEEP_LDO_ON_VAUX2_KEEPON_SHIFT		4
++#define SLEEP_KEEP_LDO_ON_VAUX1_KEEPON_MASK		0x08
++#define SLEEP_KEEP_LDO_ON_VAUX1_KEEPON_SHIFT		3
++#define SLEEP_KEEP_LDO_ON_VDIG2_KEEPON_MASK		0x04
++#define SLEEP_KEEP_LDO_ON_VDIG2_KEEPON_SHIFT		2
++#define SLEEP_KEEP_LDO_ON_VDIG1_KEEPON_MASK		0x02
++#define SLEEP_KEEP_LDO_ON_VDIG1_KEEPON_SHIFT		1
++#define SLEEP_KEEP_LDO_ON_VMMC_KEEPON_MASK		0x01
++#define SLEEP_KEEP_LDO_ON_VMMC_KEEPON_SHIFT		0
++
++
++/*Register SLEEP_KEEP_RES_ON  (0x80) register.RegisterDescription */
++#define SLEEP_KEEP_RES_ON_THERM_KEEPON_MASK		0x80
++#define SLEEP_KEEP_RES_ON_THERM_KEEPON_SHIFT		7
++#define SLEEP_KEEP_RES_ON_CLKOUT32K_KEEPON_MASK		0x40
++#define SLEEP_KEEP_RES_ON_CLKOUT32K_KEEPON_SHIFT	6
++#define SLEEP_KEEP_RES_ON_VRTC_KEEPON_MASK		0x20
++#define SLEEP_KEEP_RES_ON_VRTC_KEEPON_SHIFT		5
++#define SLEEP_KEEP_RES_ON_I2CHS_KEEPON_MASK		0x10
++#define SLEEP_KEEP_RES_ON_I2CHS_KEEPON_SHIFT		4
++#define SLEEP_KEEP_RES_ON_VDD3_KEEPON_MASK		0x08
++#define SLEEP_KEEP_RES_ON_VDD3_KEEPON_SHIFT		3
++#define SLEEP_KEEP_RES_ON_VDD2_KEEPON_MASK		0x04
++#define SLEEP_KEEP_RES_ON_VDD2_KEEPON_SHIFT		2
++#define SLEEP_KEEP_RES_ON_VDD1_KEEPON_MASK		0x02
++#define SLEEP_KEEP_RES_ON_VDD1_KEEPON_SHIFT		1
++#define SLEEP_KEEP_RES_ON_VIO_KEEPON_MASK		0x01
++#define SLEEP_KEEP_RES_ON_VIO_KEEPON_SHIFT		0
++
++
++/*Register SLEEP_SET_LDO_OFF  (0x80) register.RegisterDescription */
++#define SLEEP_SET_LDO_OFF_VDAC_SETOFF_MASK		0x80
++#define SLEEP_SET_LDO_OFF_VDAC_SETOFF_SHIFT		7
++#define SLEEP_SET_LDO_OFF_VPLL_SETOFF_MASK		0x40
++#define SLEEP_SET_LDO_OFF_VPLL_SETOFF_SHIFT		6
++#define SLEEP_SET_LDO_OFF_VAUX33_SETOFF_MASK		0x20
++#define SLEEP_SET_LDO_OFF_VAUX33_SETOFF_SHIFT		5
++#define SLEEP_SET_LDO_OFF_VAUX2_SETOFF_MASK		0x10
++#define SLEEP_SET_LDO_OFF_VAUX2_SETOFF_SHIFT		4
++#define SLEEP_SET_LDO_OFF_VAUX1_SETOFF_MASK		0x08
++#define SLEEP_SET_LDO_OFF_VAUX1_SETOFF_SHIFT		3
++#define SLEEP_SET_LDO_OFF_VDIG2_SETOFF_MASK		0x04
++#define SLEEP_SET_LDO_OFF_VDIG2_SETOFF_SHIFT		2
++#define SLEEP_SET_LDO_OFF_VDIG1_SETOFF_MASK		0x02
++#define SLEEP_SET_LDO_OFF_VDIG1_SETOFF_SHIFT		1
++#define SLEEP_SET_LDO_OFF_VMMC_SETOFF_MASK		0x01
++#define SLEEP_SET_LDO_OFF_VMMC_SETOFF_SHIFT		0
++
++
++/*Register SLEEP_SET_RES_OFF  (0x80) register.RegisterDescription */
++#define SLEEP_SET_RES_OFF_DEFAULT_VOLT_MASK		0x80
++#define SLEEP_SET_RES_OFF_DEFAULT_VOLT_SHIFT		7
++#define SLEEP_SET_RES_OFF_RSVD_MASK			0x60
++#define SLEEP_SET_RES_OFF_RSVD_SHIFT			5
++#define SLEEP_SET_RES_OFF_SPARE_SETOFF_MASK		0x10
++#define SLEEP_SET_RES_OFF_SPARE_SETOFF_SHIFT		4
++#define SLEEP_SET_RES_OFF_VDD3_SETOFF_MASK		0x08
++#define SLEEP_SET_RES_OFF_VDD3_SETOFF_SHIFT		3
++#define SLEEP_SET_RES_OFF_VDD2_SETOFF_MASK		0x04
++#define SLEEP_SET_RES_OFF_VDD2_SETOFF_SHIFT		2
++#define SLEEP_SET_RES_OFF_VDD1_SETOFF_MASK		0x02
++#define SLEEP_SET_RES_OFF_VDD1_SETOFF_SHIFT		1
++#define SLEEP_SET_RES_OFF_VIO_SETOFF_MASK		0x01
++#define SLEEP_SET_RES_OFF_VIO_SETOFF_SHIFT		0
++
++
++/*Register EN1_LDO_ASS	(0x80) register.RegisterDescription */
++#define EN1_LDO_ASS_VDAC_EN1_MASK			0x80
++#define EN1_LDO_ASS_VDAC_EN1_SHIFT			7
++#define EN1_LDO_ASS_VPLL_EN1_MASK			0x40
++#define EN1_LDO_ASS_VPLL_EN1_SHIFT			6
++#define EN1_LDO_ASS_VAUX33_EN1_MASK			0x20
++#define EN1_LDO_ASS_VAUX33_EN1_SHIFT			5
++#define EN1_LDO_ASS_VAUX2_EN1_MASK			0x10
++#define EN1_LDO_ASS_VAUX2_EN1_SHIFT			4
++#define EN1_LDO_ASS_VAUX1_EN1_MASK			0x08
++#define EN1_LDO_ASS_VAUX1_EN1_SHIFT			3
++#define EN1_LDO_ASS_VDIG2_EN1_MASK			0x04
++#define EN1_LDO_ASS_VDIG2_EN1_SHIFT			2
++#define EN1_LDO_ASS_VDIG1_EN1_MASK			0x02
++#define EN1_LDO_ASS_VDIG1_EN1_SHIFT			1
++#define EN1_LDO_ASS_VMMC_EN1_MASK			0x01
++#define EN1_LDO_ASS_VMMC_EN1_SHIFT			0
++
++
++/*Register EN1_SMPS_ASS  (0x80) register.RegisterDescription */
++#define EN1_SMPS_ASS_RSVD_MASK				0xE0
++#define EN1_SMPS_ASS_RSVD_SHIFT				5
++#define EN1_SMPS_ASS_SPARE_EN1_MASK			0x10
++#define EN1_SMPS_ASS_SPARE_EN1_SHIFT			4
++#define EN1_SMPS_ASS_VDD3_EN1_MASK			0x08
++#define EN1_SMPS_ASS_VDD3_EN1_SHIFT			3
++#define EN1_SMPS_ASS_VDD2_EN1_MASK			0x04
++#define EN1_SMPS_ASS_VDD2_EN1_SHIFT			2
++#define EN1_SMPS_ASS_VDD1_EN1_MASK			0x02
++#define EN1_SMPS_ASS_VDD1_EN1_SHIFT			1
++#define EN1_SMPS_ASS_VIO_EN1_MASK			0x01
++#define EN1_SMPS_ASS_VIO_EN1_SHIFT			0
++
++
++/*Register EN2_LDO_ASS	(0x80) register.RegisterDescription */
++#define EN2_LDO_ASS_VDAC_EN2_MASK			0x80
++#define EN2_LDO_ASS_VDAC_EN2_SHIFT			7
++#define EN2_LDO_ASS_VPLL_EN2_MASK			0x40
++#define EN2_LDO_ASS_VPLL_EN2_SHIFT			6
++#define EN2_LDO_ASS_VAUX33_EN2_MASK			0x20
++#define EN2_LDO_ASS_VAUX33_EN2_SHIFT			5
++#define EN2_LDO_ASS_VAUX2_EN2_MASK			0x10
++#define EN2_LDO_ASS_VAUX2_EN2_SHIFT			4
++#define EN2_LDO_ASS_VAUX1_EN2_MASK			0x08
++#define EN2_LDO_ASS_VAUX1_EN2_SHIFT			3
++#define EN2_LDO_ASS_VDIG2_EN2_MASK			0x04
++#define EN2_LDO_ASS_VDIG2_EN2_SHIFT			2
++#define EN2_LDO_ASS_VDIG1_EN2_MASK			0x02
++#define EN2_LDO_ASS_VDIG1_EN2_SHIFT			1
++#define EN2_LDO_ASS_VMMC_EN2_MASK			0x01
++#define EN2_LDO_ASS_VMMC_EN2_SHIFT			0
++
++
++/*Register EN2_SMPS_ASS  (0x80) register.RegisterDescription */
++#define EN2_SMPS_ASS_RSVD_MASK				0xE0
++#define EN2_SMPS_ASS_RSVD_SHIFT				5
++#define EN2_SMPS_ASS_SPARE_EN2_MASK			0x10
++#define EN2_SMPS_ASS_SPARE_EN2_SHIFT			4
++#define EN2_SMPS_ASS_VDD3_EN2_MASK			0x08
++#define EN2_SMPS_ASS_VDD3_EN2_SHIFT			3
++#define EN2_SMPS_ASS_VDD2_EN2_MASK			0x04
++#define EN2_SMPS_ASS_VDD2_EN2_SHIFT			2
++#define EN2_SMPS_ASS_VDD1_EN2_MASK			0x02
++#define EN2_SMPS_ASS_VDD1_EN2_SHIFT			1
++#define EN2_SMPS_ASS_VIO_EN2_MASK			0x01
++#define EN2_SMPS_ASS_VIO_EN2_SHIFT			0
++
++
++/*Register EN3_LDO_ASS	(0x80) register.RegisterDescription */
++#define EN3_LDO_ASS_VDAC_EN3_MASK			0x80
++#define EN3_LDO_ASS_VDAC_EN3_SHIFT			7
++#define EN3_LDO_ASS_VPLL_EN3_MASK			0x40
++#define EN3_LDO_ASS_VPLL_EN3_SHIFT			6
++#define EN3_LDO_ASS_VAUX33_EN3_MASK			0x20
++#define EN3_LDO_ASS_VAUX33_EN3_SHIFT			5
++#define EN3_LDO_ASS_VAUX2_EN3_MASK			0x10
++#define EN3_LDO_ASS_VAUX2_EN3_SHIFT			4
++#define EN3_LDO_ASS_VAUX1_EN3_MASK			0x08
++#define EN3_LDO_ASS_VAUX1_EN3_SHIFT			3
++#define EN3_LDO_ASS_VDIG2_EN3_MASK			0x04
++#define EN3_LDO_ASS_VDIG2_EN3_SHIFT			2
++#define EN3_LDO_ASS_VDIG1_EN3_MASK			0x02
++#define EN3_LDO_ASS_VDIG1_EN3_SHIFT			1
++#define EN3_LDO_ASS_VMMC_EN3_MASK			0x01
++#define EN3_LDO_ASS_VMMC_EN3_SHIFT			0
++
++
++/*Register SPARE  (0x80) register.RegisterDescription */
++#define SPARE_SPARE_MASK				0xFF
++#define SPARE_SPARE_SHIFT				0
++
++
++/*Register INT_STS  (0x80) register.RegisterDescription */
++#define INT_STS_RTC_PERIOD_IT_MASK			0x80
++#define INT_STS_RTC_PERIOD_IT_SHIFT			7
++#define INT_STS_RTC_ALARM_IT_MASK			0x40
++#define INT_STS_RTC_ALARM_IT_SHIFT			6
++#define INT_STS_HOTDIE_IT_MASK				0x20
++#define INT_STS_HOTDIE_IT_SHIFT				5
++#define INT_STS_PWRHOLD_IT_MASK				0x10
++#define INT_STS_PWRHOLD_IT_SHIFT			4
++#define INT_STS_PWRON_LP_IT_MASK			0x08
++#define INT_STS_PWRON_LP_IT_SHIFT			3
++#define INT_STS_PWRON_IT_MASK				0x04
++#define INT_STS_PWRON_IT_SHIFT				2
++#define INT_STS_VMBHI_IT_MASK				0x02
++#define INT_STS_VMBHI_IT_SHIFT				1
++#define INT_STS_VMBDCH_IT_MASK				0x01
++#define INT_STS_VMBDCH_IT_SHIFT				0
++
++
++/*Register INT_MSK  (0x80) register.RegisterDescription */
++#define INT_MSK_RTC_PERIOD_IT_MSK_MASK			0x80
++#define INT_MSK_RTC_PERIOD_IT_MSK_SHIFT			7
++#define INT_MSK_RTC_ALARM_IT_MSK_MASK			0x40
++#define INT_MSK_RTC_ALARM_IT_MSK_SHIFT			6
++#define INT_MSK_HOTDIE_IT_MSK_MASK			0x20
++#define INT_MSK_HOTDIE_IT_MSK_SHIFT			5
++#define INT_MSK_PWRHOLD_IT_MSK_MASK			0x10
++#define INT_MSK_PWRHOLD_IT_MSK_SHIFT			4
++#define INT_MSK_PWRON_LP_IT_MSK_MASK			0x08
++#define INT_MSK_PWRON_LP_IT_MSK_SHIFT			3
++#define INT_MSK_PWRON_IT_MSK_MASK			0x04
++#define INT_MSK_PWRON_IT_MSK_SHIFT			2
++#define INT_MSK_VMBHI_IT_MSK_MASK			0x02
++#define INT_MSK_VMBHI_IT_MSK_SHIFT			1
++#define INT_MSK_VMBDCH_IT_MSK_MASK			0x01
++#define INT_MSK_VMBDCH_IT_MSK_SHIFT			0
++
++
++/*Register INT_STS2  (0x80) register.RegisterDescription */
++#define INT_STS2_GPIO3_F_IT_MASK			0x80
++#define INT_STS2_GPIO3_F_IT_SHIFT			7
++#define INT_STS2_GPIO3_R_IT_MASK			0x40
++#define INT_STS2_GPIO3_R_IT_SHIFT			6
++#define INT_STS2_GPIO2_F_IT_MASK			0x20
++#define INT_STS2_GPIO2_F_IT_SHIFT			5
++#define INT_STS2_GPIO2_R_IT_MASK			0x10
++#define INT_STS2_GPIO2_R_IT_SHIFT			4
++#define INT_STS2_GPIO1_F_IT_MASK			0x08
++#define INT_STS2_GPIO1_F_IT_SHIFT			3
++#define INT_STS2_GPIO1_R_IT_MASK			0x04
++#define INT_STS2_GPIO1_R_IT_SHIFT			2
++#define INT_STS2_GPIO0_F_IT_MASK			0x02
++#define INT_STS2_GPIO0_F_IT_SHIFT			1
++#define INT_STS2_GPIO0_R_IT_MASK			0x01
++#define INT_STS2_GPIO0_R_IT_SHIFT			0
++
++
++/*Register INT_MSK2  (0x80) register.RegisterDescription */
++#define INT_MSK2_GPIO3_F_IT_MSK_MASK			0x80
++#define INT_MSK2_GPIO3_F_IT_MSK_SHIFT			7
++#define INT_MSK2_GPIO3_R_IT_MSK_MASK			0x40
++#define INT_MSK2_GPIO3_R_IT_MSK_SHIFT			6
++#define INT_MSK2_GPIO2_F_IT_MSK_MASK			0x20
++#define INT_MSK2_GPIO2_F_IT_MSK_SHIFT			5
++#define INT_MSK2_GPIO2_R_IT_MSK_MASK			0x10
++#define INT_MSK2_GPIO2_R_IT_MSK_SHIFT			4
++#define INT_MSK2_GPIO1_F_IT_MSK_MASK			0x08
++#define INT_MSK2_GPIO1_F_IT_MSK_SHIFT			3
++#define INT_MSK2_GPIO1_R_IT_MSK_MASK			0x04
++#define INT_MSK2_GPIO1_R_IT_MSK_SHIFT			2
++#define INT_MSK2_GPIO0_F_IT_MSK_MASK			0x02
++#define INT_MSK2_GPIO0_F_IT_MSK_SHIFT			1
++#define INT_MSK2_GPIO0_R_IT_MSK_MASK			0x01
++#define INT_MSK2_GPIO0_R_IT_MSK_SHIFT			0
++
++
++/*Register INT_STS3  (0x80) register.RegisterDescription */
++#define INT_STS3_GPIO5_F_IT_MASK			0x08
++#define INT_STS3_GPIO5_F_IT_SHIFT			3
++#define INT_STS3_GPIO5_R_IT_MASK			0x04
++#define INT_STS3_GPIO5_R_IT_SHIFT			2
++#define INT_STS3_GPIO4_F_IT_MASK			0x02
++#define INT_STS3_GPIO4_F_IT_SHIFT			1
++#define INT_STS3_GPIO4_R_IT_MASK			0x01
++#define INT_STS3_GPIO4_R_IT_SHIFT			0
++
++
++/*Register INT_MSK3  (0x80) register.RegisterDescription */
++#define INT_MSK3_GPIO5_F_IT_MSK_MASK			0x08
++#define INT_MSK3_GPIO5_F_IT_MSK_SHIFT			3
++#define INT_MSK3_GPIO5_R_IT_MSK_MASK			0x04
++#define INT_MSK3_GPIO5_R_IT_MSK_SHIFT			2
++#define INT_MSK3_GPIO4_F_IT_MSK_MASK			0x02
++#define INT_MSK3_GPIO4_F_IT_MSK_SHIFT			1
++#define INT_MSK3_GPIO4_R_IT_MSK_MASK			0x01
++#define INT_MSK3_GPIO4_R_IT_MSK_SHIFT			0
++
++
++/*Register GPIO0  (0x80) register.RegisterDescription */
++#define GPIO0_GPIO_DEB_MASK				0x10
++#define GPIO0_GPIO_DEB_SHIFT				4
++#define GPIO0_GPIO_PUEN_MASK				0x08
++#define GPIO0_GPIO_PUEN_SHIFT				3
++#define GPIO0_GPIO_CFG_MASK				0x04
++#define GPIO0_GPIO_CFG_SHIFT				2
++#define GPIO0_GPIO_STS_MASK				0x02
++#define GPIO0_GPIO_STS_SHIFT				1
++#define GPIO0_GPIO_SET_MASK				0x01
++#define GPIO0_GPIO_SET_SHIFT				0
++
++
++/*Register GPIO1  (0x80) register.RegisterDescription */
++#define GPIO1_GPIO_DEB_MASK				0x10
++#define GPIO1_GPIO_DEB_SHIFT				4
++#define GPIO1_GPIO_PUEN_MASK				0x08
++#define GPIO1_GPIO_PUEN_SHIFT				3
++#define GPIO1_GPIO_CFG_MASK				0x04
++#define GPIO1_GPIO_CFG_SHIFT				2
++#define GPIO1_GPIO_STS_MASK				0x02
++#define GPIO1_GPIO_STS_SHIFT				1
++#define GPIO1_GPIO_SET_MASK				0x01
++#define GPIO1_GPIO_SET_SHIFT				0
++
++
++/*Register GPIO2  (0x80) register.RegisterDescription */
++#define GPIO2_GPIO_DEB_MASK				0x10
++#define GPIO2_GPIO_DEB_SHIFT				4
++#define GPIO2_GPIO_PUEN_MASK			 	0x08
++#define GPIO2_GPIO_PUEN_SHIFT				3
++#define GPIO2_GPIO_CFG_MASK				0x04
++#define GPIO2_GPIO_CFG_SHIFT				2
++#define GPIO2_GPIO_STS_MASK				0x02
++#define GPIO2_GPIO_STS_SHIFT				1
++#define GPIO2_GPIO_SET_MASK				0x01
++#define GPIO2_GPIO_SET_SHIFT				0
++
++
++/*Register GPIO3  (0x80) register.RegisterDescription */
++#define GPIO3_GPIO_DEB_MASK				0x10
++#define GPIO3_GPIO_DEB_SHIFT				4
++#define GPIO3_GPIO_PUEN_MASK				0x08
++#define GPIO3_GPIO_PUEN_SHIFT				3
++#define GPIO3_GPIO_CFG_MASK				0x04
++#define GPIO3_GPIO_CFG_SHIFT				2
++#define GPIO3_GPIO_STS_MASK			 	0x02
++#define GPIO3_GPIO_STS_SHIFT				1
++#define GPIO3_GPIO_SET_MASK				0x01
++#define GPIO3_GPIO_SET_SHIFT				0
++
++
++/*Register GPIO4  (0x80) register.RegisterDescription */
++#define GPIO4_GPIO_DEB_MASK				0x10
++#define GPIO4_GPIO_DEB_SHIFT				4
++#define GPIO4_GPIO_PUEN_MASK				0x08
++#define GPIO4_GPIO_PUEN_SHIFT				3
++#define GPIO4_GPIO_CFG_MASK				0x04
++#define GPIO4_GPIO_CFG_SHIFT				2
++#define GPIO4_GPIO_STS_MASK				0x02
++#define GPIO4_GPIO_STS_SHIFT				1
++#define GPIO4_GPIO_SET_MASK				0x01
++#define GPIO4_GPIO_SET_SHIFT				0
++
++
++/*Register GPIO5  (0x80) register.RegisterDescription */
++#define GPIO5_GPIO_DEB_MASK				0x10
++#define GPIO5_GPIO_DEB_SHIFT				4
++#define GPIO5_GPIO_PUEN_MASK				0x08
++#define GPIO5_GPIO_PUEN_SHIFT				3
++#define GPIO5_GPIO_CFG_MASK				0x04
++#define GPIO5_GPIO_CFG_SHIFT				2
++#define GPIO5_GPIO_STS_MASK				0x02
++#define GPIO5_GPIO_STS_SHIFT				1
++#define GPIO5_GPIO_SET_MASK				0x01
++#define GPIO5_GPIO_SET_SHIFT				0
++
++
++/*Register JTAGVERNUM  (0x80) register.RegisterDescription */
++#define JTAGVERNUM_VERNUM_MASK				0x0F
++#define JTAGVERNUM_VERNUM_SHIFT				0
++
++
++/* IRQ Definitions */
++#define TPS65910_IRQ_VBAT_VMBDCH			0
++#define TPS65910_IRQ_VBAT_VMHI				1
++#define TPS65910_IRQ_PWRON				2
++#define TPS65910_IRQ_PWRON_LP				3
++#define TPS65910_IRQ_PWRHOLD				4
++#define TPS65910_IRQ_HOTDIE				5
++#define TPS65910_IRQ_RTC_ALARM				6
++#define TPS65910_IRQ_RTC_PERIOD				7
++#define TPS65910_IRQ_GPIO_R				8
++#define TPS65910_IRQ_GPIO_F				9
++#define TPS65910_NUM_IRQ				10
++
++/* GPIO Register Definitions */
++#define TPS65910_GPIO_DEB				BIT(2)
++#define TPS65910_GPIO_PUEN				BIT(3)
++#define TPS65910_GPIO_CFG				BIT(2)
++#define TPS65910_GPIO_STS				BIT(1)
++#define TPS65910_GPIO_SET				BIT(0)
++
++/**
++ * struct tps65910_board
++ * Board platform data may be used to initialize regulators.
++ */
++
++struct tps65910_board {
++	struct regulator_init_data *tps65910_pmic_init_data;
++};
++
++/**
++ * struct tps65910 - tps65910 sub-driver chip access routines
++ */
++
++struct tps65910 {
++	struct device *dev;
++	struct i2c_client *i2c_client;
++	struct mutex io_mutex;
++	int (*read)(struct tps65910 *tps65910, u8 reg, int size, void *dest);
++	int (*write)(struct tps65910 *tps65910, u8 reg, int size, void *src);
++
++	/* Client devices */
++	struct tps65910_pmic *pmic;
++	struct tps65910_rtc *rtc;
++	struct tps65910_power *power;
++
++	/* GPIO Handling */
++	struct gpio_chip gpio;
++
++	/* IRQ Handling */
++	struct mutex irq_lock;
++	int chip_irq;
++	int irq_base;
++	u16 irq_mask;
++};
++
++struct tps65910_platform_data {
++	int irq_base;
++};
++
++int tps65910_set_bits(struct tps65910 *tps65910, u8 reg, u8 mask);
++int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask);
++
++#endif /*  __LINUX_MFD_TPS65910_H */
+-- 
+1.7.1
 
-
-
-
-
-
-
-
-
-
-f0267b00 3581997851 C Ii:2:008:2 0:8 8 = 03000008 00000000
-db7e2900 3582013998 S Ii:2:008:2 -115:8 8 <
-db7e2900 3582093846 C Ii:2:008:2 0:8 8 = 03000000 00000000
-db7e2900 3582101235 S Ii:2:008:2 -115:8 8 <
-db7e2900 3582477849 C Ii:2:008:2 0:8 8 = 03000008 00000000
-db7e2900 3582497373 S Ii:2:008:2 -115:8 8 <
-db7e2900 3582565849 C Ii:2:008:2 0:8 8 = 03000000 00000000
-d58e0300 3582576419 S Ii:2:008:2 -115:8 8 <
-
---------------090403040409000000030605--
