@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab1EBBUd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 21:20:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54618 "EHLO
+	id S1756586Ab1EBBXF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 21:23:05 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46893 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881Ab1EBBUG (ORCPT
+	with ESMTP id S1754384Ab1EBBTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 21:20:06 -0400
+	Sun, 1 May 2011 21:19:53 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=xrZFzlOkILlepACORjHj0W88srQJyxt02FXuqJvOzhtfK+Cjbh7LOOQsPfMeLF3ex
-	cy/Zx6q8eRKT7JMrNKQIQ==
+	b=pHM92zFxKPNi2OqD/BNmhfaHYesTL8zvF2MoZdapyM3nApCKiFDwvzA+rpJi2+08O
+	wZ2pXBw7UUVj0afa38BRA==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v1 18/19] sched: update shares distribution to use u64
-Date: Sun,  1 May 2011 18:19:16 -0700
-Message-Id: <1304299157-25769-19-git-send-email-ncrao@google.com>
+Subject: [PATCH v1 19/19] sched: convert atomic ops in shares update to use atomic64_t ops
+Date: Sun,  1 May 2011 18:19:17 -0700
+Message-Id: <1304299157-25769-20-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1304299157-25769-1-git-send-email-ncrao@google.com>
 References: <1304299157-25769-1-git-send-email-ncrao@google.com>
@@ -29,120 +29,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the shares distribution code to use u64. We still maintain tg->shares as
-an unsigned long since sched entity weights can't exceed MAX_SHARES (2^28). This
-patch updates all the calculations required to estimate shares to use u64.
+Convert uses of atomic_t to atomic64_t in shares update calculations. Total
+task weight in a tg can overflow the atomic type on 32-bit systems.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
  kernel/sched.c       |    2 +-
- kernel/sched_debug.c |    6 +++---
- kernel/sched_fair.c  |   17 ++++++++++++-----
- 3 files changed, 16 insertions(+), 9 deletions(-)
+ kernel/sched_debug.c |    4 ++--
+ kernel/sched_fair.c  |    8 +++-----
+ 3 files changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 6b9b02a..e131225 100644
+index e131225..af26b3e 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -367,7 +367,7 @@ struct cfs_rq {
- 	u64 load_period;
- 	u64 load_stamp, load_last, load_unacc_exec_time;
+@@ -255,7 +255,7 @@ struct task_group {
+ 	struct cfs_rq **cfs_rq;
+ 	unsigned long shares;
  
--	unsigned long load_contribution;
-+	u64 load_contribution;
+-	atomic_t load_weight;
++	atomic64_t load_weight;
  #endif
- #endif
- };
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
 diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index d22b666..b809651 100644
+index b809651..2d0fff9 100644
 --- a/kernel/sched_debug.c
 +++ b/kernel/sched_debug.c
-@@ -204,11 +204,11 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 	SEQ_printf(m, "  .%-30s: %lld\n", "load", cfs_rq->load.weight);
- #ifdef CONFIG_FAIR_GROUP_SCHED
- #ifdef CONFIG_SMP
--	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_avg",
-+	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", "load_avg",
- 			SPLIT_NS(cfs_rq->load_avg));
--	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_period",
-+	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", "load_period",
+@@ -210,8 +210,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
  			SPLIT_NS(cfs_rq->load_period));
--	SEQ_printf(m, "  .%-30s: %ld\n", "load_contrib",
-+	SEQ_printf(m, "  .%-30s: %lld\n", "load_contrib",
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "load_contrib",
  			cfs_rq->load_contribution);
- 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
- 			atomic_read(&cfs_rq->tg->load_weight));
+-	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+-			atomic_read(&cfs_rq->tg->load_weight));
++	SEQ_printf(m, "  .%-30s: %ld\n", "load_tg",
++			atomic64_read(&cfs_rq->tg->load_weight));
+ #endif
+ 
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index bf9bbaa..3f56410 100644
+index 3f56410..0152410 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -708,12 +708,13 @@ static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
- 					    int global_update)
- {
- 	struct task_group *tg = cfs_rq->tg;
--	long load_avg;
-+	s64 load_avg;
- 
- 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+@@ -714,8 +714,7 @@ static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
  	load_avg -= cfs_rq->load_contribution;
  
  	if (global_update || abs(load_avg) > cfs_rq->load_contribution / 8) {
-+		/* TODO: fix atomics for 64-bit additions */
- 		atomic_add(load_avg, &tg->load_weight);
+-		/* TODO: fix atomics for 64-bit additions */
+-		atomic_add(load_avg, &tg->load_weight);
++		atomic64_add(load_avg, &tg->load_weight);
  		cfs_rq->load_contribution += load_avg;
  	}
-@@ -723,7 +724,7 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- {
- 	u64 period = sysctl_sched_shares_window;
- 	u64 now, delta;
--	unsigned long load = cfs_rq->load.weight;
-+	u64 load = cfs_rq->load.weight;
- 
- 	if (cfs_rq->tg == &root_task_group)
- 		return;
-@@ -743,8 +744,13 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- 	cfs_rq->load_unacc_exec_time = 0;
- 	cfs_rq->load_period += delta;
- 	if (load) {
-+		u64 tmp = cfs_rq->load_avg;
- 		cfs_rq->load_last = now;
- 		cfs_rq->load_avg += delta * load;
-+
-+		/* Detect overflow and set load_avg to max */
-+		if (unlikely(cfs_rq->load_avg < tmp))
-+			cfs_rq->load_avg = ~0ULL;
- 	}
- 
- 	/* consider updating load contribution on each fold or truncate */
-@@ -769,24 +775,25 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- 
- static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg)
- {
--	long load_weight, load, shares;
-+	s64 load_weight, load, shares;
+ }
+@@ -779,8 +778,7 @@ static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg)
  
  	load = cfs_rq->load.weight;
  
-+	/* TODO: fixup atomics to handle u64 in 32-bit */
- 	load_weight = atomic_read(&tg->load_weight);
+-	/* TODO: fixup atomics to handle u64 in 32-bit */
+-	load_weight = atomic_read(&tg->load_weight);
++	load_weight = atomic64_read(&tg->load_weight);
  	load_weight += load;
  	load_weight -= cfs_rq->load_contribution;
  
- 	shares = (tg->shares * load);
- 	if (load_weight)
--		shares /= load_weight;
-+		shares = div64_u64(shares, load_weight);
+@@ -1409,7 +1407,7 @@ static s64 effective_load(struct task_group *tg, int cpu, s64 wl, s64 wg)
+ 		w = se->my_q->load.weight;
  
- 	if (shares < MIN_SHARES)
- 		shares = MIN_SHARES;
- 	if (shares > tg->shares)
- 		shares = tg->shares;
+ 		/* use this cpu's instantaneous contribution */
+-		lw = atomic_read(&tg->load_weight);
++		lw = atomic64_read(&tg->load_weight);
+ 		lw -= se->my_q->load_contribution;
+ 		lw += w + wg;
  
--	return shares;
-+	return (long)shares;
- }
- 
- static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
 -- 
 1.7.3.1
 
