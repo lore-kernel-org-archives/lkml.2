@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab1EBRuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:50:25 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53709 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1EBRuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:50:24 -0400
-X-Originating-IP: 217.70.178.137
-X-Originating-IP: 50.43.15.19
-Date: Mon, 2 May 2011 10:50:11 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 45/86] net,act_police,rcu: remove
- rcu_barrier()
-Message-ID: <20110502175011.GC24574@feather>
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-45-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501155935.GH14829@feather>
- <20110502083618.GB2297@linux.vnet.ibm.com>
+	id S1755417Ab1EBUZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 16:25:26 -0400
+Received: from nm18-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.23]:44726
+	"HELO nm18-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753344Ab1EBUZY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 16:25:24 -0400
+X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 16:25:24 EDT
+X-Yahoo-Newman-Id: 183149.19019.bm@omp1006.access.mail.mud.yahoo.com
+X-Yahoo-SMTP: hkDz_0CswBCNpAxe6jvEiFd9bjPV2x_A1CGAGexiFYCM
+X-YMail-OSG: Xg9G6C8VM1nIKHn3NrU5u5M39fdlzG3VhD.41LSSPjVESp.
+ yCHw_hJbcG2p90jcG7PeRkqAiE9xzE17JbCAnSnwP_NTIAG7WBayHHkeH3RM
+ t0qDhpAVikseUmPszkBzpRYTBhV1lyBQ.Rq5gEk3m3f.YStlhBNPrkwMIVea
+ G9zq1AJ7dApbQd64I4DiPQltZb6UeDwBGbK5gBxFhMibnTOqHE9JMl_5Z8IB
+ ceSlHdcmOafc7F5VwObooM9jt6MRNZVSo39lGcUIZJYUGJjo55Ce4jShSR.I
+ Ywf0jZeJ0PKsneSdapuCeosc2SrAFuoxe_ctHGQ2rUDXehw--
+X-Yahoo-Newman-Property: ymail-3
+From: "Dr.Vincent Mark" <drrvinccmakk@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: drrrvinccmark@yahoo.com
+Date: Mon, 02 May 2011 18:53:42 +0100
+Subject: Od Dr. Vincent OZ
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502083618.GB2297@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <OMOBAPC6de67166fa0a4b248866f0987f368180@OMOBAPC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 01:36:18AM -0700, Paul E. McKenney wrote:
-> On Sun, May 01, 2011 at 08:59:35AM -0700, Josh Triplett wrote:
-> > On Sun, May 01, 2011 at 06:21:25AM -0700, Paul E. McKenney wrote:
-> > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > 
-> > > There is no callback of this module maybe queued
-> > > since we use kfree_rcu(), we can safely remove the rcu_barrier().
-> > > 
-> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > Acked-by: David S. Miller <davem@davemloft.net>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > ---
-> > >  net/sched/act_police.c |    1 -
-> > >  1 files changed, 0 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/net/sched/act_police.c b/net/sched/act_police.c
-> > > index d6bcd64..b3b9b32 100644
-> > > --- a/net/sched/act_police.c
-> > > +++ b/net/sched/act_police.c
-> > > @@ -396,7 +396,6 @@ static void __exit
-> > >  police_cleanup_module(void)
-> > >  {
-> > >  	tcf_unregister_action(&act_police_ops);
-> > > -	rcu_barrier(); /* Wait for completion of call_rcu()'s (tcf_police_free_rcu) */
-> > >  }
-> > 
-> > Very nice side-effect of having common callback code.  Seems worth doing
-> > a review of other callers of rcu_barrier as well, to see if they still
-> > need to do so.
-> 
-> Agreed, and good point on the review.  /me wonders how this review could
-> be automated...
+Vázený príteli. 
 
-Build everything as a module, and for each module check whether it uses
-the symbol rcu_barrier but not the symbol call_rcu.  Same for the
-corresponding call_rcu_sched and call_rcu_bh.
 
-Also, Coccinelle could likely handle simple cases of
-call_rcu(function_that_calls_container_of_then_kfree), at least when
-the call and the function appear in the same source file.
 
-- Josh Triplett
+Jsem Dr.Vincent Marka, manazer Úcetnictví Audit ministerstva credite suise banky, zde v England.I písu vám o obchodní návrh, který bude mít obrovský prínos pro obe us.In mém oddelení, je vedoucí Greater London Krajský úrad, jsem zjistil soucet £ 16,5 milionu (sestnáct milionu, pet set liber sterlinku) v úctu, který patrí k jednomu z nasich zahranicních zákazníku Pozdní Obchodní Mogul Mr.Mosies Saba miliardár, Zida z Mexika, který byl obetí zrícení vrtulníku na pocátku tohoto roku, zabíjet jej a rodina members.Saba byl 47-roky-old.Also ve vrtulníku v dobe havárie byla jeho manzelka, jejich syn Avraham (Albert) a jeho dcera-in-law.The pilot byl také zabit. 
+
+
+  
+
+
+Volba Vás kontaktovat se vzbudila z geografické povahy, kde zijete, obzvláste vzhledem k citlivosti na transakce a duvernost herein.Now nás bankovní bylo cekání na nekterý z príbuzných prijde-az k tvrzení, ale nikdo nemá udelal that.I osobne jsem byl neúspesný pri rozmistování príbuzným, mám usilovat o vás souhlas k vám jako dalsí príbuzný / Bude príjemce na zemrelého tak, ze výtezek z tohoto úctu ocenen na 16,5 milionu liber muze být vyplacena na vás. 
+
+
+
+
+
+To bude vyplacena, nebo sdílená v techto procent, 60% pro me a 40% na you.I mít zajistené veskeré nezbytné právní dokumenty, které mohou být pouzity k zálohování toto tvrzení jsme making.All co potrebujete, je vyplnit vase jména dokumenty a legalizovat to u soudu dokázat, jste zde jako oprávnený beneficiary.All Zádám nyní je vase uprímná Co-operace, duvernosti a Trust umoznit nás videt tuto transakci through.I vám zarucit, ze to bude popraven za legitimní usporádání, které bude chránit vás z jakéhokoli porusení zákona. 
+
+
+
+
+Prosím, uvedte mi následující, jak jsme na 7 dní spustíme ji through.This je velmi URGENT PROSÍM. 
+
+Laskave odpoved na muj soukromý e-mail zde: dr.vinccmark@yahoo.com 
+
+
+1.FULL Jméno .............................. 
+2.Your Prímé mobilní císlo ........................ 
+3.Your Kontaktní adresa ........................... 
+4.occupation :................................ 
+5.Your Vek :................................ 
+
+
+S prosla metodický vyhledávání, rozhodl jsem se Vás kontaktovat doufat, ze vás najdou tento návrh interesting.Please o Vase potvrzení této zprávy a uvedením Vaseho zájmu poskytnou vám více information.Endeavor dejte mi vedet vase rozhodnutí, spíse nez drzet me ceká. 
+
+
+
+Laskave odpoved na muj soukromý e-mail zde: dr.vinccmark@yahoo.com 
+
+
+Podekoval vám v ocekávání své príznivé odpovedi. 
+
+
+S pozdravem, 
+Dr.Vincent Marek 
++447024039520
+
+
