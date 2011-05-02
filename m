@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab1EBXJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:09:44 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758023Ab1EBXJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:09:33 -0400
-X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
-Message-Id: <201105022254.p42MsQlr030357@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 2 May 2011 15:54:32 -0400
-Subject: [PATCH] arch/tile: disable GX prefetcher during cache flush
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 02 May 2011 22:54:27.0002 (UTC) FILETIME=[E35A61A0:01CC091B]
+	id S1757184Ab1EBT7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:59:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49654 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab1EBT7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:59:45 -0400
+Message-ID: <4DBF0D0C.8000105@zytor.com>
+Date: Mon, 02 May 2011 12:59:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: yinghai@kernel.org, Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH] Two patches fixing regression introduced
+ by 'x86-64, mm: Put early page table high'
+References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com> <4DBEEA69.7010000@zytor.com> <20110502180802.GA7498@dumpdata.com> <4DBEF8EC.7080301@zytor.com> <20110502193436.GA14666@dumpdata.com>
+In-Reply-To: <20110502193436.GA14666@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, it's possible to end up with the prefetcher pulling
-data into cache that the code believes has been flushed.
+On 05/02/2011 12:34 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, May 02, 2011 at 11:33:16AM -0700, H. Peter Anvin wrote:
+>> On 05/02/2011 11:08 AM, Konrad Rzeszutek Wilk wrote:
+>>>>
+>>>> My inclination would be to apply your workaround -- are there any
+>>>> adverse effects to doing that?
+>>>
+>>> There is a bootup slowdown (not noticeable). That is because we call the
+>>> 'memblock_find_range' function on every PTE table creation (only during
+>>> bootup of course). 
+>>>
+>>> Testing wise, on the machines on which the regression occurred, with these two
+>>> patches the regression disappears - so that is a good sign. I am testing
+>>> it on some more today to assure myself I am not missing anything.
+>>>
+>>
+>> OK, sounds like a plan then.  I like it because it doesn't affect the
+>> native kernel.
+> 
+> <laughs> I figured :-)
+> 
+> Moving forward I really want to get rid of this wart.
+> 
+> Not sure if it is possible, but I was thinking it would be nice to get
+> you, Yinghai, Jeremy, Stefano all in one place (phone or web-conference thing)
+> to sketch out some ideas and hammer something out.
+> 
+> What days would work best?
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/lib/cacheflush.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+First things first... are you pushing the workaround (you can add my
+Acked-by:) or should I?
 
-diff --git a/arch/tile/lib/cacheflush.c b/arch/tile/lib/cacheflush.c
-index 35c1d8c..8928aac 100644
---- a/arch/tile/lib/cacheflush.c
-+++ b/arch/tile/lib/cacheflush.c
-@@ -15,6 +15,7 @@
- #include <asm/page.h>
- #include <asm/cacheflush.h>
- #include <arch/icache.h>
-+#include <arch/spr_def.h>
- 
- 
- void __flush_icache_range(unsigned long start, unsigned long end)
-@@ -39,6 +40,18 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
- 	char *p, *base;
- 	size_t step_size, load_count;
- 	const unsigned long STRIPE_WIDTH = 8192;
-+#ifdef __tilegx__
-+	/*
-+	 * On TILE-Gx, we must disable the dstream prefetcher before doing
-+	 * a cache flush; otherwise, we could end up with data in the cache
-+	 * that we don't want there.  Note that normally we'd do an mf
-+	 * after the SPR write to disabling the prefetcher, but we do one
-+	 * below, before any further loads, so there's no need to do it
-+	 * here.
-+	 */
-+	uint_reg_t old_dstream_pf = __insn_mfspr(SPR_DSTREAM_PF);
-+	__insn_mtspr(SPR_DSTREAM_PF, 0);
-+#endif
- 
- 	/*
- 	 * Flush and invalidate the buffer out of the local L1/L2
-@@ -122,4 +135,9 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
- 
- 	/* Wait for the load+inv's (and thus finvs) to have completed. */
- 	__insn_mf();
-+
-+#ifdef __tilegx__
-+	/* Reenable the prefetcher. */
-+	__insn_mtspr(SPR_DSTREAM_PF, old_dstream_pf);
-+#endif
- }
--- 
-1.6.5.2
+Second... I don't know what physical locations and/or time zones every
+one is in, which is probably the first thing.
 
+Third, I will be travelling a lot over the next two weeks, plus we are
+getting close to merge window time, so it might be hard to schedule
+before the merge window.  Are you looking at trying to push something
+for .40?  If so, you probably should have an implementation in mind
+already.  If not, I suggest we aim for after the merge window is over or
+at least quieted down.
+	
+	-hpa
