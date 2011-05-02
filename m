@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab1EBJrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 05:47:09 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34043 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab1EBJrG (ORCPT
+	id S1757433Ab1EBJzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 05:55:05 -0400
+Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:1569 "EHLO
+	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756858Ab1EBJzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 05:47:06 -0400
-Date: Mon, 2 May 2011 11:46:16 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ben Dooks <ben-i2c@fluff.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, eric.y.miao@gmail.com,
-        ben-linux@fluff.org, linux-i2c@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
-Message-ID: <20110502114616.7813da79@endymion.delvare>
-In-Reply-To: <20110502092734.GV15795@trinity.fluff.org>
-References: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
-	<20110502092734.GV15795@trinity.fluff.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 2 May 2011 05:55:02 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 05:55:02 EDT
+From: Maarten ter Huurne <maarten@treewalker.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: [PATCH] MIPS: JZ4740: setup: Autodetect physical memory.
+Date: Mon,  2 May 2011 11:47:00 +0200
+Message-Id: <1304329620-17659-1-git-send-email-maarten@treewalker.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011 10:27:34 +0100, Ben Dooks wrote:
-> On Thu, Apr 28, 2011 at 11:15:44PM +0800, Haojian Zhuang wrote:
-> > Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
-> > cores are sharing one pair of I2C pins.
-> > 
-> > In order to keep I2C transaction operated with atomic, hardware lock
-> > (RIPC) is required. Because of this, bus lock in AP side can't afford
-> > this requirement. Now hardware lock is appended.
-> > 
-> > Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-> > Cc: Ben Dooks <ben-linux@fluff.org>
-> > Cc: Jean Delvare <khali@linux-fr.org>
-> 
-> Right, this looks like a reasonable explanation of what is going on here
-> and if Jean is happy with the core changes I'll look at where the driver
-> change can go.
+Assume that the boot loader knows the physical memory of the system and
+deduce that information from the contents of the SDRAM control register.
+It is still possible to override with with the "mem=" parameter, but we
+have a sensible default now.
 
-Yes I am!
+Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ arch/mips/jz4740/setup.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-Let me know if you want me to take the core change in my tree or if you
-prefer to have it in yours to avoid a dependency.
-
+diff --git a/arch/mips/jz4740/setup.c b/arch/mips/jz4740/setup.c
+index 6a9e14d..d97cfbf 100644
+--- a/arch/mips/jz4740/setup.c
++++ b/arch/mips/jz4740/setup.c
+@@ -1,5 +1,6 @@
+ /*
+  *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  Copyright (C) 2011, Maarten ter Huurne <maarten@treewalker.org>
+  *  JZ4740 setup code
+  *
+  *  This program is free software; you can redistribute it and/or modify it
+@@ -14,13 +15,44 @@
+  */
+ 
+ #include <linux/init.h>
++#include <linux/io.h>
+ #include <linux/kernel.h>
+ 
++#include <asm/bootinfo.h>
++
++#include <asm/mach-jz4740/base.h>
++
+ #include "reset.h"
+ 
++
++#define JZ4740_EMC_SDRAM_CTRL 0x80
++
++
++static void __init jz4740_detect_mem(void)
++{
++	void __iomem *jz_emc_base;
++	u32 ctrl, bus, bank, rows, cols;
++	phys_t size;
++
++	jz_emc_base = ioremap(JZ4740_EMC_BASE_ADDR, 0x100);
++	ctrl = readl(jz_emc_base + JZ4740_EMC_SDRAM_CTRL);
++	bus = 2 - ((ctrl >> 31) & 1);
++	bank = 1 + ((ctrl >> 19) & 1);
++	cols = 8 + ((ctrl >> 26) & 7);
++	rows = 11 + ((ctrl >> 20) & 3);
++	printk(KERN_DEBUG
++		"SDRAM preconfigured: bus:%u bank:%u rows:%u cols:%u\n",
++		bus, bank, rows, cols);
++	iounmap(jz_emc_base);
++
++	size = 1 << (bus + bank + cols + rows);
++	add_memory_region(0, size, BOOT_MEM_RAM);
++}
++
+ void __init plat_mem_setup(void)
+ {
+ 	jz4740_reset_init();
++	jz4740_detect_mem();
+ }
+ 
+ const char *get_system_type(void)
 -- 
-Jean Delvare
+1.7.3.4
+
