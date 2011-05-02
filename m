@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab1EBVk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:40:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:56664 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab1EBVkz (ORCPT
+	id S1758146Ab1EBVme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:42:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39165
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757524Ab1EBVma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:40:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=OatCop9WISBNI56lxQnNTfW5Pu0ZN/JykmJSF4E9yRAkbmVbtV6lNg+aJ4wSJbtJVO
-         22YKDoclMI/nwIEc9fZQ==
-MIME-Version: 1.0
-In-Reply-To: <1304365095.6400.20.camel@macbook.infradead.org>
-References: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com> <1304365095.6400.20.camel@macbook.infradead.org>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 2 May 2011 14:40:33 -0700
-Message-ID: <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
-Subject: Re: linux-firmware tree
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Mon, 2 May 2011 17:42:30 -0400
+Date: Mon, 02 May 2011 14:41:56 -0700 (PDT)
+Message-Id: <20110502.144156.104049895.davem@davemloft.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, kaber@trash.net
+Subject: Re: [PATCH tip/core/rcu 1/7] net,rcu: convert
+ call_rcu(sk_filter_release_rcu) to kfree_rcu
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1304352824-6563-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110502161321.GA6537@linux.vnet.ibm.com>
+	<1304352824-6563-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 2, 2011 at 12:38 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Mon, 2011-05-02 at 19:57 +0100, Mike Waychison wrote:
->> Hi David,
->>
->> I'm trying to understand the purpose of the linux-firmware tree.
->> Forgive me if this is a stupid question, but the only information
->> about it I could find was your original post back in 2008:
->> https://lwn.net/Articles/294308/
->>
->> Will the Linux kernel sources always continue to have the firmware
->> blobs and the linux-firmware tree is only for those users of distros
->> that strip the firmware out?
->
-> No, the legacy firmware images from the kernel tree are going to be
-> removed. They were only kept for backward compatibility.
->
-> The linux-firmware tree has a lot of things that were never included in
-> the kernel source; no *new* firmware images are being (or at least
-> should be) added to the kernel source itself.
->
-> Everyone should be using the linux-firmware tree by now.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon,  2 May 2011 09:13:38 -0700
 
-Fair enough.  We haven't actually hit a case where the firmware
-required by any of the drivers we use isn't already present in the
-tree.
+> The RCU callback sk_filter_release_rcu just calls kfree(), so we use
+> kfree_rcu() instead of call_rcu().
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-I'm trying to figure out how we could ship firmware blobs on our
-systems going forward.  Currently, we let firmware get installed to
-our install root via the modules_install target, and then package up
-the install root.  If drivers are going to request firmware blobs from
-userland without them being picked up in-tree by
-fw-shipped-$(CONFIG_FOO), we'll need to know at build time which
-firmware blobs to package up.
+I'm fine with all of these net conversions:
 
-I don't see anything in the build (looking at scripts/Makefile.fwinst
-in particular) that allows the build to enumerate out-of-tree firmware
-files required by drivers.  Do you have any thoughts on how this could
-be enumerated? (if it isn't already?)
-
-
-The alternative would be to ship the whole of the linux-firmware tree
-on every machine we have, but that seems like a bad idea as it is only
-going to grow with time and we don't have the MiB budget for such a
-thing.
+Acked-by: David S. Miller <davem@davemloft.net>
