@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab1EBILG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 04:11:06 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:52087 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab1EBILD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 04:11:03 -0400
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Kay Sievers <kay.sievers@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: Re: [RFC][PATCH 1/4] clock_rtoffset: new syscall
-In-Reply-To: <alpine.LFD.2.02.1104291931200.3005@ionos>
-References: <alpine.LFD.2.00.1103102040190.2787@localhost6.localdomain6>  <1303901023-11568-1-git-send-email-virtuoso@slind.org>  <alpine.LFD.2.02.1104271359580.3323@ionos> <1303937755.1065.8.camel@zag> <alpine.LFD.2.02.1104291931200.3005@ionos>
-User-Agent: Notmuch/0.5-83-g74bc93f (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Mon, 02 May 2011 11:10:59 +0300
-Message-ID: <87y62pmsj0.fsf@shisha.kicks-ass.net>
+	id S1755544Ab1EBILb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 04:11:31 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54632 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045Ab1EBIL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 04:11:28 -0400
+Date: Mon, 2 May 2011 01:11:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 31/86] rcu: further lower priority in
+ rcu_yield()
+Message-ID: <20110502081121.GT2297@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-31-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1304272264.7417.20.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304272264.7417.20.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011 19:32:13 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> Alexander,
-> 
-> On Wed, 27 Apr 2011, Kay Sievers wrote:
-> > On Wed, 2011-04-27 at 16:02 +0200, Thomas Gleixner wrote:
-> > > On Wed, 27 Apr 2011, Alexander Shishkin wrote:
-> > > The completely untested patch below should solve the same problem in a
-> > > sane way. Restricted to timerfd, but that really should be sufficient.
+On Sun, May 01, 2011 at 07:51:04PM +0200, Mike Galbraith wrote:
+> On Sun, 2011-05-01 at 06:21 -0700, Paul E. McKenney wrote:
+> > From: Paul E. McKenney <paul.mckenney@linaro.org>
 > > 
-> > > Subject: timerfd: Allow timers to be cancelled when clock was set
-> > > From: Thomas Gleixner <tglx@linutronix.de>
-> > > Date: Wed, 27 Apr 2011 14:16:42 +0200
-> > 
-> > Seems to work fine for me here for the weird "cron timer" case, or the
-> > simple "desktop clock" use-case -- where we want to rely on the timer to
-> > let the process sleep as long as possible, but wake it up to recalculate
-> > the next wakeup in case anything has changed in the meantime.
+> > Although rcu_yield() dropped from real-time to normal priority, there
+> > is always the possibility that the competing tasks have been niced.
+> > So nice to 19 in rcu_yield() to help ensure that other tasks have a
+> > better chance of running.
 > 
-> is that sufficient to solve your problems as well?
+> But.. that just prolongs the pain of overhead you _have_ to eat, no?  In
+> a brief surge, fine, you can spread the cost out.. but how do you know
+> when it's ok to yield?
 
-Yes, it looks to be.
+I modeled this code on the existing code in ksoftirqd.  But yes, this is
+a heuristic.  I do believe that it is quite robust, but time will tell.
 
-Thanks,
---
-Alex
+> (When maintenance threads worrying about their CPU usage is worrisome.)
+
+Indeed.  But I am not introducing this, just moving the existing checking
+from ksoftirqd.
+
+So I believe that I am OK here.
+
+							Thanx, Paul
+
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 3295c7b..963b4b1 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1561,6 +1561,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+> >  	mod_timer(&yield_timer, jiffies + 2);
+> >  	sp.sched_priority = 0;
+> >  	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+> > +	set_user_nice(current, 19);
+> >  	schedule();
+> >  	sp.sched_priority = RCU_KTHREAD_PRIO;
+> >  	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+> 
+> 
