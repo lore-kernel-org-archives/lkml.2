@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1EBPvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 11:51:47 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61996 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab1EBPvq (ORCPT
+	id S1756889Ab1EBPwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 11:52:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61462 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab1EBPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 11:51:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Ld0ntmS7RY0Fq2oCbl3oL9ybg8QfxxD6Xdc2EvJ/Qjb7KQfdrZwRsckmuVUWJaNXRP
-         4NdTcy1AGaUZfoSxoMYLxiCJcvY7RmapsRTQsTHIJoTwBYbCKEWD716V7QpnR+mRp0aG
-         k0nUH8iG2E/ZOrYYZnFlTXzdHaOg/IolVQ0Dg=
+	Mon, 2 May 2011 11:52:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
+Date: Mon, 2 May 2011 17:52:25 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <20110502045207.24800.91172.stgit@ponder> <201105021039.32374.arnd@arndb.de> <4DBEB1A8.3040202@gmail.com>
+In-Reply-To: <4DBEB1A8.3040202@gmail.com>
 MIME-Version: 1.0
-Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <20110502154322.GB8098@suse.de>
-References: <1304348681-24950-1-git-send-email-wanlong.gao@gmail.com>
-	<1304348681-24950-2-git-send-email-wanlong.gao@gmail.com>
-	<20110502154322.GB8098@suse.de>
-Date: Mon, 2 May 2011 23:51:45 +0800
-X-Google-Sender-Auth: bFV1UlmrQQ_5YG7vwTDu_OBzIK0
-Message-ID: <BANLkTi=fYSYWx4XX64meSHHKDENVCviAAQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] KernelDoc:Add the device driver-model structures to kerneldoc
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105021752.25273.arnd@arndb.de>
+X-Provags-ID: V02:K0:QTI0iv4dajP7UHZTpDLEZL8Nbxz9xt68uiN3Yu4Vmfh
+ LNHKflFZfJ/EPAZnKFGi4ZIGafLsDwPCZbiXXoB3OogCCSxa/V
+ uwX+oF6iccT7QieZLdm4IF1pum8VyYMKr5udZ1XqujFBWzU6PZ
+ XmCgH95rFYXH8IUBmesMyvj4Pf96bY8yXTxhc194IDk3L+1VYN
+ G9dPN0/WuzGt14UMRlUJw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/2/11, Greg KH <gregkh@suse.de> wrote:
+On Monday 02 May 2011, Rob Herring wrote:
+> The SCU is accessed before ioremap is up. The only reason it is accessed 
+> early is to determine the number of cores present.
 
-> Again, the driver core's private data, not the driver's private data,
-> very big difference.  No one other than the driver core can touch this.
->
-> Same goes for the other comments you added...
->
-> I think this needs a whole lot more description than what you have
-> provided in order for it to be acceptable.
->
-> Care to work on it?
->
-> thanks,
->
-> greg k-h
-Greg:
-Thanks for your comments and I will do my best and resend the patch.
+The number of cores should definitely be available in the device tree,
+normally by looking at the root interrupt controller.
 
-Thanks
-Wanlong Gao
+> The L2 can certainly be ioremapped and probed via DT. How about 
+> something like this:
+> 
+>         l2cc {
+>                 compatible = "arm,pl310-l2";
+>                 reg = <0xfff12000 0x1000>;
+>                 aux-value = <0>;
+>                 aux-mask = <0xffffffff>;
+>         };
+
+sounds good to me.
+
+	Arnd
