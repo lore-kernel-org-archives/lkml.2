@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759659Ab1EBOi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:38:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16410 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136Ab1EBOiw (ORCPT
+	id S1759672Ab1EBOjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:39:10 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:42968 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759491Ab1EBOjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:38:52 -0400
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH 3/3] blkdev: honor discard_granularity in blkdev_issue_discard()
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
-	<1304345841-20063-3-git-send-email-lczerner@redhat.com>
-Date: Mon, 02 May 2011 10:38:38 -0400
-In-Reply-To: <1304345841-20063-3-git-send-email-lczerner@redhat.com> (Lukas
-	Czerner's message of "Mon, 2 May 2011 16:17:21 +0200")
-Message-ID: <yq17ha94175.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
+	Mon, 2 May 2011 10:39:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=P2+WkxMrCL1eFakDa7tSHkGDq2L7uQBv298ScuV5mYReOmhggVzrcuHHRrOWqckV06
+         VJ6ln2zVJckD/oPkqTvHv3+yHo2+JnA1xP6OX+U6sR8b0euO+e+vGxT2j6kUc2/DRfGP
+         +r63xvOTf7GZq7aDRaU0FwDdMovTxoqNQHTls=
+Date: Mon, 2 May 2011 22:38:49 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, randy.dunlap@oracle.com, joe@perches.com,
+        akpm@linux-foundation.org
+Subject: [PATCH]Remove a warning for drivers/staging/wlan-ng/cfg80211.c
+Message-ID: <20110502143845.GA4952@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com,
+	randy.dunlap@oracle.com, joe@perches.com, akpm@linux-foundation.org
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DBEC1F9.00B6:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Lukas" == Lukas Czerner <lczerner@redhat.com> writes:
+From: Harry Wei <harryxiyou@gmail.com>
+  
+	When i was compiling kernel, a warning happened to me.
+  The warning said like following.
 
-Lukas> As Jeff Moyer pointed out we do not honor discard granularity
-Lukas> while submitting REQ_DISCARD bios of size smaller than
-Lukas> max_discard_sectors.  That fact might have unwanted consequences
-Lukas> of device ignoring the request, or even worse if device firmware
-Lukas> is buggy.
+drivers/staging/wlan-ng/cfg80211.c:709: warning: initialization from
+incompatible pointer type.
 
-We've discussed this before and the consensus was not to do it. The
-granularity is a hint, not a hard limit like max_discard_sectors.
+See http://s1202.photobucket.com/albums/bb364/harrywei/?action=view&current=patched2.png
+for more details.
 
-We want the reporting to be comprehensive throughout the block layer. If
-we start aligning to the granularity at the top we lose information for
-stacked devices below with a finer granularity.
+So i patch like following.
 
-So if we were to align to the granularity we'd want to do it at the
-bottom of the stack when we issue the command to the device. We've had a
-few proposed patches to did that but so far we've only found one device
-where it made a difference. And that case didn't justify adding a quirk.
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/staging/wlan-ng/cfg80211.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 6a71f52..7637839 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -273,7 +273,7 @@ exit:
+ }
+ 
+ int prism2_set_default_key(struct wiphy *wiphy, struct net_device *dev,
+-			   u8 key_index)
++			   u8 key_index, bool unicast, bool multicast)
+ {
+ 	wlandevice_t *wlandev = dev->ml_priv;
+ 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.7.0.4
+
