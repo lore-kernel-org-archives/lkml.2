@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab1EBTjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:39:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59159 "EHLO mx2.suse.de"
+	id S1755687Ab1EBTkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:40:36 -0400
+Received: from mail.perches.com ([173.55.12.10]:1126 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab1EBTjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 15:39:39 -0400
-Date: Mon, 2 May 2011 21:39:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Allow setting of number of raw devices as a module parameter
-Message-ID: <20110502193937.GM4556@quack.suse.cz>
-References: <1304029469-19672-1-git-send-email-jack@suse.cz>
- <201104301415.02349.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201104301415.02349.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753880Ab1EBTkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:40:35 -0400
+Subject: Re: [PATCH 2/4] pinmux: add a driver for the U300 pinmux
+From: Joe Perches <joe@perches.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <1304363798-30409-1-git-send-email-linus.walleij@stericsson.com>
+References: <1304363798-30409-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 May 2011 12:40:33 -0700
+Message-ID: <1304365233.7792.42.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 30-04-11 14:15:02, Arnd Bergmann wrote:
-> On Friday 29 April 2011 00:24:29 Jan Kara wrote:
-> > Allow setting of maximal number of raw devices as a module parameter. This
-> > requires changing of static array into a vmalloced one (the array is going to
-> > be too large for kmalloc).
-> > 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> Why don't you get rid of the global raw_devices array instead?
-> 
-> I suppose if you embed the struct cdev in raw_device_data and
-> register it during RAW_SETBIND separately for each raw device
-> instead of globally at raw_init time, you can support any number
-> of devices while making the code smaller and simpler. I suppose
-> you can even remove the raw_mutex then.
-  OK, I see. This might be a reasonable option. I'd then use kobj_lookup()
-to find my structure where I need it instead of array indexing, right? 
-I have really zero experience with writing device drivers so I'm asking
-simple questions :).
+On Mon, 2011-05-02 at 21:16 +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+[]
+> diff --git a/drivers/pinmux/pinmux-u300.c b/drivers/pinmux/pinmux-u300.c
+> +++ b/drivers/pinmux/pinmux-u300.c
+> +struct u300_pin_desc {
+> +	unsigned number;
+> +	char *name;
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+const char *name?
+
+
