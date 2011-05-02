@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611Ab1EBWQu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 18:16:50 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:2354 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab1EBWQt (ORCPT
+	id S1758835Ab1EBWUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 18:20:23 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:46772 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab1EBWUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 18:16:49 -0400
-Subject: Re: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
-From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-To: Len Brown <lenb@kernel.org>, Nicolas Kaiser <nikai@nikai.net>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1303402099.11855.9.camel@ks-ubuntu>
-References: <1303341624.11397.2.camel@ks-ubuntu>
-	 <20110421102815.5abf133e@absol.kitzblitz>
-	 <1303402099.11855.9.camel@ks-ubuntu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 17:16:45 -0500
-Message-ID: <1304374605.1619.4.camel@ks-ubuntu>
+	Mon, 2 May 2011 18:20:20 -0400
+Date: Tue, 3 May 2011 00:18:57 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
+        akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
+        rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from online_page()
+Message-ID: <20110502221857.GJ4623@router-fw-old.local.net-space.pl>
+References: <20110502211915.GB4623@router-fw-old.local.net-space.pl> <1304371504.30823.45.camel@nimitz>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304371504.30823.45.camel@nimitz>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2011-04-21 at 11:08 -0500, Karthigan Srinivasan wrote:
+On Mon, May 02, 2011 at 02:25:04PM -0700, Dave Hansen wrote:
+> On Mon, 2011-05-02 at 23:19 +0200, Daniel Kiper wrote:
+> > Memory hotplug code strictly depends on CONFIG_SPARSEMEM.
+> > It means that code depending on CONFIG_FLATMEM in online_page()
+> > is never compiled. Remove it because it is not needed anymore.
+>
+> It's subtle, but I don't think that's true.  We had another hotplug mode
+> for x86_64 before folks were comfortable turning SPARSEMEM on for the
+> whole architecture.  It was quite possible to have memory hotplug
+> without sparsemem in that case.  I think Keith Mannthey did some of that
+> code if I remember right.
+>
+> But, I'm not sure how much of that stayed in distros versus made it
+> upstream.  In any case, you might want to chase down the
+> X86_64_ACPI_NUMA bit to make sure it can't be used with FLATMEM ever.
+>
+> config MEMORY_HOTPLUG
+>         bool "Allow for memory hot-add"
+>         depends on SPARSEMEM || X86_64_ACPI_NUMA
+>         depends on HOTPLUG && ARCH_ENABLE_MEMORY_HOTPLUG
+>         depends on (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)
 
-Len - I submitted this patch on 4/21 and have not received any
-acknowledgement. I am re-submitting it again. Please review and approve.
+IIRC some time ago it was possible to enable memory hotplug with
+CONFIG_FLATMEM. That is why I looked for any dependencies of memory
+hoplug code on CONFIG_FLATMEM in current Linux Kernel source. I could
+not find anything and that is why I published this patch. However,
+maybe I missed something.
 
-Best Regards,
-Karthigan Srinivasan.
-
-====
-
-Fixed brace and comment coding style issues is code.
-
-Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
----
- drivers/acpi/utils.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index b002a47..76eaac2 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -99,9 +99,8 @@ acpi_extract_package(union acpi_object *package,
- 
- 		union acpi_object *element = &(package->package.elements[i]);
- 
--		if (!element) {
-+		if (!element)
- 			return AE_BAD_DATA;
--		}
- 
- 		switch (element->type) {
- 
-@@ -185,9 +184,8 @@ acpi_extract_package(union acpi_object *package,
- 		u8 **pointer = NULL;
- 		union acpi_object *element = &(package->package.elements[i]);
- 
--		if (!element) {
-+		if (!element)
- 			return AE_BAD_DATA;
--		}
- 
- 		switch (element->type) {
- 
-@@ -303,9 +301,8 @@ acpi_evaluate_reference(acpi_handle handle,
- 	u32 i = 0;
- 
- 
--	if (!list) {
-+	if (!list)
- 		return AE_BAD_PARAMETER;
--	}
- 
- 	/* Evaluate object. */
- 
-@@ -337,9 +334,9 @@ acpi_evaluate_reference(acpi_handle handle,
- 		goto end;
- 	}
- 
--	if (package->package.count > ACPI_MAX_HANDLES) {
-+	if (package->package.count > ACPI_MAX_HANDLES)
- 		return AE_NO_MEMORY;
--	}
-+
- 	list->count = package->package.count;
- 
- 	/* Extract package data. */
-@@ -373,7 +370,7 @@ acpi_evaluate_reference(acpi_handle handle,
-       end:
- 	if (ACPI_FAILURE(status)) {
- 		list->count = 0;
--		//kfree(list->handles);
-+		/* kfree(list->handles); */
- 	}
- 
- 	kfree(buffer.pointer);
--- 
-1.7.1
-
-
-
-
-
+Daniel
