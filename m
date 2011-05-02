@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab1EBSd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 14:33:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40271 "EHLO mail.zytor.com"
+	id S1757824Ab1EBSeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 14:34:00 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab1EBSdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 14:33:25 -0400
-Message-ID: <4DBEF8EC.7080301@zytor.com>
-Date: Mon, 02 May 2011 11:33:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1755382Ab1EBSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 14:33:55 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xensource.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
-Subject: Re: [Xen-devel] Re: [PATCH] Two patches fixing regression introduced
- by 'x86-64, mm: Put early page table high'
-References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com> <4DBEEA69.7010000@zytor.com> <20110502180802.GA7498@dumpdata.com>
-In-Reply-To: <20110502180802.GA7498@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19902.63759.655826.771299@pilspetsen.it.uu.se>
+Date: Mon, 2 May 2011 20:33:51 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Mikael Pettersson" <mikpe@it.uu.se>
+Subject: Re: [Bug #33402] [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
+In-Reply-To: <G9uL1cldhmL.A.KtE.6VGvNB@chimera>
+References: <Xp4OiTz83N.A.O0D.JVGvNB@chimera>
+	<G9uL1cldhmL.A.KtE.6VGvNB@chimera>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2011 11:08 AM, Konrad Rzeszutek Wilk wrote:
->>
->> My inclination would be to apply your workaround -- are there any
->> adverse effects to doing that?
+On Sat, 30 Apr 2011 21:46:55 +0200 (CEST), "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> The following bug entry is on the current list of known regressions
+> from 2.6.38.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> There is a bootup slowdown (not noticeable). That is because we call the
-> 'memblock_find_range' function on every PTE table creation (only during
-> bootup of course). 
 > 
-> Testing wise, on the machines on which the regression occurred, with these two
-> patches the regression disappears - so that is a good sign. I am testing
-> it on some more today to assure myself I am not missing anything.
-> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=33402
+> Subject		: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
+> Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+> Date		: 2011-04-12 17:30 (19 days old)
+> Message-ID	: <19876.35918.322649.256455@pilspetsen.it.uu.se>
+> References	: http://marc.info/?l=linuxppc-embedded&m=130263128523237&w=2
 
-OK, sounds like a plan then.  I like it because it doesn't affect the
-native kernel.
+Fixed in 2.6.39-rc5.
 
-	-hpa
+/Mikael
