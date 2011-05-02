@@ -1,93 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1EBXPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:15:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab1EBXPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:15:37 -0400
-Date: Mon, 2 May 2011 16:12:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when
- tasks are frozen
-Message-ID: <20110502231234.GA6430@suse.de>
-References: <201105030044.51661.rjw@sisk.pl>
+	id S1754224Ab1EBXOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:14:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61362 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1EBXON convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 19:14:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ycIhqRT1vc1mvMbFF2PdyoIMkixXteEd/E1bTpqVBXCz9gvTVMnc/0dD866tXvJW44
+         u/AtG9j7Bx8NzdQ5qxsw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105030044.51661.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110502224838.GB10278@cmpxchg.org>
+References: <1304366849.15370.27.camel@mulgrave.site>
+	<20110502224838.GB10278@cmpxchg.org>
+Date: Mon, 2 May 2011 16:14:09 -0700
+Message-ID: <BANLkTikDyL9-XLpwyLwUQNuUfkBwbUBcZg@mail.gmail.com>
+Subject: Re: memcg: fix fatal livelock in kswapd
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 12:44:51AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Some drivers erroneously use request_firmware() from their ->resume()
-> (or ->thaw(), or ->restore()) callbacks, which is not going to work
-> unless the firmware has been built in.  This causes system resume to
-> stall until the firmware-loading timeout expires, which makes users
-> think that the resume has failed and reboot their machines
-> unnecessarily.  For this reason, make _request_firmware() print a
-> warning when it has been called when tasks are frozen and it's
-> impossible to start any new usermode helpers.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/firmware_class.c |    3 +++
->  include/linux/kmod.h          |    1 +
->  kernel/kmod.c                 |    8 ++++++++
->  3 files changed, 12 insertions(+)
-> 
-> Index: linux-2.6/include/linux/kmod.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/kmod.h
-> +++ linux-2.6/include/linux/kmod.h
-> @@ -113,5 +113,6 @@ extern void usermodehelper_init(void);
->  
->  extern int usermodehelper_disable(void);
->  extern void usermodehelper_enable(void);
-> +extern bool usermodehelper_is_disabled(void);
->  
->  #endif /* __LINUX_KMOD_H__ */
-> Index: linux-2.6/kernel/kmod.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/kmod.c
-> +++ linux-2.6/kernel/kmod.c
-> @@ -301,6 +301,14 @@ void usermodehelper_enable(void)
->  	usermodehelper_disabled = 0;
->  }
->  
-> +/**
-> + * usermodehelper_is_disabled - check if new helpers are allowed to be started
-> + */
-> +bool usermodehelper_is_disabled(void)
-> +{
-> +	return usermodehelper_disabled;
-> +}
-> +
->  static void helper_lock(void)
->  {
->  	atomic_inc(&running_helpers);
-> Index: linux-2.6/drivers/base/firmware_class.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/firmware_class.c
-> +++ linux-2.6/drivers/base/firmware_class.c
-> @@ -521,6 +521,9 @@ static int _request_firmware(const struc
->  	if (!firmware_p)
->  		return -EINVAL;
->  
-> +	if (WARN_ON(usermodehelper_is_disabled()))
-> +		return -EBUSY;
+On Mon, May 2, 2011 at 3:48 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Hi,
+>
+> On Mon, May 02, 2011 at 03:07:29PM -0500, James Bottomley wrote:
+>> The fatal livelock in kswapd, reported in this thread:
+>>
+>> http://marc.info/?t=130392066000001
+>>
+>> Is mitigateable if we prevent the cgroups code being so aggressive in
+>> its zone shrinking (by reducing it's default shrink from 0 [everything]
+>> to DEF_PRIORITY [some things]).  This will have an obvious knock on
+>> effect to cgroup accounting, but it's better than hanging systems.
+>
+> Actually, it's not that obvious.  At least not to me.  I added Balbir,
+> who added said comment and code in the first place, to CC: Here is the
+> comment in full quote:
+>
+>        /*
+>         * NOTE: Although we can get the priority field, using it
+>         * here is not a good idea, since it limits the pages we can scan.
+>         * if we don't reclaim here, the shrink_zone from balance_pgdat
+>         * will pick up pages from other mem cgroup's as well. We hack
+>         * the priority and make it zero.
+>         */
+>
+> The idea is that if one memcg is above its softlimit, we prefer
+> reducing pages from this memcg over reclaiming random other pages,
+> including those of other memcgs.
+>
+> But the code flow looks like this:
+>
+>        balance_pgdat
+>          mem_cgroup_soft_limit_reclaim
+>            mem_cgroup_shrink_node_zone
+>              shrink_zone(0, zone, &sc)
+>          shrink_zone(prio, zone, &sc)
+>
+> so the success of the inner memcg shrink_zone does at least not
+> explicitely result in the outer, global shrink_zone steering clear of
+> other memcgs' pages.  It just tries to move the pressure of balancing
+> the zones to the memcg with the biggest soft limit excess.  That can
+> only really work if the memcg is a large enough contributor to the
+> zone's total number of lru pages, though, and looks very likely to hit
+> the exceeding memcg too hard in other cases.
+yes, the logic is selecting one memcg(the one exceeding the most) and
+starting hierarchical reclaim on it. It will looping until the the
+following condition becomes true:
+1. memcg usage is below its soft_limit
+2. looping 100 times
+3. reclaimed pages equal or greater than (excess >>2) where excess is
+the (usage - soft_limit)
 
-But you can safely call this function with nowait set, and this warning
-should not be triggered, right?
+hmm, the worst case i can think of is the memcg only has one page
+allocate on the zone, and we end up looping 100 time each time and not
+contributing much to the global reclaim.
 
-thanks,
+>
+> I am very much for removing this hack.  There is still more scan
+> pressure applied to memcgs in excess of their soft limit even if the
+> extra scan is happening at a sane priority level.  And the fact that
+> global reclaim operates completely unaware of memcgs is a different
+> story.
+>
+> However, this code came into place with v2.6.31-8387-g4e41695.  Why is
+> it only now showing up?
+>
+> You also wrote in that thread that this happens on a standard F15
+> installation.  On the F15 I am running here, systemd does not
+> configure memcgs, however.  Did you manually configure memcgs and set
+> soft limits?  Because I wonder how it ended up in soft limit reclaim
+> in the first place.
 
-greg k-h
+curious as well. if we have workload to reproduce it, i would like to try
+
+--Ying
+>
+>        Hannes
+>
+>> Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+>>
+>> ---
+>>
+>> >From 74b62fc417f07e1411d98181631e4e097c8e3e68 Mon Sep 17 00:00:00 2001
+>> From: James Bottomley <James.Bottomley@HansenPartnership.com>
+>> Date: Mon, 2 May 2011 14:56:29 -0500
+>> Subject: [PATCH] vmscan: move containers scan back to default priority
+>>
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index f6b435c..46cde92 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -2173,8 +2173,12 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>>        * if we don't reclaim here, the shrink_zone from balance_pgdat
+>>        * will pick up pages from other mem cgroup's as well. We hack
+>>        * the priority and make it zero.
+>> +      *
+>> +      * FIXME: jejb: zero here was causing a livelock in the
+>> +      * shrinker so changed to DEF_PRIORITY to fix this. Now need to
+>> +      * sort out cgroup accounting.
+>>        */
+>> -     shrink_zone(0, zone, &sc);
+>> +     shrink_zone(DEF_PRIORITY, zone, &sc);
+>>
+>>       trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
+>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
