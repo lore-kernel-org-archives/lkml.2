@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab1EBPbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 11:31:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55527 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab1EBPbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 11:31:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c9bTp5+nMGukmDDcKa2TPw2I8DAM1T43Sh6HCEoyjXZ7RIfywc/gwVU4i81O4m6Pdr
-         4iouM6/ZdUecCVko9b2qn6FKIlltxgrEkSgQ2YnhP68R5k02Z830AhY3oCAlYqrEscOi
-         L+EJVfEqgezECfkGp+AhXcd5saoN8ZdUZZVDM=
-Date: Mon, 2 May 2011 17:30:55 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [GIT PULL tip:x86/mm] Unify 32 and 64bit NUMA init paths
-Message-ID: <20110502153055.GF22117@htj.dyndns.org>
-References: <20110502091334.GB22117@htj.dyndns.org>
- <20110502101828.GB27072@elte.hu>
- <20110502122319.GC22117@htj.dyndns.org>
- <20110502150401.GA21680@elte.hu>
- <20110502150945.GE22117@htj.dyndns.org>
+	id S1759535Ab1EBPbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 11:31:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50984 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756713Ab1EBPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 11:31:10 -0400
+Message-ID: <4DBECE3C.5070008@suse.cz>
+Date: Mon, 02 May 2011 17:31:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502150945.GE22117@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Valdis.Kletnieks@vt.edu
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: linux-next: build warning after merge of the kbuild tree
+References: <20110502121817.645d544e.sfr@canb.auug.org.au> <20110502022417.GA11804@redhat.com> <20110502134524.40da4245.sfr@canb.auug.org.au> <20110502142454.a7091ad5.sfr@canb.auug.org.au> <20110502145338.7be2fdbc.sfr@canb.auug.org.au>            <20110502111337.GA15769@sepie.suse.cz> <10763.1304349435@localhost>
+In-Reply-To: <10763.1304349435@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+On 2.5.2011 17:17, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 02 May 2011 13:13:37 +0200, Michal Marek said:
+>
+>> +# We test for support of the -Wunused-but-set-variable option, because
+>> +# some version of gcc will happily accept any -Wno-* switch and complain
+>> +# later during build.
+>> +ifeq ($(call cc-option-yn, -Wunused-but-set-variable), y)
+>> +KBUILD_CFLAGS += -Wno-unused-but-set-variable
+>> +endif
+>
+> Do we need to do this more generically for all the other -Wno-foo
+> options under the various W={123} options?
 
-On Mon, May 02, 2011 at 05:09:45PM +0200, Tejun Heo wrote:
-> On Mon, May 02, 2011 at 05:04:01PM +0200, Ingo Molnar wrote:
-> > Doesnt build on 32-bit allyesconfig:
-> > 
-> >   ERROR: "physnode_map" [drivers/net/wan/dscc4.ko] undefined!
-> >   ERROR: "physnode_map" [crypto/tcrypt.ko] undefined!
-> 
-> Dang, I only checked allmodconfig.  Testing allyesconfig now.
+I only see -Wno-unused-parameter in scripts/Makefile.build and that 
+should be supported by any gcc version. Also please have a look at 
+http://marc.info/?l=linux-kernel&m=130433840412201&w=2, which is an 
+updated version.
 
-Nope, it was a last minute edit while tree generation which dropped
-#include <linux/module.h> in the unification patch.  This broke
-EXPORT_SYMBOL(physnode_map) and thus led to the above failure.
-
-I regenerated from the reunification patch up.  The new HEAD is
-e5a10c1bd12a5d71bbb6406c1b0dbbc9d8958397.  Sorry about the fuss.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
- ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-
-Thanks.
-
--- 
-tejun
+Michal
