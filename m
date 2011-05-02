@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab1EBS0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 14:26:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58835 "EHLO mga11.intel.com"
+	id S1757271Ab1EBScU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 14:32:20 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:51819 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab1EBS0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 14:26:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,303,1301900400"; 
-   d="scan'208";a="917035322"
-Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using
- cluster groups v4
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DBEB96A.8000309@openvz.org>
-References: <20110502113445.751391656@openvz.org>
-	 <20110502114024.222582172@openvz.org> <20110502132232.GA3873@elte.hu>
-	 <4DBEB96A.8000309@openvz.org>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 02 May 2011 11:27:03 -0700
-Message-Id: <1304360823.19493.27.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1752287Ab1EBScT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 14:32:19 -0400
+Message-ID: <4DBEF8A8.6040401@linux.vnet.ibm.com>
+Date: Mon, 02 May 2011 11:32:08 -0700
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <ak@linux.intel.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Vince Weaver <vweaver1@eecs.utk.edu>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@gmail.com>, Carl Love <carll@us.ibm.com>
+Subject: Re: re-enable Nehalem raw Offcore-Events support
+References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu> <BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com> <20110429172525.GA2745@tassilo.jf.intel.com> <alpine.LFD.2.02.1104291938240.3005@ionos> <4DBC6BC1.5090102@linux.vnet.ibm.com> <20110501175505.GA27830@elte.hu>
+In-Reply-To: <20110501175505.GA27830@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 07:02 -0700, Cyrill Gorcunov wrote:
-> On 05/02/2011 05:22 PM, Ingo Molnar wrote:
-> > 
-> > * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > 
-> >> With this change, microbenchmark measuring the cost
-> >> of flush_tlb_others(), with the flush tlb IPI being
-> >> sent from a cpu in the socket-1 to all the logical
-> >> cpus in socket-2 (on a Westmere-EX system that has
-> >> 20 logical cpus in a socket) is 3x times better now
-> >> (compared to the former 'send one-by-one' algorithm).
-> > 
-> > What kind of microbenchmark was this, could the actual results and measurement 
-> > methods be shared as well?
+On 05/01/2011 10:55 AM, Ingo Molnar wrote:
 > 
-> Suresh, could you please post the microbenchmark?
+> * Corey Ashford <cjashfor@linux.vnet.ibm.com> wrote:
+> 
+>> Carl Love and I recently completed some work to add perf_events support for 
+>> the IBM Blue Waters machine's "CPU networking" chip, called the Torrent chip.  
+>> We did all of this work based on a RHEL 6 kernel (2.6.32ish), which doesn't 
+>> have Peter's more recent multi-PMU support.
+>>
+>> I would say that most if not all of the events are not generalizable in the 
+>> sense that you are talking about; the events are very specific to the Torrent 
+>> chip. [...]
+> 
+> That's ok and not a problem.
+> 
+> The issue here are events that *are* generalizable.
+> 
+>> So if I'm understanding what you have said correctly, we would not be able to 
+>> get a forward port of this code committed without abstracting these events in 
+>> a away that's acceptable to the kernel community. [...]
+> 
+> If the number of events worth generalizing is the empty set that's ok.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-It is a simple kernel hack to measure the TSC cost of flush_tlb_others()
-with and with out this change. 3x better was specifically for the test
-condition where we called flush_tlb_others() on a logical cpu in
-socket-1, which sent the flush tlb IPI to all the logical cpu's in
-another socket.
+Great, that's good to hear.
 
-This is done on WSM-EX which has 20 logical cpu's on one socket. 20
-logical cpu's in that socket will fall under two cluster groups. So 2
-batches of grouped IPI's vs 20 serialized(atleast the sending part)
-IPI's.
+Thanks,
 
-thanks,
-suresh
-
-
-
+- Corey
