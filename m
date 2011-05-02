@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab1EBIDt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 04:03:49 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:60911 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab1EBIDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 04:03:46 -0400
-Date: Mon, 2 May 2011 10:03:47 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 2.6.39-rc5
-Message-ID: <20110502100347.52553105@mschwide.boeblingen.de.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753653Ab1EBIEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 04:04:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34475 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab1EBIEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 04:04:42 -0400
+Date: Mon, 2 May 2011 11:04:22 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/2] x2apic optimization, round 4
+Message-ID: <20110502080422.GH18376@redhat.com>
+References: <20110430171459.685415696@openvz.org>
+ <4DBC6DC1.30900@redhat.com>
+ <20110501164635.GA21833@elte.hu>
+ <BANLkTimpk3Ye=HvCohTbKT7Jzedo_V07Yg@mail.gmail.com>
+ <20110502053928.GB18376@redhat.com>
+ <BANLkTi=Bw5k1_oytZmXgTrQ-XUJisp3vfQ@mail.gmail.com>
+ <4DBE589C.1040103@gmail.com>
+ <20110502074524.GD18376@redhat.com>
+ <4DBE62BA.6060306@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DBE62BA.6060306@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, May 02, 2011 at 11:52:26AM +0400, Cyrill Gorcunov wrote:
+> On 05/02/2011 11:45 AM, Gleb Natapov wrote:
+> > On Mon, May 02, 2011 at 11:09:16AM +0400, Cyrill Gorcunov wrote:
+> >> On 05/02/2011 09:51 AM, Cyrill Gorcunov wrote:
+> >>> Yeah, i'll do so as only bring my laptop to life, I managed to kill
+> >>> grub and can't restore it back for a while, will ping you back as soon
+> >>> as I can.
+> >>>
+> >>> Sorry for top post.
+> >>>
+> >>
+> >>   I've managed to semi-restore it. Gleb, maybe there some additional
+> >> parameter needed for kvm (except -cpu host,+x2apic) to make it work
+> >> with cluster mode? I always see physical mode which was not the target
+> >> of the patch series.
+> >>
+> > Hmm, +x2apic is enough to advertise x2apic presents to the OS. What
+> > logic Linux uses to decide which mode to use?
+> > 
+> > --
+> > 			Gleb.
+> 
+>   As far as I know interrupt remapping should be supported by kernel
+> to switch to logic cluster mode, so I presume kvm doesn't support
+> it yet and in result only physical mode is used. I think ACPI_SIG_DMAR
+> is missed in acpi tables (actually I didn't find it in kvm sources).
+> 
+Ahh, definitely. I recall that now. 
 
-please pull from 'for-linus' branch of
-
-	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
-
-to receive the following updates:
-
-Heiko Carstens (1):
-      [S390] irqstats: fix counting of pfault, dasd diag and virtio irqs
-
-Martin Schwidefsky (1):
-      [S390] prng: fix pointer arithmetic
-
- arch/s390/crypto/prng.c        |    2 +-
- arch/s390/mm/fault.c           |    2 +-
- drivers/s390/block/dasd_diag.c |    2 +-
- drivers/s390/kvm/kvm_virtio.c  |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/s390/crypto/prng.c b/arch/s390/crypto/prng.c
-index 44bca3f..8b16c47 100644
---- a/arch/s390/crypto/prng.c
-+++ b/arch/s390/crypto/prng.c
-@@ -76,7 +76,7 @@ static void prng_seed(int nbytes)
- 
- 	/* Add the entropy */
- 	while (nbytes >= 8) {
--		*((__u64 *)parm_block) ^= *((__u64 *)buf+i);
-+		*((__u64 *)parm_block) ^= *((__u64 *)(buf+i));
- 		prng_add_entropy();
- 		i += 8;
- 		nbytes -= 8;
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index 4cf85fe..ab98813 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -543,7 +543,6 @@ static void pfault_interrupt(unsigned int ext_int_code,
- 	struct task_struct *tsk;
- 	__u16 subcode;
- 
--	kstat_cpu(smp_processor_id()).irqs[EXTINT_PFL]++;
- 	/*
- 	 * Get the external interruption subcode & pfault
- 	 * initial/completion signal bit. VM stores this 
-@@ -553,6 +552,7 @@ static void pfault_interrupt(unsigned int ext_int_code,
- 	subcode = ext_int_code >> 16;
- 	if ((subcode & 0xff00) != __SUBCODE_MASK)
- 		return;
-+	kstat_cpu(smp_processor_id()).irqs[EXTINT_PFL]++;
- 
- 	/*
- 	 * Get the token (= address of the task structure of the affected task).
-diff --git a/drivers/s390/block/dasd_diag.c b/drivers/s390/block/dasd_diag.c
-index 29143ed..85dddb1 100644
---- a/drivers/s390/block/dasd_diag.c
-+++ b/drivers/s390/block/dasd_diag.c
-@@ -239,7 +239,6 @@ static void dasd_ext_handler(unsigned int ext_int_code,
- 	addr_t ip;
- 	int rc;
- 
--	kstat_cpu(smp_processor_id()).irqs[EXTINT_DSD]++;
- 	switch (ext_int_code >> 24) {
- 	case DASD_DIAG_CODE_31BIT:
- 		ip = (addr_t) param32;
-@@ -250,6 +249,7 @@ static void dasd_ext_handler(unsigned int ext_int_code,
- 	default:
- 		return;
- 	}
-+	kstat_cpu(smp_processor_id()).irqs[EXTINT_DSD]++;
- 	if (!ip) {		/* no intparm: unsolicited interrupt */
- 		DBF_EVENT(DBF_NOTICE, "%s", "caught unsolicited "
- 			      "interrupt");
-diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index 414427d..607998f 100644
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -381,10 +381,10 @@ static void kvm_extint_handler(unsigned int ext_int_code,
- 	u16 subcode;
- 	u32 param;
- 
--	kstat_cpu(smp_processor_id()).irqs[EXTINT_VRT]++;
- 	subcode = ext_int_code >> 16;
- 	if ((subcode & 0xff00) != VIRTIO_SUBCODE_64)
- 		return;
-+	kstat_cpu(smp_processor_id()).irqs[EXTINT_VRT]++;
- 
- 	/* The LSB might be overloaded, we have to mask it */
- 	vq = (struct virtqueue *)(param64 & ~1UL);
+--
+			Gleb.
