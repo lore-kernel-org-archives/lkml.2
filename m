@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab1EBRyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:54:16 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54106 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab1EBRyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:54:13 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.15.19
-Date: Mon, 2 May 2011 10:53:57 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 11/86] rcu: Add boosting to TREE_PREEMPT_RCU
- tracing
-Message-ID: <20110502175357.GE24574@feather>
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
- <1304256126-26015-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110501155225.GF14829@feather>
- <20110502082711.GW2297@linux.vnet.ibm.com>
+	id S1756303Ab1EBSDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 14:03:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39122 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752233Ab1EBSDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 14:03:09 -0400
+Message-ID: <2b5d75ba05bd7889ac80514015e36ad2.squirrel@www.skyhub.de>
+In-Reply-To: <BANLkTi==Tx6sXcA2Bk6Cp7wc1DY-7c1V3g@mail.gmail.com>
+References: <71633.1304013549@localhost>
+    <1304083893-18849-1-git-send-email-mmarek@suse.cz>
+    <BANLkTikMf4x0e3UhabUH+c_xnWJMQ3rkvg@mail.gmail.com>
+    <20110502170736.GB18740@merkur.ravnborg.org>
+    <BANLkTi==Tx6sXcA2Bk6Cp7wc1DY-7c1V3g@mail.gmail.com>
+Date: Mon, 2 May 2011 20:03:05 +0200 (CEST)
+Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
+From: boris@alien8.de
+To: "Arnaud Lacombe" <lacombar@gmail.com>
+Cc: "Sam Ravnborg" <sam@ravnborg.org>,
+        =?iso-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        "Michal Marek" <mmarek@suse.cz>, valdis.kletnieks@vt.edu, bp@alien8.de,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502082711.GW2297@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 01:27:11AM -0700, Paul E. McKenney wrote:
-> On Sun, May 01, 2011 at 08:52:25AM -0700, Josh Triplett wrote:
-> > On Sun, May 01, 2011 at 06:20:51AM -0700, Paul E. McKenney wrote:
-> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > 
-> > > Includes total number of tasks boosted, number boosted on behalf of each
-> > > of normal and expedited grace periods, and statistics on attempts to
-> > > initiate boosting that failed for various reasons.
-> > 
-> > In this patch series, you have several cases where you improve the trace
-> > output in one patch, and then update the documentation in a subsequent
-> > patch.  You might consider doing both in the same patch, so that at each
-> > step the documentation matches the kernel.
-> 
-> The reason I do the documentation second is that it allows me to copy
-> the exact output from a test run, which has the nice side-effect of
-> making sure that I really am getting the documentation correct.  Or at
-> least of reducing the probability of getting it wrong...  ;-)
+I'm really getting tired of this!
 
-I definitely agree that you should copy the output from a test run to
-make the documentation accurate; I just mean that once you do so, you
-should put both the code changes and corresponding documentation into a
-single commit.
+> Because you are not even sure of what you submitted is good for the kernel
+> ?
 
-- Josh Triplett
+No, because we need to get a feeling of what makes sense for all these
+options first. I'd rather do the learning-by-doing thing here and
+implement what makes sense than braindead frameworks.
+
+> I think this has been done completely wrong, first all the extra
+> warnings got in (without a detailed impact implied by each one),
+
+WTF? http://marc.info/?l=linux-kbuild&m=130346037604547&w=2
+
+No one else did check those and said, ACK/NACK so we went in with this
+initial splitting first.
+
+> then it was decided to be split in several level (which I proposed on
+> Feb 20th, but was originally rejected by Borislav Petkov),
+
+Of course, because it made no sense at the time. Sam added it later with
+his proposal patch.
+
+> then, well, some may need to be removed because they are not good for
+> Linux.
+
+have you even tried all those options and come up with concrete
+suggestions on which options should go in and which shouldn't, and for
+what reasons? I don't think so. So until you do, I don't care what you
+have to say.
+
+[snip a bunch of bullshit]
+
+> Now, the drawback of your comment is that when it will be time to
+> change the interface, some will object because it will have been
+> started to be used by third party scripts, and as authors of third
+> party script, it is a PITA to have to check the kernel version to know
+> if I should W=1,2,3, or W=123 or if W=3 includes W=1 ...
+
+This is exactly why we're trying to get a feeling of this by _running_
+it and _then_ _bitching_ about it. And this is for DEVELOPERS only - if
+they've introduced it in their scripts, then they should be able to fix
+any changes very easily.
+
