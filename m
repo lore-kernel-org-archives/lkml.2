@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758512Ab1EBWEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 18:04:14 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:40560 "EHLO smtp.polymtl.ca"
+	id S1759253Ab1EBWFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 18:05:12 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:57353 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab1EBWEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 18:04:12 -0400
-Message-Id: <20110502213212.016163484@efficios.com>
+	id S1758886Ab1EBWFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 18:05:10 -0400
+Message-Id: <20110502213212.181691455@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 02 May 2011 17:11:28 -0400
+Date: Mon, 02 May 2011 17:11:29 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC patch 05/32] trace event irq remove semicolons
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Theodore Tso <tytso@mit.edu>
+Subject: [RFC patch 06/32] trace event jbd2 remove semicolons
 References: <20110502211123.163877033@efficios.com>
-Content-Disposition: inline; filename=trace-event-irq-remove-semicolons.patch
+Content-Disposition: inline; filename=trace-event-jbd2-remove-semicolons.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Mon,  2 May 2011 21:32:12 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,85 +31,124 @@ CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Theodore Ts'o <tytso@mit.edu>
 ---
- include/trace/events/irq.h |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ include/trace/events/jbd2.h |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/irq.h
+Index: linux-2.6-lttng/include/trace/events/jbd2.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/irq.h
-+++ linux-2.6-lttng/include/trace/events/irq.h
-@@ -6,6 +6,9 @@
- 
+--- linux-2.6-lttng.orig/include/trace/events/jbd2.h
++++ linux-2.6-lttng/include/trace/events/jbd2.h
+@@ -7,9 +7,14 @@
+ #include <linux/jbd2.h>
  #include <linux/tracepoint.h>
  
-+#ifndef _TRACE_IRQ_DEF_
-+#define _TRACE_IRQ_DEF_
++#ifndef _TRACE_JBD2_DEF_
++#define _TRACE_JBD2_DEF_
 +
- struct irqaction;
- struct softirq_action;
+ struct transaction_chp_stats_s;
+ struct transaction_run_stats_s;
  
-@@ -23,6 +26,8 @@ struct softirq_action;
- 			 softirq_name(HRTIMER),		\
- 			 softirq_name(RCU))
- 
-+#endif /* _TRACE_IRQ_DEF_ */
++#endif /* _TRACE_JBD2_DEF_ */
 +
- /**
-  * irq_handler_entry - called immediately before the irq action handler
-  * @irq: irq number
-@@ -51,7 +56,7 @@ TRACE_EVENT(irq_handler_entry,
- 	),
+ TRACE_EVENT(jbd2_checkpoint,
  
- 	TP_printk("irq=%d name=%s", __entry->irq, __get_str(name))
+ 	TP_PROTO(journal_t *journal, int result),
+@@ -28,7 +33,7 @@ TRACE_EVENT(jbd2_checkpoint,
+ 
+ 	TP_printk("dev %s result %d",
+ 		  jbd2_dev_to_name(__entry->dev), __entry->result)
 -);
 +)
  
- /**
-  * irq_handler_exit - called immediately after the irq action handler returns
-@@ -82,7 +87,7 @@ TRACE_EVENT(irq_handler_exit,
+ DECLARE_EVENT_CLASS(jbd2_commit,
  
- 	TP_printk("irq=%d ret=%s",
- 		  __entry->irq, __entry->ret ? "handled" : "unhandled")
+@@ -51,35 +56,35 @@ DECLARE_EVENT_CLASS(jbd2_commit,
+ 	TP_printk("dev %s transaction %d sync %d",
+ 		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
+ 		  __entry->sync_commit)
 -);
 +)
  
- DECLARE_EVENT_CLASS(softirq,
+ DEFINE_EVENT(jbd2_commit, jbd2_start_commit,
  
-@@ -100,7 +105,7 @@ DECLARE_EVENT_CLASS(softirq,
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
  
- 	TP_printk("vec=%u [action=%s]", __entry->vec,
- 		  show_softirq_name(__entry->vec))
+ 	TP_ARGS(journal, commit_transaction)
 -);
 +)
  
- /**
-  * softirq_entry - called immediately before the softirq handler
-@@ -114,7 +119,7 @@ DEFINE_EVENT(softirq, softirq_entry,
- 	TP_PROTO(unsigned int vec_nr),
+ DEFINE_EVENT(jbd2_commit, jbd2_commit_locking,
  
- 	TP_ARGS(vec_nr)
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+ 
+ 	TP_ARGS(journal, commit_transaction)
 -);
 +)
  
- /**
-  * softirq_exit - called immediately after the softirq handler returns
-@@ -128,7 +133,7 @@ DEFINE_EVENT(softirq, softirq_exit,
- 	TP_PROTO(unsigned int vec_nr),
+ DEFINE_EVENT(jbd2_commit, jbd2_commit_flushing,
  
- 	TP_ARGS(vec_nr)
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+ 
+ 	TP_ARGS(journal, commit_transaction)
 -);
 +)
  
- /**
-  * softirq_raise - called immediately when a softirq is raised
-@@ -142,7 +147,7 @@ DEFINE_EVENT(softirq, softirq_raise,
- 	TP_PROTO(unsigned int vec_nr),
+ DEFINE_EVENT(jbd2_commit, jbd2_commit_logging,
  
- 	TP_ARGS(vec_nr)
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+ 
+ 	TP_ARGS(journal, commit_transaction)
 -);
 +)
  
- #endif /*  _TRACE_IRQ_H */
+ TRACE_EVENT(jbd2_end_commit,
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+@@ -103,7 +108,7 @@ TRACE_EVENT(jbd2_end_commit,
+ 	TP_printk("dev %s transaction %d sync %d head %d",
+ 		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
+ 		  __entry->sync_commit, __entry->head)
+-);
++)
+ 
+ TRACE_EVENT(jbd2_submit_inode_data,
+ 	TP_PROTO(struct inode *inode),
+@@ -122,7 +127,7 @@ TRACE_EVENT(jbd2_submit_inode_data,
+ 
+ 	TP_printk("dev %s ino %lu",
+ 		  jbd2_dev_to_name(__entry->dev), (unsigned long) __entry->ino)
+-);
++)
+ 
+ TRACE_EVENT(jbd2_run_stats,
+ 	TP_PROTO(dev_t dev, unsigned long tid,
+@@ -166,7 +171,7 @@ TRACE_EVENT(jbd2_run_stats,
+ 		  jiffies_to_msecs(__entry->logging),
+ 		  __entry->handle_count, __entry->blocks,
+ 		  __entry->blocks_logged)
+-);
++)
+ 
+ TRACE_EVENT(jbd2_checkpoint_stats,
+ 	TP_PROTO(dev_t dev, unsigned long tid,
+@@ -197,7 +202,7 @@ TRACE_EVENT(jbd2_checkpoint_stats,
+ 		  jbd2_dev_to_name(__entry->dev), __entry->tid,
+ 		  jiffies_to_msecs(__entry->chp_time),
+ 		  __entry->forced_to_close, __entry->written, __entry->dropped)
+-);
++)
+ 
+ TRACE_EVENT(jbd2_cleanup_journal_tail,
+ 
+@@ -225,7 +230,7 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
+ 	TP_printk("dev %s from %u to %u offset %lu freed %lu",
+ 		  jbd2_dev_to_name(__entry->dev), __entry->tail_sequence,
+ 		  __entry->first_tid, __entry->block_nr, __entry->freed)
+-);
++)
+ 
+ #endif /* _TRACE_JBD2_H */
  
 
