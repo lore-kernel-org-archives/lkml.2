@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab1EBWFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 18:05:12 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:57353 "EHLO smtp.polymtl.ca"
+	id S932561Ab1EBVij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:38:39 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:39956 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758886Ab1EBWFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 18:05:10 -0400
-Message-Id: <20110502213212.181691455@efficios.com>
+	id S932498Ab1EBVif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 17:38:35 -0400
+Message-Id: <20110502213212.349674198@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 02 May 2011 17:11:29 -0400
+Date: Mon, 02 May 2011 17:11:30 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Theodore Tso <tytso@mit.edu>
-Subject: [RFC patch 06/32] trace event jbd2 remove semicolons
+        Li Zefan <lizf@cn.fujitsu.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [RFC patch 07/32] trace event kmem remove semicolons
 References: <20110502211123.163877033@efficios.com>
-Content-Disposition: inline; filename=trace-event-jbd2-remove-semicolons.patch
+Content-Disposition: inline; filename=trace-event-kmem-remove-semicolons.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Mon,  2 May 2011 21:32:12 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,123 +34,157 @@ CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Li Zefan <lizf@cn.fujitsu.com>
-CC: Theodore Ts'o <tytso@mit.edu>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: Larry Woodman <lwoodman@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- include/trace/events/jbd2.h |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ include/trace/events/kmem.h |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/jbd2.h
+Index: linux-2.6-lttng/include/trace/events/kmem.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/jbd2.h
-+++ linux-2.6-lttng/include/trace/events/jbd2.h
-@@ -7,9 +7,14 @@
- #include <linux/jbd2.h>
- #include <linux/tracepoint.h>
- 
-+#ifndef _TRACE_JBD2_DEF_
-+#define _TRACE_JBD2_DEF_
-+
- struct transaction_chp_stats_s;
- struct transaction_run_stats_s;
- 
-+#endif /* _TRACE_JBD2_DEF_ */
-+
- TRACE_EVENT(jbd2_checkpoint,
- 
- 	TP_PROTO(journal_t *journal, int result),
-@@ -28,7 +33,7 @@ TRACE_EVENT(jbd2_checkpoint,
- 
- 	TP_printk("dev %s result %d",
- 		  jbd2_dev_to_name(__entry->dev), __entry->result)
+--- linux-2.6-lttng.orig/include/trace/events/kmem.h
++++ linux-2.6-lttng/include/trace/events/kmem.h
+@@ -40,7 +40,7 @@ DECLARE_EVENT_CLASS(kmem_alloc,
+ 		__entry->bytes_req,
+ 		__entry->bytes_alloc,
+ 		show_gfp_flags(__entry->gfp_flags))
 -);
 +)
  
- DECLARE_EVENT_CLASS(jbd2_commit,
+ DEFINE_EVENT(kmem_alloc, kmalloc,
  
-@@ -51,35 +56,35 @@ DECLARE_EVENT_CLASS(jbd2_commit,
- 	TP_printk("dev %s transaction %d sync %d",
- 		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
- 		  __entry->sync_commit)
+@@ -48,7 +48,7 @@ DEFINE_EVENT(kmem_alloc, kmalloc,
+ 		 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags),
+ 
+ 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
 -);
 +)
  
- DEFINE_EVENT(jbd2_commit, jbd2_start_commit,
+ DEFINE_EVENT(kmem_alloc, kmem_cache_alloc,
  
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+@@ -56,7 +56,7 @@ DEFINE_EVENT(kmem_alloc, kmem_cache_allo
+ 		 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags),
  
- 	TP_ARGS(journal, commit_transaction)
+ 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
 -);
 +)
  
- DEFINE_EVENT(jbd2_commit, jbd2_commit_locking,
+ DECLARE_EVENT_CLASS(kmem_alloc_node,
  
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
- 
- 	TP_ARGS(journal, commit_transaction)
+@@ -94,7 +94,7 @@ DECLARE_EVENT_CLASS(kmem_alloc_node,
+ 		__entry->bytes_alloc,
+ 		show_gfp_flags(__entry->gfp_flags),
+ 		__entry->node)
 -);
 +)
  
- DEFINE_EVENT(jbd2_commit, jbd2_commit_flushing,
+ DEFINE_EVENT(kmem_alloc_node, kmalloc_node,
  
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+@@ -103,7 +103,7 @@ DEFINE_EVENT(kmem_alloc_node, kmalloc_no
+ 		 gfp_t gfp_flags, int node),
  
- 	TP_ARGS(journal, commit_transaction)
+ 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags, node)
 -);
 +)
  
- DEFINE_EVENT(jbd2_commit, jbd2_commit_logging,
+ DEFINE_EVENT(kmem_alloc_node, kmem_cache_alloc_node,
  
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+@@ -112,7 +112,7 @@ DEFINE_EVENT(kmem_alloc_node, kmem_cache
+ 		 gfp_t gfp_flags, int node),
  
- 	TP_ARGS(journal, commit_transaction)
+ 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags, node)
 -);
 +)
  
- TRACE_EVENT(jbd2_end_commit,
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
-@@ -103,7 +108,7 @@ TRACE_EVENT(jbd2_end_commit,
- 	TP_printk("dev %s transaction %d sync %d head %d",
- 		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
- 		  __entry->sync_commit, __entry->head)
+ DECLARE_EVENT_CLASS(kmem_free,
+ 
+@@ -131,21 +131,21 @@ DECLARE_EVENT_CLASS(kmem_free,
+ 	),
+ 
+ 	TP_printk("call_site=%lx ptr=%p", __entry->call_site, __entry->ptr)
 -);
 +)
  
- TRACE_EVENT(jbd2_submit_inode_data,
- 	TP_PROTO(struct inode *inode),
-@@ -122,7 +127,7 @@ TRACE_EVENT(jbd2_submit_inode_data,
+ DEFINE_EVENT(kmem_free, kfree,
  
- 	TP_printk("dev %s ino %lu",
- 		  jbd2_dev_to_name(__entry->dev), (unsigned long) __entry->ino)
+ 	TP_PROTO(unsigned long call_site, const void *ptr),
+ 
+ 	TP_ARGS(call_site, ptr)
 -);
 +)
  
- TRACE_EVENT(jbd2_run_stats,
- 	TP_PROTO(dev_t dev, unsigned long tid,
-@@ -166,7 +171,7 @@ TRACE_EVENT(jbd2_run_stats,
- 		  jiffies_to_msecs(__entry->logging),
- 		  __entry->handle_count, __entry->blocks,
- 		  __entry->blocks_logged)
+ DEFINE_EVENT(kmem_free, kmem_cache_free,
+ 
+ 	TP_PROTO(unsigned long call_site, const void *ptr),
+ 
+ 	TP_ARGS(call_site, ptr)
 -);
 +)
  
- TRACE_EVENT(jbd2_checkpoint_stats,
- 	TP_PROTO(dev_t dev, unsigned long tid,
-@@ -197,7 +202,7 @@ TRACE_EVENT(jbd2_checkpoint_stats,
- 		  jbd2_dev_to_name(__entry->dev), __entry->tid,
- 		  jiffies_to_msecs(__entry->chp_time),
- 		  __entry->forced_to_close, __entry->written, __entry->dropped)
+ TRACE_EVENT(mm_page_free_direct,
+ 
+@@ -167,7 +167,7 @@ TRACE_EVENT(mm_page_free_direct,
+ 			__entry->page,
+ 			page_to_pfn(__entry->page),
+ 			__entry->order)
 -);
 +)
  
- TRACE_EVENT(jbd2_cleanup_journal_tail,
+ TRACE_EVENT(mm_pagevec_free,
  
-@@ -225,7 +230,7 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
- 	TP_printk("dev %s from %u to %u offset %lu freed %lu",
- 		  jbd2_dev_to_name(__entry->dev), __entry->tail_sequence,
- 		  __entry->first_tid, __entry->block_nr, __entry->freed)
+@@ -189,7 +189,7 @@ TRACE_EVENT(mm_pagevec_free,
+ 			__entry->page,
+ 			page_to_pfn(__entry->page),
+ 			__entry->cold)
 -);
 +)
  
- #endif /* _TRACE_JBD2_H */
+ TRACE_EVENT(mm_page_alloc,
+ 
+@@ -218,7 +218,7 @@ TRACE_EVENT(mm_page_alloc,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		show_gfp_flags(__entry->gfp_flags))
+-);
++)
+ 
+ DECLARE_EVENT_CLASS(mm_page,
+ 
+@@ -244,14 +244,14 @@ DECLARE_EVENT_CLASS(mm_page,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		__entry->order == 0)
+-);
++)
+ 
+ DEFINE_EVENT(mm_page, mm_page_alloc_zone_locked,
+ 
+ 	TP_PROTO(struct page *page, unsigned int order, int migratetype),
+ 
+ 	TP_ARGS(page, order, migratetype)
+-);
++)
+ 
+ DEFINE_EVENT_PRINT(mm_page, mm_page_pcpu_drain,
+ 
+@@ -262,7 +262,7 @@ DEFINE_EVENT_PRINT(mm_page, mm_page_pcpu
+ 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d",
+ 		__entry->page, page_to_pfn(__entry->page),
+ 		__entry->order, __entry->migratetype)
+-);
++)
+ 
+ TRACE_EVENT(mm_page_alloc_extfrag,
+ 
+@@ -300,7 +300,7 @@ TRACE_EVENT(mm_page_alloc_extfrag,
+ 		__entry->fallback_migratetype,
+ 		__entry->fallback_order < pageblock_order,
+ 		__entry->alloc_migratetype == __entry->fallback_migratetype)
+-);
++)
+ 
+ #endif /* _TRACE_KMEM_H */
  
 
