@@ -1,97 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1EBFGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 01:06:21 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37121 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab1EBFGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 01:06:19 -0400
-Date: Mon, 2 May 2011 15:06:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the cpufreq tree
-Message-Id: <20110502150615.f174d0d7.sfr@canb.auug.org.au>
-In-Reply-To: <20110429201241.GA12256@redhat.com>
-References: <20110427111024.eb26b6f5.sfr@canb.auug.org.au>
-	<20110427013217.GA30804@redhat.com>
-	<20110427115427.f5a4fac7.sfr@canb.auug.org.au>
-	<20110429201241.GA12256@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_May_2011_15_06_15_+1000_+7_bjr4kSBKftA+6"
+	id S1753051Ab1EBFHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 01:07:44 -0400
+Received: from mail-px0-f170.google.com ([209.85.212.170]:55239 "EHLO
+	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab1EBFHn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 01:07:43 -0400
+Subject: [RFC PATCH 0/4] ARM: Basic Xilinx Support
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        John Linn <john.linn@xilinx.com>
+Date: Sun, 01 May 2011 23:07:39 -0600
+Message-ID: <20110502045207.24800.91172.stgit@ponder>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_May_2011_15_06_15_+1000_+7_bjr4kSBKftA+6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Russell,
 
-Hi Dave,
+Just for giggles, here is the Xilinx board support series reworked a
+bit to depend entirely on CONFIG_OF and not use any static device
+registrations other than what is needed to bootstrap the system, and
+adds as little code as possible in terms of new infrastructure.  All
+told, the 4th patch adds less than 950 lines of code to the kernel,
+which is pretty darn good for a whole new subarch.
 
-On Fri, 29 Apr 2011 16:12:42 -0400 Dave Jones <davej@redhat.com> wrote:
->
-> I've moved this work onto a separate move-drivers branch. Could you track=
- that in next too please?
-> (Apply after fixes & next)
->=20
-> I'm hoping this branch will be fairly short-lived, but it depends how qui=
-ckly
-> other architecture maintainers move their drivers over too.
+The zynq platform is a pretty ideal test case for this since the goal
+has been from day one to depend on CONFIG_OF.  The previous series
+only used static device registrations because device tree on arm isn't
+yet in mainline.  Plus, xilinx is already quite comfortable with how
+to use the device tree since their other two architectures (powerpc and
+microblaze) have depended on device tree for years now.
 
-I have added that new branch starting today.  I called it cpufreq-move.
+I'd like to get your thoughts on the reuse of plat-versatile for the
+struct clk implementation.  I'm certainly not excited about creating
+yet another implementation, and versatile seems to be ideal to reuse.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+The previous version of this board support has already been in
+linux-next for quite a while now.  If you do decide to pick up
+device tree support for 2.6.40, then it would pretty low risk thing to
+queue up this board support also.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+The 2nd and 3rd patches aren't actually part of the board support, but
+I included them here because they're needed to get the patch to apply.
+The whole series is based on top of both the irq_domain series I
+posted last week and the latest arm device tree support series.
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+g.
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+---
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
+Grant Likely (4):
+      arm/dt: Add dt machine definition
+      of/address: Add of_find_matching_node_by_address helper
+      dt/irq: add of_irq_domain_add_simple() helper
+      ARM: Xilinx: Adding Xilinx board support
 
---Signature=_Mon__2_May_2011_15_06_15_+1000_+7_bjr4kSBKftA+6
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ Documentation/devicetree/bindings/arm/xilinx.txt |    7 +
+ arch/arm/Kconfig                                 |   14 +
+ arch/arm/Makefile                                |    2 
+ arch/arm/boot/dts/zynq-ep107.dts                 |   52 ++++
+ arch/arm/include/asm/mach/arch.h                 |    9 +
+ arch/arm/mach-zynq/Makefile                      |    6 
+ arch/arm/mach-zynq/Makefile.boot                 |    3 
+ arch/arm/mach-zynq/board_dt.c                    |   36 +++
+ arch/arm/mach-zynq/common.c                      |  112 ++++++++
+ arch/arm/mach-zynq/common.h                      |   29 ++
+ arch/arm/mach-zynq/include/mach/clkdev.h         |   32 ++
+ arch/arm/mach-zynq/include/mach/debug-macro.S    |   36 +++
+ arch/arm/mach-zynq/include/mach/entry-macro.S    |   30 ++
+ arch/arm/mach-zynq/include/mach/hardware.h       |   18 +
+ arch/arm/mach-zynq/include/mach/io.h             |   33 ++
+ arch/arm/mach-zynq/include/mach/irqs.h           |   21 ++
+ arch/arm/mach-zynq/include/mach/memory.h         |   22 ++
+ arch/arm/mach-zynq/include/mach/system.h         |   28 ++
+ arch/arm/mach-zynq/include/mach/timex.h          |   23 ++
+ arch/arm/mach-zynq/include/mach/uart.h           |   25 ++
+ arch/arm/mach-zynq/include/mach/uncompress.h     |   51 ++++
+ arch/arm/mach-zynq/include/mach/vmalloc.h        |   20 +
+ arch/arm/mach-zynq/include/mach/zynq_soc.h       |   48 ++++
+ arch/arm/mach-zynq/timer.c                       |  298 ++++++++++++++++++++++
+ arch/arm/mm/Kconfig                              |    2 
+ drivers/of/address.c                             |   18 +
+ drivers/of/irq.c                                 |   44 +++
+ include/linux/of_address.h                       |    4 
+ include/linux/of_irq.h                           |    2 
+ 29 files changed, 1024 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/xilinx.txt
+ create mode 100644 arch/arm/boot/dts/zynq-ep107.dts
+ create mode 100644 arch/arm/mach-zynq/Makefile
+ create mode 100644 arch/arm/mach-zynq/Makefile.boot
+ create mode 100644 arch/arm/mach-zynq/board_dt.c
+ create mode 100644 arch/arm/mach-zynq/common.c
+ create mode 100644 arch/arm/mach-zynq/common.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/debug-macro.S
+ create mode 100644 arch/arm/mach-zynq/include/mach/entry-macro.S
+ create mode 100644 arch/arm/mach-zynq/include/mach/hardware.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/io.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/irqs.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/memory.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/system.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/timex.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/uart.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/uncompress.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/vmalloc.h
+ create mode 100644 arch/arm/mach-zynq/include/mach/zynq_soc.h
+ create mode 100644 arch/arm/mach-zynq/timer.c
 
-iQEcBAEBAgAGBQJNvjvHAAoJEDMEi1NhKgbscooH/2lezgHdL/ucbcxg8em8lYUx
-ULRPco52fklpwuVw1h9wiuijVTbhfMyBhOZnTbTuX4EE3R97u6joecl7dpfDkeqE
-UM56oDcxNG+cjuIveD0oE24wpRNWH+JTuJ0vsansFl1mCP0+QEx2Fw1A1CxH98qi
-Y4zLojtn3hyzNFdbfUm+GXBQjFXxSVd0eWT4ch3vg+I+SzIpxwT+TXqal7aNFWdi
-N5drJ2byQQwMCFEv/RjeQLPbaX+wBGIQlBmWRq1l1dBcoZSUWcC9ja6VeEzeM5aD
-yCvzY0W4wp7STgMKqGXbsLd3SjeB07aTr3ycS/nf0pNFgUHgTgOPaXkKgY4eoLE=
-=H6gI
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_May_2011_15_06_15_+1000_+7_bjr4kSBKftA+6--
+-- 
+Signature
