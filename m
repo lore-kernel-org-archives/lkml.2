@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab1EBPGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 11:06:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49908 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102Ab1EBPGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 11:06:05 -0400
-Date: Mon, 2 May 2011 17:05:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using
- cluster groups v4
-Message-ID: <20110502150552.GA21974@elte.hu>
-References: <20110502113445.751391656@openvz.org>
- <20110502114024.222582172@openvz.org>
- <20110502132232.GA3873@elte.hu>
- <4DBEB96A.8000309@openvz.org>
- <4DBEBE72.3040702@gmail.com>
+	id S932156Ab1EBPJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 11:09:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63480 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab1EBPJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 11:09:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=m8oQFvCSIUHPF/WzTCJGecJ+9b6jCzE3qp467wI6HITfcIvGbCZUsjuMhrAatSqCxX
+         vO7XJDghIguYWIxD/GEoGePD/BjOofXr2xkISIetokHnhVIpdaSRzubbMSkHU5yzYrg9
+         tIE0BDkJDcsbhlwwPoIVY7xa9EefseH7HWyDs=
+Date: Mon, 2 May 2011 17:09:45 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [GIT PULL tip:x86/mm] Unify 32 and 64bit NUMA init paths
+Message-ID: <20110502150945.GE22117@htj.dyndns.org>
+References: <20110502091334.GB22117@htj.dyndns.org>
+ <20110502101828.GB27072@elte.hu>
+ <20110502122319.GC22117@htj.dyndns.org>
+ <20110502150401.GA21680@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DBEBE72.3040702@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110502150401.GA21680@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On 05/02/2011 06:02 PM, Cyrill Gorcunov wrote:
-> ...
-> > 
-> >   Ingo, the idea was to merge probe_x.c completely, and put all this not into init()
-> > but rather into apic->probe() or something like that. I don't have a clear picture
-> > in mind yet what the best way would be, so instead of fast designed method I thought
-> > to leave it opencoded with fixme note.
-> > 
-> >   So lets wait until Suresh post the benchmark and I will make apic->init() meanwhile.
-> > 
+On Mon, May 02, 2011 at 05:04:01PM +0200, Ingo Molnar wrote:
+> Doesnt build on 32-bit allyesconfig:
 > 
->   Ingo, would it be fine to make apic->init() either _before_ this series or 
-> on top of them (because if I introduce it inside this particular patch it 
-> would contain some unrelated code snippets such as .init = NULL for all apics 
-> declaration).
+>   ERROR: "physnode_map" [drivers/net/wan/dscc4.ko] undefined!
+>   ERROR: "physnode_map" [crypto/tcrypt.ko] undefined!
 
-Of course it should be a separate patch - even this patch looks a bit large - 
-any way to split it up further?
+Dang, I only checked allmodconfig.  Testing allyesconfig now.
 
-And yes, if it fits it should be in apic->probe() instead of introducing a new 
-->init() method.
+Thanks.
 
-Thanks,
-
-	Ingo
+-- 
+tejun
