@@ -1,150 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab1EBOZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:25:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53815 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440Ab1EBOZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:25:34 -0400
-From: srinath@mistralsolutions.com
-To: linux-omap@vger.kernel.org
-Cc: jdk@ti.com, tony@atomide.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        khilman@deeprootsystems.com, nm@ti.com, nagendra@mistralsolutions.com,
-        umeshk@mistralsolutions.com,
-        "Srinath.R" <srinath@mistralsolutions.com>
-Subject: [Patch v2] AM35xx-Craneboard:Display: Add DVI and TV Support
-Date: Mon,  2 May 2011 19:10:43 +0530
-Message-Id: <1304343643-3148-2-git-send-email-srinath@mistralsolutions.com>
-X-Mailer: git-send-email 1.7.1.226.g770c5
-In-Reply-To: <[PATCH]>
-References: <[PATCH]>
+	id S1759031Ab1EBNqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 09:46:44 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54213 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757061Ab1EBNqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 09:46:42 -0400
+Date: Mon, 2 May 2011 06:46:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: query: [PATCH 2/2] cgroup: Remove call to synchronize_rcu in
+ cgroup_attach_task
+Message-ID: <20110502134635.GB4197@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1302170153.12304.31.camel@marge.simson.net>
+ <4DA50430.8020701@cn.fujitsu.com>
+ <1302664313.7407.29.camel@marge.simson.net>
+ <BANLkTikqvP90Etu=L24DPWbckrawM-6n=Q@mail.gmail.com>
+ <1303136494.7542.20.camel@marge.simson.net>
+ <1303983516.7460.5.camel@marge.simson.net>
+ <1304080487.21536.16.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304080487.21536.16.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinath.R <srinath@mistralsolutions.com>
+On Fri, Apr 29, 2011 at 02:34:47PM +0200, Mike Galbraith wrote:
+> (ok crickets, keep the noise down please)
+> 
+> On Thu, 2011-04-28 at 11:38 +0200, Mike Galbraith wrote:
+> 
+> > The explosions are because the logic to snag rmdir() should anyone grab
+> > a reference will let us zip right through and free a cgroup while
+> > there's a destruction in flight.  Adding a cgrp->count check before
+> > trying to cgroup_clear_css_refs() prevents the explosions, but that
+> > leaves RCU grace periods still embedded in userspace.
+> > 
+> > So...
+> > 
+> > I bent up put_css_set() a bit to try to destroy synchronously on final
+> > put if possible, so rmdir() will only be snagged if that fails.  The
+> > thing seems to be working, so I'll show it.  Readers (beware) may notice
+> > some gratuitous looking chicken scratches.  Just ignore those, and move
+> > along smartly to the suggesting a much better way part, for surely one
+> > must exist. 
+> 
+> Hi Self, (*howdy*)
+> 
+> You might try the below.  No weird gyrations to accomplish the same
+> thing, and I see no slub debug gripes, no list debug gripes, nada.
+> 
+> Makes one wonder what these things do for a living.
 
-Added Display (DVI and TV) support for CraneBoard.
+If you are adding something to an RCU-protected data structure, then you do
+not need synchronize_rcu().  But if you are removing something from
+an RCU-protected data structure, then you really do need them.  If you
+leave them out, you can see the following type of failure:
 
-History:
-https://patchwork.kernel.org/patch/740761/
+1.	CPU 0, running in an RCU read-side critical section, obtains
+	a pointer to data item A.
 
-Signed-off-by: Srinath.R <srinath@mistralsolutions.com>
----
- arch/arm/mach-omap2/board-am3517crane.c |   73 +++++++++++++++++++++++++++++++
- 1 files changed, 73 insertions(+), 0 deletions(-)
+2.	CPU 1 removes data item A from the structure.
 
-diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
-index 05867b5..26fa565 100644
---- a/arch/arm/mach-omap2/board-am3517crane.c
-+++ b/arch/arm/mach-omap2/board-am3517crane.c
-@@ -29,12 +29,15 @@
- #include <plat/board.h>
- #include <plat/common.h>
- #include <plat/usb.h>
-+#include <plat/display.h>
-+#include <plat/panel-generic-dpi.h>
- 
- #include "mux.h"
- #include "control.h"
- 
- #define GPIO_USB_POWER		35
- #define GPIO_USB_NRESET		38
-+#define GPIO_DVI_ENABLE		52
- 
- 
- /* Board initialization */
-@@ -66,11 +69,78 @@ static struct usbhs_omap_board_data usbhs_bdata __initdata = {
- 	.reset_gpio_port[2]  = -EINVAL
- };
- 
-+static void __init am3517_crane_display_init(void)
-+{
-+	int ret;
-+
-+	ret = omap_mux_init_gpio(GPIO_DVI_ENABLE, OMAP_PIN_OUTPUT);
-+	if (ret < 0) {
-+		pr_err("Can not configure mux for GPIO_DVI_ENABLE %d\n",
-+			GPIO_DVI_ENABLE);
-+		return;
-+	}
-+
-+	ret = gpio_request_one(GPIO_DVI_ENABLE, GPIOF_OUT_INIT_HIGH,
-+				"dvi_enable");
-+	if (ret < 0) {
-+		pr_err("Can not request GPIO %d\n", GPIO_DVI_ENABLE);
-+		return;
-+	}
-+
-+}
-+
-+static struct omap_dss_device am3517_crane_tv_device = {
-+	.type                   = OMAP_DISPLAY_TYPE_VENC,
-+	.name                   = "tv",
-+	.driver_name            = "venc",
-+	.phy.venc.type          = OMAP_DSS_VENC_TYPE_COMPOSITE,
-+	.platform_enable        = NULL,
-+	.platform_disable       = NULL,
-+};
-+
-+static int am3517_crane_panel_enable_dvi(struct omap_dss_device *dssdev)
-+{
-+	gpio_set_value(GPIO_DVI_ENABLE, 1);
-+	return 0;
-+}
-+
-+static void am3517_crane_panel_disable_dvi(struct omap_dss_device *dssdev)
-+{
-+	gpio_set_value(GPIO_DVI_ENABLE, 0);
-+}
-+
-+
-+static struct panel_generic_dpi_data dvi_panel = {
-+	.name                   = "generic",
-+	.platform_enable        = am3517_crane_panel_enable_dvi,
-+	.platform_disable       = am3517_crane_panel_disable_dvi,
-+};
-+
-+static struct omap_dss_device am3517_crane_dvi_device = {
-+	.type                   = OMAP_DISPLAY_TYPE_DPI,
-+	.name                   = "dvi",
-+	.driver_name            = "generic_dpi_panel",
-+	.data                   = &dvi_panel,
-+	.phy.dpi.data_lines     = 24,
-+};
-+
-+static struct omap_dss_device *am3517_crane_dss_devices[] = {
-+	&am3517_crane_tv_device,
-+	&am3517_crane_dvi_device,
-+};
-+
-+static struct omap_dss_board_info am3517_crane_dss_data = {
-+	.num_devices    = ARRAY_SIZE(am3517_crane_dss_devices),
-+	.devices        = am3517_crane_dss_devices,
-+	.default_device = &am3517_crane_dvi_device,
-+};
-+
- static void __init am3517_crane_init(void)
- {
- 	int ret;
- 
- 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-+	omap_display_init(&am3517_crane_dss_data);
- 	omap_serial_init();
- 
- 	omap_board_config = am3517_crane_config;
-@@ -103,6 +173,9 @@ static void __init am3517_crane_init(void)
- 	}
- 
- 	usbhs_init(&usbhs_bdata);
-+
-+	/* DSS */
-+	am3517_crane_display_init();
- }
- 
- MACHINE_START(CRANEBOARD, "AM3517/05 CRANEBOARD")
--- 
-1.5.3.4
+3.	CPU 1 does not do a synchronize_rcu().  If CPU 1 had done a
+	synchronize_rcu(), then it would have waited until CPU 0 had
+	left its RCU read-side critical section, and thus until
+	CPU 0 stopped using its pointer to data item A.  But there was
+	no synchronize_rcu(), so CPU 0 is still looking at data item A.
 
+4.	CPU 1 frees data item A.
+
+This is very bad.  CPU 0 has a pointer into the freelist.  Worse yet,
+some other CPU might allocate memory and get a pointer to data item A.
+That CPU and CPU 0 would then have an interesting but short lived
+disagreement about that memory's type.  Crash goes the kernel.
+
+So please do not remove synchronize_rcu() calls unless you can prove
+that it is safe to do so!
+
+						Thanx, Paul
+
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 25c7eb5..b8c64bf 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -826,13 +826,6 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+>  		struct cgroup *cgrp = dentry->d_fsdata;
+>  		struct cgroup_subsys *ss;
+>  		BUG_ON(!(cgroup_is_removed(cgrp)));
+> -		/* It's possible for external users to be holding css
+> -		 * reference counts on a cgroup; css_put() needs to
+> -		 * be able to access the cgroup after decrementing
+> -		 * the reference count in order to know if it needs to
+> -		 * queue the cgroup to be handled by the release
+> -		 * agent */
+> -		synchronize_rcu();
+> 
+>  		mutex_lock(&cgroup_mutex);
+>  		/*
+> @@ -1822,7 +1815,6 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>  			ss->attach(ss, cgrp, oldcgrp, tsk, false);
+>  	}
+>  	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
+> -	synchronize_rcu();
+>  	put_css_set(cg);
+> 
+>  	/*
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
