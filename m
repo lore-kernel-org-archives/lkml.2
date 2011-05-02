@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab1EBXLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:11:38 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757584Ab1EBXJc (ORCPT
+	id S1754603Ab1EBTfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:35:18 -0400
+Received: from 232.Red-88-26-245.staticIP.rima-tde.net ([88.26.245.232]:47367
+	"HELO sysvalve.homelinux.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753642Ab1EBTfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:09:32 -0400
-X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
-Message-Id: <201105022254.p42MsQaw030355@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 2 May 2011 15:35:06 -0400
-Subject: [PATCH] arch/tile: properly flush the I$ when unloading kernel modules
+	Mon, 2 May 2011 15:35:15 -0400
+From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
 To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 02 May 2011 22:54:26.0565 (UTC) FILETIME=[E317B350:01CC091B]
+Cc: dgiagio@gmail.com, dborca@yahoo.com, davem@davemloft.net,
+        pmcenery@gmail.com, david.hill@ubisoft.com,
+        linux-usb@vger.kernel.org (open list:USB SUBSYSTEM),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+Subject: [PATCH] ipheth.c: Enable IP header alignment
+Date: Mon,  2 May 2011 21:35:12 +0200
+Message-Id: <1304364912-15444-1-git-send-email-agimenez@sysvalve.es>
+X-Mailer: git-send-email 1.7.5
+In-Reply-To: <1304264799.2833.82.camel@localhost>
+References: <1304264799.2833.82.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, in principle, there could be stale I$ data present
-next time the page that previously held the kernel module code was
-used to run some new code.
+Since commit ea812ca1b06113597adcd8e70c0f84a413d97544 (x86: Align skb w/ start
+of cacheline on newer core 2/Xeon Arch), NET_IP_ALIGN changed from 2 to 0, and
+the constant is used to reserve more room for the socket buffer.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Some people have reported that tethering stopped working and David Hill
+submited a patch that redefined NET_IP_ALIGN. Pointed by Ben Hutchings, the
+patch has been reworked to use a private constant.
+
+I have no more an iPhone device to test it, so it is only compile-tested.
+
+Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
 ---
- arch/tile/kernel/module.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ drivers/net/usb/ipheth.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
-index e2ab82b..f68df69 100644
---- a/arch/tile/kernel/module.c
-+++ b/arch/tile/kernel/module.c
-@@ -22,6 +22,7 @@
- #include <linux/kernel.h>
- #include <asm/opcode-tile.h>
- #include <asm/pgtable.h>
-+#include <asm/homecache.h>
+diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+index 7d42f9a..8f1ffc7 100644
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -80,6 +80,8 @@
+ #define IPHETH_CARRIER_CHECK_TIMEOUT round_jiffies_relative(1 * HZ)
+ #define IPHETH_CARRIER_ON       0x04
  
- #ifdef __tilegx__
- # define Elf_Rela Elf64_Rela
-@@ -86,8 +87,13 @@ error:
- void module_free(struct module *mod, void *module_region)
- {
- 	vfree(module_region);
++#define IPHETH_IP_ALIGN 2
 +
-+	/* Globally flush the L1 icache. */
-+	flush_remote(0, HV_FLUSH_EVICT_L1I, cpu_online_mask,
-+		     0, 0, 0, NULL, NULL, 0);
-+
- 	/*
--	 * FIXME: If module_region == mod->init_region, trim exception
-+	 * FIXME: If module_region == mod->module_init, trim exception
- 	 * table entries.
- 	 */
- }
+ static struct usb_device_id ipheth_table[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE,
+@@ -205,15 +207,15 @@ static void ipheth_rcvbulk_callback(struct urb *urb)
+ 	len = urb->actual_length;
+ 	buf = urb->transfer_buffer;
+ 
+-	skb = dev_alloc_skb(NET_IP_ALIGN + len);
++	skb = dev_alloc_skb(IPHETH_IP_ALIGN + len);
+ 	if (!skb) {
+ 		err("%s: dev_alloc_skb: -ENOMEM", __func__);
+ 		dev->net->stats.rx_dropped++;
+ 		return;
+ 	}
+ 
+-	skb_reserve(skb, NET_IP_ALIGN);
+-	memcpy(skb_put(skb, len), buf + NET_IP_ALIGN, len - NET_IP_ALIGN);
++	skb_reserve(skb, IPHETH_IP_ALIGN);
++	memcpy(skb_put(skb, len), buf + IPHETH_IP_ALIGN, len - IPHETH_IP_ALIGN);
+ 	skb->dev = dev->net;
+ 	skb->protocol = eth_type_trans(skb, dev->net);
+ 
 -- 
-1.6.5.2
+1.7.5
 
