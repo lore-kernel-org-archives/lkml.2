@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab1EBVQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:16:39 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:41413 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab1EBVQi convert rfc822-to-8bit (ORCPT
+	id S1757683Ab1EBVTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:19:33 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:46417 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757331Ab1EBVTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:16:38 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-Thread-Topic: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-Thread-Index: AQHMBGnbOdiUysHbTUGr026Sn7cwwZRw2pzQgADfZgD//9dIkIAAhckAgALsDiCAAIGrgIADE/mA//+K1cCAAHyegP//qoFAABSsIIAAII/J0AAP4IMAAAwOQRA=
-Date: Mon, 2 May 2011 21:16:36 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481DF56D@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <6E21E5352C11B742B20C142EB499E0481DD266@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110427121856.GA20633@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110429164025.GA7698@kroah.com> <20110501154041.GB15210@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DF253@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110501160721.GA8195@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DF2A0@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110501205315.GC1017@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481DF543@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110502200012.GA21619@infradead.org>
-In-Reply-To: <20110502200012.GA21619@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.33]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 2 May 2011 17:19:30 -0400
+Date: Mon, 2 May 2011 23:18:06 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 0/4] mm: Memory hotplug and sparsemem cleanups
+Message-ID: <20110502211806.GA4623@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+Full list of cleanups:
+  - mm: Remove dependency on CONFIG_FLATMEM from online_page(),
+  - mm: Enable set_page_section() only if CONFIG_SPARSEMEM
+    and !CONFIG_SPARSEMEM_VMEMMAP,
+  - mm: pfn_to_section_nr()/section_nr_to_pfn() is valid
+    only in CONFIG_SPARSEMEM context,
+  - mm: Do not define PFN_SECTION_SHIFT if !CONFIG_SPARSEMEM.
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Monday, May 02, 2011 4:00 PM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; Greg KH; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
-> 
-> On Mon, May 02, 2011 at 07:48:38PM +0000, KY Srinivasan wrote:
-> > By setting up appropriate modprobe rules, this can be addressed.
-> 
-> That assumes libata is a module, which it is not for many popular
-> distributions.
-> 
-As long as you can prevent ata_piix from loading, it should be fine.
+Those patches applies to Linus' git tree, v2.6.39-rc5 tag.
+They are required by latest memory hotplug support for Xen balloon
+driver patch which will be sent soon.
 
-Regards,
-
-K. Y
+Daniel
