@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab1EBPJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 11:09:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63480 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab1EBPJw (ORCPT
+	id S932092Ab1EBPMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 11:12:39 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49654 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab1EBPMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 11:09:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m8oQFvCSIUHPF/WzTCJGecJ+9b6jCzE3qp467wI6HITfcIvGbCZUsjuMhrAatSqCxX
-         vO7XJDghIguYWIxD/GEoGePD/BjOofXr2xkISIetokHnhVIpdaSRzubbMSkHU5yzYrg9
-         tIE0BDkJDcsbhlwwPoIVY7xa9EefseH7HWyDs=
-Date: Mon, 2 May 2011 17:09:45 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [GIT PULL tip:x86/mm] Unify 32 and 64bit NUMA init paths
-Message-ID: <20110502150945.GE22117@htj.dyndns.org>
-References: <20110502091334.GB22117@htj.dyndns.org>
- <20110502101828.GB27072@elte.hu>
- <20110502122319.GC22117@htj.dyndns.org>
- <20110502150401.GA21680@elte.hu>
+	Mon, 2 May 2011 11:12:35 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: linux-kernel@vger.kernel.org
+Subject: Re: unable to handle kernel paging request when inserting FAT32 formatted flash media
+References: <20110502064945.GA12197@mac.home>
+	<20110502065529.GA12397@mac.home> <87y62pf9xg.fsf@devron.myhome.or.jp>
+Date: Tue, 03 May 2011 00:12:33 +0900
+In-Reply-To: <87y62pf9xg.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Mon, 02 May 2011 23:34:35 +0900")
+Message-ID: <87r58hf866.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502150401.GA21680@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 05:04:01PM +0200, Ingo Molnar wrote:
-> Doesnt build on 32-bit allyesconfig:
-> 
->   ERROR: "physnode_map" [drivers/net/wan/dscc4.ko] undefined!
->   ERROR: "physnode_map" [crypto/tcrypt.ko] undefined!
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
-Dang, I only checked allmodconfig.  Testing allyesconfig now.
+> Tino Keitel <tino.keitel@tikei.de> writes:
+>
+>> On Mon, May 02, 2011 at 08:49:45 +0200, Tino Keitel wrote:
+>>> Hi,
+>>> 
+>>> when I insert a CF or SD card from my cameras into the USB card reader,
+>>> I get the attached kernel oops. This is reproducible and did not happen
+>>> with 2.6.38.
+>>
+>> Forgot to mention: the bug occurs with 2.6.39-rc5.
+>
+> There is no related change in fs/fat after 2.6.38. So, the cause would
+> be other area. Anyway, I'll see detail a bit.
+
+BTW, is this reproducible? And could you send .config both of 2.6.38 and
+2.6.39-rc5?
+
+Page fault is in allocated area by module load, it sounds like
+strange. Um...
 
 Thanks.
-
 -- 
-tejun
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
