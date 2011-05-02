@@ -1,55 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab1EBRWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:22:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62258 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab1EBRWn (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 2 May 2011 13:22:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com,
-        yinghai@kernel.org, hpa@zytor.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen: mask_rw_pte mark RO all pagetable pages up to pgt_buf_top
-Date: Mon,  2 May 2011 13:22:22 -0400
-Message-Id: <1304356942-17656-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
-References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DBEE85D.00BC:SCFMA922111,ss=1,fgs=0
+	id S1756138Ab1EBRZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 13:25:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312Ab1EBRZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 13:25:20 -0400
+From: Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jesse Gross <jesse@nicira.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] flex_array: avoid divisions when accessing elements
+Date: Mon,  2 May 2011 13:26:34 -0400
+Message-Id: <1304357194-19308-1-git-send-email-eparis@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Jesse Gross <jesse@nicira.com>
 
-mask_rw_pte is currently checking if a pfn is a pagetable page if it
-falls in the range pgt_buf_start - pgt_buf_end but that is incorrect
-because pgt_buf_end is a moving target: pgt_buf_top is the real
-boundary.
+On most architectures division is an expensive operation and accessing an
+element currently requires four of them.  This performance penalty
+effectively precludes flex arrays from being used on any kind of fast
+path.  However, two of these divisions can be handled at creation time and
+the others can be replaced by a reciprocal divide, completely avoiding
+real divisions on access.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+[rebase on top of changes to support 0 len elements: eparis]
+[initialize part_nr when array fits entirely in base: eparis]
+Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
- arch/x86/xen/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/flex_array.h |    2 +
+ lib/flex_array.c           |   51 +++++++++++++++++++++++++-------------------
+ 2 files changed, 31 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 1bca25f..55c965b 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1616,7 +1616,7 @@ static __init pte_t mask_rw_pte(pte_t *ptep, pte_t pte)
- 	 * it is RO.
- 	 */
- 	if (((!is_early_ioremap_ptep(ptep) &&
--			pfn >= pgt_buf_start && pfn < pgt_buf_end)) ||
-+			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
- 			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
- 		pte = pte_wrprotect(pte);
+diff --git a/include/linux/flex_array.h b/include/linux/flex_array.h
+index ebeb2f3..6843cf1 100644
+--- a/include/linux/flex_array.h
++++ b/include/linux/flex_array.h
+@@ -21,6 +21,8 @@ struct flex_array {
+ 		struct {
+ 			int element_size;
+ 			int total_nr_elements;
++			int elems_per_part;
++			u32 reciprocal_elems;
+ 			struct flex_array_part *parts[];
+ 		};
+ 		/*
+diff --git a/lib/flex_array.c b/lib/flex_array.c
+index cab7621..9b8b894 100644
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/stddef.h>
+ #include <linux/module.h>
++#include <linux/reciprocal_div.h>
+ 
+ struct flex_array_part {
+ 	char elements[FLEX_ARRAY_PART_SIZE];
+@@ -70,15 +71,15 @@ static inline int elements_fit_in_base(struct flex_array *fa)
+  * Element size | Objects | Objects |
+  * PAGE_SIZE=4k |  32-bit |  64-bit |
+  * ---------------------------------|
+- *      1 bytes | 4186112 | 2093056 |
+- *      2 bytes | 2093056 | 1046528 |
+- *      3 bytes | 1395030 |  697515 |
+- *      4 bytes | 1046528 |  523264 |
+- *     32 bytes |  130816 |   65408 |
+- *     33 bytes |  126728 |   63364 |
+- *   2048 bytes |    2044 |    1022 |
+- *   2049 bytes |    1022 |     511 |
+- *       void * | 1046528 |  261632 |
++ *      1 bytes | 4177920 | 2088960 |
++ *      2 bytes | 2088960 | 1044480 |
++ *      3 bytes | 1392300 |  696150 |
++ *      4 bytes | 1044480 |  522240 |
++ *     32 bytes |  130560 |   65408 |
++ *     33 bytes |  126480 |   63240 |
++ *   2048 bytes |    2040 |    1020 |
++ *   2049 bytes |    1020 |     510 |
++ *       void * | 1044480 |  261120 |
+  *
+  * Since 64-bit pointers are twice the size, we lose half the
+  * capacity in the base structure.  Also note that no effort is made
+@@ -88,11 +89,15 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 					gfp_t flags)
+ {
+ 	struct flex_array *ret;
++	int elems_per_part = 0;
++	int reciprocal_elems = 0;
+ 	int max_size = 0;
+ 
+-	if (element_size)
+-		max_size = FLEX_ARRAY_NR_BASE_PTRS *
+-			   FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
++	if (element_size) {
++		elems_per_part = FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
++		reciprocal_elems = reciprocal_value(elems_per_part);
++		max_size = FLEX_ARRAY_NR_BASE_PTRS * elems_per_part;
++	}
+ 
+ 	/* max_size will end up 0 if element_size > PAGE_SIZE */
+ 	if (total > max_size)
+@@ -102,6 +107,8 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 		return NULL;
+ 	ret->element_size = element_size;
+ 	ret->total_nr_elements = total;
++	ret->elems_per_part = elems_per_part;
++	ret->reciprocal_elems = reciprocal_elems;
+ 	if (elements_fit_in_base(ret) && !(flags & __GFP_ZERO))
+ 		memset(&ret->parts[0], FLEX_ARRAY_FREE,
+ 						FLEX_ARRAY_BASE_BYTES_LEFT);
+@@ -112,7 +119,7 @@ EXPORT_SYMBOL(flex_array_alloc);
+ static int fa_element_to_part_nr(struct flex_array *fa,
+ 					unsigned int element_nr)
+ {
+-	return element_nr / FLEX_ARRAY_ELEMENTS_PER_PART(fa->element_size);
++	return reciprocal_divide(element_nr, fa->reciprocal_elems);
+ }
+ 
+ /**
+@@ -141,12 +148,12 @@ void flex_array_free(struct flex_array *fa)
+ EXPORT_SYMBOL(flex_array_free);
+ 
+ static unsigned int index_inside_part(struct flex_array *fa,
+-					unsigned int element_nr)
++					unsigned int element_nr,
++					unsigned int part_nr)
+ {
+ 	unsigned int part_offset;
+ 
+-	part_offset = element_nr %
+-				FLEX_ARRAY_ELEMENTS_PER_PART(fa->element_size);
++	part_offset = element_nr - part_nr * fa->elems_per_part;
+ 	return part_offset * fa->element_size;
+ }
+ 
+@@ -186,7 +193,7 @@ __fa_get_part(struct flex_array *fa, int part_nr, gfp_t flags)
+ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+ 			gfp_t flags)
+ {
+-	int part_nr;
++	int part_nr = 0;
+ 	struct flex_array_part *part;
+ 	void *dst;
+ 
+@@ -202,7 +209,7 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+ 		if (!part)
+ 			return -ENOMEM;
+ 	}
+-	dst = &part->elements[index_inside_part(fa, element_nr)];
++	dst = &part->elements[index_inside_part(fa, element_nr, part_nr)];
+ 	memcpy(dst, src, fa->element_size);
+ 	return 0;
+ }
+@@ -217,7 +224,7 @@ EXPORT_SYMBOL(flex_array_put);
+  */
+ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
+ {
+-	int part_nr;
++	int part_nr = 0;
+ 	struct flex_array_part *part;
+ 	void *dst;
+ 
+@@ -233,7 +240,7 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
+ 		if (!part)
+ 			return -EINVAL;
+ 	}
+-	dst = &part->elements[index_inside_part(fa, element_nr)];
++	dst = &part->elements[index_inside_part(fa, element_nr, part_nr)];
+ 	memset(dst, FLEX_ARRAY_FREE, fa->element_size);
+ 	return 0;
+ }
+@@ -302,7 +309,7 @@ EXPORT_SYMBOL(flex_array_prealloc);
+  */
+ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
+ {
+-	int part_nr;
++	int part_nr = 0;
+ 	struct flex_array_part *part;
+ 
+ 	if (!fa->element_size)
+@@ -317,7 +324,7 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
+ 		if (!part)
+ 			return NULL;
+ 	}
+-	return &part->elements[index_inside_part(fa, element_nr)];
++	return &part->elements[index_inside_part(fa, element_nr, part_nr)];
+ }
+ EXPORT_SYMBOL(flex_array_get);
  
 -- 
 1.7.1
