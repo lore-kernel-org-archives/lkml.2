@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab1EBOuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:50:12 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49641 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759719Ab1EBOuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:50:09 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Eric Moore <Eric.Moore@lsi.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mptsas: Fix annoying warning
-Date: Mon,  2 May 2011 16:49:38 +0200
-Message-Id: <1304347778-12129-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	id S1759872Ab1EBO4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:56:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab1EBO4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:56:52 -0400
+Message-ID: <4DBEC626.7060704@redhat.com>
+Date: Mon, 02 May 2011 10:56:38 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/2] Check PageUnevictable in lru_deactivate_fn
+References: <cover.1304261567.git.minchan.kim@gmail.com> <c7a7b3ceafe4fdc4bc038774374504827c01481f.1304261567.git.minchan.kim@gmail.com>
+In-Reply-To: <c7a7b3ceafe4fdc4bc038774374504827c01481f.1304261567.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On 05/01/2011 11:03 AM, Minchan Kim wrote:
+> The lru_deactivate_fn should not move page which in on unevictable lru
+> into inactive list. Otherwise, we can meet BUG when we use isolate_lru_pages
+> as __isolate_lru_page could return -EINVAL.
+> It's really BUG and let's fix it.
+>
+> Reported-by: Ying Han<yinghan@google.com>
+> Tested-by: Ying Han<yinghan@google.com>
+> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
 
-Shut up
+Reviewed-by: Rik van Riel<riel@redhat.com>
 
-drivers/message/fusion/mptsas.c: In function 'mptsas_event_process':
-drivers/message/fusion/mptsas.c:5015: warning: unused variable 'log_info'
-
-for configs with CONFIG_SCSI_MPT2SAS_LOGGING unset.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/message/fusion/mptsas.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 66f9412..7596aec 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -5012,7 +5012,6 @@ mptsas_event_process(MPT_ADAPTER *ioc, EventNotificationReply_t *reply)
- 			(ioc_stat & MPI_IOCSTATUS_FLAG_LOG_INFO_AVAILABLE)) {
- 			VirtTarget *vtarget = NULL;
- 			u8		id, channel;
--			u32	 log_info = le32_to_cpu(reply->IOCLogInfo);
- 
- 			id = sas_event_data->TargetID;
- 			channel = sas_event_data->Bus;
-@@ -5023,7 +5022,8 @@ mptsas_event_process(MPT_ADAPTER *ioc, EventNotificationReply_t *reply)
- 				    "LogInfo (0x%x) available for "
- 				   "INTERNAL_DEVICE_RESET"
- 				   "fw_id %d fw_channel %d\n", ioc->name,
--				   log_info, id, channel));
-+				   le32_to_cpu(reply->IOCLogInfo),
-+				   id, channel));
- 				if (vtarget->raidVolume) {
- 					devtprintk(ioc, printk(MYIOC_s_DEBUG_FMT
- 					"Skipping Raid Volume for inDMD\n",
 -- 
-1.7.4.rc2
-
+All rights reversed
