@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab1EBVep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:34:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39453 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab1EBVeo (ORCPT
+	id S1757096Ab1EBVfP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:35:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60259 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1EBVfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:34:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=rIRFgoizr4lrCyw1RpdW7OdOMxceIzXNO0W13JeDRPj8dj31nUY6VKNjfpgCTRzSOq
-         m30jwl+AjbiHer8RBbDfs7+fTyGfmrR2dTp/rAJkB1hcNlFm12fZvVwL1qW/funwM8SU
-         ydJyedwySBzwE/3m4zhJJd2Ar8yrubTcVQtsI=
-From: "Kaywinnit L. Frye" <kaywinnit.lee.frye.2497@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Kaywinnit L. Frye" <kaywinnit.lee.frye.2497@gmail.com>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-Subject: [PATCH] wait: include linux/sched.h
-Date: Mon,  2 May 2011 22:34:02 +0100
-Message-Id: <1304372042-12098-1-git-send-email-kaywinnit.lee.frye.2497@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 2 May 2011 17:35:14 -0400
+Date: Mon, 2 May 2011 17:35:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/25] Staging: hv: Cleanup vmbus driver code
+Message-ID: <20110502213511.GA5641@infradead.org>
+References: <6E21E5352C11B742B20C142EB499E0481DD676@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110429164025.GA7698@kroah.com>
+ <20110501154041.GB15210@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF253@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501160721.GA8195@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF2A0@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110501205315.GC1017@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF543@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110502200012.GA21619@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481DF56D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DF56D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-signal_pending(), schedule*() and TASK_* are used in various macros in
-wait.h and all defined in linux/sched.h
+On Mon, May 02, 2011 at 09:16:36PM +0000, KY Srinivasan wrote:
+> > That assumes libata is a module, which it is not for many popular
+> > distributions.
+> > 
+> As long as you can prevent ata_piix from loading, it should be fine.
 
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Kaywinnit L. Frye <kaywinnit.lee.frye.2497@gmail.com>
----
- include/linux/wait.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Again, this might very well be built in, e.g. take a look at:
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 3efc9f3..667a3d7 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -22,6 +22,7 @@
- #include <linux/list.h>
- #include <linux/stddef.h>
- #include <linux/spinlock.h>
-+#include <linux/sched.h>
- #include <asm/system.h>
- #include <asm/current.h>
- 
--- 
-1.7.2.5
+http://pkgs.fedoraproject.org/gitweb/?p=kernel.git;a=blob;f=config-generic;h=779415bcc036b922ba92de9c4b15b9da64e9707c;hb=HEAD
 
+http://gitorious.org/opensuse/kernel-source/blobs/master/config/x86_64/default
