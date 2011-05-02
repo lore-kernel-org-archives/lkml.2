@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab1EBTsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:48:53 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:32757 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755417Ab1EBTsv (ORCPT
+	id S932077Ab1EBXJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:09:42 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757905Ab1EBXJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 15:48:51 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAC8Jv01R8INT/2dsb2JhbACmDHiIcbh9DoVyBJV1hyg
-Date: Mon, 2 May 2011 21:48:49 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Jonathan McDowell <noodles@earth.li>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cleanup pc87413 watchdog driver to use
-	request_muxed_region for SuperIO area
-Message-ID: <20110502194849.GA21338@infomag.iguana.be>
-References: <20110414190238.GI4835@earth.li> <20110430182512.GK4835@earth.li>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110430182512.GK4835@earth.li>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 2 May 2011 19:09:32 -0400
+X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
+Message-Id: <201105022254.p42MsQ8S030356@farm-0023.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 2 May 2011 15:51:32 -0400
+Subject: [PATCH] arch/tile: tolerate disabling CONFIG_BLK_DEV_INITRD
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 02 May 2011 22:54:26.0768 (UTC) FILETIME=[E336AD00:01CC091B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+The code accidentally was relying on this configuration option
+being selected.
 
-> I haven't seen any response to the below. Did I send it to the correct
-> places?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/setup.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-Has been sent to the correct place. I will look at this later (probably somewhere next week).
-
-Kind regards,
-Wim.
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 3696b18..6cdc9ba 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -912,6 +912,8 @@ void __cpuinit setup_cpu(int boot)
+ #endif
+ }
+ 
++#ifdef CONFIG_BLK_DEV_INITRD
++
+ static int __initdata set_initramfs_file;
+ static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
+ 
+@@ -969,6 +971,10 @@ void __init free_initrd_mem(unsigned long begin, unsigned long end)
+ 	free_bootmem(__pa(begin), end - begin);
+ }
+ 
++#else
++static inline void load_hv_initrd(void) {}
++#endif /* CONFIG_BLK_DEV_INITRD */
++
+ static void __init validate_hv(void)
+ {
+ 	/*
+-- 
+1.6.5.2
 
