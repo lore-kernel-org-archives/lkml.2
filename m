@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab1EBFvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 01:51:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41081 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab1EBFve convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 01:51:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=tz2iYl3HtOfV51hHHhBxazpKijpGIpBG/bC03KWKDnpVhQ5e+x0jUs1sJizDOAaDO9
-         hfDX9B491hRTwDeSH4umZ+8EG2357KVDB3BsnrRevE+Sm6e+8Hw+6+/zOxoearA7ZMgW
-         +LKgPmYFOYfBAwAASjMqNXoTQH+/gl6kV0a9s=
-MIME-Version: 1.0
-In-Reply-To: <20110502053928.GB18376@redhat.com>
-References: <20110430171459.685415696@openvz.org>
-	<4DBC6DC1.30900@redhat.com>
-	<20110501164635.GA21833@elte.hu>
-	<BANLkTimpk3Ye=HvCohTbKT7Jzedo_V07Yg@mail.gmail.com>
-	<20110502053928.GB18376@redhat.com>
-Date: Mon, 2 May 2011 09:51:32 +0400
-X-Google-Sender-Auth: Dny-IXWk6VaulyIjGtyjyuRf2gg
-Message-ID: <BANLkTi=Bw5k1_oytZmXgTrQ-XUJisp3vfQ@mail.gmail.com>
-Subject: Re: [patch 0/2] x2apic optimization, round 4
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753976Ab1EBF5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 01:57:25 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38484 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753325Ab1EBF5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 01:57:23 -0400
+Date: Mon, 2 May 2011 15:57:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Jones <davej@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: linux-next: build warning after merge of the kbuild tree
+Message-Id: <20110502155712.ab6a64ba.sfr@canb.auug.org.au>
+In-Reply-To: <20110502043642.GD11804@redhat.com>
+References: <20110502121817.645d544e.sfr@canb.auug.org.au>
+	<20110502022417.GA11804@redhat.com>
+	<20110502134524.40da4245.sfr@canb.auug.org.au>
+	<20110502142454.a7091ad5.sfr@canb.auug.org.au>
+	<20110502043642.GD11804@redhat.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah, i'll do so as only bring my laptop to life, I managed to kill
-grub and can't restore it back for a while, will ping you back as soon
-as I can.
+--Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for top post.
+Hi Dave,
 
-On Monday, May 2, 2011, Gleb Natapov <gleb@redhat.com> wrote:
-> On Sun, May 01, 2011 at 09:11:35PM +0400, Cyrill Gorcunov wrote:
->> On Sun, May 1, 2011 at 8:46 PM, Ingo Molnar <mingo@elte.hu> wrote:
->> >
->> > * Avi Kivity <avi@redhat.com> wrote:
->> >
->> >> On 04/30/2011 08:14 PM, Cyrill Gorcunov wrote:
->> >> >   Hi Ingo, here is an updated series of two patches for
->> >> >x2apic cluster mode ipi optimization. Please take a
->> >> >look.
->> >> >
->> >> >   The only concern which was unresolved is a messy bit
->> >> >in default_setup_apic_routing(), so we've added a FIXME
->> >> >there and clean it up as only time permits. Actually I
->> >> >have a plan to merge probe_32/64.c into single file (and
->> >> >even started working on this task) but not yes succeed.
->> >> >
->> >> >   Anyway I think patches should be in a good shape now and
->> >> >probably we could merge them to not lose?
->> >> >
->> >> >   Comments are welcome.
->> >>
->> >> Very nice!  This will also significantly speed up kvm guests using x2apic.
->> >
->> > Ok. It would be nice to know on what systems these patches were tested, i.e. i
->> > suppose x2apic-enabled ones?
->> >
->> > Thanks,
->> >
->> >        Ingo
->> >
->>
->> Suresh has tested them on Westmere-Ex system, I personally don't have
->> such machine.
-> Can you test in in KVM with x2apic emulation enabled?
+On Mon, 2 May 2011 00:36:43 -0400 Dave Jones <davej@redhat.com> wrote:
 >
-> --
->                         Gleb.
->
+> That's interesting. That suggests that something isn't being built with K=
+BUILD_CFLAGS.
+> I did a full defconfig build on x86-64 successfully (allmodconfig is chur=
+ning away).
+> Can you point me at something that doesn't build ?
+
+I have just done an i386 defconfig build with V=3D1.  Every compilation has
+that flag passed to it, but only one complains:
+
+  i386-linux-gcc -Wp,-MD,kernel/.futex.o.d  -nostdinc -isystem /opt/cross/g=
+cc-4.4.5-nolibc/i386-linux/bin/../lib/gcc/i386-linux/4.4.5/include -I/scrat=
+ch/sfr/next/arch/x86/include -Iarch/x86/include/generated -Iinclude  -I/scr=
+atch/sfr/next/include -include include/generated/autoconf.h  -I/scratch/sfr=
+/next/kernel -Ikernel -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-t=
+rigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declara=
+tion -Wno-format-security -fno-delete-null-pointer-checks -Os -m32 -msoft-f=
+loat -mregparm=3D3 -freg-struct-return -mpreferred-stack-boundary=3D2 -marc=
+h=3Di686 -mtune=3Dgeneric -Wa,-mtune=3Dgeneric32 -ffreestanding -DCONFIG_AS=
+_CFI=3D1 -DCONFIG_AS_CFI_SIGNAL_FRAME=3D1 -DCONFIG_AS_CFI_SECTIONS=3D1 -pip=
+e -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-=
+sse2 -mno-3dnow -Wframe-larger-than=3D2048 -fno-stack-protector -Wno-unused=
+-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdec=
+laration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-=
+stack    -D"KBUILD_STR(s)=3D#s" -D"KBUILD_BASENAME=3DKBUILD_STR(futex)"  -D=
+"KBUILD_MODNAME=3DKBUILD_STR(futex)" -c -o kernel/futex.o /scratch/sfr/next=
+/kernel/futex.c
+/scratch/sfr/next/kernel/futex.c: In function 'fixup_pi_state_owner':
+/scratch/sfr/next/kernel/futex.c:1549: warning: 'curval' may be used uninit=
+ialized in this function
+/scratch/sfr/next/kernel/futex.c: In function 'futex_lock_pi_atomic':
+/scratch/sfr/next/kernel/futex.c:678: warning: 'curval' may be used uniniti=
+alized in this function
+/scratch/sfr/next/kernel/futex.c: In function 'handle_futex_death':
+/scratch/sfr/next/kernel/futex.c:2454: warning: 'nval' may be used uninitia=
+lized in this function
+At top level:
+cc1: warning: unrecognized command line option "-Wno-unused-but-set-variabl=
+e"
+
+I removed kernel/futex.o and recompiled to verify.  futex.c doesn't seem
+to be built any differently to anything else.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNvke4AAoJEDMEi1NhKgbsZXUH/3mKFehSW9ZxBAM/1YkbkcW0
+ZWLdAEg1qc3616fGKeGYYAGLiONDpopcqHI8WC4vRz7DNrA/1LyfYHcUlK7DN3gJ
+znyttATrsPzly1s+FzHsPjhJI3CD4+QIh3TLrS/rMNgOgmaPuzPoALBBHLSs0ira
+B+jv14LDRJJms63LkTWyGGdprGGY0JGaXlHJ3zS9PWukcCMcjJNdEakwN4aY5B+c
+gxJr1AjjVPqrta5A9P+RU16cRmP4z9XK0U5JbMXZ0FP/CmosdeHlUXs1xUFbez6R
+DQp5Rv/LPhaS90ivmM6BzF1nGhBwXBJHXcmCjEZ531aUkHCwBBH0Sbc4EeGiwQ8=
+=W6ZN
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim--
