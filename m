@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab1EBQJt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:09:49 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:52274 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754688Ab1EBQJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:09:45 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=r1UkDfux55QA90gUsxi3v/wzv2BK6rABGlHVc7SaldGwYdPMGoKO7uCRTthwbpkCKs5rvWyK5OkNudAfAtsZisA6VcjnKjRxMTCqS0FITDk/R7QnXyT0snO8dTnfs1bK;
-Date: Mon, 2 May 2011 09:09:43 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kbuild@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        sam@ravnborg.org
-Subject: Re: linux-next: Tree for May 2 (uml builds fail)
-Message-Id: <20110502090943.4a978f4c.rdunlap@xenotime.net>
-In-Reply-To: <20110502160405.GE15769@sepie.suse.cz>
-References: <20110502150150.d932642f.sfr@canb.auug.org.au>
-	<20110502081948.1ccb9aef.rdunlap@xenotime.net>
-	<20110502160405.GE15769@sepie.suse.cz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1757069Ab1EBQLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:11:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754250Ab1EBQLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 12:11:03 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 3/3] blkdev: honor discard_granularity in blkdev_issue_discard()
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
+	<1304345841-20063-3-git-send-email-lczerner@redhat.com>
+	<yq17ha94175.fsf@sermon.lab.mkp.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 02 May 2011 12:10:41 -0400
+In-Reply-To: <yq17ha94175.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
+	message of "Mon, 02 May 2011 10:38:38 -0400")
+Message-ID: <x49aaf5ozge.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011 18:04:05 +0200 Michal Marek wrote:
+"Martin K. Petersen" <martin.petersen@oracle.com> writes:
 
-> On Mon, May 02, 2011 at 08:19:48AM -0700, Randy Dunlap wrote:
-> > On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20110429:
-> > 
-> > 
-> > uml builds on i386 or x86_64 fail with: (I'm using O=outputdir if it matters)
-> > 
-> >   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-> > scripts/kconfig/conf --silentoldconfig arch/um/Kconfig.x86
-> >   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-> > /lnx/src/NEXT/linux-next-20110502/scripts/Makefile.asm-generic:9: /lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild: No such file or directory
-> > make[2]: *** No rule to make target `/lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild'.  Stop.
-> 
-> This patch should fix it.
+>>>>>> "Lukas" == Lukas Czerner <lczerner@redhat.com> writes:
+>
+> Lukas> As Jeff Moyer pointed out we do not honor discard granularity
+> Lukas> while submitting REQ_DISCARD bios of size smaller than
+> Lukas> max_discard_sectors.  That fact might have unwanted consequences
+> Lukas> of device ignoring the request, or even worse if device firmware
+> Lukas> is buggy.
+>
+> We've discussed this before and the consensus was not to do it. The
+> granularity is a hint, not a hard limit like max_discard_sectors.
+>
+> We want the reporting to be comprehensive throughout the block layer. If
+> we start aligning to the granularity at the top we lose information for
+> stacked devices below with a finer granularity.
+>
+> So if we were to align to the granularity we'd want to do it at the
+> bottom of the stack when we issue the command to the device. We've had a
+> few proposed patches to did that but so far we've only found one device
+> where it made a difference. And that case didn't justify adding a quirk.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Hm, I wonder where it makes sense to document this.  Maybe
+Documentation/block/queue-sysfs.txt, but I admit I wouldn't have looked
+there while reviewing this code.
 
-Thanks.
-
-
-> Michal
-> 
-> Subject: [PATCH] kbuild: Fix Makefile.asm-generic for um
-> 
-> Do nothing if arch/$(SRCARCH)/include/asm/Kbuild does not exist, which
-> is the case of um.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> 
-> diff --git a/scripts/Makefile.asm-generic b/scripts/Makefile.asm-generic
-> index a687cb6..490122c 100644
-> --- a/scripts/Makefile.asm-generic
-> +++ b/scripts/Makefile.asm-generic
-> @@ -6,7 +6,7 @@
->  # a small wrapper file in $(obj) (arch/$(SRCARCH)/include/generated/asm)
->  
->  kbuild-file := $(srctree)/arch/$(SRCARCH)/include/asm/Kbuild
-> -include $(kbuild-file)
-> +-include $(kbuild-file)
->  
->  include scripts/Kbuild.include
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Cheers,
+Jeff
