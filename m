@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab1EBV47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:56:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59924 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab1EBV46 (ORCPT
+	id S1758292Ab1EBV7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:59:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43426 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756698Ab1EBV7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:56:58 -0400
-Subject: Re: linux-firmware tree
-From: David Woodhouse <dwmw2@infradead.org>
-To: Mike Waychison <mikew@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
-References: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com>
-	 <1304365095.6400.20.camel@macbook.infradead.org>
-	 <BANLkTinTUdAgF4eQ8_JtWgT_jJB5f7nT-A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 22:56:54 +0100
-Message-ID: <1304373414.6400.23.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 2 May 2011 17:59:38 -0400
+Date: Mon, 2 May 2011 15:59:36 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        Torben Hohn <torbenh@linutronix.de>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH 1/2] x86/dtb: make irq host list accessible
+Message-ID: <20110502215936.GG10097@ponder.secretlab.ca>
+References: <20110427143423.GB15211@linutronix.de>
+ <20110429222600.GJ7497@ponder.secretlab.ca>
+ <20110430090218.GA24750@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430090218.GA24750@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 14:40 -0700, Mike Waychison wrote:
-> I don't see anything in the build (looking at scripts/Makefile.fwinst
-> in particular) that allows the build to enumerate out-of-tree firmware
-> files required by drivers.  Do you have any thoughts on how this could
-> be enumerated? (if it isn't already?)
+On Sat, Apr 30, 2011 at 11:02:18AM +0200, Sebastian Andrzej Siewior wrote:
+> * Grant Likely | 2011-04-29 16:26:00 [-0600]:
+> 
+> >On Wed, Apr 27, 2011 at 04:34:23PM +0200, Sebastian Andrzej Siewior wrote:
+> >> From: Torben Hohn <torbenh@linutronix.de>
+> >> 
+> >> There is an gpio irq chip comming which needs this from the outside.
+> >> There is no EXPORT_SYMBOL because this does not yet work in modules.
+> >> 
+> >Can you rework this to sit on top of the of_irq_domain series I sent
+> >out yesterday?  I *really* hope to get of_irq_domain merged into .40,
+> >but this change would conflict.
+> 
+> This patch should be obsolete with of_irq_domain beeing generic now.
+> Could you please take look at the gpio driver? If there is nothing
+> obvious wrong I would rework it to work with of_irq_domain() and
+> repost.
 
-Using the MODULE_FIRMWARE tags of the drivers which are built.
+okay, will do.
 
-This is actually the reason we haven't removed the legacy firmware from
-the source tree yet; it's waiting for me to implement that bit.
-
-It shouldn't be hard to post-process the modules and list the firmware
-blobs that they reference. We'd just want to make it do the same for
-built-in drivers too.
-
--- 
-dwmw2
+g.
 
