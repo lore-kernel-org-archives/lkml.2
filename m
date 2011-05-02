@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab1EBNwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 09:52:42 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:43935 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752965Ab1EBNwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 09:52:41 -0400
-Date: Mon, 2 May 2011 15:48:05 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        oprofile-list@lists.sf.net, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH resend] s390: oprofile: fix error checks in
- oprofile_hwsampler_init()
-Message-ID: <20110502154805.71664123@absol.kitzblitz>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932079Ab1EBNuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 09:50:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10164 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757730Ab1EBNuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 09:50:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,302,1301900400"; 
+   d="scan'208";a="916936689"
+Date: Mon, 2 May 2011 21:49:54 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation
+ failures
+Message-ID: <20110502134953.GA12281@localhost>
+References: <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
+ <20110426063421.GC19717@localhost>
+ <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
+ <20110426092029.GA27053@localhost>
+ <20110426124743.e58d9746.akpm@linux-foundation.org>
+ <20110428133644.GA12400@localhost>
+ <20110429022824.GA8061@localhost>
+ <20110430141741.GA4511@localhost>
+ <20110501163542.GA3204@barrios-desktop>
+ <20110502132958.GA9690@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502132958.GA9690@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking 'oprofile_min_interval < 0' and
-'oprofile_max_interval < 0' doesn't work because
-'oprofile_min_interval' and 'oprofile_max_interval' are unsigned.
+On Mon, May 02, 2011 at 09:29:58PM +0800, Wu Fengguang wrote:
+> > > +                     if (preferred_zone &&
+> > > +                         zone_watermark_ok_safe(preferred_zone, sc->order,
+> > > +                                     high_wmark_pages(preferred_zone),
+> > > +                                     zone_idx(preferred_zone), 0))
+> > > +                             goto out;
+> > > +             }
+> > 
+> > As I said, I think direct reclaim path sould be fast if possbile and
+> > it should not a function of min_free_kbytes.
+> 
+> It can be made not a function of min_free_kbytes by simply changing
+> high_wmark_pages() to low_wmark_pages() in the above chunk, since
+> direct reclaim is triggered when ALLOC_WMARK_LOW cannot be satisfied,
+> ie. it just dropped below low_wmark_pages().
+> 
+> But still, it costs 62ms reclaim latency (base kernel is 29ms).
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
-Untested.
+I got new findings: the CPU schedule delays are much larger than
+reclaim delays. It does make the "direct reclaim until low watermark
+OK" latency less a problem :)
 
- arch/s390/oprofile/init.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+1000 dd test case:
+                RECLAIM delay   CPU delay       nr_alloc_fail   CAL (last CPU)
+base kernel     29ms            244ms           14586           218440
+patched         62ms            215ms           5004            325
 
-diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
-index c63d7e5..09c3088 100644
---- a/arch/s390/oprofile/init.c
-+++ b/arch/s390/oprofile/init.c
-@@ -138,22 +138,26 @@ static int oprofile_create_hwsampling_files(struct super_block *sb,
- 
- static int oprofile_hwsampler_init(struct oprofile_operations *ops)
- {
-+	long retval;
-+
- 	if (hwsampler_setup())
- 		return -ENODEV;
- 
- 	/*
- 	 * create hwsampler files only if hwsampler_setup() succeeds.
- 	 */
--	oprofile_min_interval = hwsampler_query_min_interval();
--	if (oprofile_min_interval < 0) {
-+	retval = hwsampler_query_min_interval();
-+	if (retval < 0) {
- 		oprofile_min_interval = 0;
- 		return -ENODEV;
- 	}
--	oprofile_max_interval = hwsampler_query_max_interval();
--	if (oprofile_max_interval < 0) {
-+	oprofile_min_interval = retval;
-+	retval = hwsampler_query_max_interval();
-+	if (retval < 0) {
- 		oprofile_max_interval = 0;
- 		return -ENODEV;
- 	}
-+	oprofile_max_interval = retval;
- 
- 	if (oprofile_timer_init(ops))
- 		return -ENODEV;
--- 
-1.7.3.4
+Thanks,
+Fengguang
