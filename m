@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab1EBKhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 06:37:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15221 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab1EBKhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 06:37:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,302,1301900400"; 
-   d="scan'208";a="686928451"
-Subject: Re: [PATCH 2/2] dmaengine: shdma: add runtime- and system-level
- power management
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <damm@opensource.se>
-In-Reply-To: <Pine.LNX.4.64.1105021117060.13244@axis700.grange>
-References: <Pine.LNX.4.64.1104291901200.17813@axis700.grange>
-	 <Pine.LNX.4.64.1104291908090.17813@axis700.grange>
-	 <1304323391.1589.9.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1105021056231.13244@axis700.grange>
-	 <1304325486.1589.15.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1105021117060.13244@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 15:35:47 +0530
-Message-ID: <1304330747.1589.23.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757352Ab1EBKIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 06:08:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46561 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755616Ab1EBKIY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 06:08:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.00.1104290853280.26322@tundra.namei.org>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	<1303960136-14298-3-git-send-email-wad@chromium.org>
+	<20110428122334.D197.A69D9226@jp.fujitsu.com>
+	<BANLkTinfXZ3j0vG51=cQjM0FZQ5VR5ze8A@mail.gmail.com>
+	<alpine.LRH.2.00.1104290853280.26322@tundra.namei.org>
+Date: Mon, 2 May 2011 03:08:23 -0700
+Message-ID: <BANLkTi=GA1iFFOirGaG3Th_qOexnAcphOA@mail.gmail.com>
+Subject: Re: [PATCH 4/7] seccomp_filter: add process state reporting
+From: Will Drewry <wad@chromium.org>
+To: James Morris <jmorris@namei.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, kees.cook@canonical.com,
+        eparis@redhat.com, agl@chromium.org, mingo@elte.hu,
+        rostedt@goodmis.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 11:53 +0200, Guennadi Liakhovetski wrote:
-> On Mon, 2 May 2011, Koul, Vinod wrote:
-> 
-> > On Mon, 2011-05-02 at 11:04 +0200, Guennadi Liakhovetski wrote:
-> > > On Mon, 2 May 2011, Koul, Vinod wrote:
-> > > 
-> > > > On Fri, 2011-04-29 at 19:09 +0200, Guennadi Liakhovetski wrote:
-> > > > > This patch extends and fixes runtime power management in the shdma
-> > > > > driver to support powering down the DMA controller and adds support
-> > > > > for system-level suspend and resume.
-> > > > > 
-> > > > > +
-> > > > > +static int sh_dmae_runtime_resume(struct device *dev)
-> > > > > +{
-> > > > > +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
-> > > > > +
-> > > > > +	return sh_dmae_rst(shdev);
-> > > > > +}
-> > > > > +
-> > > > > +#ifdef CONFIG_PM
-> > > > This should be removed...
-> > > 
-> > > You mean, these functions just won't be called, but this way we save a 
-> > > couple of bytes if PM is not set, don't we?
-> > I meant you dont need to have this, PM is usually part of core options
-> > which ppl enable nowadays. Do you run with PM disabled?
-> 
-> I actually do, but maybe that's not a very important argument. So, if the 
-> only difference is a couple of kilobytes in the kernel size, then maybe we 
-> can just keep it always enabled. There are no other side-efects to it, 
-> right?
-Yes, other driver currently do this...
+On Thu, Apr 28, 2011 at 3:54 PM, James Morris <jmorris@namei.org> wrote:
+> On Wed, 27 Apr 2011, Will Drewry wrote:
+>
+>> > Can't you make individual seccomp specific file?
+>>
+>> Definitely.  Would it make sense to have /proc/<pid>/seccomp and
+>> /proc/<pid>/seccomp_filter?
+>
+> Do you need the separate seccomp file vs. just checking what's in
+> seccomp_filter ?
 
--- 
-~Vinod
+Initially, I would've said yes, because I had modeled it such that any
+entries in /proc/<pid>/seccomp_filter could be fed right back into as
+filters.  However, as I've reworked it from Frederic and other's
+feedback, I don't need to keep the separation - all the relevant info
+can just be in seccomp_filter and no secondary file will be useful.
 
+Thanks for pointing it out!  I'm tracking down what is, no doubt, a
+dumb bug (still), but once I sort it, I'll repost the series with this
+change included.
+
+Cheers!
+will
