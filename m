@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab1EBWOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 18:14:11 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:32783 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757435Ab1EBWOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 18:14:09 -0400
-Date: Mon, 2 May 2011 16:14:06 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Heiko Schocher <hs@denx.de>
-Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
-        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
-Message-ID: <20110502221406.GA15043@ponder.secretlab.ca>
-References: <1291451028-22532-1-git-send-email-hs@denx.de>
- <1300782452-528-1-git-send-email-hs@denx.de>
+	id S1758828Ab1EBWXC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 18:23:02 -0400
+Received: from nm13-vm0.bullet.mail.ird.yahoo.com ([77.238.189.195]:31696 "HELO
+	nm13-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756982Ab1EBWXB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 18:23:01 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 18:23:00 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 442421.16700.bm@omp1008.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=bfWu47QAAvowpwYPZlXtCF2Bu4/l5yeg8ofAEMD69SZWIu2nonXqQq0TqkxSt377JLXJUUaQpnSbtk81+rZcABFe2IrtMxJdaXrQkmaLTbqqp5SHLkpDicTb9BavJiotgJKFyYugNn4mb39iBwFF6gVA+HqR+1zQaLe8j0+KT9c=;
+Message-ID: <325376.71935.qm@web29015.mail.ird.yahoo.com>
+X-YMail-OSG: 5dFYTxAVM1k_C_N3w12hxjb8.tFJiOV3s3L7FDSG7YtPGWv
+ oVGSGG2EAKNg9_wX89OZfcqu3rWlBYn9Hj878ic24tl62uI3z4WmUlHHQTZ4
+ pOEQrLjrXUfgJXSAv80Upw4rpXOaXC65bkmkhPoe5xPh5OMLndr8K2.zVfsy
+ NzEti9GaLb2Q7dcnyJLRa1u.Jv0BFCqBqDYvE4KJTawzz3YMOUSxz1cLueI4
+ 89rum20oyOyjoX8YlfBg3VgLvDT35X8ajEojN_5AIZ5gfkgWlARPQebnJlcx
+ GeAkS6pbvdu61aUXHk82OeWVeVIkfX7U7Oqp1Bns5teJPcy9t__nnskR6.g-
+ -
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.110.299900
+Date: Mon, 2 May 2011 23:16:23 +0100 (BST)
+From: Paul Parsons <lost.distance@yahoo.com>
+Subject: Re: [PATCH 1/2] mfd: Add ASIC3 LED support
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110502153951.GH8222@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300782452-528-1-git-send-email-hs@denx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
-> cc: Wolfram Sang <w.sang@pengutronix.de>
-> cc: Grant Likely <grant.likely@secretlab.ca>
-> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> cc: linux-fbdev@vger.kernel.org
-> cc: devicetree-discuss@ozlabs.org
-> cc: Ben Dooks <ben@simtec.co.uk>
-> cc: Vincent Sanders <vince@simtec.co.uk>
-> cc: Samuel Ortiz <sameo@linux.intel.com>
-> cc: linux-kernel@vger.kernel.org
-> cc: Randy Dunlap <rdunlap@xenotime.net>
-> cc: Wolfgang Denk <wd@denx.de>
-> cc: Paul Mundt <lethal@linux-sh.org>
-> 
-> changes since v5:
-> - repost complete patchseries, as Paul Mundt suggested
-> - rebased against current head
-> - add Acked-by from Samuel Ortiz (MFD parts)
->   http://www.spinics.net/lists/linux-fbdev/msg02550.html
->   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
-> 
->   and Benjamin Herrenschmidt (DTS parts)
->   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
-> - removed patch 
->   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
->   therefore added
->   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
+Hi Samuel,
 
-Refresh my memory, why was the mpc5200_defconfig updated dropped?
+--- On Mon, 2/5/11, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Where is the LED driver ?
+It was posted separately - [PATCH 2/2] leds: Add ASIC3 LED support - since drivers/mfd and drivers/leds are maintained separately. Sorry, I should have cross copied them.
 
-g.
+> > -static int asic3_clk_enable(struct asic3 *asic,
+> struct asic3_clk *clk)
+> > +static void asic3_clk_enable(struct asic3 *asic,
+> struct asic3_clk *clk)
+> Although a valid change, this is unrelated to this patch.
+Not completely unrelated; I call asic3_clk_enable() and found it simpler to remove the unnecessary return value rather than check it.
 
+> > +    asic->gpio.label = "asic3";
+> Ditto.
+Agreed; that was left in by mistake.
+
+Should I resubmit?
+
+Regards,
+Paul
