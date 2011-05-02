@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1EBXVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:21:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34049 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751151Ab1EBXVd (ORCPT
+	id S1756606Ab1EBXVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:21:40 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:61053 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753715Ab1EBXVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:21:33 -0400
+	Mon, 2 May 2011 19:21:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALo7v015LBza/2dsb2JhbACmDnjEbw6FcgSVdYc4
+Date: Tue, 3 May 2011 09:21:21 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 3/3] blkdev: honor discard_granularity in
+ blkdev_issue_discard()
+Message-ID: <20110502232121.GD2978@dastard>
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
+ <1304345841-20063-3-git-send-email-lczerner@redhat.com>
+ <yq17ha94175.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-In-Reply-To: <20110502231234.GA6430@suse.de>
-References: <201105030044.51661.rjw@sisk.pl> <20110502231234.GA6430@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 May 2011 16:21:09 -0700
-Message-ID: <BANLkTikCHO1ST27uhJLU5mBxtWPuuVkNKA@mail.gmail.com>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when
- tasks are frozen
-To: Greg KH <gregkh@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq17ha94175.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 2, 2011 at 4:12 PM, Greg KH <gregkh@suse.de> wrote:
->
-> But you can safely call this function with nowait set, and this warning
-> should not be triggered, right?
+On Mon, May 02, 2011 at 10:38:38AM -0400, Martin K. Petersen wrote:
+> >>>>> "Lukas" == Lukas Czerner <lczerner@redhat.com> writes:
+> 
+> Lukas> As Jeff Moyer pointed out we do not honor discard granularity
+> Lukas> while submitting REQ_DISCARD bios of size smaller than
+> Lukas> max_discard_sectors.  That fact might have unwanted consequences
+> Lukas> of device ignoring the request, or even worse if device firmware
+> Lukas> is buggy.
+> 
+> We've discussed this before and the consensus was not to do it. The
+> granularity is a hint, not a hard limit like max_discard_sectors.
+> 
+> We want the reporting to be comprehensive throughout the block layer. If
+> we start aligning to the granularity at the top we lose information for
+> stacked devices below with a finer granularity.
+> 
+> So if we were to align to the granularity we'd want to do it at the
+> bottom of the stack when we issue the command to the device. We've had a
+> few proposed patches to did that but so far we've only found one device
+> where it made a difference. And that case didn't justify adding a quirk.
 
-Why would you want that?
+Adding this comment to the code to explain why we don't enforce the
+granularity would be a good idea, yes?
 
-It's _always_ wrong to ask for firmware during resume. "nowait" or not
-is totally irrelevant. A driver that depends on the firmware being
-built in to the kernel is a buggy driver, why would you want to
-silently allow that kind of crap? It's just a timebomb waiting for
-somebody to compile the kernel differently.
+Cheers,
 
-                      Linus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
