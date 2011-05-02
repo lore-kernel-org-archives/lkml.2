@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1EBBWh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 21:22:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54570 "EHLO
+	id S1755629Ab1EBBUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 21:20:00 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46862 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab1EBBTy (ORCPT
+	with ESMTP id S1754498Ab1EBBTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 21:19:54 -0400
+	Sun, 1 May 2011 21:19:48 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=YMeFxEw+ALSB5O0oiEBXVVVH2/BzmaQhbXm+lOruWHxttlcobYXxaAAvAF9AT4Eq7
-	l4UKTh7wB6MELZ0zwqvsg==
+	b=SSV3AAnTeZ/t6WIDRkTCGjPL9PARlG8A3GGXszxKCcQhVeo6jDHSnpEGk2Qu1ak1e
+	C7lFLALRP1zMYvV3ZiACA==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v1 14/19] sched: change type of imbalance to be u64
-Date: Sun,  1 May 2011 18:19:12 -0700
-Message-Id: <1304299157-25769-15-git-send-email-ncrao@google.com>
+Subject: [PATCH v1 15/19] sched: update h_load to use u64
+Date: Sun,  1 May 2011 18:19:13 -0700
+Message-Id: <1304299157-25769-16-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1304299157-25769-1-git-send-email-ncrao@google.com>
 References: <1304299157-25769-1-git-send-email-ncrao@google.com>
@@ -29,130 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the type of imbalance to be u64. With increased sched load
-resolution, it is possible for a runqueue to have a sched weight of 2^32, and
-imbalance needs to be updated to u64 to handle this case.
+Calculate tg->h_load using u64 to handle u64 load weights.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
- include/linux/sched.h |    2 +-
- kernel/sched_fair.c   |   24 ++++++++++++------------
- kernel/sched_stats.h  |    2 +-
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ kernel/sched.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 546a418..2d9689a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -945,10 +945,10 @@ struct sched_domain {
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 08dcd24..6b9b02a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -354,7 +354,7 @@ struct cfs_rq {
+ 	 * Where f(tg) is the recursive weight fraction assigned to
+ 	 * this group.
+ 	 */
+-	unsigned long h_load;
++	u64 h_load;
  
- #ifdef CONFIG_SCHEDSTATS
- 	/* load_balance() stats */
-+	u64 lb_imbalance[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_count[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_failed[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_balanced[CPU_MAX_IDLE_TYPES];
--	unsigned int lb_imbalance[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_gained[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_hot_gained[CPU_MAX_IDLE_TYPES];
- 	unsigned int lb_nobusyg[CPU_MAX_IDLE_TYPES];
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 3e01c8d..850e41b 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2497,7 +2497,7 @@ static inline void update_sd_power_savings_stats(struct sched_group *group,
-  * Else returns 0.
+ 	/*
+ 	 * Maintaining per-cpu shares distribution for group scheduling
+@@ -1540,15 +1540,17 @@ static unsigned long cpu_avg_load_per_task(int cpu)
   */
- static inline int check_power_save_busiest_group(struct sd_lb_stats *sds,
--					int this_cpu, unsigned long *imbalance)
-+					int this_cpu, u64 *imbalance)
+ static int tg_load_down(struct task_group *tg, void *data)
  {
- 	if (!sds->power_savings_balance)
- 		return 0;
-@@ -2526,7 +2526,7 @@ static inline void update_sd_power_savings_stats(struct sched_group *group,
- }
+-	unsigned long load;
++	u64 load;
+ 	long cpu = (long)data;
  
- static inline int check_power_save_busiest_group(struct sd_lb_stats *sds,
--					int this_cpu, unsigned long *imbalance)
-+					int this_cpu, u64 *imbalance)
- {
- 	return 0;
- }
-@@ -2916,7 +2916,7 @@ int __weak arch_sd_sibling_asym_packing(void)
-  */
- static int check_asym_packing(struct sched_domain *sd,
- 			      struct sd_lb_stats *sds,
--			      int this_cpu, unsigned long *imbalance)
-+			      int this_cpu, u64 *imbalance)
- {
- 	int busiest_cpu;
+ 	if (!tg->parent) {
+ 		load = cpu_rq(cpu)->load.weight;
+ 	} else {
+-		load = tg->parent->cfs_rq[cpu]->h_load;
+-		load *= tg->se[cpu]->load.weight;
+-		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
++		u64 parent_h_load = tg->parent->cfs_rq[cpu]->h_load;
++		u64 parent_weight = tg->parent->cfs_rq[cpu]->load.weight;
++
++		load = div64_u64(parent_h_load * tg->se[cpu]->load.weight,
++				 parent_weight + 1);
+ 	}
  
-@@ -2943,8 +2943,8 @@ static int check_asym_packing(struct sched_domain *sd,
-  * @this_cpu: The cpu at whose sched_domain we're performing load-balance.
-  * @imbalance: Variable to store the imbalance.
-  */
--static inline void fix_small_imbalance(struct sd_lb_stats *sds,
--				int this_cpu, unsigned long *imbalance)
-+static inline
-+void fix_small_imbalance(struct sd_lb_stats *sds, int this_cpu, u64 *imbalance)
- {
- 	u64 tmp, pwr_now = 0, pwr_move = 0;
- 	unsigned int imbn = 2;
-@@ -3014,8 +3014,8 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
-  * @this_cpu: Cpu for which currently load balance is being performed.
-  * @imbalance: The variable to store the imbalance.
-  */
--static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
--		unsigned long *imbalance)
-+static inline
-+void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu, u64 *imbalance)
- {
- 	u64 max_pull, load_above_capacity = ~0ULL;
- 
-@@ -3103,9 +3103,9 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
-  *		   put to idle by rebalancing its tasks onto our group.
-  */
- static struct sched_group *
--find_busiest_group(struct sched_domain *sd, int this_cpu,
--		   unsigned long *imbalance, enum cpu_idle_type idle,
--		   const struct cpumask *cpus, int *balance)
-+find_busiest_group(struct sched_domain *sd, int this_cpu, u64 *imbalance,
-+		   enum cpu_idle_type idle, const struct cpumask *cpus,
-+		   int *balance)
- {
- 	struct sd_lb_stats sds;
- 
-@@ -3202,7 +3202,7 @@ ret:
-  */
- static struct rq *
- find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
--		   enum cpu_idle_type idle, unsigned long imbalance,
-+		   enum cpu_idle_type idle, u64 imbalance,
- 		   const struct cpumask *cpus)
- {
- 	struct rq *busiest = NULL, *rq;
-@@ -3308,7 +3308,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- {
- 	int ld_moved, all_pinned = 0, active_balance = 0;
- 	struct sched_group *group;
--	unsigned long imbalance;
-+	u64 imbalance;
- 	struct rq *busiest;
- 	unsigned long flags;
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 48ddf43..f44676c 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -46,7 +46,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 			seq_printf(seq, "domain%d %s", dcount++, mask_str);
- 			for (itype = CPU_IDLE; itype < CPU_MAX_IDLE_TYPES;
- 					itype++) {
--				seq_printf(seq, " %u %u %u %u %u %u %u %u",
-+				seq_printf(seq, " %u %u %u %llu %u %u %u %u",
- 				    sd->lb_count[itype],
- 				    sd->lb_balanced[itype],
- 				    sd->lb_failed[itype],
+ 	tg->cfs_rq[cpu]->h_load = load;
 -- 
 1.7.3.1
 
