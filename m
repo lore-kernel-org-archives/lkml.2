@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab1EBODe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:03:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:32379 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756156Ab1EBODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:03:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,303,1301900400"; 
-   d="scan'208";a="428890522"
-Date: Mon, 2 May 2011 22:02:57 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] getdelays: show average CPU/IO/SWAP/RECLAIM delays
-Message-ID: <20110502140257.GA12780@localhost>
+	id S1759152Ab1EBOE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:04:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:57795 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754579Ab1EBOE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:04:56 -0400
+Date: Mon, 2 May 2011 10:04:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Adi J. Sieker" <adi@core.adi.io>
+cc: Oliver Neukum <oliver@neukum.org>, USB list <linux-usb@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
+In-Reply-To: <4DBD9D0D.1080503@sieker.io>
+Message-ID: <Pine.LNX.4.44L0.1105021001490.2106-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I find it very handy to show the average delays in milliseconds.
+On Sun, 1 May 2011, Adi J. Sieker wrote:
 
-Example output (on 100 concurrent dd reading sparse files):
+> On 01/05/11 09:53, Oliver Neukum wrote:
+> > Am Samstag, 30. April 2011, 22:23:05 schrieb Adi J. Sieker:
+> >> Hello,
+> >>
+> >> the lovely folks from #kernelnewbies suggested I write this mail since
+> >> they are at a loss.
+> >> I recently got a new USB keyboard which works fine in the BIOS and also
+> >> in VBox Windows guests, but not on the host.
+> >>
+> >> The keyboard is a Keysonic KSK-8003 UX product details here:
+> >> http://maxpoint.de/de/products/keyboards.php?pid=1_3_7&we_objectID=1220
+> >>
+> >> The menu key and the backspace keys do work. The num lock led is on,
+> >> though I can't switch num lock off.
+> >> If I attch the keyboard to a VirtualBox VM running WindowsXP as a guest,
+> >> it works as expected in the VM.
+> > This indicates that it is working on the USB level.
+> >
+> >> I'm running 2.6.32-27-generic #49-Ubuntu. I tried the Ubuntu 10.10
+> >> LiveCD and that also didn't work. I haven't tried 11.04 yet though.
+> > Do you get anything on the event device? What does udev say when you
+> > plug in the device?
 
-CPU             count     real total  virtual total    delay total  delay average
-                  986     3223509952     3207643301    38863410579         39.415ms
-IO              count    delay total  delay average
-                    0              0              0ms
-SWAP            count    delay total  delay average
-                    0              0              0ms
-RECLAIM         count    delay total  delay average
-                 1059     5131834899              4ms
-dd: read=0, write=0, cancelled_write=0
+...
 
-CC: Mel Gorman <mel@linux.vnet.ibm.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- Documentation/accounting/getdelays.c |   33 +++++++++++++++----------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+> one thing I found out is that this keyboard has some special anti 
+> ghosting function for some keys. Where you can press multiple keys 
+> simultaneously
+> and they are all recognized. This is apparently great for gaming. Which 
+> I'm not interested in...
 
---- linux-next.orig/Documentation/accounting/getdelays.c	2011-05-02 11:33:44.000000000 +0800
-+++ linux-next/Documentation/accounting/getdelays.c	2011-05-02 21:36:45.000000000 +0800
-@@ -191,30 +191,37 @@ static int get_family_id(int sd)
- 	return id;
- }
- 
-+#define average_ms(t, c) (t / 1000000ULL / (c ? c : 1))
-+
- static void print_delayacct(struct taskstats *t)
- {
--	printf("\n\nCPU   %15s%15s%15s%15s\n"
--	       "      %15llu%15llu%15llu%15llu\n"
--	       "IO    %15s%15s\n"
--	       "      %15llu%15llu\n"
--	       "SWAP  %15s%15s\n"
--	       "      %15llu%15llu\n"
--	       "RECLAIM  %12s%15s\n"
--	       "      %15llu%15llu\n",
--	       "count", "real total", "virtual total", "delay total",
-+	printf("\n\nCPU   %15s%15s%15s%15s%15s\n"
-+	       "      %15llu%15llu%15llu%15llu%15.3fms\n"
-+	       "IO    %15s%15s%15s\n"
-+	       "      %15llu%15llu%15llums\n"
-+	       "SWAP  %15s%15s%15s\n"
-+	       "      %15llu%15llu%15llums\n"
-+	       "RECLAIM  %12s%15s%15s\n"
-+	       "      %15llu%15llu%15llums\n",
-+	       "count", "real total", "virtual total",
-+	       "delay total", "delay average",
- 	       (unsigned long long)t->cpu_count,
- 	       (unsigned long long)t->cpu_run_real_total,
- 	       (unsigned long long)t->cpu_run_virtual_total,
- 	       (unsigned long long)t->cpu_delay_total,
--	       "count", "delay total",
-+	       average_ms((double)t->cpu_delay_total, t->cpu_count),
-+	       "count", "delay total", "delay average",
- 	       (unsigned long long)t->blkio_count,
- 	       (unsigned long long)t->blkio_delay_total,
--	       "count", "delay total",
-+	       average_ms(t->blkio_delay_total, t->blkio_count),
-+	       "count", "delay total", "delay average",
- 	       (unsigned long long)t->swapin_count,
- 	       (unsigned long long)t->swapin_delay_total,
--	       "count", "delay total",
-+	       average_ms(t->swapin_delay_total, t->swapin_count),
-+	       "count", "delay total", "delay average",
- 	       (unsigned long long)t->freepages_count,
--	       (unsigned long long)t->freepages_delay_total);
-+	       (unsigned long long)t->freepages_delay_total,
-+	       average_ms(t->freepages_delay_total, t->freepages_count));
- }
- 
- static void task_context_switch_counts(struct taskstats *t)
+Something else that might help is a usbmon trace showing what happens 
+when you plug in the keyboard.  Instructions are in the kernel source 
+file Documentation/usb/usbmon.txt.  In particular, while running the 
+test try pressing some of the normal keys that don't work.
+
+Also, it would help to see the output from "lsusb -v" for this device 
+-- but you'll have to unbind it from the usbhid driver first.
+
+Alan Stern
+
