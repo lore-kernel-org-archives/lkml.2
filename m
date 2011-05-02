@@ -1,67 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760028Ab1EBO5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:57:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4722 "EHLO mx1.redhat.com"
+	id S1760140Ab1EBO7B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:59:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62359 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757909Ab1EBO5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:57:42 -0400
-Message-ID: <4DBEC65B.4010201@redhat.com>
-Date: Mon, 02 May 2011 10:57:31 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1759772Ab1EBO7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:59:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,303,1301900400"; 
+   d="scan'208";a="636747094"
+Date: Mon, 2 May 2011 16:58:56 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Willie Ruan <wruan@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: pm8xxx-pwm: add pm8xxx PWM driver
+Message-ID: <20110502145855.GB8222@sortiz-mobl>
+References: <1303452952-20499-1-git-send-email-wruan@codeaurora.org>
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 2/2] Filter unevictable page out in deactivate_page
-References: <cover.1304261567.git.minchan.kim@gmail.com> <dc54a5771cf1f580a91d16816100d4a2bcf2cdf5.1304261567.git.minchan.kim@gmail.com>
-In-Reply-To: <dc54a5771cf1f580a91d16816100d4a2bcf2cdf5.1304261567.git.minchan.kim@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303452952-20499-1-git-send-email-wruan@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2011 11:03 AM, Minchan Kim wrote:
-> It's pointless that deactive_page's pagevec operation about
-> unevictable page as it's nop.
-> This patch removes unnecessary overhead which might be a bit problem
-> in case that there are many unevictable page in system(ex, mprotect workload)
->
-> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
-> ---
->   mm/swap.c |    9 +++++++++
->   1 files changed, 9 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 2e9656d..b707694 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -511,6 +511,15 @@ static void drain_cpu_pagevecs(int cpu)
->    */
->   void deactivate_page(struct page *page)
->   {
+Hi Willie,
+
+On Thu, Apr 21, 2011 at 11:15:51PM -0700, Willie Ruan wrote:
+> Qualcomm PM8xxx chips, such as PM8058 and PM8921, have 8 channels of
+> PWM, also called LPG (Light Pulse Generator) in HW specs. All PWM
+> channels can be used as simple PWM machine or as a more advanced PWM
+> pattern generator using programmed lookup table.
+> 
+> This patch supports all APIs listed in <linux/pwm.h> with a small
+> difference. The two parameters (duty_ns and period_ns) in pwm_config()
+> are used as values in microseconds instead of nanoseconds. Otherwise a
+> 32-bit integer can't fit for a range of 7 us to 300+ seconds.
+I can only lament the fact that we're still lacking a proper PWM API. Besides
+that, I have a couple comments:
+
+> +static void pm8xxx_pwm_calc_period(unsigned int period_us,
+> +					   struct pm8xxx_pwm_config *pwm_conf)
+> +{
+> +	int	n, m, clk, div;
+> +	int	best_m, best_div, best_clk;
+> +	int	last_err, cur_err, better_err, better_m;
+> +	unsigned int	tmp_p, last_p, min_err, period_n;
 > +
-> +	/*
-> +	 * In workload which system has many unevictable page(ex, mprotect),
-> +	 * unevictalge page deactivation for accelerating reclaim
-
-Typo.
-
-> +	 * is pointless.
-> +	 */
-> +	if (PageUnevictable(page))
-> +		return;
+> +	/* PWM Period / N */
+> +	if (period_us < (40 * USEC_PER_SEC)) {  /* ~6-bit max */
+> +		period_n = (period_us * NSEC_PER_USEC) >> 6;
+> +		n = 6;
+> +	} else if (period_us < (274 * USEC_PER_SEC)) { /* overflow threshold */
+> +		period_n = (period_us >> 6) * NSEC_PER_USEC;
+> +		if (period_n >= MAX_MPT) {
+> +			n = 9;
+> +			period_n >>= 3;
+> +		} else
+> +			n = 6;
+> +	} else {
+> +		period_n = (period_us >> 9) * NSEC_PER_USEC;
+> +		n = 9;
+> +	}
 > +
->   	if (likely(get_page_unless_zero(page))) {
->   		struct pagevec *pvec =&get_cpu_var(lru_deactivate_pvecs);
->
+> +	min_err = MAX_MPT;
+> +	best_m = 0;
+> +	best_clk = 0;
+> +	best_div = 0;
+> +	for (clk = 0; clk < NUM_CLOCKS; clk++) {
+> +		for (div = 0; div < NUM_PRE_DIVIDE; div++) {
+> +			tmp_p = period_n;
+> +			last_p = tmp_p;
+> +			for (m = 0; m <= PM8XXX_PWM_M_MAX; m++) {
+> +				if (tmp_p <= pt_t[div][clk]) {
+> +					/* Found local best */
+> +					if (!m) {
+> +						better_err = pt_t[div][clk] -
+> +							tmp_p;
+> +						better_m = m;
+> +					} else {
+> +						last_err = last_p -
+> +							pt_t[div][clk];
+> +						cur_err = pt_t[div][clk] -
+> +							tmp_p;
+> +
+> +						if (cur_err < last_err) {
+> +							better_err = cur_err;
+> +							better_m = m;
+> +						} else {
+> +							better_err = last_err;
+> +							better_m = m - 1;
+> +						}
+> +					}
+> +
+> +					if (better_err < min_err) {
+> +						min_err = better_err;
+> +						best_m = better_m;
+> +						best_clk = clk;
+> +						best_div = div;
+> +					}
+> +					break;
+> +				} else {
+> +					last_p = tmp_p;
+> +					tmp_p >>= 1;
+> +				}
+> +			}
+> +		}
+> +	}
+This loop needs to be splitted up into 2-3 different routines. Your code will
+be much more readable.
 
+> +static int pm8xxx_pwm_configure(struct pwm_device *pwm,
+> +			 struct pm8xxx_pwm_config *pwm_conf)
+> +{
+> +	int	i, rc, len;
+> +	u8	reg, ramp_enabled = 0;
+> +
+> +	reg = (pwm_conf->pwm_size > 6) ? PM8XXX_PWM_SIZE_9_BIT : 0;
+> +	pwm->pwm_ctl[5] = reg;
+> +
+> +	reg = ((pwm_conf->clk + 1) << PM8XXX_PWM_CLK_SEL_SHIFT)
+> +		& PM8XXX_PWM_CLK_SEL_MASK;
+> +	reg |= (pwm_conf->pre_div << PM8XXX_PWM_PREDIVIDE_SHIFT)
+> +		& PM8XXX_PWM_PREDIVIDE_MASK;
+> +	reg |= pwm_conf->pre_div_exp & PM8XXX_PWM_M_MASK;
+> +	pwm->pwm_ctl[4] = reg;
+> +
+> +	if (pwm_conf->bypass_lut) {
+> +		pwm->pwm_ctl[0] &= PM8XXX_PWM_PWM_START; /* keep enabled */
+> +		pwm->pwm_ctl[1] = PM8XXX_PWM_BYPASS_LUT;
+> +		pwm->pwm_ctl[2] = 0;
+> +
+> +		if (pwm_conf->pwm_size > 6) {
+> +			pwm->pwm_ctl[3] = pwm_conf->pwm_value
+> +						& PM8XXX_PWM_VALUE_BIT7_0;
+> +			pwm->pwm_ctl[4] |= (pwm_conf->pwm_value >> 1)
+> +						& PM8XXX_PWM_VALUE_BIT8;
+> +		} else {
+> +			pwm->pwm_ctl[3] = pwm_conf->pwm_value
+> +						& PM8XXX_PWM_VALUE_BIT5_0;
+> +		}
+> +
+> +		len = 6;
+> +	} else {
+> +		int	pause_cnt, j;
+> +
+> +		/* Linear search for duty time */
+> +		for (i = 0; i < PM8XXX_PWM_1KHZ_COUNT_MAX; i++) {
+> +			if (duty_msec[i] >= pwm_conf->lut_duty_ms)
+> +				break;
+> +		}
+> +
+> +		ramp_enabled = pwm->pwm_ctl[0] & PM8XXX_PWM_RAMP_GEN_START;
+> +		pwm->pwm_ctl[0] &= PM8XXX_PWM_PWM_START; /* keep enabled */
+> +		pwm->pwm_ctl[0] |= (i << PM8XXX_PWM_1KHZ_COUNT_SHIFT) &
+> +					PM8XXX_PWM_1KHZ_COUNT_MASK;
+> +		pwm->pwm_ctl[1] = pwm_conf->lut_hi_index &
+> +					PM8XXX_PWM_HIGH_INDEX_MASK;
+> +		pwm->pwm_ctl[2] = pwm_conf->lut_lo_index &
+> +					PM8XXX_PWM_LOW_INDEX_MASK;
+> +
+> +		if (pwm_conf->flags & PM_PWM_LUT_REVERSE)
+> +			pwm->pwm_ctl[1] |= PM8XXX_PWM_REVERSE_EN;
+> +		if (pwm_conf->flags & PM_PWM_LUT_RAMP_UP)
+> +			pwm->pwm_ctl[2] |= PM8XXX_PWM_RAMP_UP;
+> +		if (pwm_conf->flags & PM_PWM_LUT_LOOP)
+> +			pwm->pwm_ctl[2] |= PM8XXX_PWM_LOOP_EN;
+> +
+> +		/* Pause time */
+> +		if (pwm_conf->flags & PM_PWM_LUT_PAUSE_HI_EN) {
+> +			/* Linear search for pause time */
+> +			pause_cnt = (pwm_conf->lut_pause_hi + duty_msec[i] / 2)
+> +					/ duty_msec[i];
+> +			for (j = 0; j < PM8XXX_PWM_PAUSE_COUNT_MAX; j++) {
+> +				if (pause_count[j] >= pause_cnt)
+> +					break;
+> +			}
+> +			pwm->pwm_ctl[5] = (j <<
+> +					   PM8XXX_PWM_PAUSE_COUNT_HI_SHIFT) &
+> +						PM8XXX_PWM_PAUSE_COUNT_HI_MASK;
+> +			pwm->pwm_ctl[5] |= PM8XXX_PWM_PAUSE_ENABLE_HIGH;
+> +		} else
+> +			pwm->pwm_ctl[5] = 0;
+> +
+> +		if (pwm_conf->flags & PM_PWM_LUT_PAUSE_LO_EN) {
+> +			/* Linear search for pause time */
+> +			pause_cnt = (pwm_conf->lut_pause_lo + duty_msec[i] / 2)
+> +					/ duty_msec[i];
+> +			for (j = 0; j < PM8XXX_PWM_PAUSE_COUNT_MAX; j++) {
+> +				if (pause_count[j] >= pause_cnt)
+> +					break;
+> +			}
+> +			pwm->pwm_ctl[6] = (j <<
+> +					   PM8XXX_PWM_PAUSE_COUNT_LO_SHIFT) &
+> +						PM8XXX_PWM_PAUSE_COUNT_LO_MASK;
+> +			pwm->pwm_ctl[6] |= PM8XXX_PWM_PAUSE_ENABLE_LOW;
+> +		} else
+> +			pwm->pwm_ctl[6] = 0;
+> +
+> +		len = 7;
+> +	}
+> +
+> +	pm8xxx_pwm_bank_sel(pwm);
+> +
+> +	for (i = 0; i < len; i++) {
+> +		rc = pm8xxx_writeb(pwm->chip->dev->parent,
+> +				   SSBI_REG_ADDR_LPG_CTL(i),
+> +				   pwm->pwm_ctl[i]);
+> +		if (rc) {
+> +			pr_err("pm8xxx_write(): rc=%d (PWM Ctl[%d])\n", rc, i);
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (ramp_enabled) {
+> +		pwm->pwm_ctl[0] |= ramp_enabled;
+> +		pm8xxx_writeb(pwm->chip->dev->parent,
+> +			      SSBI_REG_ADDR_LPG_CTL(0),
+> +			      pwm->pwm_ctl[0]);
+> +	}
+> +
+> +	return rc;
+> +}
+I would also appreciate if this routine could be made smaller by having it
+calling sub routines.
+
+Cheers,
+Samuel.
 
 -- 
-All rights reversed
+Intel Open Source Technology Centre
+http://oss.intel.com/
