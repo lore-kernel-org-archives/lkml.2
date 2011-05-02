@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab1EBXJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:09:42 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab1EBXJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:09:32 -0400
-X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
-Message-Id: <201105022254.p42MsQ8S030356@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 2 May 2011 15:51:32 -0400
-Subject: [PATCH] arch/tile: tolerate disabling CONFIG_BLK_DEV_INITRD
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 02 May 2011 22:54:26.0768 (UTC) FILETIME=[E336AD00:01CC091B]
+	id S1755752Ab1EBTxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:53:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771Ab1EBTxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:53:24 -0400
+Date: Mon, 2 May 2011 22:53:03 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
+Message-ID: <20110502195302.GA25619@redhat.com>
+References: <1303328216.19336.18.camel@localhost.localdomain>
+ <1303328648.19336.24.camel@localhost.localdomain>
+ <20110502104257.GA21625@redhat.com>
+ <1304362028.20660.15.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304362028.20660.15.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code accidentally was relying on this configuration option
-being selected.
+On Mon, May 02, 2011 at 11:47:08AM -0700, Shirley Ma wrote:
+> On Mon, 2011-05-02 at 13:42 +0300, Michael S. Tsirkin wrote:
+> > This comment should specify what exactly is the promise the
+> > device makes by setting this flag. Specifically, the
+> > condition is that no skb fragments are used
+> > after the uinfo callback has been called.
+> > 
+> > The way it's implemented, it probably means the device
+> > should not use any of skb_clone, expand head etc.
+> 
+> Agree. Or maybe force a copy when device uses skb_clone, expand
+> head ...?
+> 
+> Thanks
+> Shirley
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/kernel/setup.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Copy from userspace upfront without locking is probably cheaper?
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 3696b18..6cdc9ba 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -912,6 +912,8 @@ void __cpuinit setup_cpu(int boot)
- #endif
- }
- 
-+#ifdef CONFIG_BLK_DEV_INITRD
-+
- static int __initdata set_initramfs_file;
- static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
- 
-@@ -969,6 +971,10 @@ void __init free_initrd_mem(unsigned long begin, unsigned long end)
- 	free_bootmem(__pa(begin), end - begin);
- }
- 
-+#else
-+static inline void load_hv_initrd(void) {}
-+#endif /* CONFIG_BLK_DEV_INITRD */
-+
- static void __init validate_hv(void)
- {
- 	/*
 -- 
-1.6.5.2
-
+MST
