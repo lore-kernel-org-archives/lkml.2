@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab1EBVzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:55:45 -0400
-Received: from kroah.org ([198.145.64.141]:38983 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758213Ab1EBVzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:55:43 -0400
-Date: Mon, 2 May 2011 14:55:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
- Systems TS-5xxx detection
-Message-ID: <20110502215535.GA30373@kroah.com>
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20110429233230.GB24864@kroah.com>
- <1304368433-sup-4264@sfl>
+	id S1757979Ab1EBVzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:55:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42965 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab1EBVzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 17:55:39 -0400
+Date: Mon, 2 May 2011 15:55:37 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tony Lindgren <tony@atomide.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/8] arm/dt: probe for platforms via the device tree
+Message-ID: <20110502215537.GE10097@ponder.secretlab.ca>
+References: <20110429070135.12522.35745.stgit@ponder>
+ <20110429071548.12522.56929.stgit@ponder>
+ <20110502151542.GG2092@atomide.com>
+ <BANLkTikue6jMUcQMv9GD4cZ=o5EEW7QDqQ@mail.gmail.com>
+ <20110502163951.GC9243@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1304368433-sup-4264@sfl>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110502163951.GC9243@atomide.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 05:07:29PM -0400, Vivien Didelot wrote:
-> Hi,
+On Mon, May 02, 2011 at 07:39:54PM +0300, Tony Lindgren wrote:
+> * Grant Likely <grant.likely@secretlab.ca> [110502 18:31]:
+> > On Mon, May 2, 2011 at 9:15 AM, Tony Lindgren <tony@atomide.com> wrote:
+> > > * Grant Likely <grant.likely@secretlab.ca> [110429 00:13]:
+> > >> +
+> > >> +/**
+> > >> + * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
+> > >> + * @dt_phys: physical address of dt blob
+> > >> + *
+> > >> + * If a dtb was passed to the kernel in r2, then use it to choose the
+> > >> + * correct machine_desc and to setup the system.
+> > >> + */
+> > >> +struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
+> > >> +{
+> > > ...
+> > >
+> > >> +
+> > >> +     /* Retrieve various information from the /chosen node */
+> > >> +     of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
+> > >
+> > > Just to make sure we're considering properly what this change means..
+> > >
+> > > Does this patch require using CONFIG_CMDLINE_FORCE for older bootloaders
+> > > with the device tree append patch?
+> > 
+> > With the current patch?  Yes, but there is a follow-on patch that was
+> > posted a while ago[1] that will copy ATAG data into the device tree in
+> > the bootloader.  I've not been pushing to include that change since it
+> > adds a lot of code to the wrapper and I'm not sure how deeply we want
+> > to support that use case.  Basically I want to have a better idea what
+> > the supported use cases are before pushing something like that.
 > 
-> Thanks you all for your comments, I'll consider them carefully.
+> OK. Maybe that could be made simpler if we only copy the cmdline?
 > 
-> Excerpts from Greg KH's message of 2011-04-29 19:32:30 -0400:
-> > On Fri, Apr 29, 2011 at 06:21:48PM -0400, Vivien Didelot wrote:
-> > > +/proc filesystem
-> > > +----------------
-> > > +
-> > > +Information about the TS board is available through the /proc/ts-sbcinfo.
-> > 
-> > Really?  Why?
-> > 
-> > As you now have added a new kernel/user ABI, it must be documented in
-> > Documentation/ABI/
-> > 
-> > Please include that in your next patch.
-> > 
-> > But first off, why a new proc file?  What is it used for?
+> The cmdline is something that bootloaders typically allow to configure,
+> while the other ATAGs are static and should be in the .dts file.
+
+Once the libfdt code is pulled into to manipulate the command line,
+it becomes trivial to parse the rest of the atags too, so this
+probably won't make much difference (unless work is done to preparse
+the devicetree and provide to the zimage wrapper a direct offset to
+the cmdline buffer in the dtb, but that gets hairy and I really don't
+want to go down that path).
+
+>  
+> > Adding a default command line to the .dts file instead of using
+> > CONFIG_CMDLINE_FORCE also works.
 > 
-> I think it could be useful for the user to know what option is available
-> or not on the board.
+> But that requires carrying extra patches for something that should
+> be user configured.. So not so nice for distros.
 
-But that's not how we export data to userspace anymore, sorry.  We try
-to learn from our past mistakes.
+Right, so this is only a stop-gap solution.  I'll add this to the list
+of topics to discuss in the device tree session at Linaro@UDS next
+week.
 
-Almost all of this data can be gotten from other methods anyway, you
-need to justify why you wish to repeat this here.
+g.
 
-> > > +static int ts_sbcinfo_init_buffer(char *buf, struct ts5xxx_sbcinfo *sbcinfo)
-> > > +{
-> > > +    char *pos = buf;
-> > > +
-> > > +    pos += ts_addbuf(pos, "Board ID", "TS-%d", sbcinfo->board_id);
-> > > +    pos += ts_addbuf(pos, "RS485", "%s", sbcinfo->rs485 ? "yes" : "no");
-> > > +    pos += ts_addbuf(pos, "AnalogToDigital", "%s",
-> > > +             sbcinfo->adc ? "yes" : "no");
-> > > +    pos += ts_addbuf(pos, "Auto485", "%s", sbcinfo->auto485 ? "yes" : "no");
-> > > +    pos += ts_addbuf(pos, "SRAM", "%s", sbcinfo->sram ? "yes" : "no");
-> > > +    pos += ts_addbuf(pos, "External Reset", "%s",
-> > > +             sbcinfo->external_reset ? "yes" : "no");
-> > 
-> > Most of these look like they should be simple "one value per file" sysfs
-> > files for your system.  That would make things much easier on your
-> > userspace tools to handle parsing them properly, right?
-> > 
-> > Why not do that instead?
 > 
-> I had a look at other drivers, and /sys/devices/platform/ts/ seems to be
-> a good place to hold those entries (one per options as you suggested).
-> Do you agree with that?
-
-No, this is not a platform device, is it?  Only platform devices go
-there, and I really doubt you have many of them for this board.
-
-> By the way, as they would be sysfs attributes, is Documentation/ABI the
-> best place to add the documentation file?
-
-Yes.
-
-thanks,
-
-greg k-h
+> Tony
+>  
+> > [1] http://lists.ozlabs.org/pipermail/devicetree-discuss/2011-March/004652.html
