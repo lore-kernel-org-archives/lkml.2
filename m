@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1EBUZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 16:25:26 -0400
-Received: from nm18-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.23]:44726
-	"HELO nm18-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753344Ab1EBUZY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 16:25:24 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 16:25:24 EDT
-X-Yahoo-Newman-Id: 183149.19019.bm@omp1006.access.mail.mud.yahoo.com
-X-Yahoo-SMTP: hkDz_0CswBCNpAxe6jvEiFd9bjPV2x_A1CGAGexiFYCM
-X-YMail-OSG: Xg9G6C8VM1nIKHn3NrU5u5M39fdlzG3VhD.41LSSPjVESp.
- yCHw_hJbcG2p90jcG7PeRkqAiE9xzE17JbCAnSnwP_NTIAG7WBayHHkeH3RM
- t0qDhpAVikseUmPszkBzpRYTBhV1lyBQ.Rq5gEk3m3f.YStlhBNPrkwMIVea
- G9zq1AJ7dApbQd64I4DiPQltZb6UeDwBGbK5gBxFhMibnTOqHE9JMl_5Z8IB
- ceSlHdcmOafc7F5VwObooM9jt6MRNZVSo39lGcUIZJYUGJjo55Ce4jShSR.I
- Ywf0jZeJ0PKsneSdapuCeosc2SrAFuoxe_ctHGQ2rUDXehw--
-X-Yahoo-Newman-Property: ymail-3
-From: "Dr.Vincent Mark" <drrvinccmakk@att.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: drrrvinccmark@yahoo.com
-Date: Mon, 02 May 2011 18:53:42 +0100
-Subject: Od Dr. Vincent OZ
+	id S1756533Ab1EBRyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 13:54:16 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54106 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab1EBRyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 13:54:13 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Mon, 2 May 2011 10:53:57 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 11/86] rcu: Add boosting to TREE_PREEMPT_RCU
+ tracing
+Message-ID: <20110502175357.GE24574@feather>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110501155225.GF14829@feather>
+ <20110502082711.GW2297@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Message-ID: <OMOBAPC6de67166fa0a4b248866f0987f368180@OMOBAPC>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502082711.GW2297@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vázený príteli. 
+On Mon, May 02, 2011 at 01:27:11AM -0700, Paul E. McKenney wrote:
+> On Sun, May 01, 2011 at 08:52:25AM -0700, Josh Triplett wrote:
+> > On Sun, May 01, 2011 at 06:20:51AM -0700, Paul E. McKenney wrote:
+> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > 
+> > > Includes total number of tasks boosted, number boosted on behalf of each
+> > > of normal and expedited grace periods, and statistics on attempts to
+> > > initiate boosting that failed for various reasons.
+> > 
+> > In this patch series, you have several cases where you improve the trace
+> > output in one patch, and then update the documentation in a subsequent
+> > patch.  You might consider doing both in the same patch, so that at each
+> > step the documentation matches the kernel.
+> 
+> The reason I do the documentation second is that it allows me to copy
+> the exact output from a test run, which has the nice side-effect of
+> making sure that I really am getting the documentation correct.  Or at
+> least of reducing the probability of getting it wrong...  ;-)
 
+I definitely agree that you should copy the output from a test run to
+make the documentation accurate; I just mean that once you do so, you
+should put both the code changes and corresponding documentation into a
+single commit.
 
-
-Jsem Dr.Vincent Marka, manazer Úcetnictví Audit ministerstva credite suise banky, zde v England.I písu vám o obchodní návrh, který bude mít obrovský prínos pro obe us.In mém oddelení, je vedoucí Greater London Krajský úrad, jsem zjistil soucet £ 16,5 milionu (sestnáct milionu, pet set liber sterlinku) v úctu, který patrí k jednomu z nasich zahranicních zákazníku Pozdní Obchodní Mogul Mr.Mosies Saba miliardár, Zida z Mexika, který byl obetí zrícení vrtulníku na pocátku tohoto roku, zabíjet jej a rodina members.Saba byl 47-roky-old.Also ve vrtulníku v dobe havárie byla jeho manzelka, jejich syn Avraham (Albert) a jeho dcera-in-law.The pilot byl také zabit. 
-
-
-  
-
-
-Volba Vás kontaktovat se vzbudila z geografické povahy, kde zijete, obzvláste vzhledem k citlivosti na transakce a duvernost herein.Now nás bankovní bylo cekání na nekterý z príbuzných prijde-az k tvrzení, ale nikdo nemá udelal that.I osobne jsem byl neúspesný pri rozmistování príbuzným, mám usilovat o vás souhlas k vám jako dalsí príbuzný / Bude príjemce na zemrelého tak, ze výtezek z tohoto úctu ocenen na 16,5 milionu liber muze být vyplacena na vás. 
-
-
-
-
-
-To bude vyplacena, nebo sdílená v techto procent, 60% pro me a 40% na you.I mít zajistené veskeré nezbytné právní dokumenty, které mohou být pouzity k zálohování toto tvrzení jsme making.All co potrebujete, je vyplnit vase jména dokumenty a legalizovat to u soudu dokázat, jste zde jako oprávnený beneficiary.All Zádám nyní je vase uprímná Co-operace, duvernosti a Trust umoznit nás videt tuto transakci through.I vám zarucit, ze to bude popraven za legitimní usporádání, které bude chránit vás z jakéhokoli porusení zákona. 
-
-
-
-
-Prosím, uvedte mi následující, jak jsme na 7 dní spustíme ji through.This je velmi URGENT PROSÍM. 
-
-Laskave odpoved na muj soukromý e-mail zde: dr.vinccmark@yahoo.com 
-
-
-1.FULL Jméno .............................. 
-2.Your Prímé mobilní císlo ........................ 
-3.Your Kontaktní adresa ........................... 
-4.occupation :................................ 
-5.Your Vek :................................ 
-
-
-S prosla metodický vyhledávání, rozhodl jsem se Vás kontaktovat doufat, ze vás najdou tento návrh interesting.Please o Vase potvrzení této zprávy a uvedením Vaseho zájmu poskytnou vám více information.Endeavor dejte mi vedet vase rozhodnutí, spíse nez drzet me ceká. 
-
-
-
-Laskave odpoved na muj soukromý e-mail zde: dr.vinccmark@yahoo.com 
-
-
-Podekoval vám v ocekávání své príznivé odpovedi. 
-
-
-S pozdravem, 
-Dr.Vincent Marek 
-+447024039520
-
-
+- Josh Triplett
