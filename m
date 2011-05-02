@@ -1,189 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab1EBRfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:35:43 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45609 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab1EBRfi (ORCPT
+	id S1753533Ab1EBRfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 13:35:00 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63307 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab1EBRe4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:35:38 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 4/4] x86, mce: Have MCE persistent event off by default for now
-Date: Mon,  2 May 2011 19:34:51 +0200
-Message-Id: <1304357691-14354-5-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1304357691-14354-1-git-send-email-bp@amd64.org>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+	Mon, 2 May 2011 13:34:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mm8hVeaxHRYgY4mSzTbQwzwDWLa0hdO+JJMLNCM7g9G2WabbdlYioKn+bHNC3XLsbi
+         2vtxBHy6uy9tWilFtESYAK19bO98QMSKVLxJo6WWYZslCD+x2uLg2KJRtZsyAQVgdOxk
+         gZlH31OIfeWwhClCZXhKUfFEf2s8iTDvLTNB0=
+MIME-Version: 1.0
+In-Reply-To: <20110502170736.GB18740@merkur.ravnborg.org>
+References: <71633.1304013549@localhost>
+	<1304083893-18849-1-git-send-email-mmarek@suse.cz>
+	<BANLkTikMf4x0e3UhabUH+c_xnWJMQ3rkvg@mail.gmail.com>
+	<20110502170736.GB18740@merkur.ravnborg.org>
+Date: Mon, 2 May 2011 13:34:54 -0400
+Message-ID: <BANLkTi==Tx6sXcA2Bk6Cp7wc1DY-7c1V3g@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Valdis.Kletnieks@vt.edu, bp@alien8.de,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Hi,
 
-This is new functionality and it affects all of x86 so we want to be
-very conservative about it and have it off by default for now, in case
-something goes awry. You can always enable it by supplying "ras" on the
-kernel command line.
+On Mon, May 2, 2011 at 1:07 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Tue, May 03, 2011 at 12:16:15AM +0800, Américo Wang wrote:
+>> On Fri, Apr 29, 2011 at 9:31 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> > Add support for make W=12, make W=123 and so on, to enable warnings from
+>> > multiple W= levels. Normally, make W=<level> does not include warnings
+>> > from the previous level.
+>> >
+>>
+>> This interface is not friendly, at least not as normal as we often see.
+>> W=x+1 is supposed to include warnings of W=x.
+>>
+>> Please refine the interface.
+>
+> Until we see that several people have had benefit if W=...
+> we should leave it as is now.
+>
+> Then when people really start to use if we can refine it.
+>
+> IMO it is much more important to find the right sub-set
+> of warnings to keep on W=1 level than how we see additional warnings.
+>
+> There may well be warnings where we say that the benefit of it is
+> zero - or it is plain wrong in the kernel.
+> Lets try to focus on this.
+>
+Because you are not even sure of what you submitted is good for the kernel ?
 
-Also, depending on whether it is enabled or not, we emit the tracepoint
-from a different place in the code to pick up additional decoded info.
+I think this has been done completely wrong, first all the extra
+warnings got in (without a detailed impact implied by each one), then
+it was decided to be split in several level (which I proposed on Feb
+20th, but was originally rejected by Borislav Petkov), then, well,
+some may need to be removed because they are not good for Linux. I
+would rather have provided the framework first, clean, natural
+interface, then added new warnings gradually when we were sure had a
+positive impact on the kernel, with the associated patch fixing them.
+Right now, +80k warnings will be just impossible to fix.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- Documentation/kernel-parameters.txt |    2 ++
- arch/x86/include/asm/mce.h          |    1 +
- arch/x86/kernel/cpu/mcheck/mce.c    |   32 ++++++++++++++++++++++++++++++--
- drivers/edac/mce_amd.c              |    5 +++++
- 4 files changed, 38 insertions(+), 2 deletions(-)
+Now, the drawback of your comment is that when it will be time to
+change the interface, some will object because it will have been
+started to be used by third party scripts, and as authors of third
+party script, it is a PITA to have to check the kernel version to know
+if I should W=1,2,3, or W=123 or if W=3 includes W=1 ...
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index cc85a92..f09438a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2165,6 +2165,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	ramdisk_size=	[RAM] Sizes of RAM disks in kilobytes
- 			See Documentation/blockdev/ramdisk.txt.
- 
-+	ras		[X86] Enable RAS daemon supporting functionality.
-+
- 	rcupdate.blimit=	[KNL,BOOT]
- 			Set maximum number of finished RCU callbacks to process
- 			in one batch.
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 40cc9bc..649d47a 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -131,6 +131,7 @@ extern struct atomic_notifier_head x86_mce_decoder_chain;
- 
- extern int mce_disabled;
- extern int mce_p5_enabled;
-+extern int ras;
- 
- #ifdef CONFIG_X86_MCE
- int mcheck_init(void);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 9589ebf..3fb22cb 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -59,6 +59,8 @@ static DEFINE_MUTEX(mce_read_mutex);
- #define CREATE_TRACE_POINTS
- #include <trace/events/mce.h>
- 
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mce_record);
-+
- int mce_disabled __read_mostly;
- 
- #define MISC_MCELOG_MINOR	227
-@@ -86,6 +88,7 @@ static int			mce_dont_log_ce		__read_mostly;
- int				mce_cmci_disabled	__read_mostly;
- int				mce_ignore_ce		__read_mostly;
- int				mce_ser			__read_mostly;
-+int				ras			__read_mostly;
- 
- struct mce_bank                *mce_banks		__read_mostly;
- 
-@@ -105,6 +108,7 @@ static int			cpu_missing;
-  */
- ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
- EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
-+EXPORT_SYMBOL_GPL(ras);
- 
- static int default_decode_mce(struct notifier_block *nb, unsigned long val,
- 			       void *data)
-@@ -163,8 +167,9 @@ void mce_log(struct mce *mce)
- {
- 	unsigned next, entry;
- 
--	/* Emit the trace record: */
--	trace_mce_record(mce);
-+	if (!ras)
-+		/* Emit the trace record: */
-+		trace_mce_record(mce);
- 
- 	mce->finished = 0;
- 	wmb();
-@@ -1721,6 +1726,19 @@ static int __init mcheck_enable(char *str)
- }
- __setup("mce", mcheck_enable);
- 
-+static int __init ras_enable(char *str)
-+{
-+	/*
-+	 * We enable the persistent event only if "ras" is supplied on the
-+	 * command line.
-+	 */
-+	ras = 1;
-+
-+	return 0;
-+}
-+
-+__setup("ras", ras_enable);
-+
- int __init mcheck_init(void)
- {
- 	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
-@@ -2081,6 +2099,9 @@ static int mce_enable_perf_event_on_cpu(int cpu)
- 	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
- 	int err = -EINVAL;
- 
-+	if (!ras)
-+		return 0;
-+
- 	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
- 	if (IS_ERR(d->event)) {
- 		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
-@@ -2105,6 +2126,10 @@ ret:
- static void mce_disable_perf_event_on_cpu(int cpu)
- {
- 	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-+
-+	if (!ras)
-+		return;
-+
- 	debugfs_remove(d->debugfs_entry);
- 	perf_disable_persistent_event(d->event, cpu);
- }
-@@ -2113,6 +2138,9 @@ static __init int mcheck_init_persistent_event(void)
- {
- 	int cpu, err = 0;
- 
-+	if (!ras)
-+		return -EBUSY;
-+
- 	get_online_cpus();
- 
- 	pattr.config = event_mce_record.event.type;
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index 795cfbc..e329335 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -1,5 +1,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <asm/mce.h>
-+#include <trace/events/mce.h>
- 
- #include "mce_amd.h"
- 
-@@ -829,6 +831,9 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
- 
- 	amd_decode_err_code(m->status & 0xffff);
- 
-+	if (ras)
-+		trace_mce_record(m);
-+
- 	return NOTIFY_STOP;
- }
- EXPORT_SYMBOL_GPL(amd_decode_mce);
--- 
-1.7.4.rc2
+my 0.2c,
 
+ - Arnaud
