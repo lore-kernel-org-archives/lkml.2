@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab1EBJdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 05:33:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35296 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756404Ab1EBJdP (ORCPT
+	id S1757524Ab1EBJrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 05:47:09 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34043 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab1EBJrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 05:33:15 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+BFRE3F0iBPe5MOibda4gm+VXX+pZzJNWq83tF8j
-	/nXx6FXVAi6fu7
-Subject: Re: [PATCH tip/core/rcu 31/86] rcu: further lower priority in
- rcu_yield()
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-In-Reply-To: <20110502081121.GT2297@linux.vnet.ibm.com>
-References: <20110501132142.GA25494@linux.vnet.ibm.com>
-	 <1304256126-26015-31-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1304272264.7417.20.camel@marge.simson.net>
-	 <20110502081121.GT2297@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 11:33:06 +0200
-Message-ID: <1304328786.26772.8.camel@marge.simson.net>
+	Mon, 2 May 2011 05:47:06 -0400
+Date: Mon, 2 May 2011 11:46:16 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Ben Dooks <ben-i2c@fluff.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, eric.y.miao@gmail.com,
+        ben-linux@fluff.org, linux-i2c@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
+Message-ID: <20110502114616.7813da79@endymion.delvare>
+In-Reply-To: <20110502092734.GV15795@trinity.fluff.org>
+References: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
+	<20110502092734.GV15795@trinity.fluff.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 01:11 -0700, Paul E. McKenney wrote:
-> On Sun, May 01, 2011 at 07:51:04PM +0200, Mike Galbraith wrote:
-> > On Sun, 2011-05-01 at 06:21 -0700, Paul E. McKenney wrote:
-> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > 
-> > > Although rcu_yield() dropped from real-time to normal priority, there
-> > > is always the possibility that the competing tasks have been niced.
-> > > So nice to 19 in rcu_yield() to help ensure that other tasks have a
-> > > better chance of running.
+On Mon, 2 May 2011 10:27:34 +0100, Ben Dooks wrote:
+> On Thu, Apr 28, 2011 at 11:15:44PM +0800, Haojian Zhuang wrote:
+> > Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+> > cores are sharing one pair of I2C pins.
 > > 
-> > But.. that just prolongs the pain of overhead you _have_ to eat, no?  In
-> > a brief surge, fine, you can spread the cost out.. but how do you know
-> > when it's ok to yield?
+> > In order to keep I2C transaction operated with atomic, hardware lock
+> > (RIPC) is required. Because of this, bus lock in AP side can't afford
+> > this requirement. Now hardware lock is appended.
+> > 
+> > Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> > Cc: Ben Dooks <ben-linux@fluff.org>
+> > Cc: Jean Delvare <khali@linux-fr.org>
 > 
-> I modeled this code on the existing code in ksoftirqd.  But yes, this is
-> a heuristic.  I do believe that it is quite robust, but time will tell.
+> Right, this looks like a reasonable explanation of what is going on here
+> and if Jean is happy with the core changes I'll look at where the driver
+> change can go.
 
-(It probably is fine, but when I see 'yield', alarms and sirens go off)
+Yes I am!
 
+Let me know if you want me to take the core change in my tree or if you
+prefer to have it in yours to avoid a dependency.
+
+-- 
+Jean Delvare
