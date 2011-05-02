@@ -1,80 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab1EBJKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 05:10:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42371 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab1EBJKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 05:10:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,301,1301900400"; 
-   d="scan'208";a="636642557"
-Subject: Re: [PATCH 2/2] dmaengine: shdma: add runtime- and system-level
- power management
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <damm@opensource.se>
-In-Reply-To: <Pine.LNX.4.64.1105021056231.13244@axis700.grange>
-References: <Pine.LNX.4.64.1104291901200.17813@axis700.grange>
-	 <Pine.LNX.4.64.1104291908090.17813@axis700.grange>
-	 <1304323391.1589.9.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1105021056231.13244@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 14:08:06 +0530
-Message-ID: <1304325486.1589.15.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756875Ab1EBIjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 04:39:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61894 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab1EBIji (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 04:39:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
+Date: Mon, 2 May 2011 10:39:32 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        John Linn <john.linn@xilinx.com>
+References: <20110502045207.24800.91172.stgit@ponder> <20110502050800.24800.13738.stgit@ponder>
+In-Reply-To: <20110502050800.24800.13738.stgit@ponder>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105021039.32374.arnd@arndb.de>
+X-Provags-ID: V02:K0:NP7w4KxNDZJh+OtObA4CdbpY/cTXssxucjM63Dhbu/y
+ 63tLXc977X1Ujkip5loxg3CPXkTguS8EyOL0A82L5Fj5x5MDMi
+ yi/R0F3iZ7MSvveOuav0mAoP5v+riUZ24NFs7bYw31YUGopti4
+ mWR9q85vRS1ybdqWhmJ+kztLPUypDEWCD36Vr4h4thzkIubw//
+ x/nT5VIZFA1TxbTxgroAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 11:04 +0200, Guennadi Liakhovetski wrote:
-> On Mon, 2 May 2011, Koul, Vinod wrote:
+On Monday 02 May 2011 07:08:00 Grant Likely wrote:
+> The 1st board support is minimal to get a system up and running
+> on the Xilinx platform.
 > 
-> > On Fri, 2011-04-29 at 19:09 +0200, Guennadi Liakhovetski wrote:
-> > > This patch extends and fixes runtime power management in the shdma
-> > > driver to support powering down the DMA controller and adds support
-> > > for system-level suspend and resume.
-> > > 
-> > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > > ---
-> > >  drivers/dma/shdma.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  drivers/dma/shdma.h |    1 +
-> > >  2 files changed, 69 insertions(+), 0 deletions(-)
-> > > 
-> > 
-> > >  
-> > > +static int sh_dmae_runtime_suspend(struct device *dev)
-> > > +{
-> > > +	return 0;
-> > > +}
-> > Don't you need to initialize you device on resume...????
-> 
-> Hm, yes, but this is suspend... Resume is below. Sorry, I probably don't 
-> understand your question.
-Opps, my question was for empty suspend. Dont you need to power off you
-device.
-> 
-> > > +
-> > > +static int sh_dmae_runtime_resume(struct device *dev)
-> > > +{
-> > > +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
-> > > +
-> > > +	return sh_dmae_rst(shdev);
-> > > +}
-> > > +
-> > > +#ifdef CONFIG_PM
-> > This should be removed...
-> 
-> You mean, these functions just won't be called, but this way we save a 
-> couple of bytes if PM is not set, don't we?
-I meant you dont need to have this, PM is usually part of core options
-which ppl enable nowadays. Do you run with PM disabled?
+> This platform reuses the clock implementation from plat-versatile, and
+> it depends entirely on CONFIG_OF support.  There is only one board
+> support file which obtains all device information from a device tree
+> dtb file which is passed to the kernel at boot time.
 
+Very cool stuff!
 
--- 
-~Vinod
+> +
+> +	amba {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		ranges;
 
+Shouldn't we have a way to identify amba buses by the compatible property
+as well, rather than only declaring it simple-bus?
+
+We might be able to do some more automatic probing in the amba
+code in cases where the architected registers are actually filled
+with meaningful data there.
+
+Is the empty ranges property technically correct? Excuse my poor
+knowledge of amba, but I would have assumed that only a range
+of addresses is actually put on the bus, while others (e.g. RAM)
+are not visible on AMBA.
+
+> +static struct of_device_id zynq_of_bus_ids[] __initdata = {
+> +	{ .compatible = "simple-bus", },
+> +	{}
+> +};
+> +
+> +static struct of_device_id gic_match[] = {
+> +	{ .compatible = "arm,gic", },
+> +	{}
+> +};
+> +
+> +/**
+> + * xilinx_init_machine() - System specific initialization, intended to be
+> + *			   called from board specific initialization.
+> + */
+> +void __init xilinx_init_machine(void)
+> +{
+> +	struct device_node *node = of_find_matching_node(NULL, gic_match);
+> +
+> +	if (node)
+> +		of_irq_domain_add_simple(node, 0, NR_IRQS);
+> +
+> +#ifdef CONFIG_CACHE_L2X0
+> +	/*
+> +	 * 64KB way size, 8-way associativity, parity disabled
+> +	 */
+> +	l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
+> +#endif
+> +
+> +/**
+> + * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+> + */
+> +void __init xilinx_irq_init(void)
+> +{
+> +	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
+> +}
+
+I think we can do better than this, there is still more hardcoded stuff
+in here than I think should be. I understand that you tried to minimize
+the size of the patch set for obvious reasons, but none of this
+seems too board specific to put into common code in one way or another.
+
+Of course we can not fix all of this at once, but maybe we can have
+an explanation for each hardcoded setting on why it is still needed
+and what would have to be done to make it go away.
+
+> +/* The minimum devices needed to be mapped before the VM system is up and
+> + * running include the GIC, UART and Timer Counter.
+> + */
+> +
+> +static struct map_desc io_desc[] __initdata = {
+> +	{
+> +		.virtual	= TTC0_VIRT,
+> +		.pfn		= __phys_to_pfn(TTC0_PHYS),
+> +		.length		= SZ_4K,
+> +		.type		= MT_DEVICE,
+> +	}, {
+> +		.virtual	= SCU_PERIPH_VIRT,
+> +		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
+> +		.length		= SZ_8K,
+> +		.type		= MT_DEVICE,
+> +	}, {
+> +		.virtual	= PL310_L2CC_VIRT,
+> +		.pfn		= __phys_to_pfn(PL310_L2CC_PHYS),
+> +		.length		= SZ_4K,
+> +		.type		= MT_DEVICE,
+> +	},
+
+I especially dislike the idea of having to set up iotables, these
+seem completely counterintuitive when we probe the devices from the
+device tree.
+
+AFAICT, all of init_irq, time_init and init_machine are called way after
+mm_init, so you should have ioremap available by the time you need to
+access these virtual memory ranges.
+
+I can understand why you'd want to special-case PCI I/O space windows
+and early serial port access, but I think we should handle them differently
+and give them fixed machine independent virtual addresses.
+
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/io.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/irqs.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/memory.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/system.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/timex.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/vmalloc.h
+
+These are all either completely generic versions that could be reused
+on a number of other machines, or they could be turned into such files.
+
+For the global inlude/asm-generic files, we have just added a mechanism
+to share that kind of file across multiple architectures using some
+Makefile magic. Should we perhaps do something similar here to avoid
+having to create more of the same files?
+
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/uart.h
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/include/mach/uncompress.h
+
+For these, it obviously won't work.
+
+> diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
+> new file mode 100644
+> index 0000000..c2c96cc
+> --- /dev/null
+> +++ b/arch/arm/mach-zynq/timer.c
+
+In the light of the recent discussions of drivers moving out of
+platforms into common Linux code, do we expect this to also
+happen to timers any time soon?
+
+	Arnd
