@@ -1,51 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab1EBV7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:59:39 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43426 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756698Ab1EBV7i (ORCPT
+	id S1758181Ab1EBWCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 18:02:53 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:46685 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab1EBWCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:59:38 -0400
-Date: Mon, 2 May 2011 15:59:36 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        Torben Hohn <torbenh@linutronix.de>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: Re: [PATCH 1/2] x86/dtb: make irq host list accessible
-Message-ID: <20110502215936.GG10097@ponder.secretlab.ca>
-References: <20110427143423.GB15211@linutronix.de>
- <20110429222600.GJ7497@ponder.secretlab.ca>
- <20110430090218.GA24750@linutronix.de>
-MIME-Version: 1.0
+	Mon, 2 May 2011 18:02:52 -0400
+Date: Tue, 3 May 2011 00:01:48 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH V2] xen/balloon: Memory hotplug support for Xen balloon driver
+Message-ID: <20110502220148.GI4623@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110430090218.GA24750@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 30, 2011 at 11:02:18AM +0200, Sebastian Andrzej Siewior wrote:
-> * Grant Likely | 2011-04-29 16:26:00 [-0600]:
-> 
-> >On Wed, Apr 27, 2011 at 04:34:23PM +0200, Sebastian Andrzej Siewior wrote:
-> >> From: Torben Hohn <torbenh@linutronix.de>
-> >> 
-> >> There is an gpio irq chip comming which needs this from the outside.
-> >> There is no EXPORT_SYMBOL because this does not yet work in modules.
-> >> 
-> >Can you rework this to sit on top of the of_irq_domain series I sent
-> >out yesterday?  I *really* hope to get of_irq_domain merged into .40,
-> >but this change would conflict.
-> 
-> This patch should be obsolete with of_irq_domain beeing generic now.
-> Could you please take look at the gpio driver? If there is nothing
-> obvious wrong I would rework it to work with of_irq_domain() and
-> repost.
+Memory hotplug support for Xen balloon driver. It should be
+mentioned that hotplugged memory is not onlined automatically.
+It should be onlined by user through standard sysfs interface.
 
-okay, will do.
+This patch applies to Linus' git tree, v2.6.39-rc5 tag with a few
+prerequisite patches available at https://lkml.org/lkml/2011/5/2/339
+and at https://lkml.org/lkml/2011/3/28/98.
 
-g.
+I have received notice that previous series of patches broke machine
+migration under Xen. I am going to confirm that and solve that problem
+ASAP (#define ASAP LATER_THEN_SOONER_HOWEVER_IT_WILL_BE_DONE). I do not
+have received any notices about other problems till now.
 
+Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+---
+ drivers/xen/Kconfig   |   10 ++++
+ drivers/xen/balloon.c |  139 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/xen/balloon.h |    4 ++
+ 3 files changed, 151 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index a59638b..bd8cfae 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -9,6 +9,16 @@ config XEN_BALLOON
+ 	  the system to expand the domain's memory allocation, or alternatively
+ 	  return unneeded memory to the system.
+ 
++config XEN_BALLOON_MEMORY_HOTPLUG
++	bool "Memory hotplug support for Xen balloon driver"
++	default n
++	depends on XEN_BALLOON && MEMORY_HOTPLUG
++	help
++	  Memory hotplug support for Xen balloon driver allows expanding memory
++	  available for the system above limit declared at system startup.
++	  It is very useful on critical systems which require long
++	  run without rebooting.
++
+ config XEN_SCRUB_PAGES
+ 	bool "Scrub pages before returning them to system"
+ 	depends on XEN_BALLOON
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index f54290b..e16cf26 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -4,6 +4,12 @@
+  * Copyright (c) 2003, B Dragovic
+  * Copyright (c) 2003-2004, M Williamson, K Fraser
+  * Copyright (c) 2005 Dan M. Smith, IBM Corporation
++ * Copyright (c) 2010 Daniel Kiper
++ *
++ * Memory hotplug support was written by Daniel Kiper. Work on
++ * it was sponsored by Google under Google Summer of Code 2010
++ * program. Jeremy Fitzhardinge from Xen.org was the mentor for
++ * this project.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License version 2
+@@ -40,6 +46,9 @@
+ #include <linux/mutex.h>
+ #include <linux/list.h>
+ #include <linux/gfp.h>
++#include <linux/notifier.h>
++#include <linux/memory.h>
++#include <linux/memory_hotplug.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgalloc.h>
+@@ -194,6 +203,87 @@ static enum bp_state update_schedule(enum bp_state state)
+ 	return BP_EAGAIN;
+ }
+ 
++#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
++static long current_credit(void)
++{
++	return balloon_stats.target_pages - balloon_stats.current_pages -
++		balloon_stats.hotplug_pages;
++}
++
++static bool balloon_is_inflated(void)
++{
++	if (balloon_stats.balloon_low || balloon_stats.balloon_high ||
++			balloon_stats.balloon_hotplug)
++		return true;
++	else
++		return false;
++}
++
++/*
++ * reserve_additional_memory() adds memory region of size >= credit above
++ * max_pfn. New region is section aligned and size is modified to be multiple
++ * of section size. Those features allow optimal use of address space and
++ * establish proper alignment when this function is called first time after
++ * boot (last section not fully populated at boot time contains unused memory
++ * pages with PG_reserved bit not set; online_pages_range() does not allow page
++ * onlining in whole range if first onlined page does not have PG_reserved
++ * bit set). Real size of added memory is established at page onlining stage.
++ */
++
++static enum bp_state reserve_additional_memory(long credit)
++{
++	int nid, rc;
++	u64 hotplug_start_paddr;
++	unsigned long balloon_hotplug = credit;
++
++	hotplug_start_paddr = PFN_PHYS(SECTION_ALIGN_UP(max_pfn));
++	balloon_hotplug = round_up(balloon_hotplug, PAGES_PER_SECTION);
++	nid = memory_add_physaddr_to_nid(hotplug_start_paddr);
++
++	rc = add_memory(nid, hotplug_start_paddr, balloon_hotplug << PAGE_SHIFT);
++
++	if (rc) {
++		pr_info("xen_balloon: %s: add_memory() failed: %i\n", __func__, rc);
++		return BP_EAGAIN;
++	}
++
++	balloon_hotplug -= credit;
++
++	balloon_stats.hotplug_pages += credit;
++	balloon_stats.balloon_hotplug = balloon_hotplug;
++
++	return BP_DONE;
++}
++
++static void xen_online_page(struct page *page)
++{
++	__online_page_set_limits(page);
++
++	mutex_lock(&balloon_mutex);
++
++	__balloon_append(page);
++
++	if (balloon_stats.hotplug_pages)
++		--balloon_stats.hotplug_pages;
++	else
++		--balloon_stats.balloon_hotplug;
++
++	mutex_unlock(&balloon_mutex);
++}
++
++static int xen_memory_notifier(struct notifier_block *nb, unsigned long val, void *v)
++{
++	if (val == MEM_ONLINE)
++		schedule_delayed_work(&balloon_worker, 0);
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block xen_memory_nb = {
++	.notifier_call = xen_memory_notifier,
++	.priority = 0
++};
++#else
+ static long current_credit(void)
+ {
+ 	unsigned long target = balloon_stats.target_pages;
+@@ -206,6 +296,21 @@ static long current_credit(void)
+ 	return target - balloon_stats.current_pages;
+ }
+ 
++static bool balloon_is_inflated(void)
++{
++	if (balloon_stats.balloon_low || balloon_stats.balloon_high)
++		return true;
++	else
++		return false;
++}
++
++static enum bp_state reserve_additional_memory(long credit)
++{
++	balloon_stats.target_pages = balloon_stats.current_pages;
++	return BP_DONE;
++}
++#endif /* CONFIG_XEN_BALLOON_MEMORY_HOTPLUG */
++
+ static enum bp_state increase_reservation(unsigned long nr_pages)
+ {
+ 	int rc;
+@@ -217,6 +322,15 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ 		.domid        = DOMID_SELF
+ 	};
+ 
++#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
++	if (!balloon_stats.balloon_low && !balloon_stats.balloon_high) {
++		nr_pages = min(nr_pages, balloon_stats.balloon_hotplug);
++		balloon_stats.hotplug_pages += nr_pages;
++		balloon_stats.balloon_hotplug -= nr_pages;
++		return BP_DONE;
++	}
++#endif
++
+ 	if (nr_pages > ARRAY_SIZE(frame_list))
+ 		nr_pages = ARRAY_SIZE(frame_list);
+ 
+@@ -279,6 +393,15 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 		.domid        = DOMID_SELF
+ 	};
+ 
++#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
++	if (balloon_stats.hotplug_pages) {
++		nr_pages = min(nr_pages, balloon_stats.hotplug_pages);
++		balloon_stats.hotplug_pages -= nr_pages;
++		balloon_stats.balloon_hotplug += nr_pages;
++		return BP_DONE;
++	}
++#endif
++
+ 	if (nr_pages > ARRAY_SIZE(frame_list))
+ 		nr_pages = ARRAY_SIZE(frame_list);
+ 
+@@ -340,8 +463,12 @@ static void balloon_process(struct work_struct *work)
+ 	do {
+ 		credit = current_credit();
+ 
+-		if (credit > 0)
+-			state = increase_reservation(credit);
++		if (credit > 0) {
++			if (balloon_is_inflated())
++				state = increase_reservation(credit);
++			else
++				state = reserve_additional_memory(credit);
++		}
+ 
+ 		if (credit < 0)
+ 			state = decrease_reservation(-credit, GFP_BALLOON);
+@@ -448,6 +575,14 @@ static int __init balloon_init(void)
+ 	balloon_stats.retry_count = 1;
+ 	balloon_stats.max_retry_count = RETRY_UNLIMITED;
+ 
++#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
++	balloon_stats.hotplug_pages = 0;
++	balloon_stats.balloon_hotplug = 0;
++
++	register_online_page_callback(&xen_online_page);
++	register_memory_notifier(&xen_memory_nb);
++#endif
++
+ 	/*
+ 	 * Initialise the balloon with excess memory space.  We need
+ 	 * to make sure we don't add memory which doesn't exist or
+diff --git a/include/xen/balloon.h b/include/xen/balloon.h
+index a2b22f0..aeca6ae 100644
+--- a/include/xen/balloon.h
++++ b/include/xen/balloon.h
+@@ -15,6 +15,10 @@ struct balloon_stats {
+ 	unsigned long max_schedule_delay;
+ 	unsigned long retry_count;
+ 	unsigned long max_retry_count;
++#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
++	unsigned long hotplug_pages;
++	unsigned long balloon_hotplug;
++#endif
+ };
+ 
+ extern struct balloon_stats balloon_stats;
+-- 
+1.5.6.5
