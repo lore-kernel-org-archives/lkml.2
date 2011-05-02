@@ -1,73 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1EBUUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 16:20:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41323 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab1EBUUU (ORCPT
+	id S1754807Ab1EBXLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:11:06 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54332 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758140Ab1EBXJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 16:20:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:date:from:to:message-id;
-        b=s35EDQMXV9LK9CvR8DZ3vKXglekggQvinefg1V6HoSLm5RExhgeXknkx54/G0OOQy+
-         SGPGS1FT4TDQ4v7IaP12H5Dqt+7xqbUZRQpLgi3gO+6WIoDdQZRj4xr6JXk5DjvT+Y2U
-         dtjlDVpx55fr9jFNYzG7RgJI+AuyvHM/ez36Q=
-Subject: Dropped IRQ disables Radeon 3D
-Date: Mon, 02 May 2011 20:19:35 +0000
-From: Michael Witten <mfwitten@gmail.com>
+	Mon, 2 May 2011 19:09:35 -0400
+X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 19:09:25 EDT
+Message-Id: <201105022254.p42MsRTL030359@farm-0023.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 2 May 2011 16:21:12 -0400
+Subject: [PATCH] arch/tile: kernel-related cleanups from removing static page size
 To: linux-kernel@vger.kernel.org
-Message-ID: <d74f405530c34a2f9fdae3d7cf37e0fcmfwitten@gmail.com>
+X-OriginalArrivalTime: 02 May 2011 22:54:27.0377 (UTC) FILETIME=[E3939A10:01CC091B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been randomly getting the following backtrace in dmesg for a
-while now (I thought I built my kernel with debugging support and
-symbols, but I guess not, so sorry if it's not that helpful); at
-the time, I was running:
+User space code has been able to discover the static page size
+by including a special <hv/pagesize.h> file.  In the current release,
+that file is now gone, and <asm/page.h> doesn't rely on it.  The
+getpagesize() API is now the only way for userspace to get the page size.
 
-  v2.6.39-rc4-183-g0f1d9f7 (0f1d9f78ce41a8874d30271ef8480e6f8f7f1fce)
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/arch/icache.h   |   11 +++++------
+ arch/tile/include/asm/page.h      |   10 ++--------
+ arch/tile/include/hv/hypervisor.h |   12 ++++++++++--
+ arch/tile/include/hv/pagesize.h   |   32 --------------------------------
+ 4 files changed, 17 insertions(+), 48 deletions(-)
+ delete mode 100644 arch/tile/include/hv/pagesize.h
 
-It only seems like my 3D acceleration is disabled as a result
-of disabling the IRQ (and the IRQ number is not always the
-same).
+diff --git a/arch/tile/include/arch/icache.h b/arch/tile/include/arch/icache.h
+index 5c87c90..762eafa 100644
+--- a/arch/tile/include/arch/icache.h
++++ b/arch/tile/include/arch/icache.h
+@@ -16,7 +16,7 @@
+ /**
+  * @file
+  *
+- * Support for invalidating bytes in the instruction
++ * Support for invalidating bytes in the instruction cache.
+  */
+ 
+ #ifndef __ARCH_ICACHE_H__
+@@ -30,11 +30,10 @@
+  *
+  * @param addr The start of memory to be invalidated.
+  * @param size The number of bytes to be invalidated.
+- * @param page_size The system's page size, typically the PAGE_SIZE constant
+- * in sys/page.h.  This value must be a power of two no larger
+- * than the page containing the code to be invalidated. If the value
+- * is smaller than the actual page size, this function will still
+- * work, but may run slower than necessary.
++ * @param page_size The system's page size, e.g. getpagesize() in userspace.
++ * This value must be a power of two no larger than the page containing
++ * the code to be invalidated. If the value is smaller than the actual page
++ * size, this function will still work, but may run slower than necessary.
+  */
+ static __inline void
+ invalidate_icache(const void* addr, unsigned long size,
+diff --git a/arch/tile/include/asm/page.h b/arch/tile/include/asm/page.h
+index 7105629..db93518 100644
+--- a/arch/tile/include/asm/page.h
++++ b/arch/tile/include/asm/page.h
+@@ -16,7 +16,8 @@
+ #define _ASM_TILE_PAGE_H
+ 
+ #include <linux/const.h>
+-#include <hv/pagesize.h>
++#include <hv/hypervisor.h>
++#include <arch/chip.h>
+ 
+ /* PAGE_SHIFT and HPAGE_SHIFT determine the page sizes. */
+ #define PAGE_SHIFT	HV_LOG2_PAGE_SIZE_SMALL
+@@ -28,8 +29,6 @@
+ #define PAGE_MASK	(~(PAGE_SIZE - 1))
+ #define HPAGE_MASK	(~(HPAGE_SIZE - 1))
+ 
+-#ifdef __KERNEL__
+-
+ /*
+  * If the Kconfig doesn't specify, set a maximum zone order that
+  * is enough so that we can create huge pages from small pages given
+@@ -39,9 +38,6 @@
+ #define CONFIG_FORCE_MAX_ZONEORDER (HPAGE_SHIFT - PAGE_SHIFT + 1)
+ #endif
+ 
+-#include <hv/hypervisor.h>
+-#include <arch/chip.h>
+-
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/types.h>
+@@ -337,6 +333,4 @@ extern pte_t *virt_to_pte(struct mm_struct *mm, unsigned long addr);
+ 
+ #include <asm-generic/memory_model.h>
+ 
+-#endif /* __KERNEL__ */
+-
+ #endif /* _ASM_TILE_PAGE_H */
+diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
+index ee41bca..72ec1e9 100644
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -22,8 +22,6 @@
+ 
+ #include <arch/chip.h>
+ 
+-#include <hv/pagesize.h>
+-
+ /* Linux builds want unsigned long constants, but assembler wants numbers */
+ #ifdef __ASSEMBLER__
+ /** One, for assembler */
+@@ -44,11 +42,21 @@
+  */
+ #define HV_L1_SPAN (__HV_SIZE_ONE << HV_LOG2_L1_SPAN)
+ 
++/** The log2 of the size of small pages, in bytes. This value should
++ * be verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_SMALL).
++ */
++#define HV_LOG2_PAGE_SIZE_SMALL 16
++
+ /** The size of small pages, in bytes. This value should be verified
+  * at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_SMALL).
+  */
+ #define HV_PAGE_SIZE_SMALL (__HV_SIZE_ONE << HV_LOG2_PAGE_SIZE_SMALL)
+ 
++/** The log2 of the size of large pages, in bytes. This value should be
++ * verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_LARGE).
++ */
++#define HV_LOG2_PAGE_SIZE_LARGE 24
++
+ /** The size of large pages, in bytes. This value should be verified
+  * at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_LARGE).
+  */
+diff --git a/arch/tile/include/hv/pagesize.h b/arch/tile/include/hv/pagesize.h
+deleted file mode 100644
+index 58bed11..0000000
+--- a/arch/tile/include/hv/pagesize.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * Copyright 2010 Tilera Corporation. All Rights Reserved.
+- *
+- *   This program is free software; you can redistribute it and/or
+- *   modify it under the terms of the GNU General Public License
+- *   as published by the Free Software Foundation, version 2.
+- *
+- *   This program is distributed in the hope that it will be useful, but
+- *   WITHOUT ANY WARRANTY; without even the implied warranty of
+- *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+- *   NON INFRINGEMENT.  See the GNU General Public License for
+- *   more details.
+- */
+-
+-/**
+- * @file pagesize.h
+- */
+-
+-#ifndef _HV_PAGESIZE_H
+-#define _HV_PAGESIZE_H
+-
+-/** The log2 of the size of small pages, in bytes. This value should
+- * be verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_SMALL).
+- */
+-#define HV_LOG2_PAGE_SIZE_SMALL 16
+-
+-/** The log2 of the size of large pages, in bytes. This value should be
+- * verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_LARGE).
+- */
+-#define HV_LOG2_PAGE_SIZE_LARGE 24
+-
+-#endif /* _HV_PAGESIZE_H */
+-- 
+1.6.5.2
 
-I can fix my 3D acceleration by suspending to ram and then
-waking my system up again.
-
-  [357580.931252] irq 11: nobody cared (try booting with the "irqpoll" option)
-  [357580.931260] Pid: 0, comm: swapper Not tainted 2.6.39-rc4-0f1d9f78ce41a8874d30271ef8480e6f8f7f1fce-THOR-205+ #4
-  [357580.931264] Call Trace:
-  [357580.931276]  [<c1329df1>] ? __report_bad_irq.isra.6+0x37/0x83
-  [357580.931283]  [<c12900cb>] ? snd_intel8x0_interrupt+0x4e/0x1c0
-  [357580.931289]  [<c104d6a3>] ? note_interrupt+0x110/0x175
-  [357580.931296]  [<c121be98>] ? tg3_interrupt_tagged+0x29/0x70
-  [357580.931301]  [<c104c832>] ? handle_irq_event_percpu+0x105/0x117
-  [357580.931306]  [<c104da68>] ? unmask_irq+0x1a/0x1a
-  [357580.931310]  [<c104c85d>] ? handle_irq_event+0x19/0x24
-  [357580.931314]  [<c104daa8>] ? handle_level_irq+0x40/0x56
-  [357580.931318]  <IRQ>  [<c100358a>] ? do_IRQ+0x2e/0x81
-  [357580.931327]  [<c1024510>] ? irq_exit+0x44/0x67
-  [357580.931334]  [<c132e2a9>] ? common_interrupt+0x29/0x30
-  [357580.931339]  [<c1024345>] ? __do_softirq+0x30/0xe5
-  [357580.931343]  [<c1024315>] ? local_bh_enable+0x2/0x2
-  [357580.931346]  <IRQ>  [<c10244fd>] ? irq_exit+0x31/0x67
-  [357580.931353]  [<c10035ca>] ? do_IRQ+0x6e/0x81
-  [357580.931360]  [<c1147dd7>] ? acpi_hw_write_port+0x22/0x83
-  [357580.931365]  [<c132e2a9>] ? common_interrupt+0x29/0x30
-  [357580.931371]  [<c1154f11>] ? acpi_idle_enter_bm+0x1d5/0x20a
-  [357580.931378]  [<c1261150>] ? cpuidle_idle_call+0x65/0x95
-  [357580.931382]  [<c1001577>] ? cpu_idle+0x23/0x3d
-  [357580.931387]  [<c14dd60b>] ? start_kernel+0x263/0x268
-  [357580.931392]  [<c14dd151>] ? loglevel+0x14/0x14
-  [357580.931395] handlers:
-  [357580.931397] [<c11bdcb4>] (radeon_driver_irq_handler_kms+0x0/0x10)
-  [357580.931405] [<c122cca3>] (usb_hcd_irq+0x0/0x5e)
-  [357580.931411] [<c122cca3>] (usb_hcd_irq+0x0/0x5e)
-  [357580.931415] [<c121be6f>] (tg3_interrupt_tagged+0x0/0x70)
-  [357580.931420] [<c129007d>] (snd_intel8x0_interrupt+0x0/0x1c0)
-  [357580.931426] Disabling IRQ #11
-
-Sincerely,
-Michael Witten
