@@ -1,45 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1EBQQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:16:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33806 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab1EBQQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:16:04 -0400
+	id S932238Ab1EBVhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 17:37:10 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33036 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757485Ab1EBVg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 17:36:58 -0400
 Date: Mon, 2 May 2011 09:15:46 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 2 (uml irqs)
-Message-Id: <20110502091546.5c04f4e6.randy.dunlap@oracle.com>
-In-Reply-To: <20110502150150.d932642f.sfr@canb.auug.org.au>
-References: <20110502150150.d932642f.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DBED8B7.00A5:SCFMA4539811,ss=1,fgs=0
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 10/86] rcu: eliminate unused boosting
+ statistics
+Message-ID: <20110502161546.GA6524@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+ <1304256126-26015-10-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110501155317.GG14829@feather>
+ <20110502082555.GV2297@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502082555.GV2297@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Mon, May 02, 2011 at 01:25:55AM -0700, Paul E. McKenney wrote:
+> On Sun, May 01, 2011 at 08:53:18AM -0700, Josh Triplett wrote:
+> > On Sun, May 01, 2011 at 06:20:50AM -0700, Paul E. McKenney wrote:
+> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > 
+> > > The n_rcu_torture_boost_allocerror and n_rcu_torture_boost_afferror
+> > > statistics are not actually incremented anymore, so eliminate them.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > ---
+> > >  kernel/rcutorture.c |    4 +---
+> > >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> > > index 4d256db..62ec8ee6 100644
+> > > --- a/kernel/rcutorture.c
+> > > +++ b/kernel/rcutorture.c
+> > > @@ -1067,7 +1067,7 @@ rcu_torture_printk(char *page)
+> > >  	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
+> > >  	cnt += sprintf(&page[cnt],
+> > >  		       "rtc: %p ver: %ld tfle: %d rta: %d rtaf: %d rtf: %d "
+> > > -		       "rtmbe: %d rtbke: %ld rtbre: %ld rtbae: %ld rtbafe: %ld "
+> > > +		       "rtmbe: %d rtbke: %ld rtbre: %ld "
+> > >  		       "rtbf: %ld rtb: %ld nt: %ld",
+> > >  		       rcu_torture_current,
+> > >  		       rcu_torture_current_version,
+> > > @@ -1078,8 +1078,6 @@ rcu_torture_printk(char *page)
+> > >  		       atomic_read(&n_rcu_torture_mberror),
+> > >  		       n_rcu_torture_boost_ktrerror,
+> > >  		       n_rcu_torture_boost_rterror,
+> > > -		       n_rcu_torture_boost_allocerror,
+> > > -		       n_rcu_torture_boost_afferror,
+> > >  		       n_rcu_torture_boost_failure,
+> > >  		       n_rcu_torture_boosts,
+> > >  		       n_rcu_torture_timers);
+> > 
+> > Shouldn't you eliminate the variables entirely, if they no longer track
+> > anything?
 > 
-> Changes since 20110429:
+> I most certainly should!!!  Good catch!!!
 
+And here is the updated commit.
 
-building uml on i386 or x86_64 fails with:
+							Thanx, Paul
 
-linux-next-20110502/kernel/irq/generic-chip.c: In function 'irq_setup_generic_chip':
-linux-next-20110502/kernel/irq/generic-chip.c:232: error: implicit declaration of function 'readl'
+------------------------------------------------------------------------
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+rcu: eliminate unused boosting statistics
+
+The n_rcu_torture_boost_allocerror and n_rcu_torture_boost_afferror
+statistics are not actually incremented anymore, so eliminate them.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index 4d256db..22b0e74 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -146,8 +146,6 @@ static atomic_t n_rcu_torture_mberror;
+ static atomic_t n_rcu_torture_error;
+ static long n_rcu_torture_boost_ktrerror;
+ static long n_rcu_torture_boost_rterror;
+-static long n_rcu_torture_boost_allocerror;
+-static long n_rcu_torture_boost_afferror;
+ static long n_rcu_torture_boost_failure;
+ static long n_rcu_torture_boosts;
+ static long n_rcu_torture_timers;
+@@ -1067,7 +1065,7 @@ rcu_torture_printk(char *page)
+ 	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
+ 	cnt += sprintf(&page[cnt],
+ 		       "rtc: %p ver: %ld tfle: %d rta: %d rtaf: %d rtf: %d "
+-		       "rtmbe: %d rtbke: %ld rtbre: %ld rtbae: %ld rtbafe: %ld "
++		       "rtmbe: %d rtbke: %ld rtbre: %ld "
+ 		       "rtbf: %ld rtb: %ld nt: %ld",
+ 		       rcu_torture_current,
+ 		       rcu_torture_current_version,
+@@ -1078,16 +1076,12 @@ rcu_torture_printk(char *page)
+ 		       atomic_read(&n_rcu_torture_mberror),
+ 		       n_rcu_torture_boost_ktrerror,
+ 		       n_rcu_torture_boost_rterror,
+-		       n_rcu_torture_boost_allocerror,
+-		       n_rcu_torture_boost_afferror,
+ 		       n_rcu_torture_boost_failure,
+ 		       n_rcu_torture_boosts,
+ 		       n_rcu_torture_timers);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+-	    n_rcu_torture_boost_allocerror != 0 ||
+-	    n_rcu_torture_boost_afferror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0)
+ 		cnt += sprintf(&page[cnt], " !!!");
+ 	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
+@@ -1486,8 +1480,6 @@ rcu_torture_init(void)
+ 	atomic_set(&n_rcu_torture_error, 0);
+ 	n_rcu_torture_boost_ktrerror = 0;
+ 	n_rcu_torture_boost_rterror = 0;
+-	n_rcu_torture_boost_allocerror = 0;
+-	n_rcu_torture_boost_afferror = 0;
+ 	n_rcu_torture_boost_failure = 0;
+ 	n_rcu_torture_boosts = 0;
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
