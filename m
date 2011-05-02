@@ -1,102 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1EBF5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 01:57:25 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38484 "EHLO smtps.tip.net.au"
+	id S1754866Ab1EBGgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 02:36:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54688 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325Ab1EBF5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 01:57:23 -0400
-Date: Mon, 2 May 2011 15:57:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Jones <davej@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: linux-next: build warning after merge of the kbuild tree
-Message-Id: <20110502155712.ab6a64ba.sfr@canb.auug.org.au>
-In-Reply-To: <20110502043642.GD11804@redhat.com>
-References: <20110502121817.645d544e.sfr@canb.auug.org.au>
-	<20110502022417.GA11804@redhat.com>
-	<20110502134524.40da4245.sfr@canb.auug.org.au>
-	<20110502142454.a7091ad5.sfr@canb.auug.org.au>
-	<20110502043642.GD11804@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1753585Ab1EBGgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 02:36:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,301,1301900400"; 
+   d="scan'208";a="686872142"
+Subject: Re: Can I/OAT DMA engineer access PCI MMIO space
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: =?UTF-8?Q?=E5=BA=B7=E5=89=91=E6=96=8C?= <kjbmail@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com
+In-Reply-To: <4DBA8F30.2060206@gmail.com>
+References: <4DBA8F30.2060206@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 May 2011 11:34:20 +0530
+Message-ID: <1304316260.1589.2.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-04-29 at 18:13 +0800, 康剑斌 wrote:
+> I try to use ioatdam to copy data from system memory to pci MMIO space:
 
-Hi Dave,
+> If dst points to a memory space, the operation would pass.
+> But if dst points to a pci MMIO space, it failed with kernel oops.
+> It seems the code:
+> BUG_ON(is_ioat_bug(chanerr));
+> in drivers/dma/ioat/dma_v3.c, line 365 cause the oops.
+> Is there anyway to access pci MMIO space using ioat?
+> The datasheet says that ioat supports MMIO access.
+Did you map the IO memory in kernel using ioremap and friends first?
 
-On Mon, 2 May 2011 00:36:43 -0400 Dave Jones <davej@redhat.com> wrote:
->
-> That's interesting. That suggests that something isn't being built with K=
-BUILD_CFLAGS.
-> I did a full defconfig build on x86-64 successfully (allmodconfig is chur=
-ning away).
-> Can you point me at something that doesn't build ?
+-- 
+~Vinod
 
-I have just done an i386 defconfig build with V=3D1.  Every compilation has
-that flag passed to it, but only one complains:
-
-  i386-linux-gcc -Wp,-MD,kernel/.futex.o.d  -nostdinc -isystem /opt/cross/g=
-cc-4.4.5-nolibc/i386-linux/bin/../lib/gcc/i386-linux/4.4.5/include -I/scrat=
-ch/sfr/next/arch/x86/include -Iarch/x86/include/generated -Iinclude  -I/scr=
-atch/sfr/next/include -include include/generated/autoconf.h  -I/scratch/sfr=
-/next/kernel -Ikernel -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-t=
-rigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declara=
-tion -Wno-format-security -fno-delete-null-pointer-checks -Os -m32 -msoft-f=
-loat -mregparm=3D3 -freg-struct-return -mpreferred-stack-boundary=3D2 -marc=
-h=3Di686 -mtune=3Dgeneric -Wa,-mtune=3Dgeneric32 -ffreestanding -DCONFIG_AS=
-_CFI=3D1 -DCONFIG_AS_CFI_SIGNAL_FRAME=3D1 -DCONFIG_AS_CFI_SECTIONS=3D1 -pip=
-e -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-=
-sse2 -mno-3dnow -Wframe-larger-than=3D2048 -fno-stack-protector -Wno-unused=
--but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdec=
-laration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-=
-stack    -D"KBUILD_STR(s)=3D#s" -D"KBUILD_BASENAME=3DKBUILD_STR(futex)"  -D=
-"KBUILD_MODNAME=3DKBUILD_STR(futex)" -c -o kernel/futex.o /scratch/sfr/next=
-/kernel/futex.c
-/scratch/sfr/next/kernel/futex.c: In function 'fixup_pi_state_owner':
-/scratch/sfr/next/kernel/futex.c:1549: warning: 'curval' may be used uninit=
-ialized in this function
-/scratch/sfr/next/kernel/futex.c: In function 'futex_lock_pi_atomic':
-/scratch/sfr/next/kernel/futex.c:678: warning: 'curval' may be used uniniti=
-alized in this function
-/scratch/sfr/next/kernel/futex.c: In function 'handle_futex_death':
-/scratch/sfr/next/kernel/futex.c:2454: warning: 'nval' may be used uninitia=
-lized in this function
-At top level:
-cc1: warning: unrecognized command line option "-Wno-unused-but-set-variabl=
-e"
-
-I removed kernel/futex.o and recompiled to verify.  futex.c doesn't seem
-to be built any differently to anything else.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNvke4AAoJEDMEi1NhKgbsZXUH/3mKFehSW9ZxBAM/1YkbkcW0
-ZWLdAEg1qc3616fGKeGYYAGLiONDpopcqHI8WC4vRz7DNrA/1LyfYHcUlK7DN3gJ
-znyttATrsPzly1s+FzHsPjhJI3CD4+QIh3TLrS/rMNgOgmaPuzPoALBBHLSs0ira
-B+jv14LDRJJms63LkTWyGGdprGGY0JGaXlHJ3zS9PWukcCMcjJNdEakwN4aY5B+c
-gxJr1AjjVPqrta5A9P+RU16cRmP4z9XK0U5JbMXZ0FP/CmosdeHlUXs1xUFbez6R
-DQp5Rv/LPhaS90ivmM6BzF1nGhBwXBJHXcmCjEZ531aUkHCwBBH0Sbc4EeGiwQ8=
-=W6ZN
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_May_2011_15_57_12_+1000_0W8Ph+ngFt8dNdim--
