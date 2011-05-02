@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab1EBScU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 14:32:20 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:51819 "EHLO e6.ny.us.ibm.com"
+	id S1757455Ab1EBSd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 14:33:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40271 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab1EBScT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 14:32:19 -0400
-Message-ID: <4DBEF8A8.6040401@linux.vnet.ibm.com>
-Date: Mon, 02 May 2011 11:32:08 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+	id S1753990Ab1EBSdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 14:33:25 -0400
+Message-ID: <4DBEF8EC.7080301@zytor.com>
+Date: Mon, 02 May 2011 11:33:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <ak@linux.intel.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@gmail.com>, Carl Love <carll@us.ibm.com>
-Subject: Re: re-enable Nehalem raw Offcore-Events support
-References: <alpine.DEB.2.00.1104291056220.22212@cl320.eecs.utk.edu> <BANLkTimjmYUJMGw0aB+w+E76H+kxSpqFZg@mail.gmail.com> <20110429172525.GA2745@tassilo.jf.intel.com> <alpine.LFD.2.02.1104291938240.3005@ionos> <4DBC6BC1.5090102@linux.vnet.ibm.com> <20110501175505.GA27830@elte.hu>
-In-Reply-To: <20110501175505.GA27830@elte.hu>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel@lists.xensource.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
+Subject: Re: [Xen-devel] Re: [PATCH] Two patches fixing regression introduced
+ by 'x86-64, mm: Put early page table high'
+References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com> <4DBEEA69.7010000@zytor.com> <20110502180802.GA7498@dumpdata.com>
+In-Reply-To: <20110502180802.GA7498@dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2011 10:55 AM, Ingo Molnar wrote:
-> 
-> * Corey Ashford <cjashfor@linux.vnet.ibm.com> wrote:
-> 
->> Carl Love and I recently completed some work to add perf_events support for 
->> the IBM Blue Waters machine's "CPU networking" chip, called the Torrent chip.  
->> We did all of this work based on a RHEL 6 kernel (2.6.32ish), which doesn't 
->> have Peter's more recent multi-PMU support.
+On 05/02/2011 11:08 AM, Konrad Rzeszutek Wilk wrote:
 >>
->> I would say that most if not all of the events are not generalizable in the 
->> sense that you are talking about; the events are very specific to the Torrent 
->> chip. [...]
+>> My inclination would be to apply your workaround -- are there any
+>> adverse effects to doing that?
 > 
-> That's ok and not a problem.
+> There is a bootup slowdown (not noticeable). That is because we call the
+> 'memblock_find_range' function on every PTE table creation (only during
+> bootup of course). 
 > 
-> The issue here are events that *are* generalizable.
+> Testing wise, on the machines on which the regression occurred, with these two
+> patches the regression disappears - so that is a good sign. I am testing
+> it on some more today to assure myself I am not missing anything.
 > 
->> So if I'm understanding what you have said correctly, we would not be able to 
->> get a forward port of this code committed without abstracting these events in 
->> a away that's acceptable to the kernel community. [...]
-> 
-> If the number of events worth generalizing is the empty set that's ok.
-> 
-> Thanks,
-> 
-> 	Ingo
 
-Great, that's good to hear.
+OK, sounds like a plan then.  I like it because it doesn't affect the
+native kernel.
 
-Thanks,
-
-- Corey
+	-hpa
