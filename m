@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1EBBTv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 21:19:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54511 "EHLO
+	id S1755752Ab1EBBUD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 21:20:03 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46866 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab1EBBTn (ORCPT
+	with ESMTP id S1754521Ab1EBBTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 21:19:43 -0400
+	Sun, 1 May 2011 21:19:48 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=m63N4214atfS2IX4PUx8/MmCwC18DpoWLLPd16oZyI3und2mLGnaC9Yz594pqsKWT
-	DQv9PO2RZLfkEhRitw4ng==
+	b=fLECXY7ZOsJTr1Aq3A7Po8yQuUWnf52dBmFMC1K+Vy+oaWJ/05/YIOsGKemONLsWu
+	LC5nIJ/AGVrl3OOO2P9Yw==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v1 03/19] sched: use u64 for load_weight fields
-Date: Sun,  1 May 2011 18:19:01 -0700
-Message-Id: <1304299157-25769-4-git-send-email-ncrao@google.com>
+Subject: [PATCH v1 04/19] sched: update cpu_load to be u64
+Date: Sun,  1 May 2011 18:19:02 -0700
+Message-Id: <1304299157-25769-5-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1304299157-25769-1-git-send-email-ncrao@google.com>
 References: <1304299157-25769-1-git-send-email-ncrao@google.com>
@@ -29,53 +29,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts load_weight fields to use u64 instead of unsigned long.
-This is effectively a no-op for 64-bit where unsigned long is 64-bit wide
-anyway. On 32-bit architectures, it is required to ensure the rq load weight
-does not overflow in the presence of multiple large weight entities. Also
-increase MAX_SHARES to 2^28 (from 2^18).
+cpu_load derives from rq->load.weight and needs to be updated to u64 as it can
+now overflow on 32-bit machines. This patch updates cpu_load in rq struct, and
+all functions that use this field.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
- include/linux/sched.h |    2 +-
- kernel/sched_debug.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/sched.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d2c3bab..6d88be1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1104,7 +1104,7 @@ struct sched_class {
- };
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 05e3fe2..7badde6 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -454,7 +454,7 @@ struct rq {
+ 	 */
+ 	unsigned long nr_running;
+ 	#define CPU_LOAD_IDX_MAX 5
+-	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
++	u64 cpu_load[CPU_LOAD_IDX_MAX];
+ 	unsigned long last_load_update_tick;
+ #ifdef CONFIG_NO_HZ
+ 	u64 nohz_stamp;
+@@ -3364,8 +3364,7 @@ static const unsigned char
+  * would be when CPU is idle and so we just decay the old load without
+  * adding any new load.
+  */
+-static unsigned long
+-decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
++static u64 decay_load_missed(u64 load, unsigned long missed_updates, int idx)
+ {
+ 	int j = 0;
  
- struct load_weight {
--	unsigned long weight, inv_weight;
-+	u64 weight, inv_weight;
- };
+@@ -3395,7 +3394,7 @@ decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
+  */
+ static void update_cpu_load(struct rq *this_rq)
+ {
+-	unsigned long this_load = this_rq->load.weight;
++	u64 this_load = this_rq->load.weight;
+ 	unsigned long curr_jiffies = jiffies;
+ 	unsigned long pending_updates;
+ 	int i, scale;
+@@ -3412,7 +3411,7 @@ static void update_cpu_load(struct rq *this_rq)
+ 	/* Update our load: */
+ 	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
+ 	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+-		unsigned long old_load, new_load;
++		u64 old_load, new_load;
  
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index 7bacd83..d22b666 100644
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -201,7 +201,7 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 	SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
- 			cfs_rq->nr_spread_over);
- 	SEQ_printf(m, "  .%-30s: %ld\n", "nr_running", cfs_rq->nr_running);
--	SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
-+	SEQ_printf(m, "  .%-30s: %lld\n", "load", cfs_rq->load.weight);
- #ifdef CONFIG_FAIR_GROUP_SCHED
- #ifdef CONFIG_SMP
- 	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_avg",
-@@ -264,7 +264,7 @@ static void print_cpu(struct seq_file *m, int cpu)
- 	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", #x, SPLIT_NS(rq->x))
+ 		/* scale is effectively 1 << i now, and >> i divides by scale */
  
- 	P(nr_running);
--	SEQ_printf(m, "  .%-30s: %lu\n", "load",
-+	SEQ_printf(m, "  .%-30s: %llu\n", "load",
- 		   rq->load.weight);
- 	P(nr_switches);
- 	P(nr_load_updates);
 -- 
 1.7.3.1
 
