@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab1EBRfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 13:35:31 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45583 "EHLO
+	id S1757223Ab1EBRfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 13:35:43 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45609 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab1EBRf2 (ORCPT
+	with ESMTP id S1755636Ab1EBRfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 13:35:28 -0400
+	Mon, 2 May 2011 13:35:38 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
@@ -17,9 +17,9 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
         EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/4] x86, mce: Add persistent MCE event
-Date: Mon,  2 May 2011 19:34:50 +0200
-Message-Id: <1304357691-14354-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/4] x86, mce: Have MCE persistent event off by default for now
+Date: Mon,  2 May 2011 19:34:51 +0200
+Message-Id: <1304357691-14354-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1304357691-14354-1-git-send-email-bp@amd64.org>
 References: <1304357691-14354-1-git-send-email-bp@amd64.org>
@@ -29,164 +29,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add the necessary glue to enable the mce_record tracepoint on boot,
-turning it into a persistent event. This exports the MCE buffer through
-a debugfs per-CPU file which a userspace daemon can read and then
-process the received error data further.
+This is new functionality and it affects all of x86 so we want to be
+very conservative about it and have it off by default for now, in case
+something goes awry. You can always enable it by supplying "ras" on the
+kernel command line.
+
+Also, depending on whether it is enabled or not, we emit the tracepoint
+from a different place in the code to pick up additional decoded info.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/include/asm/mce.h       |    8 +++
- arch/x86/kernel/cpu/mcheck/mce.c |   89 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 97 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt |    2 ++
+ arch/x86/include/asm/mce.h          |    1 +
+ arch/x86/kernel/cpu/mcheck/mce.c    |   32 ++++++++++++++++++++++++++++++--
+ drivers/edac/mce_amd.c              |    5 +++++
+ 4 files changed, 38 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index cc85a92..f09438a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2165,6 +2165,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	ramdisk_size=	[RAM] Sizes of RAM disks in kilobytes
+ 			See Documentation/blockdev/ramdisk.txt.
+ 
++	ras		[X86] Enable RAS daemon supporting functionality.
++
+ 	rcupdate.blimit=	[KNL,BOOT]
+ 			Set maximum number of finished RCU callbacks to process
+ 			in one batch.
 diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index eb16e94..40cc9bc 100644
+index 40cc9bc..649d47a 100644
 --- a/arch/x86/include/asm/mce.h
 +++ b/arch/x86/include/asm/mce.h
-@@ -115,6 +115,14 @@ struct mce_log {
+@@ -131,6 +131,7 @@ extern struct atomic_notifier_head x86_mce_decoder_chain;
  
- #ifdef __KERNEL__
+ extern int mce_disabled;
+ extern int mce_p5_enabled;
++extern int ras;
  
-+/*
-+ * a per-CPU descriptor of the persistent MCE tracepoint
-+ */
-+struct mce_tp_desc {
-+	struct perf_event *event;
-+	struct dentry *debugfs_entry;
-+};
-+
- extern struct atomic_notifier_head x86_mce_decoder_chain;
- 
- #include <linux/percpu.h>
+ #ifdef CONFIG_X86_MCE
+ int mcheck_init(void);
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..9589ebf 100644
+index 9589ebf..3fb22cb 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -96,6 +96,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
+@@ -59,6 +59,8 @@ static DEFINE_MUTEX(mce_read_mutex);
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/mce.h>
  
- static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
- static DEFINE_PER_CPU(struct mce, mces_seen);
-+static DEFINE_PER_CPU(struct mce_tp_desc, mce_event);
- static int			cpu_missing;
++EXPORT_TRACEPOINT_SYMBOL_GPL(mce_record);
++
+ int mce_disabled __read_mostly;
  
- /*
-@@ -2055,6 +2056,91 @@ static void __cpuinit mce_reenable_cpu(void *h)
- 	}
+ #define MISC_MCELOG_MINOR	227
+@@ -86,6 +88,7 @@ static int			mce_dont_log_ce		__read_mostly;
+ int				mce_cmci_disabled	__read_mostly;
+ int				mce_ignore_ce		__read_mostly;
+ int				mce_ser			__read_mostly;
++int				ras			__read_mostly;
+ 
+ struct mce_bank                *mce_banks		__read_mostly;
+ 
+@@ -105,6 +108,7 @@ static int			cpu_missing;
+  */
+ ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
+ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
++EXPORT_SYMBOL_GPL(ras);
+ 
+ static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+ 			       void *data)
+@@ -163,8 +167,9 @@ void mce_log(struct mce *mce)
+ {
+ 	unsigned next, entry;
+ 
+-	/* Emit the trace record: */
+-	trace_mce_record(mce);
++	if (!ras)
++		/* Emit the trace record: */
++		trace_mce_record(mce);
+ 
+ 	mce->finished = 0;
+ 	wmb();
+@@ -1721,6 +1726,19 @@ static int __init mcheck_enable(char *str)
  }
+ __setup("mce", mcheck_enable);
  
-+static struct perf_event_attr pattr = {
-+	.type		= PERF_TYPE_TRACEPOINT,
-+	.size		= sizeof(pattr),
-+	.sample_type	= PERF_SAMPLE_RAW,
-+	.persistent	= 1,
-+};
-+
-+static struct dentry *mce_add_event_debugfs(struct perf_event *event, int cpu)
++static int __init ras_enable(char *str)
 +{
-+	char buf[14];
-+
-+	sprintf(buf, "mce_record%d", cpu);
-+
-+	return debugfs_create_file(buf, S_IRUGO | S_IWUSR,
-+				   mce_get_debugfs_dir(),
-+				   event, &perf_pers_fops);
-+}
-+
-+#define MCE_BUF_PAGES	4
-+
-+static int mce_enable_perf_event_on_cpu(int cpu)
-+{
-+	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-+	int err = -EINVAL;
-+
-+	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
-+	if (IS_ERR(d->event)) {
-+		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
-+		goto ret;
-+	}
-+
-+	d->debugfs_entry = mce_add_event_debugfs(d->event, cpu);
-+	if (!d->debugfs_entry) {
-+		printk(KERN_ERR "MCE: Error adding event debugfs entry on cpu %d\n", cpu);
-+		goto disable;
-+	}
++	/*
++	 * We enable the persistent event only if "ras" is supplied on the
++	 * command line.
++	 */
++	ras = 1;
 +
 +	return 0;
-+
-+disable:
-+	perf_disable_persistent_event(d->event, cpu);
-+
-+ret:
-+	return err;
 +}
 +
-+static void mce_disable_perf_event_on_cpu(int cpu)
-+{
-+	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-+	debugfs_remove(d->debugfs_entry);
-+	perf_disable_persistent_event(d->event, cpu);
-+}
++__setup("ras", ras_enable);
 +
-+static __init int mcheck_init_persistent_event(void)
-+{
-+	int cpu, err = 0;
+ int __init mcheck_init(void)
+ {
+ 	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
+@@ -2081,6 +2099,9 @@ static int mce_enable_perf_event_on_cpu(int cpu)
+ 	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
+ 	int err = -EINVAL;
+ 
++	if (!ras)
++		return 0;
 +
-+	get_online_cpus();
+ 	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
+ 	if (IS_ERR(d->event)) {
+ 		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
+@@ -2105,6 +2126,10 @@ ret:
+ static void mce_disable_perf_event_on_cpu(int cpu)
+ {
+ 	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
 +
-+	pattr.config = event_mce_record.event.type;
-+	pattr.sample_period = 1;
-+	pattr.wakeup_events = 1;
++	if (!ras)
++		return;
 +
-+	for_each_online_cpu(cpu)
-+		if (mce_enable_perf_event_on_cpu(cpu))
-+			goto err_unwind;
+ 	debugfs_remove(d->debugfs_entry);
+ 	perf_disable_persistent_event(d->event, cpu);
+ }
+@@ -2113,6 +2138,9 @@ static __init int mcheck_init_persistent_event(void)
+ {
+ 	int cpu, err = 0;
+ 
++	if (!ras)
++		return -EBUSY;
 +
-+	goto unlock;
+ 	get_online_cpus();
+ 
+ 	pattr.config = event_mce_record.event.type;
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index 795cfbc..e329335 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -1,5 +1,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <asm/mce.h>
++#include <trace/events/mce.h>
+ 
+ #include "mce_amd.h"
+ 
+@@ -829,6 +831,9 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
+ 
+ 	amd_decode_err_code(m->status & 0xffff);
+ 
++	if (ras)
++		trace_mce_record(m);
 +
-+err_unwind:
-+	err = -EINVAL;
-+	for (--cpu; cpu >= 0; cpu--)
-+		mce_disable_perf_event_on_cpu(cpu);
-+
-+unlock:
-+	put_online_cpus();
-+
-+	return err;
-+}
-+
-+/*
-+ * This has to run after event_trace_init()
-+ */
-+device_initcall(mcheck_init_persistent_event);
-+
- /* Get notified when a cpu comes on/off. Be hotplug friendly. */
- static int __cpuinit
- mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-@@ -2068,6 +2154,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		mce_create_device(cpu);
- 		if (threshold_cpu_callback)
- 			threshold_cpu_callback(action, cpu);
-+		mce_enable_perf_event_on_cpu(cpu);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -2077,6 +2164,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
-+		mce_disable_perf_event_on_cpu(cpu);
- 		del_timer_sync(t);
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
- 		break;
-@@ -2088,6 +2176,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 			add_timer_on(t, cpu);
- 		}
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
-+		mce_enable_perf_event_on_cpu(cpu);
- 		break;
- 	case CPU_POST_DEAD:
- 		/* intentionally ignoring frozen here */
+ 	return NOTIFY_STOP;
+ }
+ EXPORT_SYMBOL_GPL(amd_decode_mce);
 -- 
 1.7.4.rc2
 
