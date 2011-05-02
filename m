@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab1EBQEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:04:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52841 "EHLO mx2.suse.de"
+	id S1755701Ab1EBQFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:05:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52904 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948Ab1EBQEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:04:07 -0400
-Date: Mon, 2 May 2011 18:04:05 +0200
+	id S1752794Ab1EBQFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 12:05:23 -0400
+Message-ID: <4DBED641.8080605@suse.cz>
+Date: Mon, 02 May 2011 18:05:21 +0200
 From: Michal Marek <mmarek@suse.cz>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kbuild@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        sam@ravnborg.org
-Subject: Re: linux-next: Tree for May 2 (uml builds fail)
-Message-ID: <20110502160405.GE15769@sepie.suse.cz>
-References: <20110502150150.d932642f.sfr@canb.auug.org.au>
- <20110502081948.1ccb9aef.rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502081948.1ccb9aef.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu, bp@alien8.de, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
+References: <71633.1304013549@localhost>	<1304083893-18849-1-git-send-email-mmarek@suse.cz>	<20110502153813.GC15769@sepie.suse.cz> <BANLkTi=xfP_1guk5ZuCj0R_r=XqaGwZw-w@mail.gmail.com>
+In-Reply-To: <BANLkTi=xfP_1guk5ZuCj0R_r=XqaGwZw-w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 08:19:48AM -0700, Randy Dunlap wrote:
-> On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20110429:
-> 
-> 
-> uml builds on i386 or x86_64 fail with: (I'm using O=outputdir if it matters)
-> 
->   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-> scripts/kconfig/conf --silentoldconfig arch/um/Kconfig.x86
->   GEN     /lnx/src/NEXT/linux-next-20110502/UM64/Makefile
-> /lnx/src/NEXT/linux-next-20110502/scripts/Makefile.asm-generic:9: /lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild: No such file or directory
-> make[2]: *** No rule to make target `/lnx/src/NEXT/linux-next-20110502/arch/um/include/asm/Kbuild'.  Stop.
+On 2.5.2011 17:53, Arnaud Lacombe wrote:
+> Hi Michal,
+>
+> On Mon, May 2, 2011 at 11:38 AM, Michal Marek<mmarek@suse.cz>  wrote:
+>> On Fri, Apr 29, 2011 at 03:31:33PM +0200, Michal Marek wrote:
+>>> Add support for make W=12, make W=123 and so on, to enable warnings from
+>>> multiple W= levels. Normally, make W=<level>  does not include warnings
+>>> from the previous level.
+>>>
+>>> Signed-off-by: Michal Marek<mmarek@suse.cz>
+>>> ---
+>>>   scripts/Makefile.build |    8 ++++++--
+>>>   1 files changed, 6 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+>>> index 9c0c481..28cef2a 100644
+>>> --- a/scripts/Makefile.build
+>>> +++ b/scripts/Makefile.build
+>>> @@ -60,6 +60,8 @@ endif
+>>>   # $(call cc-option, -W...) handles gcc -W.. options which
+>>>   # are not supported by all versions of the compiler
+>>>   ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
+>>> +warning-  := $(empty)
+>>> +
+>>>   warning-1 := -Wextra -Wunused -Wno-unused-parameter
+>>>   warning-1 += -Wmissing-declarations
+>>>   warning-1 += -Wmissing-format-attribute
+>>> @@ -85,9 +87,11 @@ warning-3 += -Wswitch-default
+>>>   warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
+>>>   warning-3 += $(call cc-option, -Wvla)
+>>>
+>>> -warning := $(warning-$(KBUILD_ENABLE_EXTRA_GCC_CHECKS))
+>>> +warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+>>> +warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+>>> +warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+>>>
+>>> -ifeq ("$(warning)","")
+>>> +ifeq ("$(strip $(warning))","")
+>>>           $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
+>>>   endif
+>>
+>> Pushed to kbuild-2.6.git#kbuild with the following make help update:
+>>
+> you did not comment on the point I raised.
 
-This patch should fix it.
+Valdis did. Why is it a problem that W=123 can be interchanged with W=321?
 
 Michal
-
-Subject: [PATCH] kbuild: Fix Makefile.asm-generic for um
-
-Do nothing if arch/$(SRCARCH)/include/asm/Kbuild does not exist, which
-is the case of um.
-
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-diff --git a/scripts/Makefile.asm-generic b/scripts/Makefile.asm-generic
-index a687cb6..490122c 100644
---- a/scripts/Makefile.asm-generic
-+++ b/scripts/Makefile.asm-generic
-@@ -6,7 +6,7 @@
- # a small wrapper file in $(obj) (arch/$(SRCARCH)/include/generated/asm)
- 
- kbuild-file := $(srctree)/arch/$(SRCARCH)/include/asm/Kbuild
--include $(kbuild-file)
-+-include $(kbuild-file)
- 
- include scripts/Kbuild.include
- 
