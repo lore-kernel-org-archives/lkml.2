@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab1EBX2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 19:28:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36752 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab1EBX2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 19:28:30 -0400
-Date: Mon, 2 May 2011 16:28:20 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when
- tasks are frozen
-Message-ID: <20110502232820.GA9578@suse.de>
+	id S1755984Ab1EBXbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 19:31:46 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55909 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1EBXbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 19:31:44 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when tasks are frozen
+In-Reply-To: Your message of "Tue, 03 May 2011 00:44:51 +0200."
+             <201105030044.51661.rjw@sisk.pl>
+From: Valdis.Kletnieks@vt.edu
 References: <201105030044.51661.rjw@sisk.pl>
- <20110502231234.GA6430@suse.de>
- <BANLkTikCHO1ST27uhJLU5mBxtWPuuVkNKA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikCHO1ST27uhJLU5mBxtWPuuVkNKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304379012_5156P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 02 May 2011 19:30:12 -0400
+Message-ID: <50363.1304379012@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4DBF3E87.0040,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 04:21:09PM -0700, Linus Torvalds wrote:
-> On Mon, May 2, 2011 at 4:12 PM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > But you can safely call this function with nowait set, and this warning
-> > should not be triggered, right?
-> 
-> Why would you want that?
-> 
-> It's _always_ wrong to ask for firmware during resume. "nowait" or not
-> is totally irrelevant. A driver that depends on the firmware being
-> built in to the kernel is a buggy driver, why would you want to
-> silently allow that kind of crap? It's just a timebomb waiting for
-> somebody to compile the kernel differently.
+--==_Exmh_1304379012_5156P
+Content-Type: text/plain; charset=us-ascii
 
-A driver that does not rely on the firmware being built in would be
-correct in calling request_firmware_nowait() on resume, then when
-userspace is properly woken up, the firmware would be sent to the
-device, then the driver would be notified, load it, and handle things
-as part of its resume sequence from that notification.
+On Tue, 03 May 2011 00:44:51 +0200, "Rafael J. Wysocki" said:
 
-Isn't that ideally what we want to have happen?
+> +	if (WARN_ON(usermodehelper_is_disabled()))
+> +		return -EBUSY;
+> +
 
-Or am I missing something else?
+Since this is a "no user serviceable parts inside" type of error, so I guess
+WARN_ON rather than a printk(KERN_WARNING is a good idea so we get
+a traceback pointing out the offending driver.
 
-thanks,
+I have to wonder 2 things though:
 
-greg k-h
+1) What percent of the time the missing firmware (or other issues, like the
+display not being resumed yet) will prevent the WARN_ON output from making it
+to the display *anyhow*, so the user *still* hits the power button to try again?
+
+2) What percent of the time the WARN_ON output will itself make the user
+think the resume has died rather than just being slow, causing them to power
+cycle and hope for a clean boot?
+
+Maybe something like this instead?
+
+	if (WARN_ON(usermodehelper_is_disable()))) {
+		printk(KERN_WARNING "Resume continuing, but firmware for %s not loaded", device);
+		return -EBUSY;
+	}
+
+(or whatever that %s actually needs to work)
+
+All the same, it still looks better than what we're doing now.
+
+
+--==_Exmh_1304379012_5156P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNvz6EcC3lWbTT17ARAoB3AKDdGwaSZvg4IY15nM55u5ZpdmS2ewCfdMpC
+N7QaGdS2glNSsTngfe98oDo=
+=T9ik
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304379012_5156P--
+
