@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab1EBLNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 07:13:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39776 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab1EBLNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 07:13:39 -0400
-Date: Mon, 2 May 2011 13:13:37 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Jones <davej@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: linux-next: build warning after merge of the kbuild tree
-Message-ID: <20110502111337.GA15769@sepie.suse.cz>
-References: <20110502121817.645d544e.sfr@canb.auug.org.au>
- <20110502022417.GA11804@redhat.com>
- <20110502134524.40da4245.sfr@canb.auug.org.au>
- <20110502142454.a7091ad5.sfr@canb.auug.org.au>
- <20110502145338.7be2fdbc.sfr@canb.auug.org.au>
+	id S1758146Ab1EBL0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 07:26:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51743 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab1EBL0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 07:26:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Date: Mon, 2 May 2011 13:26:09 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linaro-mm-sig@lists.linaro.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        KyongHo Cho <pullip.cho@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <201104212129.17013.arnd@arndb.de> <20110429221554.GD14871@n2100.arm.linux.org.uk> <8yapqo1ogrk.fsf@huya.qualcomm.com>
+In-Reply-To: <8yapqo1ogrk.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502145338.7be2fdbc.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105021326.09725.arnd@arndb.de>
+X-Provags-ID: V02:K0:lB071iEUBTwrPUo6S7fxhOelZc+EwCM+cBQ/t2JdqeM
+ E+W9kvV5ZGi0OIC9WMUrWQm9DAnPR2YbvhcyosV1ZWEQLi+ptx
+ poHoDCOj+bH2AhiDr/VBzQgeHBRWOrsN9PYo96UK/VhKh/9+im
+ uDQp46QHt55Nt4yBERuFbG69NnkPsyqBut7IeiKg/UEtXCy+vB
+ T7ojosH1rKLUSD4eBLNow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 02:53:38PM +1000, Stephen Rothwell wrote:
-> Hi Dave,
-> 
-> hmmm,
-> 
-> On my build machine:
-> $ /opt/cross/gcc-4.4.5-nolibc/x86_64-linux/bin/x86_64-linux-gcc -Wno-unused-but-set-variable -c -xc /dev/null -o /tmp/xx.o; echo $?
-> 0
-> $ /opt/cross/gcc-4.4.5-nolibc/x86_64-linux/bin/x86_64-linux-gcc -Wunused-but-set-variable -c -xc /dev/null -o /tmp/xx.o; echo $?
-> cc1: error: unrecognized command line option "-Wunused-but-set-variable"
-> 1
-> $ gcc -Wno-unused-but-set-variable -c -xc /dev/null -o /tmp/xx.o; echo $?
-> 0
-> $ gcc -Wunused-but-set-variable -c -xc /dev/null -o /tmp/xx.o; echo $?
-> cc1: error: unrecognized command line option "-Wunused-but-set-variable"
-> 1
+On Monday 02 May 2011, David Brown wrote:
+> I'll confirm this from the Qualcomm side as well.  You cannot have
+> multiple inconsistent mappings of the same page without having difficult
+> to find problems.
 
-I reproduced this myself with 4.5.1 and 4.6.0 and was about to file a
-bug at gcc.gnu.org, but I learned that this is a feature :-(, see here:
-http://gcc.gnu.org/PR28322 . It treats invalid -Wno-* options as
-warnings and it only issues them when there is another warning or error
-in the source.
+I believe Catalin was referring to the case where you have only
+one nonconsistent (cacheable) mapping plus multiple consistent
+(cacheable) mappings. I don't think anyone has suggested doing
+DMA to a page that has multiple nonconsistent mappings with
+virtually indexed caches.
 
-I have a patch below, but after learning the above, I'm going to rewrite
-it to some more generic cc-disable-warning fuction, because it can hit
-us anytime again.
+> The spec clarifications appear to give ways of dealing with it if it
+> happens, and bounds on what can go wrong, but I wouldn't call it
+> something we want to do normally.  Corrupt data is arguably less of a
+> problem than nasal demons, but still a problem.
 
-Michal
+Anything that has a theoretical chance of corrupting data is not an
+option, but I'd really like to see what the clarified spec says
+about this. Even if there is a way to legally leave a page for
+dma_alloc_coherent in the linear mapping, it might turn out to
+be harder to do than using highmem pages or unmapping supersections
+at run time as was suggested.
 
-Subject: [PATCH] kbuild: Fix passing -Wno-unused-but-set-variable to some gcc versions
-
-Some versions of gcc will happily accept -Wno-<anything> in the
-cc-option test and complain later when compiling some random file that
--Wno-unused-but-set-variable is not recognized. Work around this by
-testing if gcc supports the -Wunused-but-set-variable option insteaed.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-diff --git a/Makefile b/Makefile
-index 4527dc2..db6b6df 100644
---- a/Makefile
-+++ b/Makefile
-@@ -569,7 +569,12 @@ endif
- 
- # This warning generated too much noise in a regular build.
- # Use make W=1 to enable this warning (see scripts/Makefile.build)
--KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
-+# We test for support of the -Wunused-but-set-variable option, because
-+# some version of gcc will happily accept any -Wno-* switch and complain
-+# later during build.
-+ifeq ($(call cc-option-yn, -Wunused-but-set-variable), y)
-+KBUILD_CFLAGS += -Wno-unused-but-set-variable
-+endif
- 
- ifdef CONFIG_FRAME_POINTER
- KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
+	Arnd
