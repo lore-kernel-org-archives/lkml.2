@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1EBAtm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 20:49:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	id S1754271Ab1EBAuH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 20:50:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab1EBAtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752447Ab1EBAtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 May 2011 20:49:40 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 0/2] vga switcheroo: Prevent nouveau irq handler from kill the
- system
+Subject: [PATCH 1/2] vga_switcheroo: Remove unbalanced pci_enable_device
 To: airlied@linux.ie, dri-devel@lists.freedesktop.org
 Cc: alex.williamson@redhat.com, linux-kernel@vger.kernel.org
-Date: Sun, 01 May 2011 18:49:21 -0600
-Message-ID: <20110502004806.2307.34136.stgit@ul30vt.home>
+Date: Sun, 01 May 2011 18:49:33 -0600
+Message-ID: <20110502004928.2307.25274.stgit@ul30vt.home>
+In-Reply-To: <20110502004806.2307.34136.stgit@ul30vt.home>
+References: <20110502004806.2307.34136.stgit@ul30vt.home>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,24 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On an Intel/Nvidia hybrid graphics system, using the integrated
-graphics and powering off the discrete, one of the primary sources
-of system hangs seems to be the nouveau driver processing interrupts
-while the device is powered off.  This short series removes the
-unbalanced pci_enable_device() from core switcheroo code, allowing
-us to check pci_is_enabled() from the nouveau irq handler to determine
-whether to touch hardware.  Thanks,
+This is unbalanced and probably more fitting for the client
+to take care of.  Remove it.
 
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
-Alex Williamson (2):
-      drm/nouveau: Check that the device is enabled before processing interrupt
-      vga_switcheroo: Remove unbalanced pci_enable_device
+ drivers/gpu/vga/vga_switcheroo.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index e01cacb..f0f244d 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -215,7 +215,6 @@ static int vga_switchoff(struct vga_switcheroo_client *client)
+ /* stage one happens before delay */
+ static int vga_switchto_stage1(struct vga_switcheroo_client *new_client)
+ {
+-	int ret;
+ 	int i;
+ 	struct vga_switcheroo_client *active = NULL;
+ 
+@@ -231,11 +230,6 @@ static int vga_switchto_stage1(struct vga_switcheroo_client *new_client)
+ 	if (!active)
+ 		return 0;
+ 
+-	/* power up the first device */
+-	ret = pci_enable_device(new_client->pdev);
+-	if (ret)
+-		return ret;
+-
+ 	if (new_client->pwr_state == VGA_SWITCHEROO_OFF)
+ 		vga_switchon(new_client);
+ 
 
- drivers/gpu/drm/nouveau/nouveau_drv.c |    2 ++
- drivers/gpu/drm/nouveau/nouveau_irq.c |    3 +++
- drivers/gpu/vga/vga_switcheroo.c      |    6 ------
- 3 files changed, 5 insertions(+), 6 deletions(-)
