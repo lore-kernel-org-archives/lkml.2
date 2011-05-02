@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab1EBBUf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 May 2011 21:20:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54615 "EHLO
+	id S1756069Ab1EBBUd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 May 2011 21:20:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54618 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab1EBBUF (ORCPT
+	with ESMTP id S1755881Ab1EBBUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 May 2011 21:20:05 -0400
+	Sun, 1 May 2011 21:20:06 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=r+lPv7uW7cFl+VbZMuvdMCYzuUtTeo7ZEJhXklQHyaX2OliSKxshV3Y2xNJHoW3su
-	y4bCUpC6Sw5fk9xBUfS3g==
+	b=xrZFzlOkILlepACORjHj0W88srQJyxt02FXuqJvOzhtfK+Cjbh7LOOQsPfMeLF3ex
+	cy/Zx6q8eRKT7JMrNKQIQ==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v1 17/19] sched: update f_b_q() to use u64 for weighted cpuload
-Date: Sun,  1 May 2011 18:19:15 -0700
-Message-Id: <1304299157-25769-18-git-send-email-ncrao@google.com>
+Subject: [PATCH v1 18/19] sched: update shares distribution to use u64
+Date: Sun,  1 May 2011 18:19:16 -0700
+Message-Id: <1304299157-25769-19-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1304299157-25769-1-git-send-email-ncrao@google.com>
 References: <1304299157-25769-1-git-send-email-ncrao@google.com>
@@ -29,43 +29,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update f_b_q() to use u64 when comparing loads.
+Update the shares distribution code to use u64. We still maintain tg->shares as
+an unsigned long since sched entity weights can't exceed MAX_SHARES (2^28). This
+patch updates all the calculations required to estimate shares to use u64.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
- kernel/sched_fair.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/sched.c       |    2 +-
+ kernel/sched_debug.c |    6 +++---
+ kernel/sched_fair.c  |   17 ++++++++++++-----
+ 3 files changed, 16 insertions(+), 9 deletions(-)
 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 6b9b02a..e131225 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -367,7 +367,7 @@ struct cfs_rq {
+ 	u64 load_period;
+ 	u64 load_stamp, load_last, load_unacc_exec_time;
+ 
+-	unsigned long load_contribution;
++	u64 load_contribution;
+ #endif
+ #endif
+ };
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index d22b666..b809651 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -204,11 +204,11 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "load", cfs_rq->load.weight);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ #ifdef CONFIG_SMP
+-	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_avg",
++	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", "load_avg",
+ 			SPLIT_NS(cfs_rq->load_avg));
+-	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_period",
++	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", "load_period",
+ 			SPLIT_NS(cfs_rq->load_period));
+-	SEQ_printf(m, "  .%-30s: %ld\n", "load_contrib",
++	SEQ_printf(m, "  .%-30s: %lld\n", "load_contrib",
+ 			cfs_rq->load_contribution);
+ 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+ 			atomic_read(&cfs_rq->tg->load_weight));
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 813bcf0..bf9bbaa 100644
+index bf9bbaa..3f56410 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -3203,14 +3203,14 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
- 		   const struct cpumask *cpus)
+@@ -708,12 +708,13 @@ static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
+ 					    int global_update)
  {
- 	struct rq *busiest = NULL, *rq;
--	unsigned long max_load = 0;
-+	u64 max_load = 0;
- 	int i;
+ 	struct task_group *tg = cfs_rq->tg;
+-	long load_avg;
++	s64 load_avg;
  
- 	for_each_cpu(i, sched_group_cpus(group)) {
- 		unsigned long power = power_of(i);
- 		unsigned long capacity = DIV_ROUND_CLOSEST(power,
- 							   SCHED_POWER_SCALE);
--		unsigned long wl;
-+		u64 wl;
+ 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+ 	load_avg -= cfs_rq->load_contribution;
  
- 		if (!capacity)
- 			capacity = fix_small_capacity(sd, group);
-@@ -3234,7 +3234,7 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
- 		 * the load can be moved away from the cpu that is potentially
- 		 * running at a lower capacity.
- 		 */
--		wl = (wl * SCHED_POWER_SCALE) / power;
-+		wl = div_u64(wl * SCHED_POWER_SCALE, power);
+ 	if (global_update || abs(load_avg) > cfs_rq->load_contribution / 8) {
++		/* TODO: fix atomics for 64-bit additions */
+ 		atomic_add(load_avg, &tg->load_weight);
+ 		cfs_rq->load_contribution += load_avg;
+ 	}
+@@ -723,7 +724,7 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+ 	u64 period = sysctl_sched_shares_window;
+ 	u64 now, delta;
+-	unsigned long load = cfs_rq->load.weight;
++	u64 load = cfs_rq->load.weight;
  
- 		if (wl > max_load) {
- 			max_load = wl;
+ 	if (cfs_rq->tg == &root_task_group)
+ 		return;
+@@ -743,8 +744,13 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ 	cfs_rq->load_unacc_exec_time = 0;
+ 	cfs_rq->load_period += delta;
+ 	if (load) {
++		u64 tmp = cfs_rq->load_avg;
+ 		cfs_rq->load_last = now;
+ 		cfs_rq->load_avg += delta * load;
++
++		/* Detect overflow and set load_avg to max */
++		if (unlikely(cfs_rq->load_avg < tmp))
++			cfs_rq->load_avg = ~0ULL;
+ 	}
+ 
+ 	/* consider updating load contribution on each fold or truncate */
+@@ -769,24 +775,25 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ 
+ static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg)
+ {
+-	long load_weight, load, shares;
++	s64 load_weight, load, shares;
+ 
+ 	load = cfs_rq->load.weight;
+ 
++	/* TODO: fixup atomics to handle u64 in 32-bit */
+ 	load_weight = atomic_read(&tg->load_weight);
+ 	load_weight += load;
+ 	load_weight -= cfs_rq->load_contribution;
+ 
+ 	shares = (tg->shares * load);
+ 	if (load_weight)
+-		shares /= load_weight;
++		shares = div64_u64(shares, load_weight);
+ 
+ 	if (shares < MIN_SHARES)
+ 		shares = MIN_SHARES;
+ 	if (shares > tg->shares)
+ 		shares = tg->shares;
+ 
+-	return shares;
++	return (long)shares;
+ }
+ 
+ static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
 -- 
 1.7.3.1
 
