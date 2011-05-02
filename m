@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1EBVgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 17:36:50 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:56373 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040Ab1EBVgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 17:36:49 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH tip/core/rcu 7/7] net,rcu: convert call_rcu(xt_rateest_free_rcu) to kfree_rcu()
-Date: Mon,  2 May 2011 09:13:44 -0700
-Message-Id: <1304352824-6563-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110502161321.GA6537@linux.vnet.ibm.com>
-References: <20110502161321.GA6537@linux.vnet.ibm.com>
+	id S1757188Ab1EBQQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:16:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33806 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab1EBQQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 12:16:04 -0400
+Date: Mon, 2 May 2011 09:15:46 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 2 (uml irqs)
+Message-Id: <20110502091546.5c04f4e6.randy.dunlap@oracle.com>
+In-Reply-To: <20110502150150.d932642f.sfr@canb.auug.org.au>
+References: <20110502150150.d932642f.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4DBED8B7.00A5:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RCU callback xt_rateest_free_rcu() just calls kfree(), so we can
-use kfree_rcu() instead of call_rcu().  This also allows us to dispense
-with an rcu_barrier() call, speeding up unloading of this module.
+On Mon, 2 May 2011 15:01:50 +1000 Stephen Rothwell wrote:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Patrick McHardy <kaber@trash.net>
+> Hi all,
+> 
+> Changes since 20110429:
+
+
+building uml on i386 or x86_64 fails with:
+
+linux-next-20110502/kernel/irq/generic-chip.c: In function 'irq_setup_generic_chip':
+linux-next-20110502/kernel/irq/generic-chip.c:232: error: implicit declaration of function 'readl'
+
 ---
- net/netfilter/xt_RATEEST.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
-
-diff --git a/net/netfilter/xt_RATEEST.c b/net/netfilter/xt_RATEEST.c
-index de079ab..f264032 100644
---- a/net/netfilter/xt_RATEEST.c
-+++ b/net/netfilter/xt_RATEEST.c
-@@ -60,11 +60,6 @@ struct xt_rateest *xt_rateest_lookup(const char *name)
- }
- EXPORT_SYMBOL_GPL(xt_rateest_lookup);
- 
--static void xt_rateest_free_rcu(struct rcu_head *head)
--{
--	kfree(container_of(head, struct xt_rateest, rcu));
--}
--
- void xt_rateest_put(struct xt_rateest *est)
- {
- 	mutex_lock(&xt_rateest_mutex);
-@@ -75,7 +70,7 @@ void xt_rateest_put(struct xt_rateest *est)
- 		 * gen_estimator est_timer() might access est->lock or bstats,
- 		 * wait a RCU grace period before freeing 'est'
- 		 */
--		call_rcu(&est->rcu, xt_rateest_free_rcu);
-+		kfree_rcu(est, rcu);
- 	}
- 	mutex_unlock(&xt_rateest_mutex);
- }
-@@ -188,7 +183,6 @@ static int __init xt_rateest_tg_init(void)
- static void __exit xt_rateest_tg_fini(void)
- {
- 	xt_unregister_target(&xt_rateest_tg_reg);
--	rcu_barrier(); /* Wait for completion of call_rcu()'s (xt_rateest_free_rcu) */
- }
- 
- 
--- 
-1.7.3.2
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
