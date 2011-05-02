@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1EBTiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 15:38:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54299 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab1EBTiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 15:38:18 -0400
-Subject: Re: linux-firmware tree
-From: David Woodhouse <dwmw2@infradead.org>
-To: Mike Waychison <mikew@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com>
-References: <BANLkTimmr=rD84cAkQ2xGsG7PccxQKKqVg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 20:38:15 +0100
-Message-ID: <1304365095.6400.20.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754777Ab1EBTjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 15:39:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59159 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab1EBTjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 15:39:39 -0400
+Date: Mon, 2 May 2011 21:39:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Allow setting of number of raw devices as a module parameter
+Message-ID: <20110502193937.GM4556@quack.suse.cz>
+References: <1304029469-19672-1-git-send-email-jack@suse.cz>
+ <201104301415.02349.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104301415.02349.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 19:57 +0100, Mike Waychison wrote:
-> Hi David,
+On Sat 30-04-11 14:15:02, Arnd Bergmann wrote:
+> On Friday 29 April 2011 00:24:29 Jan Kara wrote:
+> > Allow setting of maximal number of raw devices as a module parameter. This
+> > requires changing of static array into a vmalloced one (the array is going to
+> > be too large for kmalloc).
+> > 
+> > Signed-off-by: Jan Kara <jack@suse.cz>
 > 
-> I'm trying to understand the purpose of the linux-firmware tree.
-> Forgive me if this is a stupid question, but the only information
-> about it I could find was your original post back in 2008:
-> https://lwn.net/Articles/294308/
+> Why don't you get rid of the global raw_devices array instead?
 > 
-> Will the Linux kernel sources always continue to have the firmware
-> blobs and the linux-firmware tree is only for those users of distros
-> that strip the firmware out?
+> I suppose if you embed the struct cdev in raw_device_data and
+> register it during RAW_SETBIND separately for each raw device
+> instead of globally at raw_init time, you can support any number
+> of devices while making the code smaller and simpler. I suppose
+> you can even remove the raw_mutex then.
+  OK, I see. This might be a reasonable option. I'd then use kobj_lookup()
+to find my structure where I need it instead of array indexing, right? 
+I have really zero experience with writing device drivers so I'm asking
+simple questions :).
 
-No, the legacy firmware images from the kernel tree are going to be
-removed. They were only kept for backward compatibility.
-
-The linux-firmware tree has a lot of things that were never included in
-the kernel source; no *new* firmware images are being (or at least
-should be) added to the kernel source itself.
-
-Everyone should be using the linux-firmware tree by now.
-
+								Honza
 -- 
-dwmw2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
