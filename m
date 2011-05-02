@@ -1,103 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab1EBQR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 12:17:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36724 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab1EBQRx convert rfc822-to-8bit (ORCPT
+	id S1757533Ab1EBQS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 12:18:28 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:41047 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab1EBQS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 12:17:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZGjzSFpOxiNHh2XcBDhAZnKtOF0plDtRNDt4UusTPoDkhJuMgAEsOknwB6PRuwi7j5
-         /PQOfZsAWipo+TZyC/evt7Bm9vX2X2JCpp+GvsarhJ1K84DAAGXSQwTk9+VRMUI7OcPX
-         vesj/OytIiYO04moTOQFlJ5GJJ+TgUjdbPlFo=
-MIME-Version: 1.0
-In-Reply-To: <4DBED641.8080605@suse.cz>
-References: <71633.1304013549@localhost>
-	<1304083893-18849-1-git-send-email-mmarek@suse.cz>
-	<20110502153813.GC15769@sepie.suse.cz>
-	<BANLkTi=xfP_1guk5ZuCj0R_r=XqaGwZw-w@mail.gmail.com>
-	<4DBED641.8080605@suse.cz>
-Date: Mon, 2 May 2011 12:17:52 -0400
-Message-ID: <BANLkTikLfXCKKqgrHKy4T7JvumWc_gi7mg@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: Allow to combine multiple W= levels
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Valdis.Kletnieks@vt.edu, bp@alien8.de, sam@ravnborg.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 May 2011 12:18:27 -0400
+Date: Mon, 2 May 2011 18:18:11 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Doug Nazar <nazard.lkml@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com
+Subject: Re: xfs hang on 2.6.39-rc5
+Message-ID: <20110502181811.61dd09eb@neptune.home>
+In-Reply-To: <4DBD7880.2040804@gmail.com>
+References: <4DBD7880.2040804@gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 01 May 2011 Doug Nazar <nazard.lkml@gmail.com> wrote:
+> On two different hosts, both running 2.6.39-rc5-00123-g33b6c92, xfs 
+> seems to be locking up.
+> 
+> I had to revert the box from the second trace but this trace is mounted 
+> with:
 
-On Mon, May 2, 2011 at 12:05 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 2.5.2011 17:53, Arnaud Lacombe wrote:
->>
->> Hi Michal,
->>
->> On Mon, May 2, 2011 at 11:38 AM, Michal Marek<mmarek@suse.cz>  wrote:
->>>
->>> On Fri, Apr 29, 2011 at 03:31:33PM +0200, Michal Marek wrote:
->>>>
->>>> Add support for make W=12, make W=123 and so on, to enable warnings from
->>>> multiple W= levels. Normally, make W=<level>  does not include warnings
->>>> from the previous level.
->>>>
->>>> Signed-off-by: Michal Marek<mmarek@suse.cz>
->>>> ---
->>>>  scripts/Makefile.build |    8 ++++++--
->>>>  1 files changed, 6 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
->>>> index 9c0c481..28cef2a 100644
->>>> --- a/scripts/Makefile.build
->>>> +++ b/scripts/Makefile.build
->>>> @@ -60,6 +60,8 @@ endif
->>>>  # $(call cc-option, -W...) handles gcc -W.. options which
->>>>  # are not supported by all versions of the compiler
->>>>  ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
->>>> +warning-  := $(empty)
->>>> +
->>>>  warning-1 := -Wextra -Wunused -Wno-unused-parameter
->>>>  warning-1 += -Wmissing-declarations
->>>>  warning-1 += -Wmissing-format-attribute
->>>> @@ -85,9 +87,11 @@ warning-3 += -Wswitch-default
->>>>  warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
->>>>  warning-3 += $(call cc-option, -Wvla)
->>>>
->>>> -warning := $(warning-$(KBUILD_ENABLE_EXTRA_GCC_CHECKS))
->>>> +warning := $(warning-$(findstring 1,
->>>> $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
->>>> +warning += $(warning-$(findstring 2,
->>>> $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
->>>> +warning += $(warning-$(findstring 3,
->>>> $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
->>>>
->>>> -ifeq ("$(warning)","")
->>>> +ifeq ("$(strip $(warning))","")
->>>>          $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
->>>>  endif
->>>
->>> Pushed to kbuild-2.6.git#kbuild with the following make help update:
->>>
->> you did not comment on the point I raised.
->
-> Valdis did. Why is it a problem that W=123 can be interchanged with W=321?
->
-Because 321 != 123 and 321 > 123. As I am a dumb human being, I would
-expect 321 to have a different meaning than 123, but also 321 to be
-more verbose than 123. Said otherwise, humans tends to naturally
-interpret 321 and 123 as number rather than concatenation of
-character.
+This looks related to at least:
+  http://thread.gmane.org/gmane.linux.kernel/1130312/focus=1131769
 
- - Arnaud
 
-> Michal
->
+> UUID=dcdc849e-bad8-4971-935c-223819a6dcc4               /               
+> xfs             noatime         0 1
+> 
+> which ends up being:
+> 
+> /dev/sdb3 on / type xfs (rw,noatime,delaylog,noquota)
+> 
+> meta-data=/dev/sdb3              isize=256    agcount=16, agsize=601056 blks
+>           =                       sectsz=512   attr=0
+> data     =                       bsize=4096   blocks=9616896, imaxpct=25
+>           =                       sunit=0      swidth=0 blks
+> naming   =version 2              bsize=4096   ascii-ci=0
+> log      =internal               bsize=4096   blocks=4695, version=1
+>           =                       sectsz=512   sunit=0 blks, lazy-count=0
+> realtime =none                   extsz=65536  blocks=0, rtextents=0
+> 
+> [38160.536046] INFO: task multilog:7586 blocked for more than 120 seconds.
+> [38160.536052] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
+> disables this message.
+> [38160.536059] multilog        D 0012cfae     0  7586   7578 0x00000000
+> [38160.536069]  f5bcfd18 00000086 f9a4653a 0012cfae f9a33b34 00000024 
+> 6d783c2f 0000227f
+> [38160.536082]  f5bcfcc8 f5bcfcd8 00000000 00000000 f5bcfd18 f5c91810 
+> f5c91810 00000024
+> [38160.536092]  00d2e530 f1fd2e40 00001460 00dc5000 f5c1b780 0000695d 
+> 00000000 f5bcfd18
+> [38160.536103] Call Trace:
+> [38160.536188]  [<f9a4653a>] ? kmem_alloc+0x51/0xbe [xfs]
+> [38160.536212]  [<f9a33b34>] ? xlog_space_left+0x24/0xa9 [xfs]
+> [38160.536237]  [<f9a34644>] ? xlog_grant_push_ail+0xb8/0xdc [xfs]
+> [38160.536262]  [<f9a34c8f>] xlog_grant_log_space+0x173/0x42a [xfs]
+> [38160.536277]  [<c1028b95>] ? try_to_wake_up+0xd4/0xd4
+> [38160.536302]  [<f9a34ff1>] xfs_log_reserve+0xab/0xfe [xfs]
+> [38160.536329]  [<f9a40a20>] xfs_trans_reserve+0x74/0x1cb [xfs]
+> [38160.536357]  [<f9a3de78>] xfs_rename+0x122/0x61a [xfs]
+> [38160.536367]  [<c10bbd13>] ? link_path_walk+0x2de/0x77b
+> [38160.536375]  [<c10bae07>] ? generic_permission+0x1a/0x95
+> [38160.536398]  [<f9a4ee3e>] xfs_vn_rename+0x60/0x6a [xfs]
+> [38160.536407]  [<c10bd680>] vfs_rename+0x313/0x350
+> [38160.536415]  [<c10c290a>] ? d_lookup+0x1e/0x3d
+> [38160.536422]  [<c10be874>] sys_renameat+0x203/0x219
+> [38160.536431]  [<c10c889e>] ? mntput+0x13/0x1f
+> [38160.536437]  [<c10b4bfd>] ? fput+0x118/0x1b0
+> [38160.536443]  [<c10be8b2>] sys_rename+0x28/0x2a
+> [38160.536451]  [<c12db698>] sysenter_do_call+0x12/0x28
+> 
+> 
+> 
+> [94440.552055] INFO: task nfsd:8055 blocked for more than 120 seconds.
+> [94440.553587] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
+> disables this message.
+> [94440.556638] nfsd            D df5df880     0  8055      2 0x00000000
+> [94440.558258]  d6fb3d78 00000046 d6941c90 df5df880 df2b1400 df5df8c0 
+> 5a0961bd 000055be
+> [94440.561634]  d6fb3d28 03f35714 00014f61 00000000 d6fb3d78 d6fae370 
+> d6fae370 ffffff8c
+> [94440.565246]  d6941cdc d6fb3d48 c10c4aa8 cb5aea80 cb918000 0004e83b 
+> cb918201 e21adb34
+> [94440.569039] Call Trace:
+> [94440.570871]  [<c10c4aa8>] ? d_obtain_alias+0x3e/0xe6
+> [94440.572813]  [<e21adb34>] ? xlog_space_left+0x24/0xa9 [xfs]
+> [94440.574708]  [<e21aec08>] xlog_grant_log_space+0xec/0x42a [xfs]
+> [94440.576622]  [<e21ae644>] ? xlog_grant_push_ail+0xb8/0xdc [xfs]
+> [94440.578509]  [<c1028b95>] ? try_to_wake_up+0xd4/0xd4
+> [94440.580451]  [<e21aeff1>] xfs_log_reserve+0xab/0xfe [xfs]
+> [94440.582391]  [<e21baa20>] xfs_trans_reserve+0x74/0x1cb [xfs]
+> [94440.584353]  [<e21bdd48>] xfs_remove+0xd9/0x333 [xfs]
+> [94440.586270]  [<c10bad79>] ? acl_permission_check+0x1b/0x8f
+> [94440.588209]  [<c10bae07>] ? generic_permission+0x1a/0x95
+> [94440.590152]  [<e21c9079>] xfs_vn_unlink+0x30/0x6a [xfs]
+> [94440.592083]  [<c10bd2f7>] vfs_unlink+0x60/0xae
+> [94440.594006]  [<e1ebf9c5>] nfsd_unlink+0x19e/0x21b [nfsd]
+> [94440.595943]  [<e1ecae80>] ? nfsd4_encode_operation+0x56/0x161 [nfsd]
+> [94440.597911]  [<e1ec92a8>] nfsd4_remove+0x3e/0x114 [nfsd]
+> [94440.599878]  [<e1ec96f3>] nfsd4_proc_compound+0x334/0x3e9 [nfsd]
+> [94440.601853]  [<e1ecbcc7>] ? nfsd4_decode_getattr+0x8/0xa [nfsd]
+> [94440.603832]  [<e1ecfdb1>] ? nfs4svc_decode_compoundargs+0x268/0x342 
+> [nfsd]
+> [94440.605851]  [<e1ec926a>] ? nfsd4_rename+0x1e0/0x1e0 [nfsd]
+> [94440.607826]  [<e1ebc2be>] nfsd_dispatch+0xbc/0x1e9 [nfsd]
+> [94440.609794]  [<e1f81f2b>] svc_process+0x401/0x740 [sunrpc]
+> [94440.611715]  [<e1ebc8a4>] nfsd+0xae/0x130 [nfsd]
+> [94440.613620]  [<e1ebc7f6>] ? nfsd_svc+0x197/0x197 [nfsd]
+> [94440.615495]  [<e1ebc7f6>] ? nfsd_svc+0x197/0x197 [nfsd]
+> [94440.617277]  [<c1043c01>] kthread+0x67/0x69
+> [94440.618996]  [<c1043b9a>] ? kthreadd+0xa3/0xa3
+> [94440.620641]  [<c12dbc36>] kernel_thread_helper+0x6/0xd
+> 
+> 
+> Doug
+> 
