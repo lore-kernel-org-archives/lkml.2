@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab1EBOSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 10:18:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758655Ab1EBOSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 10:18:42 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH 3/3] blkdev: honor discard_granularity in blkdev_issue_discard()
-Date: Mon,  2 May 2011 16:17:21 +0200
-Message-Id: <1304345841-20063-3-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
-References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
+	id S1759361Ab1EBOXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 10:23:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53369 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759183Ab1EBOXv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 10:23:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GSCE/huQ3gLRMdFK002YOEtqpAGG0+8wmt+3QbjtRpdG/7MuOrq0VVGstglRkR88YP
+         iwhF+9A46iQjK6I0zlajcTA2k8cyl+s6FSbIedEsmq5KNBe3um2u3PRnUFZbhILm04Ri
+         z0C+RxMkKKZKH7Odm+k7TS/BJ8HoOsl8P94TA=
+Message-ID: <4DBEBE72.3040702@gmail.com>
+Date: Mon, 02 May 2011 18:23:46 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using cluster
+ groups v4
+References: <20110502113445.751391656@openvz.org> <20110502114024.222582172@openvz.org> <20110502132232.GA3873@elte.hu> <4DBEB96A.8000309@openvz.org>
+In-Reply-To: <4DBEB96A.8000309@openvz.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Jeff Moyer pointed out we do not honor discard granularity while
-submitting REQ_DISCARD bios of size smaller than max_discard_sectors.
-That fact might have unwanted consequences of device ignoring the
-request, or even worse if device firmware is buggy.
+On 05/02/2011 06:02 PM, Cyrill Gorcunov wrote:
+...
+> 
+>   Ingo, the idea was to merge probe_x.c completely, and put all this not into init()
+> but rather into apic->probe() or something like that. I don't have a clear picture
+> in mind yet what the best way would be, so instead of fast designed method I thought
+> to leave it opencoded with fixme note.
+> 
+>   So lets wait until Suresh post the benchmark and I will make apic->init() meanwhile.
+> 
 
-This commit changes the behaviour so all discard bios smaller than
-max_discard_sectors are aligned properly wrt discard_granularity.
+  Ingo, would it be fine to make apic->init() either _before_ this series or on
+top of them (because if I introduce it inside this particular patch it would contain
+some unrelated code snippets such as .init = NULL for all apics declaration).
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Reported-by: Jeff Moyer <jmoyer@redhat.com>
-CC: Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Jens Axboe <jaxboe@fusionio.com>
----
- block/blk-lib.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d7a98d3..4019036 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -46,7 +46,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct request_queue *q = bdev_get_queue(bdev);
- 	int type = REQ_WRITE | REQ_DISCARD;
--	unsigned int max_discard_sectors;
-+	unsigned int max_discard_sectors, disc_sects;
- 	struct bio_batch bb;
- 	struct bio *bio;
- 	int ret = 0;
-@@ -57,16 +57,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	if (!blk_queue_discard(q))
- 		return -EOPNOTSUPP;
- 
-+	disc_sects = q->limits.discard_granularity >> 9;
- 	/*
- 	 * Ensure that max_discard_sectors is of the proper
- 	 * granularity
- 	 */
- 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
--	if (q->limits.discard_granularity) {
--		unsigned int disc_sects = q->limits.discard_granularity >> 9;
--
-+	if (q->limits.discard_granularity)
- 		max_discard_sectors &= ~(disc_sects - 1);
--	}
- 
- 	if (flags & BLKDEV_DISCARD_SECURE) {
- 		if (!blk_queue_secdiscard(q))
-@@ -95,7 +93,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 			nr_sects -= max_discard_sectors;
- 			sector += max_discard_sectors;
- 		} else {
--			bio->bi_size = nr_sects << 9;
-+			bio->bi_size = ((nr_sects & ~(disc_sects - 1)) << 9);
- 			nr_sects = 0;
- 		}
- 
 -- 
-1.7.4.4
-
+Thanks,
+  Cyrill
