@@ -1,244 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1ECOHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:07:21 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:50007 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752910Ab1ECOHT (ORCPT
+	id S1752896Ab1ECOI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:08:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52902 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab1ECOIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:07:19 -0400
-Date: Tue, 3 May 2011 10:07:17 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [RFC patch 01/32] TRACE_EVENT: gradual semicolon removal
-Message-ID: <20110503140717.GA29736@Krystal>
-References: <20110502211123.163877033@efficios.com> <20110502213211.250108074@efficios.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502213211.250108074@efficios.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:43:38 up 160 days, 18:46,  7 users,  load average: 0.01, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 3 May 2011 10:08:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Ip5TJuJGtQ5sIs4eIPy1o17L8eCh6pUePD0EQsIoKcyS2nILFsA3xc56w/mnHAyn1n
+         FwvFVYYK4ziOoSdAX1N6UCoZXi6bXlA9vDf61KDPjdbBRqdooY5qYMqEZmnxR45DZ6Uj
+         rJHdX87uVS3snIhkWzV9fuuL2wHKPvJXxkFSY=
+From: wanlong.gao@gmail.com
+To: gregkh@suse.de, rdunlap@xenotime.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [resend PATCH] KernelDoc:Add the device driver-model structures to kerneldoc
+Date: Tue,  3 May 2011 22:07:29 +0800
+Message-Id: <1304431649-5168-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-And here is a self-reply to patch 01/32, due to LKML refusing messages
-with more than 20 recipients.
 
-Thanks,
+Hi Greg:
+I did the work again with your comments, please see the patch again now.
 
-Mathieu
+Thanks very much.
+Best regards
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Initiate the removal of the extra semicolons at the end of:
-> 
-> TRACE_EVENT(
->   ...
-> );     <---- here,
-> 
-> TRACE_EVENT_FN(
->   ...
-> );     <---- here,
-> 
-> DEFINE_EVENT(
->   ...
-> );     <---- here,
-> 
-> DEFINE_EVENT_PRINT(
->   ...
-> );     <---- and here.
-> 
-> by removing the semicolon from the comment in tracepoint.h explaining the
-> TRACE_EVENT() usage. It is now also mandated that all declarations done in the
-> trace event headers should be surrounded by ifdefs checks: it is already
-> necessary, but some users get away from this requirement for structure
-> forward-declarations.
-> 
-> I am proposing to merge this patchset through the "tracing" tree for better
-> coordination.
-> 
-> Adding the missing semicolon within the DEFINE_EVENT(), DEFINE_EVENT_PRINT()
-> and DEFINE_TRACE_FN() macros is required as a preliminary step to remove extra
-> semicolons.  We currently are not seeing any impact of this missing semicolon
-> because extra they appear all over the place in the code generated from
-> TRACE_EVENT within ftrace stages. The side-effect of these extra semicolons are:
-> 
-> a) to pollute the preprocessor output, leaving extra ";" between trace event
-> instances in trace points creation.
-> 
-> b) to render impossible creation of an array of events. Extra semicolons are
-> not a matter as long as TRACE_EVENT creates statements, structure elements or
-> functions, because extra semicolons are discarded by the compiler. However,
-> when creating an array, the separator is the comma, and the semicolon causes a
-> parse error.
-> 
-> 
-> * So what is the motivation for removing these semicolons ?
-> 
-> Currently, Ftrace is creating a "ftrace_define_fields_##call" function for each
-> event to define the event fields, which consumes space. It also has the
-> ".fields" list head to keep a dynamically generated list of event fields.
-> 
-> By allowing creation of arrays of events, we can do the following: turn the
-> dynamically created list of event fields into a first-level const array listing
-> event fields. We can use ARRAY_SIZE() on this array to know its size,
-> statically. Then, in a following trace event stage, we can create another const
-> array containing tuples of (pointers to the event-specific arrays, array size).
-> 
-> So we get all the same information Ftrace currently gets with much less code
-> overall, much less read-write data, and less dynamic initialization code.
-> 
-> 
-> * Why do this incrementally ?
-> 
-> After this preliminary patch, the semicolon removal can be done gradually
-> without breaking the build: we can be in an intermediate state with some files
-> having semicolons and others without. This is therefore good for
-> bissectability, and seems like a nice way to bring in an internal API change
-> without making developers suffer too much. Then, once things are stabilized, we
-> can start modifying the Ftrace code to generate the more space-efficient arrays
-> (possibly in a release-cycle or so), knowing that this enforces a strict
-> requirement on semicolon removal.
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Alexander Graf <agraf@suse.de>
-> CC: Alex Elder <aelder@sgi.com>
-> CC: Anton Blanchard <anton@samba.org>
-> CC: Arjan van de Ven <arjan@linux.intel.com>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Christoph Hellwig <hch@lst.de>
-> CC: Chris Wilson <chris@chris-wilson.co.uk>
-> CC: Dave Airlie <airlied@redhat.com>
-> CC: Dave Chinner <david@fromorbit.com>
-> CC: Dave Chinner <dchinner@redhat.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Gleb Natapov <gleb@redhat.com>
-> CC: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: James Bottomley <James.Bottomley@suse.de>
-> CC: Jean Pihet <j-pihet@ti.com>
-> CC: Jeff Moyer <jmoyer@redhat.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: Jeremy Kerr <jk@ozlabs.org>
-> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> CC: Joerg Roedel <joerg.roedel@amd.com>
-> CC: Johannes Berg <johannes@sipsolutions.net>
-> CC: John W. Linville <linville@tuxdriver.com>
-> CC: Josh Stone <jistone@redhat.com>
-> CC: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-> CC: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Larry Woodman <lwoodman@redhat.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Li Zefan <lizf@cn.fujitsu.com>
-> CC: Marcelo Tosatti <mtosatti@redhat.com>
-> CC: Martin K. Petersen <martin.petersen@oracle.com>
-> CC: Masami Hiramatsu <mhiramat@redhat.com>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Reinette Chatre <reinette.chatre@intel.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Roland McGrath <roland@redhat.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Steven Whitehouse <swhiteho@redhat.com>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Theodore Ts'o <tytso@mit.edu>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Thomas Renninger <trenn@suse.de>
-> CC: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
-> CC: Vadim Rozenfeld <vrozenfe@redhat.com>
-> CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> CC: Zhu Yi <yi.zhu@intel.com>
-> ---
->  include/linux/tracepoint.h |    4 ++--
->  include/trace/ftrace.h     |   10 +++++-----
->  2 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> Index: linux-2.6-lttng/include/trace/ftrace.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/trace/ftrace.h
-> +++ linux-2.6-lttng/include/trace/ftrace.h
-> @@ -34,8 +34,8 @@
->  			     PARAMS(args),		       \
->  			     PARAMS(tstruct),		       \
->  			     PARAMS(assign),		       \
-> -			     PARAMS(print));		       \
-> -	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
-> +			     PARAMS(print))		       \
-> +	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args))
->  
->  
->  #undef __field
-> @@ -69,7 +69,7 @@
->  #undef DEFINE_EVENT
->  #define DEFINE_EVENT(template, name, proto, args)	\
->  	static struct ftrace_event_call	__used		\
-> -	__attribute__((__aligned__(4))) event_##name
-> +	__attribute__((__aligned__(4))) event_##name;
->  
->  #undef DEFINE_EVENT_PRINT
->  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> @@ -588,7 +588,7 @@ static struct ftrace_event_call __used e
->  	.print_fmt		= print_fmt_##template,			\
->  };									\
->  static struct ftrace_event_call __used					\
-> -__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
-> +__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
->  
->  #undef DEFINE_EVENT_PRINT
->  #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
-> @@ -602,7 +602,7 @@ static struct ftrace_event_call __used e
->  	.print_fmt		= print_fmt_##call,			\
->  };									\
->  static struct ftrace_event_call __used					\
-> -__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
-> +__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
->  
->  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
->  
-> Index: linux-2.6-lttng/include/linux/tracepoint.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/linux/tracepoint.h
-> +++ linux-2.6-lttng/include/linux/tracepoint.h
-> @@ -187,7 +187,7 @@ do_trace:								\
->  		&__tracepoint_##name;
->  
->  #define DEFINE_TRACE(name)						\
-> -	DEFINE_TRACE_FN(name, NULL, NULL);
-> +	DEFINE_TRACE_FN(name, NULL, NULL)
->  
->  #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)				\
->  	EXPORT_SYMBOL_GPL(__tracepoint_##name)
-> @@ -345,7 +345,7 @@ do_trace:								\
->   *		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
->   *		__entry->next_comm, __entry->next_pid, __entry->next_prio),
->   *
-> - * );
-> + * )
->   *
->   * This macro construct is thus used for the regular printk format
->   * tracing setup, it is used to construct a function pointer based
-> 
+Wanlong Gao
 
+Add the comments to the structure bus_type, device_driver, device,
+class for generating the driver-model kerneldoc.
+
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ Documentation/DocBook/device-drivers.tmpl |    6 +-
+ include/linux/device.h                    |  154 ++++++++++++++++++++++++++++-
+ 2 files changed, 154 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
+index 36f63d4..b638e50 100644
+--- a/Documentation/DocBook/device-drivers.tmpl
++++ b/Documentation/DocBook/device-drivers.tmpl
+@@ -96,10 +96,10 @@ X!Iinclude/linux/kobject.h
+ 
+   <chapter id="devdrivers">
+      <title>Device drivers infrastructure</title>
++     <sect1><title>The Basic Device Driver-Model Structures </title>
++!Iinclude/linux/device.h
++     </sect1>
+      <sect1><title>Device Drivers Base</title>
+-<!--
+-X!Iinclude/linux/device.h
+--->
+ !Edrivers/base/driver.c
+ !Edrivers/base/core.c
+ !Edrivers/base/class.c
+diff --git a/include/linux/device.h b/include/linux/device.h
+index ab8dfc0..50985850 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -47,6 +47,38 @@ extern int __must_check bus_create_file(struct bus_type *,
+ 					struct bus_attribute *);
+ extern void bus_remove_file(struct bus_type *, struct bus_attribute *);
+ 
++/**
++ * struct bus_type - The bus type of the device .
++ *
++ * @name:	The name of the bus.
++ * @bus_attrs:	Default attributes of the bus.
++ * @dev_attrs:	Default attributes of the devices on the bus.
++ * @drv_attrs:	Default attributes of the device drivers on the bus.
++ * @match:	Called, perhaps multiple times, whenever a new device or driver
++ *		is added for this bus. It should return a nonzero value if the
++ *		given device can be handled by the given driver.
++ * @uevent:	Called when a device is added, removed, or a few other things
++ *		that generate uevents to add the environment variables.
++ * @probe:	Called when a new device or driver add to this bus, and callback
++ *		the specific driver's probe to initial the matched device.
++ * @remove:	Called when a device or driver removed from this bus.
++ * @shutdown:	Called at shut-down time to quiesce the device.
++ * @suspend:	Called when a device on this bus want to go to sleep mode.
++ * @resume:	Called to bring a device on this bus from sleep mode.
++ * @pm:		Power management operations of this bus, callback the specific
++ *		device driver's pm-ops.
++ * @p:		The private data of the driver core, only the driver core can
++ *		touch this.
++ *
++ * A bus is a channel between the processor and one or more devices. For the
++ * purposes of the device model, all devices are connected via a bus,even if
++ * it is an internal, virtual, "platform" bus. Buses can plug into each other.
++ * A USB controller is usually a PCI device, for example. The device model
++ * represents the actual connections between buses and the devices they control.
++ * A bus is represented by the bus_type structure. It contains the name, the
++ * default attributes, the bus' methods, PM operations, and the driver core's
++ * private data.
++ */
+ struct bus_type {
+ 	const char		*name;
+ 	struct bus_attribute	*bus_attrs;
+@@ -119,6 +151,37 @@ extern int bus_unregister_notifier(struct bus_type *bus,
+ extern struct kset *bus_get_kset(struct bus_type *bus);
+ extern struct klist *bus_get_device_klist(struct bus_type *bus);
+ 
++/**
++ * struct device_driver - The basic device driver structure
++ * @name:	Name of the device driver.
++ * @bus:	The bus the device driver belongs to.
++ * @owner:	The module owner.
++ * @mod_name:	Used for built-in modules.
++ * @suppress_bind_attrs:Disables bind/unbind via sysfs.
++ * @of_match_table:The open firmware table.
++ * @probe:	called to query the existence of a specific device,
++ *		whether this driver can work with it, and bind the driver
++ *		to a specific device.
++ * @remove:	Called when the device is removed from the system to
++ *		unbind a device from this driver.
++ * @shutdown:	Called at shut-down time to quiesce the device.
++ * @suspend:	Called to put the device to sleep mode. Usually to a
++ *		low power state.
++ * @resume:	Called to bring a device from sleep mode.
++ * @groups:	Default attributes that get created by the driver core
++ *		automatically.
++ * @pm:		Power management operations of the device which matched
++ *		this driver.
++ * @p:		Driver core's private data, no one other than the driver
++ *		core can touch this.
++ *
++ * The device driver-model tracks all of the drivers known to the system.
++ * The main reason for this tracking is to enable the driver core to match
++ * up drivers with new devices. Once drivers are known objects within the
++ * system, however, a number of other things become possible. Device drivers
++ * can export information and configuration variables that are independent
++ * of any specific device.
++ */
+ struct device_driver {
+ 	const char		*name;
+ 	struct bus_type		*bus;
+@@ -185,8 +248,34 @@ struct device *driver_find_device(struct device_driver *drv,
+ 				  struct device *start, void *data,
+ 				  int (*match)(struct device *dev, void *data));
+ 
+-/*
+- * device classes
++/**
++ * struct class - device classes
++ * @name:	Name of the class.
++ * @owner:	The module owner.
++ * @class_attrs:Default attributes of this class.
++ * @dev_attrs:	Default attributes of the devices belong to the class.
++ * @dev_bin_attrs:Default binary attributes of the devices belong to the class.
++ * @dev_kobj:	The kobject that represents this class and links it into the hierarchy.
++ * @dev_uevent:	Called when a device is added, removed from this class, or a
++ *		few other things that generate uevents to add the environment
++ *		variables.
++ * @devnode:	Callback to provide the devtmpfs.
++ * @class_release:Called to release this class.
++ * @dev_release:Called to release the device.
++ * @suspend:	Used to put the device to sleep mode, usually to a low power
++ *		state.
++ * @resume:	Used to bring the device from the sleep mode.
++ * @ns_type:	Callbacks so sysfs can detemine namespaces.
++ * @namespace:	Namespace of the device belongs to this class.
++ * @pm:		The default device power management operations of this class.
++ * @p:		The private data of the driver core, no one other than the
++ *		driver core can touch this.
++ *
++ * A class is a higher-level view of a device that abstracts out low-level
++ * implementation details. Drivers may see a SCSI disk or an ATA disk, but,
++ * at the class level, they are all simply disks. Classes allow user space
++ * to work with devices based on what they do, rather than how they are
++ * connected or how they work.
+  */
+ struct class {
+ 	const char		*name;
+@@ -401,6 +490,65 @@ struct device_dma_parameters {
+ 	unsigned long segment_boundary_mask;
+ };
+ 
++/**
++ * struct device - The basic device structure.
++ * @parent:	The device's "parent" device the device to which it is attached.
++ * 		In most cases,a parent device is some sort of bus or host
++ * 		controller. If parent is NULL,the device, is a top-level device,
++ * 		which is not usually what you want.
++ * @p:		Hold the private to the driver core portions of the device.
++ * 		See the comment of the struct device_private for detail.
++ * @kobj:	A top-level, abstract class from which other classes are derived.
++ * @init_name:	Initial name of the device.
++ * @type:	The type of device.
++ * 		This identifies the device type and carries type-specific
++ * 		information.
++ * @mutex:	Mutex to synchronize calls to its driver.
++ * @bus:	Type of bus device is on.
++ * @driver:	Which driver has allocated this
++ * @platform_data:Platform data specific to the device.
++ * 		Example..For devices on custom boards, as typical of embedded
++ * 		and SOC based hardware, Linux often uses platform_data to point
++ * 		to board-specific structures describing devices and how they
++ * 		are wired.  That can include what ports are available, chip
++ * 		variants, which GPIO pins act in what additional roles, and so
++ * 		on.  This shrinks the "Board Support Packages" (BSPs) and
++ * 		minimizes board-specific #ifdefs in drivers.
++ * @power:	For device power management.
++ * 		See the Documentation/power/devices.txt for details.
++ * @pwr_domain:	Provide callbacks that are executed during system suspend,
++ * 		hibernation, system resume and during runtime PM transitions
++ * 		along with subsystem-level and driver-level callbacks.
++ * @numa_node:	NUMA node this device is close to.
++ * @dma_mask:	Dma mask (if dma'ble device).
++ * @coherent_dma_mask:Like dma_mask, but for alloc_coherent mapping as not all
++ * 		hardware supports 64 bit addresses for consistent allocations
++ * 		such description.
++ * @dma_parms:	A low level driver may set these to teach IOMMU code about
++ * 		segment limitations.
++ * @dma_pools:	Dma pools (if dma'ble device) .
++ * @dma_mem:	Internal for coherent mem override.
++ * @archdata:	For arch specific additions.
++ * @of_node:	Associated device tree node.
++ * @of_match:	Matching of_device_id from driver.
++ * @devt:	For creating the sysfs "dev".
++ * @devres_lock:Spinlock to protect the resource of the device.
++ * @devres_head:The resources list of the device.
++ * @knode_class:The node used to add the device to the class list.
++ * @class:	The class of the device.
++ * @groups:	Optional attribute groups.
++ * @release:	Callback to free the device after all references have
++ * 		gone away. This should be set by the allocator of the
++ * 		device (i.e. the bus driver that discovered the device).
++ *
++ * At the lowest level, every device in a Linux system is represented by an
++ * instance of struct device.The device structure contains the information
++ * that the device model core needs to model the system. Most subsystems,
++ * however, track additional information about the devices they host. As a
++ * result, it is rare for devices to be represented by bare device structures;
++ * instead, that structure, like kobject structures, is usually embed-ded within
++ * a higher-level representation of the device.
++ */
+ struct device {
+ 	struct device		*parent;
+ 
+@@ -611,7 +759,7 @@ extern int (*platform_notify)(struct device *dev);
+ extern int (*platform_notify_remove)(struct device *dev);
+ 
+ 
+-/**
++/*
+  * get_device - atomically increment the reference count for the device.
+  *
+  */
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.4.1
+
