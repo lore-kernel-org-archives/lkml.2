@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab1ECNVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:21:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52418 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752011Ab1ECNVl (ORCPT
+	id S1752148Ab1ECNWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:22:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60445 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab1ECNWk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:21:41 -0400
-Date: Tue, 3 May 2011 14:21:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC patch 29/32] trace event asoc remove semicolons
-Message-ID: <20110503132138.GL1762@opensource.wolfsonmicro.com>
-References: <20110502211123.163877033@efficios.com>
- <20110502213216.050459585@efficios.com>
+	Tue, 3 May 2011 09:22:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110502213216.050459585@efficios.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DBFADBE.5040603@denx.de>
+References: <1291451028-22532-1-git-send-email-hs@denx.de> <1300782452-528-1-git-send-email-hs@denx.de>
+ <20110502221406.GA15043@ponder.secretlab.ca> <4DBF8FF6.8030100@denx.de>
+ <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com> <4DBFADBE.5040603@denx.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 3 May 2011 07:22:20 -0600
+X-Google-Sender-Auth: auwV429-7PKWGIRVwvuYDAPxHpk
+Message-ID: <BANLkTi=b_ySGOxb2jXCvKdniesdNhqoUpQ@mail.gmail.com>
+Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
+To: hs@denx.de
+Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
+        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
+        Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 05:11:52PM -0400, Mathieu Desnoyers wrote:
-> Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
-> of events, thus saving space for trace event probes.
+On Tue, May 3, 2011 at 1:24 AM, Heiko Schocher <hs@denx.de> wrote:
+>
+> Ok. Done, just one more question:
+>
+> Why you didn;t pick up the patches:
+>
+> - powerpc, 5200: add support for charon board
+>  (Got an Acked-by from Wolfram Sang)
+> - powerpc, video: add SM501 support for charon board.
 
-Can I apply this in my tree or does this depend on some earlier patch I
-don't have?
+I did pick them up and they are in my tree.  Actually, I squashed
+those two together since there was no reason to have them split apart.
 
-> +#ifndef _TRACE_ASOC_DEF_
-> +#define _TRACE_ASOC_DEF_
-> +
->  struct snd_soc_jack;
->  struct snd_soc_codec;
->  struct snd_soc_card;
->  struct snd_soc_dapm_widget;
->  
-> +#endif /* _TRACE_ASOC_DEF_ */
-
-This is an unrelated change and should be split out.  Frankly I'm not
-that this is an improvement anyway, the struct declarations aren't going
-to do any harm...
+g.
