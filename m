@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1ECV1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:27:52 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36745 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752886Ab1ECV1v (ORCPT
+	id S1755170Ab1ECV3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:29:16 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47811 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754124Ab1ECV3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:27:51 -0400
-Date: Tue, 3 May 2011 22:29:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
-Message-ID: <20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110503174254.GA6545@kroah.com>
-References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
-	<20110503163128.24853.15446.stgit@bob.linux.org.uk>
-	<20110503174254.GA6545@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 17:29:15 -0400
+Date: Tue, 3 May 2011 17:29:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC patch 29/32] trace event asoc remove semicolons
+Message-ID: <20110503212914.GH32331@Krystal>
+References: <20110502211123.163877033@efficios.com> <20110502213216.050459585@efficios.com> <20110503132138.GL1762@opensource.wolfsonmicro.com> <20110503140647.GA29665@Krystal> <20110503141436.GB2893@sirena.org.uk> <20110503142407.GC2893@sirena.org.uk> <1304433287.25414.2396.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304433287.25414.2396.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:28:58 up 161 days,  2:32,  5 users,  load average: 0.05, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> > Signed-off-by: Ramesh Babu K V <ramesh.babu@intel.com>
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2011-05-03 at 15:24 +0100, Mark Brown wrote:
+> > On Tue, May 03, 2011 at 03:14:37PM +0100, Mark Brown wrote:
 > 
-> Something is messed up here as:
+> > OK, now I see patch 1 I understand why you're doing this.  It should
+> > still be at least called out in the patch description if not actually
+> > split out into a separate patch (which would be ideal) - one of the
+> > things that really stands out in reviews is unrelated changes.
 > 
-> > --- a/drivers/staging/intel_sst/intel_sst_drv_interface.c
-> > +++ b/drivers/staging/intel_sst/intel_sst_drv_interface.c
-> > @@ -508,6 +508,7 @@ int register_sst_card(struct intel_sst_card_ops *card)
-> >  			sst_drv_ctx->pmic_state = SND_MAD_INIT_DONE;
-> >  			sst_drv_ctx->rx_time_slot_status = 0; /*default AMIC*/
-> >  			card->pcm_control = sst_pmic_ops.pcm_control;
-> > +			sst_drv_ctx->scard_ops->card_status = SND_CARD_UN_INIT;
-> >  			return 0;
-> >  		} else {
-> >  			pr_err("strcmp fail %s\n", card->module_name);
+> I actually think there should have been two different patch sets. One
+> for the semi colon clean up, and the other to do the work for arrays.
+> The semi colon clean up is non-controversial as it is just a clean up
+> that does not affect the current code at all.
 > 
-> This line is in the original patch from Vinod in this function that
-> added the driver to the tree (git commit id fffa1cca), so the patch
-> doesn't apply at all.  Do you see this too?
+> But the added array preparation is not needed until we do the array
+> work, which deserves its own patch set.
 
-I see it present in ffa1cca then removed then added back
+OK, I'll split those patches.
 
-I see the problem - Mark Brown took a patch in staging via the ASoC tree
-which clashes with this.
+Thanks,
 
-fa880004682cf0d10e7a7c71dc8d56bbd67ac3d5
+Mathieu
 
-which is not only a staging patch but also breaks compilation of the code
-because the sst_drv_ctx symbol isn't even exported or visible to the
-intelmid module, which suggests it wasn't even compile tested.
+> 
+> -- Steve
+> 
+> 
 
-Best plan seems to be for the patch Mark took to go into the staging tree
-as well, and I'll then rebuild the patch stack on top of it and fix the
-fact it didn't even build.
-
-In general we have a bigger problem here, the ASoC driver appears to be
-violating rule #1 of staging - nothing outside of staging should be using
-or depending upon staging code in the first place.
-
-Alan
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
