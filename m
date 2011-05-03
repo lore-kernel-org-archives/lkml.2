@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab1ECXiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:38:00 -0400
-Received: from mail.cp-tel.net ([12.197.240.47]:46283 "HELO mail.cp-tel.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754092Ab1ECXh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:37:59 -0400
-X-Greylist: delayed 5405 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 19:37:59 EDT
-Message-ID: <b218057bf94a7e36de7f4c46b743671d.squirrel@mail.cp-tel.net>
-Date: Tue, 3 May 2011 16:55:22 -0500 (CDT)
-Subject: Dear 'WEBMAIL ACCOUNT USER',
-From: "Dear 'WEBMAIL ACCOUNT USER'," <info@web.com>
-Reply-To: upgraden_account@hotmail.com
-User-Agent: SquirrelMail/1.4.15
+	id S1752328Ab1ECV4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:56:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45417 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1ECV4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 17:56:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=lQF2HjMUGCCWPcc9Q5WwwYtdt+C1zYwbZH2qWhoHaWUqznC88r10RKNEH50TnDpYpx
+         4U6DIMB9Jsz9sHzOvATQ==
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-MagicMail-UUID: 0b40ef4c-75d0-11e0-87fd-001143e79e68
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110503214142.GC2678@nowhere>
+References: <1304456616-30281-1-git-send-email-vnagarnaik@google.com> <20110503214142.GC2678@nowhere>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Tue, 3 May 2011 14:56:11 -0700
+Message-ID: <BANLkTinA8M8Ok2jghtCoeBiTfw6n3NSziA@mail.gmail.com>
+Subject: Re: [RFC PATCH] tracing: Don't call wakeup() when committing the event
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear 'WEBMAIL ACCOUNT USER',
+On Tue, May 3, 2011 at 2:41 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, May 03, 2011 at 02:03:36PM -0700, Vaibhav Nagarnaik wrote:
+>> In using syscall tracing by concurrent processes, the wakeup() that is
+>> called in the event commit function causes contention on the spin lock
+>> of the waitqueue. I enabled sys_enter_getuid and sys_exit_getuid
+>> tracepoints, and by running getuid_microbench from autotest in parallel
+>> I found that the contention causes exponential latency increase in the
+>> tracing path.
+>>
+>> The autotest binary getuid_microbench calls getuid() in a tight loop for
+>> the given number of iterations and measures the average time required to
+>> complete a single invocation of syscall.
+>>
+>> The patch here points to the problem and provides a naive solution to
+>> start the discussion. It is not intended to be a definitive solution.
+>
+> Right, so another solution could be to have per cpu waitqueues for
+> the per_cpu trace_pipe/trace_pipe_raw files, and one big for the main
+> trace_pipe file.
 
-We are currrently upgrading our database and all account need to be verified.
-To complete your account activation with us,you are required to reply to this
-message and enter correctly the information's that is required from you.
+That could be another way. But if there is still *one* common waitqueue for
+the main trace file, we are still going to get contention on waking up that
+common waitqueue.
 
-Fill in your User Name and Password in the space provided (********)You are
-required to reply to this e-mail within the next 48 hours.
+Unless I am missing something, can you explain why there won't be contention
+in your suggested solution?
 
-Failure to get back to us, your Webmail account will be de-activated from our
-database.
+>
+> That involves two wake_up() calls but then it scales and you keep
+> the awakening.
+>
 
-FULL NAME;
-USERNAME;
-PASSWORD;
-RE-TYPE PASSWORD;
-DATE OF BIRTH;
-
-
-Thank you for using  Webmail Copyright 2011 ©  Web Team.
-
-19X45HANJ4453VXTM334M
-     10-01-2011
-
+Vaibhav Nagarnaik
