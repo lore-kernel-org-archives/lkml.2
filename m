@@ -1,65 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1ECT5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 15:57:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37927 "EHLO mx3.mail.elte.hu"
+	id S1754765Ab1ECT5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:57:31 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:54323 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab1ECT5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 15:57:20 -0400
-Date: Tue, 3 May 2011 21:56:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
- for now
-Message-ID: <20110503195658.GA24750@elte.hu>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-5-git-send-email-bp@amd64.org>
- <20110503064505.GF7751@elte.hu>
- <20110503072302.GC18979@aftab>
- <987664A83D2D224EAE907B061CE93D5301C53670E0@orsmsx505.amr.corp.intel.com>
- <20110503195200.GA23243@aftab>
+	id S1754662Ab1ECT53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 15:57:29 -0400
+Date: Tue, 3 May 2011 21:57:19 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, w.sang@pengutronix.de, arnd@arndb.de
+Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
+Message-ID: <20110503195719.GA2737@local>
+References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110503195200.GA23243@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@amd64.org> wrote:
-
-> > Probably make some sense to delay such a message (so that in the boot case 
-> > we give the daemon a chance to get started before complaining that it 
-> > hasn't shown up for work).
+On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
+> Adding OF binding to genirq.
+> Version string is setup to the "devicetree".
 > 
-> Yep, that and also I need to address the case for catching earlybird MCEs, 
-> when perf hasn't been initialized yet. I'm thinking we could reuse the mcelog 
-> buffer and feed those into the RAS daemon after init. Something like that.
+> Compatible string is not setup for now but you can add your
+> custom compatible string to uio_of_genirq_match structure.
+> 
+> For example with "vendor,device" compatible string:
+> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> 	{ .compatible = "vendor,device", },
+> 	{ /* empty for now */ },
+> };
+> 
 
-I'd suggest that to solve that problem we initialize events earlier and allow 
-something like a small static buffer backed event which does not need any 
-dynamic memory so it can be enabled early on and can receive events, at the 
-same time the MCE hw bits are enabled.
-
-That event can get a larger buffer once the system is more fully up - without 
-losing whatever events it is already holding.
+Looks OK to me.
 
 Thanks,
+Hans
 
-	Ingo
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+
+> 
+> ---
+> 
+> v4: Remove dev_info messages
+>     Check irq against -ENXIO for no irq
+> 
+> v3: Fix irq binding
+>     Use "devicetree" as version string
+> 
+> v2: Remove additional resource binding
+>     Setup correct version string
+>     Clear compatible string
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   39 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 7174d51..ed6bf64 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -23,6 +23,10 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/slab.h>
+>  
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+>  struct uio_pdrv_genirq_platdata {
+> @@ -97,6 +101,27 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	int ret = -EINVAL;
+>  	int i;
+>  
+> +	if (!uioinfo) {
+> +		int irq;
+> +
+> +		/* alloc uioinfo for one device */
+> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> +		if (!uioinfo) {
+> +			ret = -ENOMEM;
+> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> +			goto bad2;
+> +		}
+> +		uioinfo->name = pdev->dev.of_node->name;
+> +		uioinfo->version = "devicetree";
+> +
+> +		/* Multiple IRQs are not supported */
+> +		irq = platform_get_irq(pdev, 0);
+> +		if (irq == -ENXIO)
+> +			uioinfo->irq = UIO_IRQ_NONE;
+> +		else
+> +			uioinfo->irq = irq;
+> +	}
+> +
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+>  		goto bad0;
+> @@ -180,6 +205,10 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	kfree(priv);
+>  	pm_runtime_disable(&pdev->dev);
+>   bad0:
+> +	/* kfree uioinfo for CONFIG_OF */
+> +	if (!pdev->dev.platform_data)
+> +		kfree(uioinfo);
+> + bad2:
+>  	return ret;
+>  }
+>  
+> @@ -215,6 +244,15 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+>  	.runtime_resume = uio_pdrv_genirq_runtime_nop,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> +	{ /* empty for now */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +#else
+> +# define uio_of_genirq_match NULL
+> +#endif
+> +
+>  static struct platform_driver uio_pdrv_genirq = {
+>  	.probe = uio_pdrv_genirq_probe,
+>  	.remove = uio_pdrv_genirq_remove,
+> @@ -222,6 +260,7 @@ static struct platform_driver uio_pdrv_genirq = {
+>  		.name = DRIVER_NAME,
+>  		.owner = THIS_MODULE,
+>  		.pm = &uio_pdrv_genirq_dev_pm_ops,
+> +		.of_match_table = uio_of_genirq_match,
+>  	},
+>  };
+>  
+> -- 
+> 1.5.5.6
+> 
+> 
