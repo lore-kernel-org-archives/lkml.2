@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab1EGGce (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 02:32:34 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50320 "EHLO
+	id S1754729Ab1EGGeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 02:34:09 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50587 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab1EGGcb (ORCPT
+	with ESMTP id S1753690Ab1EGGct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 02:32:31 -0400
+	Sat, 7 May 2011 02:32:49 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=tzjYG0mlu2bXpLxxhKPBZCHoQl+uRXHMs4CHbhyXZePOaFhcwUesmCjKDILurM4Ch
-	BwEl3Z1IW9e+E12I23dWg==
-Message-Id: <20110503092905.694819271@google.com>
+	b=cRXvd0PCK6NcNyA1Dxz/kFvSkyPV+U8fwlVBuV71kdOQwodREZ1EQpGE3qrETy15p
+	d4wiHQ+MjLU7OA45RtigA==
+Message-Id: <20110503092905.782248242@google.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 02:29:00 -0700
+Date: Tue, 03 May 2011 02:29:01 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,239 +24,133 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: [patch 14/15] sched: return unused runtime on voluntary sleep
+Subject: [patch 15/15] sched: add documentation for bandwidth control
 References: <20110503092846.022272244@google.com>
-Content-Disposition: inline; filename=sched-bwc-simple_return_quota.patch
+Content-Disposition: inline; filename=sched-bwc-documentation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a local cfs_rq blocks we return the majority of its remaining quota to the
-global bandwidth pool for use by other runqueues.
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
 
-We do this only when the quota is current and there is more than 
-min_cfs_rq_quota [1ms by default] of runtime remaining on the rq.
+Basic description of usage and effect for CFS Bandwidth Control.
 
-In the case where there are throttled runqueues and we have sufficient
-bandwidth to meter out a slice, a second timer is kicked off to handle this
-delivery, unthrottling where appropriate.
-
-Using a 'worst case' antagonist which executes on each cpu
-for 1ms before moving onto the next on a fairly large machine:
-
-no quota generations:
- 197.47 ms       /cgroup/a/cpuacct.usage
- 199.46 ms       /cgroup/a/cpuacct.usage
- 205.46 ms       /cgroup/a/cpuacct.usage
- 198.46 ms       /cgroup/a/cpuacct.usage
- 208.39 ms       /cgroup/a/cpuacct.usage
-Since we are allowed to use "stale" quota our usage is effectively bounded by
-the rate of input into the global pool and performance is relatively stable.
-
-with quota generations [1s increments]:
- 119.58 ms       /cgroup/a/cpuacct.usage
- 119.65 ms       /cgroup/a/cpuacct.usage
- 119.64 ms       /cgroup/a/cpuacct.usage
- 119.63 ms       /cgroup/a/cpuacct.usage
- 119.60 ms       /cgroup/a/cpuacct.usage
-The large deficit here is due to quota generations (/intentionally/) preventing
-us from now using previously stranded slack quota.  The cost is that this quota
-becomes unavailable.
-
-with quota generations and quota return:
- 200.09 ms       /cgroup/a/cpuacct.usage
- 200.09 ms       /cgroup/a/cpuacct.usage
- 198.09 ms       /cgroup/a/cpuacct.usage
- 200.09 ms       /cgroup/a/cpuacct.usage
- 200.06 ms       /cgroup/a/cpuacct.usage
-By returning unused quota we're able to both stably consume our desired quota
-and prevent unintentional overages due to the abuse of slack quota from 
-previous quota periods (especially on a large machine).
-
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 Signed-off-by: Paul Turner <pjt@google.com>
-
 ---
- kernel/sched.c      |   15 +++++++
- kernel/sched_fair.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 113 insertions(+), 4 deletions(-)
+ Documentation/scheduler/sched-bwc.txt |   98
+ ++++++++++++++++++++++++++++++++++
+ Documentation/scheduler/sched-bwc.txt |  104 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
 
-Index: tip/kernel/sched.c
+Index: tip/Documentation/scheduler/sched-bwc.txt
 ===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -257,7 +257,7 @@ struct cfs_bandwidth {
- 	s64 hierarchal_quota;
- 
- 	int idle;
--	struct hrtimer period_timer;
-+	struct hrtimer period_timer, slack_timer;
- 	struct list_head throttled_cfs_rq;
- 
- 	/* statistics */
-@@ -414,6 +414,16 @@ static inline struct cfs_bandwidth *tg_c
- 
- static inline u64 default_cfs_period(void);
- static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun);
-+static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b);
+--- /dev/null
++++ tip/Documentation/scheduler/sched-bwc.txt
+@@ -0,0 +1,104 @@
++CFS Bandwidth Control (aka CPU hard limits)
++===========================================
 +
-+static enum hrtimer_restart sched_cfs_slack_timer(struct hrtimer *timer)
-+{
-+	struct cfs_bandwidth *cfs_b =
-+		container_of(timer, struct cfs_bandwidth, slack_timer);
-+	do_sched_cfs_slack_timer(cfs_b);
++[ This document talks about CPU bandwidth control of CFS groups only.
++  The bandwidth control of RT groups is explained in
++  Documentation/scheduler/sched-rt-group.txt ]
 +
-+	return HRTIMER_NORESTART;
-+}
- 
- static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
- {
-@@ -446,6 +456,8 @@ static void init_cfs_bandwidth(struct cf
- 	INIT_LIST_HEAD(&cfs_b->throttled_cfs_rq);
- 	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	cfs_b->period_timer.function = sched_cfs_period_timer;
-+	hrtimer_init(&cfs_b->slack_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	cfs_b->slack_timer.function = sched_cfs_slack_timer;
- 
- }
- 
-@@ -474,6 +486,7 @@ static void start_cfs_bandwidth(struct c
- static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- {
- 	hrtimer_cancel(&cfs_b->period_timer);
-+	hrtimer_cancel(&cfs_b->slack_timer);
- }
- #else
- #ifdef CONFIG_FAIR_GROUP_SCHED
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -1465,20 +1465,25 @@ static void throttle_cfs_rq(struct cfs_r
- 	raw_spin_unlock(&cfs_b->lock);
- }
- 
-+static void return_cfs_rq_quota(struct cfs_rq *cfs_rq);
++CFS bandwidth control is a group scheduler extension that can be used to
++control the maximum CPU bandwidth obtained by a CPU cgroup.
 +
- /* conditionally throttle active cfs_rq's from put_prev_entity() */
- static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
- {
--	if (!cfs_rq->runtime_enabled || cfs_rq->runtime_remaining > 0)
-+	if (!cfs_rq->runtime_enabled)
- 		return;
- 
- 	/*
- 	 * it's possible active load balance has forced a throttled cfs_rq to
--	 * run again, we don't want to re-throttled in this case.
-+	 * run again, we don't want to re-throttle in this case.
- 	 */
- 	if (cfs_rq_throttled(cfs_rq))
- 		return;
- 
--	throttle_cfs_rq(cfs_rq);
-+	if (cfs_rq->runtime_remaining <= 0)
-+		throttle_cfs_rq(cfs_rq);
-+	else if (!cfs_rq->load.weight)
-+		return_cfs_rq_quota(cfs_rq);
- }
- 
- /*
-@@ -1644,6 +1649,97 @@ out_unlock:
- out:
- 	return idle;
- }
++Bandwidth allowed for a group is specified using quota and period. Within
++a given "period" (microseconds), a group is allowed to consume up to "quota"
++microseconds of CPU time, which is the upper limit or the hard limit. When the
++CPU bandwidth consumption of a group exceeds the hard limit, the tasks in the
++group are throttled and are not allowed to run until the end of the period at
++which time the group's quota is replenished.
 +
-+/* a cfs_rq won't donate quota below this amount */
-+static const u64 min_cfs_rq_quota = 1 * NSEC_PER_MSEC;
-+/* minimum remaining period time to redistribute slack quota */
-+static const u64 min_bandwidth_expiration = 2 * NSEC_PER_MSEC;
-+/* how long we wait to gather additional slack before distributing */
-+static const u64 cfs_bandwidth_slack_period = 5 * NSEC_PER_MSEC;
++Runtime available to the group is tracked globally. At the beginning of
++every period, group's global runtime pool is replenished with "quota"
++microseconds worth of runtime. The runtime consumption happens locally at each
++CPU by fetching runtimes in "slices" from the global pool.
 +
-+/* are we near the end of the current quota period? */
-+static int runtime_refresh_within(struct cfs_bandwidth *cfs_b, u64 min_expire)
-+{
-+	struct hrtimer *refresh_timer = &cfs_b->period_timer;
-+	u64 remaining;
++Interface
++---------
++Quota and period can be set via cgroup files.
 +
-+	/* if the call back is running a quota refresh is occurring */
-+	if (hrtimer_callback_running(refresh_timer))
-+		return 1;
++cpu.cfs_quota_us: the enforcement interval (microseconds)
++cpu.cfs_period_us: the maximum allowed bandwidth (microseconds)
 +
-+	/* is a quota refresh about to occur? */
-+	remaining = ktime_to_ns(hrtimer_expires_remaining(refresh_timer));
-+	if (remaining < min_expire)
-+		return 1;
++Within a period of cpu.cfs_period_us, the group as a whole will not be allowed
++to consume more than cpu_cfs_quota_us worth of runtime.
 +
-+	return 0;
-+}
++The default value of cpu.cfs_period_us is 500ms and the default value
++for cpu.cfs_quota_us is -1.
 +
-+static void start_cfs_slack_bandwidth(struct cfs_bandwidth *cfs_b)
-+{
-+	u64 min_left = cfs_bandwidth_slack_period + min_bandwidth_expiration;
++A group with cpu.cfs_quota_us as -1 indicates that the group has infinite
++bandwidth, which means that it is not bandwidth controlled.
 +
-+	/* if there's a quota refresh soon don't bother with slack */
-+	if (runtime_refresh_within(cfs_b, min_left))
-+		return;
++Writing any negative value to cpu.cfs_quota_us will turn the group into
++an infinite bandwidth group. Reading cpu.cfs_quota_us for an infinite
++bandwidth group will always return -1.
 +
-+	start_bandwidth_timer(&cfs_b->slack_timer,
-+				ns_to_ktime(cfs_bandwidth_slack_period));
-+}
++System wide settings
++--------------------
++The amount of runtime obtained from global pool every time a CPU wants the
++group quota locally is controlled by a sysctl parameter
++sched_cfs_bandwidth_slice_us. The current default is 5ms. This can be changed
++by writing to /proc/sys/kernel/sched_cfs_bandwidth_slice_us.
 +
-+static void return_cfs_rq_quota(struct cfs_rq *cfs_rq)
-+{
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-+	s64 slack_runtime = cfs_rq->runtime_remaining - min_cfs_rq_quota;
++A quota hierarchy is defined to be consistent if the sum of child reservations
++does not exceed the bandwidth allocated to its parent.  An entity with no
++explicit bandwidth reservation (e.g. no limit) is considered to inherit its
++parent's limits.  This behavior may be managed using
++/proc/sys/kernel/sched_cfs_bandwidth_consistent
 +
-+	if (!cfs_rq->runtime_enabled || cfs_rq->load.weight)
-+		return;
++Statistics
++----------
++cpu.stat file lists three different stats related to CPU bandwidth control.
 +
-+	if (slack_runtime <= 0)
-+		return;
++nr_periods: Number of enforcement intervals that have elapsed.
++nr_throttled: Number of times the group has been throttled/limited.
++throttled_time: The total time duration (in nanoseconds) for which the group
++remained throttled.
 +
-+	raw_spin_lock(&cfs_b->lock);
-+	if (cfs_b->quota != RUNTIME_INF &&
-+	    cfs_b->runtime_expires == cfs_rq->runtime_expires) {
-+		cfs_b->runtime += slack_runtime;
++These files are read-only.
 +
-+		if (cfs_b->runtime > sched_cfs_bandwidth_slice() &&
-+		    !list_empty(&cfs_b->throttled_cfs_rq))
-+			start_cfs_slack_bandwidth(cfs_b);
-+	}
-+	raw_spin_unlock(&cfs_b->lock);
++Hierarchy considerations
++------------------------
++Each group's bandwidth (quota and period) can be set independent of its
++parent or child groups. There are two ways in which a group can get
++throttled:
 +
-+	cfs_rq->runtime_remaining -= slack_runtime;
-+}
++- it consumed its quota within the period
++- it has quota left but the parent's quota is exhausted.
 +
-+static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
-+{
-+	u64 runtime = 0, slice = sched_cfs_bandwidth_slice();
-+	u64 expires;
++In the 2nd case, even though the child has quota left, it will not be
++able to run since the parent itself is throttled. Similarly groups that are
++not bandwidth constrained might end up being throttled if any parent
++in their hierarchy is throttled.
 +
-+	/* confirm we're still not at a refresh boundary */
-+	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration))
-+		return;
++Examples
++--------
++1. Limit a group to 1 CPU worth of runtime.
 +
-+	raw_spin_lock(&cfs_b->lock);
-+	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
-+		runtime = cfs_b->runtime;
-+		cfs_b->runtime = 0;
-+	}
-+	expires = cfs_b->runtime_expires;
-+	raw_spin_unlock(&cfs_b->lock);
++	If period is 500ms and quota is also 500ms, the group will get
++	1 CPU worth of runtime every 500ms.
 +
-+	if (!runtime)
-+		return;
++	# echo 500000 > cpu.cfs_quota_us /* quota = 500ms */
++	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
 +
-+	runtime = distribute_cfs_runtime(cfs_b, runtime, expires);
++2. Limit a group to 2 CPUs worth of runtime on a multi-CPU machine.
 +
-+	raw_spin_lock(&cfs_b->lock);
-+	if (expires == cfs_b->runtime_expires)
-+		cfs_b->runtime = runtime;
-+	raw_spin_unlock(&cfs_b->lock);
-+}
++	With 500ms period and 1000ms quota, the group can get 2 CPUs worth of
++	runtime every 500ms.
 +
- #else
- static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
- 		unsigned long delta_exec) {}
++	# echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
++	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
++
++3. Limit a group to 20% of 1 CPU.
++
++	With 500ms period, 100ms quota will be equivalent to 20% of 1 CPU.
++
++	# echo 100000 > cpu.cfs_quota_us /* quota = 100ms */
++	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
 
 
