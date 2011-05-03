@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab1ECUDt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:03:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54947 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab1ECUDq (ORCPT
+	id S1754853Ab1ECUGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:06:16 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35434 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab1ECUGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:03:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AlaLjzKYXTZLi2zV2YGtVjCNsrhWA1OEIBVX8XyfkJer0tqJ4pqni7/8tsQ7y25p0n
-         M2DhczyQgDtrkwBUxzQyV7ksi3AvIR+m9Uqv9tE0rY+usu0PEmpyLTWGOUeGjV0JoVIc
-         Na72cHbIm3RKfUaP7swtei3akf8Ax3iNIB6/0=
-Message-ID: <4DC05F9C.2070802@lwfinger.net>
-Date: Tue, 03 May 2011 15:03:40 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-References: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net> <20110503150105.GC18648@gere.osrc.amd.com>
-In-Reply-To: <20110503150105.GC18648@gere.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 16:06:13 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: Chris Ball <cjb@laptop.org>,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
+        Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH] sdio: optimized SDIO IRQ handling for single function
+Date: Tue,  3 May 2011 22:04:47 +0200
+Message-Id: <1304453087-7365-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 10:01 AM, Borislav Petkov wrote:
-> I think I have such a device in my Thinkpad:
->
-> 03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller [10ec:8172] (rev 10)
->
-> I could give them a run soon. Do you have them in a tree somewhere I
-> could pull?
+From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
 
-Your device is claimed by the new driver.
+If there is only 1 function registered, and IRQ:s are supported and
+currently enabled, call the callback handler directly
+without checking the CCCR registers.
 
-You can get the code from
+Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+---
+ drivers/mmc/core/sdio_irq.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lwfinger/rtl8192se.git
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index b300161..25291bf 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -32,6 +32,20 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+ 	int i, ret, count;
+ 	unsigned char pending;
+ 
++	/*
++	 * If there is only 1 function registered
++	 * call irq directly without checking the CCCR registers.
++	 */
++	if ((card->host->caps & MMC_CAP_SDIO_IRQ) &&
++	    card->host->sdio_irqs && (card->sdio_funcs == 1))
++		for (i = 0; i < SDIO_MAX_FUNCS; i++) {
++			struct sdio_func *func = card->sdio_func[i];
++			if (func && func->irq_handler) {
++				func->irq_handler(func);
++				return 1;
++			}
++		}
++
+ 	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
+ 	if (ret) {
+ 		printk(KERN_DEBUG "%s: error %d reading SDIO_CCCR_INTx\n",
+-- 
+1.7.4.1
 
-This tree is based on Linville's wireless-testing tree with these 12 patches 
-applied.
-
-Larry
