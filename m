@@ -1,40 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab1ECA0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 20:26:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:1153 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab1ECA0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 20:26:47 -0400
-Subject: Re: [PATCH] drivers/acpi/utils.c: Fixed coding style issues
-From: Joe Perches <joe@perches.com>
-To: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-Cc: Len Brown <lenb@kernel.org>, Nicolas Kaiser <nikai@nikai.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1304374605.1619.4.camel@ks-ubuntu>
-References: <1303341624.11397.2.camel@ks-ubuntu>
-	 <20110421102815.5abf133e@absol.kitzblitz>
-	 <1303402099.11855.9.camel@ks-ubuntu>  <1304374605.1619.4.camel@ks-ubuntu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 May 2011 17:26:45 -0700
-Message-ID: <1304382405.7792.53.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758988Ab1ECBA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 21:00:28 -0400
+Received: from usindmx01.hds.com ([207.126.252.12]:43570 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758924Ab1ECBAX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 21:00:23 -0400
+X-Greylist: delayed 1904 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 May 2011 21:00:23 EDT
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Wu Fengguang <fengguang.wu@intel.com>, Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>
+Date: Mon, 2 May 2011 20:27:43 -0400
+Subject: RE: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation failures
+Thread-Topic: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation
+ failures
+Thread-Index: AcwIz9zupkxMcsC9RtSiVb/bU06c5wAVlr8g
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C3DED479C@USINDEVS02.corp.hds.com>
+References: <BANLkTinM9DjK9QsGtN0Sh308rr+86UMF0A@mail.gmail.com>
+ <20110426063421.GC19717@localhost>
+ <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
+ <20110426092029.GA27053@localhost>
+ <20110426124743.e58d9746.akpm@linux-foundation.org>
+ <20110428133644.GA12400@localhost> <20110429022824.GA8061@localhost>
+ <20110430141741.GA4511@localhost> <20110501163542.GA3204@barrios-desktop>
+ <20110502132958.GA9690@localhost> <20110502134953.GA12281@localhost>
+In-Reply-To: <20110502134953.GA12281@localhost>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 17:16 -0500, Karthigan Srinivasan wrote:
->  drivers/acpi/utils.c |   15 ++++++---------
-> @@ -373,7 +370,7 @@ acpi_evaluate_reference(acpi_handle handle,
->        end:
->  	if (ACPI_FAILURE(status)) {
->  		list->count = 0;
-> -		//kfree(list->handles);
-> +		/* kfree(list->handles); */
+Hi Wu,
+ 
+> On Mon, May 02, 2011 at 09:29:58PM +0800, Wu Fengguang wrote:
+> > > > +                     if (preferred_zone &&
+> > > > +                         zone_watermark_ok_safe(preferred_zone, sc->order,
+> > > > +                                     high_wmark_pages(preferred_zone),
+> > > > +                                     zone_idx(preferred_zone), 0))
+> > > > +                             goto out;
+> > > > +             }
+> > >
+> > > As I said, I think direct reclaim path sould be fast if possbile and
+> > > it should not a function of min_free_kbytes.
+> >
+> > It can be made not a function of min_free_kbytes by simply changing
+> > high_wmark_pages() to low_wmark_pages() in the above chunk, since
+> > direct reclaim is triggered when ALLOC_WMARK_LOW cannot be satisfied,
+> > ie. it just dropped below low_wmark_pages().
+> >
+> > But still, it costs 62ms reclaim latency (base kernel is 29ms).
+> 
+> I got new findings: the CPU schedule delays are much larger than
+> reclaim delays. It does make the "direct reclaim until low watermark
+> OK" latency less a problem :)
+> 
+> 1000 dd test case:
+>                 RECLAIM delay   CPU delay       nr_alloc_fail   CAL (last CPU)
+> base kernel     29ms            244ms           14586           218440
+> patched         62ms            215ms           5004            325
 
-Just delete the line instead.
+Hmm, in your system, the latency of direct reclaim may be a less problem.
 
+But, generally speaking, in a latency sensitive system in enterprise area
+there are two kind of processes. One is latency sensitive -(A) the other
+is not-latency sensitive -(B). And usually we set cpu affinity for both processes
+to avoid scheduling issue in (A). In this situation, CPU delay tends to be lower
+than the above and a less problem but reclaim delay is more critical. 
+
+Regards,
+Satoru
+
+> 
+> Thanks,
+> Fengguang
+> 
 
