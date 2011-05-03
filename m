@@ -1,351 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab1ECWuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:50:18 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32651 "EHLO
+	id S1753545Ab1ECWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:52:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:28408 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab1ECWuR (ORCPT
+	with ESMTP id S1752011Ab1ECWw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:50:17 -0400
+	Tue, 3 May 2011 18:52:28 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=oyugUJ0ltS4zDmFvXW2WfDMoSwkUA7GJlzILsqS8LFjhJrbIAs9L4UMKAVKXgPvxk
-	XBBOZn7BU4NHUYAXT2dwg==
+	b=UQ3i/u3AodKNeTLiP2Bk5eMgE5qfo65ZAuxCifSZ+Z1mpXuhtS/1VH6P9vWUySELP
+	2LLtm9Vn1Gui1iS5Kq5qA==
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>
 Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org, x86@kernel.org,
-        Aditya Kali <adityakali@google.com>,
+        Jiaying Zhang <jiayingz@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] x86: Change trap definitions to enumerated values
-Date: Tue,  3 May 2011 15:49:55 -0700
-Message-Id: <1304462995-1825-1-git-send-email-vnagarnaik@google.com>
+Subject: [PATCH] trace: Add trap entry/exit tracepoints
+Date: Tue,  3 May 2011 15:52:10 -0700
+Message-Id: <1304463130-1960-1-git-send-email-vnagarnaik@google.com>
 X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aditya Kali <adityakali@google.com>
+From: Jiaying Zhang <jiayingz@google.com>
 
-The traps are referred to by their numbers and it can be difficult to
-understand them while reading the code without context. This patch adds
-enumeration of the trap numbers and replaced the numbers to the correct
-enum for x86.
+There are many ways that the system can move from user space to kernel
+space and back. Of those, syscalls and interrupts are traced in ftrace.
+Using traps is another way, but is not traced currently. Page faults,
+general protection faults and others provide analysis of how the system
+is behaving, who causes it and timing impact on the system performance
+and running processes.
+
+The following patch adds the event definition for trap entry/exit and
+the instrumentation hooks for x86 platforms. Other platforms should be
+able to use these events as well once they add the corresponding
+instrumentation.
+
+$ echo 1 > debug/tracing/events/trap/enable
+run gdb to genrate some trap events
+$ cat debug/tracing/trace
+          <...>-13619 [003]   917.726602: trap_entry: number=3
+          <...>-13619 [003]   917.726612: trap_exit: number=3
+          <...>-13619 [003]   917.747263: trap_entry: number=1
+          <...>-13619 [003]   917.747272: trap_exit: number=1
+          <...>-13619 [003]   917.747567: trap_entry: number=3
+          <...>-13619 [003]   917.747570: trap_exit: number=3
+          <...>-13619 [003]   917.748101: trap_entry: number=1
+          <...>-13619 [003]   917.748103: trap_exit: number=1
+
+$ echo 1 > tracing_enabled; ~/trap pagefault; echo 0 > tracing_enabled
+$ cat trace | grep "trap-" | grep number=14 | head
+       trap-12528 [003]  1159.755792: trap_entry: number=14
+       trap-12528 [003]  1159.755801: trap_entry: number=14
+       trap-12528 [003]  1159.755804: trap_entry: number=14
+       trap-12528 [003]  1159.755807: trap_entry: number=14
+       trap-12528 [003]  1159.755810: trap_entry: number=14
+       trap-12528 [003]  1159.755817: trap_entry: number=14
+       trap-12528 [003]  1159.755819: trap_entry: number=14
+       trap-12528 [003]  1159.755821: trap_entry: number=14
+       trap-12528 [003]  1159.755824: trap_entry: number=14
+       trap-12528 [003]  1159.755826: trap_entry: number=14
+$ cat trace | grep "trap-" | grep number=7 | head
+       trap-12528 [003]  1159.756283: trap_entry: number=7
+       trap-12529 [003]  1159.757427: trap_entry: number=7
+       trap-12530 [003]  1159.758277: trap_entry: number=7
+       trap-12531 [003]  1159.759172: trap_entry: number=7
+       trap-12532 [003]  1159.768643: trap_entry: number=7
+       trap-12533 [003]  1159.778195: trap_entry: number=7
+       trap-15026 [001]  1557.877722: trap_entry: number=7
+       trap-15253 [001]  1621.395067: trap_entry: number=7
 
 Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- arch/x86/include/asm/traps.h |   24 +++++++++
- arch/x86/kernel/traps.c      |  116 ++++++++++++++++++++++-------------------
- 2 files changed, 86 insertions(+), 54 deletions(-)
+ arch/x86/kernel/traps.c     |   19 ++++++++++++++++++
+ arch/x86/mm/fault.c         |   13 ++++++++++-
+ include/trace/events/trap.h |   44 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 74 insertions(+), 2 deletions(-)
+ create mode 100644 include/trace/events/trap.h
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 0310da6..c561caf 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -87,4 +87,28 @@ asmlinkage void smp_thermal_interrupt(void);
- asmlinkage void mce_threshold_interrupt(void);
- #endif
- 
-+/* Interrupts/Exceptions */
-+enum {
-+	INTR_DIV_BY_ZERO = 0,	/*  0 */
-+	INTR_DEBUG,		/*  1 */
-+	INTR_NMI,		/*  2 */
-+	INTR_BREAKPOINT,	/*  3 */
-+	INTR_OVERFLOW,		/*  4 */
-+	INTR_BOUNDS_CHECK,	/*  5 */
-+	INTR_INVALID_OP,	/*  6 */
-+	INTR_NO_DEV,		/*  7 */
-+	INTR_DBL_FAULT,		/*  8 */
-+	INTR_SEG_OVERRUN,	/*  9 */
-+	INTR_INVALID_TSS,	/* 10 */
-+	INTR_NO_SEG,		/* 11 */
-+	INTR_STACK_FAULT,	/* 12 */
-+	INTR_GPF,		/* 13 */
-+	INTR_PAGE_FAULT,	/* 14 */
-+	INTR_SPURIOUS,		/* 15 */
-+	INTR_COPROCESSOR,	/* 16 */
-+	INTR_ALIGNMENT,		/* 17 */
-+	INTR_MCE,		/* 18 */
-+	INTR_SIMD_COPROCESSOR	/* 19 */
-+};
-+
- #endif /* _ASM_X86_TRAPS_H */
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index fbfc162..b3efe9f 100644
+index b3efe9f..fbfd787 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -129,7 +129,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 		 * traps 0, 1, 3, 4, and 5 should be forwarded to vm86.
- 		 * On nmi (interrupt 2), do_trap should not be called.
- 		 */
--		if (trapnr < 6)
-+		if (trapnr < INTR_INVALID_OP)
- 			goto vm86_trap;
- 		goto trap_signal;
- 	}
-@@ -213,27 +213,29 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
- }
+@@ -33,6 +33,9 @@
+ #include <linux/io.h>
+ #include <trace/events/irq.h>
  
--DO_ERROR_INFO(0, SIGFPE, "divide error", divide_error, FPE_INTDIV, regs->ip)
--DO_ERROR(4, SIGSEGV, "overflow", overflow)
--DO_ERROR(5, SIGSEGV, "bounds", bounds)
--DO_ERROR_INFO(6, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN, regs->ip)
--DO_ERROR(9, SIGFPE, "coprocessor segment overrun", coprocessor_segment_overrun)
--DO_ERROR(10, SIGSEGV, "invalid TSS", invalid_TSS)
--DO_ERROR(11, SIGBUS, "segment not present", segment_not_present)
-+DO_ERROR_INFO(INTR_DIV_BY_ZERO, SIGFPE, "divide error",    divide_error,    FPE_INTDIV, regs->ip)
-+DO_ERROR_INFO(INTR_ALIGNMENT,   SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
-+DO_ERROR_INFO(INTR_INVALID_OP,  SIGILL, "invalid opcode",  invalid_op,      ILL_ILLOPN, regs->ip)
++#define CREATE_TRACE_POINTS
++#include <trace/events/trap.h>
 +
-+DO_ERROR(INTR_OVERFLOW,     SIGSEGV, "overflow",                    overflow)
-+DO_ERROR(INTR_BOUNDS_CHECK, SIGSEGV, "bounds",                      bounds)
-+DO_ERROR(INTR_SEG_OVERRUN,  SIGFPE,  "coprocessor segment overrun", coprocessor_segment_overrun)
-+DO_ERROR(INTR_INVALID_TSS,  SIGSEGV, "invalid TSS",                 invalid_TSS)
-+DO_ERROR(INTR_NO_SEG,       SIGBUS,  "segment not present",         segment_not_present)
- #ifdef CONFIG_X86_32
--DO_ERROR(12, SIGBUS, "stack segment", stack_segment)
-+DO_ERROR(INTR_STACK_FAULT,  SIGBUS,  "stack segment",               stack_segment)
- #endif
--DO_ERROR_INFO(17, SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
- dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+ #ifdef CONFIG_EISA
+ #include <linux/ioport.h>
+ #include <linux/eisa.h>
+@@ -123,6 +126,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
  {
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--			12, SIGBUS) == NOTIFY_STOP)
-+			INTR_STACK_FAULT, SIGBUS) == NOTIFY_STOP)
- 		return;
- 	preempt_conditional_sti(regs);
--	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
-+	do_trap(INTR_STACK_FAULT, SIGBUS, "stack segment", regs, error_code,
-+			NULL);
- 	preempt_conditional_cli(regs);
- }
- 
-@@ -243,10 +245,10 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
  	struct task_struct *tsk = current;
  
- 	/* Return not checked because double check cannot be ignored */
--	notify_die(DIE_TRAP, str, regs, error_code, 8, SIGSEGV);
-+	notify_die(DIE_TRAP, str, regs, error_code, INTR_DBL_FAULT, SIGSEGV);
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 8;
-+	tsk->thread.trap_no = INTR_DBL_FAULT;
- 
- 	/*
- 	 * This is always a kernel trap and never fixable (and thus must
-@@ -274,7 +276,7 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		goto gp_in_kernel;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_no = INTR_GPF;
- 
- 	if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
- 			printk_ratelimit()) {
-@@ -301,9 +303,9 @@ gp_in_kernel:
- 		return;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_no = INTR_GPF;
- 	if (notify_die(DIE_GPF, "general protection fault", regs,
--				error_code, 13, SIGSEGV) == NOTIFY_STOP)
-+				error_code, INTR_GPF, SIGSEGV) == NOTIFY_STOP)
- 		return;
- 	die("general protection fault", regs, error_code);
- }
-@@ -372,7 +374,8 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- static notrace __kprobes void
- unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- {
--	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
-+	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, INTR_NMI,
-+				SIGINT) ==
- 			NOTIFY_STOP)
- 		return;
- #ifdef CONFIG_MCA
-@@ -404,7 +407,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	 * NMI, otherwise we may lose it, because the CPU-specific
- 	 * NMI can not be detected/processed on other CPUs.
- 	 */
--	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
-+	if (notify_die(DIE_NMI, "nmi", regs, 0, INTR_NMI, SIGINT) ==
-+			NOTIFY_STOP)
- 		return;
- 
- 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
-@@ -460,22 +464,24 @@ void restart_nmi(void)
- dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
- {
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
--	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
--			== NOTIFY_STOP)
-+	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, INTR_BREAKPOINT,
-+			SIGTRAP) == NOTIFY_STOP)
- 		return;
- #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
- #ifdef CONFIG_KPROBES
--	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
-+	if (notify_die(DIE_INT3, "int3", regs, error_code, INTR_BREAKPOINT,
-+				SIGTRAP)
- 			== NOTIFY_STOP)
- 		return;
- #else
--	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
-+	if (notify_die(DIE_TRAP, "int3", regs, error_code, INTR_BREAKPOINT,
-+				SIGTRAP)
- 			== NOTIFY_STOP)
- 		return;
- #endif
- 
- 	preempt_conditional_sti(regs);
--	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
-+	do_trap(INTR_BREAKPOINT, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
- }
- 
-@@ -574,7 +580,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
++	trace_trap_entry(trapnr);
+ #ifdef CONFIG_X86_32
  	if (regs->flags & X86_VM_MASK) {
+ 		/*
+@@ -169,6 +173,7 @@ trap_signal:
+ 		force_sig_info(signr, info, tsk);
+ 	else
+ 		force_sig(signr, tsk);
++	trace_trap_exit(trapnr);
+ 	return;
+ 
+ kernel_trap:
+@@ -177,6 +182,7 @@ kernel_trap:
+ 		tsk->thread.trap_no = trapnr;
+ 		die(str, regs, error_code);
+ 	}
++	trace_trap_exit(trapnr);
+ 	return;
+ 
+ #ifdef CONFIG_X86_32
+@@ -184,6 +190,7 @@ vm86_trap:
+ 	if (handle_vm86_trap((struct kernel_vm86_regs *) regs,
+ 						error_code, trapnr))
+ 		goto trap_signal;
++	trace_trap_exit(trapnr);
+ 	return;
+ #endif
+ }
+@@ -288,7 +295,9 @@ do_general_protection(struct pt_regs *regs, long error_code)
+ 		printk("\n");
+ 	}
+ 
++	trace_trap_entry(tsk->thread.trap_no);
+ 	force_sig(SIGSEGV, tsk);
++	trace_trap_exit(tsk->thread.trap_no);
+ 	return;
+ 
+ #ifdef CONFIG_X86_32
+@@ -575,6 +584,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 							SIGTRAP) == NOTIFY_STOP)
+ 		return;
+ 
++	trace_trap_entry(tsk->thread.trap_no);
+ 	/* It's safe to allow irq's after DR6 has been saved */
+ 	preempt_conditional_sti(regs);
+ 
+@@ -582,6 +592,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
  		handle_vm86_trap((struct kernel_vm86_regs *) regs,
--				error_code, 1);
-+				error_code, INTR_DEBUG);
+ 				error_code, INTR_DEBUG);
  		preempt_conditional_cli(regs);
++		trace_trap_exit(tsk->thread.trap_no);
  		return;
  	}
-@@ -602,14 +608,15 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- /*
-  * Note that we play around with the 'TS' bit in an attempt to get
-  * the correct behaviour even in the presence of the asynchronous
-- * IRQ13 behaviour
-+ * INTR_GPF behaviour
-  */
- void math_error(struct pt_regs *regs, int error_code, int trapnr)
- {
- 	struct task_struct *task = current;
- 	siginfo_t info;
- 	unsigned short err;
--	char *str = (trapnr == 16) ? "fpu exception" : "simd exception";
-+	char *str = (trapnr == INTR_COPROCESSOR) ? "fpu exception" :
-+						"simd exception";
  
- 	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, SIGFPE) == NOTIFY_STOP)
- 		return;
-@@ -634,7 +641,7 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 	info.si_signo = SIGFPE;
- 	info.si_errno = 0;
- 	info.si_addr = (void __user *)regs->ip;
--	if (trapnr == 16) {
-+	if (trapnr == INTR_COPROCESSOR) {
- 		unsigned short cwd, swd;
- 		/*
- 		 * (~cwd & swd) will mask out exceptions that are not set to unmasked
-@@ -678,8 +685,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 		info.si_code = FPE_FLTRES;
- 	} else {
- 		/*
--		 * If we're using IRQ 13, or supposedly even some trap 16
--		 * implementations, it's possible we get a spurious trap...
-+		 * If we're using INTR_GPF, or supposedly even some trap
-+		 * INTR_COPROCESSOR implementations, it's possible we get a
-+		 * spurious trap...
+@@ -602,6 +613,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 		send_sigtrap(tsk, regs, error_code, si_code);
+ 	preempt_conditional_cli(regs);
+ 
++	trace_trap_exit(tsk->thread.trap_no);
+ 	return;
+ }
+ 
+@@ -691,7 +703,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
  		 */
  		return;		/* Spurious trap, no error */
  	}
-@@ -692,13 +700,13 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
- 	ignore_fpu_irq = 1;
- #endif
- 
--	math_error(regs, error_code, 16);
-+	math_error(regs, error_code, INTR_COPROCESSOR);
++	trace_trap_entry(task->thread.trap_no);
+ 	force_sig_info(SIGFPE, &info, task);
++	trace_trap_exit(task->thread.trap_no);
  }
  
+ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
+@@ -712,11 +726,13 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
  dotraplinkage void
- do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
+ do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
  {
--	math_error(regs, error_code, 19);
-+	math_error(regs, error_code, INTR_SIMD_COPROCESSOR);
- }
- 
- dotraplinkage void
-@@ -745,7 +753,7 @@ void __math_state_restore(void)
-  * 'math_state_restore()' saves the current math information in the
-  * old math state array, and gets the new ones from the current task
-  *
-- * Careful.. There are problems with IBM-designed IRQ13 behaviour.
-+ * Careful.. There are problems with IBM-designed INTR_GPF behaviour.
-  * Don't touch unless you *really* know how it works.
-  *
-  * Must be called with kernel preemption disabled (in this case,
-@@ -817,10 +825,10 @@ dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
- /* Set of traps needed for early debugging. */
- void __init early_trap_init(void)
- {
--	set_intr_gate_ist(1, &debug, DEBUG_STACK);
-+	set_intr_gate_ist(INTR_DEBUG, &debug, DEBUG_STACK);
- 	/* int3 can be called from all */
--	set_system_intr_gate_ist(3, &int3, DEBUG_STACK);
--	set_intr_gate(14, &page_fault);
-+	set_system_intr_gate_ist(INTR_BREAKPOINT, &int3, DEBUG_STACK);
-+	set_intr_gate(INTR_PAGE_FAULT, &page_fault);
- 	load_idt(&idt_descr);
- }
- 
-@@ -836,30 +844,30 @@ void __init trap_init(void)
- 	early_iounmap(p, 4);
++	trace_trap_entry(INTR_SPURIOUS);
+ 	conditional_sti(regs);
+ #if 0
+ 	/* No need to warn about this any longer. */
+ 	printk(KERN_INFO "Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
  #endif
++	trace_trap_exit(INTR_SPURIOUS);
+ }
  
--	set_intr_gate(0, &divide_error);
--	set_intr_gate_ist(2, &nmi, NMI_STACK);
-+	set_intr_gate(INTR_DIV_BY_ZERO,     &divide_error);
-+	set_intr_gate_ist(INTR_NMI,         &nmi, NMI_STACK);
- 	/* int4 can be called from all */
--	set_system_intr_gate(4, &overflow);
--	set_intr_gate(5, &bounds);
--	set_intr_gate(6, &invalid_op);
--	set_intr_gate(7, &device_not_available);
-+	set_system_intr_gate(INTR_OVERFLOW, &overflow);
-+	set_intr_gate(INTR_BOUNDS_CHECK,    &bounds);
-+	set_intr_gate(INTR_INVALID_OP,      &invalid_op);
-+	set_intr_gate(INTR_NO_DEV,          &device_not_available);
+ asmlinkage void __attribute__((weak)) smp_thermal_interrupt(void)
+@@ -788,6 +804,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
+ dotraplinkage void __kprobes
+ do_device_not_available(struct pt_regs *regs, long error_code)
+ {
++	trace_trap_entry(INTR_NO_DEV);
+ #ifdef CONFIG_MATH_EMULATION
+ 	if (read_cr0() & X86_CR0_EM) {
+ 		struct math_emu_info info = { };
+@@ -796,6 +813,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
+ 
+ 		info.regs = regs;
+ 		math_emulate(&info);
++		trace_trap_exit(INTR_NO_DEV);
+ 		return;
+ 	}
+ #endif
+@@ -803,6 +821,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
  #ifdef CONFIG_X86_32
--	set_task_gate(8, GDT_ENTRY_DOUBLEFAULT_TSS);
-+	set_task_gate(INTR_DBL_FAULT,       GDT_ENTRY_DOUBLEFAULT_TSS);
- #else
--	set_intr_gate_ist(8, &double_fault, DOUBLEFAULT_STACK);
-+	set_intr_gate_ist(INTR_DBL_FAULT,   &double_fault, DOUBLEFAULT_STACK);
+ 	conditional_sti(regs);
  #endif
--	set_intr_gate(9, &coprocessor_segment_overrun);
--	set_intr_gate(10, &invalid_TSS);
--	set_intr_gate(11, &segment_not_present);
--	set_intr_gate_ist(12, &stack_segment, STACKFAULT_STACK);
--	set_intr_gate(13, &general_protection);
--	set_intr_gate(15, &spurious_interrupt_bug);
--	set_intr_gate(16, &coprocessor_error);
--	set_intr_gate(17, &alignment_check);
-+	set_intr_gate(INTR_SEG_OVERRUN,     &coprocessor_segment_overrun);
-+	set_intr_gate(INTR_INVALID_TSS,     &invalid_TSS);
-+	set_intr_gate(INTR_NO_SEG,          &segment_not_present);
-+	set_intr_gate_ist(INTR_STACK_FAULT, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(INTR_GPF,             &general_protection);
-+	set_intr_gate(INTR_SPURIOUS,        &spurious_interrupt_bug);
-+	set_intr_gate(INTR_COPROCESSOR,     &coprocessor_error);
-+	set_intr_gate(INTR_ALIGNMENT,       &alignment_check);
- #ifdef CONFIG_X86_MCE
--	set_intr_gate_ist(18, &machine_check, MCE_STACK);
-+	set_intr_gate_ist(INTR_MCE,         &machine_check, MCE_STACK);
- #endif
--	set_intr_gate(19, &simd_coprocessor_error);
-+	set_intr_gate(INTR_SIMD_COPROCESSOR, &simd_coprocessor_error);
++	trace_trap_exit(INTR_NO_DEV);
+ }
  
- 	/* Reserve all the builtin and the syscall vector: */
- 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 20e3f87..507f5af 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -11,6 +11,7 @@
+ #include <linux/kprobes.h>		/* __kprobes, ...		*/
+ #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
+ #include <linux/perf_event.h>		/* perf_sw_event		*/
++#include <trace/events/trap.h>		/* trap trace events		*/
+ #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+ 
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+@@ -955,8 +956,8 @@ static int fault_in_kernel_space(unsigned long address)
+  * and the problem, and then passes it off to one of the appropriate
+  * routines.
+  */
+-dotraplinkage void __kprobes
+-do_page_fault(struct pt_regs *regs, unsigned long error_code)
++static __always_inline void
++__do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -1164,3 +1165,11 @@ good_area:
+ 
+ 	up_read(&mm->mmap_sem);
+ }
++
++dotraplinkage void __kprobes
++do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	trace_trap_entry(INTR_PAGE_FAULT);
++	__do_page_fault(regs, error_code);
++	trace_trap_exit(INTR_PAGE_FAULT);
++}
+diff --git a/include/trace/events/trap.h b/include/trace/events/trap.h
+new file mode 100644
+index 0000000..cb38eb6
+--- /dev/null
++++ b/include/trace/events/trap.h
+@@ -0,0 +1,44 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM trap
++
++#if !defined(_TRACE_TRAP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TRAP_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(trap,
++
++	TP_PROTO(int id),
++
++	TP_ARGS(id),
++
++	TP_STRUCT__entry(
++		__field(	int,	id	)
++	),
++
++	TP_fast_assign(
++		__entry->id = id;
++	),
++
++	TP_printk("number=%d", __entry->id)
++);
++
++DEFINE_EVENT(trap, trap_entry,
++
++	TP_PROTO(int id),
++
++	TP_ARGS(id)
++);
++
++DEFINE_EVENT(trap, trap_exit,
++
++	TP_PROTO(int id),
++
++	TP_ARGS(id)
++);
++
++#endif /* _TRACE_TRAP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
 -- 
 1.7.3.1
 
