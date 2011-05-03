@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab1ECPBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 11:01:13 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45745 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab1ECPBL (ORCPT
+	id S1752686Ab1ECPFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 11:05:12 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51892 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1ECPFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 11:01:11 -0400
-Date: Tue, 3 May 2011 17:01:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-Message-ID: <20110503150105.GC18648@gere.osrc.amd.com>
-References: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net>
+	Tue, 3 May 2011 11:05:10 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linaro-mm-sig@lists.linaro.org
+Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
+Date: Tue, 3 May 2011 17:05:39 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <201104212129.17013.arnd@arndb.de> <BANLkTinPbZZS9F1tRCA73fgoD-y__jSfCA@mail.gmail.com> <201104271243.16868.arnd@arndb.de>
+In-Reply-To: <201104271243.16868.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105031705.39957.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 09:47:35AM -0500, Larry Finger wrote:
-> This set of patches introduces a driver for the RTL8192SE PCI devices.
+On Wednesday 27 April 2011 12:43:16 Arnd Bergmann wrote:
+> On Wednesday 27 April 2011, Catalin Marinas wrote:
+> > On 21 April 2011 20:29, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > I think the recent discussions on linaro-mm-sig and the BoF last week
+> > > at ELC have been quite productive, and at least my understanding
+> > > of the missing pieces has improved quite a bit. This is a list of
+> > > things that I think need to be done in the kernel. Please complain
+> > > if any of these still seem controversial:
+> > > 
+> > > 1. Fix the arm version of dma_alloc_coherent. It's in use today and
+> > > 
+> > >   is broken on modern CPUs because it results in both cached and
+> > >   uncached mappings. Rebecca suggested different approaches how to
+> > >   get there.
+> > 
+> > It's not broken since we moved to using Normal non-cacheable memory
+> > for the coherent DMA buffers (as long as you flush the cacheable alias
+> > before using the buffer, as we already do). The ARM ARM currently says
+> > unpredictable for such situations but this is being clarified in
+> > future updates and the Normal non-cacheable vs cacheable aliases can
+> > be used (given correct cache maintenance before using the buffer).
 > 
-> The patches are as follows:
+> Thanks for that information, I believe a number of people in the
+> previous discussions were relying on the information from the
+> documentation. Are you sure that this is not only correct for the
+> cores made by ARM ltd but also for the other implementations that
+> may have relied on documentation?
 > 
-> 01/12: Introduce file def.h
-> 02/12: Introduce dynamic management routines dm.c and dm.h
-> 03/12: Introduce firmware routines fw.c and fw.h
-> 04/12: Introduce hardware control routines hw.c and hw.h
-> 05/12: Introduce LED routines led.c and led.h
-> 06/12: Introduce PHY routines phy.c and phy.h
-> 07/12: Introduce register definition header
-> 08/12: Introduce radio control routines
-> 09/12: Introduce main routine (sw.c and sw.h)
-> 10/12: Introduce tables
-> 11/12: Introduce TX/RX routines
-> 12/12: Modify Kconfig and Makefiles to build rtl8192se
+> As I mentioned before, there are other architectures, where having
+> conflicting cache settings in TLB entries for the same pysical page
+> immediately checkstops the CPU, and I guess that this was also allowed
+> by the current version of the ARM ARM.
+> 
+> > > 2. Implement dma_alloc_noncoherent on ARM. Marek pointed out
+> > > 
+> > >   that this is needed, and it currently is not implemented, with
+> > >   an outdated comment explaining why it used to not be possible
+> > >   to do it.
+> > 
+> > As Russell pointed out, there are 4 main combinations with iommu and
+> > some coherency support (i.e. being able to snoop the CPU caches). But
+> > in an SoC you can have different devices with different iommu and
+> > coherency configurations. Some of them may even be able to see the L2
+> > cache but not the L1 (in which case it would help if we can get an
+> > inner non-cacheable outer cacheable mapping).
+> > 
+> > Anyway, we end up with different DMA ops per device via dev_archdata.
+> 
+> Having different DMA ops per device was the solution that I was suggesting
+> with dma_mapping_common.h, but Russell pointed out that it may not be
+> the best option.
+> 
+> The alternative would be to have just one set of dma_mapping functions
+> as we do today, but to extend the functions to also cover the iommu
+> case, for instance (example, don't take literally):
+> 
+> static inline dma_addr_t dma_map_single(struct device *dev, void *cpu_addr,
+>                 size_t size, enum dma_data_direction dir)
+> {
+> 	dma_addr_t ret;
+> 
+> #ifdef CONFIG_DMABOUNCE
+> 	if (dev->archdata.dmabounce)
+> 		return dmabounce_map_single(dev, cpu_addr, size, dir);
+> #endif
+> 
+> #ifdef CONFIG_IOMMU
+> 	if (dev->archdata.iommu)
+> 		ret = iommu_map_single(dev, cpu_addr, size, dir);
+> 	else
+> #endif
 
-I think I have such a device in my Thinkpad:
+I wish it was that simple.
 
-03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller [10ec:8172] (rev 10)
+The OMAP4 ISS (Imaging Subsystem) has no IOMMU, but it can use the OMAP4 DMM 
+(Dynamic Memory Manager) which acts as a memory remapper. Basically (if my 
+understanding is correct), the ISS is configured to read/write from/to 
+physical addresses. If those physical addresses are in the DMM address range, 
+the DMM translates the accesses to physical accesses, acting as an IOMMU.
 
-I could give them a run soon. Do you have them in a tree somewhere I
-could pull?
+The ISS can thus write to physically contiguous memory directly, or to 
+scattered physical pages through the DMM. Whether an IOMMU (or, to be correct 
+in this case, the IOMMU-like DMM) needs to handle the DMA is a per-buffer 
+decision, not a per-device decision.
 
-Thanks.
+> 		dma_addr = virt_to_dma(dev, ptr);
+> 
+> 	dma_sync_single_for_device(dev, dma_addr, size, dir);
+> }
+> 
+> This would not even conflict with having a common implementation
+> for iommu based dma_map_ops -- we would just call the iommu functions
+> directly when needed rather than having an indirect function call.
 
 -- 
-Regards/Gruss,
-Boris.
+Regards,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Laurent Pinchart
