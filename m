@@ -1,61 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab1ECO1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:27:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43848 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab1ECO07 (ORCPT
+	id S1752717Ab1ECO36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:29:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40520 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752620Ab1ECO34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:26:59 -0400
-Date: Tue, 3 May 2011 16:26:25 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
-Message-ID: <20110503142625.GF20241@aftab>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-3-git-send-email-bp@amd64.org>
- <20110503064046.GD7751@elte.hu>
- <20110503125929.GB1730@nowhere>
- <20110503133057.GD20241@aftab>
+	Tue, 3 May 2011 10:29:56 -0400
+Date: Tue, 3 May 2011 15:29:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, lrg@slimlogic.co.uk
+Subject: Re: [RFC patch 29/32] trace event asoc remove semicolons
+Message-ID: <20110503142954.GQ1762@opensource.wolfsonmicro.com>
+References: <20110502211123.163877033@efficios.com>
+ <20110502213216.050459585@efficios.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110503133057.GD20241@aftab>
+In-Reply-To: <20110502213216.050459585@efficios.com>
+X-Cookie: You should go home.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 09:30:57AM -0400, Borislav Petkov wrote:
-> On Tue, May 03, 2011 at 08:59:35AM -0400, Frederic Weisbecker wrote:
-> > On Tue, May 03, 2011 at 08:40:46AM +0200, Ingo Molnar wrote:
-> > > [ kernel/hw_breakpoint.c could possibly move into kernel/events/hw_breakpoint.c 
-> > >   file as well - if Frederic acks it. ]
-> > 
-> > Makes sense yeah.
+On Mon, May 02, 2011 at 05:11:52PM -0400, Mathieu Desnoyers wrote:
+> Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
+> of events, thus saving space for trace event probes.
 > 
-> Ok, looks trivial enough. Ingo, let me know if I should add it to the
-> pull request from earlier.
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-I slapped it into a new branch along with the previous patch:
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git perf-event-rename-2
+and adding Liam.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> ---
+>  include/trace/events/asoc.h |   39 ++++++++++++++++++++++-----------------
+>  1 file changed, 22 insertions(+), 17 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/trace/events/asoc.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/trace/events/asoc.h
+> +++ linux-2.6-lttng/include/trace/events/asoc.h
+> @@ -7,11 +7,16 @@
+>  #include <linux/ktime.h>
+>  #include <linux/tracepoint.h>
+>  
+> +#ifndef _TRACE_ASOC_DEF_
+> +#define _TRACE_ASOC_DEF_
+> +
+>  struct snd_soc_jack;
+>  struct snd_soc_codec;
+>  struct snd_soc_card;
+>  struct snd_soc_dapm_widget;
+>  
+> +#endif /* _TRACE_ASOC_DEF_ */
+> +
+>  /*
+>   * Log register events
+>   */
+> @@ -39,7 +44,7 @@ DECLARE_EVENT_CLASS(snd_soc_reg,
+>  	TP_printk("codec=%s.%d reg=%x val=%x", __get_str(name),
+>  		  (int)__entry->id, (unsigned int)__entry->reg,
+>  		  (unsigned int)__entry->val)
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_reg, snd_soc_reg_write,
+>  
+> @@ -48,7 +53,7 @@ DEFINE_EVENT(snd_soc_reg, snd_soc_reg_wr
+>  
+>  	TP_ARGS(codec, reg, val)
+>  
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_reg, snd_soc_reg_read,
+>  
+> @@ -57,7 +62,7 @@ DEFINE_EVENT(snd_soc_reg, snd_soc_reg_re
+>  
+>  	TP_ARGS(codec, reg, val)
+>  
+> -);
+> +)
+>  
+>  DECLARE_EVENT_CLASS(snd_soc_card,
+>  
+> @@ -76,7 +81,7 @@ DECLARE_EVENT_CLASS(snd_soc_card,
+>  	),
+>  
+>  	TP_printk("card=%s val=%d", __get_str(name), (int)__entry->val)
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_card, snd_soc_bias_level_start,
+>  
+> @@ -84,7 +89,7 @@ DEFINE_EVENT(snd_soc_card, snd_soc_bias_
+>  
+>  	TP_ARGS(card, val)
+>  
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_card, snd_soc_bias_level_done,
+>  
+> @@ -92,7 +97,7 @@ DEFINE_EVENT(snd_soc_card, snd_soc_bias_
+>  
+>  	TP_ARGS(card, val)
+>  
+> -);
+> +)
+>  
+>  DECLARE_EVENT_CLASS(snd_soc_dapm_basic,
+>  
+> @@ -109,7 +114,7 @@ DECLARE_EVENT_CLASS(snd_soc_dapm_basic,
+>  	),
+>  
+>  	TP_printk("card=%s", __get_str(name))
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_dapm_basic, snd_soc_dapm_start,
+>  
+> @@ -117,7 +122,7 @@ DEFINE_EVENT(snd_soc_dapm_basic, snd_soc
+>  
+>  	TP_ARGS(card)
+>  
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_dapm_basic, snd_soc_dapm_done,
+>  
+> @@ -125,7 +130,7 @@ DEFINE_EVENT(snd_soc_dapm_basic, snd_soc
+>  
+>  	TP_ARGS(card)
+>  
+> -);
+> +)
+>  
+>  DECLARE_EVENT_CLASS(snd_soc_dapm_widget,
+>  
+> @@ -145,7 +150,7 @@ DECLARE_EVENT_CLASS(snd_soc_dapm_widget,
+>  
+>  	TP_printk("widget=%s val=%d", __get_str(name),
+>  		  (int)__entry->val)
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_power,
+>  
+> @@ -153,7 +158,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
+>  
+>  	TP_ARGS(w, val)
+>  
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_event_start,
+>  
+> @@ -161,7 +166,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
+>  
+>  	TP_ARGS(w, val)
+>  
+> -);
+> +)
+>  
+>  DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_event_done,
+>  
+> @@ -169,7 +174,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
+>  
+>  	TP_ARGS(w, val)
+>  
+> -);
+> +)
+>  
+>  TRACE_EVENT(snd_soc_jack_irq,
+>  
+> @@ -186,7 +191,7 @@ TRACE_EVENT(snd_soc_jack_irq,
+>  	),
+>  
+>  	TP_printk("%s", __get_str(name))
+> -);
+> +)
+>  
+>  TRACE_EVENT(snd_soc_jack_report,
+>  
+> @@ -208,7 +213,7 @@ TRACE_EVENT(snd_soc_jack_report,
+>  
+>  	TP_printk("jack=%s %x/%x", __get_str(name), (int)__entry->val,
+>  		  (int)__entry->mask)
+> -);
+> +)
+>  
+>  TRACE_EVENT(snd_soc_jack_notify,
+>  
+> @@ -227,7 +232,7 @@ TRACE_EVENT(snd_soc_jack_notify,
+>  	),
+>  
+>  	TP_printk("jack=%s %x", __get_str(name), (int)__entry->val)
+> -);
+> +)
+>  
+>  TRACE_EVENT(snd_soc_cache_sync,
+>  
+> @@ -252,7 +257,7 @@ TRACE_EVENT(snd_soc_cache_sync,
+>  
+>  	TP_printk("codec=%s.%d type=%s status=%s", __get_str(name),
+>  		  (int)__entry->id, __get_str(type), __get_str(status))
+> -);
+> +)
+>  
+>  #endif /* _TRACE_ASOC_H */
+>  
+> 
