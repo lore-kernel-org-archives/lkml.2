@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1ECXOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:14:51 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:52778 "EHLO smtp.polymtl.ca"
+	id S1754250Ab1ECXW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:22:26 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:51388 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754281Ab1ECXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:14:46 -0400
-Message-Id: <20110503231427.238824689@efficios.com>
+	id S1754085Ab1ECXOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:14:42 -0400
+Message-Id: <20110503231427.405287683@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 19:10:42 -0400
+Date: Tue, 03 May 2011 19:10:43 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Stone <jistone@redhat.com>
-Subject: [RFC patch 19/32] trace event syscalls remove semicolons
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: [RFC patch 20/32] trace event timer remove semicolons
 References: <20110503231023.968960757@efficios.com>
-Content-Disposition: inline; filename=trace-event-syscalls-remove-semicolons.patch
+Content-Disposition: inline; filename=trace-event-timer-remove-semicolons.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:27 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,31 +33,141 @@ CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Josh Stone <jistone@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>
 ---
- include/trace/events/syscalls.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/trace/events/timer.h |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/syscalls.h
+Index: linux-2.6-lttng/include/trace/events/timer.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/syscalls.h
-+++ linux-2.6-lttng/include/trace/events/syscalls.h
-@@ -38,7 +38,7 @@ TRACE_EVENT_FN(sys_enter,
- 		  __entry->args[3], __entry->args[4], __entry->args[5]),
+--- linux-2.6-lttng.orig/include/trace/events/timer.h
++++ linux-2.6-lttng/include/trace/events/timer.h
+@@ -23,7 +23,7 @@ DECLARE_EVENT_CLASS(timer_class,
+ 	),
  
- 	syscall_regfunc, syscall_unregfunc
+ 	TP_printk("timer=%p", __entry->timer)
 -);
 +)
  
- TRACE_EVENT_FLAGS(sys_enter, TRACE_EVENT_FL_CAP_ANY)
+ /**
+  * timer_init - called when the timer is initialized
+@@ -34,7 +34,7 @@ DEFINE_EVENT(timer_class, timer_init,
+ 	TP_PROTO(struct timer_list *timer),
  
-@@ -62,7 +62,7 @@ TRACE_EVENT_FN(sys_exit,
- 		  __entry->id, __entry->ret),
- 
- 	syscall_regfunc, syscall_unregfunc
+ 	TP_ARGS(timer)
 -);
 +)
  
- TRACE_EVENT_FLAGS(sys_exit, TRACE_EVENT_FL_CAP_ANY)
+ /**
+  * timer_start - called when the timer is started
+@@ -64,7 +64,7 @@ TRACE_EVENT(timer_start,
+ 	TP_printk("timer=%p function=%pf expires=%lu [timeout=%ld]",
+ 		  __entry->timer, __entry->function, __entry->expires,
+ 		  (long)__entry->expires - __entry->now)
+-);
++)
+ 
+ /**
+  * timer_expire_entry - called immediately before the timer callback
+@@ -91,7 +91,7 @@ TRACE_EVENT(timer_expire_entry,
+ 	),
+ 
+ 	TP_printk("timer=%p function=%pf now=%lu", __entry->timer, __entry->function,__entry->now)
+-);
++)
+ 
+ /**
+  * timer_expire_exit - called immediately after the timer callback returns
+@@ -108,7 +108,7 @@ DEFINE_EVENT(timer_class, timer_expire_e
+ 	TP_PROTO(struct timer_list *timer),
+ 
+ 	TP_ARGS(timer)
+-);
++)
+ 
+ /**
+  * timer_cancel - called when the timer is canceled
+@@ -119,7 +119,7 @@ DEFINE_EVENT(timer_class, timer_cancel,
+ 	TP_PROTO(struct timer_list *timer),
+ 
+ 	TP_ARGS(timer)
+-);
++)
+ 
+ /**
+  * hrtimer_init - called when the hrtimer is initialized
+@@ -151,7 +151,7 @@ TRACE_EVENT(hrtimer_init,
+ 			"CLOCK_REALTIME" : "CLOCK_MONOTONIC",
+ 		  __entry->mode == HRTIMER_MODE_ABS ?
+ 			"HRTIMER_MODE_ABS" : "HRTIMER_MODE_REL")
+-);
++)
+ 
+ /**
+  * hrtimer_start - called when the hrtimer is started
+@@ -183,7 +183,7 @@ TRACE_EVENT(hrtimer_start,
+ 				  .tv64 = __entry->expires }),
+ 		  (unsigned long long)ktime_to_ns((ktime_t) {
+ 				  .tv64 = __entry->softexpires }))
+-);
++)
+ 
+ /**
+  * htimmer_expire_entry - called immediately before the hrtimer callback
+@@ -213,7 +213,7 @@ TRACE_EVENT(hrtimer_expire_entry,
+ 
+ 	TP_printk("hrtimer=%p function=%pf now=%llu", __entry->hrtimer, __entry->function,
+ 		  (unsigned long long)ktime_to_ns((ktime_t) { .tv64 = __entry->now }))
+- );
++)
+ 
+ DECLARE_EVENT_CLASS(hrtimer_class,
+ 
+@@ -230,7 +230,7 @@ DECLARE_EVENT_CLASS(hrtimer_class,
+ 	),
+ 
+ 	TP_printk("hrtimer=%p", __entry->hrtimer)
+-);
++)
+ 
+ /**
+  * hrtimer_expire_exit - called immediately after the hrtimer callback returns
+@@ -244,7 +244,7 @@ DEFINE_EVENT(hrtimer_class, hrtimer_expi
+ 	TP_PROTO(struct hrtimer *hrtimer),
+ 
+ 	TP_ARGS(hrtimer)
+-);
++)
+ 
+ /**
+  * hrtimer_cancel - called when the hrtimer is canceled
+@@ -255,7 +255,7 @@ DEFINE_EVENT(hrtimer_class, hrtimer_canc
+ 	TP_PROTO(struct hrtimer *hrtimer),
+ 
+ 	TP_ARGS(hrtimer)
+-);
++)
+ 
+ /**
+  * itimer_state - called when itimer is started or canceled
+@@ -293,7 +293,7 @@ TRACE_EVENT(itimer_state,
+ 		  __entry->which, (unsigned long long)__entry->expires,
+ 		  __entry->value_sec, __entry->value_usec,
+ 		  __entry->interval_sec, __entry->interval_usec)
+-);
++)
+ 
+ /**
+  * itimer_expire - called when itimer expires
+@@ -321,7 +321,7 @@ TRACE_EVENT(itimer_expire,
+ 
+ 	TP_printk("which=%d pid=%d now=%llu", __entry->which,
+ 		  (int) __entry->pid, (unsigned long long)__entry->now)
+-);
++)
+ 
+ #endif /*  _TRACE_TIMER_H */
  
 
