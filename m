@@ -1,277 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1ECQx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:53:58 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45647 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab1ECQxz (ORCPT
+	id S1753854Ab1ECQkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 12:40:37 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55097 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab1ECQkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:53:55 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 21/23] intel_sst: add Master Volume
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 03 May 2011 17:38:18 +0100
-Message-ID: <20110503163814.24853.57918.stgit@bob.linux.org.uk>
-In-Reply-To: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
-References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 3 May 2011 12:40:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=kGOXx22SxvzDM6/FJmnrHmWftxuIsFObl0CnXjyrGCzzrfQ4tChJJVVhdedmI56g26
+         dcXGK5AdKzwFIfvO48G6KZ3HQF73rvRRUt8wm8BEKMtsImEG8zs9IUBcr03h5eIY9Fas
+         ziHy4rTNejMv1tfwzO9rWJ7s2z65nhz/Ip0g4=
+Subject: [PATCH 1/2] regulator: Put mutex lock down to
+ mc13783_powermisc_rmw function
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yong Shen <yong.shen@linaro.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 00:40:30 +0800
+Message-ID: <1304440830.16287.10.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lu Guanqun <guanqun.lu@intel.com>
+mc13783_powermisc_rmw function is doing read/modify/write bitmask operations,
+thus add the lock to protect it.
+Then we can remove the lock/unlock from the caller.
 
-With this patch, Master Volume will control AUDIOLVOL(0x10c) and
-AUDIORVOL(0x10d); while PCM Volume will control HPLVOL(0x123) and
-HPRVOL(0x124).
-
-Signed-off-by: Lu Guanqun <guanqun.lu@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
+ drivers/regulator/mc13783-regulator.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
- drivers/staging/intel_sst/intelmid.h             |    7 ++-
- drivers/staging/intel_sst/intelmid_ctrl.c        |   40 +++++++++++++++++-
- drivers/staging/intel_sst/intelmid_snd_control.h |    2 +
- drivers/staging/intel_sst/intelmid_v2_control.c  |   48 +++++++++++++++++-----
- 4 files changed, 81 insertions(+), 16 deletions(-)
-
-
-diff --git a/drivers/staging/intel_sst/intelmid.h b/drivers/staging/intel_sst/intelmid.h
-index 3201d5a..14a7ba0 100644
---- a/drivers/staging/intel_sst/intelmid.h
-+++ b/drivers/staging/intel_sst/intelmid.h
-@@ -57,9 +57,9 @@
- #define MAX_CHANNEL_DMIC	5
- #define FIFO_SIZE		0 /* fifo not being used */
- #define INTEL_MAD		"Intel MAD"
--#define MAX_CTRL_MRST		7
-+#define MAX_CTRL_MRST		8
- #define MAX_CTRL_MFLD		7
--#define MAX_CTRL		7
-+#define MAX_CTRL		8
- #define MAX_VENDORS		4
- /* TODO +6 db */
- #define MAX_VOL		64
-@@ -145,6 +145,8 @@ struct snd_control_val {
- 	int	playback_vol_min;
- 	int	capture_vol_max;
- 	int	capture_vol_min;
-+	int	master_vol_max;
-+	int	master_vol_min;
- };
+diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
+index 3e5d0c3..13d699c 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -235,11 +235,12 @@ static int mc13783_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 	int ret;
+ 	u32 valread;
  
- struct mad_stream_pvt {
-@@ -175,6 +177,7 @@ enum _widget_ctrl {
- 	PLAYBACK_MUTE,
- 	CAPTURE_VOL,
- 	CAPTURE_MUTE,
-+	MASTER_VOL,
- 	MASTER_MUTE
- };
- enum _widget_ctrl_mfld {
-diff --git a/drivers/staging/intel_sst/intelmid_ctrl.c b/drivers/staging/intel_sst/intelmid_ctrl.c
-index af9e112..19ec474 100644
---- a/drivers/staging/intel_sst/intelmid_ctrl.c
-+++ b/drivers/staging/intel_sst/intelmid_ctrl.c
-@@ -80,9 +80,11 @@ struct snd_control_val intelmad_ctrl_val[MAX_VENDORS] = {
- 	},
- 	{
- 		.playback_vol_max = 0,
--		.playback_vol_min = -126,
-+		.playback_vol_min = -31,
- 		.capture_vol_max = 0,
- 		.capture_vol_min = -31,
-+		.master_vol_max = 0,
-+		.master_vol_min = -126,
- 	},
- };
++	mc13xxx_lock(mc13783);
+ 	BUG_ON(val & ~mask);
  
-@@ -159,6 +161,15 @@ static int snd_intelmad_playback_volume_info(struct snd_kcontrol *kcontrol,
- 	return 0;
+ 	ret = mc13xxx_reg_read(mc13783, MC13783_REG_POWERMISC, &valread);
+ 	if (ret)
+-		return ret;
++		goto out;
+ 
+ 	/* Update the stored state for Power Gates. */
+ 	priv->powermisc_pwgt_state =
+@@ -252,7 +253,10 @@ static int mc13783_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 	valread = (valread & ~MC13783_REG_POWERMISC_PWGTSPI_M) |
+ 						priv->powermisc_pwgt_state;
+ 
+-	return mc13xxx_reg_write(mc13783, MC13783_REG_POWERMISC, valread);
++	ret = mc13xxx_reg_write(mc13783, MC13783_REG_POWERMISC, valread);
++out:
++	mc13xxx_unlock(mc13783);
++	return ret;
  }
  
-+static int snd_intelmad_master_volume_info(struct snd_kcontrol *kcontrol,
-+					struct snd_ctl_elem_info *uinfo)
-+{
-+	snd_intelmad_volume_info(uinfo, STEREO_CNTL,
-+		intelmad_ctrl_val[sst_card_vendor_id].master_vol_max,
-+		intelmad_ctrl_val[sst_card_vendor_id].master_vol_min);
-+	return 0;
-+}
-+
- /**
- * snd_intelmad_device_info_mrst - provides information about the devices available
- *
-@@ -281,6 +292,11 @@ static int snd_intelmad_volume_get(struct snd_kcontrol *kcontrol,
- 	case CAPTURE_VOL:
- 		cntl_list[0] = PMIC_SND_CAPTURE_VOL;
- 		break;
-+
-+	case MASTER_VOL:
-+		cntl_list[0] = PMIC_SND_RIGHT_MASTER_VOL;
-+		cntl_list[1] = PMIC_SND_LEFT_MASTER_VOL;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -291,7 +307,8 @@ static int snd_intelmad_volume_get(struct snd_kcontrol *kcontrol,
- 	if (ret_val)
- 		return ret_val;
+ static int mc13783_gpo_regulator_enable(struct regulator_dev *rdev)
+@@ -270,10 +274,8 @@ static int mc13783_gpo_regulator_enable(struct regulator_dev *rdev)
+ 	    id == MC13783_REG_PWGT2SPI)
+ 		en_val = 0;
  
--	if (kcontrol->id.numid == PLAYBACK_VOL) {
-+	if (kcontrol->id.numid == PLAYBACK_VOL ||
-+		kcontrol->id.numid == MASTER_VOL) {
- 		ret_val = scard_ops->get_vol(cntl_list[1], &value);
- 		uval->value.integer.value[1] = value;
- 	}
-@@ -399,6 +416,12 @@ static int snd_intelmad_volume_set(struct snd_kcontrol *kcontrol,
- 	case CAPTURE_VOL:
- 		cntl_list[0] = PMIC_SND_CAPTURE_VOL;
- 		break;
-+
-+	case MASTER_VOL:
-+		cntl_list[0] = PMIC_SND_LEFT_MASTER_VOL;
-+		cntl_list[1] = PMIC_SND_RIGHT_MASTER_VOL;
-+		break;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -408,7 +431,8 @@ static int snd_intelmad_volume_set(struct snd_kcontrol *kcontrol,
- 	if (ret_val)
- 		return ret_val;
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13783_powermisc_rmw(priv, mc13xxx_regulators[id].enable_bit,
+ 					en_val);
+-	mc13xxx_unlock(priv->mc13xxx);
  
--	if (kcontrol->id.numid == PLAYBACK_VOL)
-+	if (kcontrol->id.numid == PLAYBACK_VOL ||
-+		kcontrol->id.numid == MASTER_VOL)
- 		ret_val = scard_ops->set_vol(cntl_list[1],
- 				uval->value.integer.value[1]);
- 	return ret_val;
-@@ -753,7 +777,6 @@ static int snd_intelmad_device_dmic_info_mfld(struct snd_kcontrol *kcontrol,
- 	return 0;
+ 	return ret;
  }
+@@ -293,10 +295,8 @@ static int mc13783_gpo_regulator_disable(struct regulator_dev *rdev)
+ 	    id == MC13783_REG_PWGT2SPI)
+ 		dis_val = mc13xxx_regulators[id].enable_bit;
  
--
- struct snd_kcontrol_new snd_intelmad_controls_mrst[MAX_CTRL] __devinitdata = {
- {
- 	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
-@@ -811,6 +834,15 @@ struct snd_kcontrol_new snd_intelmad_controls_mrst[MAX_CTRL] __devinitdata = {
- },
- {
- 	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
-+	.name		=	"Master Playback Volume",
-+	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
-+	.info		=	snd_intelmad_master_volume_info,
-+	.get		=	snd_intelmad_volume_get,
-+	.put		=	snd_intelmad_volume_set,
-+	.private_value	=	0,
-+},
-+{
-+	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
- 	.name		=	"Master Playback Switch",
- 	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
- 	.info		=	snd_intelmad_mute_info,
-diff --git a/drivers/staging/intel_sst/intelmid_snd_control.h b/drivers/staging/intel_sst/intelmid_snd_control.h
-index c7e9f16..06ad3a1 100644
---- a/drivers/staging/intel_sst/intelmid_snd_control.h
-+++ b/drivers/staging/intel_sst/intelmid_snd_control.h
-@@ -111,6 +111,8 @@ enum pmic_controls {
- 	PMIC_SND_RIGHT_SPEAKER_MUTE =		0x0015,
- 	PMIC_SND_RECEIVER_VOL =			0x0016,
- 	PMIC_SND_RECEIVER_MUTE =		0x0017,
-+	PMIC_SND_LEFT_MASTER_VOL =		0x0018,
-+	PMIC_SND_RIGHT_MASTER_VOL =		0x0019,
- /* Other controls */
- 	PMIC_SND_MUTE_ALL =			0x0020,
- 	PMIC_MAX_CONTROLS =			0x0020,
-diff --git a/drivers/staging/intel_sst/intelmid_v2_control.c b/drivers/staging/intel_sst/intelmid_v2_control.c
-index 5e61fe8..b19f51e 100644
---- a/drivers/staging/intel_sst/intelmid_v2_control.c
-+++ b/drivers/staging/intel_sst/intelmid_v2_control.c
-@@ -788,9 +788,8 @@ static int nc_set_vol(int dev_id, int value)
- 	case PMIC_SND_LEFT_PB_VOL:
- 		pr_debug("PMIC_SND_LEFT_HP_VOL %d\n", value);
- 		sc_access[0].value = -value;
--		sc_access[0].reg_addr  = AUDIOLVOL;
--		sc_access[0].mask =
--			(MASK0|MASK1|MASK2|MASK3|MASK4|MASK5|MASK6);
-+		sc_access[0].reg_addr  = HPLVOL;
-+		sc_access[0].mask = (MASK0|MASK1|MASK2|MASK3|MASK4);
- 		entries = 1;
- 		break;
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13783_powermisc_rmw(priv, mc13xxx_regulators[id].enable_bit,
+ 					dis_val);
+-	mc13xxx_unlock(priv->mc13xxx);
  
-@@ -798,15 +797,32 @@ static int nc_set_vol(int dev_id, int value)
- 		pr_debug("PMIC_SND_RIGHT_HP_VOL value %d\n", value);
- 		if (snd_pmic_ops_nc.num_channel == 1) {
- 			sc_access[0].value = 0x04;
--		    sc_access[0].reg_addr = RMUTE;
-+			sc_access[0].reg_addr = RMUTE;
- 			sc_access[0].mask = MASK2;
- 		} else {
-+			sc_access[0].value = -value;
-+			sc_access[0].reg_addr  = HPRVOL;
-+			sc_access[0].mask = (MASK0|MASK1|MASK2|MASK3|MASK4);
-+		}
-+		entries = 1;
-+		break;
-+
-+	case PMIC_SND_LEFT_MASTER_VOL:
-+		pr_debug("PMIC_SND_LEFT_MASTER_VOL value %d\n", value);
-+		sc_access[0].value = -value;
-+		sc_access[0].reg_addr = AUDIOLVOL;
-+		sc_access[0].mask =
-+			(MASK0|MASK1|MASK2|MASK3|MASK4|MASK5|MASK6);
-+		entries = 1;
-+		break;
-+
-+	case PMIC_SND_RIGHT_MASTER_VOL:
-+		pr_debug("PMIC_SND_RIGHT_MASTER_VOL value %d\n", value);
- 		sc_access[0].value = -value;
--		sc_access[0].reg_addr  = AUDIORVOL;
-+		sc_access[0].reg_addr = AUDIORVOL;
- 		sc_access[0].mask =
- 				(MASK0|MASK1|MASK2|MASK3|MASK4|MASK5|MASK6);
- 		entries = 1;
--		}
- 		break;
- 
- 	default:
-@@ -971,18 +987,30 @@ static int nc_get_vol(int dev_id, int *value)
- 		mask = (MASK0|MASK1|MASK2|MASK3|MASK4|MASK5);
- 		break;
- 
--	case PMIC_SND_RIGHT_PB_VOL:
--		pr_debug("GET_VOLUME_PMIC_LEFT_HP_VOL\n");
-+	case PMIC_SND_LEFT_MASTER_VOL:
-+		pr_debug("GET_VOLUME_PMIC_LEFT_MASTER_VOL\n");
- 		sc_access.reg_addr = AUDIOLVOL;
- 		mask = (MASK0|MASK1|MASK2|MASK3|MASK4|MASK5|MASK6);
- 		break;
- 
--	case PMIC_SND_LEFT_PB_VOL:
--		pr_debug("GET_VOLUME_PMIC_RIGHT_HP_VOL\n");
-+	case PMIC_SND_RIGHT_MASTER_VOL:
-+		pr_debug("GET_VOLUME_PMIC_RIGHT_MASTER_VOL\n");
- 		sc_access.reg_addr = AUDIORVOL;
- 		mask = (MASK0|MASK1|MASK2|MASK3|MASK4|MASK5|MASK6);
- 		break;
- 
-+	case PMIC_SND_RIGHT_PB_VOL:
-+		pr_debug("GET_VOLUME_PMIC_RIGHT_HP_VOL\n");
-+		sc_access.reg_addr = HPRVOL;
-+		mask = (MASK0|MASK1|MASK2|MASK3|MASK4);
-+		break;
-+
-+	case PMIC_SND_LEFT_PB_VOL:
-+		pr_debug("GET_VOLUME_PMIC_LEFT_HP_VOL\n");
-+		sc_access.reg_addr = HPLVOL;
-+		mask = (MASK0|MASK1|MASK2|MASK3|MASK4);
-+		break;
-+
- 	default:
- 		return -EINVAL;
- 
+ 	return ret;
+ }
+-- 
+1.7.1
+
+
 
