@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab1ECJhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 05:37:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59869 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1ECJhW (ORCPT
+	id S1752024Ab1ECJgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:36:04 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47331 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751406Ab1ECJgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 05:37:22 -0400
-Date: Tue, 3 May 2011 10:36:59 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ulrich Weigand <ulrich.weigand@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, patches@linaro.org
-Subject: Re: [PATCH v4 1/2] ARM: ELF: Define new core note type for VFP
- registers
-Message-ID: <20110503093659.GA2503@arm.com>
-References: <1302688597-2969-1-git-send-email-dave.martin@linaro.org>
- <1302688597-2969-2-git-send-email-dave.martin@linaro.org>
- <20110428184925.GM17290@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110428184925.GM17290@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 May 2011 05:36:02 -0400
+Date: Tue, 3 May 2011 10:37:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jimmy Chen (=?big5?B?s6+lw7lG?=) <jimmy.chen@moxa.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <wim@iguana.be>
+Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
+ driver
+Message-ID: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
+In-Reply-To: <ECB3782BB8F03341905DD923270296115F7124@mhqms01.moxa.com>
+References: <ECB3782BB8F03341905DD923270296115F7122@mhqms01.moxa.com>
+	<ECB3782BB8F03341905DD923270296115F7124@mhqms01.moxa.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 28, 2011 at 07:49:25PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Apr 13, 2011 at 10:56:36AM +0100, Dave Martin wrote:
-> > The VFP registers are not currently included in coredumps,
-> > and there's no existing note type where they can sensibly be
-> > included, so this patch defines a dedicated note type for them.
-> 
-> This probably wants to be copied to LKML (added).
+> Add real function for watchdog driver
 
-Good point-- thanks.
+Looks a lot better
 
----Dave
+> +#define __KERNEL_SYSCALLS__
+> +
 
-> 
-> > Signed-off-by: Dave Martin <dave.martin@linaro.org>
-> > Acked-by: Will Deacon <Will.Deacon@arm.com>
-> > ---
-> >  include/linux/elf.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/elf.h b/include/linux/elf.h
-> > index 4d60801..110821c 100644
-> > --- a/include/linux/elf.h
-> > +++ b/include/linux/elf.h
-> > @@ -395,6 +395,7 @@ typedef struct elf64_shdr {
-> >  #define NT_S390_CTRS	0x304		/* s390 control registers */
-> >  #define NT_S390_PREFIX	0x305		/* s390 prefix register */
-> >  #define NT_S390_LAST_BREAK	0x306	/* s390 breaking event address */
-> > +#define NT_ARM_VFP	0x400		/* ARM VFP/NEON registers */
-> >  
-> >  
-> >  /* Note header in a PT_NOTE section */
-> > -- 
-> > 1.7.1
-> > 
-> > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+You shouldn't need that define now
+
+
+> +	/* we suppose to check magic id in case wrong devices */
+> +	if (wdt_verify_vendor()) {
+> +		printk(KERN_ERR "hw device id not match!!\n");
+> +		ret = -ENODEV;
+> +		goto reqreg_err;
+> +	}
+
+This wants to happen after the request_region - if the region is busy
+then you know your device isn't present but that the addresses in
+question are currently in use so you shouldn't touch them
+
+We tend to use pr_err()/pr_debug() etc now rather than printk(KERN_ERR
+"Oops"); to be less long winded - but the code you have there isn't wrong
+in using printk().
+
+With the tests re-ordered this looks fairly sound to me
+
+Alan
