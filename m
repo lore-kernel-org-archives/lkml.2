@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab1ECRxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:53:52 -0400
+	id S1754275Ab1ECRw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:52:56 -0400
 Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36881 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab1ECRxA (ORCPT
+	with ESMTP id S1753999Ab1ECRwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:53:00 -0400
+	Tue, 3 May 2011 13:52:55 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 14/23] sst: return correct output/input device id
+Subject: [PATCH 15/23] intel_sst: make sure the sst_drop_stream() get called
+ when needed
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 03 May 2011 17:34:40 +0100
-Message-ID: <20110503163438.24853.11533.stgit@bob.linux.org.uk>
+Date: Tue, 03 May 2011 17:34:55 +0100
+Message-ID: <20110503163450.24853.41907.stgit@bob.linux.org.uk>
 In-Reply-To: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
 References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -22,59 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lu Guanqun <guanqun.lu@intel.com>
+From: Feng Tang <feng.tang@intel.com>
 
-Without this patch, the change of output/input device can't be reflected
-correctly. The mismatch reflects insane design, and should be fixed when
-switching to the ASoC framework.
+When "aplay test.wav", if we "ctrl+z" to suspend it, the last piece of
+sound will be played endlessly. So we need make sure the drop_stream
+is called in such a case.
 
-Signed-off-by: Lu Guanqun <guanqun.lu@intel.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/intel_sst/intelmid_ctrl.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+ .../staging/intel_sst/intel_sst_drv_interface.c    |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 
-diff --git a/drivers/staging/intel_sst/intelmid_ctrl.c b/drivers/staging/intel_sst/intelmid_ctrl.c
-index 2c3ee94..af9e112 100644
---- a/drivers/staging/intel_sst/intelmid_ctrl.c
-+++ b/drivers/staging/intel_sst/intelmid_ctrl.c
-@@ -504,8 +504,8 @@ static int snd_intelmad_device_get(struct snd_kcontrol *kcontrol,
- 	WARN_ON(!kcontrol);
- 
- 	intelmaddata = kcontrol->private_data;
-+	scard_ops = intelmaddata->sstdrv_ops->scard_ops;
- 	if (intelmaddata->cpu_id == CPU_CHIP_PENWELL) {
--		scard_ops = intelmaddata->sstdrv_ops->scard_ops;
- 		if (kcontrol->id.numid == OUTPUT_SEL)
- 			uval->value.enumerated.item[0] =
- 					scard_ops->output_dev_id;
-@@ -517,6 +517,25 @@ static int snd_intelmad_device_get(struct snd_kcontrol *kcontrol,
- 					scard_ops->lineout_dev_id;
- 		else
- 			return -EINVAL;
-+	} else if (intelmaddata->cpu_id == CPU_CHIP_LINCROFT) {
-+		if (kcontrol->id.numid == OUTPUT_SEL)
-+			/* There is a mismatch here.
-+			 * ALSA expects 1 for internal speaker.
-+			 * But internally, we may give 2 for internal speaker.
-+			 */
-+			if (scard_ops->output_dev_id == MONO_EARPIECE ||
-+			    scard_ops->output_dev_id == INTERNAL_SPKR)
-+				uval->value.enumerated.item[0] = MONO_EARPIECE;
-+			else if (scard_ops->output_dev_id == STEREO_HEADPHONE)
-+				uval->value.enumerated.item[0] =
-+					STEREO_HEADPHONE;
-+			else
-+				return -EINVAL;
-+		else if (kcontrol->id.numid == INPUT_SEL)
-+			uval->value.enumerated.item[0] =
-+					scard_ops->input_dev_id;
-+		else
-+			return -EINVAL;
- 	} else
- 	uval->value.enumerated.item[0] = kcontrol->private_value;
- 	return 0;
+diff --git a/drivers/staging/intel_sst/intel_sst_drv_interface.c b/drivers/staging/intel_sst/intel_sst_drv_interface.c
+index 1e8c056..bb64f2a 100644
+--- a/drivers/staging/intel_sst/intel_sst_drv_interface.c
++++ b/drivers/staging/intel_sst/intel_sst_drv_interface.c
+@@ -283,8 +283,8 @@ void sst_process_mad_ops(struct work_struct *work)
+ 		retval = sst_resume_stream(mad_ops->stream_id);
+ 		break;
+ 	case SST_SND_DROP:
+-/*		retval = sst_drop_stream(mad_ops->stream_id);
+-*/		break;
++		retval = sst_drop_stream(mad_ops->stream_id);
++		break;
+ 	case SST_SND_START:
+ 			pr_debug("SST Debug: start stream\n");
+ 		retval = sst_start_stream(mad_ops->stream_id);
 
