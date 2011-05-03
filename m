@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1ECLOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 07:14:05 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50195 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751500Ab1ECLOD (ORCPT
+	id S1752550Ab1ECLUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 07:20:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29304 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab1ECLUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 07:14:03 -0400
-Date: Tue, 3 May 2011 12:15:10 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: jimmy.chen@moxa.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, wim@iguana.be
-Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
- driver
-Message-ID: <20110503121510.5bba70c5@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110503105735.GB2497@pengutronix.de>
-References: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
-	<ECB3782BB8F03341905DD923270296115F720B@mhqms01.moxa.com>
-	<20110503105735.GB2497@pengutronix.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 07:20:35 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] fs: remove FS_COW_FL
+In-reply-to: <4DBFC6D0.3010105@cn.fujitsu.com>
+References: <4DA7B559.8060800@cn.fujitsu.com> <4DBFC6D0.3010105@cn.fujitsu.com>
+Date: Tue, 03 May 2011 07:20:11 -0400
+Message-Id: <1304421568-sup-4709@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DBFE4FF.008E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmm, code in a header? Can't this go into the main source? Hmm, at least
-> it87_wdt.c has something very similar. Maybe it can even be shared? What
-> about locking BTW?
+Excerpts from Li Zefan's message of 2011-05-03 05:11:44 -0400:
+> Any comments? If this patch is acceptable, it should be queued for .39?
+> since fs.h is exported to userspace.
+>
+> Li Zefan wrote:
+> > FS_COW_FL and FS_NOCOW_FL were newly introduced to control per file
+> > COW in btrfs, but FS_NOCOW_FL is sufficient.
+> > 
 
-The spinlock handles it if you look at the caller points, because you
-have to own the super I/O and select it each time.
+Good point, I'll send this in.
 
-
-Ultimately it wants to be using request_muxed_* but that isn't in any of
-the mainstream code yet so can be done in the future when the mux patches
-go in.
-
-Alan
+-chris
