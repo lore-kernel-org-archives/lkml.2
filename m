@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1ECP2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 11:28:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25496 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1ECP2G (ORCPT
+	id S1753078Ab1ECPaC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 11:30:02 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56969 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1ECPaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 11:28:06 -0400
-Date: Tue, 3 May 2011 11:27:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 1/2] xen/mmu: Add workaround "x86-64, mm: Put early page
- table high"
-Message-ID: <20110503152745.GB8868@dumpdata.com>
-References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
- <1304356942-17656-2-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.00.1105031351190.10886@kaball-desktop>
-MIME-Version: 1.0
+	Tue, 3 May 2011 11:30:00 -0400
+X-Nat-Received: from [202.181.97.72]:52715 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1304436571.14309
+To: sam@synack.fr, linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, hadi@cyberus.ca, kaber@trash.net,
+        zbr@ioremap.net, root@localdomain.pl
+Subject: Re: [RFC v3 01/10] lsm: add security_socket_closed()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1304432663-1575-1-git-send-email-sam@synack.fr>
+	<1304432663-1575-2-git-send-email-sam@synack.fr>
+In-Reply-To: <1304432663-1575-2-git-send-email-sam@synack.fr>
+Message-Id: <201105040029.IGA98088.SHOVQFLOMJtOFF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 4 May 2011 00:29:29 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105031351190.10886@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DC01EFF.0043:SCFMA922111,ss=1,fgs=0
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 03052011 #5369088, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 02:20:25PM +0100, Stefano Stabellini wrote:
-> On Mon, 2 May 2011, Konrad Rzeszutek Wilk wrote:
-> > As a consequence of the commit:
-> > 
-> > commit 4b239f458c229de044d6905c2b0f9fe16ed9e01e
-> > Author: Yinghai Lu <yinghai@kernel.org>
-> > Date:   Fri Dec 17 16:58:28 2010 -0800
-> > 
-> >     x86-64, mm: Put early page table high
-> > 
-> > it causes the Linux kernel to crash under Xen:
-> > 
-> > mapping kernel into physical memory
-> > Xen: setup ISA identity maps
-> > about to get started...
-> > (XEN) mm.c:2466:d0 Bad type (saw 7400000000000001 != exp 1000000000000000) for mfn b1d89 (pfn bacf7)
-> > (XEN) mm.c:3027:d0 Error while pinning mfn b1d89
-> > (XEN) traps.c:481:d0 Unhandled invalid opcode fault/trap [#6] on VCPU 0 [ec=0000]
-> > (XEN) domain_crash_sync called from entry.S
-> > (XEN) Domain 0 (vcpu#0) crashed on cpu#0:
+Samir Bellabes wrote:
+> Allow a module to update security informations when a socket is closed.
+Is security_inode_free() too late for doing it?
 
-.. snip..
-> 
-> 
-> Unless I am missing something there is no guarantee that somebody else
-> won't use memory in the pgt_buf_end-pgt_buf_top range when the range is
-> still RO before mark_rw_past_pgt() is called again.  If so this code
-> works by coincidence, that is the reason why I didn't try to reuse the
-> pagetable_setup_done or the pagetable_setup_start hooks.
-
-It looks that during sequence of events after the initial pagetable is created
-and when we get to the post-allocator nobody is touching those pages.
-(also one of them - the 0-4GB pagetable has been .. made RW). But if you do find it
-dying/crashing, please tell so that we can revert it and use the generic work-around
-or revert Yinghai's patch.
- 
-> In any case this code looks very ugly and fragile, do we really want to
-> add a workaround as bad as this one rather than reverting the original
-> commit? I think it creates a bad precedent.
-
-This is the second one. We had the swapper_pg_dir/initial_page_table dance in x86_32
-where we mark it RO, then RW (after a cr3 load) then RO and then back to RW.
-(Details escape me, but it was some form of that)
-
-But I wonder how many workarounds the generic code has because of us?
-
-I think we need to setup some form of meeting with the x86 maintainers
-to figure out some better way of handling this.
+static void ccs_inode_free_security(struct inode *inode)
+{
+        if (inode->i_sb && inode->i_sb->s_magic == SOCKFS_MAGIC)
+                ccs_update_socket_tag(inode, 0);
+}
