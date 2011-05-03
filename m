@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab1ECUdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:33:40 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:35729 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab1ECUdi (ORCPT
+	id S1755137Ab1ECUeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:34:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45302 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab1ECUeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:33:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=SQZYyZI5G646V8pyU32XjzvwpwnJWGdPtub8HgZZKBRxps9oCuwpkNCsQnIxsmLrPW
-         Qgxs1+bNyTy2xy2qlrBatC32CNi7/837YNe68cXjMZEMbFT2YFO+2xMh2jP2dHCxAAVg
-         7sxWmUjFX4mDuEbWtaTL4OWUW6PmU8g3eCJSA=
-Message-ID: <4DC0669E.4040100@lwfinger.net>
-Date: Tue, 03 May 2011 15:33:34 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Tue, 3 May 2011 16:34:22 -0400
+Date: Tue, 3 May 2011 22:34:12 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, arnd@arndb.de
+Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
+Message-ID: <20110503203412.GA2119@pengutronix.de>
+References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-CC: Walter Goldens <goldenstranger@yahoo.com>,
-        John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-References: <776913.88107.qm@web161609.mail.bf1.yahoo.com> <4DC0312A.4040303@lwfinger.net> <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com>
-In-Reply-To: <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
+Content-Disposition: inline
+In-Reply-To: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 03:19 PM, Gábor Stefanik wrote:
-> On Tue, May 3, 2011 at 6:45 PM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
->> On 05/03/2011 10:59 AM, Walter Goldens wrote:
->>>
->>>> This set of patches introduces a driver for the RTL8192SE PCI devices.
->>>
->>> Any estimates on the *SU driver? :)
->>
->> Now that rtl8192se is submitted, I will start work on the driver for the
->> RTL8192DE devices. After that will be the RTL8191SU. It has lower priority
->> because r8712u from staging handles those devices. It is not based on
->> mac80211, but it works.
->
-> Again, may I remind you that the preferred behavior in the Linux world
-> is release-early, release-often? :-)
 
-That I know, but "code first" still applies. If the comparison between rtl8192ce 
-and rtl8192cu has any validity for the rtl8192s varieties, roughly half of this 
-driver will be shared. In addition, we do have all the USB plumbing in place, 
-but we are still talking about a few thousand lines of code. At last contact, 
-Realtek has no interest in this project, thus I will be on my own.
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Larry
+On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
+> Adding OF binding to genirq.
+> Version string is setup to the "devicetree".
+>=20
+> Compatible string is not setup for now but you can add your
+> custom compatible string to uio_of_genirq_match structure.
+>=20
+> For example with "vendor,device" compatible string:
+> static const struct of_device_id __devinitconst uio_of_genirq_match[] =3D=
+ {
+> 	{ .compatible =3D "vendor,device", },
+> 	{ /* empty for now */ },
+> };
+>=20
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
+[...]
 
+> +		/* alloc uioinfo for one device */
+> +		uioinfo =3D kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+
+kfree in remove?
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk3AZsQACgkQD27XaX1/VRvr3ACeOaGboYXohsqIqkX2f3Fy+PzR
+CaMAniiz7f9MDArwGEHEa66/TiM+2LJt
+=Odmy
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
