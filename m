@@ -1,134 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1ECObf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:31:35 -0400
-Received: from 236.121.91-79.rev.gaoland.net ([79.91.121.236]:46267 "EHLO
-	mx.synack.fr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab1ECObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:31:32 -0400
-From: Samir Bellabes <sam@synack.fr>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, jamal <hadi@cyberus.ca>,
-        Patrick McHardy <kaber@trash.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Grzegorz Nosek <root@localdomain.pl>, Samir Bellabes <sam@synack.fr>
-Subject: [RFC v3 10/10] snet: introduce security/snet, Makefile and Kconfig changes
-Date: Tue,  3 May 2011 16:24:23 +0200
-Message-Id: <1304432663-1575-11-git-send-email-sam@synack.fr>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1304432663-1575-1-git-send-email-sam@synack.fr>
-References: <1304432663-1575-1-git-send-email-sam@synack.fr>
+	id S1752356Ab1ECO1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:27:00 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43848 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1ECO07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 10:26:59 -0400
+Date: Tue, 3 May 2011 16:26:25 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
+Message-ID: <20110503142625.GF20241@aftab>
+References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+ <1304357691-14354-3-git-send-email-bp@amd64.org>
+ <20110503064046.GD7751@elte.hu>
+ <20110503125929.GB1730@nowhere>
+ <20110503133057.GD20241@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503133057.GD20241@aftab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch creates folder security/snet and adds changes for Kconfig and Makefile
+On Tue, May 03, 2011 at 09:30:57AM -0400, Borislav Petkov wrote:
+> On Tue, May 03, 2011 at 08:59:35AM -0400, Frederic Weisbecker wrote:
+> > On Tue, May 03, 2011 at 08:40:46AM +0200, Ingo Molnar wrote:
+> > > [ kernel/hw_breakpoint.c could possibly move into kernel/events/hw_breakpoint.c 
+> > >   file as well - if Frederic acks it. ]
+> > 
+> > Makes sense yeah.
+> 
+> Ok, looks trivial enough. Ingo, let me know if I should add it to the
+> pull request from earlier.
 
-Signed-off-by: Samir Bellabes <sam@synack.fr>
----
- security/Kconfig       |    6 ++++++
- security/Makefile      |    2 ++
- security/snet/Kconfig  |   11 +++++++++++
- security/snet/Makefile |   14 ++++++++++++++
- 4 files changed, 33 insertions(+), 0 deletions(-)
- create mode 100644 security/snet/Kconfig
- create mode 100644 security/snet/Makefile
+I slapped it into a new branch along with the previous patch:
 
-diff --git a/security/Kconfig b/security/Kconfig
-index 95accd4..7e393c4 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -184,6 +184,7 @@ source security/selinux/Kconfig
- source security/smack/Kconfig
- source security/tomoyo/Kconfig
- source security/apparmor/Kconfig
-+source security/snet/Kconfig
- 
- source security/integrity/ima/Kconfig
- 
-@@ -193,6 +194,7 @@ choice
- 	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
- 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
- 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
-+	default DEFAULT_SECURITY_SNET if SECURITY_SNET
- 	default DEFAULT_SECURITY_DAC
- 
- 	help
-@@ -211,6 +213,9 @@ choice
- 	config DEFAULT_SECURITY_APPARMOR
- 		bool "AppArmor" if SECURITY_APPARMOR=y
- 
-+	config DEFAULT_SECURITY_SNET
-+		bool "snet" if SECURITY_SNET=y
-+
- 	config DEFAULT_SECURITY_DAC
- 		bool "Unix Discretionary Access Controls"
- 
-@@ -222,6 +227,7 @@ config DEFAULT_SECURITY
- 	default "smack" if DEFAULT_SECURITY_SMACK
- 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
- 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
-+	default "snet" if DEFAULT_SECURITY_SNET
- 	default "" if DEFAULT_SECURITY_DAC
- 
- endmenu
-diff --git a/security/Makefile b/security/Makefile
-index 8bb0fe9..9e769b2 100644
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
- subdir-$(CONFIG_SECURITY_SMACK)		+= smack
- subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
- subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
-+subdir-$(CONFIG_SECURITY_SNET)		+= snet
- 
- # always enable default capabilities
- obj-y					+= commoncap.o
-@@ -21,6 +22,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
- obj-$(CONFIG_AUDIT)			+= lsm_audit.o
- obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
- obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
-+obj-$(CONFIG_SECURITY_SNET)		+= snet/built-in.o
- obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
- 
- # Object integrity file lists
-diff --git a/security/snet/Kconfig b/security/snet/Kconfig
-new file mode 100644
-index 0000000..6dabd7d
---- /dev/null
-+++ b/security/snet/Kconfig
-@@ -0,0 +1,11 @@
-+#
-+# snet
-+#
-+
-+config SECURITY_SNET
-+	bool "snet - Security for NETwork syscalls"
-+	depends on SECURITY_NETWORK
-+	default n
-+	---help---
-+	If this option is enabled, the kernel will include support for reporting
-+	networking's syscalls to userspace and wait for a verdict
-diff --git a/security/snet/Makefile b/security/snet/Makefile
-new file mode 100644
-index 0000000..e8f52f1
---- /dev/null
-+++ b/security/snet/Makefile
-@@ -0,0 +1,14 @@
-+#
-+# Makefile for building the Security Network Events module.
-+#
-+obj-$(CONFIG_SECURITY_SNET) :=  snet.o
-+
-+snet-y := snet_event.o \
-+	  snet_netlink_helper.o \
-+	  snet_netlink.o \
-+	  snet_verdict.o \
-+	  snet_ticket_helper.o \
-+	  snet_ticket.o \
-+	  snet_hooks.o \
-+	  snet_core.o \
-+	  snet_utils.o
+git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git perf-event-rename-2
+
+Thanks.
+
 -- 
-1.7.4.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
