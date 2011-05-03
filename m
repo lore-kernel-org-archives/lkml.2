@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1ECSCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:02:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36991 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab1ECSCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:02:03 -0400
-Date: Tue, 3 May 2011 09:01:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Sebastian =?iso-8859-1?Q?F=E4rber?= <faerber@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Hard LOCKUP, maybe acpi related (present in 2.6.32 to 2.6.37,
- fixed in 2.6.38)
-Message-ID: <20110503130123.GA23498@redhat.com>
-References: <BANLkTikAun3_-WyKE0RJiXei=QGXQ1g+JQ@mail.gmail.com>
+	id S1752686Ab1ECNh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:37:28 -0400
+Received: from muse.oxfordinspire.co.uk ([93.93.128.48]:60046 "EHLO
+	muse.oxfordinspire.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab1ECNh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 09:37:26 -0400
+X-Greylist: delayed 1685 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 09:37:26 EDT
+Message-ID: <4DBFFE64.6000306@exotica.org.uk>
+Date: Tue, 03 May 2011 14:08:52 +0100
+From: Jools Wills <buzz@exotica.org.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikAun3_-WyKE0RJiXei=QGXQ1g+JQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Walter Goldens <goldenstranger@yahoo.com>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Roland Dreier <roland@kernel.org>, linux-usb@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
+References: <484421.61252.qm@web161619.mail.bf1.yahoo.com>
+In-Reply-To: <484421.61252.qm@web161619.mail.bf1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Spam-Score: -2.9 (--)
+X-Spam-Report: Spam detection software, running on the system "muse.oxfordinspire.co.uk", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  in case it is useful: I am currently using the vendor driver
+    on a device I have (O2 Joggler). The rt2800usb driver didn't work well and
+    the staging rt2870sta driver didn't seem to work with wireless N and users
+    reported to me that it drops the connection and is unreliable. The vendor
+    driver does seem to work best. [...] 
+ Content analysis details:   (-2.9 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+ -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 29, 2011 at 12:50:35PM +0200, Sebastian Färber wrote:
-> Hi,
-> 
-> I'm trying to track down a problem i have with newer hardware which seems
-> fixed in 2.6.38.4 but which i can reproduce from 2.6.32 to 2.6.37
-> I'm running a DEBUG Kernel with nmi_watchdog=1 and attached a backtrace
-> of the lockup that happened on 2.6.37.6. I can also provide backtraces for
-> 2.6.32 to 2.6.35 if necessary, they look very similar.
+in case it is useful:
 
-It looks like you are using the old nmi watchdog which may have given you
-false positives.  Can you turn on the new nmi watchdog (for 2.6.36 or
-later)?
+I am currently using the vendor driver on a device I have (O2 Joggler).
+The rt2800usb driver didn't work well and the staging rt2870sta driver
+didn't seem to work with wireless N and users reported to me that it
+drops the connection and is unreliable. The vendor driver does seem to
+work best.
 
-CONFIG_LOCKUP_DETECTOR=y
-CONFIG_HARDLOCKUP_DETECTOR=y
+I made a debian package (using dkms) of the vendor driver on my joggler
+ppa. tested working wiht 2.6.37/2.6.38
 
-and see if that gives a more meaningful backtrace?
+https://launchpad.net/~jools/+archive/joggler
 
-Cheers,
-Don
+note it doesn't automatically install the newer firmware so that will
+need to be done manually.
+
+Best Regards
+
+Jools
