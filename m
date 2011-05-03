@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1ECWlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:41:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:18320 "EHLO
+	id S1753322Ab1ECWli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:41:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18896 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab1ECWlJ (ORCPT
+	with ESMTP id S1752902Ab1ECWlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:41:09 -0400
+	Tue, 3 May 2011 18:41:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=sL1iFy1XmzyJD9KPXWwRtqmzCz36a9DScVc0birHWh6ujKrmoRApxu8CWU61n478o6
-         5X8w/I+ABo4sgGX5jxyw==
-Date: Tue, 3 May 2011 15:40:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: James Bottomley <James.Bottomley@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] m68k SLUB fix for 2.6.39
-In-Reply-To: <BANLkTimT4899xDF99Fj37u_CgnkeBzoFzQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1105031538470.27795@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site> <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
- <BANLkTimT4899xDF99Fj37u_CgnkeBzoFzQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Ub/+sG9ersuEX2M8f/EQ2U6oMVNjMWIGM+8vzxEYG9M2KgXb+z4YMb9sxcCEgwgA00
+         E+lL23VpWWmhAeLy2lXA==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <BANLkTinqHNCzcZmQL6M-pCszTmPO=-X8yw@mail.gmail.com>
+References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+ <1304124773-24935-1-git-send-email-vnagarnaik@google.com> <20110503131820.GB23498@redhat.com>
+ <BANLkTinqHNCzcZmQL6M-pCszTmPO=-X8yw@mail.gmail.com>
+From: Michael Rubin <mrubin@google.com>
+Date: Tue, 3 May 2011 15:41:14 -0700
+Message-ID: <BANLkTik4N_cWuw2Vq65UX5jCW+AccQHAHw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86: Change trap definitions to enumerated values
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Aditya Kali <adityakali@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Apr 2011, Geert Uytterhoeven wrote:
+On Tue, May 3, 2011 at 12:00 PM, Vaibhav Nagarnaik
+<vnagarnaik@google.com> wrote:
+> Would it make better sense to separate this patch into 2 patches, the first
+> one replacing the numbers to enums and the second one adding the tracepoints?
 
-> My ARAnyM instance has
-> 
-> System Memory:	276480K
-> 	 14 MB at 0x00000000 (ST-RAM)
-> 	256 MB at 0x01000000 (alternate RAM)
-> 
-> and 137800KIB of swap, and survived the following program just fine:
-> 
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <string.h>
-> 
-> int main(int argc, char *argv[])
-> {
->     size_t size = 1048576;
->     size_t total = 0;
->     void *p;
-> 
->     while (size) {
-> 	p = malloc(size);
-> 	if (!p) {
-> 	    printf("Failed to allocate %zu bytes\n", size);
-> 	    size /= 2;
-> 	}
-> 	memset(p, 0xaa, size);
-> 	total += size;
-> 	printf("Using %zu / 0x%zx bytes of memory\n", total, total);
->     }
-> 
->     printf("Finished!\n");
->     return 0;
-> }
-> 
-> i.e. the OOM-killer just killed the program after it consumed all
-> available virtual
-> memory:
-> 
-> Out of memory: Kill process 1727 (malloctest) score 854 or sacrifice child
-> Killed process 1727 (malloctest) total-vm:361160kB, anon-rss:224164kB,
-> file-rss:0kB
-> malloctest: page allocation failure. order:0, mode:0x84d0
-> 
-> So SLUB really seems to work now.
-> 
+Yes please do that.
+Each patch should stand on its own with one simple purpose if possible.
 
-So we're in the unfortunate position where slub works fine for some 
-architectures with DISCONTIGMEM and not with others.  It seems like the 
-problems originating on James' hppa aren't related to slab allocation at 
-all, though, so I'm wondering if we should rethink disallowing SLUB as it 
-sits in Linus' tree right now for everything that uses DISCONTINGMEM 
-without NUMA and not force them to enable CONFIG_BROKEN?
-
-Perhaps change the kconfig entry to only block slub for parisc instead?
+mrubin
