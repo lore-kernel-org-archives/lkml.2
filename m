@@ -1,122 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1ECRBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:01:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27058 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab1ECRBO (ORCPT
+	id S1754054Ab1ECRCG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:02:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53816 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab1ECRCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:01:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6335"; a="89067053"
-Message-ID: <4DC034CA.6000505@codeaurora.org>
-Date: Tue, 03 May 2011 10:00:58 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Tue, 3 May 2011 13:02:04 -0400
+Date: Tue, 3 May 2011 18:02:00 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/23] intel_sst: MSIC codec power optimisation
+Message-ID: <20110503170200.GG2893@sirena.org.uk>
+References: <20110503162919.24853.58699.stgit@bob.linux.org.uk> <20110503163200.24853.6842.stgit@bob.linux.org.uk> <20110503165838.GF2893@sirena.org.uk> <20110503180202.0900afaa@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Colin Cross <ccross@google.com>, Kevin Hilman <khilman@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-Subject: Re: [Update x3][PATCH 7/9] PM / Runtime: Generic clock manipulation
- rountines for runtime PM (v6)
-References: <201104130205.26988.rjw@sisk.pl> <4DBB12EF.9030000@codeaurora.org> <201104292229.56518.rjw@sisk.pl> <201104300004.02601.rjw@sisk.pl>
-In-Reply-To: <201104300004.02601.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503180202.0900afaa@lxorguk.ukuu.org.uk>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2011 03:04 PM, Rafael J. Wysocki wrote:
-> +
-> +/**
-> + * enable_clock - Enable a device clock.
-> + * @dev: Device whose clock is to be enabled.
-> + * @con_id: Connection ID of the clock.
-> + */
-> +static void enable_clock(struct device *dev, const char *con_id)
-> +{
-> +	struct clk *clk;
-> +
-> +	clk = clk_get(dev, con_id);
-> +	if (!IS_ERR(clk)) {
-> +		clk_enable(clk);
-> +		clk_put(clk);
-> +		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
-> +	}
-> +}
+On Tue, May 03, 2011 at 06:02:02PM +0100, Alan Cox wrote:
+> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-This doesn't make much sense to me. You're getting a clock and then
-enabling it and then putting the clock? How can you be so sure that
-clk_put() won't one day do some kind of lower power mode on the clock
-when clk_put() is called on it? I don't think anyone does anything
-today, but I don't think its safe to assume that clk_put() won't try to
-forcibly shut off the clock once all clk_get() callers have clk_put().
+> > Once you move over to proper CODEC drivers the core will take care of
+> > this stuff for you.
 
-Perhaps we should document the meaning of clk_enable() followed by
-clk_put() somewhere instead?
+> Please see 00/23
 
-> +
-> +/**
-> + * disable_clock - Disable a device clock.
-> + * @dev: Device whose clock is to be disabled.
-> + * @con_id: Connection ID of the clock.
-> + */
-> +static void disable_clock(struct device *dev, const char *con_id)
-> +{
-> +	struct clk *clk;
-> +
-> +	clk = clk_get(dev, con_id);
-> +	if (!IS_ERR(clk)) {
-> +		clk_disable(clk);
-> +		clk_put(clk);
-> +		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
-> +	}
-> +}
+> "This is a forward port of various further Intel work on the SST driver in
+> staging. This keeps the staging driver up to date while the ALSA driver
+> development continues."
 
-This might not be as bad, but it looks like a similar problem.
-
-> -
-> -static int platform_bus_notify(struct notifier_block *nb,
-> -			       unsigned long action, void *data)
-> -{
-> -	struct device *dev = data;
-> -	struct clk *clk;
-> -
-> -	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
-> -
-> -	switch (action) {
-> -	case BUS_NOTIFY_BIND_DRIVER:
-> -		clk = clk_get(dev, NULL);
-> -		if (!IS_ERR(clk)) {
-> -			clk_enable(clk);
-> -			clk_put(clk);
-> -			dev_info(dev, "runtime pm disabled, clock forced on\n");
-> -		}
-> -		break;
-> -	case BUS_NOTIFY_UNBOUND_DRIVER:
-> -		clk = clk_get(dev, NULL);
-> -		if (!IS_ERR(clk)) {
-> -			clk_disable(clk);
-> -			clk_put(clk);
-> -			dev_info(dev, "runtime pm disabled, clock forced off\n");
-> -		}
-
-Ah ok I see that it's coming from here.
-
-BTW, whatever is in linux-next is failing to compile:
-
-drivers/base/power/clock_ops.c:391: error: 'con_id' undeclared (first
-use in this function)
-drivers/base/power/clock_ops.c:391: error: (Each undeclared identifier
-is reported only once
-drivers/base/power/clock_ops.c:391: error: for each function it appears in.)
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+I did see that; I don't see any contradiction here?
