@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1ECOhk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:37:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40220 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1ECOhi (ORCPT
+	id S1753113Ab1ECOoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:44:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51536 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752853Ab1ECOon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:37:38 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=OAku4sAPhKAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=59TrGsfLputFGiSdmTUA:9 a=yIoDhOLDytWEHtL7PeEA:7 a=PUjeQqilurYA:10 a=b3D6R9wpAFoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC patch 01/32] TRACE_EVENT: gradual semicolon removal
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <20110503140717.GA29736@Krystal>
-References: <20110502211123.163877033@efficios.com>
-	 <20110502213211.250108074@efficios.com>  <20110503140717.GA29736@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 03 May 2011 10:37:37 -0400
-Message-ID: <1304433457.25414.2399.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 10:44:43 -0400
+Date: Tue, 3 May 2011 15:44:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCHv2 -next] MFD: MFD module of DA9052 PMIC driver
+Message-ID: <20110503144441.GS1762@opensource.wolfsonmicro.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5AFBA@KCINPUNHJCMS01.kpit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5AFBA@KCINPUNHJCMS01.kpit.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 10:07 -0400, Mathieu Desnoyers wrote:
-> Hi,
-> 
-> And here is a self-reply to patch 01/32, due to LKML refusing messages
-> with more than 20 recipients.
-> 
-BTW, next time don't Cc the world on generic patch sets like this. If
-someone is Cc'd in one of the patch sets and wonders what it is about.
+On Tue, May 03, 2011 at 07:30:54PM +0530, Ashish Jangam wrote:
 
-a) You did not write your change log well enough
+> +int da9052_unmask_events(struct da9052 *da9052, unsigned int events)
+> +{
+> +       uint8_t v[4];
+> +
+> +       da9052->events_mask &= ~events;
+> +
+> +       v[0] = (da9052->events_mask & 0xff);
+> +       v[1] = (da9052->events_mask >> 8) & 0xff;
+> +       v[2] = (da9052->events_mask >> 16) & 0xff;
+> +       v[3] = (da9052->events_mask >> 24) & 0xff;
+> +
+> +       return da9052_group_write(da9052, DA9052_IRQ_MASK_A_REG, 4, v);
+> +}
+> +
+> +int da9052_mask_events(struct da9052 *da9052, unsigned int events)
+> +{
+> +       uint8_t v[4];
+> +
+> +       da9052->events_mask |= events;
+> +
+> +       v[0] = (da9052->events_mask & 0xff);
+> +       v[1] = (da9052->events_mask >> 8) & 0xff;
+> +       v[2] = (da9052->events_mask >> 16) & 0xff;
+> +       v[3] = (da9052->events_mask >> 24) & 0xff;
+> +
+> +       return da9052_group_write(da9052, DA9052_IRQ_MASK_A_REG, 4, v);
+> +}
 
-b) It contains unrelated changes
+My previous queries about why this is here and not in the IRQ code still
+stand.
 
-c) They could look at lkml.org to find out what this patch set is about.
+> +static void da9052_irq_sync_unlock(struct irq_data *data)
+> +{
+> +       struct da9052 *da9052 = irq_data_get_irq_chip_data(data);
+> +       struct da9052_irq_data *irq_data = irq_to_da9052_irq(da9052,
+> +                                               data->irq);
+> +
+> +       da9052_mask_events(da9052, irq_data->event);
+> +       mutex_unlock(&da9052->irq_lock);
 
-(c) is what I usually do when I'm Cc'd in a middle of a patch series.
-
--- Steve
-
-
+What happens if an event was enabled while the bus was locked?
