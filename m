@@ -1,154 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab1ECQub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:50:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58043 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753896Ab1ECQua (ORCPT
+	id S1754145Ab1ECQxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 12:53:37 -0400
+Received: from smtp108.prem.mail.sp1.yahoo.com ([98.136.44.63]:32123 "HELO
+	smtp108.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754070Ab1ECQxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:50:30 -0400
-Date: Tue, 3 May 2011 17:50:27 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Collins <collinsd@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm-owner@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] regulator: pm8921-regulator: Add regulator
- driver for PM8921
-Message-ID: <20110503165027.GC1762@opensource.wolfsonmicro.com>
-References: <1304438668-23680-1-git-send-email-collinsd@codeaurora.org>
- <1304438756-28125-1-git-send-email-collinsd@codeaurora.org>
+	Tue, 3 May 2011 12:53:33 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: g1HVnt0VM1koHj3gllAZfQhI1SeVStgzKVcELy.cuRdc.V0
+ bRAcFTgUELvX9EK2tZLHeQYrGiEeTie7hkJxd6K2aIqqDqzQhoCfTa8KcLGd
+ HNRoB0JDHflruauApC_ej.fYTauU9eD7Gt9y93NrUMDV2tHEDNFvBEk2EXIY
+ ioeZKZivsV8ltepAYf5DjFkhCSO4Qb.m9eR9YY65Vuk0Fo4Rr61QMR_Quok1
+ 0_ub.OVTDAFQbTU.LNcdhIdb1E479xbYoVXTCplk4RHc_YlDDt1A1sRrzjsi
+ 1TSQMum3HLg9niL17UZ7unGoL.gMNAv_0GJO1agsWYlAP2zWKhZ.R_Ug7WFM
+ aekS4yEIU0o_46Yxa6sQIPa.WKFM5CXYl8Q--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4DC0330C.60208@schaufler-ca.com>
+Date: Tue, 03 May 2011 09:53:32 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304438756-28125-1-git-send-email-collinsd@codeaurora.org>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Samir Bellabes <sam@synack.fr>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Patrick McHardy <kaber@trash.net>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        Grzegorz Nosek <root@localdomain.pl>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC v3 00/10] snet: Security for NETwork syscalls
+References: <1304432663-1575-1-git-send-email-sam@synack.fr>
+In-Reply-To: <1304432663-1575-1-git-send-email-sam@synack.fr>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 09:05:56AM -0700, David Collins wrote:
-> Create a regulator driver to control all regulators on a Qualcomm
-> PM8921 PMIC chip.  This chip contains many different types of
-> regulators with a wide range of abilities and voltage ranges.
+On 5/3/2011 7:24 AM, Samir Bellabes wrote:
+> Hello lsm and netdev people,
+> This set of patches is the version 3 of snet, which I would like to submit as a
+> RFC.
+>
+> snet is a linux security module. It provides a mecanism defering syscall
+> security hooks and decision (verdict) to userspace.
 
-This is basically OK but a few comments below.
+As you have submitted this as a Request For Comments I will make one.
 
-> Eight different regulator types are available on the PM8921.  These
-> are managed via 7 different type values in the driver:
-> 
-> LDO      - low drop out regulator (supports both NMOS and PMOS LDOs)
-> NLDO1200 - 1.2A NMOS LDO (different control structure than other LDOs)
-> SMPS     - switched-mode power supply
-> FTSMPS   - fast transient SMPS
-> VS       - voltage switch
-> VS300    - 300mA voltage switch (different control structure than
->              other switches)
-> NCP      - negative charge pump
+I first saw this approach in 1987, on Unix, from a company called
+SecureWare (long completely assimilated into HP). The potential for
+deadlock, where the system prevents the decision making application
+from accessing the information it needs to grant itself access is
+great. The performance impact of making security checks in user
+space is appalling. The exposure for attack, especially regarding
+denial of service, is enormous. I do not recommend this approach.
 
-Given that I'm not seeing much code sharing except is_enabled() it might
-be nice to split the driver up by regulator, it's very large.
+There are cases where user space access control assistance could
+be appropriate, in particular controls based on the data involved.
+Even those controls must be very carefully crafted to avoid
+impacting the correct function of the system in the unhappily
+likely event of the access control enforcing applications being
+unavailable or incapable of keeping up with demand.
 
-> +		for (i = 0; i < pdata->num_regulators; i++) {
-> +			mfd_regulators[i].name = PM8921_REGULATOR_DEV_NAME;
-> +			mfd_regulators[i].id = pdata->regulator_pdatas[i].id;
-> +			mfd_regulators[i].platform_data =
-> +				&(pdata->regulator_pdatas[i]);
-> +			mfd_regulators[i].pdata_size =
-> +				sizeof(struct pm8921_regulator_platform_data);
-> +		}
-> +		ret = mfd_add_devices(pmic->dev, 0, mfd_regulators,
-> +				pdata->num_regulators, NULL, irq_base);
+> snet has some subsystems :
+>     - snet_core     : init and exit the system
+>     - snet_hooks    : LSM hooks
+>     - snet_netlink  : kernel-user communication (genetlink)
+>     - snet_event    : manages the list of protected syscalls
+>     - snet_verdict  : provides a waitqueue for syscalls and manage verdicts
+>     - snet_ticket   : provides a granted-access ticket mecanism
+>
+> I believe that snet will help to get over the classical configuration
+> complexity of others security modules, by providing interactivity to users.
+> I also think that monolithic strategy is broken with snet, as we can provide
+> security for others syscall's categories:
+>  - sfs  : security for filesystem,
+>  - stask: security for task,
+>  - smem : security for memory
+>  ..
+>
+> In this way, and by putting abstraction on how this subsystems can talk to each
+> others, we may use the security combinaison we want: choose to run sfs,
+> stask, but not snet nor smem. Better, developpers may investigated how to build
+> another security subsystem for tasks, and use others existing (smem, snet..)
+> which they don't want to modify
+>
+> I think that interactivity is very usefull for users, as they may be notify when
+> something is wrong and take decision, and from userspace, the decision may be
+> defered to another box. In this way, snet also have a advantage for mobile
+> devices as the policy decision will be push to a distant server, mobile device
+> will then wait for verdicts and as policy strategies are centralized.
+>
+> Interactivity is *not* only clicking a Yes/No question, as said, we
+> can centralised previous locals LSM security subsytems, and make the
+> network aware of events occuring on it.
+>
+> Finally, and a important point: snet integration respects the LSM framework idea
+> of using LSM hooks.
+>
+> New feature from the previous version:
+>  * Building a ticket mecanism for each task_struct using pointer void *security
+>    Use the pointer (void*) security related to task_struct to provides
+>    granted-acces tickets: if two identical requests are coming, ask the user
+>    for the first one, store the result in a ticket and for the second request,
+>    just look in the tickets owned by the task-struct
+>  * send data buffer of sendmsg to userspace
+>    this may provide a way to look inside the data (as a anti-virus do)
+>
+> roadmap:
+>  * find a way to send data buffer of sendmsg to userspace (using netfilter)
+>  * adding other security systems
+>    we can think about adding fork(), exec(), open(), close()..
+>
+> I'm Ccing netfilter-devel, as snet may be seen as a way to do filtering.
+>
+> Last devel patchs were:
+>  * using kmem_cache instead of kmalloc
+>  * remove attend to send buffer socker to userspace
+>
+> Samir Bellabes (10):
+>   lsm: add security_socket_closed()
+>   Revert "lsm: Remove the socket_post_accept() hook"
+>   snet: introduce snet_core
+>   snet: introduce snet_event
+>   snet: introduce snet_hooks
+>   snet: introduce snet_netlink
+>   snet: introduce snet_verdict
+>   snet: introduce snet_ticket
+>   snet: introduce snet_utils
+>   snet: introduce security/snet, Makefile and Kconfig changes
+>
+>  include/linux/security.h            |   23 ++
+>  include/linux/snet.h                |  117 ++++++
+>  net/socket.c                        |    3 +
+>  security/Kconfig                    |    6 +
+>  security/Makefile                   |    2 +
+>  security/capability.c               |   10 +
+>  security/security.c                 |   10 +
+>  security/snet/Kconfig               |   11 +
+>  security/snet/Makefile              |   14 +
+>  security/snet/snet_core.c           |   82 ++++
+>  security/snet/snet_event.c          |  201 ++++++++++
+>  security/snet/snet_event.h          |   21 +
+>  security/snet/snet_hooks.c          |  722 +++++++++++++++++++++++++++++++++++
+>  security/snet/snet_hooks.h          |   10 +
+>  security/snet/snet_netlink.c        |  442 +++++++++++++++++++++
+>  security/snet/snet_netlink.h        |   17 +
+>  security/snet/snet_netlink_helper.c |  220 +++++++++++
+>  security/snet/snet_netlink_helper.h |    7 +
+>  security/snet/snet_ticket.c         |  195 ++++++++++
+>  security/snet/snet_ticket.h         |   37 ++
+>  security/snet/snet_ticket_helper.c  |  127 ++++++
+>  security/snet/snet_ticket_helper.h  |    8 +
+>  security/snet/snet_utils.c          |   38 ++
+>  security/snet/snet_utils.h          |    9 +
+>  security/snet/snet_verdict.c        |  203 ++++++++++
+>  security/snet/snet_verdict.h        |   23 ++
+>  26 files changed, 2558 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/snet.h
+>  create mode 100644 security/snet/Kconfig
+>  create mode 100644 security/snet/Makefile
+>  create mode 100644 security/snet/snet_core.c
+>  create mode 100644 security/snet/snet_event.c
+>  create mode 100644 security/snet/snet_event.h
+>  create mode 100644 security/snet/snet_hooks.c
+>  create mode 100644 security/snet/snet_hooks.h
+>  create mode 100644 security/snet/snet_netlink.c
+>  create mode 100644 security/snet/snet_netlink.h
+>  create mode 100644 security/snet/snet_netlink_helper.c
+>  create mode 100644 security/snet/snet_netlink_helper.h
+>  create mode 100644 security/snet/snet_ticket.c
+>  create mode 100644 security/snet/snet_ticket.h
+>  create mode 100644 security/snet/snet_ticket_helper.c
+>  create mode 100644 security/snet/snet_ticket_helper.h
+>  create mode 100644 security/snet/snet_utils.c
+>  create mode 100644 security/snet/snet_utils.h
+>  create mode 100644 security/snet/snet_verdict.c
+>  create mode 100644 security/snet/snet_verdict.h
+>
 
-I'm having a hard time liking this.
-
-> +static int pm8921_vreg_masked_write(struct pm8921_vreg *vreg, u16 addr, u8 val,
-> +		u8 mask, u8 *reg_save)
-> +{
-> +	int rc = 0;
-> +	u8 reg;
-> +
-> +	reg = (*reg_save & ~mask) | (val & mask);
-> +	if (reg != *reg_save)
-> +		rc = pm8xxx_writeb(vreg->dev->parent, addr, reg);
-> +
-> +	if (rc)
-> +		pr_err("pm8xxx_writeb failed; addr=0x%03X, rc=%d\n", addr, rc);
-
-dev_err or one of your custom error macros.
-
-> +static int _pm8921_vreg_is_enabled(struct pm8921_vreg *vreg)
-> +{
-> +	int rc = 0;
-> +
-> +	/*
-> +	 * All regulator types except advanced mode SMPS, FTSMPS, and VS300 have
-> +	 * enable bit in bit 7 of the control register.
-> +	 */
-> +	switch (vreg->type) {
-
-If they're all checking bit 7 the switch statement feels a bit odd...
-
-> +static int pm8921_nldo_list_voltage(struct regulator_dev *rdev,
-> +				    unsigned selector)
-> +{
-> +	if (selector >= NLDO_SET_POINTS)
-> +		return 0;
-
-That looks like it should be returning an error.  0 is for things that
-are in range but can't be set for some reason (it's more intended for
-values knocked out by constraints or similar).
-
-> +static int _pm8921_nldo1200_get_voltage(struct pm8921_vreg *vreg)
-> +{
-> +	int uV = 0;
-> +	int vprog;
-> +
-> +	if (!NLDO1200_IN_ADVANCED_MODE(vreg)) {
-> +		pr_warn("%s: currently in legacy mode; voltage unknown.\n",
-> +			vreg->name);
-> +		return vreg->save_uV;
-> +	}
-> +
-> +	vprog = vreg->ctrl_reg & NLDO1200_CTRL_VPROG_MASK;
-> +
-> +	if ((vreg->ctrl_reg & NLDO1200_CTRL_RANGE_MASK)
-> +	    == NLDO1200_CTRL_RANGE_LOW)
-> +		uV = vprog * NLDO1200_LOW_UV_STEP + NLDO1200_LOW_UV_MIN;
-> +	else
-> +		uV = vprog * NLDO1200_HIGH_UV_STEP + NLDO1200_HIGH_UV_MIN;
-
-Just implement get_voltage_sel() - the same thing applies to most of the
-other regulators that have meaningful selectors.
-
-> +		/* Advanced mode */
-> +		if ((vreg->test_reg[2] & NLDO1200_ADVANCED_PM_MASK)
-> +		    == NLDO1200_ADVANCED_PM_LPM)
-
-Do we need #defines for the indexes into these arrays?  It's a bit magic
-and the code is complicated enough.
-
-> +	if (mode != REGULATOR_MODE_NORMAL && mode != REGULATOR_MODE_IDLE) {
-> +		vreg_err(vreg, "invalid mode: %u\n", mode);
-> +		return -EINVAL;
-> +	}
-
-switch would be clearer.
-
-> +/**
-> + * struct pm8921_regulator_platform_data - PMIC 8921 regulator platform data
-> + * @init_data:		regulator constraints
-> + * @id:			regulator id; from enum pm8921_vreg_id
-> + * @pull_down_enable:	0 = no pulldown, 1 = pulldown when regulator disabled
-> + * @pin_ctrl:		pin control inputs to use for the regulator; should be
-> + *			a combination of PM8921_VREG_PIN_CTRL_* values
-> + * @pin_fn:		action to perform when pin control pin is active
-> + * @system_uA:		current drawn from regulator not accounted for by any
-> + *			regulator framework consumer
-
-Having system_uA here seems wrong, this is hardly something that is
-specific to this chip.
