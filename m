@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1ECVly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:41:54 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:64668 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab1ECVlv (ORCPT
+	id S1755435Ab1ECVlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:41:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38957 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab1ECVls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:41:51 -0400
-Date: Tue, 03 May 2011 17:40:30 -0400 (EDT)
-From: pefoley2@verizon.net
-X-X-Sender: root@gentoo.foleyremote.com
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, hjanssen@microsoft.com,
-        haiyangz@microsoft.com
-Subject: [PATCH resend v2] staging: hv: make HYPERV_UTILS depend on NLS to
- prevent a build error
-Message-id: <alpine.LNX.2.00.1105031733300.9497@gentoo.foleyremote.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 May 2011 17:41:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=REiLuXIkny7JBJI3JW73eJDWPEKauCrx1WaWYr8LaJL4DlSsXsByK0lhHUJ3An7EKe
+         P18/BeIyDINaKH4QIvin9wMTyIQDAl+9zaecWeaCtOGcwMHchVEwAgqMNaEarCsrNq/w
+         VGzc+bVPEuLerm3mqXBGQMJJGDCkm0kEjf3Ls=
+Date: Tue, 3 May 2011 23:41:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] tracing: Don't call wakeup() when committing the
+ event
+Message-ID: <20110503214142.GC2678@nowhere>
+References: <1304456616-30281-1-git-send-email-vnagarnaik@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304456616-30281-1-git-send-email-vnagarnaik@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When HYPERV_UTILS=y and NLS=n the build fails with this error:
-MODPOST 3 modules 
-ERROR: "utf8s_to_utf16s" [drivers/staging/hv/hv_utils.ko] undefined!
-This patch fixes this by adding a dependency on NLS to HYPERV_UTILS.
+On Tue, May 03, 2011 at 02:03:36PM -0700, Vaibhav Nagarnaik wrote:
+> In using syscall tracing by concurrent processes, the wakeup() that is
+> called in the event commit function causes contention on the spin lock
+> of the waitqueue. I enabled sys_enter_getuid and sys_exit_getuid
+> tracepoints, and by running getuid_microbench from autotest in parallel
+> I found that the contention causes exponential latency increase in the
+> tracing path.
+> 
+> The autotest binary getuid_microbench calls getuid() in a tight loop for
+> the given number of iterations and measures the average time required to
+> complete a single invocation of syscall.
+> 
+> The patch here points to the problem and provides a naive solution to
+> start the discussion. It is not intended to be a definitive solution.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- drivers/staging/hv/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Right, so another solution could be to have per cpu waitqueues for
+the per_cpu trace_pipe/trace_pipe_raw files, and one big for the main
+trace_pipe file.
 
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index d41f380..76f0756 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -31,7 +31,7 @@ config HYPERV_NET
- 
- config HYPERV_UTILS
- 	tristate "Microsoft Hyper-V Utilities driver"
--	depends on CONNECTOR
-+	depends on CONNECTOR && NLS
- 	default HYPERV
- 	help
- 	  Select this option to enable the Hyper-V Utilities.
--- 
-1.7.5.rc1
-
+That involves two wake_up() calls but then it scales and you keep
+the awakening.
