@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab1ECT7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 15:59:38 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38209 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929Ab1ECT7h (ORCPT
+	id S1754979Ab1ECT7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:59:44 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:35226 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab1ECT7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 15:59:37 -0400
-Subject: [PATCH 10/16] hpsa: clarify messages around reset behavior
+	Tue, 3 May 2011 15:59:41 -0400
+Subject: [PATCH 11/16] hpsa: remove atrophied hpsa_scsi_setup function
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
         mikem@beardog.cce.hp.com
-Date: Tue, 03 May 2011 14:59:36 -0500
-Message-ID: <20110503195936.5478.97874.stgit@beardog.cce.hp.com>
+Date: Tue, 03 May 2011 14:59:41 -0500
+Message-ID: <20110503195941.5478.4259.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,42 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-When waiting for the board to become "not ready"
-don't print a message saying "waiting for board to
-become ready" (possibly followed by a message saying
-"failed waiting for board to become not ready".  Instead,
-it should be "waiting for board to reset" and "failed
-waiting for board to reset."
+hpsa_scsi_setup at one time contained enough code to justify
+its existence, but that time has passed.
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/scsi/hpsa.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 97db2e5..2a90e9a 100644
+index 2a90e9a..ca92141 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -3334,11 +3334,11 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
- 	msleep(HPSA_POST_RESET_PAUSE_MSECS);
+@@ -929,13 +929,6 @@ static void hpsa_slave_destroy(struct scsi_device *sdev)
+ 	/* nothing to do. */
+ }
  
- 	/* Wait for board to become not ready, then ready. */
--	dev_info(&pdev->dev, "Waiting for board to become ready.\n");
-+	dev_info(&pdev->dev, "Waiting for board to reset.\n");
- 	rc = hpsa_wait_for_board_state(pdev, vaddr, BOARD_NOT_READY);
- 	if (rc)
- 		dev_warn(&pdev->dev,
--			"failed waiting for board to become not ready\n");
-+			"failed waiting for board to reset\n");
- 	rc = hpsa_wait_for_board_state(pdev, vaddr, BOARD_READY);
- 	if (rc) {
- 		dev_warn(&pdev->dev,
-@@ -3837,6 +3837,7 @@ static __devinit int hpsa_init_reset_devices(struct pci_dev *pdev)
- 		return -ENODEV;
+-static void hpsa_scsi_setup(struct ctlr_info *h)
+-{
+-	h->ndevices = 0;
+-	h->scsi_host = NULL;
+-	spin_lock_init(&h->devlock);
+-}
+-
+ static void hpsa_free_sg_chain_blocks(struct ctlr_info *h)
+ {
+ 	int i;
+@@ -3970,7 +3963,9 @@ static int __devinit hpsa_init_one(struct pci_dev *pdev,
+ 	h->scan_finished = 1; /* no scan currently in progress */
  
- 	/* Now try to get the controller to respond to a no-op */
-+	dev_warn(&pdev->dev, "Waiting for controller to respond to no-op\n");
- 	for (i = 0; i < HPSA_POST_RESET_NOOP_RETRIES; i++) {
- 		if (hpsa_noop(pdev) == 0)
- 			break;
+ 	pci_set_drvdata(pdev, h);
+-	hpsa_scsi_setup(h);
++	h->ndevices = 0;
++	h->scsi_host = NULL;
++	spin_lock_init(&h->devlock);
+ 
+ 	/* Turn the interrupts on so we can service requests */
+ 	h->access.set_intr_mask(h, HPSA_INTR_ON);
 
