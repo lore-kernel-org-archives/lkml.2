@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1ECWW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:22:29 -0400
-Received: from mailfw02.zoner.fi ([84.34.147.249]:43108 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab1ECWW2 (ORCPT
+	id S1753269Ab1ECW01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:26:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36701 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752902Ab1ECW00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:22:28 -0400
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] XZ decompressor: Fix decoding of empty LZMA2 streams
-Date: Wed, 4 May 2011 01:22:36 +0300
-User-Agent: KMail/1.13.7 (Linux/2.6.38-ARCH; KDE/4.6.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-References: <201105011938.42851.lasse.collin@tukaani.org> <20110503143620.c6b4d272.akpm@linux-foundation.org>
-In-Reply-To: <20110503143620.c6b4d272.akpm@linux-foundation.org>
+	Tue, 3 May 2011 18:26:26 -0400
+Date: Tue, 3 May 2011 23:26:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
+Message-ID: <20110503222635.GA8035@opensource.wolfsonmicro.com>
+References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
+ <20110503163128.24853.15446.stgit@bob.linux.org.uk>
+ <20110503174254.GA6545@kroah.com>
+ <20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
+ <20110503213925.GA7453@opensource.wolfsonmicro.com>
+ <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
+ <20110503220233.GB14080@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105040122.36545.lasse.collin@tukaani.org>
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503220233.GB14080@kroah.com>
+X-Cookie: Stay away from hurricanes for a while.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-04 Andrew Morton wrote:
-> Lasse Collin <lasse.collin@tukaani.org> wrote:
-> > From: Lasse Collin <lasse.collin@tukaani.org>
-> > 
-> > The old code considered valid empty LZMA2 streams to be corrupt.
-> > Note that a typical empty .xz file has no LZMA2 data at all,
-> > and thus most .xz files having no uncompressed data are handled
-> > correctly even without this fix.
-> > 
-> > Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
-> 
-> The patch didn't have the cc:stable tag, but appears to be needed in
-> 2.6.38.x and perhaps earlier, yes?
-> 
-> It's commit 646032e3b05b32d3f20cb108a030593d9d792eb5 in mainline.
+On Tue, May 03, 2011 at 03:02:33PM -0700, Greg KH wrote:
 
-Thanks. It's good for 2.6.38.x. Older ones don't have XZ support.
+> Mark, can you try to let me know if you are patching staging code?  If
+> you want to "own" a driver in the staging tree, that's fine, just let me
+> konw and I'll funnel patches to you for it (we do that for other staging
+> drivers).
 
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+I CCed you in on the thread where the patch was applied.  Probably you
+forgot about it as it was described as a build fix for my tree.
+
+I'm not really that interested in the Intel patches in staging, the bulk
+of them require a from scratch rewrite to go upstream as they're so far
+from following the Linux driver model for these things.
