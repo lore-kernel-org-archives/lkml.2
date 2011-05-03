@@ -1,68 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1ECTeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 15:34:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:36831 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab1ECTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 15:34:05 -0400
-Date: Tue, 3 May 2011 12:33:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, kaber@trash.net
-Subject: Re: [PATCH tip/core/rcu 1/7] net,rcu: convert
- call_rcu(sk_filter_release_rcu) to kfree_rcu
-Message-ID: <20110503193349.GX2294@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110502161321.GA6537@linux.vnet.ibm.com>
- <1304352824-6563-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110502.144156.104049895.davem@davemloft.net>
- <20110502220628.GI2294@linux.vnet.ibm.com>
- <20110503061335.GA7751@elte.hu>
- <20110503061604.GA8611@elte.hu>
+	id S1754697Ab1ECTlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:41:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46180 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab1ECTlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 15:41:24 -0400
+Date: Tue, 3 May 2011 13:41:19 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
+        cbouatmailru@gmail.com, arnd@arndb.de, nico@fluxnic.net
+Subject: Re: [PATCHv3 1/7] basic_mmio_gpio: remove runtime width/endianness
+ evaluation
+Message-ID: <20110503194119.GA9401@ponder.secretlab.ca>
+References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
+ <1302520914-22816-2-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110503061604.GA8611@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1302520914-22816-2-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 08:16:04AM +0200, Ingo Molnar wrote:
+On Mon, Apr 11, 2011 at 12:21:48PM +0100, Jamie Iles wrote:
+> Remove endianness/width calculations at runtime by installing function
+> pointers for bit-to-mask conversion and register accessors.
 > 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Mon, May 02, 2011 at 02:41:56PM -0700, David Miller wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > Date: Mon,  2 May 2011 09:13:38 -0700
-> > > > 
-> > > > > The RCU callback sk_filter_release_rcu just calls kfree(), so we use
-> > > > > kfree_rcu() instead of call_rcu().
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > I'm fine with all of these net conversions:
-> > > > 
-> > > > Acked-by: David S. Miller <davem@davemloft.net>
-> > > 
-> > > Thank you, Dave!
-> > 
-> > Looking at the networking-only diffstat i suspect the best flow would be if 
-> > Dave pulled these from you into the networking tree?
-> 
-> Oh, but kfree_rcu() is not upstream yet, right? So it has to be in the RCU 
-> tree.
+> Reported-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
 
-Yep!  So I either need to get kfree_rcu() upstream, then push up Dave's
-tree, or I need to push them all up -tip.  Either way is fine by me.
+Merged, thanks.
 
-							Thanx, Paul
+g.
+
+> ---
+>  drivers/gpio/basic_mmio_gpio.c |  136 +++++++++++++++++++++++++++-------------
+>  1 files changed, 92 insertions(+), 44 deletions(-)
+> 
+> diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
+> index 3addea6..e935a24 100644
+> --- a/drivers/gpio/basic_mmio_gpio.c
+> +++ b/drivers/gpio/basic_mmio_gpio.c
+> @@ -63,6 +63,10 @@ o        `                     ~~~~\___/~~~~    ` controller in FPGA is ,.`
+>  
+>  struct bgpio_chip {
+>  	struct gpio_chip gc;
+> +
+> +	unsigned long (*read_reg)(void __iomem *reg);
+> +	void (*write_reg)(void __iomem *reg, unsigned long data);
+> +
+>  	void __iomem *reg_dat;
+>  	void __iomem *reg_set;
+>  	void __iomem *reg_clr;
+> @@ -74,7 +78,7 @@ struct bgpio_chip {
+>  	 * Some GPIO controllers work with the big-endian bits notation,
+>  	 * e.g. in a 8-bits register, GPIO7 is the least significant bit.
+>  	 */
+> -	int big_endian_bits;
+> +	unsigned long (*pin2mask)(struct bgpio_chip *bgc, unsigned int pin);
+>  
+>  	/*
+>  	 * Used to lock bgpio_chip->data. Also, this is needed to keep
+> @@ -91,70 +95,77 @@ static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
+>  	return container_of(gc, struct bgpio_chip, gc);
+>  }
+>  
+> -static unsigned long bgpio_in(struct bgpio_chip *bgc)
+> +static void bgpio_write8(void __iomem *reg, unsigned long data)
+>  {
+> -	switch (bgc->bits) {
+> -	case 8:
+> -		return __raw_readb(bgc->reg_dat);
+> -	case 16:
+> -		return __raw_readw(bgc->reg_dat);
+> -	case 32:
+> -		return __raw_readl(bgc->reg_dat);
+> -#if BITS_PER_LONG >= 64
+> -	case 64:
+> -		return __raw_readq(bgc->reg_dat);
+> -#endif
+> -	}
+> -	return -EINVAL;
+> +	__raw_writeb(data, reg);
+>  }
+>  
+> -static void bgpio_out(struct bgpio_chip *bgc, void __iomem *reg,
+> -		      unsigned long data)
+> +static unsigned long bgpio_read8(void __iomem *reg)
+>  {
+> -	switch (bgc->bits) {
+> -	case 8:
+> -		__raw_writeb(data, reg);
+> -		return;
+> -	case 16:
+> -		__raw_writew(data, reg);
+> -		return;
+> -	case 32:
+> -		__raw_writel(data, reg);
+> -		return;
+> +	return __raw_readb(reg);
+> +}
+> +
+> +static void bgpio_write16(void __iomem *reg, unsigned long data)
+> +{
+> +	__raw_writew(data, reg);
+> +}
+> +
+> +static unsigned long bgpio_read16(void __iomem *reg)
+> +{
+> +	return __raw_readw(reg);
+> +}
+> +
+> +static void bgpio_write32(void __iomem *reg, unsigned long data)
+> +{
+> +	__raw_writel(data, reg);
+> +}
+> +
+> +static unsigned long bgpio_read32(void __iomem *reg)
+> +{
+> +	return __raw_readl(reg);
+> +}
+> +
+>  #if BITS_PER_LONG >= 64
+> -	case 64:
+> -		__raw_writeq(data, reg);
+> -		return;
+> -#endif
+> -	}
+> +static void bgpio_write64(void __iomem *reg, unsigned long data)
+> +{
+> +	__raw_writeq(data, reg);
+>  }
+>  
+> +static unsigned long bgpio_read64(void __iomem *reg)
+> +{
+> +	return __raw_readq(reg);
+> +}
+> +#endif /* BITS_PER_LONG >= 64 */
+> +
+>  static unsigned long bgpio_pin2mask(struct bgpio_chip *bgc, unsigned int pin)
+>  {
+> -	if (bgc->big_endian_bits)
+> -		return 1 << (bgc->bits - 1 - pin);
+> -	else
+> -		return 1 << pin;
+> +	return 1 << pin;
+> +}
+> +
+> +static unsigned long bgpio_pin2mask_be(struct bgpio_chip *bgc,
+> +				       unsigned int pin)
+> +{
+> +	return 1 << (bgc->bits - 1 - pin);
+>  }
+>  
+>  static int bgpio_get(struct gpio_chip *gc, unsigned int gpio)
+>  {
+>  	struct bgpio_chip *bgc = to_bgpio_chip(gc);
+>  
+> -	return bgpio_in(bgc) & bgpio_pin2mask(bgc, gpio);
+> +	return bgc->read_reg(bgc->reg_dat) & bgc->pin2mask(bgc, gpio);
+>  }
+>  
+>  static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+>  {
+>  	struct bgpio_chip *bgc = to_bgpio_chip(gc);
+> -	unsigned long mask = bgpio_pin2mask(bgc, gpio);
+> +	unsigned long mask = bgc->pin2mask(bgc, gpio);
+>  	unsigned long flags;
+>  
+>  	if (bgc->reg_set) {
+>  		if (val)
+> -			bgpio_out(bgc, bgc->reg_set, mask);
+> +			bgc->write_reg(bgc->reg_set, mask);
+>  		else
+> -			bgpio_out(bgc, bgc->reg_clr, mask);
+> +			bgc->write_reg(bgc->reg_clr, mask);
+>  		return;
+>  	}
+>  
+> @@ -165,7 +176,7 @@ static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+>  	else
+>  		bgc->data &= ~mask;
+>  
+> -	bgpio_out(bgc, bgc->reg_dat, bgc->data);
+> +	bgc->write_reg(bgc->reg_dat, bgc->data);
+>  
+>  	spin_unlock_irqrestore(&bgc->lock, flags);
+>  }
+> @@ -181,9 +192,44 @@ static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+>  	return 0;
+>  }
+>  
+> -static int __devinit bgpio_probe(struct platform_device *pdev)
+> +static int bgpio_setup_accessors(struct platform_device *pdev,
+> +				 struct bgpio_chip *bgc)
+>  {
+>  	const struct platform_device_id *platid = platform_get_device_id(pdev);
+> +
+> +	switch (bgc->bits) {
+> +	case 8:
+> +		bgc->read_reg	= bgpio_read8;
+> +		bgc->write_reg	= bgpio_write8;
+> +		break;
+> +	case 16:
+> +		bgc->read_reg	= bgpio_read16;
+> +		bgc->write_reg	= bgpio_write16;
+> +		break;
+> +	case 32:
+> +		bgc->read_reg	= bgpio_read32;
+> +		bgc->write_reg	= bgpio_write32;
+> +		break;
+> +#if BITS_PER_LONG >= 64
+> +	case 64:
+> +		bgc->read_reg	= bgpio_read64;
+> +		bgc->write_reg	= bgpio_write64;
+> +		break;
+> +#endif /* BITS_PER_LONG >= 64 */
+> +	default:
+> +		dev_err(&pdev->dev, "unsupported data width %u bits\n",
+> +			bgc->bits);
+> +		return -EINVAL;
+> +	}
+> +
+> +	bgc->pin2mask = strcmp(platid->name, "basic-mmio-gpio-be") ?
+> +		bgpio_pin2mask : bgpio_pin2mask_be;
+> +
+> +	return 0;
+> +}
+> +
+> +static int __devinit bgpio_probe(struct platform_device *pdev)
+> +{
+>  	struct device *dev = &pdev->dev;
+>  	struct bgpio_pdata *pdata = dev_get_platdata(dev);
+>  	struct bgpio_chip *bgc;
+> @@ -232,9 +278,11 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
+>  	spin_lock_init(&bgc->lock);
+>  
+>  	bgc->bits = bits;
+> -	bgc->big_endian_bits = !strcmp(platid->name, "basic-mmio-gpio-be");
+> -	bgc->data = bgpio_in(bgc);
+> +	ret = bgpio_setup_accessors(pdev, bgc);
+> +	if (ret)
+> +		return ret;
+>  
+> +	bgc->data = bgc->read_reg(bgc->reg_dat);
+>  	bgc->gc.ngpio = bits;
+>  	bgc->gc.direction_input = bgpio_dir_in;
+>  	bgc->gc.direction_output = bgpio_dir_out;
+> -- 
+> 1.7.4.2
+> 
