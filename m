@@ -1,110 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1ECSSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:18:07 -0400
-Received: from mail.perches.com ([173.55.12.10]:1192 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404Ab1ECSSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:18:03 -0400
-From: Joe Perches <joe@perches.com>
-To: Oliver Neukum <oneukum@suse.de>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] usbnet: Convert dbg to dev_dbg and neatening
-Date: Tue,  3 May 2011 11:17:58 -0700
-Message-Id: <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.5.rc3.dirty
-In-Reply-To: <cover.1304445019.git.joe@perches.com>
-References: <cover.1304445019.git.joe@perches.com>
+	id S1754404Ab1ECS3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 14:29:37 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:30823 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1ECS3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 14:29:36 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "root@docs.homelinux.org" <root@docs.homelinux.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Error in Hyper-V modules hv_vmbus
+Thread-Topic: Error in Hyper-V modules hv_vmbus
+Thread-Index: AQHMB0SgETUemc5uTUuEnNLkft8sE5R22q3wgAGFHACAAsCCUIAAicEA//+SaUCAADRasA==
+Date: Tue, 3 May 2011 18:29:34 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A26D8@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <4DBC1F2F.5050205@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF19C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <4DBD53F6.6070603@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF83C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <bbdd3ea71462ef4f7d152a67e52cafb1@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF899@TK5EX14MBXC124.redmond.corp.microsoft.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DF899@TK5EX14MBXC124.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p43ITtET027029
 
-Use the more standard logging form.
-Add a bit more tidying style.
+> > -----Original Message-----
+> > From: root@docs.homelinux.org [mailto:root@docs.homelinux.org]
+> > Sent: Tuesday, May 03, 2011 10:52 AM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org
+> > Subject: RE: Error in Hyper-V modules hv_vmbus
+> >
+> >  On Tue, 3 May 2011 13:42:43 +0000, KY Srinivasan wrote:
+> > >> -----Original Message-----
+> > >> From: root [mailto:root@docs.homelinux.org]
+> > >> Sent: Sunday, May 01, 2011 8:37 AM
+> > >> To: KY Srinivasan
+> > >> Cc: linux-kernel@vger.kernel.org
+> > >> Subject: Re: Error in Hyper-V modules hv_vmbus
+> > >>
+> > >> Windows Server Core 2008 R2 with SP2
+> > >
+> > > This is a known problem and a fix has been submitted - the patch is
+> > > yet to be applied though. Once the hv patches that are in the queue
+> > > are applied, this problem will be fixed. In the interim, if you want
+> > > an immediate fix, I could send you the patch that will apply against
+> > > the tree you have.
+> > >
+> > > Regards,
+> > >
+> > > K. Y
+> > >>
+> > >> Regards
+> > >> Juan Dos Santos
+> >
+> >  Could You send me the patch? So I can test it, I am using the kernel
+> > source from
+> > http://www.kernel.org/pub/linux/kernel/v2.6/testing/linux-2.6.39-rc5.t
+> > ar.bz2,  is the patch compatible with this kernel source?
+> 
+> This is a very old version of the hyper-V driver code compared to what is in
+> Greg's tree and looking at the code It does not look like the problem you are
+> seeing is the problem my patch fixes. We will do some additional testing and
+> get back to you. It would be very useful if you can post the dmesg or stack
+> trace that can shed additional light on the problem.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/usb/usbnet.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+Juan,
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 28aecbb..b803085 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -192,8 +192,8 @@ static int init_status(struct usbnet *dev, struct usb_interface *intf)
- 		return 0;
- 
- 	pipe = usb_rcvintpipe(dev->udev,
--			      dev->status->desc.bEndpointAddress
--			      & USB_ENDPOINT_NUMBER_MASK);
-+			      (dev->status->desc.bEndpointAddress
-+			       & USB_ENDPOINT_NUMBER_MASK));
- 	maxp = usb_maxpacket(dev->udev, pipe, 0);
- 
- 	/* avoid 1 msec chatter:  min 8 msec poll rate */
-@@ -1066,7 +1066,8 @@ netdev_tx_t usbnet_start_xmit(struct sk_buff *skb,
- 		skb = info->tx_fixup(dev, skb, GFP_ATOMIC);
- 		if (!skb) {
- 			if (netif_msg_tx_err(dev)) {
--				netif_dbg(dev, tx_err, dev->net, "can't tx_fixup skb\n");
-+				netif_dbg(dev, tx_err, dev->net,
-+					  "can't tx_fixup skb\n");
- 				goto drop;
- 			} else {
- 				/* cdc_ncm collected packet; waits for more */
-@@ -1333,7 +1334,7 @@ usbnet_probe(struct usb_interface *udev, const struct usb_device_id *prod)
- 	/* set up our own records */
- 	net = alloc_etherdev(sizeof(*dev));
- 	if (!net) {
--		dbg("can't kmalloc dev");
-+		dev_dbg(&udev->dev, "can't alloc_etherdev\n");
- 		goto out;
- 	}
- 
-@@ -1345,8 +1346,9 @@ usbnet_probe(struct usb_interface *udev, const struct usb_device_id *prod)
- 	dev->intf = udev;
- 	dev->driver_info = info;
- 	dev->driver_name = name;
--	dev->msg_enable = netif_msg_init(msg_level, NETIF_MSG_DRV
--					 | NETIF_MSG_PROBE | NETIF_MSG_LINK);
-+	dev->msg_enable = netif_msg_init(msg_level, (NETIF_MSG_DRV |
-+						     NETIF_MSG_PROBE |
-+						     NETIF_MSG_LINK));
- 	skb_queue_head_init(&dev->rxq);
- 	skb_queue_head_init(&dev->txq);
- 	skb_queue_head_init(&dev->done);
-@@ -1466,8 +1468,7 @@ EXPORT_SYMBOL_GPL(usbnet_probe);
- 
- /*-------------------------------------------------------------------------*/
- 
--/*
-- * suspend the whole driver as soon as the first interface is suspended
-+/* suspend the whole driver as soon as the first interface is suspended
-  * resume only when the last interface is resumed
-  */
- 
-@@ -1485,16 +1486,14 @@ int usbnet_suspend(struct usb_interface *intf, pm_message_t message)
- 			set_bit(EVENT_DEV_ASLEEP, &dev->flags);
- 			spin_unlock_irq(&dev->txq.lock);
- 		}
--		/*
--		 * accelerate emptying of the rx and queues, to avoid
-+		/* accelerate emptying of the rx and queues, to avoid
- 		 * having everything error out.
- 		 */
- 		netif_device_detach(dev->net);
- 		usbnet_terminate_urbs(dev);
- 		usb_kill_urb(dev->interrupt);
- 
--		/*
--		 * reattach so runtime management can use and
-+		/* reattach so runtime management can use and
- 		 * wake the device
- 		 */
- 		netif_device_attach(dev->net);
--- 
-1.7.5.rc3.dirty
+I just fixed a few issues in Ubuntu 10.10 that might be similar.
 
+I will spin up a debian system and see if I can reproduce the problem and submit a patch
+To fix it.
+
+Hank.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
