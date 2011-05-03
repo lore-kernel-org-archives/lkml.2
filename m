@@ -1,105 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab1ECB7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 21:59:43 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35311 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab1ECB7l (ORCPT
+	id S1755026Ab1ECCSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 22:18:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51364 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab1ECCSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 21:59:41 -0400
-Date: Mon, 2 May 2011 18:59:31 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Mingming Cao <cmm@us.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [RFC v2] block integrity: Stabilize(?) pages during writeback
-Message-ID: <20110503015931.GC20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <1303476503-sup-4141@think> <20110422203434.GA2977@quack.suse.cz> <20110426003738.GB22189@tux1.beaverton.ibm.com> <1303817010-sup-351@think>
+	Mon, 2 May 2011 22:18:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YH/DwOmjChGC3t9Z2mvSNfOnQsJ3B/5dnaV6T8d34f1+921D/YCAOC02z1glirjX+8
+         TZ/iWQjm7DH7PZD4Vv+i8LjRZak71aiMYEsCmwDUuGiYKqne3Bobw3Mp0Wi9bgimKOfD
+         NcqFkBJKig3hRP7cSar3Znevqsr2sjx1OCliQ=
+Message-ID: <4DBF66C0.9020600@gmail.com>
+Date: Tue, 03 May 2011 10:21:52 +0800
+From: =?UTF-8?B?5bq35YmR5paM?= <kjbmail@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303817010-sup-351@think>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Koul, Vinod" <vinod.koul@intel.com>
+CC: linux-kernel@vger.kernel.org, dan.j.williams@intel.com
+Subject: Re: Can I/OAT DMA engineer access PCI MMIO space
+References: <4DBA8F30.2060206@gmail.com> <1304316260.1589.2.camel@vkoul-udesk3>
+In-Reply-To: <1304316260.1589.2.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 26, 2011 at 07:33:18AM -0400, Chris Mason wrote:
-> Excerpts from Darrick J. Wong's message of 2011-04-25 20:37:38 -0400:
-> > On Fri, Apr 22, 2011 at 10:34:34PM +0200, Jan Kara wrote:
-> > > On Fri 22-04-11 08:50:01, Chris Mason wrote:
-> > > > Excerpts from Darrick J. Wong's message of 2011-04-21 20:02:26 -0400:
-> > > > > Hi everyone,
-> > > > > 
-> > > > > I've finally managed to get together a patch that seems to provide stable pages
-> > > > > during writeback, or at least gets us to the point that after several days of
-> > > > > running tests I don't see DIF checksum errors anymore. :)
-> > > > > 
-> > > > > The last two pieces to go into this puzzle were (a) bio_integrity_prep needs to
-> > > > > walk the process tree to find all userland ptes that map to a particular memory
-> > > > > page and revoke write access, and
-> > > > 
-> > > > Hmm, did you need the bio_integrity_prep change for all the filesystems?
-> > > > This should be happening already as part of using page_mkwrite.
-> > >   Or more precisely page_mkclean() should do what you try to do in
-> > > bio_integrity_prep()... It would certainly be interesting (bug) if you
-> > > could write to the page after calling page_mkclean() without page_mkwrite()
-> > > being called.
-> > 
-> > Hm... in mpage_da_submit_io I see the following sequence of calls:
-> > 
-> > 1. clear_page_dirty_for_io
-> > 2. possibly one of: ext4_bio_write_page or block_write_full_page.
-> >    If ext4_bio_write_page, 
-> >    2a. kmem_cache_alloc
-> >    2b. set_page_writeback
-> > 
-> > Before and after #1, the page is locked but writeback is not set.
-> > 
-> > Before #2, the page must be locked and writeback must not be set, because both
-> > of those two functions want to set the writeback bit themselves.  However,
-> > ext4_bio_write_page tries to allocate memory with GFP_NOFS, which means it can
-> > sleep (I think).
-> 
-> Sleeping isn't the problem as long as you sleep with the page locked.
-> The idea is that writepage will:
-> 
-> 1) lock the page
-> 2) clear_page_dirty_for_io (which calls page_mkclean)
-> 3) set_page_writeback()
-> 4) unlock the page
-> 5) start the IO
-> 
-> page_mkwrite will:
-> 
-> 1) lock the page
-> 2) wait on page writeback
-> 3) do other stuff
-> 
-> So if ext is calling set_page_writeback() on an unlocked page, that's a
-> problem.  Otherwise it should be working.
 
-You're right, at this point in time writepage and page_mkwrite in ext4 both
-behave as you describe.  I began backing out parts of my patches to
-bio-integrity.c and discovered that with the current kernel (2.6.39-rc5) the
-only part that seems useful is the set_memory_ro/rw pair from that old
-debugging patch.  Unfortunately, those two functions only seem to exist on x86;
-I suppose I could port them to others.  If that's even a sane idea.
+>> I try to use ioatdam to copy data from system memory to pci MMIO space:
+>> If dst points to a memory space, the operation would pass.
+>> But if dst points to a pci MMIO space, it failed with kernel oops.
+>> It seems the code:
+>> BUG_ON(is_ioat_bug(chanerr));
+>> in drivers/dma/ioat/dma_v3.c, line 365 cause the oops.
+>> Is there anyway to access pci MMIO space using ioat?
+>> The datasheet says that ioat supports MMIO access.
+> Did you map the IO memory in kernel using ioremap and friends first?
+>
+yes, I had used 'ioremap_nocache' to map the IO memory and I can use
+memcpy to copy data to this region. The async_tx should have been 
+correctly configured as
+I can use aync_memcpy to copy data between different system memory address.
 
---D
-> 
-> -chris
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
