@@ -1,167 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab1ECGoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 02:44:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40751 "EHLO mx3.mail.elte.hu"
+	id S1753196Ab1ECGog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 02:44:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15273 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1ECGoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 02:44:18 -0400
-Date: Tue, 3 May 2011 08:44:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 3/4] x86, mce: Add persistent MCE event
-Message-ID: <20110503064401.GE7751@elte.hu>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-4-git-send-email-bp@amd64.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304357691-14354-4-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751485Ab1ECGoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 02:44:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,307,1301900400"; 
+   d="scan'208";a="741459066"
+Subject: Re: [PATCH 1/2]block: optimize non-queueable flush request drive
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+In-Reply-To: <20110430143758.GK29280@htj.dyndns.org>
+References: <1303202686.3981.216.camel@sli10-conroe>
+	 <20110422233204.GB1576@mtj.dyndns.org>
+	 <20110425013328.GA17315@sli10-conroe.sh.intel.com>
+	 <20110425085827.GB17734@mtj.dyndns.org>
+	 <20110425091311.GC17734@mtj.dyndns.org>
+	 <1303778790.3981.283.camel@sli10-conroe>
+	 <20110426104843.GB878@htj.dyndns.org>
+	 <1303977055.3981.587.camel@sli10-conroe>
+	 <20110430143758.GK29280@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 14:44:31 +0800
+Message-ID: <1304405071.3828.11.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+> On Thu, Apr 28, 2011 at 03:50:55PM +0800, Shaohua Li wrote:
+> > Index: linux/block/blk-flush.c
+> > ===================================================================
+> > --- linux.orig/block/blk-flush.c	2011-04-28 10:23:12.000000000 +0800
+> > +++ linux/block/blk-flush.c	2011-04-28 14:12:50.000000000 +0800
+> > @@ -158,6 +158,17 @@ static bool blk_flush_complete_seq(struc
+> >  	switch (seq) {
+> >  	case REQ_FSEQ_PREFLUSH:
+> >  	case REQ_FSEQ_POSTFLUSH:
+> > +		/*
+> > +		 * If queue doesn't support queueable flush request, we just
+> > +		 * merge the flush with running flush. For such queue, there
+> > +		 * are no normal requests running when flush request is
+> > +		 * running, so this still guarantees the correctness.
+> > +		 */
+> > +		if (!blk_queue_flush_queueable(q)) {
+> > +			list_move_tail(&rq->flush.list,
+> > +				&q->flush_queue[q->flush_running_idx]);
+> > +			break;
+> > +		}
+> 
+> As I've said several times already, I really don't like this magic
+> being done in the completion path.  Can't you detect the condition on
+> issue of the second/following flush and append it to the running list?
+hmm, don't understand it. blk_flush_complete_seq is called when the
+second flush is issued. or do you mean do this when the second flush is
+issued to disk? but when the second flush is issued the first flush is
+already finished.
 
-* Borislav Petkov <bp@amd64.org> wrote:
+> If you already have tried that but this way still seems better, can
+> you please explain why?
+> 
+> Also, this is a separate logic.  Please put it in a separate patch.
+> The first patch should implement queue holding while flushing, which
+> should remove the regression, right?
+ok. holding queue has no performance gain in my test, but it reduced a
+lot of request requeue.
 
-> +static struct perf_event_attr pattr = {
-> +	.type		= PERF_TYPE_TRACEPOINT,
-> +	.size		= sizeof(pattr),
-> +	.sample_type	= PERF_SAMPLE_RAW,
-> +	.persistent	= 1,
-> +};
-> +
-> +static struct dentry *mce_add_event_debugfs(struct perf_event *event, int cpu)
-> +{
-> +	char buf[14];
-> +
-> +	sprintf(buf, "mce_record%d", cpu);
-> +
-> +	return debugfs_create_file(buf, S_IRUGO | S_IWUSR,
-> +				   mce_get_debugfs_dir(),
-> +				   event, &perf_pers_fops);
-> +}
-> +
-> +#define MCE_BUF_PAGES	4
-> +
-> +static int mce_enable_perf_event_on_cpu(int cpu)
-> +{
-> +	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-> +	int err = -EINVAL;
-> +
-> +	d->event = perf_enable_persistent_event(&pattr, cpu, MCE_BUF_PAGES);
-> +	if (IS_ERR(d->event)) {
-> +		printk(KERN_ERR "MCE: Error enabling event on cpu %d\n", cpu);
-> +		goto ret;
-> +	}
-> +
-> +	d->debugfs_entry = mce_add_event_debugfs(d->event, cpu);
-> +	if (!d->debugfs_entry) {
-> +		printk(KERN_ERR "MCE: Error adding event debugfs entry on cpu %d\n", cpu);
-> +		goto disable;
-> +	}
-> +
-> +	return 0;
-> +
-> +disable:
-> +	perf_disable_persistent_event(d->event, cpu);
-> +
-> +ret:
-> +	return err;
-> +}
-> +
-> +static void mce_disable_perf_event_on_cpu(int cpu)
-> +{
-> +	struct mce_tp_desc *d = &per_cpu(mce_event, cpu);
-> +	debugfs_remove(d->debugfs_entry);
-> +	perf_disable_persistent_event(d->event, cpu);
-> +}
-> +
-> +static __init int mcheck_init_persistent_event(void)
-> +{
-> +	int cpu, err = 0;
-> +
-> +	get_online_cpus();
-> +
-> +	pattr.config = event_mce_record.event.type;
-> +	pattr.sample_period = 1;
-> +	pattr.wakeup_events = 1;
-> +
-> +	for_each_online_cpu(cpu)
-> +		if (mce_enable_perf_event_on_cpu(cpu))
-> +			goto err_unwind;
-> +
-> +	goto unlock;
-> +
-> +err_unwind:
-> +	err = -EINVAL;
-> +	for (--cpu; cpu >= 0; cpu--)
-> +		mce_disable_perf_event_on_cpu(cpu);
-> +
-> +unlock:
-> +	put_online_cpus();
-> +
-> +	return err;
-> +}
-> +
-> +/*
-> + * This has to run after event_trace_init()
-> + */
-> +device_initcall(mcheck_init_persistent_event);
-
-Looks quite generic - shouldnt this bit be generalized a bit more into 
-kernel/events/? When other places (and other platforms) want to add a
-persistent event they would thus have your new facility available as well.
-
-Except this bit:
-
->  /* Get notified when a cpu comes on/off. Be hotplug friendly. */
->  static int __cpuinit
->  mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-> @@ -2068,6 +2154,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  		mce_create_device(cpu);
->  		if (threshold_cpu_callback)
->  			threshold_cpu_callback(action, cpu);
-> +		mce_enable_perf_event_on_cpu(cpu);
->  		break;
->  	case CPU_DEAD:
->  	case CPU_DEAD_FROZEN:
-> @@ -2077,6 +2164,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  		break;
->  	case CPU_DOWN_PREPARE:
->  	case CPU_DOWN_PREPARE_FROZEN:
-> +		mce_disable_perf_event_on_cpu(cpu);
->  		del_timer_sync(t);
->  		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
->  		break;
-> @@ -2088,6 +2176,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  			add_timer_on(t, cpu);
->  		}
->  		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
-> +		mce_enable_perf_event_on_cpu(cpu);
->  		break;
->  	case CPU_POST_DEAD:
->  		/* intentionally ignoring frozen here */
-
-which looks a bit x86 specific.
+> The second patch can optimize back-to-back execution, which might or
+> might not buy us tangible performance gain, so it would be nice to
+> have some measurement for this change.  Also, this logic isn't
+> necessarily related with queueability of flushes, right?  As such, I
+> think it would be better for it to be implemented separately from the
+> queueability thing, unless doing such increases complexity too much.
+> 
+> > Index: linux/include/linux/blkdev.h
+> > ===================================================================
+> > --- linux.orig/include/linux/blkdev.h	2011-04-28 10:23:12.000000000 +0800
+> > +++ linux/include/linux/blkdev.h	2011-04-28 10:32:54.000000000 +0800
+> > @@ -364,6 +364,13 @@ struct request_queue
+> >  	 * for flush operations
+> >  	 */
+> >  	unsigned int		flush_flags;
+> > +	unsigned int		flush_not_queueable:1;
+> > +	/*
+> > +	 * flush_exclusive_running and flush_queue_delayed are only meaningful
+> > +	 * when flush request isn't queueable
+> > +	 */
+> > +	unsigned int		flush_exclusive_running:1;
+> > +	unsigned int		flush_queue_delayed:1;
+> 
+> Hmmm... why do you need separate ->flush_exclusive_running?  Doesn't
+> pending_idx != running_idx already have the same information?
+when pending_idx != running_idx, flush request is added into queue tail,
+but this doesn't mean flush request is dispatched to disk. there might
+be other requests in the queue head, which we should dispatch. And flush
+request might be reqeueud. Just checking pending_idx != running_idx will
+cause queue hang because we thought flush is dispatched and then hold
+the queue, but actually flush isn't dispatched yet, the queue should
+dispatch other normal requests.
 
 Thanks,
+Shaohua
 
-	Ingo
