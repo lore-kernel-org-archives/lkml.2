@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1EGGel (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 02:34:41 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50547 "EHLO
+	id S1754678Ab1EGGdq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 02:33:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50630 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab1EGGcr (ORCPT
+	with ESMTP id S1753835Ab1EGGcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 02:32:47 -0400
+	Sat, 7 May 2011 02:32:52 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject;
-	b=fP8CDfTZfafbuh3lA9Qmp6ZxjcFVPrl0mpSkHRvQG8sIo+hf64Wi8P7eXhcTO4Yda
-	HebWQCzfRDK8hlg4N64pA==
-Message-Id: <20110503092846.022272244@google.com>
+	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
+	b=iEUtp/t87+QCGzT0UH8/yPpIcCIKcJP5cmPL2RBn0FU9AuCyy+EvlMo/wCCwa8wBZ
+	Z73aaQom8rJa1cvCSFmWQ==
+Message-Id: <20110503092904.541414484@google.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 02:28:46 -0700
+Date: Tue, 03 May 2011 02:28:47 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,69 +24,40 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: [patch 00/15] CFS Bandwidth Control V6
+Subject: [patch 01/15] sched: (fixlet) dont update shares twice on on_rq parent
+References: <20110503092846.022272244@google.com>
+Content-Disposition: inline; filename=sched-bwc-fix_dequeue_task_buglet.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Apologies if you're receiving this twice, the previous mailing did not seem 
-to make it to the list for some reason ].
+In dequeue_task_fair() we bail on dequeue when we encounter a parenting entity
+with additional weight.  However, we perform a double shares update on this
+entity since we continue the shares update traversal from that point, despite
+dequeue_entity() having already updated its queuing cfs_rq.
 
-Hi all,
+Avoid this by starting from the parent when we resume.
 
-Please find attached the latest iteration of bandwidth control (v6).
+Signed-off-by: Paul Turner <pjt@google.com>
+---
+ kernel/sched_fair.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Where the previous release cleaned up many of the semantics surrounding the
-update_curr() path and throttling, this release is focused on cleaning up the
-patchset itself.  Elements such as the notion of expiring bandwidth from
-previous quota periods as well as some of the core accounting changes have
-been pushed up (and re-written for clarity) within the patchset reducing the
-patch-to-patch churn significantly.
-
-While this restructuring was fairly extensive in terms of the code touched,
-there are no major behavioral changes beyond bug fixes.
-
-Thanks to Hidetoshi Seto for identifying the throttle list corruption.
-
-Notable changes:
-- Runtime is now actively expired taking advantage of the bounds placed on
-  sched_clock syncrhonization.
-- distribute_cfs_runtime() no longer races with throttles around the period
-  boundary.
-- Major code cleanup
-
-Bug fixes:
-- several interactions with active load-balance have been corrected.  This was
-  manifesting previously in throttle_list corruption and crashes.
-
-Interface:
-----------
-Three new cgroupfs files are exported by the cpu subsystem:
-  cpu.cfs_period_us : period over which bandwidth is to be regulated
-  cpu.cfs_quota_us  : bandwidth available for consumption per period
-  cpu.stat          : statistics (such as number of throttled periods and
-                      total throttled time)
-One important interface change that this introduces (versus the rate limits
-proposal) is that the defined bandwidth becomes an absolute quantifier.
-
-Previous postings:
------------------
-v5:
-https://lkml.org/lkml/2011/3/22/477
-v4:
-https://lkml.org/lkml/2011/2/23/44
-v3:
-https://lkml.org/lkml/2010/10/12/44
-v2:
-http://lkml.org/lkml/2010/4/28/88
-Original posting:
-http://lkml.org/lkml/2010/2/12/393
-
-Prior approaches:
-http://lkml.org/lkml/2010/1/5/44 ["CFS Hard limits v5"]
-
-Thanks,
-
-- Paul
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -1355,8 +1355,10 @@ static void dequeue_task_fair(struct rq 
+ 		dequeue_entity(cfs_rq, se, flags);
+ 
+ 		/* Don't dequeue parent if it has other entities besides us */
+-		if (cfs_rq->load.weight)
++		if (cfs_rq->load.weight) {
++			se = parent_entity(se);
+ 			break;
++		}
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
 
 
