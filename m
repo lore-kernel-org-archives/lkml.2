@@ -1,218 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab1ECTmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 15:42:46 -0400
+	id S1754799Ab1ECTmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:42:50 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:35921 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab1ECTmo (ORCPT
+	with ESMTP id S1754745Ab1ECTmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 15:42:44 -0400
-Date: Tue, 3 May 2011 13:42:29 -0600
+	Tue, 3 May 2011 15:42:47 -0400
+Date: Tue, 3 May 2011 13:42:43 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        cbouatmailru@gmail.com, arnd@arndb.de, nico@fluxnic.net
-Subject: Re: [PATCHv3 7/7] basic_mmio_gpio: support direction registers
-Message-ID: <20110503194229.GG9401@ponder.secretlab.ca>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <1302520914-22816-8-git-send-email-jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH] basic_mmio_gpio: convert to non-__raw* accessors
+Message-ID: <20110503194243.GH9401@ponder.secretlab.ca>
+References: <1302538286-3547-1-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302520914-22816-8-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <1302538286-3547-1-git-send-email-jamie@jamieiles.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 12:21:54PM +0100, Jamie Iles wrote:
-> Most controllers require the direction of a GPIO to be set by writing to
-> a direction register.  Add support for either an input direction
-> register or an output direction register.
+On Mon, Apr 11, 2011 at 05:11:26PM +0100, Jamie Iles wrote:
+> The __raw_* accessors don't include memory barriers and can cause
+> problems when writes get stuck in write buffers.
 > 
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> Suggested-by: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
 > Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 
 Merged, thanks.
 
 g.
 
 > ---
->  drivers/gpio/basic_mmio_gpio.c |  114 +++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 112 insertions(+), 2 deletions(-)
+> 
+> Note: This patch is based on top of my other series to extend
+> basic_mmio_gpio.
+> 
+>  drivers/gpio/basic_mmio_gpio.c |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
 > 
 > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-> index 6b99489..f4afd96 100644
+> index f4afd96..b2ec45f 100644
 > --- a/drivers/gpio/basic_mmio_gpio.c
 > +++ b/drivers/gpio/basic_mmio_gpio.c
-> @@ -70,6 +70,7 @@ struct bgpio_chip {
->  	void __iomem *reg_dat;
->  	void __iomem *reg_set;
->  	void __iomem *reg_clr;
-> +	void __iomem *reg_dir;
+> @@ -101,43 +101,43 @@ static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
 >  
->  	/* Number of bits (GPIOs): <register width> * 8. */
->  	int bits;
-> @@ -88,6 +89,9 @@ struct bgpio_chip {
->  
->  	/* Shadowed data register to clear/set bits safely. */
->  	unsigned long data;
-> +
-> +	/* Shadowed direction registers to clear/set direction safely. */
-> +	unsigned long dir;
->  };
->  
->  static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
-> @@ -203,15 +207,80 @@ static void bgpio_set_set(struct gpio_chip *gc, unsigned int gpio, int val)
->  	spin_unlock_irqrestore(&bgc->lock, flags);
->  }
->  
-> +static int bgpio_simple_dir_in(struct gpio_chip *gc, unsigned int gpio)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int bgpio_simple_dir_out(struct gpio_chip *gc, unsigned int gpio,
-> +				int val)
-> +{
-> +	gc->set(gc, gpio, val);
-> +
-> +	return 0;
-> +}
-> +
->  static int bgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+>  static void bgpio_write8(void __iomem *reg, unsigned long data)
 >  {
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +
-> +	bgc->dir &= ~bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-> +
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
->  	return 0;
+> -	__raw_writeb(data, reg);
+> +	writeb(data, reg);
 >  }
 >  
->  static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+>  static unsigned long bgpio_read8(void __iomem *reg)
 >  {
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	gc->set(gc, gpio, val);
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +
-> +	bgc->dir |= bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-> +
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static int bgpio_dir_in_inv(struct gpio_chip *gc, unsigned int gpio)
-> +{
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +
-> +	bgc->dir |= bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-> +
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static int bgpio_dir_out_inv(struct gpio_chip *gc, unsigned int gpio, int val)
-> +{
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
->  	gc->set(gc, gpio, val);
->  
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +
-> +	bgc->dir &= ~bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-> +
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
->  	return 0;
+> -	return __raw_readb(reg);
+> +	return readb(reg);
 >  }
 >  
-> @@ -274,6 +343,14 @@ static int bgpio_setup_accessors(struct platform_device *pdev,
->   * by clearing a bit.  For the set clr pair, this drives a 1 by setting a bit
->   * in the set register and clears it by setting a bit in the clear register.
->   * The configuration is detected by which resources are present.
-> + *
-> + * For setting the GPIO direction, there are three supported configurations:
-> + *
-> + *	- simple bidirection GPIO that requires no configuration.
-> + *	- an output direction register (named "dirout") where a 1 bit
-> + *	indicates the GPIO is an output.
-> + *	- an input direction register (named "dirin") where a 1 bit indicates
-> + *	the GPIO is an input.
->   */
->  static int bgpio_setup_io(struct platform_device *pdev,
->  			  struct bgpio_chip *bgc)
-> @@ -330,6 +407,37 @@ static int bgpio_setup_io(struct platform_device *pdev,
->  	return 0;
->  }
->  
-> +static int bgpio_setup_direction(struct platform_device *pdev,
-> +				 struct bgpio_chip *bgc)
-> +{
-> +	struct resource *res_dirout;
-> +	struct resource *res_dirin;
-> +
-> +	res_dirout = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> +						  "dirout");
-> +	res_dirin = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dirin");
-> +	if (res_dirout && res_dirin) {
-> +		return -EINVAL;
-> +	} else if (res_dirout) {
-> +		bgc->reg_dir = bgpio_request_and_map(&pdev->dev, res_dirout);
-> +		if (!bgc->reg_dir)
-> +			return -ENOMEM;
-> +		bgc->gc.direction_output = bgpio_dir_out;
-> +		bgc->gc.direction_input = bgpio_dir_in;
-> +	} else if (res_dirin) {
-> +		bgc->reg_dir = bgpio_request_and_map(&pdev->dev, res_dirin);
-> +		if (!bgc->reg_dir)
-> +			return -ENOMEM;
-> +		bgc->gc.direction_output = bgpio_dir_out_inv;
-> +		bgc->gc.direction_input = bgpio_dir_in_inv;
-> +	} else {
-> +		bgc->gc.direction_output = bgpio_simple_dir_out;
-> +		bgc->gc.direction_input = bgpio_simple_dir_in;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int __devinit bgpio_probe(struct platform_device *pdev)
+>  static void bgpio_write16(void __iomem *reg, unsigned long data)
 >  {
->  	struct device *dev = &pdev->dev;
-> @@ -360,11 +468,13 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
->  		return ret;
+> -	__raw_writew(data, reg);
+> +	writew(data, reg);
+>  }
 >  
->  	spin_lock_init(&bgc->lock);
-> +	ret = bgpio_setup_direction(pdev, bgc);
-> +	if (ret)
-> +		return ret;
-> +
->  	bgc->data = bgc->read_reg(bgc->reg_dat);
+>  static unsigned long bgpio_read16(void __iomem *reg)
+>  {
+> -	return __raw_readw(reg);
+> +	return readw(reg);
+>  }
 >  
->  	bgc->gc.ngpio = ngpio;
-> -	bgc->gc.direction_input = bgpio_dir_in;
-> -	bgc->gc.direction_output = bgpio_dir_out;
->  	bgc->gc.dev = dev;
->  	bgc->gc.label = dev_name(dev);
+>  static void bgpio_write32(void __iomem *reg, unsigned long data)
+>  {
+> -	__raw_writel(data, reg);
+> +	writel(data, reg);
+>  }
+>  
+>  static unsigned long bgpio_read32(void __iomem *reg)
+>  {
+> -	return __raw_readl(reg);
+> +	return readl(reg);
+>  }
+>  
+>  #if BITS_PER_LONG >= 64
+>  static void bgpio_write64(void __iomem *reg, unsigned long data)
+>  {
+> -	__raw_writeq(data, reg);
+> +	writeq(data, reg);
+>  }
+>  
+>  static unsigned long bgpio_read64(void __iomem *reg)
+>  {
+> -	return __raw_readq(reg);
+> +	return readq(reg);
+>  }
+>  #endif /* BITS_PER_LONG >= 64 */
 >  
 > -- 
 > 1.7.4.2
