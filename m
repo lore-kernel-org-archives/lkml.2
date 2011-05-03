@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1ECRZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:25:25 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:43422 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753739Ab1ECRZY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:25:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IfaXF4rhx5dzJHcHJABZT+aZCqQ0SZ9pAWFd9AmQNQkNRPLkXm1yum9tZZvGHP4phL
-         wMn5DrlShYlGFZ2Jxp2kVyQK8gIsQwruAcEs9sHT7M6Pu4Uq2jGA3FGhB4LIVH4FTCHz
-         ek7wmR4HeEeKAU9IKucENWO+v5n9awNsIo6vg=
+	id S1753950Ab1ECRsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:48:47 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:39573 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab1ECRsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:48:46 -0400
+X-Greylist: delayed 1289 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 13:48:46 EDT
+Date: Tue, 3 May 2011 19:27:12 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 0/4] Pinmux subsystem
+Message-ID: <20110503172712.GE6538@lunn.ch>
+References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20110429082623.GN11227@gundam.enneenne.com>
-References: <1303928054-14662-3-git-send-email-jamesnuss@nanometrics.ca>
-	<20110428152222.0271163f@apollo.gnet>
-	<BANLkTimG0vL3Ky=ARa+7XyW4PSFdg064YQ@mail.gmail.com>
-	<20110429005524.67600139@apollo.gnet>
-	<20110429012748.704a39a6@apollo.gnet>
-	<4DBA3EC3.2020209@gmail.com>
-	<20110429082623.GN11227@gundam.enneenne.com>
-Date: Tue, 3 May 2011 13:25:22 -0400
-Message-ID: <BANLkTimtK=5rJAYaV5Aa9y8CTnUU3TfKiA@mail.gmail.com>
-Subject: Re: [LinuxPPS] [PATCH 2/2] pps: new client driver using IRQs
-From: James Nuss <jamesnuss@nanometrics.ca>
-To: Igor Plyatov <plyatov@gmail.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Rodolfo Giometti <rodolfo.giometti@enneenne.com>
-Cc: linuxpps@ml.enneenne.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for you comments Igor, Alexander and Rodolfo.
+On Mon, May 02, 2011 at 09:16:08PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This patchset creates a pinmux subsystem and switches U300 to use that new
+> subsystem as an example. The problem is not that fantastically hard to
+> solve in a general way, nobody got around to it because it requires some
+> upfront code I believe, and this is my stab at it.
 
-You all make a good point that it would be useful to also register a
-CLEAR event. Before I go ahead and implement any changes I would like
-clarify a couple of things.
+Hi Linus
 
-My original patch which only included the ASSERT event was simple
-because all you needed to do was register an IRQ resource with a
-particular edge trigger and you would get an ASSERT event on that
-edge. It becomes a little more complicated when you want to capture
-both ASSERT and CLEAR events because you also have to indicate to the
-driver which edge is the ASSERT and which is the CLEAR. This is
-because I presume you could have systems that generate a pulse which
-transitions from low->high->low OR a pulse which transitions from
-high->low->high, and we would want a driver which is generic enough to
-handle both cases. Is my understanding correct that an ASSERT event is
-simply the first edge of a single pulse, regardless of "polarity"?
+I have some questions about how you see the following situations been
+solved.
 
-I suppose the driver could be intelligent enough to figure out which
-is the first edge on the assumption that the pulse width is always
-very small - at least less than 0.5 second, more likely less than a
-few hundred milliseconds. Obviously it would need at least 2 pulses
-before it decides to register either an ASSERT or CLEAR event. Is it
-safe enough to say that an ASSERT event will only be generated if the
-previous edge was greater than 0.5 second ago, otherwise a CLEAR event
-will be generated?
+Say i have a UART core. I can be used as a 3-wire serial port, or
+additionally it can have hardware flow control, or additionally it can
+have all the modem signals. What would i expect to find in the pinmux
+driver?
 
-If I was to implement the driver this way then you would have exactly
-3 ways to register a device to use this driver:
+I can think of two different solutions: 
 
-1) Register an IRQ with only IORESOURCE_IRQ_HIGHEDGE set:
-This will generate an ASSERT event on rising edges (no CLEAR events)
+1) Three functions: uart-3wire, uart-hw-flow, uart-hw-flow-modem.  The
+   first just has 2 pins, the second 4 and the last 8. The board code
+   selects one of these for the serial driver to use.
 
-2) Register an IRQ with only IORESOURCE_IRQ_LOWEDGE set:
-This will generate an ASSERT event on falling edges (no CLEAR events)
+2) Three functions: uart-core, uart-hw-flow, uart-mode.  The first has
+   2 pins, the second has 2 pins and the last 4 pins. The board code tells
+   the driver to use uart-core, plus say uart-hw-flow.
 
-3) Register an IRQ with both IORESOURCE_IRQ_LOWEDGE and
-IORESOURCE_IRQ_HIGHEDGE set:
-This will generate ASSERT and CLEAR events with the driver dynamically
-determining which edge is the ASSERT based on the logic above.
+Do you think the documentation should have guidelines how best to do
+this sort of core + additional optional extras?
 
-I hope this covers all the potential use cases.
+Say i have a SoC with an SPI core. This core has the usual MISC, MOSI
+and SCLK. It additionally has 4 chip select lines. My board uses chip
+select lines 2 and 3 for SPI, and select lines 0 and 1 as GPIO lines.
+How does the pinmux driver handle this? Again, it is the problems of a
+few core pins plus additional optional extras.
 
-cheers,
-James
+Maybe the documentation should make some recommendations about what is
+placed into the drivers/pinmux/pinmux-foo.c and what should be kept in
+the board specific code? Without these guidelines, it seems to me,
+each board for a given SoC is going to add its own peculiar pin
+combination to the drivers/pinmux/pinmux-foo.c file.  Maybe it makes
+more sense to have a collection of standard pin functions in
+drivers/pinmux/pinmux-foo.c, which cover 75% of the likely
+combinations. And recommend a board file to have its own additional
+list of strange pin functions which it registers with the pinmux core?
 
-
-On Fri, Apr 29, 2011 at 4:26 AM, Rodolfo Giometti <giometti@enneenne.com> wrote:
-> On Fri, Apr 29, 2011 at 08:29:55AM +0400, Igor Plyatov wrote:
->
->>>> The latter will definitely mess things up, right?
->>> I mean, one surely can register an IRQ resource with both flags set. And
->>> if the underlying hardware works as it is described (i.e. raises an irq
->>> on both edges) then it will be a problem.
->>
->> Please don't try to abandon one of ASSERT or CLEAR events!
->> It is very useful to register both of them, because in this case its
->> possible to measure pulse width and decode PPS signals like DCF77.
->
-> At this point I suppose we should add both ASSERT and CLEAR events...
->
-> Ciao,
->
-> Rodolfo
->
-> --
->
-> GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-> Linux Device Driver                          giometti@linux.it
-> Embedded Systems                     phone:  +39 349 2432127
-> UNIX programming                     skype:  rodolfo.giometti
-> Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+     Thanks
+        Andrew
