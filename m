@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab1ECRtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:49:31 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:59805 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab1ECRt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:49:29 -0400
-Subject: [PATCH net-next-2.6] ipheth: Properly distinguish length and
- alignment in URBs and skbs
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Hill <david.hill@ubisoft.com>
-Cc: "L. Alberto" =?ISO-8859-1?Q?Gim=E9nez?= <agimenez@sysvalve.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dgiagio@gmail.com" <dgiagio@gmail.com>,
-        "dborca@yahoo.com" <dborca@yahoo.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "pmcenery@gmail.com" <pmcenery@gmail.com>,
-        "open list:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
-In-Reply-To: <710D4D6CE160654C87478D18385BB9971BE3FDCA46@MDC-MAIL-CMS01.ubisoft.org>
-References: <1304264799.2833.82.camel@localhost>
-	 <1304364912-15444-1-git-send-email-agimenez@sysvalve.es>
-	 <1304370274.2833.192.camel@localhost>
-	 <20110503165751.GA6566@bart.evergreen.loc>
-	 <710D4D6CE160654C87478D18385BB9971BE3FDCA46@MDC-MAIL-CMS01.ubisoft.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Tue, 03 May 2011 18:49:25 +0100
-Message-ID: <1304444965.2873.11.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 May 2011 17:49:28.0774 (UTC) FILETIME=[732C1E60:01CC09BA]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18110.005
-X-TM-AS-Result: No--9.033900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1754387Ab1ECR6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:58:05 -0400
+Received: from kroah.org ([198.145.64.141]:38018 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab1ECR6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:58:03 -0400
+Date: Tue, 3 May 2011 10:49:37 -0700
+From: Greg KH <greg@kroah.com>
+To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Subject: Re: [PATCH v5] staging: Add ST-Ericsson CG2900 driver
+Message-ID: <20110503174937.GA18622@kroah.com>
+References: <1303818021-24275-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303818021-24275-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB protocol this driver implements appears to require 2 bytes of
-padding in front of each received packet.  This used to be equal to
-the value of NET_IP_ALIGN on x86, so the driver abused that constant
-and mostly worked, but this is no longer the case.  The driver also
-mixed up the URB and packet lengths, resulting in 2 bytes of junk at
-the end of the skb.
+On Tue, Apr 26, 2011 at 01:40:21PM +0200, Par-Gunnar Hjalmdahl wrote:
+> This patch adds support for the ST-Ericsson CG2900
+> Connectivity Combo controller (Bluetooth, FM, GPS).
+> 
+> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Introduce a private constant for the 2 bytes of padding; fix this
-confusion and check for the under-length case.
+What changed in this version?  It still doesn't apply properly to the
+linux-next tree, which shows me that I don't think anything really
+changed here.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
----
-Compile-tested only, as I'm not cool enough for an iPhone either.
-This is applicable to net-next-2.6 or v2.6.38.
+Can you rediff it so it properly applies (i.e. why are you adding your
+driver to the middle of drivers/staging/Makefile and not at the end
+which is where it properly belongs?) and resend it?
 
-Ben.
+thanks,
 
- drivers/net/usb/ipheth.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
-index 7d42f9a..81126ff 100644
---- a/drivers/net/usb/ipheth.c
-+++ b/drivers/net/usb/ipheth.c
-@@ -65,6 +65,7 @@
- #define IPHETH_USBINTF_PROTO    1
- 
- #define IPHETH_BUF_SIZE         1516
-+#define IPHETH_IP_ALIGN		2	/* padding at front of URB */
- #define IPHETH_TX_TIMEOUT       (5 * HZ)
- 
- #define IPHETH_INTFNUM          2
-@@ -202,18 +203,21 @@ static void ipheth_rcvbulk_callback(struct urb *urb)
- 		return;
- 	}
- 
--	len = urb->actual_length;
--	buf = urb->transfer_buffer;
-+	if (urb->actual_length <= IPHETH_IP_ALIGN) {
-+		dev->net->stats.rx_length_errors++;
-+		return;
-+	}
-+	len = urb->actual_length - IPHETH_IP_ALIGN;
-+	buf = urb->transfer_buffer + IPHETH_IP_ALIGN;
- 
--	skb = dev_alloc_skb(NET_IP_ALIGN + len);
-+	skb = dev_alloc_skb(len);
- 	if (!skb) {
- 		err("%s: dev_alloc_skb: -ENOMEM", __func__);
- 		dev->net->stats.rx_dropped++;
- 		return;
- 	}
- 
--	skb_reserve(skb, NET_IP_ALIGN);
--	memcpy(skb_put(skb, len), buf + NET_IP_ALIGN, len - NET_IP_ALIGN);
-+	memcpy(skb_put(skb, len), buf, len);
- 	skb->dev = dev->net;
- 	skb->protocol = eth_type_trans(skb, dev->net);
- 
--- 
-1.7.4
-
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+greg k-h
