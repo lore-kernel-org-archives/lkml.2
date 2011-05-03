@@ -1,136 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1ECRgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:36:55 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:56253 "EHLO e4.ny.us.ibm.com"
+	id S1754031Ab1ECRhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:37:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57063 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab1ECRgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:36:54 -0400
-Subject: Re: [PATCH V3 3/8] Add userspace buffers support in skb
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110502105348.GA21706@redhat.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-	 <1303328877.19336.28.camel@localhost.localdomain>
-	 <20110502105348.GA21706@redhat.com>
+	id S1753640Ab1ECRhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:37:36 -0400
+Subject: Re: 2.6.39-rc5+ BUG at scsi_run_queue+0x24/0xe3
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: linux-kernel@vger.kernel.org, linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <4DC03B0A.50209@sandia.gov>
+References: <4DC0330F.6050906@sandia.gov>
+	 <1304442019.10982.7.camel@mulgrave.site>  <4DC03B0A.50209@sandia.gov>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 10:36:48 -0700
-Message-ID: <1304444208.20660.24.camel@localhost.localdomain>
+Date: Tue, 03 May 2011 17:37:30 +0000
+Message-ID: <1304444251.10982.9.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 13:53 +0300, Michael S. Tsirkin wrote:
-> On Wed, Apr 20, 2011 at 12:47:57PM -0700, Shirley Ma wrote:
-> > This patch adds userspace buffers support in skb. A new struct
-> > skb_ubuf_info is needed to maintain the userspace buffers argument
-> > and index, a callback is used to notify userspace to release the
-> > buffers once lower device has done DMA (Last reference to that skb
-> > has gone).
+On Tue, 2011-05-03 at 11:27 -0600, Jim Schutt wrote:
+> James Bottomley wrote:
+> > On Tue, 2011-05-03 at 10:53 -0600, Jim Schutt wrote:
+> >> Please let me know if what further information you need, or if there is
+> >> anything I can do, to help resolve this.
 > > 
-> > Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> > I think this is the fix (already in rc-fixes):
+> > 
+> > James
+> > 
 > > ---
+> > From 3e85ea868dbd60a84240be5c1eebc36841b9c568 Mon Sep 17 00:00:00 2001
+> > From: James Bottomley <James.Bottomley@suse.de>
+> > Date: Sun, 1 May 2011 09:42:07 -0500
+> > Subject: [PATCH] [SCSI] fix oops in scsi_run_queue()
 > > 
-> >  include/linux/skbuff.h |   14 ++++++++++++++
-> >  net/core/skbuff.c      |   15 ++++++++++++++-
-> >  2 files changed, 28 insertions(+), 1 deletions(-)
+> > The recent commit closing the race window in device teardown:
 > > 
-> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> > index d0ae90a..47a187b 100644
-> > --- a/include/linux/skbuff.h
-> > +++ b/include/linux/skbuff.h
-> > @@ -189,6 +189,16 @@ enum {
-> >       SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
-> >  };
+> > commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b
+> > Author: James Bottomley <James.Bottomley@suse.de>
+> > Date:   Fri Apr 22 10:39:59 2011 -0500
+> > 
+> >     [SCSI] put stricter guards on queue dead checks
+> > 
+> > is causing a potential NULL deref in scsi_run_queue() because the
+> > q->queuedata may already be NULL by the time this function is called.
+> > Since we shouldn't be running a queue that is being torn down, simply
+> > add a NULL check in scsi_run_queue() to forestall this.
+> > 
+> > Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+> > 
+> > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> > index e9901b8..03979f4 100644
+> > --- a/drivers/scsi/scsi_lib.c
+> > +++ b/drivers/scsi/scsi_lib.c
+> > @@ -404,6 +404,10 @@ static void scsi_run_queue(struct request_queue *q)
+> >  	LIST_HEAD(starved_list);
+> >  	unsigned long flags;
 > >  
-> > +/* The callback notifies userspace to release buffers when skb DMA
-> is done in
-> > + * lower device, the desc is used to track userspace buffer index.
-> > + */
-> > +struct skb_ubuf_info {
-> > +     /* support buffers allocation from userspace */
-> > +     void            (*callback)(struct sk_buff *);
-> > +     void            *arg;
-> > +     size_t          desc;
-> > +};
+> > +	/* if the device is dead, sdev will be NULL, so no queue to run */
+> > +	if (!sdev)
+> > +		return;
 > > +
-> >  /* This data is invariant across clones and lives at
-> >   * the end of the header data, ie. at skb->end.
-> >   */
-> > @@ -211,6 +221,10 @@ struct skb_shared_info {
-> >       /* Intermediate layers must ensure that destructor_arg
-> >        * remains valid until skb destructor */
-> >       void *          destructor_arg;
-> > +
-> > +     /* DMA mapping from/to userspace buffers */
-> > +     struct skb_ubuf_info ubuf;
-> > +
-> >       /* must be last field, see pskb_expand_head() */
-> >       skb_frag_t      frags[MAX_SKB_FRAGS];
-> >  };
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index 7ebeed0..822c07d 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size,
-> gfp_t gfp_mask,
-> >       shinfo = skb_shinfo(skb);
-> >       memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
-> >       atomic_set(&shinfo->dataref, 1);
-> > +     shinfo->ubuf.callback = NULL;
-> > +     shinfo->ubuf.arg = NULL;
-> >       kmemcheck_annotate_variable(shinfo->destructor_arg);
-> >  
-> >       if (fclone) {
-> > @@ -327,7 +329,15 @@ static void skb_release_data(struct sk_buff
-> *skb)
-> >                       for (i = 0; i < skb_shinfo(skb)->nr_frags; i
-> ++)
-> >                               put_page(skb_shinfo(skb)->frags[i].page);
-> >               }
-> > -
-> > +             /*
-> > +              * if skb buf is from userspace, we need to notify the
-> caller
-> > +              * the lower device DMA has done;
-> > +              */
-> > +             if (skb_shinfo(skb)->ubuf.callback) {
-> > +                     skb_shinfo(skb)->ubuf.callback(skb);
-> > +                     skb_shinfo(skb)->ubuf.callback = NULL;
-> > +                     skb_shinfo(skb)->ubuf.arg = NULL;
-> > +             }
-> >               if (skb_has_frag_list(skb))
-> >                       skb_drop_fraglist(skb);
+> >  	if (scsi_target(sdev)->single_lun)
+> >  		scsi_single_lun_run(sdev);
 > >  
 > 
-> We probably don't need to touch arg if callback is NULL?
-
-Yes.
-
-> > @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int
-> skb_size)
-> >       if (irqs_disabled())
-> >               return false;
-> >  
-> > +     if (shinfo->ubuf.callback)
-> > +             return false;
-> > +
-> >       if (skb_is_nonlinear(skb) || skb->fclone !=
-> SKB_FCLONE_UNAVAILABLE)
-> >               return false;
+> Hmmm, with the above added, I still get BUGs.  Here's an
+> example:
 > 
-> This is not the only API unsupported for these skbs, is it?
-> Probably need to check and fail there as well. 
+> [   17.142931] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [   17.143002] IP: [<ffffffffa01cf8c5>] scsi_run_queue+0x24/0xec [scsi_mod]
 
-Yes, I am going through all these skbs to make sure covering all.
+Ooh, compiler optimisation, I think; try this instead
 
-Thanks
-Shirley
+James
+
+---
+
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index e9901b8..0bac91e 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -400,10 +400,15 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
+ static void scsi_run_queue(struct request_queue *q)
+ {
+ 	struct scsi_device *sdev = q->queuedata;
+-	struct Scsi_Host *shost = sdev->host;
++	struct Scsi_Host *shost;
+ 	LIST_HEAD(starved_list);
+ 	unsigned long flags;
+ 
++	/* if the device is dead, sdev will be NULL, so no queue to run */
++	if (!sdev)
++		return;
++
++	shost = sdev->host;
+ 	if (scsi_target(sdev)->single_lun)
+ 		scsi_single_lun_run(sdev);
+ 
+
+
 
