@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab1ECUvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:51:10 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39351 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755150Ab1ECUvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:51:08 -0400
-Date: Tue, 3 May 2011 22:50:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110503205051.GA28647@elte.hu>
-References: <web-516671337@zbackend1.aha.ru>
- <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com>
- <web-516990066@zbackend1.aha.ru>
- <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
- <20110503190822.GA20520@elte.hu>
- <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <4DC06386.8090206@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC06386.8090206@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755208Ab1ECUvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:51:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34599 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab1ECUvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 16:51:46 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: Chris Ball <cjb@laptop.org>,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
+        Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH resend] sdio: optimized SDIO IRQ handling for single function
+Date: Tue,  3 May 2011 22:51:21 +0200
+Message-Id: <1304455881-10010-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+If there is only 1 function registered it is possible to
+improve performance by avoiding the overhead of reading the
+CCCR registers and directly call the function handler.
 
-> On 05/03/2011 01:17 PM, Linus Torvalds wrote:
-> > 
-> > That said, I don't really see why ELAN would be so special.
-> > 
-> 
-> ELAN used to have a nonstandard A20 enabling sequence, until someone
-> found out that changes to the mainline sequence had made ELAN work as a
-> side effect.
-> 
-> At this point, it's just a CPU selection thing, so it makes very little
-> sense.
+Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+---
+ drivers/mmc/core/sdio_irq.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-the ELAN .config option influences the following details:
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index b300161..25291bf 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -32,6 +32,20 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+ 	int i, ret, count;
+ 	unsigned char pending;
+ 
++	/*
++	 * If there is only 1 function registered
++	 * call irq directly without checking the CCCR registers.
++	 */
++	if ((card->host->caps & MMC_CAP_SDIO_IRQ) &&
++	    card->host->sdio_irqs && (card->sdio_funcs == 1))
++		for (i = 0; i < SDIO_MAX_FUNCS; i++) {
++			struct sdio_func *func = card->sdio_func[i];
++			if (func && func->irq_handler) {
++				func->irq_handler(func);
++				return 1;
++			}
++		}
++
+ 	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
+ 	if (ret) {
+ 		printk(KERN_DEBUG "%s: error %d reading SDIO_CCCR_INTx\n",
+-- 
+1.7.4.1
 
- - sets X86_L1_CACHE_SHIFT to 4 (16 bytes) instead of the typical 6 (64 bytes)
- - sets X86_ALIGNMENT_16
- - sets the -march=i486 compiler flag
-
-So in terms of the kernel image it seems to be mostly equivalent to selecting 
-i486 from the CPU menu - except the X86_ALIGNMENT_16 detail (which does not 
-seem to do anything substantive, AFAICS).
-
-Thanks,
-
-	Ingo
