@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1ECXMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:12:47 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51820 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab1ECXMq (ORCPT
+	id S1755432Ab1ECXRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:17:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56971 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753883Ab1ECXRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:12:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZJWboZ05LJlcfLineWViYCwEj3Tb1smkXUXMp7tzM9Dx6Gjsr+Y3kZVgspPzClXEjI
-         i7kPKlgHdWbjBGMIUAV4ubjUmtI7+MrbplXbScIaEcWUOgdGfaGYzv4iHBfDZvz91Jxr
-         OkpZn3H0b5ACarTzaeMz9wr1R62eOMeWtS2Gc=
-Date: Wed, 4 May 2011 01:12:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
-Message-ID: <20110503231241.GG2678@nowhere>
-References: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
- <1303923602-2923-4-git-send-email-fweisbec@gmail.com>
- <4DB854AA.6070101@zytor.com>
- <20110427182633.GB1753@nowhere>
- <008d59a3-bd23-4cb3-8a73-1640137e3ac4@email.android.com>
- <20110427195004.GA3654@nowhere>
- <4DC020D9.3050000@zytor.com>
+	Tue, 3 May 2011 19:17:30 -0400
+Date: Wed, 4 May 2011 00:17:22 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Michael Schmitz <schmitzmic@googlemail.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Pekka Enberg <penberg@kernel.org>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
+Subject: Re: [Stable-review] [36/55] [PARISC] slub: fix panic with
+ DISCONTIGMEM
+Message-ID: <20110503231721.GI2268@decadent.org.uk>
+References: <20110429185656.051229285@clark.kroah.org>
+ <1304366677.2833.170.camel@localhost>
+ <alpine.DEB.2.00.1105031544240.27795@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DC020D9.3050000@zytor.com>
+In-Reply-To: <alpine.DEB.2.00.1105031544240.27795@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.i.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 08:35:53AM -0700, H. Peter Anvin wrote:
-> On 04/27/2011 12:50 PM, Frederic Weisbecker wrote:
-> > On Wed, Apr 27, 2011 at 11:54:17AM -0700, H. Peter Anvin wrote:
-> >> Why do you have to be able to disable breakpoints to disable perf? That seems seriously backwards, especially since we had breakpoints long before perf...
-> > 
-> > That started when we implemented breakpoints as counters. Then we realized that
-> > ptrace had its own scheduling that was somehow duplicating what perf was doing.
-> > So we have finally unified that under perf. The good point is that archs don't need
-> > to care much about ptrace breakpoints tracking, just the interface.
-> > 
-> > But yeah the bad point is that dependency.
+On Tue, May 03, 2011 at 03:46:13PM -0700, David Rientjes wrote:
+[...]
+> SLUB relies heavily on N_NORMAL_MEMORY, so these two patches fix that 
+> allocator but the problem is actually not just isolated to that subsystem; 
+> it fixes an issue with anything that uses N_NORMAL_MEMORY.
 > 
-> It really is very bad... without breakpoints, you lose almost all
-> debugging support.
+> The former patch sets the nodes correctly for parisc and Michael's patch 
+> sets the nodes correctly for m68k, so it's the same fix for two different 
+> previously-broken architectures.
 
-Right, so it should be fine for embedded environment to disable breakpoints.
-It depends on CONFIG_EXPERT now.
+So if I understand you correctly, the Kconfig condition for SLUB is
+now wrong - only architectures that use DISCONTIGMEM's fake-NUMA and
+don't set the node states to N_NORMAL_MEMORY will break it.  And
+there's no good way to test for that in Kconfig.
+
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
