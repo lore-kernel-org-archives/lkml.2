@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab1ECOf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:35:28 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35207 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab1ECOf1 (ORCPT
+	id S1753213Ab1ECOhk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:37:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40220 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab1ECOhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:35:27 -0400
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [Linaro-mm-sig] [RFC] ARM DMA mapping TODO, v1
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Date: Tue, 3 May 2011 16:35:58 +0200
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Tue, 3 May 2011 10:37:38 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=OAku4sAPhKAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=59TrGsfLputFGiSdmTUA:9 a=yIoDhOLDytWEHtL7PeEA:7 a=PUjeQqilurYA:10 a=b3D6R9wpAFoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC patch 01/32] TRACE_EVENT: gradual semicolon removal
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20110503140717.GA29736@Krystal>
+References: <20110502211123.163877033@efficios.com>
+	 <20110502213211.250108074@efficios.com>  <20110503140717.GA29736@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 03 May 2011 10:37:37 -0400
+Message-ID: <1304433457.25414.2399.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105031635.59038.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 April 2011 23:31:06 Benjamin Herrenschmidt wrote:
-> On Thu, 2011-04-21 at 21:29 +0200, Arnd Bergmann wrote:
-> > 7. Extend the dma_map_ops to have a way for mapping a buffer
-> > 
-> >    from dma_alloc_{non,}coherent into user space. We have not
-> >    discussed that yet, but after thinking this for some time, I
-> >    believe this would be the right approach to map buffers into
-> >    user space from code that doesn't care about the underlying
-> >    hardware.
+On Tue, 2011-05-03 at 10:07 -0400, Mathieu Desnoyers wrote:
+> Hi,
 > 
-> Yes. There is a dma_mmap_coherent() call that's not part of the "Real"
-> API but is implemented by some archs and used by Alsa (I added support
-> for it on powerpc recently).
+> And here is a self-reply to patch 01/32, due to LKML refusing messages
+> with more than 20 recipients.
 > 
-> Maybe that should go into the dma ops.
-> 
-> The question remains, if we ever want to do more complex demand-paged
-> operations, should we also expose a lower level set of functions to get
-> struct page out of a dma_alloc_coherent() allocation and to get the
-> pgprot for the user dma mapping ?
-> 
-> > After all these are in place, building anything on top of
-> > dma_alloc_{non,}coherent should be much easier. The question
-> > of passing buffers between V4L and DRM is still completely
-> > unsolved as far as I can tell, but that discussion might become
-> > more focused if we can agree on the above points and assume
-> > that it will be done.
-> 
-> My gut feeling is that it should be done by having V4L use DRM buffers
-> in the first place...
+BTW, next time don't Cc the world on generic patch sets like this. If
+someone is Cc'd in one of the patch sets and wonders what it is about.
 
-V4L2 needs to capture data to a wide variety of memory locations (system 
-memory when you just want to process the data using the CPU, frame buffer 
-memory, contiguous buffers that will be passed to a DSP for video encoding, 
-GPU textures, ...). To allow those use cases (and more) the V4L2 API provides 
-two ways to handle data buffers: applications can request the driver to 
-allocate memory internally, and them mmap() the buffers to userspace, or pass 
-arbitrary memory pointers (and sizes) to the driver to be used as video 
-capture buffers.
+a) You did not write your change log well enough
 
-In the first case drivers will allocate memory depending on their 
-requirements. This could mean vmalloc_user() for USB drivers that use memcpy() 
-in the kernel, vmalloc() for hardware that support SG-lists or IOMMUs, 
-dma_alloc_coherent() for drivers that need contiguous memory, ...
+b) It contains unrelated changes
 
-In the second case the driver will verify that the memory it receives from the 
-application matches its requirements (regarding contiguousness for instance) 
-and will then use that memory.
+c) They could look at lkml.org to find out what this patch set is about.
 
-I think we could target the second case only if we want to share buffers 
-between V4L and DRM, as V4L2 (unlike DRM) is already pretty good at using 
-buffers it didn't allocate itself. The current API will need to be extended to 
-pass an opaque buffer handle instead of a memory address, as we want to avoid 
-requiring a userspace mapping for the buffer when not necessary. That's the 
-whole point of the initial memory management discussion.
+(c) is what I usually do when I'm Cc'd in a middle of a patch series.
 
-We will of course need to make sure that the DRM buffers fullfil the V4L2 
-needs.
+-- Steve
 
-> > I expect that I will have to update the list above as people
-> > point out mistakes in my assumptions.
 
--- 
-Regards,
-
-Laurent Pinchart
