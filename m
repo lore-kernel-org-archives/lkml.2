@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1ECLOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 07:14:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55073 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab1ECLOo (ORCPT
+	id S1752511Ab1ECLOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 07:14:05 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50195 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751500Ab1ECLOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 07:14:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] audit: support the "standard" <asm-generic/unistd.h>
-Date: Tue, 3 May 2011 13:14:39 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201105022254.p42MsDib030320@farm-0023.internal.tilera.com>
-In-Reply-To: <201105022254.p42MsDib030320@farm-0023.internal.tilera.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Tue, 3 May 2011 07:14:03 -0400
+Date: Tue, 3 May 2011 12:15:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: jimmy.chen@moxa.com, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, wim@iguana.be
+Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
+ driver
+Message-ID: <20110503121510.5bba70c5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110503105735.GB2497@pengutronix.de>
+References: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
+	<ECB3782BB8F03341905DD923270296115F720B@mhqms01.moxa.com>
+	<20110503105735.GB2497@pengutronix.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105031314.39544.arnd@arndb.de>
-X-Provags-ID: V02:K0:zA+O7uKntXsFhRN/0vp/y3umqLZna+4urctXhJqImlL
- cyFl3kGTrVW1wvr6gaqqkXd2bEO3QOfdj2Y0hak7HBbk1IWb54
- vQQX6FswfCjk9SY1GlyV4FxrcJQjnCMaqg4WriXevC12FOzB39
- LDRCaZsoNvRcSARWpS/LhNI8Zv7ekdNdw9chzgxSNwCFVFeQKf
- ne58c36/grNaibZib+jzg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 May 2011, Chris Metcalf wrote:
-> Many of the syscalls mentioned in the audit code are not present
-> for architectures that implement only the "standard" set of
-> Linux syscalls (e.g. openat, but not open, etc.).  This change
-> adds proper #ifdefs for all those syscalls.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Hmm, code in a header? Can't this go into the main source? Hmm, at least
+> it87_wdt.c has something very similar. Maybe it can even be shared? What
+> about locking BTW?
 
-Looks good, thanks!
+The spinlock handles it if you look at the caller points, because you
+have to own the super I/O and select it each time.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Ultimately it wants to be using request_muxed_* but that isn't in any of
+the mainstream code yet so can be done in the future when the mux patches
+go in.
+
+Alan
