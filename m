@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab1ECGMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 02:12:12 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45346 "EHLO zene.cmpxchg.org"
+	id S1752560Ab1ECGOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 02:14:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59600 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab1ECGMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 02:12:10 -0400
-Date: Tue, 3 May 2011 08:11:56 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: memcg: fix fatal livelock in kswapd
-Message-ID: <20110503061156.GC10278@cmpxchg.org>
-References: <1304366849.15370.27.camel@mulgrave.site>
- <20110502224838.GB10278@cmpxchg.org>
- <BANLkTikDyL9-XLpwyLwUQNuUfkBwbUBcZg@mail.gmail.com>
+	id S1751930Ab1ECGOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 02:14:22 -0400
+Date: Tue, 3 May 2011 08:13:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, kaber@trash.net
+Subject: Re: [PATCH tip/core/rcu 1/7] net,rcu: convert
+ call_rcu(sk_filter_release_rcu) to kfree_rcu
+Message-ID: <20110503061335.GA7751@elte.hu>
+References: <20110502161321.GA6537@linux.vnet.ibm.com>
+ <1304352824-6563-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110502.144156.104049895.davem@davemloft.net>
+ <20110502220628.GI2294@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikDyL9-XLpwyLwUQNuUfkBwbUBcZg@mail.gmail.com>
+In-Reply-To: <20110502220628.GI2294@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 04:14:09PM -0700, Ying Han wrote:
-> On Mon, May 2, 2011 at 3:48 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > Hi,
-> >
-> > On Mon, May 02, 2011 at 03:07:29PM -0500, James Bottomley wrote:
-> >> The fatal livelock in kswapd, reported in this thread:
-> >>
-> >> http://marc.info/?t=130392066000001
-> >>
-> >> Is mitigateable if we prevent the cgroups code being so aggressive in
-> >> its zone shrinking (by reducing it's default shrink from 0 [everything]
-> >> to DEF_PRIORITY [some things]).  This will have an obvious knock on
-> >> effect to cgroup accounting, but it's better than hanging systems.
-> >
-> > Actually, it's not that obvious.  At least not to me.  I added Balbir,
-> > who added said comment and code in the first place, to CC: Here is the
-> > comment in full quote:
-> >
-> >        /*
-> >         * NOTE: Although we can get the priority field, using it
-> >         * here is not a good idea, since it limits the pages we can scan.
-> >         * if we don't reclaim here, the shrink_zone from balance_pgdat
-> >         * will pick up pages from other mem cgroup's as well. We hack
-> >         * the priority and make it zero.
-> >         */
-> >
-> > The idea is that if one memcg is above its softlimit, we prefer
-> > reducing pages from this memcg over reclaiming random other pages,
-> > including those of other memcgs.
-> >
-> > But the code flow looks like this:
-> >
-> >        balance_pgdat
-> >          mem_cgroup_soft_limit_reclaim
-> >            mem_cgroup_shrink_node_zone
-> >              shrink_zone(0, zone, &sc)
-> >          shrink_zone(prio, zone, &sc)
-> >
-> > so the success of the inner memcg shrink_zone does at least not
-> > explicitely result in the outer, global shrink_zone steering clear of
-> > other memcgs' pages.  It just tries to move the pressure of balancing
-> > the zones to the memcg with the biggest soft limit excess.  That can
-> > only really work if the memcg is a large enough contributor to the
-> > zone's total number of lru pages, though, and looks very likely to hit
-> > the exceeding memcg too hard in other cases.
-> yes, the logic is selecting one memcg(the one exceeding the most) and
-> starting hierarchical reclaim on it. It will looping until the the
-> following condition becomes true:
-> 1. memcg usage is below its soft_limit
-> 2. looping 100 times
-> 3. reclaimed pages equal or greater than (excess >>2) where excess is
-> the (usage - soft_limit)
 
-There is no need to loop if we beat up the memcg in question with a
-hammer during the first iteration ;-)
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-That is, we already did the aggressive scan when all these conditions
-are checked.
+> On Mon, May 02, 2011 at 02:41:56PM -0700, David Miller wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > Date: Mon,  2 May 2011 09:13:38 -0700
+> > 
+> > > The RCU callback sk_filter_release_rcu just calls kfree(), so we use
+> > > kfree_rcu() instead of call_rcu().
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > I'm fine with all of these net conversions:
+> > 
+> > Acked-by: David S. Miller <davem@davemloft.net>
+> 
+> Thank you, Dave!
 
-> hmm, the worst case i can think of is the memcg only has one page
-> allocate on the zone, and we end up looping 100 time each time and not
-> contributing much to the global reclaim.
+Looking at the networking-only diffstat i suspect the best flow would be if 
+Dave pulled these from you into the networking tree?
 
-Good point, it should probably bail earlier on a zone that does not
-really contribute to the soft limit excess.
+Thanks,
+
+	Ingo
