@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1ECRnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:43:31 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40756 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab1ECRna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:43:30 -0400
-Subject: Re: [PATCH V3 2/8] Add a new zerocopy device flag
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110502195302.GA25619@redhat.com>
-References: <1303328216.19336.18.camel@localhost.localdomain>
-	 <1303328648.19336.24.camel@localhost.localdomain>
-	 <20110502104257.GA21625@redhat.com>
-	 <1304362028.20660.15.camel@localhost.localdomain>
-	 <20110502195302.GA25619@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 10:42:50 -0700
-Message-ID: <1304444570.20660.32.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754184Ab1ECRnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:43:04 -0400
+Received: from kroah.org ([198.145.64.141]:33817 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab1ECRnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:43:02 -0400
+Date: Tue, 3 May 2011 10:42:54 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
+Message-ID: <20110503174254.GA6545@kroah.com>
+References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
+ <20110503163128.24853.15446.stgit@bob.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503163128.24853.15446.stgit@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-02 at 22:53 +0300, Michael S. Tsirkin wrote:
-> On Mon, May 02, 2011 at 11:47:08AM -0700, Shirley Ma wrote:
-> > On Mon, 2011-05-02 at 13:42 +0300, Michael S. Tsirkin wrote:
-> > > This comment should specify what exactly is the promise the
-> > > device makes by setting this flag. Specifically, the
-> > > condition is that no skb fragments are used
-> > > after the uinfo callback has been called.
-> > > 
-> > > The way it's implemented, it probably means the device
-> > > should not use any of skb_clone, expand head etc.
-> > 
-> > Agree. Or maybe force a copy when device uses skb_clone, expand
-> > head ...?
-> > 
-> > Thanks
-> > Shirley
+On Tue, May 03, 2011 at 05:31:49PM +0100, Alan Cox wrote:
+> From: Vinod Koul <vinod.koul@intel.com>
 > 
-> Copy from userspace upfront without locking is probably cheaper? 
+> During suspend and runtime_suspend audio dsp will be in D3 state
+> and will loose its context.
+> 
+> This patch adds support in driver to save the dsp context
+> and restore this context during resume
+> 
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> Signed-off-by: Ramesh Babu K V <ramesh.babu@intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-Better to prevent this kind of skbs to be used in skb_clone, expand head
-for now.
+Something is messed up here as:
 
-Thanks
-Shirley
+> --- a/drivers/staging/intel_sst/intel_sst_drv_interface.c
+> +++ b/drivers/staging/intel_sst/intel_sst_drv_interface.c
+> @@ -508,6 +508,7 @@ int register_sst_card(struct intel_sst_card_ops *card)
+>  			sst_drv_ctx->pmic_state = SND_MAD_INIT_DONE;
+>  			sst_drv_ctx->rx_time_slot_status = 0; /*default AMIC*/
+>  			card->pcm_control = sst_pmic_ops.pcm_control;
+> +			sst_drv_ctx->scard_ops->card_status = SND_CARD_UN_INIT;
+>  			return 0;
+>  		} else {
+>  			pr_err("strcmp fail %s\n", card->module_name);
 
+This line is in the original patch from Vinod in this function that
+added the driver to the tree (git commit id fffa1cca), so the patch
+doesn't apply at all.  Do you see this too?
+
+If I comment out this chunk, the patch fails later on as well:
+
+patching file drivers/staging/intel_sst/intelmid.c
+Hunk #1 FAILED at 805.
+1 out of 1 hunk FAILED -- saving rejects to file drivers/staging/intel_sst/intelmid.c.rej
+
+
+Which is odd.
+
+What tree did you generate this series against?  I don't have any
+outstanding sst patches in my "to-apply" queue, did I miss some that you
+previously sent that I should have applied first?
+
+confused,
+
+greg k-h
