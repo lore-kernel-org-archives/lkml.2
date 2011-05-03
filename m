@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab1ECUGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:06:38 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:44333 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab1ECUGg (ORCPT
+	id S1754953Ab1ECT7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:59:38 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:38209 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929Ab1ECT7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:06:36 -0400
-Subject: [PATCH 09/16] hpsa: increase time to wait for board reset
+	Tue, 3 May 2011 15:59:37 -0400
+Subject: [PATCH 10/16] hpsa: clarify messages around reset behavior
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
         mikem@beardog.cce.hp.com
-Date: Tue, 03 May 2011 14:59:31 -0500
-Message-ID: <20110503195931.5478.71892.stgit@beardog.cce.hp.com>
+Date: Tue, 03 May 2011 14:59:36 -0500
+Message-ID: <20110503195936.5478.97874.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,22 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
+When waiting for the board to become "not ready"
+don't print a message saying "waiting for board to
+become ready" (possibly followed by a message saying
+"failed waiting for board to become not ready".  Instead,
+it should be "waiting for board to reset" and "failed
+waiting for board to reset."
+
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/hpsa.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-index 7a4ee73..b1412a7 100644
---- a/drivers/scsi/hpsa.h
-+++ b/drivers/scsi/hpsa.h
-@@ -155,7 +155,7 @@ struct ctlr_info {
-  * HPSA_BOARD_READY_ITERATIONS are derived from those.
-  */
- #define HPSA_BOARD_READY_WAIT_SECS (120)
--#define HPSA_BOARD_NOT_READY_WAIT_SECS (10)
-+#define HPSA_BOARD_NOT_READY_WAIT_SECS (100)
- #define HPSA_BOARD_READY_POLL_INTERVAL_MSECS (100)
- #define HPSA_BOARD_READY_POLL_INTERVAL \
- 	((HPSA_BOARD_READY_POLL_INTERVAL_MSECS * HZ) / 1000)
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 97db2e5..2a90e9a 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3334,11 +3334,11 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 	msleep(HPSA_POST_RESET_PAUSE_MSECS);
+ 
+ 	/* Wait for board to become not ready, then ready. */
+-	dev_info(&pdev->dev, "Waiting for board to become ready.\n");
++	dev_info(&pdev->dev, "Waiting for board to reset.\n");
+ 	rc = hpsa_wait_for_board_state(pdev, vaddr, BOARD_NOT_READY);
+ 	if (rc)
+ 		dev_warn(&pdev->dev,
+-			"failed waiting for board to become not ready\n");
++			"failed waiting for board to reset\n");
+ 	rc = hpsa_wait_for_board_state(pdev, vaddr, BOARD_READY);
+ 	if (rc) {
+ 		dev_warn(&pdev->dev,
+@@ -3837,6 +3837,7 @@ static __devinit int hpsa_init_reset_devices(struct pci_dev *pdev)
+ 		return -ENODEV;
+ 
+ 	/* Now try to get the controller to respond to a no-op */
++	dev_warn(&pdev->dev, "Waiting for controller to respond to no-op\n");
+ 	for (i = 0; i < HPSA_POST_RESET_NOOP_RETRIES; i++) {
+ 		if (hpsa_noop(pdev) == 0)
+ 			break;
 
