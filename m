@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab1ECBAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 21:00:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43234 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755026Ab1ECBAQ (ORCPT
+	id S1754761Ab1ECBOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 21:14:07 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:53427 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab1ECBOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 21:00:16 -0400
+	Mon, 2 May 2011 21:14:06 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: linux-kernel@vger.kernel.org
+Subject: Re: unable to handle kernel paging request when inserting FAT32 formatted flash media
+References: <20110502064945.GA12197@mac.home>
+	<20110502065529.GA12397@mac.home> <87y62pf9xg.fsf@devron.myhome.or.jp>
+	<87r58hf866.fsf@devron.myhome.or.jp>
+	<20110502170122.GA14096@eazy.amigager.de>
+	<87k4e9ey9k.fsf@devron.myhome.or.jp> <20110502203327.GA19507@mac.home>
+	<87bozkg3ng.fsf@devron.myhome.or.jp>
+	<8762psfwew.fsf@devron.myhome.or.jp>
+Date: Tue, 03 May 2011 10:14:03 +0900
+In-Reply-To: <8762psfwew.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Tue, 03 May 2011 09:41:11 +0900")
+Message-ID: <87vcxsegbo.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110502232820.GA9578@suse.de>
-References: <201105030044.51661.rjw@sisk.pl> <20110502231234.GA6430@suse.de>
- <BANLkTikCHO1ST27uhJLU5mBxtWPuuVkNKA@mail.gmail.com> <20110502232820.GA9578@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 May 2011 17:59:22 -0700
-Message-ID: <BANLkTimwmC=ckj4g_ct4EhOSLD7NDgxdng@mail.gmail.com>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when
- tasks are frozen
-To: Greg KH <gregkh@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 2, 2011 at 4:28 PM, Greg KH <gregkh@suse.de> wrote:
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 >
-> A driver that does not rely on the firmware being built in would be
-> correct in calling request_firmware_nowait() on resume, then when
-> userspace is properly woken up, the firmware would be sent to the
-> device, then the driver would be notified, load it, and handle things
-> as part of its resume sequence from that notification.
+>> Tino Keitel <tino.keitel@tikei.de> writes:
+>>
+>>>> > Yes, it is reproducible. It happens with a CF card from a Canon DSLR as
+>>>> > well as with a SD card from a little Fuji cam. Configs are attached.
+>>>> 
+>>>> .config didn't have interest part for now. Could you send another oops,
+>>>> and vfat.ko, fat.ko? I'd like to see more detail by assembler, current
+>>>> oops is unclear...
+>>>
+>>> Another Oops, this time with the SD card, and the modules are attached.
+>>>
+>>>> And if possible, git bisect is appreciate.
+>>>
+>>> Lack of spare time currently, sorry.
+>>
+>> OK. Thanks for your help.
 >
-> Isn't that ideally what we want to have happen?
+> It seems to be interesting exception.
+>
+> before relocation (from fat.ko)
+>     8656:	74 51                	je     86a9 <fat_build_inode+0x2e9>
+>     8658:	49 c7 c6 00 00 00 00 	mov    $0x0,%r14
+>     865f:	b2 b6                	mov    $0xb6,%dl
+>     8661:	80 3d 00 00 00 00 00 	cmpb   $0x0,0x0(%rip) <-- exception
+>     8668:	74 3f                	je     86a9 <fat_build_inode+0x2e9>
+>     866a:	49 8d 44 24 08       	lea    0x8(%r12),%rax
+>
+> after relocation (from oops)
+>
+>   20:	74 51                	je     73 <a+0x73>
+>   22:	49 c7 c6 d8 91 13 a0 	mov    $0xffffffffa01391d8,%r14
+>   29:	b2 b6                	mov    $0xb6,%dl
+>   2b:	3d fc 9b 00 00       	cmp    $0x9bfc,%eax
+>   30:	00 74 3f 49          	add    %dh,0x49(%rdi,%rdi,1)
+>   34:	8d 44 24 08          	lea    0x8(%rsp),%eax
+>
+> relocation info would be this
+>   0x0000000000006883  X86_64_32S      000000000000000000    +253 .rodata.str1.1
 
-No. Absolutely not.
+Whoops, wrong info.
 
-What we ideally want to happen is for the driver to not be a stupid
-piece of sh*t.
+relocation info should be this
 
-A driver that needs firmware loading at resume time IS A BROKEN DRIVER.
-
-It really is that simple.
-
-> Or am I missing something else?
-
-The only correct thing to do is for a driver that is active over a
-suspend to cache the firmware in RAM.
-
-There is absolutely no other possible solution. You can't rely on
-user-space loading, because the user space may well require that
-driver to load things in the first place. And even if it doesn't, it
-leaves a huge gaping window where the driver is useless because it has
-no firmware, and then any other (unrelated to firmware loading or udev
-or anythign else) user space that wants to access the device - because
-it was accessing it before the suspend - will be hosed.
-
-Seriously. Anything else is pure idiocy. The only sane model is for
-drivers to load the firmware before the suspend even happens.
-Preferably by simply never unloading the firmware in the first place.
-
-No amount of crazy hacks will ever solve the problem if a driver
-doesn't do that.  Not "nowait", not "reload it from udev when user
-space comes back".
-
-                        Linus
+  0x0000000000008663  X86_64_PC32     0x000000000000927c      -5 .LC55
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
