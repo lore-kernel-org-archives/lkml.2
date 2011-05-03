@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab1ECJIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 05:08:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62998 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab1ECJIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 05:08:15 -0400
-Message-ID: <4DBFC6D0.3010105@cn.fujitsu.com>
-Date: Tue, 03 May 2011 17:11:44 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751993Ab1ECJNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:13:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43794 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab1ECJM7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 05:12:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=fpOpCgwEZumtZzxndYvScfrDcY+JEqKqCbYitqVFW5f5aqXZy9sruE1KXjJD26rG2v
+         oDLB5gfB/HV0zAtA/j/XtU/B3XMfwWqA79k1gixPHyVer8MNChnyilqv5iCPYdLlKifU
+         FcgwXzvGbuWKh3eXWZLfbC4g/aS40+A8hJu/8=
 MIME-Version: 1.0
-To: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-CC: Chris Mason <chris.mason@oracle.com>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] fs: remove FS_COW_FL
-References: <4DA7B559.8060800@cn.fujitsu.com>
-In-Reply-To: <4DA7B559.8060800@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-03 17:08:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-03 17:08:34,
-	Serialize complete at 2011-05-03 17:08:34
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTi=CmYOisOqMejU2qVGnB4c6Z7yHsA@mail.gmail.com>
+References: <1303910411-15793-1-git-send-email-akinobu.mita@gmail.com>
+	<1303910411-15793-2-git-send-email-akinobu.mita@gmail.com>
+	<4DBFA78F.9060001@snapgear.com>
+	<BANLkTi=CmYOisOqMejU2qVGnB4c6Z7yHsA@mail.gmail.com>
+Date: Tue, 3 May 2011 11:12:58 +0200
+X-Google-Sender-Auth: yYv_gqCOZ77DqWMS8UtybtJCkDk
+Message-ID: <BANLkTinkEHjrBW1GJSJhBnbgxXm5Vtw7BQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/7] m68knommu: fix build error due to the lack of find_next_bit_le()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Greg Ungerer <gerg@snapgear.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, arnd@arndb.de,
+        Greg Ungerer <gerg@uclinux.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments? If this patch is acceptable, it should be queued for .39?
-since fs.h is exported to userspace.
+On Tue, May 3, 2011 at 11:11, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> 2011/5/3, Greg Ungerer <gerg@snapgear.com>:
+>> Hi Akinobu,
+>>
+>> On 27/04/11 23:20, Akinobu Mita wrote:
+>>> m68knommu can't build ext4, udf, and ocfs2 due to the lack of
+>>> find_next_bit_le().
+>>>
+>>> This implements find_next_bit_le() on m68knommu by duplicating the
+>>> generic find_next_bit_le() in lib/find_next_bit.c.
+>>
+>> Wouldn't the m68k specific implementation of this in
+>> arch/m68k/include/asm/bitops_mm.h be better?
+>
+> find_next_bit_le() in bitops_mm.h has a bug
+> (Please see https://lkml.org/lkml/2011/4/3/43) and it is not fixed
+> in mainline yet. So I decided to use generic one for the safety.
 
-Li Zefan wrote:
-> FS_COW_FL and FS_NOCOW_FL were newly introduced to control per file
-> COW in btrfs, but FS_NOCOW_FL is sufficient.
-> 
-> The fact is we don't have corresponding BTRFS_INODE_COW flag.
-> 
-> COW is default, and FS_NOCOW_FL can be used to switch off COW for
-> a single file.
-> 
-> If we mount btrfs with nodatacow, a newly created file will be set with
-> the FS_NOCOW_FL flag. So to turn on COW for it, we can just clear the
-> FS_NOCOW_FL flag.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  fs/btrfs/ioctl.c   |   15 ++++++---------
->  include/linux/fs.h |    1 -
->  2 files changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-> index f580a3a..3240dd9 100644
-> --- a/fs/btrfs/ioctl.c
-> +++ b/fs/btrfs/ioctl.c
-> @@ -144,16 +144,13 @@ static int check_flags(unsigned int flags)
->  	if (flags & ~(FS_IMMUTABLE_FL | FS_APPEND_FL | \
->  		      FS_NOATIME_FL | FS_NODUMP_FL | \
->  		      FS_SYNC_FL | FS_DIRSYNC_FL | \
-> -		      FS_NOCOMP_FL | FS_COMPR_FL | \
-> -		      FS_NOCOW_FL | FS_COW_FL))
-> +		      FS_NOCOMP_FL | FS_COMPR_FL |
-> +		      FS_NOCOW_FL))
->  		return -EOPNOTSUPP;
->  
->  	if ((flags & FS_NOCOMP_FL) && (flags & FS_COMPR_FL))
->  		return -EINVAL;
->  
-> -	if ((flags & FS_NOCOW_FL) && (flags & FS_COW_FL))
-> -		return -EINVAL;
-> -
->  	return 0;
->  }
->  
-> @@ -218,6 +215,10 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
->  		ip->flags |= BTRFS_INODE_DIRSYNC;
->  	else
->  		ip->flags &= ~BTRFS_INODE_DIRSYNC;
-> +	if (flags & FS_NOCOW_FL)
-> +		ip->flags |= BTRFS_INODE_NODATACOW;
-> +	else
-> +		ip->flags &= ~BTRFS_INODE_NODATACOW;
->  
->  	/*
->  	 * The COMPRESS flag can only be changed by users, while the NOCOMPRESS
-> @@ -231,10 +232,6 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
->  		ip->flags |= BTRFS_INODE_COMPRESS;
->  		ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
->  	}
-> -	if (flags & FS_NOCOW_FL)
-> -		ip->flags |= BTRFS_INODE_NODATACOW;
-> -	else if (flags & FS_COW_FL)
-> -		ip->flags &= ~BTRFS_INODE_NODATACOW;
->  
->  	trans = btrfs_join_transaction(root, 1);
->  	BUG_ON(IS_ERR(trans));
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index de9dd81..56a4141 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -365,7 +365,6 @@ struct inodes_stat_t {
->  #define FS_EXTENT_FL			0x00080000 /* Extents */
->  #define FS_DIRECTIO_FL			0x00100000 /* Use direct i/o */
->  #define FS_NOCOW_FL			0x00800000 /* Do not cow file */
-> -#define FS_COW_FL			0x02000000 /* Cow file */
->  #define FS_RESERVED_FL			0x80000000 /* reserved for ext2 lib */
->  
->  #define FS_FL_USER_VISIBLE		0x0003DFFF /* User visible flags */
+Yeah, I still have to create a for-2.6.40 branch and add it there.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
