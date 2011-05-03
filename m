@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab1ECVw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:52:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54863 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab1ECVwQ (ORCPT
+	id S1751799Ab1ECVwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:52:04 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36106 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750698Ab1ECVwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:52:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=FRXt74pV5Mh22X6DItUwVOZQDliPFld7vDdiSazRFYIYmybjgdfiTK0e5l3weDKqfc
-         KHVioBE1d0wHFqbRhgcyVE7uzbvz0FzYTFMLC7CuMVPw4ItNdxqm5ejyJg9cFtw6oWJ/
-         E1CEhxuNCC5/j3Lp9jIT2+Jx1B1W+RsMh9g34=
-Date: Wed, 4 May 2011 01:52:11 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
-        nico@fluxnic.net
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different
- controllers
-Message-ID: <20110503215211.GA8491@oksana.dev.rtsoft.ru>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca>
- <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 May 2011 17:52:02 -0400
+Date: Tue, 3 May 2011 22:53:16 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
+Message-ID: <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110503213925.GA7453@opensource.wolfsonmicro.com>
+References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
+	<20110503163128.24853.15446.stgit@bob.linux.org.uk>
+	<20110503174254.GA6545@kroah.com>
+	<20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
+	<20110503213925.GA7453@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 03:13:20PM -0600, Grant Likely wrote:
-> > struct gpio_mmio_generic {
-> >        spinlock_t      lock;
-> >
-> >        /* initialized by user */
-> >        unsigned long   reg_data;
-> >        unsigned long   reg_set;
-> >        unsigned long   reg_clr;
-> >        unsigned long   reg_dir;
-> >
-> >        void __iomem    *reg_base;
+> To recap the previous discussion: staging is just not in the slightest
+> bit viable for ASoC stuff, code that does anything non-trivial is going
 
-This assumes that all reg_* will be mapped with a single ioremap().
-My solution (see below) doesn't have this issue.
+Yes I know that - and its active development of a nice clean driver going
+on upstream so doesn't belong there anyway. The ASoC driver should
+probably have its own copy of the bits of the staging driver that it
+needs however.
 
-> > void gpio_mmio_generic_setup(struct gpio_mmio_generic *gmg, int register_width);
-> > int gpio_mmio_generic_add(struct gpio_mmio_generic *gmg);
-> > void gpio_mmio_generic_remove(struct gpio_mmio_generic *gmg);
+I can fix this collision up easily enough and if doing it not via the
+rules is best fine by me. I think it might be wiser however if the ASoC
+driver took its own copy of the bits it actually needed.
 
-I'm not sure you need that complex API.
-
-> > gpio_mmio_generic_setup() sets up the common callback ops in the
-> > embedded gpio_chip, but the decisions it makes could be overridden by
-> > the user before calling gpio_mmio_generic_add().
-> >
-> > I've not had time to prototype this yet, but I wanted to get it
-> > written down and out onto the list for feedback since I probably won't
-> > have any chance to get to it until after UDS.  Bonus points to anyone
-> > who wants to take the initiative to hack it together before I get to
-> > it.  Extra bonus points to anyone who also converts some of the other
-> > gpio controllers to use it.  :-D
-> 
-> And triple bonus points to anyone who thinks this is stupid and comes
-> up with a better approach.  :-)
-
-This isn't stupid. And I started working on this, so what about
-http://lkml.org/lkml/2011/4/19/401 ? This is pretty much the same
-that you propose.
-
-Thanks.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Alan
