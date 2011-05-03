@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab1ECNeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:34:12 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47637 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750862Ab1ECNeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:34:10 -0400
-Date: Tue, 3 May 2011 14:35:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, jimmy.chen@moxa.com,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        wim@iguana.be
-Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
- driver
-Message-ID: <20110503143501.2596a9ce@lxorguk.ukuu.org.uk>
-In-Reply-To: <201105031451.56911.arnd@arndb.de>
-References: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
-	<20110503105735.GB2497@pengutronix.de>
-	<20110503121510.5bba70c5@lxorguk.ukuu.org.uk>
-	<201105031451.56911.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752691Ab1ECNjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:39:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab1ECNjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 09:39:13 -0400
+Date: Tue, 3 May 2011 16:39:01 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, avi@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 2/2] KVM: make guest mode entry to be rcu quiescent
+ state
+Message-ID: <20110503133901.GW2265@redhat.com>
+References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
+ <1303984323-3203-3-git-send-email-gleb@redhat.com>
+ <20110503131317.GA4244@amt.cnet>
+ <20110503132123.GV2265@redhat.com>
+ <20110503132952.GA5022@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503132952.GA5022@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Another thing that might be nice here is to have one module that probes
-> the superio-port and then registers a platform device that other drivers
+On Tue, May 03, 2011 at 10:29:52AM -0300, Marcelo Tosatti wrote:
+> On Tue, May 03, 2011 at 04:21:23PM +0300, Gleb Natapov wrote:
+> > On Tue, May 03, 2011 at 10:13:17AM -0300, Marcelo Tosatti wrote:
+> > > Hi Gleb,
+> > > 
+> > > Thats a neat idea.
+> > > 
+> > > On Thu, Apr 28, 2011 at 12:52:03PM +0300, Gleb Natapov wrote:
+> > > > KVM does not hold any references to rcu protected data when it switches
+> > > > CPU into a guest mode. In fact switching to a guest mode is very similar
+> > > > to exiting to userspase from rcu point of view. In addition CPU may stay
+> > > > in a guest mode for quite a long time (up to one time slice). Lets treat
+> > > > guest mode as quiescent state, just like we do with user-mode execution.
+> > > > 
+> > > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > > > ---
+> > > >  include/linux/kvm_host.h |    1 +
+> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > index 0bc3d37..a347bce 100644
+> > > > --- a/include/linux/kvm_host.h
+> > > > +++ b/include/linux/kvm_host.h
+> > > > @@ -593,6 +593,7 @@ static inline void kvm_guest_enter(void)
+> > > >  {
+> > > >  	account_system_vtime(current);
+> > > >  	current->flags |= PF_VCPU;
+> > > > +	rcu_note_context_switch(smp_processor_id());
+> > > >  }
+> > > >  
+> > > >  static inline void kvm_guest_exit(void)
+> > > > -- 
+> > > > 1.7.2.3
+> > > 
+> > > Please have it in x86's vcpu_enter_guest, then its more explicit
+> > > (uncertain about the context of kvm_guest_enter call in other arches).
+> > > 
+> > I checked all of them and kvm_guest_enter() is always called with local
+> > irq disabled. Paul confirmed that rcu_note_context_switch() can be
+> > called in such context.
+> 
+> OK then. Perhaps have an assert to verify interrupts are disabled?
+Yes. Can add BUG_ON(preemptible()).
 
-That doesn't help. See the it87 request_muxed patches pending. Because
-the port can be muxed we need to actually implement port muxing across
-the super I/O devices. That's a separate and larger problem altogether
-and this device will get fixed as we do the other so not a problem.
-
-> can can bind to. Right now, you have to load the module manually and
-> then check if it's there, something we no longer do for most devices.
-
-A lot of these super I/O devices have no entirely safe autodetect, and
-the same is true for it87 and many others. There isn't a nice elegant
-solution really.
-
-Alan
+--
+			Gleb.
