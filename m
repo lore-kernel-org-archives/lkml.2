@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1ECWBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:01:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56137 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab1ECWBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:01:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qkKIu/kAj6csBtDuQl10+/gxHPh092kh1M3a4nBh6JXUFutpn3QYGV7Ug7yTU/cEBi
-         gR/eMbPdLgqPkGrVkPWO3BrgV6nhevIJBb5JsWNYNLBKkQwwr5I3fZuGs7YsqOpEuNuZ
-         A4cnNie2wlnvI+usOHIO3pbEy9JPeVuOb3ibo=
-Date: Wed, 4 May 2011 00:01:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 01/32] TRACE_EVENT: gradual semicolon removal
-Message-ID: <20110503220059.GD2678@nowhere>
-References: <20110502211123.163877033@efficios.com>
- <20110502213211.250108074@efficios.com>
- <1304422337.25414.2382.camel@gandalf.stny.rr.com>
- <20110503212656.GG32331@Krystal>
+	id S1752798Ab1ECWDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:03:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40864 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924Ab1ECWDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 18:03:00 -0400
+Message-ID: <4DC07B4F.4040509@zytor.com>
+Date: Tue, 03 May 2011 15:01:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503212656.GG32331@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, werner <w.landgraf@ru.ru>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <4DC06386.8090206@zytor.com> <20110503205051.GA28647@elte.hu> <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
+In-Reply-To: <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 05:26:57PM -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > * Why do this incrementally ?
-> > 
-> > Preaching to the choir?
+On 05/03/2011 02:45 PM, Linus Torvalds wrote:
+> On Tue, May 3, 2011 at 1:50 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> the ELAN .config option influences the following details:
+>>
+>>  - sets X86_L1_CACHE_SHIFT to 4 (16 bytes) instead of the typical 6 (64 bytes)
+>>  - sets X86_ALIGNMENT_16
+>>  - sets the -march=i486 compiler flag
 > 
-> I've been asked to explain myself on this topic by Frederic last time I
-> posted this patchset, so I added the explanation to the changelog.
-
-Explaining it in the cover letter is enough :)
-
-> > 
-> > > 
-> > > After this preliminary patch, the semicolon removal can be done gradually
-> > > without breaking the build: we can be in an intermediate state with some files
-> > > having semicolons and others without. This is therefore good for
-> > > bissectability, and seems like a nice way to bring in an internal API change
-> > > without making developers suffer too much. Then, once things are stabilized, we
-> > > can start modifying the Ftrace code to generate the more space-efficient arrays
-> > > (possibly in a release-cycle or so), knowing that this enforces a strict
-> > > requirement on semicolon removal.
-> > 
-> > Mathieu, I like the patch, but I think you explain too much ;)
+> It also does this to the config diff:
 > 
-> Or too little, depending on the maintainer. ;-)
+>   306,307c328,332
+>   < CONFIG_X86_ALIGNMENT_16=y
+>   < CONFIG_X86_MINIMUM_CPU_FAMILY=4
+>   ---
+>   > CONFIG_X86_USE_PPRO_CHECKSUM=y
+>   > CONFIG_X86_TSC=y
+>   > CONFIG_X86_CMPXCHG64=y
+>   > CONFIG_X86_CMOV=y
+>   > CONFIG_X86_MINIMUM_CPU_FAMILY=5
+> 
+> because of all the indirect changes it causes.
+> 
+> Now, Werner is actually _running_ on an AMD Opteron (or whatever
+> family 15 is), I think. And his kernel is SMP-enabled. And that whole
+> thin looks really really iffy.
+> 
+> How/why do we even allow that combination of SMP and (for example)
+> arch/x86/lib/atomic64_386_32.S to be picked?
+> 
+> I don't think he actually runs SMP, but the fact that we even allow
+> that combination looks really odd/iffy. Am I missing something?
+> 
 
-Well, I did never asked for 1000 lines of changelog ;)
-The real problem with your previous set is that your arguments were
-either too weak (double ";" in generated code doesn't alone justify
-a massive change like this) or too foggy (the array of field
-idea was not developed enough to be understanble whereas it was the
-only sane reason for this massive change).
+We would end up in those paths before alternatives are run, but
+alternatives should be run before we start the second processor.
 
-Just explain briefly that the end goal is for storing fields in an array
-with a quick example and you are done with few dozen lines for
-your changelog.
-
-People simply don't review fat changelogs.
+	-hpa
