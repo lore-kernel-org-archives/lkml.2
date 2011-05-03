@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1ECRkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:40:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40277 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752545Ab1ECRku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:40:50 -0400
-Date: Tue, 3 May 2011 18:40:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lrg@ti.com,
-        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
-Subject: Re: [PATCH 2/5] regulator: tps65911: Add new chip version
-Message-ID: <20110503174048.GF1762@opensource.wolfsonmicro.com>
-References: <91D0C3C1-66A6-4642-8F78-EFE99236D1A7@slimlogic.co.uk>
+	id S1754160Ab1ECRla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:41:30 -0400
+Received: from mdc-mail-out01.ubisoft.com ([216.98.57.107]:52662 "EHLO
+	mdc-mail-out01.ubisoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752545Ab1ECRl3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:41:29 -0400
+From: David Hill <david.hill@ubisoft.com>
+To: Paul McEnery <pmcenery@gmail.com>
+CC: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dgiagio@gmail.com" <dgiagio@gmail.com>,
+        "dborca@yahoo.com" <dborca@yahoo.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "open list:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
+Date: Tue, 3 May 2011 13:41:27 -0400
+Subject: RE: [PATCH] ipheth.c: Enable IP header alignment
+Thread-Topic: [PATCH] ipheth.c: Enable IP header alignment
+Thread-Index: AcwJuEmW4Ax/5ETJSBG0CfQViUhl5gAAQWpg
+Message-ID: <710D4D6CE160654C87478D18385BB9971BE3FDCA5C@MDC-MAIL-CMS01.ubisoft.org>
+References: <1304264799.2833.82.camel@localhost>
+	<1304364912-15444-1-git-send-email-agimenez@sysvalve.es>
+	<1304370274.2833.192.camel@localhost>
+	<20110503165751.GA6566@bart.evergreen.loc>
+	<710D4D6CE160654C87478D18385BB9971BE3FDCA46@MDC-MAIL-CMS01.ubisoft.org>
+ <BANLkTi=W5HTLDa-UEvk4TefP3FyOvphxew@mail.gmail.com>
+In-Reply-To: <BANLkTi=W5HTLDa-UEvk4TefP3FyOvphxew@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <91D0C3C1-66A6-4642-8F78-EFE99236D1A7@slimlogic.co.uk>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 11:18:49AM -0500, Jorge Eduardo Candelaria wrote:
+That's not a problem, I can test it :)
 
-Mostly OK - a few small things.
 
-> +	if (id == TPS65910_REG_VDD1 || id == TPS65910_REG_VDD2) {
-> +		dcdc_mult = (selector / VDD1_2_NUM_VOLTS) + 1;
-> +		if (dcdc_mult == 1) dcdc_mult--;
-> +		vsel = (selector % VDD1_2_NUM_VOLTS) + 3;
-> +	} else {
-> +		vsel = selector;
-> +	}
+-----Original Message-----
+From: Paul McEnery [mailto:pmcenery@gmail.com] 
+Sent: 3 mai 2011 13:34
+To: David Hill
+Cc: L. Alberto Giménez; Ben Hutchings; linux-kernel@vger.kernel.org; dgiagio@gmail.com; dborca@yahoo.com; davem@davemloft.net; open list:USB SUBSYSTEM; open list:NETWORKING DRIVERS
+Subject: Re: [PATCH] ipheth.c: Enable IP header alignment
 
-Things like this should be switch statements.
+On 3 May 2011 18:18, David Hill <david.hill@ubisoft.com> wrote:
+>
+> Maybe I can help on this part.
+>
+> Git ?
+>
+> I'm using ubuntu natty ... The part  I'm not sure of is , do I patch ubuntu's kernel or I start from scratch?
+>
 
-> -	volt = VDD1_2_MIN_VOLT + (selector % VDD1_2_NUM_VOLTS) * VDD1_2_OFFSET;
-> +	if (id == TPS65911_REG_VDDCTRL)
-> +		volt = VDDCTRL_MIN_VOLT + (selector * VDDCTRL_OFFSET);
-> +	else
-> +		mult = (selector / VDD1_2_NUM_VOLTS) + 1;
-> +		volt = VDD1_2_MIN_VOLT +
-> +				(selector % VDD1_2_NUM_VOLTS) * VDD1_2_OFFSET;
+If we can get the patch committed to the Github ipheth repo, I'll
+package it in my Ubuntu PPA. You can then simply install ipheth-dkms
+which allow it to replace the in-tree module for testing...
 
-This doesn't tie in with the equivalent change in list_voltage() since
-you're testing for a different regulator (but it looks OK from a quick
-scan I *think*).
+I unfortunately cannot test either, since I no longer have an iPhone.
 
-> +	if (tps65910_chip_id(tps65910) == TPS65910) {
-> +		pmic->get_ctrl_reg = &tps65910_get_ctrl_register;
-> +		info = tps65910_regs;
-> +	} else if (tps65910_chip_id(tps65910) == TPS65911) {
-> +		pmic->get_ctrl_reg = &tps65911_get_ctrl_register;
-> +		info = tps65911_regs;
-> +	} else {
-> +		pr_err("Invalid tps chip version\n");
-> +		return -ENODEV;
-> +	}
-
-switch statement.
+Paul.
