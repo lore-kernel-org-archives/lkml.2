@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab1ECXJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:09:05 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48532 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab1ECXJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:09:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=dNtUwD3xgKmbeXUGgXtiFod8+E7RS43uf65VC+4coO0gt4Cxq7WfDWJTGozXfWIlnv
-         txyeAeNwwNjrvk/ok7Lg==
-MIME-Version: 1.0
-In-Reply-To: <1304463276.25414.2420.camel@gandalf.stny.rr.com>
-References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
- <1304124773-24935-1-git-send-email-vnagarnaik@google.com> <20110503131820.GB23498@redhat.com>
- <BANLkTinqHNCzcZmQL6M-pCszTmPO=-X8yw@mail.gmail.com> <BANLkTik4N_cWuw2Vq65UX5jCW+AccQHAHw@mail.gmail.com>
- <1304463276.25414.2420.camel@gandalf.stny.rr.com>
-From: David Sharp <dhsharp@google.com>
-Date: Tue, 3 May 2011 16:08:39 -0700
-Message-ID: <BANLkTik9yi8KdA33c1y2euegXYutQYWpaA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86: Change trap definitions to enumerated values
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Aditya Kali <adityakali@google.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1754530Ab1ECXOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:14:50 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:53935 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754331Ab1ECXOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:14:47 -0400
+Message-Id: <20110503231023.968960757@efficios.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 03 May 2011 19:10:23 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [RFC patch 00/32] TRACE_EVENT: cleanup for code-size reduction (v2)
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:24 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, these two patches were one patch originally, and we broke it up
-before sending it to you, but we made a couple mistakes:
+Hi,
 
-- missed that there were still tracepoints in this patch (it's a long,
-repetitive patch).
-- over-estimated the resistance to this patch, and under-estimated
-resistance to the tracepoint patch, so put the tracepoint patch first.
+I implemented the TRACE_EVENT macros as arrays of fields and arrays of
+events in LTTng, and realised that it could benefit Ftrace too by
+cutting down its code size. As I know that code size footprint is an
+issue Steven has been wanting to tackle for a while, I am sending this
+"semicolon removal" patchset, which is a prerequisite to be able to
+generate arrays of events.
 
-We're learning...
+* Changelog since v1
+  - Removed all ifdefs around declarations (it is now _only_ a semicolon
+    removal patchset).
 
-On Tue, May 3, 2011 at 3:54 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-05-03 at 15:41 -0700, Michael Rubin wrote:
->> On Tue, May 3, 2011 at 12:00 PM, Vaibhav Nagarnaik
->> <vnagarnaik@google.com> wrote:
->> > Would it make better sense to separate this patch into 2 patches, the first
->> > one replacing the numbers to enums and the second one adding the tracepoints?
->>
->> Yes please do that.
->> Each patch should stand on its own with one simple purpose if possible.
->
-> Agreed. Don't break up patches just because of size, but instead with
-> purpose. Usually this breaks up large patches as you want to build up
-> something, piece by piece, where each piece has a specific, easy to
-> understand goal.
->
-> This is actually what is taking me so long to get my ftrace rewrite out.
-> Not the actual work, but coming up with a way to break up that work in
-> logical steps, that makes it easy to understand and review.
->
-> -- Steve
->
->
->
+The main difference between the approaches Ftrace and LTTng have taken
+is that Ftrace creates a "ftrace_define_fields_##call" function for each
+event which calls trace_define_field for each field of each event. In
+LTTng, I did the following (code snippet from [1]):
+
+struct lttng_event_field {
+        const char *name;
+        const struct lttng_type type;
+};
+struct lttng_event_desc {
+        const struct lttng_event_field *fields;
+        const char *name;
+        unsigned int nr_fields;
+};
+#undef DEFINE_EVENT
+#define DEFINE_EVENT(_template, _name, _proto, _args)                          \
+                {                                                              \
+                        .fields = __event_fields___##_template,                \
+                        .name = #_name,                                        \
+                        .nr_fields = ARRAY_SIZE(__event_fields___##_template), \
+                },
+#define TP_ID1(_token, _system) _token##_system
+#define TP_ID(_token, _system)  TP_ID1(_token, _system)
+
+static const struct lttng_event_desc TP_ID(__event_desc___, TRACE_SYSTEM)[] = {
+#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+};
+And for creation of __event_fields___##_template, which allows to keep
+all fields in another array (which should be defined in a phase prior to
+the event array definition), I did:
+
+#undef __field
+#define __field(_type, _item)                                   \
+        { .name = #_item, .type = { .atype = atype_integer, .name = #_type} },
+(similar for __field_ext, __array, __dynamic_array, __string)
+
+#undef TP_STRUCT__entry
+#define TP_STRUCT__entry(args...) args  /* Only one used in this phase */
+#undef DECLARE_EVENT_CLASS
+#define DECLARE_EVENT_CLASS(_name, _proto, _args, _tstruct, _assign, _print) \
+        static const struct lttng_event_field __event_fields___##_name[] = { \
+                _tstruct \
+        };
+For the declaration of struct lttng_type, which contains the field type
+information in a union, see [2].
+
+Best regards,
+
+Mathieu
+
+[1] http://git.lttng.org/?p=lttng-modules.git;a=blob;f=probes/lttng-events.h;h=a05c29d56771b89807ffef035b7cd6df34a0b97f;hb=HEAD
+[2] http://git.lttng.org/?p=lttng-modules.git;a=blob;f=probes/lttng-types.h;h=0192bffaf2f321f446f71a13901e2ab09fd69663;hb=HEAD
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
