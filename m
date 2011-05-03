@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab1ECJkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 05:40:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36753 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab1ECJkc (ORCPT
+	id S1752234Ab1ECJmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:42:19 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50523 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751406Ab1ECJmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 05:40:32 -0400
-Message-ID: <4DBFCD88.6020900@sieker.io>
-Date: Tue, 03 May 2011 11:40:24 +0200
-From: "Adi J. Sieker" <adi@core.adi.io>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oliver@neukum.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-input@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-References: <Pine.LNX.4.44L0.1105021826040.8810-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105021826040.8810-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 3 May 2011 05:42:18 -0400
+Date: Tue, 3 May 2011 10:42:58 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jan Kara <jack@suse.cz>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Allow setting of number of raw devices as a module parameter
+Message-ID: <20110503104258.5a808b9d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110502192256.GL4556@quack.suse.cz>
+References: <1304029469-19672-1-git-send-email-jack@suse.cz>
+	<20110429162817.2eb26efb.akpm@linux-foundation.org>
+	<20110430112937.06024368@lxorguk.ukuu.org.uk>
+	<20110430153452.GA21439@suse.de>
+	<20110430164141.55d0ef0a@lxorguk.ukuu.org.uk>
+	<20110502192256.GL4556@quack.suse.cz>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/11 00:29, Alan Stern wrote:
-> On Mon, 2 May 2011, Adi J. Sieker wrote:
->
->>> Interestingly, the usbmon trace shows that the interrupt endpoint for
->>> interface 1 isn't being used by usbhid.  I don't know why, but it
->>> shouldn't make much difference for your purposes since that interface
->>> appears to be associated with the gaming interface.  But maybe I'm
->>> wrong and it is important somehow...
->>>
->>> The other noticeable thing is that the keyboard didn't accept the
->>> Set-Idle request for interface 1.
->>>
->>> You said before that the keyboard worked okay when driven by a guest
->>> Windows OS, right?  Can you collect an equivalent usbmon trace for
->>> that?  Comparing the two traces may be instructive.
->>
->> I hope this is what you meant. :)
->> Attached is a usbmon trace when I attach the keyboard to a VBox VM
->> running a Windows XP guest. I have no idea how to get a USB trace from
->> within Windows. The last block is when I pressed h twice in the Windows
->> XP guest.
->
-> This is perfect.  It shows that the H key is reported using the
-> interrupt endpoint on interface 1, which explains why it's not working
-> with usbhid.  It also shows that the rejected Set-Idle request doesn't
-> matter.
->
-Do you know of a way for me to tell the kernel/usbhid to use interface 1 
-and ignore interface 0?
+> So if people don't like vmalloc() (which I can understand), then I see no
+> other option than dynamically allocating struct raw_device_data.
 
-Thanks
-    Adi
+That gets rather more complicated.
+
+So yes I agree your question is a good one - for smaller sizes I'd rather
+see it from the kmalloc/static pool but for small sizes it also doesn't
+matter much anyway.
+
+Objection rescinded - I think you've proved convincingly that the only
+way to sort it properly is horribly complicated
