@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab1ECWOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:14:53 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:53821 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab1ECWOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:14:52 -0400
-Date: Wed, 4 May 2011 00:14:40 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, hjk@hansjkoch.de, arnd@arndb.de
-Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
-Message-ID: <20110503221440.GB2737@local>
-References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
- <20110503203412.GA2119@pengutronix.de>
+	id S1752986Ab1ECWW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:22:29 -0400
+Received: from mailfw02.zoner.fi ([84.34.147.249]:43108 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab1ECWW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 18:22:28 -0400
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] XZ decompressor: Fix decoding of empty LZMA2 streams
+Date: Wed, 4 May 2011 01:22:36 +0300
+User-Agent: KMail/1.13.7 (Linux/2.6.38-ARCH; KDE/4.6.2; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+References: <201105011938.42851.lasse.collin@tukaani.org> <20110503143620.c6b4d272.akpm@linux-foundation.org>
+In-Reply-To: <20110503143620.c6b4d272.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503203412.GA2119@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105040122.36545.lasse.collin@tukaani.org>
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 10:34:12PM +0200, Wolfram Sang wrote:
-> On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
-> > Adding OF binding to genirq.
-> > Version string is setup to the "devicetree".
+On 2011-05-04 Andrew Morton wrote:
+> Lasse Collin <lasse.collin@tukaani.org> wrote:
+> > From: Lasse Collin <lasse.collin@tukaani.org>
 > > 
-> > Compatible string is not setup for now but you can add your
-> > custom compatible string to uio_of_genirq_match structure.
+> > The old code considered valid empty LZMA2 streams to be corrupt.
+> > Note that a typical empty .xz file has no LZMA2 data at all,
+> > and thus most .xz files having no uncompressed data are handled
+> > correctly even without this fix.
 > > 
-> > For example with "vendor,device" compatible string:
-> > static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
-> > 	{ .compatible = "vendor,device", },
-> > 	{ /* empty for now */ },
-> > };
-> > 
-> > Signed-off-by: Michal Simek <monstr@monstr.eu>
+> > Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
 > 
-> [...]
+> The patch didn't have the cc:stable tag, but appears to be needed in
+> 2.6.38.x and perhaps earlier, yes?
 > 
-> > +		/* alloc uioinfo for one device */
-> > +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
-> 
-> kfree in remove?
+> It's commit 646032e3b05b32d3f20cb108a030593d9d792eb5 in mainline.
 
-Oh yes. Missed that one. It should probably look like the "bad0" case in probe().
+Thanks. It's good for 2.6.38.x. Older ones don't have XZ support.
 
-Thanks,
-Hans
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
