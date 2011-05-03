@@ -1,300 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1ECWw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:52:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28408 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab1ECWw2 (ORCPT
+	id S1753614Ab1ECWyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:54:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43480 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab1ECWym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:52:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=UQ3i/u3AodKNeTLiP2Bk5eMgE5qfo65ZAuxCifSZ+Z1mpXuhtS/1VH6P9vWUySELP
-	2LLtm9Vn1Gui1iS5Kq5qA==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jiaying Zhang <jiayingz@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Add trap entry/exit tracepoints
-Date: Tue,  3 May 2011 15:52:10 -0700
-Message-Id: <1304463130-1960-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Tue, 3 May 2011 18:54:42 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=7nOEvyL692QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=efay6nEPsLPRtCsF-aMA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2] x86: Change trap definitions to enumerated values
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, Don Zickus <dzickus@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Aditya Kali <adityakali@google.com>
+In-Reply-To: <BANLkTik4N_cWuw2Vq65UX5jCW+AccQHAHw@mail.gmail.com>
+References: <1303513438-26519-1-git-send-email-vnagarnaik@google.com>
+	 <1304124773-24935-1-git-send-email-vnagarnaik@google.com>
+	 <20110503131820.GB23498@redhat.com>
+	 <BANLkTinqHNCzcZmQL6M-pCszTmPO=-X8yw@mail.gmail.com>
+	 <BANLkTik4N_cWuw2Vq65UX5jCW+AccQHAHw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 03 May 2011 18:54:36 -0400
+Message-ID: <1304463276.25414.2420.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiaying Zhang <jiayingz@google.com>
+On Tue, 2011-05-03 at 15:41 -0700, Michael Rubin wrote:
+> On Tue, May 3, 2011 at 12:00 PM, Vaibhav Nagarnaik
+> <vnagarnaik@google.com> wrote:
+> > Would it make better sense to separate this patch into 2 patches, the first
+> > one replacing the numbers to enums and the second one adding the tracepoints?
+> 
+> Yes please do that.
+> Each patch should stand on its own with one simple purpose if possible.
 
-There are many ways that the system can move from user space to kernel
-space and back. Of those, syscalls and interrupts are traced in ftrace.
-Using traps is another way, but is not traced currently. Page faults,
-general protection faults and others provide analysis of how the system
-is behaving, who causes it and timing impact on the system performance
-and running processes.
+Agreed. Don't break up patches just because of size, but instead with
+purpose. Usually this breaks up large patches as you want to build up
+something, piece by piece, where each piece has a specific, easy to
+understand goal.
 
-The following patch adds the event definition for trap entry/exit and
-the instrumentation hooks for x86 platforms. Other platforms should be
-able to use these events as well once they add the corresponding
-instrumentation.
+This is actually what is taking me so long to get my ftrace rewrite out.
+Not the actual work, but coming up with a way to break up that work in
+logical steps, that makes it easy to understand and review.
 
-$ echo 1 > debug/tracing/events/trap/enable
-run gdb to genrate some trap events
-$ cat debug/tracing/trace
-          <...>-13619 [003]   917.726602: trap_entry: number=3
-          <...>-13619 [003]   917.726612: trap_exit: number=3
-          <...>-13619 [003]   917.747263: trap_entry: number=1
-          <...>-13619 [003]   917.747272: trap_exit: number=1
-          <...>-13619 [003]   917.747567: trap_entry: number=3
-          <...>-13619 [003]   917.747570: trap_exit: number=3
-          <...>-13619 [003]   917.748101: trap_entry: number=1
-          <...>-13619 [003]   917.748103: trap_exit: number=1
+-- Steve
 
-$ echo 1 > tracing_enabled; ~/trap pagefault; echo 0 > tracing_enabled
-$ cat trace | grep "trap-" | grep number=14 | head
-       trap-12528 [003]  1159.755792: trap_entry: number=14
-       trap-12528 [003]  1159.755801: trap_entry: number=14
-       trap-12528 [003]  1159.755804: trap_entry: number=14
-       trap-12528 [003]  1159.755807: trap_entry: number=14
-       trap-12528 [003]  1159.755810: trap_entry: number=14
-       trap-12528 [003]  1159.755817: trap_entry: number=14
-       trap-12528 [003]  1159.755819: trap_entry: number=14
-       trap-12528 [003]  1159.755821: trap_entry: number=14
-       trap-12528 [003]  1159.755824: trap_entry: number=14
-       trap-12528 [003]  1159.755826: trap_entry: number=14
-$ cat trace | grep "trap-" | grep number=7 | head
-       trap-12528 [003]  1159.756283: trap_entry: number=7
-       trap-12529 [003]  1159.757427: trap_entry: number=7
-       trap-12530 [003]  1159.758277: trap_entry: number=7
-       trap-12531 [003]  1159.759172: trap_entry: number=7
-       trap-12532 [003]  1159.768643: trap_entry: number=7
-       trap-12533 [003]  1159.778195: trap_entry: number=7
-       trap-15026 [001]  1557.877722: trap_entry: number=7
-       trap-15253 [001]  1621.395067: trap_entry: number=7
-
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- arch/x86/kernel/traps.c     |   19 ++++++++++++++++++
- arch/x86/mm/fault.c         |   13 ++++++++++-
- include/trace/events/trap.h |   44 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 74 insertions(+), 2 deletions(-)
- create mode 100644 include/trace/events/trap.h
-
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b3efe9f..fbfd787 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -33,6 +33,9 @@
- #include <linux/io.h>
- #include <trace/events/irq.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/trap.h>
-+
- #ifdef CONFIG_EISA
- #include <linux/ioport.h>
- #include <linux/eisa.h>
-@@ -123,6 +126,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- {
- 	struct task_struct *tsk = current;
- 
-+	trace_trap_entry(trapnr);
- #ifdef CONFIG_X86_32
- 	if (regs->flags & X86_VM_MASK) {
- 		/*
-@@ -169,6 +173,7 @@ trap_signal:
- 		force_sig_info(signr, info, tsk);
- 	else
- 		force_sig(signr, tsk);
-+	trace_trap_exit(trapnr);
- 	return;
- 
- kernel_trap:
-@@ -177,6 +182,7 @@ kernel_trap:
- 		tsk->thread.trap_no = trapnr;
- 		die(str, regs, error_code);
- 	}
-+	trace_trap_exit(trapnr);
- 	return;
- 
- #ifdef CONFIG_X86_32
-@@ -184,6 +190,7 @@ vm86_trap:
- 	if (handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 						error_code, trapnr))
- 		goto trap_signal;
-+	trace_trap_exit(trapnr);
- 	return;
- #endif
- }
-@@ -288,7 +295,9 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		printk("\n");
- 	}
- 
-+	trace_trap_entry(tsk->thread.trap_no);
- 	force_sig(SIGSEGV, tsk);
-+	trace_trap_exit(tsk->thread.trap_no);
- 	return;
- 
- #ifdef CONFIG_X86_32
-@@ -575,6 +584,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 							SIGTRAP) == NOTIFY_STOP)
- 		return;
- 
-+	trace_trap_entry(tsk->thread.trap_no);
- 	/* It's safe to allow irq's after DR6 has been saved */
- 	preempt_conditional_sti(regs);
- 
-@@ -582,6 +592,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, INTR_DEBUG);
- 		preempt_conditional_cli(regs);
-+		trace_trap_exit(tsk->thread.trap_no);
- 		return;
- 	}
- 
-@@ -602,6 +613,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 		send_sigtrap(tsk, regs, error_code, si_code);
- 	preempt_conditional_cli(regs);
- 
-+	trace_trap_exit(tsk->thread.trap_no);
- 	return;
- }
- 
-@@ -691,7 +703,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 		 */
- 		return;		/* Spurious trap, no error */
- 	}
-+	trace_trap_entry(task->thread.trap_no);
- 	force_sig_info(SIGFPE, &info, task);
-+	trace_trap_exit(task->thread.trap_no);
- }
- 
- dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
-@@ -712,11 +726,13 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- dotraplinkage void
- do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(INTR_SPURIOUS);
- 	conditional_sti(regs);
- #if 0
- 	/* No need to warn about this any longer. */
- 	printk(KERN_INFO "Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
- #endif
-+	trace_trap_exit(INTR_SPURIOUS);
- }
- 
- asmlinkage void __attribute__((weak)) smp_thermal_interrupt(void)
-@@ -788,6 +804,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
- dotraplinkage void __kprobes
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
-+	trace_trap_entry(INTR_NO_DEV);
- #ifdef CONFIG_MATH_EMULATION
- 	if (read_cr0() & X86_CR0_EM) {
- 		struct math_emu_info info = { };
-@@ -796,6 +813,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- 
- 		info.regs = regs;
- 		math_emulate(&info);
-+		trace_trap_exit(INTR_NO_DEV);
- 		return;
- 	}
- #endif
-@@ -803,6 +821,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- #ifdef CONFIG_X86_32
- 	conditional_sti(regs);
- #endif
-+	trace_trap_exit(INTR_NO_DEV);
- }
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 20e3f87..507f5af 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -11,6 +11,7 @@
- #include <linux/kprobes.h>		/* __kprobes, ...		*/
- #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
- #include <linux/perf_event.h>		/* perf_sw_event		*/
-+#include <trace/events/trap.h>		/* trap trace events		*/
- #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
- 
- #include <asm/traps.h>			/* dotraplinkage, ...		*/
-@@ -955,8 +956,8 @@ static int fault_in_kernel_space(unsigned long address)
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-  */
--dotraplinkage void __kprobes
--do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+static __always_inline void
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -1164,3 +1165,11 @@ good_area:
- 
- 	up_read(&mm->mmap_sem);
- }
-+
-+dotraplinkage void __kprobes
-+do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	trace_trap_entry(INTR_PAGE_FAULT);
-+	__do_page_fault(regs, error_code);
-+	trace_trap_exit(INTR_PAGE_FAULT);
-+}
-diff --git a/include/trace/events/trap.h b/include/trace/events/trap.h
-new file mode 100644
-index 0000000..cb38eb6
---- /dev/null
-+++ b/include/trace/events/trap.h
-@@ -0,0 +1,44 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM trap
-+
-+#if !defined(_TRACE_TRAP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_TRAP_H
-+
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(trap,
-+
-+	TP_PROTO(int id),
-+
-+	TP_ARGS(id),
-+
-+	TP_STRUCT__entry(
-+		__field(	int,	id	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->id = id;
-+	),
-+
-+	TP_printk("number=%d", __entry->id)
-+);
-+
-+DEFINE_EVENT(trap, trap_entry,
-+
-+	TP_PROTO(int id),
-+
-+	TP_ARGS(id)
-+);
-+
-+DEFINE_EVENT(trap, trap_exit,
-+
-+	TP_PROTO(int id),
-+
-+	TP_ARGS(id)
-+);
-+
-+#endif /* _TRACE_TRAP_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
--- 
-1.7.3.1
 
