@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1ECOtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:49:15 -0400
+	id S1753542Ab1ECOtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:49:23 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48835 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab1ECOtM (ORCPT
+	with ESMTP id S1751507Ab1ECOtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:49:12 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=3rvgeqzMqd0A:10 a=OMsNZOe-yqsA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=YYF7fsvRAAAA:8 a=yQdBAQUQAAAA:8 a=n9Sqmae0AAAA:8 a=VgzszB2dlJsFmcEpH2QA:9 a=eRgJmOctPgurKlUD5f8A:7 a=CjuIK1q_8ugA:10 a=oX6Vh0_dJjoA:10 a=IcxpeKGZWnEA:10 a=z0jh1eRXt18A:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+	Tue, 3 May 2011 10:49:17 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=3rvgeqzMqd0A:10 a=v9OFX68Jj_MA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=YYF7fsvRAAAA:8 a=yQdBAQUQAAAA:8 a=n9Sqmae0AAAA:8 a=hQ98lrAFXWmLxfHpkAwA:9 a=iJ5-XIWo_YE_iwSwAR0A:7 a=CjuIK1q_8ugA:10 a=oX6Vh0_dJjoA:10 a=IcxpeKGZWnEA:10 a=z0jh1eRXt18A:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 65.28.92.85
-Date: Tue, 03 May 2011 09:49:06 -0500
+Date: Tue, 03 May 2011 09:49:16 -0500
 From: Larry Finger <Larry.Finger@lwfinger.net>
 To: John W Linville <linville@tuxdriver.com>
 Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
         chaoming_li@realsil.com.cn
-Subject: [PATCH 09/12] rtlwifi: rtl8192se: Merge main (sw) routines
-Message-ID: <4dc015e2.2c371jaUYqHgtXIE%Larry.Finger@lwfinger.net>
+Subject: [PATCH 10/12] rtlwifi: rtl8192se: Merge table routines
+Message-ID: <4dc015ec.sEjEq2aH+pai/CS7%Larry.Finger@lwfinger.net>
 User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,17 +27,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chaoming Li <chaoming_li@realsil.com.cn>
 
-Merge routines sw.c and sw.h for RTL8192SE.
+Merge routines table.c and table.h for RTL8192SE.
 
 Signed-off-by: Chaoming_Li <chaoming_li@realsil.com.cn>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 ---
 
-Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/table.c
 ===================================================================
 --- /dev/null
-+++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-@@ -0,0 +1,421 @@
++++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/table.c
+@@ -0,0 +1,634 @@
 +/******************************************************************************
 + *
 + * Copyright(c) 2009-2010  Realtek Corporation.
@@ -65,412 +65,620 @@ Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
 + *
 + * Larry Finger <Larry.Finger@lwfinger.net>
 + *
++ * Created on  2010/ 5/18,  1:41
 + *****************************************************************************/
 +
-+#include <linux/vmalloc.h>
++#include "table.h"
 +
-+#include "../wifi.h"
-+#include "../core.h"
-+#include "../pci.h"
-+#include "reg.h"
-+#include "def.h"
-+#include "phy.h"
-+#include "dm.h"
-+#include "fw.h"
-+#include "hw.h"
-+#include "sw.h"
-+#include "trx.h"
-+#include "led.h"
-+
-+static void rtl92s_init_aspm_vars(struct ieee80211_hw *hw)
-+{
-+	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
-+
-+	/*close ASPM for AMD defaultly */
-+	rtlpci->const_amdpci_aspm = 0;
-+
-+	/*
-+	 * ASPM PS mode.
-+	 * 0 - Disable ASPM,
-+	 * 1 - Enable ASPM without Clock Req,
-+	 * 2 - Enable ASPM with Clock Req,
-+	 * 3 - Alwyas Enable ASPM with Clock Req,
-+	 * 4 - Always Enable ASPM without Clock Req.
-+	 * set defult to RTL8192CE:3 RTL8192E:2
-+	 * */
-+	rtlpci->const_pci_aspm = 2;
-+
-+	/*Setting for PCI-E device */
-+	rtlpci->const_devicepci_aspm_setting = 0x03;
-+
-+	/*Setting for PCI-E bridge */
-+	rtlpci->const_hostpci_aspm_setting = 0x02;
-+
-+	/*
-+	 * In Hw/Sw Radio Off situation.
-+	 * 0 - Default,
-+	 * 1 - From ASPM setting without low Mac Pwr,
-+	 * 2 - From ASPM setting with low Mac Pwr,
-+	 * 3 - Bus D3
-+	 * set default to RTL8192CE:0 RTL8192SE:2
-+	 */
-+	rtlpci->const_hwsw_rfoff_d3 = 2;
-+
-+	/*
-+	 * This setting works for those device with
-+	 * backdoor ASPM setting such as EPHY setting.
-+	 * 0 - Not support ASPM,
-+	 * 1 - Support ASPM,
-+	 * 2 - According to chipset.
-+	 */
-+	rtlpci->const_support_pciaspm = 2;
-+}
-+
-+static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
-+	const struct firmware *firmware;
-+	struct rt_firmware *pfirmware = NULL;
-+	int err = 0;
-+	u16 earlyrxthreshold = 7;
-+
-+	rtlpriv->dm.dm_initialgain_enable = 1;
-+	rtlpriv->dm.dm_flag = 0;
-+	rtlpriv->dm.disable_framebursting = 0;
-+	rtlpriv->dm.thermalvalue = 0;
-+	rtlpriv->dm.useramask = true;
-+
-+	/* compatible 5G band 91se just 2.4G band & smsp */
-+	rtlpriv->rtlhal.current_bandtype = BAND_ON_2_4G;
-+	rtlpriv->rtlhal.bandset = BAND_ON_2_4G;
-+	rtlpriv->rtlhal.macphymode = SINGLEMAC_SINGLEPHY;
-+
-+	rtlpci->transmit_config = 0;
-+
-+	rtlpci->receive_config =
-+			RCR_APPFCS |
-+			RCR_APWRMGT |
-+			/*RCR_ADD3 |*/
-+			RCR_AMF	|
-+			RCR_ADF |
-+			RCR_APP_MIC |
-+			RCR_APP_ICV |
-+			RCR_AICV |
-+			/* Accept ICV error, CRC32 Error */
-+			RCR_ACRC32 |
-+			RCR_AB |
-+			/* Accept Broadcast, Multicast */
-+			RCR_AM	|
-+			/* Accept Physical match */
-+			RCR_APM |
-+			/* Accept Destination Address packets */
-+			/*RCR_AAP |*/
-+			RCR_APP_PHYST_STAFF |
-+			/* Accept PHY status */
-+			RCR_APP_PHYST_RXFF |
-+			(earlyrxthreshold << RCR_FIFO_OFFSET);
-+
-+	rtlpci->irq_mask[0] = (u32)
-+			(IMR_ROK |
-+			IMR_VODOK |
-+			IMR_VIDOK |
-+			IMR_BEDOK |
-+			IMR_BKDOK |
-+			IMR_HCCADOK |
-+			IMR_MGNTDOK |
-+			IMR_COMDOK |
-+			IMR_HIGHDOK |
-+			IMR_BDOK |
-+			IMR_RXCMDOK |
-+			/*IMR_TIMEOUT0 |*/
-+			IMR_RDU |
-+			IMR_RXFOVW	|
-+			IMR_BCNINT
-+			/*| IMR_TXFOVW*/
-+			/*| IMR_TBDOK |
-+			IMR_TBDER*/);
-+
-+	rtlpci->irq_mask[1] = (u32) 0;
-+
-+	rtlpci->shortretry_limit = 0x30;
-+	rtlpci->longretry_limit = 0x30;
-+
-+	rtlpci->first_init = true;
-+
-+	/* for LPS & IPS */
-+	rtlpriv->psc.inactiveps = rtlpriv->cfg->mod_params->inactiveps;
-+	rtlpriv->psc.swctrl_lps = rtlpriv->cfg->mod_params->swctrl_lps;
-+	rtlpriv->psc.fwctrl_lps = rtlpriv->cfg->mod_params->fwctrl_lps;
-+	rtlpriv->psc.reg_fwctrl_lps = 3;
-+	rtlpriv->psc.reg_max_lps_awakeintvl = 5;
-+	/* for ASPM, you can close aspm through
-+	 * set const_support_pciaspm = 0 */
-+	rtl92s_init_aspm_vars(hw);
-+
-+	if (rtlpriv->psc.reg_fwctrl_lps == 1)
-+		rtlpriv->psc.fwctrl_psmode = FW_PS_MIN_MODE;
-+	else if (rtlpriv->psc.reg_fwctrl_lps == 2)
-+		rtlpriv->psc.fwctrl_psmode = FW_PS_MAX_MODE;
-+	else if (rtlpriv->psc.reg_fwctrl_lps == 3)
-+		rtlpriv->psc.fwctrl_psmode = FW_PS_DTIM_MODE;
-+
-+	/* for firmware buf */
-+	rtlpriv->rtlhal.pfirmware = vzalloc(sizeof(struct rt_firmware));
-+	if (!rtlpriv->rtlhal.pfirmware) {
-+		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
-+			 ("Can't alloc buffer for fw.\n"));
-+		return 1;
-+	}
-+
-+	/* request fw */
-+	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
-+			rtlpriv->io.dev);
-+	if (err) {
-+		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
-+			 ("Failed to request firmware!\n"));
-+		return 1;
-+	}
-+	if (firmware->size > sizeof(struct rt_firmware)) {
-+		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
-+			 ("Firmware is too big!\n"));
-+		release_firmware(firmware);
-+		return 1;
-+	}
-+
-+	pfirmware = (struct rt_firmware *)rtlpriv->rtlhal.pfirmware;
-+	memcpy(pfirmware->sz_fw_tmpbuffer, firmware->data, firmware->size);
-+	pfirmware->sz_fw_tmpbufferlen = firmware->size;
-+	release_firmware(firmware);
-+
-+	return err;
-+}
-+
-+static void rtl92s_deinit_sw_vars(struct ieee80211_hw *hw)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
-+	if (rtlpriv->rtlhal.pfirmware) {
-+		vfree(rtlpriv->rtlhal.pfirmware);
-+		rtlpriv->rtlhal.pfirmware = NULL;
-+	}
-+}
-+
-+static struct rtl_hal_ops rtl8192se_hal_ops = {
-+	.init_sw_vars = rtl92s_init_sw_vars,
-+	.deinit_sw_vars = rtl92s_deinit_sw_vars,
-+	.read_eeprom_info = rtl92se_read_eeprom_info,
-+	.interrupt_recognized = rtl92se_interrupt_recognized,
-+	.hw_init = rtl92se_hw_init,
-+	.hw_disable = rtl92se_card_disable,
-+	.hw_suspend = rtl92se_suspend,
-+	.hw_resume = rtl92se_resume,
-+	.enable_interrupt = rtl92se_enable_interrupt,
-+	.disable_interrupt = rtl92se_disable_interrupt,
-+	.set_network_type = rtl92se_set_network_type,
-+	.set_chk_bssid = rtl92se_set_check_bssid,
-+	.set_qos = rtl92se_set_qos,
-+	.set_bcn_reg = rtl92se_set_beacon_related_registers,
-+	.set_bcn_intv = rtl92se_set_beacon_interval,
-+	.update_interrupt_mask = rtl92se_update_interrupt_mask,
-+	.get_hw_reg = rtl92se_get_hw_reg,
-+	.set_hw_reg = rtl92se_set_hw_reg,
-+	.update_rate_tbl = rtl92se_update_hal_rate_tbl,
-+	.fill_tx_desc = rtl92se_tx_fill_desc,
-+	.fill_tx_cmddesc = rtl92se_tx_fill_cmddesc,
-+	.query_rx_desc = rtl92se_rx_query_desc,
-+	.set_channel_access = rtl92se_update_channel_access_setting,
-+	.radio_onoff_checking = rtl92se_gpio_radio_on_off_checking,
-+	.set_bw_mode = rtl92s_phy_set_bw_mode,
-+	.switch_channel = rtl92s_phy_sw_chnl,
-+	.dm_watchdog = rtl92s_dm_watchdog,
-+	.scan_operation_backup = rtl92s_phy_scan_operation_backup,
-+	.set_rf_power_state = rtl92s_phy_set_rf_power_state,
-+	.led_control = rtl92se_led_control,
-+	.set_desc = rtl92se_set_desc,
-+	.get_desc = rtl92se_get_desc,
-+	.tx_polling = rtl92se_tx_polling,
-+	.enable_hw_sec = rtl92se_enable_hw_security_config,
-+	.set_key = rtl92se_set_key,
-+	.init_sw_leds = rtl92se_init_sw_leds,
-+	.get_bbreg = rtl92s_phy_query_bb_reg,
-+	.set_bbreg = rtl92s_phy_set_bb_reg,
-+	.get_rfreg = rtl92s_phy_query_rf_reg,
-+	.set_rfreg = rtl92s_phy_set_rf_reg,
++u32 rtl8192sephy_reg_2t2rarray[PHY_REG_2T2RARRAYLENGTH] = {
++	0x01c, 0x07000000,
++	0x800, 0x00040000,
++	0x804, 0x00008003,
++	0x808, 0x0000fc00,
++	0x80c, 0x0000000a,
++	0x810, 0x10005088,
++	0x814, 0x020c3d10,
++	0x818, 0x00200185,
++	0x81c, 0x00000000,
++	0x820, 0x01000000,
++	0x824, 0x00390004,
++	0x828, 0x01000000,
++	0x82c, 0x00390004,
++	0x830, 0x00000004,
++	0x834, 0x00690200,
++	0x838, 0x00000004,
++	0x83c, 0x00690200,
++	0x840, 0x00010000,
++	0x844, 0x00010000,
++	0x848, 0x00000000,
++	0x84c, 0x00000000,
++	0x850, 0x00000000,
++	0x854, 0x00000000,
++	0x858, 0x48484848,
++	0x85c, 0x65a965a9,
++	0x860, 0x0f7f0130,
++	0x864, 0x0f7f0130,
++	0x868, 0x0f7f0130,
++	0x86c, 0x0f7f0130,
++	0x870, 0x03000700,
++	0x874, 0x03000300,
++	0x878, 0x00020002,
++	0x87c, 0x004f0201,
++	0x880, 0xa8300ac1,
++	0x884, 0x00000058,
++	0x888, 0x00000008,
++	0x88c, 0x00000004,
++	0x890, 0x00000000,
++	0x894, 0xfffffffe,
++	0x898, 0x40302010,
++	0x89c, 0x00706050,
++	0x8b0, 0x00000000,
++	0x8e0, 0x00000000,
++	0x8e4, 0x00000000,
++	0xe00, 0x30333333,
++	0xe04, 0x2a2d2e2f,
++	0xe08, 0x00003232,
++	0xe10, 0x30333333,
++	0xe14, 0x2a2d2e2f,
++	0xe18, 0x30333333,
++	0xe1c, 0x2a2d2e2f,
++	0xe30, 0x01007c00,
++	0xe34, 0x01004800,
++	0xe38, 0x1000dc1f,
++	0xe3c, 0x10008c1f,
++	0xe40, 0x021400a0,
++	0xe44, 0x281600a0,
++	0xe48, 0xf8000001,
++	0xe4c, 0x00002910,
++	0xe50, 0x01007c00,
++	0xe54, 0x01004800,
++	0xe58, 0x1000dc1f,
++	0xe5c, 0x10008c1f,
++	0xe60, 0x021400a0,
++	0xe64, 0x281600a0,
++	0xe6c, 0x00002910,
++	0xe70, 0x31ed92fb,
++	0xe74, 0x361536fb,
++	0xe78, 0x361536fb,
++	0xe7c, 0x361536fb,
++	0xe80, 0x361536fb,
++	0xe84, 0x000d92fb,
++	0xe88, 0x000d92fb,
++	0xe8c, 0x31ed92fb,
++	0xed0, 0x31ed92fb,
++	0xed4, 0x31ed92fb,
++	0xed8, 0x000d92fb,
++	0xedc, 0x000d92fb,
++	0xee0, 0x000d92fb,
++	0xee4, 0x015e5448,
++	0xee8, 0x21555448,
++	0x900, 0x00000000,
++	0x904, 0x00000023,
++	0x908, 0x00000000,
++	0x90c, 0x01121313,
++	0xa00, 0x00d047c8,
++	0xa04, 0x80ff0008,
++	0xa08, 0x8ccd8300,
++	0xa0c, 0x2e62120f,
++	0xa10, 0x9500bb78,
++	0xa14, 0x11144028,
++	0xa18, 0x00881117,
++	0xa1c, 0x89140f00,
++	0xa20, 0x1a1b0000,
++	0xa24, 0x090e1317,
++	0xa28, 0x00000204,
++	0xa2c, 0x10d30000,
++	0xc00, 0x40071d40,
++	0xc04, 0x00a05633,
++	0xc08, 0x000000e4,
++	0xc0c, 0x6c6c6c6c,
++	0xc10, 0x08800000,
++	0xc14, 0x40000100,
++	0xc18, 0x08000000,
++	0xc1c, 0x40000100,
++	0xc20, 0x08000000,
++	0xc24, 0x40000100,
++	0xc28, 0x08000000,
++	0xc2c, 0x40000100,
++	0xc30, 0x6de9ac44,
++	0xc34, 0x469652cf,
++	0xc38, 0x49795994,
++	0xc3c, 0x0a979764,
++	0xc40, 0x1f7c403f,
++	0xc44, 0x000100b7,
++	0xc48, 0xec020000,
++	0xc4c, 0x007f037f,
++	0xc50, 0x69543420,
++	0xc54, 0x433c0094,
++	0xc58, 0x69543420,
++	0xc5c, 0x433c0094,
++	0xc60, 0x69543420,
++	0xc64, 0x433c0094,
++	0xc68, 0x69543420,
++	0xc6c, 0x433c0094,
++	0xc70, 0x2c7f000d,
++	0xc74, 0x0186155b,
++	0xc78, 0x0000001f,
++	0xc7c, 0x00b91612,
++	0xc80, 0x40000100,
++	0xc84, 0x20f60000,
++	0xc88, 0x20000080,
++	0xc8c, 0x20200000,
++	0xc90, 0x40000100,
++	0xc94, 0x00000000,
++	0xc98, 0x40000100,
++	0xc9c, 0x00000000,
++	0xca0, 0x00492492,
++	0xca4, 0x00000000,
++	0xca8, 0x00000000,
++	0xcac, 0x00000000,
++	0xcb0, 0x00000000,
++	0xcb4, 0x00000000,
++	0xcb8, 0x00000000,
++	0xcbc, 0x28000000,
++	0xcc0, 0x00000000,
++	0xcc4, 0x00000000,
++	0xcc8, 0x00000000,
++	0xccc, 0x00000000,
++	0xcd0, 0x00000000,
++	0xcd4, 0x00000000,
++	0xcd8, 0x64b22427,
++	0xcdc, 0x00766932,
++	0xce0, 0x00222222,
++	0xce4, 0x00000000,
++	0xce8, 0x37644302,
++	0xcec, 0x2f97d40c,
++	0xd00, 0x00000750,
++	0xd04, 0x00000403,
++	0xd08, 0x0000907f,
++	0xd0c, 0x00000001,
++	0xd10, 0xa0633333,
++	0xd14, 0x33333c63,
++	0xd18, 0x6a8f5b6b,
++	0xd1c, 0x00000000,
++	0xd20, 0x00000000,
++	0xd24, 0x00000000,
++	0xd28, 0x00000000,
++	0xd2c, 0xcc979975,
++	0xd30, 0x00000000,
++	0xd34, 0x00000000,
++	0xd38, 0x00000000,
++	0xd3c, 0x00027293,
++	0xd40, 0x00000000,
++	0xd44, 0x00000000,
++	0xd48, 0x00000000,
++	0xd50, 0x6437140a,
++	0xd54, 0x024dbd02,
++	0xd58, 0x00000000,
++	0xd5c, 0x30032064,
++	0xd60, 0x4653de68,
++	0xd64, 0x00518a3c,
++	0xd68, 0x00002101,
++	0xf14, 0x00000003,
++	0xf4c, 0x00000000,
++	0xf00, 0x00000300,
 +};
 +
-+static struct rtl_mod_params rtl92se_mod_params = {
-+	.sw_crypto = false,
-+	.inactiveps = true,
-+	.swctrl_lps = true,
-+	.fwctrl_lps = false,
++u32 rtl8192sephy_changeto_1t1rarray[PHY_CHANGETO_1T1RARRAYLENGTH] = {
++	0x844, 0xffffffff, 0x00010000,
++	0x804, 0x0000000f, 0x00000001,
++	0x824, 0x00f0000f, 0x00300004,
++	0x82c, 0x00f0000f, 0x00100002,
++	0x870, 0x04000000, 0x00000001,
++	0x864, 0x00000400, 0x00000000,
++	0x878, 0x000f000f, 0x00000002,
++	0xe74, 0x0f000000, 0x00000002,
++	0xe78, 0x0f000000, 0x00000002,
++	0xe7c, 0x0f000000, 0x00000002,
++	0xe80, 0x0f000000, 0x00000002,
++	0x90c, 0x000000ff, 0x00000011,
++	0xc04, 0x000000ff, 0x00000011,
++	0xd04, 0x0000000f, 0x00000001,
++	0x1f4, 0xffff0000, 0x00007777,
++	0x234, 0xf8000000, 0x0000000a,
 +};
 +
-+/* Because memory R/W bursting will cause system hang/crash
-+ * for 92se, so we don't read back after every write action */
-+static struct rtl_hal_cfg rtl92se_hal_cfg = {
-+	.bar_id = 1,
-+	.write_readback = false,
-+	.name = "rtl92s_pci",
-+	.fw_name = "rtlwifi/rtl8192sefw.bin",
-+	.ops = &rtl8192se_hal_ops,
-+	.mod_params = &rtl92se_mod_params,
-+
-+	.maps[SYS_ISO_CTRL] = REG_SYS_ISO_CTRL,
-+	.maps[SYS_FUNC_EN] = REG_SYS_FUNC_EN,
-+	.maps[SYS_CLK] = SYS_CLKR,
-+	.maps[MAC_RCR_AM] = RCR_AM,
-+	.maps[MAC_RCR_AB] = RCR_AB,
-+	.maps[MAC_RCR_ACRC32] = RCR_ACRC32,
-+	.maps[MAC_RCR_ACF] = RCR_ACF,
-+	.maps[MAC_RCR_AAP] = RCR_AAP,
-+
-+	.maps[EFUSE_TEST] = REG_EFUSE_TEST,
-+	.maps[EFUSE_CTRL] = REG_EFUSE_CTRL,
-+	.maps[EFUSE_CLK] = REG_EFUSE_CLK,
-+	.maps[EFUSE_CLK_CTRL] = REG_EFUSE_CTRL,
-+	.maps[EFUSE_PWC_EV12V] = 0, /* nouse for 8192se */
-+	.maps[EFUSE_FEN_ELDR] = 0, /* nouse for 8192se */
-+	.maps[EFUSE_LOADER_CLK_EN] = 0,/* nouse for 8192se */
-+	.maps[EFUSE_ANA8M] = EFUSE_ANA8M,
-+	.maps[EFUSE_HWSET_MAX_SIZE] = HWSET_MAX_SIZE_92S,
-+	.maps[EFUSE_MAX_SECTION_MAP] = EFUSE_MAX_SECTION,
-+	.maps[EFUSE_REAL_CONTENT_SIZE] = EFUSE_REAL_CONTENT_LEN,
-+
-+	.maps[RWCAM] = REG_RWCAM,
-+	.maps[WCAMI] = REG_WCAMI,
-+	.maps[RCAMO] = REG_RCAMO,
-+	.maps[CAMDBG] = REG_CAMDBG,
-+	.maps[SECR] = REG_SECR,
-+	.maps[SEC_CAM_NONE] = CAM_NONE,
-+	.maps[SEC_CAM_WEP40] = CAM_WEP40,
-+	.maps[SEC_CAM_TKIP] = CAM_TKIP,
-+	.maps[SEC_CAM_AES] = CAM_AES,
-+	.maps[SEC_CAM_WEP104] = CAM_WEP104,
-+
-+	.maps[RTL_IMR_BCNDMAINT6] = IMR_BCNDMAINT6,
-+	.maps[RTL_IMR_BCNDMAINT5] = IMR_BCNDMAINT5,
-+	.maps[RTL_IMR_BCNDMAINT4] = IMR_BCNDMAINT4,
-+	.maps[RTL_IMR_BCNDMAINT3] = IMR_BCNDMAINT3,
-+	.maps[RTL_IMR_BCNDMAINT2] = IMR_BCNDMAINT2,
-+	.maps[RTL_IMR_BCNDMAINT1] = IMR_BCNDMAINT1,
-+	.maps[RTL_IMR_BCNDOK8] = IMR_BCNDOK8,
-+	.maps[RTL_IMR_BCNDOK7] = IMR_BCNDOK7,
-+	.maps[RTL_IMR_BCNDOK6] = IMR_BCNDOK6,
-+	.maps[RTL_IMR_BCNDOK5] = IMR_BCNDOK5,
-+	.maps[RTL_IMR_BCNDOK4] = IMR_BCNDOK4,
-+	.maps[RTL_IMR_BCNDOK3] = IMR_BCNDOK3,
-+	.maps[RTL_IMR_BCNDOK2] = IMR_BCNDOK2,
-+	.maps[RTL_IMR_BCNDOK1] = IMR_BCNDOK1,
-+	.maps[RTL_IMR_TIMEOUT2] = IMR_TIMEOUT2,
-+	.maps[RTL_IMR_TIMEOUT1] = IMR_TIMEOUT1,
-+
-+	.maps[RTL_IMR_TXFOVW] = IMR_TXFOVW,
-+	.maps[RTL_IMR_PSTIMEOUT] = IMR_PSTIMEOUT,
-+	.maps[RTL_IMR_BcnInt] = IMR_BCNINT,
-+	.maps[RTL_IMR_RXFOVW] = IMR_RXFOVW,
-+	.maps[RTL_IMR_RDU] = IMR_RDU,
-+	.maps[RTL_IMR_ATIMEND] = IMR_ATIMEND,
-+	.maps[RTL_IMR_BDOK] = IMR_BDOK,
-+	.maps[RTL_IMR_MGNTDOK] = IMR_MGNTDOK,
-+	.maps[RTL_IMR_TBDER] = IMR_TBDER,
-+	.maps[RTL_IMR_HIGHDOK] = IMR_HIGHDOK,
-+	.maps[RTL_IMR_COMDOK] = IMR_COMDOK,
-+	.maps[RTL_IMR_TBDOK] = IMR_TBDOK,
-+	.maps[RTL_IMR_BKDOK] = IMR_BKDOK,
-+	.maps[RTL_IMR_BEDOK] = IMR_BEDOK,
-+	.maps[RTL_IMR_VIDOK] = IMR_VIDOK,
-+	.maps[RTL_IMR_VODOK] = IMR_VODOK,
-+	.maps[RTL_IMR_ROK] = IMR_ROK,
-+	.maps[RTL_IBSS_INT_MASKS] = (IMR_BCNINT | IMR_TBDOK | IMR_TBDER),
-+
-+	.maps[RTL_RC_CCK_RATE1M] = DESC92S_RATE1M,
-+	.maps[RTL_RC_CCK_RATE2M] = DESC92S_RATE2M,
-+	.maps[RTL_RC_CCK_RATE5_5M] = DESC92S_RATE5_5M,
-+	.maps[RTL_RC_CCK_RATE11M] = DESC92S_RATE11M,
-+	.maps[RTL_RC_OFDM_RATE6M] = DESC92S_RATE6M,
-+	.maps[RTL_RC_OFDM_RATE9M] = DESC92S_RATE9M,
-+	.maps[RTL_RC_OFDM_RATE12M] = DESC92S_RATE12M,
-+	.maps[RTL_RC_OFDM_RATE18M] = DESC92S_RATE18M,
-+	.maps[RTL_RC_OFDM_RATE24M] = DESC92S_RATE24M,
-+	.maps[RTL_RC_OFDM_RATE36M] = DESC92S_RATE36M,
-+	.maps[RTL_RC_OFDM_RATE48M] = DESC92S_RATE48M,
-+	.maps[RTL_RC_OFDM_RATE54M] = DESC92S_RATE54M,
-+
-+	.maps[RTL_RC_HT_RATEMCS7] = DESC92S_RATEMCS7,
-+	.maps[RTL_RC_HT_RATEMCS15] = DESC92S_RATEMCS15,
++u32 rtl8192sephy_changeto_1t2rarray[PHY_CHANGETO_1T2RARRAYLENGTH] = {
++	0x804, 0x0000000f, 0x00000003,
++	0x824, 0x00f0000f, 0x00300004,
++	0x82c, 0x00f0000f, 0x00300002,
++	0x870, 0x04000000, 0x00000001,
++	0x864, 0x00000400, 0x00000000,
++	0x878, 0x000f000f, 0x00000002,
++	0xe74, 0x0f000000, 0x00000002,
++	0xe78, 0x0f000000, 0x00000002,
++	0xe7c, 0x0f000000, 0x00000002,
++	0xe80, 0x0f000000, 0x00000002,
++	0x90c, 0x000000ff, 0x00000011,
++	0xc04, 0x000000ff, 0x00000033,
++	0xd04, 0x0000000f, 0x00000003,
++	0x1f4, 0xffff0000, 0x00007777,
++	0x234, 0xf8000000, 0x0000000a,
 +};
 +
-+static struct pci_device_id rtl92se_pci_ids[] __devinitdata = {
-+	{RTL_PCI_DEVICE(PCI_VENDOR_ID_REALTEK, 0x8192, rtl92se_hal_cfg)},
-+	{RTL_PCI_DEVICE(PCI_VENDOR_ID_REALTEK, 0x8171, rtl92se_hal_cfg)},
-+	{RTL_PCI_DEVICE(PCI_VENDOR_ID_REALTEK, 0x8172, rtl92se_hal_cfg)},
-+	{RTL_PCI_DEVICE(PCI_VENDOR_ID_REALTEK, 0x8173, rtl92se_hal_cfg)},
-+	{RTL_PCI_DEVICE(PCI_VENDOR_ID_REALTEK, 0x8174, rtl92se_hal_cfg)},
-+	{},
++u32 rtl8192sephy_reg_array_pg[PHY_REG_ARRAY_PGLENGTH] = {
++	0xe00, 0xffffffff, 0x06090909,
++	0xe04, 0xffffffff, 0x00030406,
++	0xe08, 0x0000ff00, 0x00000000,
++	0xe10, 0xffffffff, 0x0a0c0d0e,
++	0xe14, 0xffffffff, 0x04070809,
++	0xe18, 0xffffffff, 0x0a0c0d0e,
++	0xe1c, 0xffffffff, 0x04070809,
++	0xe00, 0xffffffff, 0x04040404,
++	0xe04, 0xffffffff, 0x00020204,
++	0xe08, 0x0000ff00, 0x00000000,
++	0xe10, 0xffffffff, 0x02040404,
++	0xe14, 0xffffffff, 0x00000002,
++	0xe18, 0xffffffff, 0x02040404,
++	0xe1c, 0xffffffff, 0x00000002,
++	0xe00, 0xffffffff, 0x04040404,
++	0xe04, 0xffffffff, 0x00020204,
++	0xe08, 0x0000ff00, 0x00000000,
++	0xe10, 0xffffffff, 0x02040404,
++	0xe14, 0xffffffff, 0x00000002,
++	0xe18, 0xffffffff, 0x02040404,
++	0xe1c, 0xffffffff, 0x00000002,
++	0xe00, 0xffffffff, 0x02020202,
++	0xe04, 0xffffffff, 0x00020202,
++	0xe08, 0x0000ff00, 0x00000000,
++	0xe10, 0xffffffff, 0x02020202,
++	0xe14, 0xffffffff, 0x00000002,
++	0xe18, 0xffffffff, 0x02020202,
++	0xe1c, 0xffffffff, 0x00000002,
 +};
 +
-+MODULE_DEVICE_TABLE(pci, rtl92se_pci_ids);
-+
-+MODULE_AUTHOR("lizhaoming	<chaoming_li@realsil.com.cn>");
-+MODULE_AUTHOR("Realtek WlanFAE	<wlanfae@realtek.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Realtek 8192S/8191S 802.11n PCI wireless");
-+MODULE_FIRMWARE("rtlwifi/rtl8192sefw.bin");
-+
-+module_param_named(swenc, rtl92se_mod_params.sw_crypto, bool, 0444);
-+module_param_named(ips, rtl92se_mod_params.inactiveps, bool, 0444);
-+module_param_named(swlps, rtl92se_mod_params.swctrl_lps, bool, 0444);
-+module_param_named(fwlps, rtl92se_mod_params.fwctrl_lps, bool, 0444);
-+MODULE_PARM_DESC(swenc, "using hardware crypto (default 0 [hardware])\n");
-+MODULE_PARM_DESC(ips, "using no link power save (default 1 is open)\n");
-+MODULE_PARM_DESC(swlps, "using linked sw control power save (default 1 is "
-+		 "open)\n");
-+
-+
-+static struct pci_driver rtl92se_driver = {
-+	.name = KBUILD_MODNAME,
-+	.id_table = rtl92se_pci_ids,
-+	.probe = rtl_pci_probe,
-+	.remove = rtl_pci_disconnect,
-+
-+#ifdef CONFIG_PM
-+	.suspend = rtl_pci_suspend,
-+	.resume = rtl_pci_resume,
-+#endif
-+
++u32 rtl8192seradioa_1t_array[RADIOA_1T_ARRAYLENGTH] = {
++	0x000, 0x00030159,
++	0x001, 0x00030250,
++	0x002, 0x00010000,
++	0x010, 0x0008000f,
++	0x011, 0x000231fc,
++	0x010, 0x000c000f,
++	0x011, 0x0003f9f8,
++	0x010, 0x0002000f,
++	0x011, 0x00020101,
++	0x014, 0x0001093e,
++	0x014, 0x0009093e,
++	0x015, 0x0000f8f4,
++	0x017, 0x000f6500,
++	0x01a, 0x00013056,
++	0x01b, 0x00060000,
++	0x01c, 0x00000300,
++	0x01e, 0x00031059,
++	0x021, 0x00054000,
++	0x022, 0x0000083c,
++	0x023, 0x00001558,
++	0x024, 0x00000060,
++	0x025, 0x00022583,
++	0x026, 0x0000f200,
++	0x027, 0x000eacf1,
++	0x028, 0x0009bd54,
++	0x029, 0x00004582,
++	0x02a, 0x00000001,
++	0x02b, 0x00021334,
++	0x02a, 0x00000000,
++	0x02b, 0x0000000a,
++	0x02a, 0x00000001,
++	0x02b, 0x00000808,
++	0x02b, 0x00053333,
++	0x02c, 0x0000000c,
++	0x02a, 0x00000002,
++	0x02b, 0x00000808,
++	0x02b, 0x0005b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000003,
++	0x02b, 0x00000808,
++	0x02b, 0x00063333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000004,
++	0x02b, 0x00000808,
++	0x02b, 0x0006b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000005,
++	0x02b, 0x00000709,
++	0x02b, 0x00053333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000006,
++	0x02b, 0x00000709,
++	0x02b, 0x0005b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000007,
++	0x02b, 0x00000709,
++	0x02b, 0x00063333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000008,
++	0x02b, 0x00000709,
++	0x02b, 0x0006b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x00000009,
++	0x02b, 0x0000060a,
++	0x02b, 0x00053333,
++	0x02c, 0x0000000d,
++	0x02a, 0x0000000a,
++	0x02b, 0x0000060a,
++	0x02b, 0x0005b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x0000000b,
++	0x02b, 0x0000060a,
++	0x02b, 0x00063333,
++	0x02c, 0x0000000d,
++	0x02a, 0x0000000c,
++	0x02b, 0x0000060a,
++	0x02b, 0x0006b333,
++	0x02c, 0x0000000d,
++	0x02a, 0x0000000d,
++	0x02b, 0x0000050b,
++	0x02b, 0x00053333,
++	0x02c, 0x0000000d,
++	0x02a, 0x0000000e,
++	0x02b, 0x0000050b,
++	0x02b, 0x00066623,
++	0x02c, 0x0000001a,
++	0x02a, 0x000e4000,
++	0x030, 0x00020000,
++	0x031, 0x000b9631,
++	0x032, 0x0000130d,
++	0x033, 0x00000187,
++	0x013, 0x00019e6c,
++	0x013, 0x00015e94,
++	0x000, 0x00010159,
++	0x018, 0x0000f401,
++	0x0fe, 0x00000000,
++	0x01e, 0x0003105b,
++	0x0fe, 0x00000000,
++	0x000, 0x00030159,
++	0x010, 0x0004000f,
++	0x011, 0x000203f9,
 +};
 +
-+static int __init rtl92se_module_init(void)
-+{
-+	int ret = 0;
++u32 rtl8192seradiob_array[RADIOB_ARRAYLENGTH] = {
++	0x000, 0x00030159,
++	0x001, 0x00001041,
++	0x002, 0x00011000,
++	0x005, 0x00080fc0,
++	0x007, 0x000fc803,
++	0x013, 0x00017cb0,
++	0x013, 0x00011cc0,
++	0x013, 0x0000dc60,
++	0x013, 0x00008c60,
++	0x013, 0x00004450,
++	0x013, 0x00000020,
++};
 +
-+	ret = pci_register_driver(&rtl92se_driver);
-+	if (ret)
-+		RT_ASSERT(false, (": No device found\n"));
++u32 rtl8192seradiob_gm_array[RADIOB_GM_ARRAYLENGTH] = {
++	0x000, 0x00030159,
++	0x001, 0x00001041,
++	0x002, 0x00011000,
++	0x005, 0x00080fc0,
++	0x007, 0x000fc803,
++};
 +
-+	return ret;
-+}
++u32 rtl8192semac_2t_array[MAC_2T_ARRAYLENGTH] = {
++	0x020, 0x00000035,
++	0x048, 0x0000000e,
++	0x049, 0x000000f0,
++	0x04a, 0x00000077,
++	0x04b, 0x00000083,
++	0x0b5, 0x00000021,
++	0x0dc, 0x000000ff,
++	0x0dd, 0x000000ff,
++	0x0de, 0x000000ff,
++	0x0df, 0x000000ff,
++	0x116, 0x00000000,
++	0x117, 0x00000000,
++	0x118, 0x00000000,
++	0x119, 0x00000000,
++	0x11a, 0x00000000,
++	0x11b, 0x00000000,
++	0x11c, 0x00000000,
++	0x11d, 0x00000000,
++	0x160, 0x0000000b,
++	0x161, 0x0000000b,
++	0x162, 0x0000000b,
++	0x163, 0x0000000b,
++	0x164, 0x0000000b,
++	0x165, 0x0000000b,
++	0x166, 0x0000000b,
++	0x167, 0x0000000b,
++	0x168, 0x0000000b,
++	0x169, 0x0000000b,
++	0x16a, 0x0000000b,
++	0x16b, 0x0000000b,
++	0x16c, 0x0000000b,
++	0x16d, 0x0000000b,
++	0x16e, 0x0000000b,
++	0x16f, 0x0000000b,
++	0x170, 0x0000000b,
++	0x171, 0x0000000b,
++	0x172, 0x0000000b,
++	0x173, 0x0000000b,
++	0x174, 0x0000000b,
++	0x175, 0x0000000b,
++	0x176, 0x0000000b,
++	0x177, 0x0000000b,
++	0x178, 0x0000000b,
++	0x179, 0x0000000b,
++	0x17a, 0x0000000b,
++	0x17b, 0x0000000b,
++	0x17c, 0x0000000b,
++	0x17d, 0x0000000b,
++	0x17e, 0x0000000b,
++	0x17f, 0x0000000b,
++	0x236, 0x0000000c,
++	0x503, 0x00000022,
++	0x560, 0x00000000,
++};
 +
-+static void __exit rtl92se_module_exit(void)
-+{
-+	pci_unregister_driver(&rtl92se_driver);
-+}
++u32 rtl8192seagctab_array[AGCTAB_ARRAYLENGTH] = {
++	0xc78, 0x7f000001,
++	0xc78, 0x7f010001,
++	0xc78, 0x7e020001,
++	0xc78, 0x7d030001,
++	0xc78, 0x7c040001,
++	0xc78, 0x7b050001,
++	0xc78, 0x7a060001,
++	0xc78, 0x79070001,
++	0xc78, 0x78080001,
++	0xc78, 0x77090001,
++	0xc78, 0x760a0001,
++	0xc78, 0x750b0001,
++	0xc78, 0x740c0001,
++	0xc78, 0x730d0001,
++	0xc78, 0x720e0001,
++	0xc78, 0x710f0001,
++	0xc78, 0x70100001,
++	0xc78, 0x6f110001,
++	0xc78, 0x6f120001,
++	0xc78, 0x6e130001,
++	0xc78, 0x6d140001,
++	0xc78, 0x6d150001,
++	0xc78, 0x6c160001,
++	0xc78, 0x6b170001,
++	0xc78, 0x6a180001,
++	0xc78, 0x6a190001,
++	0xc78, 0x691a0001,
++	0xc78, 0x681b0001,
++	0xc78, 0x671c0001,
++	0xc78, 0x661d0001,
++	0xc78, 0x651e0001,
++	0xc78, 0x641f0001,
++	0xc78, 0x63200001,
++	0xc78, 0x4c210001,
++	0xc78, 0x4b220001,
++	0xc78, 0x4a230001,
++	0xc78, 0x49240001,
++	0xc78, 0x48250001,
++	0xc78, 0x47260001,
++	0xc78, 0x46270001,
++	0xc78, 0x45280001,
++	0xc78, 0x44290001,
++	0xc78, 0x2c2a0001,
++	0xc78, 0x2b2b0001,
++	0xc78, 0x2a2c0001,
++	0xc78, 0x292d0001,
++	0xc78, 0x282e0001,
++	0xc78, 0x272f0001,
++	0xc78, 0x26300001,
++	0xc78, 0x25310001,
++	0xc78, 0x24320001,
++	0xc78, 0x23330001,
++	0xc78, 0x22340001,
++	0xc78, 0x09350001,
++	0xc78, 0x08360001,
++	0xc78, 0x07370001,
++	0xc78, 0x06380001,
++	0xc78, 0x05390001,
++	0xc78, 0x043a0001,
++	0xc78, 0x033b0001,
++	0xc78, 0x023c0001,
++	0xc78, 0x013d0001,
++	0xc78, 0x003e0001,
++	0xc78, 0x003f0001,
++	0xc78, 0x7f400001,
++	0xc78, 0x7f410001,
++	0xc78, 0x7e420001,
++	0xc78, 0x7d430001,
++	0xc78, 0x7c440001,
++	0xc78, 0x7b450001,
++	0xc78, 0x7a460001,
++	0xc78, 0x79470001,
++	0xc78, 0x78480001,
++	0xc78, 0x77490001,
++	0xc78, 0x764a0001,
++	0xc78, 0x754b0001,
++	0xc78, 0x744c0001,
++	0xc78, 0x734d0001,
++	0xc78, 0x724e0001,
++	0xc78, 0x714f0001,
++	0xc78, 0x70500001,
++	0xc78, 0x6f510001,
++	0xc78, 0x6f520001,
++	0xc78, 0x6e530001,
++	0xc78, 0x6d540001,
++	0xc78, 0x6d550001,
++	0xc78, 0x6c560001,
++	0xc78, 0x6b570001,
++	0xc78, 0x6a580001,
++	0xc78, 0x6a590001,
++	0xc78, 0x695a0001,
++	0xc78, 0x685b0001,
++	0xc78, 0x675c0001,
++	0xc78, 0x665d0001,
++	0xc78, 0x655e0001,
++	0xc78, 0x645f0001,
++	0xc78, 0x63600001,
++	0xc78, 0x4c610001,
++	0xc78, 0x4b620001,
++	0xc78, 0x4a630001,
++	0xc78, 0x49640001,
++	0xc78, 0x48650001,
++	0xc78, 0x47660001,
++	0xc78, 0x46670001,
++	0xc78, 0x45680001,
++	0xc78, 0x44690001,
++	0xc78, 0x2c6a0001,
++	0xc78, 0x2b6b0001,
++	0xc78, 0x2a6c0001,
++	0xc78, 0x296d0001,
++	0xc78, 0x286e0001,
++	0xc78, 0x276f0001,
++	0xc78, 0x26700001,
++	0xc78, 0x25710001,
++	0xc78, 0x24720001,
++	0xc78, 0x23730001,
++	0xc78, 0x22740001,
++	0xc78, 0x09750001,
++	0xc78, 0x08760001,
++	0xc78, 0x07770001,
++	0xc78, 0x06780001,
++	0xc78, 0x05790001,
++	0xc78, 0x047a0001,
++	0xc78, 0x037b0001,
++	0xc78, 0x027c0001,
++	0xc78, 0x017d0001,
++	0xc78, 0x007e0001,
++	0xc78, 0x007f0001,
++	0xc78, 0x3000001e,
++	0xc78, 0x3001001e,
++	0xc78, 0x3002001e,
++	0xc78, 0x3003001e,
++	0xc78, 0x3004001e,
++	0xc78, 0x3405001e,
++	0xc78, 0x3806001e,
++	0xc78, 0x3e07001e,
++	0xc78, 0x3e08001e,
++	0xc78, 0x4409001e,
++	0xc78, 0x460a001e,
++	0xc78, 0x480b001e,
++	0xc78, 0x480c001e,
++	0xc78, 0x4e0d001e,
++	0xc78, 0x560e001e,
++	0xc78, 0x5a0f001e,
++	0xc78, 0x5e10001e,
++	0xc78, 0x6211001e,
++	0xc78, 0x6c12001e,
++	0xc78, 0x7213001e,
++	0xc78, 0x7214001e,
++	0xc78, 0x7215001e,
++	0xc78, 0x7216001e,
++	0xc78, 0x7217001e,
++	0xc78, 0x7218001e,
++	0xc78, 0x7219001e,
++	0xc78, 0x721a001e,
++	0xc78, 0x721b001e,
++	0xc78, 0x721c001e,
++	0xc78, 0x721d001e,
++	0xc78, 0x721e001e,
++	0xc78, 0x721f001e,
++};
 +
-+module_init(rtl92se_module_init);
-+module_exit(rtl92se_module_exit);
-Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.h
+Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/table.h
 ===================================================================
 --- /dev/null
-+++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.h
-@@ -0,0 +1,36 @@
++++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/table.h
+@@ -0,0 +1,49 @@
 +/******************************************************************************
-+ *
-+ * Copyright(c) 2009-2010  Realtek Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
++ * Copyright(c) 2008 - 2010 Realtek Corporation. All rights reserved.
 + *
 + * This program is distributed in the hope that it will be useful, but WITHOUT
 + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -486,17 +694,35 @@ Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/sw.h
 + *
 + * Contact Information:
 + * wlanfae <wlanfae@realtek.com>
-+ * Realtek Corporation, No. 2, Innovation Road II, Hsinchu Science Park,
-+ * Hsinchu 300, Taiwan.
 + *
-+ *****************************************************************************/
-+#ifndef __REALTEK_PCI92SE_SW_H__
-+#define __REALTEK_PCI92SE_SW_H__
++ * Larry Finger <Larry.Finger@lwfinger.net>
++ *
++ ******************************************************************************/
++#ifndef __INC_HAL8192SE_FW_IMG_H
++#define __INC_HAL8192SE_FW_IMG_H
 +
-+#define EFUSE_MAX_SECTION	16
++#include <linux/types.h>
 +
-+int rtl92se_init_sw(struct ieee80211_hw *hw);
-+void rtl92se_deinit_sw(struct ieee80211_hw *hw);
-+void rtl92se_init_var_map(struct ieee80211_hw *hw);
++/*Created on  2010/ 4/12,  5:56*/
++
++#define PHY_REG_2T2RARRAYLENGTH 372
++extern u32 rtl8192sephy_reg_2t2rarray[PHY_REG_2T2RARRAYLENGTH];
++#define PHY_CHANGETO_1T1RARRAYLENGTH 48
++extern u32 rtl8192sephy_changeto_1t1rarray[PHY_CHANGETO_1T1RARRAYLENGTH];
++#define PHY_CHANGETO_1T2RARRAYLENGTH 45
++extern u32 rtl8192sephy_changeto_1t2rarray[PHY_CHANGETO_1T2RARRAYLENGTH];
++#define PHY_REG_ARRAY_PGLENGTH 84
++extern u32 rtl8192sephy_reg_array_pg[PHY_REG_ARRAY_PGLENGTH];
++#define RADIOA_1T_ARRAYLENGTH 202
++extern u32 rtl8192seradioa_1t_array[RADIOA_1T_ARRAYLENGTH];
++#define RADIOB_ARRAYLENGTH 22
++extern u32 rtl8192seradiob_array[RADIOB_ARRAYLENGTH];
++#define RADIOB_GM_ARRAYLENGTH 10
++extern u32 rtl8192seradiob_gm_array[RADIOB_GM_ARRAYLENGTH];
++#define MAC_2T_ARRAYLENGTH 106
++extern u32 rtl8192semac_2t_array[MAC_2T_ARRAYLENGTH];
++#define AGCTAB_ARRAYLENGTH 320
++extern u32 rtl8192seagctab_array[AGCTAB_ARRAYLENGTH];
 +
 +#endif
++
