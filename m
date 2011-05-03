@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab1ECUBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:01:17 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38805 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab1ECUBL (ORCPT
+	id S1754790Ab1ECUDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:03:36 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:25783 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab1ECUDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:01:11 -0400
-Subject: [PATCH 09/16] cciss: clarify messages around reset behavior
+	Tue, 3 May 2011 16:03:35 -0400
+Subject: [PATCH 10/16] cciss: increase timeouts for post-reset no-ops
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
         linux-kernel@vger.kernel.org, smcameron@yahoo.com
-Date: Tue, 03 May 2011 14:53:36 -0500
-Message-ID: <20110503195336.5154.53358.stgit@beardog.cce.hp.com>
+Date: Tue, 03 May 2011 14:53:41 -0500
+Message-ID: <20110503195341.5154.24039.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110503194919.5154.78352.stgit@beardog.cce.hp.com>
 References: <20110503194919.5154.78352.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -26,43 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-When waiting for the board to become "not ready"
-don't print a message saying "waiting for board to
-become ready" (possibly followed by a message saying
-"failed waiting for board to become not ready".  Instead,
-it should be "waiting for board to reset" and "failed
-waiting for board to reset."
+Just to reduce the messages about timeouts that appear.
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-"
 ---
- drivers/block/cciss.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/cciss.c |    2 +-
+ drivers/block/cciss.h |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 1a4dff0..3b55723 100644
+index 3b55723..b9f8658 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -4586,11 +4586,11 @@ static __devinit int cciss_kdump_hard_reset_controller(struct pci_dev *pdev)
- 	msleep(CCISS_POST_RESET_PAUSE_MSECS);
- 
- 	/* Wait for board to become not ready, then ready. */
--	dev_info(&pdev->dev, "Waiting for board to become ready.\n");
-+	dev_info(&pdev->dev, "Waiting for board to reset.\n");
- 	rc = cciss_wait_for_board_state(pdev, vaddr, BOARD_NOT_READY);
- 	if (rc) /* Don't bail, might be E500, etc. which can't be reset */
- 		dev_warn(&pdev->dev,
--			"failed waiting for board to become not ready\n");
-+			"failed waiting for board to reset\n");
- 	rc = cciss_wait_for_board_state(pdev, vaddr, BOARD_READY);
- 	if (rc) {
- 		dev_warn(&pdev->dev,
-@@ -4641,6 +4641,7 @@ static __devinit int cciss_init_reset_devices(struct pci_dev *pdev)
- 		return -ENODEV;
- 
- 	/* Now try to get the controller to respond to a no-op */
-+	dev_warn(&pdev->dev, "Waiting for controller to respond to no-op\n");
- 	for (i = 0; i < CCISS_POST_RESET_NOOP_RETRIES; i++) {
- 		if (cciss_noop(pdev) == 0)
+@@ -4353,7 +4353,7 @@ static __devinit int cciss_message(struct pci_dev *pdev, unsigned char opcode, u
+ 		tag = readl(vaddr + SA5_REPLY_PORT_OFFSET);
+ 		if ((tag & ~3) == paddr32)
  			break;
+-		schedule_timeout_uninterruptible(HZ);
++		msleep(CCISS_POST_RESET_NOOP_TIMEOUT_MSECS);
+ 	}
+ 
+ 	iounmap(vaddr);
+diff --git a/drivers/block/cciss.h b/drivers/block/cciss.h
+index 21ec628..16b4d58 100644
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -209,8 +209,9 @@ struct ctlr_info
+ 	((CCISS_BOARD_NOT_READY_WAIT_SECS * 1000) / \
+ 		CCISS_BOARD_READY_POLL_INTERVAL_MSECS)
+ #define CCISS_POST_RESET_PAUSE_MSECS (3000)
+-#define CCISS_POST_RESET_NOOP_INTERVAL_MSECS (1000)
++#define CCISS_POST_RESET_NOOP_INTERVAL_MSECS (4000)
+ #define CCISS_POST_RESET_NOOP_RETRIES (12)
++#define CCISS_POST_RESET_NOOP_TIMEOUT_MSECS (10000)
+ 
+ /* 
+ 	Send the command to the hardware 
 
