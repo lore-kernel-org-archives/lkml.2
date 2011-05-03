@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab1ECUzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:55:09 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:46635 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1ECUzI (ORCPT
+	id S1755247Ab1ECU6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:58:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47536 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab1ECU6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:55:08 -0400
-Date: Tue, 03 May 2011 16:53:54 -0400 (EDT)
-From: pefoley2@verizon.net
-X-X-Sender: root@gentoo.foleyremote.com
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, hjanssen@microsoft.com,
-        haiyangz@microsoft.com
-Subject: [PATCH resend] staging: hv: make HYPERV_UTILS depend on NLS to prevent
- a build error
-Message-id: <alpine.LNX.2.00.1105031642370.2706@gentoo.foleyremote.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Tue, 3 May 2011 16:58:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=MNG1G9mXbvZ47B3/ECOLsevvx+eoLGaEmpR+JhtYU8T3ze4EHg01R0tbOu/HZi8vdd
+         2VhTuuPbZi1MLVMm6lbiF5E9Y7MyQEoPB5jmdVebq4uDFljJ9URWrbgw8IqVj68di2HB
+         Kldt+FvFDrpfA2jgWDOd38ufPbIOyIekBJMYM=
+Message-ID: <4DC06BF3.6070208@lwfinger.net>
+Date: Tue, 03 May 2011 15:56:19 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
+CC: Walter Goldens <goldenstranger@yahoo.com>,
+        John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn
+Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
+References: <776913.88107.qm@web161609.mail.bf1.yahoo.com> <4DC0312A.4040303@lwfinger.net> <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com> <4DC0669E.4040100@lwfinger.net> <BANLkTikxS_2wJEpijmYQy3nPy2-9pykxdA@mail.gmail.com>
+In-Reply-To: <BANLkTikxS_2wJEpijmYQy3nPy2-9pykxdA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When HYPERV_UTILS=y and NLS=n the build fails with this error:
-MODPOST 3 modules 
-ERROR: "utf8s_to_utf16s" [drivers/staging/hv/hv_utils.ko] undefined!
+On 05/03/2011 03:38 PM, Gábor Stefanik wrote:
+> 2011/5/3 Larry Finger<Larry.Finger@lwfinger.net>:
+>> On 05/03/2011 03:19 PM, Gábor Stefanik wrote:
+>>>
+>>> On Tue, May 3, 2011 at 6:45 PM, Larry Finger<Larry.Finger@lwfinger.net>
+>>>   wrote:
+>>>>
+>>>> On 05/03/2011 10:59 AM, Walter Goldens wrote:
+>>>>>
+>>>>>> This set of patches introduces a driver for the RTL8192SE PCI devices.
+>>>>>
+>>>>> Any estimates on the *SU driver? :)
+>>>>
+>>>> Now that rtl8192se is submitted, I will start work on the driver for the
+>>>> RTL8192DE devices. After that will be the RTL8191SU. It has lower
+>>>> priority
+>>>> because r8712u from staging handles those devices. It is not based on
+>>>> mac80211, but it works.
+>>>
+>>> Again, may I remind you that the preferred behavior in the Linux world
+>>> is release-early, release-often? :-)
+>>
+>> That I know, but "code first" still applies. If the comparison between
+>> rtl8192ce and rtl8192cu has any validity for the rtl8192s varieties, roughly
+>> half of this driver will be shared. In addition, we do have all the USB
+>> plumbing in place, but we are still talking about a few thousand lines of
+>> code. At last contact, Realtek has no interest in this project, thus I will
+>> be on my own.
+>>
+>> Larry
+>
+> I do not mean immediately submitting everything for inclusion -
+> however, a publicly accessible Git tree would be nice. A non-rtlwifi,
+> badly coded but functional and GPL-compatible driver is still better
+> than having to use ndiswrapper/load a binary blob.
 
-This patch fixes this by adding a dependency on NLS to HYPERV_UTILS.
+We are in better shape than having to use ndiswrapper or any non-GPL code. The 
+r8712u driver in staging is for the RTL8192SU, and it works perfectly well. It 
+just doesn't use mac80211, which is why it needs to be replaced.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
-  drivers/staging/hv/Kconfig |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index d41f380..76f0756 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -31,7 +31,7 @@ config HYPERV_NET
-
-  config HYPERV_UTILS
-  	tristate "Microsoft Hyper-V Utilities driver"
--	depends on CONNECTOR
-+	depends on CONNECTOR && NLS
-  	default HYPERV
-  	help
-  	  Select this option to enable the Hyper-V Utilities.
--- 
-1.7.5.rc1
-
+Larry
