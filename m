@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1ECUJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:09:34 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:3424 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621Ab1ECUJb (ORCPT
+	id S1754829Ab1ECT7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:59:13 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:29358 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab1ECT7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:09:31 -0400
-Subject: [PATCH 04/16] hpsa: delete old unused padding garbage
+	Tue, 3 May 2011 15:59:11 -0400
+Subject: [PATCH 05/16] hpsa: do a better job of detecting controller reset
+	failure
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
         mikem@beardog.cce.hp.com
-Date: Tue, 03 May 2011 14:59:05 -0500
-Message-ID: <20110503195905.5478.38560.stgit@beardog.cce.hp.com>
+Date: Tue, 03 May 2011 14:59:10 -0500
+Message-ID: <20110503195910.5478.63675.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,28 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
+Detect failure of controller reset by noticing if the 32 bytes of
+"driver version" we store on the hardware in the config table
+fail to get zeroed out.  Previously we noticed if the controller
+did not transition to "simple mode", but this did not detect reset
+failure if the controller was already in simple mode prior to
+the reset attempt (e.g. due to module parameter hpsa_simple_mode=1).
+
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa_cmd.h |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ drivers/scsi/hpsa.c     |   76 +++++++++++++++++++++++++++++++++++++++++------
+ drivers/scsi/hpsa_cmd.h |    1 +
+ 2 files changed, 67 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 8266850..2aeb210 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3184,6 +3184,59 @@ static int hpsa_controller_hard_reset(struct pci_dev *pdev,
+ 	return 0;
+ }
+ 
++static __devinit void init_driver_version(char *driver_version, int len)
++{
++	memset(driver_version, 0, len);
++	strncpy(driver_version, "hpsa " HPSA_DRIVER_VERSION, len - 1);
++}
++
++static __devinit int write_driver_ver_to_cfgtable(
++	struct CfgTable __iomem *cfgtable)
++{
++	char *driver_version;
++	int i, size = sizeof(cfgtable->driver_version);
++
++	driver_version = kmalloc(size, GFP_KERNEL);
++	if (!driver_version)
++		return -ENOMEM;
++
++	init_driver_version(driver_version, size);
++	for (i = 0; i < size; i++)
++		writeb(driver_version[i], &cfgtable->driver_version[i]);
++	kfree(driver_version);
++	return 0;
++}
++
++static __devinit void read_driver_ver_from_cfgtable(
++	struct CfgTable __iomem *cfgtable, unsigned char *driver_ver)
++{
++	int i;
++
++	for (i = 0; i < sizeof(cfgtable->driver_version); i++)
++		driver_ver[i] = readb(&cfgtable->driver_version[i]);
++}
++
++static __devinit int controller_reset_failed(
++	struct CfgTable __iomem *cfgtable)
++{
++
++	char *driver_ver, *old_driver_ver;
++	int rc, size = sizeof(cfgtable->driver_version);
++
++	old_driver_ver = kmalloc(2 * size, GFP_KERNEL);
++	if (!old_driver_ver)
++		return -ENOMEM;
++	driver_ver = old_driver_ver + size;
++
++	/* After a reset, the 32 bytes of "driver version" in the cfgtable
++	 * should have been changed, otherwise we know the reset failed.
++	 */
++	init_driver_version(old_driver_ver, size);
++	read_driver_ver_from_cfgtable(cfgtable, driver_ver);
++	rc = !memcmp(driver_ver, old_driver_ver, size);
++	kfree(old_driver_ver);
++	return rc;
++}
+ /* This does a hard reset of the controller using PCI power management
+  * states or the using the doorbell register.
+  */
+@@ -3194,7 +3247,7 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 	u64 cfg_base_addr_index;
+ 	void __iomem *vaddr;
+ 	unsigned long paddr;
+-	u32 misc_fw_support, active_transport;
++	u32 misc_fw_support;
+ 	int rc;
+ 	struct CfgTable __iomem *cfgtable;
+ 	bool use_doorbell;
+@@ -3256,6 +3309,9 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 		rc = -ENOMEM;
+ 		goto unmap_vaddr;
+ 	}
++	rc = write_driver_ver_to_cfgtable(cfgtable);
++	if (rc)
++		goto unmap_vaddr;
+ 
+ 	/* If reset via doorbell register is supported, use that. */
+ 	misc_fw_support = readl(&cfgtable->misc_fw_support);
+@@ -3289,19 +3345,16 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 			"failed waiting for board to become ready\n");
+ 		goto unmap_cfgtable;
+ 	}
+-	dev_info(&pdev->dev, "board ready.\n");
+ 
+-	/* Controller should be in simple mode at this point.  If it's not,
+-	 * It means we're on one of those controllers which doesn't support
+-	 * the doorbell reset method and on which the PCI power management reset
+-	 * method doesn't work (P800, for example.)
+-	 * In those cases, don't try to proceed, as it generally doesn't work.
+-	 */
+-	active_transport = readl(&cfgtable->TransportActive);
+-	if (active_transport & PERFORMANT_MODE) {
++	rc = controller_reset_failed(vaddr);
++	if (rc < 0)
++		goto unmap_cfgtable;
++	if (rc) {
+ 		dev_warn(&pdev->dev, "Unable to successfully reset controller,"
+ 			" Ignoring controller.\n");
+ 		rc = -ENODEV;
++	} else {
++		dev_info(&pdev->dev, "board ready.\n");
+ 	}
+ 
+ unmap_cfgtable:
+@@ -3542,6 +3595,9 @@ static int __devinit hpsa_find_cfgtables(struct ctlr_info *h)
+ 		       cfg_base_addr_index) + cfg_offset, sizeof(*h->cfgtable));
+ 	if (!h->cfgtable)
+ 		return -ENOMEM;
++	rc = write_driver_ver_to_cfgtable(h->cfgtable);
++	if (rc)
++		return rc;
+ 	/* Find performant mode table. */
+ 	trans_offset = readl(&h->cfgtable->TransMethodOffset);
+ 	h->transtable = remap_pci_mem(pci_resource_start(h->pdev,
 diff --git a/drivers/scsi/hpsa_cmd.h b/drivers/scsi/hpsa_cmd.h
-index 1846490..0500740 100644
+index 0500740..8fd35a7 100644
 --- a/drivers/scsi/hpsa_cmd.h
 +++ b/drivers/scsi/hpsa_cmd.h
-@@ -256,14 +256,6 @@ struct ErrorInfo {
- #define CMD_IOCTL_PEND  0x01
- #define CMD_SCSI	0x03
+@@ -337,6 +337,7 @@ struct CfgTable {
+ 	u8		reserved[0x78 - 0x58];
+ 	u32		misc_fw_support; /* offset 0x78 */
+ #define			MISC_FW_DOORBELL_RESET (0x02)
++	u8		driver_version[32];
+ };
  
--/* This structure needs to be divisible by 32 for new
-- * indexing method and performant mode.
-- */
--#define PAD32 32
--#define PAD64DIFF 0
--#define USEEXTRA ((sizeof(void *) - 4)/4)
--#define PADSIZE (PAD32 + PAD64DIFF * USEEXTRA)
--
- #define DIRECT_LOOKUP_SHIFT 5
- #define DIRECT_LOOKUP_BIT 0x10
- #define DIRECT_LOOKUP_MASK (~((1 << DIRECT_LOOKUP_SHIFT) - 1))
+ #define NUM_BLOCKFETCH_ENTRIES 8
 
