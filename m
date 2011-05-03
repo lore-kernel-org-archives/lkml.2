@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1ECTL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 15:11:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:62806 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab1ECTL0 (ORCPT
+	id S1754612Ab1ECTPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 15:15:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35983 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab1ECTPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 15:11:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=gduRZ2K7J0JOQoZcOqe874DmztD94MVGqwjMCGFuExscqwtWruAQdw/8A9hWayhxgp
-         acYEhoMyCDBS3sIixfhQ==
-Date: Tue, 3 May 2011 12:11:28 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP ||
- CONFIG_IA64
-In-Reply-To: <20110503141044.GA25351@tiehlicka.suse.cz>
-Message-ID: <alpine.LSU.2.00.1105031142260.7349@sister.anvils>
-References: <20110503141044.GA25351@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 3 May 2011 15:15:30 -0400
+Date: Tue, 3 May 2011 21:15:25 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Yong Shen <yong.shen@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC][PATCH] mfd: mc13xxx-core: put mutex lock down to
+ mc13xxx_reg_rmw function
+Message-ID: <20110503191525.GE11574@pengutronix.de>
+References: <1304440079.16287.7.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1304440079.16287.7.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Hello Axel,
 
-On Tue, 3 May 2011, Michal Hocko wrote:
-
-> Hi Andrew,
-> the patch bellow probably got lost in the huge "parisc crashes with slub"
-> thread triggered by my earlier clean up in this area so I am resending
-> it standalone.
+On Wed, May 04, 2011 at 12:27:59AM +0800, Axel Lin wrote:
+> The mc13xxx_reg_rmw function is doing read/modify/write bitmask operations,
+> thus add the lock to protect it.
+> Then we can remove the lock/unlock from the caller.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > ---
-> From 2e79c7e73a39a09389a84a8f37eb2a2f2f2859f5 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Tue, 19 Apr 2011 11:11:41 +0200
-> Subject: [PATCH] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+> Note I don't have the hardware handy for testing.
+> I appreciate if someone who has the device can test this patch.
+> Regards,
+> Axel
 > 
-> IA64 needs some trickery for Register Backing Store so we have to
-> export expand_stack_upwards for it even though the architecture expands
-> its stack downwards normally.
-> We have defined VM_GROWSUP which is defined only for the above
-> configuration so let's use it everywhere rather than hardcoded
-> CONFIG_STACK_GROWSUP || CONFIG_IA64
+>  drivers/mfd/mc13xxx-core.c                 |    8 ++++++--
+>  drivers/regulator/mc13892-regulator.c      |   16 +++++++---------
+>  drivers/regulator/mc13xxx-regulator-core.c |    6 ------
+>  3 files changed, 13 insertions(+), 17 deletions(-)
 > 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-
-Sorry to be negative, but this seems more clever than helpful to me:
-it does not optimize anything (apart from saving a few bytes in mm/mmap.c
-itself), obscures the special IA64 case, and relies upon the ways in which
-we happen to define VM_GROWSUP elsewhere.
-
-Not a nack: others may well disagree with me.
-
-And, though I didn't find time to comment on your later "symmetrical"
-patch before it went into mmotm, I didn't see how renaming expand_downwards
-and expand_upwards to expand_stack_downwards and expand_stack_upwards was
-helpful either - needless change, and you end up using expand_stack_upwards
-on something which is not (what we usually call) the stack.
-
-Now, if you're looking to make a nice cleanup, how about getting rid
-of find_vma_prev(), which Linus made redundant when he suddenly added
-vm_prev in 2.6.36?  There's at least one place where I apologize for
-its expense in a BUG_ON, I'd be glad to see that killed off.
-
-Hey, but it's certainly not for me to assign work to you!
-
-Hugh
-
-> ---
->  mm/mmap.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 29c68b0..3ff9edf 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1726,7 +1726,7 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
->  	return 0;
->  }
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index 7e4d44b..5fb0fcc 100644
+[snip]
+> diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
+> index 1b8f739..679b315 100644
+> --- a/drivers/regulator/mc13892-regulator.c
+> +++ b/drivers/regulator/mc13892-regulator.c
+> @@ -449,7 +449,8 @@ static int mc13892_sw_regulator_set_voltage(struct regulator_dev *rdev,
+>  	ret = mc13xxx_reg_read(priv->mc13xxx,
+>  		mc13892_regulators[id].vsel_reg, &val);
+>  	if (ret)
+> -		goto err;
+> +		mc13xxx_unlock(priv->mc13xxx);
+> +		return ret;
 >  
-> -#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
-> +#if VM_GROWSUP
->  /*
->   * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
->   * vma is the last one with address > vma->vm_end.  Have to extend vma.
-> @@ -1777,7 +1777,7 @@ int expand_stack_upwards(struct vm_area_struct *vma, unsigned long address)
->  	khugepaged_enter_vma_merge(vma);
->  	return error;
->  }
-> -#endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-> +#endif /* VM_GROWSUP */
+>  	hi  = val & MC13892_SWITCHERS0_SWxHI;
+>  	if (value > 1375)
+> @@ -464,11 +465,10 @@ static int mc13892_sw_regulator_set_voltage(struct regulator_dev *rdev,
+>  		value = (value - 600000) / 25000;
 >  
->  /*
->   * vma is the first one with address < vma->vm_start.  Have to extend vma.
-> -- 
-> 1.7.4.4
+>  	mask = mc13892_regulators[id].vsel_mask | MC13892_SWITCHERS0_SWxHI;
+> -	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg,
+> -			mask, value << mc13892_regulators[id].vsel_shift);
+> -err:
+>  	mc13xxx_unlock(priv->mc13xxx);
+>  
+> +	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg,
+> +			mask, value << mc13892_regulators[id].vsel_shift);
+I havn't looked deeply, but I guess this can have unwanted side effects
+here. Before you had:
+
+	lock()
+	do(something)
+	do(something, else, that, needs, rmw)
+	unlock()
+
+and you introduced an unlock()/lock() between these two do()s.
+
+I'm not convinced this change is good, though I agree that
+
+	lock()
+	rmw(...)
+	unlock()
+
+looks ugly, but imho this can better be fixed by adding a wrapper for
+that sequence if you really want.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
