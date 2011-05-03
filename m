@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab1ECVfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:35:13 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:56356 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab1ECVfM (ORCPT
+	id S1755406Ab1ECVgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:36:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43693 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378Ab1ECVgc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:35:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TukSsim/pUIkMitoz/737rtQNB2dTvX20swChNj9ysMNh6hAVP2wkQx01NW5AlatGq
-         g+DtYGnFyyMfG4S30h2e0F/WgDPkDyPX7VM4YW11DRJ1ibjFwJq9h+f7lObfnUKj7kTL
-         AYaUGOuW4E0AYvP5QlYzu5NRGiEJARbnMzE4g=
-Message-ID: <4DC0750A.50806@lwfinger.net>
-Date: Tue, 03 May 2011 16:35:06 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Tue, 3 May 2011 17:36:32 -0400
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-CC: Walter Goldens <goldenstranger@yahoo.com>,
-        John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-References: <776913.88107.qm@web161609.mail.bf1.yahoo.com> <4DC0312A.4040303@lwfinger.net> <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com> <4DC0669E.4040100@lwfinger.net> <BANLkTikxS_2wJEpijmYQy3nPy2-9pykxdA@mail.gmail.com> <4DC06BF3.6070208@lwfinger.net> <BANLkTim89BHU-0P6TkepLgDBPNfEhiaB-w@mail.gmail.com>
-In-Reply-To: <BANLkTim89BHU-0P6TkepLgDBPNfEhiaB-w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
+References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
+ <20110503210950.GA2866@ponder.secretlab.ca> <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 3 May 2011 15:36:12 -0600
+X-Google-Sender-Auth: 3zNvQLdea_zOsL6Hh1hhXMaqHvs
+Message-ID: <BANLkTik-qMKqbsdwsgA=0waiMH2f63FBzg@mail.gmail.com>
+Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different controllers
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
+        cbouatmailru@gmail.com, arnd@arndb.de, nico@fluxnic.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 04:09 PM, Gábor Stefanik wrote:
-> 2011/5/3 Larry Finger<Larry.Finger@lwfinger.net>:
->> On 05/03/2011 03:38 PM, Gábor Stefanik wrote:
->>>
->>> 2011/5/3 Larry Finger<Larry.Finger@lwfinger.net>:
->>>>
->>>> On 05/03/2011 03:19 PM, Gábor Stefanik wrote:
->>>>>
->>>>> On Tue, May 3, 2011 at 6:45 PM, Larry Finger<Larry.Finger@lwfinger.net>
->>>>>   wrote:
->>>>>>
->>>>>> On 05/03/2011 10:59 AM, Walter Goldens wrote:
->>>>>>>
->>>>>>>> This set of patches introduces a driver for the RTL8192SE PCI
->>>>>>>> devices.
->>>>>>>
->>>>>>> Any estimates on the *SU driver? :)
->>>>>>
->>>>>> Now that rtl8192se is submitted, I will start work on the driver for
->>>>>> the
->>>>>> RTL8192DE devices. After that will be the RTL8191SU. It has lower
->>>>>> priority
->>>>>> because r8712u from staging handles those devices. It is not based on
->>>>>> mac80211, but it works.
->>>>>
->>>>> Again, may I remind you that the preferred behavior in the Linux world
->>>>> is release-early, release-often? :-)
->>>>
->>>> That I know, but "code first" still applies. If the comparison between
->>>> rtl8192ce and rtl8192cu has any validity for the rtl8192s varieties,
->>>> roughly
->>>> half of this driver will be shared. In addition, we do have all the USB
->>>> plumbing in place, but we are still talking about a few thousand lines of
->>>> code. At last contact, Realtek has no interest in this project, thus I
->>>> will
->>>> be on my own.
->>>>
->>>> Larry
->>>
->>> I do not mean immediately submitting everything for inclusion -
->>> however, a publicly accessible Git tree would be nice. A non-rtlwifi,
->>> badly coded but functional and GPL-compatible driver is still better
->>> than having to use ndiswrapper/load a binary blob.
->>
->> We are in better shape than having to use ndiswrapper or any non-GPL code.
->> The r8712u driver in staging is for the RTL8192SU, and it works perfectly
->> well.
+On Tue, May 3, 2011 at 3:13 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> Oops, forgot to cc tglx...
 >
-> What about RTL8192DE?
+> On Tue, May 3, 2011 at 3:09 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> While on the topic of a generic mmio gpio driver, I've been thinking a
+>> lot about things that Alan, Anton, and others have been doing, and I
+>> took a good look at the irq_chip_generic work[1] that tglx (cc'd) put
+>> together.
+>>
+>> There are two things that stood out.  Alan pointed out (IIRC) that a
+>> generic gpio driver should not require each bank to be encapsulated in
+>> a separate struct platform_device, and after mulling over it a while I
+>> agree.  It was also pointed out by Anton that often GPIO controllers
+>> are embedded into other devices register addresses intertwined with
+>> other gpio banks, or even other functions.
+>>
+>> In parallel, tglx posted the irq_chip_generic patch[1] which has to
+>> deal with pretty much the same set of issues.  I took a close look at
+>> how he handled it for interrupt controllers, and I think it is
+>> entirely appropriate to use the same pattern for creating a
+>> gpio_mmio_generic library.
+>>
+>> [1] http://comments.gmane.org/gmane.linux.ports.arm.kernel/113697
+>>
+>> So, the direction I would like to go is to split the basic_mmio_gpio
+>> drivers into two parts;
+>>  - a platform_driver, and
+>>  - a gpio_mmio_generic library.
+>>
+>> The platform driver would be responsible for parsing pdata and/or
+>> device tree node data, but would call into the gpio_mmio_generic
+>> library for actually registering the gpio banks.
+>>
+>> I envision the gpio_mmio_generic library would look something like
+>> this:
+>>
+>> First, a structure for storing the register offsets froma  base
+>> address:
+>>
+>> struct gpio_mmio_regs {
+>> };
 
-I'm working on that one today. If all goes well, it might make 2.6.40, but that 
-may be a little tight on time. Publish early and often does apply here.
+Gah, I'm doing real well this afternoon.  Ignore the above structure.
+I intended to delete it from the email.
 
-Larry
+>>
+>> Next, a structure for each generic mmio gpio instance:
+>>
+>> struct gpio_mmio_generic {
+>>        spinlock_t      lock;
+>>
+>>        /* initialized by user */
+>>        unsigned long   reg_data;
+>>        unsigned long   reg_set;
+>>        unsigned long   reg_clr;
+>>        unsigned long   reg_dir;
+
+And these are intended to be register offsets from the base address;
+however, since the caller is responsible for ioremapping anyway, this
+could just as easily be direct pointers to the registers.
+
+>>
+>>        void __iomem    *reg_base;
+>>
+>>        /* Runtime register value caches; may be initialized by user */
+>>        u32             data_cache;
+>>        u32             dir_cache;
+>>
+>>        /* Embedded gpio_chip.  Helpers functions set up accessors, but user
+>>         * can override before calling gpio_mmio_generic_add() */
+>>        struct gpio_chip chip;
+>> };
+>>
+>> And then some helpers for initializing/adding/removing the embedded gpio_chip:
+>>
+>> void gpio_mmio_generic_setup(struct gpio_mmio_generic *gmg, int register_width);
+>> int gpio_mmio_generic_add(struct gpio_mmio_generic *gmg);
+>> void gpio_mmio_generic_remove(struct gpio_mmio_generic *gmg);
+>>
+>> gpio_mmio_generic_setup() sets up the common callback ops in the
+>> embedded gpio_chip, but the decisions it makes could be overridden by
+>> the user before calling gpio_mmio_generic_add().
+>>
+>> I've not had time to prototype this yet, but I wanted to get it
+>> written down and out onto the list for feedback since I probably won't
+>> have any chance to get to it until after UDS.  Bonus points to anyone
+>> who wants to take the initiative to hack it together before I get to
+>> it.  Extra bonus points to anyone who also converts some of the other
+>> gpio controllers to use it.  :-D
+>
+> And triple bonus points to anyone who thinks this is stupid and comes
+> up with a better approach.  :-)
+>
+> g.
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
