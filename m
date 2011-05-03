@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab1ECUeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:34:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45302 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab1ECUeW (ORCPT
+	id S1755164Ab1ECUec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:34:32 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:49004 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755146Ab1ECUea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:34:22 -0400
-Date: Tue, 3 May 2011 22:34:12 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
-        hjk@hansjkoch.de, arnd@arndb.de
-Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
-Message-ID: <20110503203412.GA2119@pengutronix.de>
-References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
+	Tue, 3 May 2011 16:34:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110503175523.GB18990@kroah.com>
+References: <1304004712-8487-1-git-send-email-omar.ramirez@ti.com>
+	<20110503175523.GB18990@kroah.com>
+Date: Tue, 3 May 2011 15:34:28 -0500
+Message-ID: <BANLkTinDTqCEmx-0GR51-4Z6okXqFDChOQ@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] staging tidspbridge: iommu migration
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Nishanth Menon <nm@ti.com>, devel <devel@driverdev.osuosl.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Fernando Guzman Lugo <x0095840@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 3, 2011 at 12:55 PM, Greg KH <greg@kroah.com> wrote:
+> On Thu, Apr 28, 2011 at 10:31:46AM -0500, Omar Ramirez Luna wrote:
+>> DO-NOT-APPLY to staging yet.
+>
+> Then don't send them to me :)
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Not a problem.
 
-On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
-> Adding OF binding to genirq.
-> Version string is setup to the "devicetree".
->=20
-> Compatible string is not setup for now but you can add your
-> custom compatible string to uio_of_genirq_match structure.
->=20
-> For example with "vendor,device" compatible string:
-> static const struct of_device_id __devinitconst uio_of_genirq_match[] =3D=
- {
-> 	{ .compatible =3D "vendor,device", },
-> 	{ /* empty for now */ },
-> };
->=20
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+Thanks,
 
-[...]
-
-> +		/* alloc uioinfo for one device */
-> +		uioinfo =3D kzalloc(sizeof(*uioinfo), GFP_KERNEL);
-
-kfree in remove?
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk3AZsQACgkQD27XaX1/VRvr3ACeOaGboYXohsqIqkX2f3Fy+PzR
-CaMAniiz7f9MDArwGEHEa66/TiM+2LJt
-=Odmy
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+Omar
