@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1ECNbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:31:31 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42537 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab1ECNb3 (ORCPT
+	id S1752369Ab1ECNeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:34:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47637 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750862Ab1ECNeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:31:29 -0400
-Date: Tue, 3 May 2011 15:30:57 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
-Message-ID: <20110503133057.GD20241@aftab>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-3-git-send-email-bp@amd64.org>
- <20110503064046.GD7751@elte.hu>
- <20110503125929.GB1730@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503125929.GB1730@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 May 2011 09:34:10 -0400
+Date: Tue, 3 May 2011 14:35:01 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, jimmy.chen@moxa.com,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        wim@iguana.be
+Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
+ driver
+Message-ID: <20110503143501.2596a9ce@lxorguk.ukuu.org.uk>
+In-Reply-To: <201105031451.56911.arnd@arndb.de>
+References: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
+	<20110503105735.GB2497@pengutronix.de>
+	<20110503121510.5bba70c5@lxorguk.ukuu.org.uk>
+	<201105031451.56911.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 08:59:35AM -0400, Frederic Weisbecker wrote:
-> On Tue, May 03, 2011 at 08:40:46AM +0200, Ingo Molnar wrote:
-> > [ kernel/hw_breakpoint.c could possibly move into kernel/events/hw_breakpoint.c 
-> >   file as well - if Frederic acks it. ]
-> 
-> Makes sense yeah.
+> Another thing that might be nice here is to have one module that probes
+> the superio-port and then registers a platform device that other drivers
 
-Ok, looks trivial enough. Ingo, let me know if I should add it to the
-pull request from earlier.
+That doesn't help. See the it87 request_muxed patches pending. Because
+the port can be muxed we need to actually implement port muxing across
+the super I/O devices. That's a separate and larger problem altogether
+and this device will get fixed as we do the other so not a problem.
 
---
->From 48dbb6dc86ca5d1b2224937d774c7ba98bc3a485 Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Tue, 3 May 2011 15:26:43 +0200
-Subject: [PATCH] hw breakpoints: Move to kernel/events/
+> can can bind to. Right now, you have to load the module manually and
+> then check if it's there, something we no longer do for most devices.
 
-As part of the events sybsystem unification, relocate hw_breakpoint.c
-into its new destination.
+A lot of these super I/O devices have no entirely safe autodetect, and
+the same is true for it87 and many others. There isn't a nice elegant
+solution really.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- kernel/Makefile                     |    1 -
- kernel/events/Makefile              |    3 ++-
- kernel/{ => events}/hw_breakpoint.c |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename kernel/{ => events}/hw_breakpoint.c (100%)
-
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 7981530..e9cf191 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -105,7 +105,6 @@ obj-$(CONFIG_IRQ_WORK) += irq_work.o
- 
- obj-$(CONFIG_PERF_EVENTS) += events/
- 
--obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
- obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
- obj-$(CONFIG_PADATA) += padata.o
- obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
-diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-index 26c00e4..1ce23d3 100644
---- a/kernel/events/Makefile
-+++ b/kernel/events/Makefile
-@@ -2,4 +2,5 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_core.o = -pg
- endif
- 
--obj-y += core.o
-+obj-y := core.o
-+obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
-diff --git a/kernel/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-similarity index 100%
-rename from kernel/hw_breakpoint.c
-rename to kernel/events/hw_breakpoint.c
--- 
-1.7.4.rc2
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Alan
