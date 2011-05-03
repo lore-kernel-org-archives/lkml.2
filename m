@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab1ECNNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:13:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab1ECNNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:13:51 -0400
-Date: Tue, 3 May 2011 10:13:17 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, avi@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 2/2] KVM: make guest mode entry to be rcu quiescent state
-Message-ID: <20110503131317.GA4244@amt.cnet>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-3-git-send-email-gleb@redhat.com>
+	id S1752068Ab1ECNPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:15:15 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61633 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab1ECNPO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 09:15:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303984323-3203-3-git-send-email-gleb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.00.1105031019400.19644@tundra.namei.org>
+References: <20110428195402.6677.80147.stgit@paris.rdu.redhat.com>
+	<alpine.LRH.2.00.1105031019400.19644@tundra.namei.org>
+Date: Tue, 3 May 2011 09:15:12 -0400
+Message-ID: <BANLkTim+sQrwXSaLgLMxyQsm1fetv_rQXQ@mail.gmail.com>
+Subject: Re: [PATCH -v2] flex_arrays: allow zero length flex arrays
+From: Eric Paris <eparis@parisplace.org>
+To: James Morris <jmorris@namei.org>
+Cc: Eric Paris <eparis@redhat.com>, dave@linux.vnet.ibm.com,
+        steffen.klassert@secunet.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, sds@tycho.nsa.gov
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+It builds on another patch already committed to my tree.  I'll send
+you a pull request for that branch right now!
 
-Thats a neat idea.
+-Eric
 
-On Thu, Apr 28, 2011 at 12:52:03PM +0300, Gleb Natapov wrote:
-> KVM does not hold any references to rcu protected data when it switches
-> CPU into a guest mode. In fact switching to a guest mode is very similar
-> to exiting to userspase from rcu point of view. In addition CPU may stay
-> in a guest mode for quite a long time (up to one time slice). Lets treat
-> guest mode as quiescent state, just like we do with user-mode execution.
-> 
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> ---
->  include/linux/kvm_host.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 0bc3d37..a347bce 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -593,6 +593,7 @@ static inline void kvm_guest_enter(void)
->  {
->  	account_system_vtime(current);
->  	current->flags |= PF_VCPU;
-> +	rcu_note_context_switch(smp_processor_id());
->  }
->  
->  static inline void kvm_guest_exit(void)
-> -- 
-> 1.7.2.3
-
-Please have it in x86's vcpu_enter_guest, then its more explicit
-(uncertain about the context of kvm_guest_enter call in other arches).
-
-
+On Mon, May 2, 2011 at 8:20 PM, James Morris <jmorris@namei.org> wrote:
+> On Thu, 28 Apr 2011, Eric Paris wrote:
+>
+>> Just like kmalloc will allow one to allocate a 0 length segment of memory
+>> flex arrays should do the same thing.  It should bomb if you try to use
+>> something, but it should at least allow the allocation.
+>
+> This patch does not apply to current -linus.
+>
+> --
+> James Morris
+> <jmorris@namei.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
