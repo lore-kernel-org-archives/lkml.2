@@ -1,211 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab1ECOS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:18:26 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45767 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab1ECOSX (ORCPT
+	id S1753022Ab1ECOQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:16:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59857 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752800Ab1ECOQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:18:23 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: 2.6.39-rc5-mmotm0429 - lockdep splat in fsck/acpi
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304432140_4857P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 03 May 2011 10:15:41 -0400
-Message-ID: <11287.1304432141@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DC00E0E.0054,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 3 May 2011 10:16:08 -0400
+Date: Tue, 3 May 2011 15:16:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCHv1 -next] REGULATOR: Regulator module of DA9052 PMIC
+ driver
+Message-ID: <20110503141605.GO1762@opensource.wolfsonmicro.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5AF7A@KCINPUNHJCMS01.kpit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5AF7A@KCINPUNHJCMS01.kpit.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304432140_4857P
-Content-Type: text/plain; charset=us-ascii
+On Tue, May 03, 2011 at 07:12:21PM +0530, Ashish Jangam wrote:
+> Hi Mark,
+> 
+> Regulator Driver for Dialog Semiconductor DA9052 PMICs.
+> 
+> Changes made since last submission:
+> . separate ops for buck peri
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 
-No, I have no idea how a path invoked by fsck and a path invoked by acpi
-managed to cross paths. Lot of scheduler and acpi function names in the
-tracebacks, so, tossing it to everybody plausible in MAINTAINERS.
+*Please* as has been *repeatedly* requested follow the patch submission
+process in SubmittingPatches, in this case you need to check your
+signoffs and the patch description.
 
-Saw this during boot this morning:
+We're now on what must be at least the 10th submission of this code and
+this basic stuff is still not being done properly, and below we're still
+identifying serious issues with the code.  This really does not feel at
+all respectful of the time and effort reviewers put into looking at your
+code.
 
-[   87.294863] =======================================================
-[   87.295177] [ INFO: possible circular locking dependency detected ]
-[   87.295402] 2.6.39-rc5-mmotm0429 #1
-[   87.295531] -------------------------------------------------------
-[   87.295727] fsck/3150 is trying to acquire lock:
-[   87.295727]  (rcu_node_level_0){..-...}, at: [<ffffffff810904a8>] rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727] 
-[   87.295727] but task is already holding lock:
-[   87.295727]  (&rq->lock){-.-.-.}, at: [<ffffffff81031dfb>] scheduler_ipi+0x34/0x5d
-[   87.295727] 
-[   87.295727] which lock already depends on the new lock.
-[   87.295727] 
-[   87.295727] 
-[   87.295727] the existing dependency chain (in reverse order) is:
-[   87.295727] 
-[   87.295727] -> #2 (&rq->lock){-.-.-.}:
-[   87.295727]        [<ffffffff810670e1>] check_prevs_add+0x8b/0x104
-[   87.295727]        [<ffffffff810674c9>] validate_chain+0x36f/0x3ab
-[   87.295727]        [<ffffffff81067b93>] __lock_acquire+0x369/0x3e2
-[   87.295727]        [<ffffffff81068137>] lock_acquire+0xfc/0x14c
-[   87.295727]        [<ffffffff81567951>] _raw_spin_lock+0x36/0x45
-[   87.295727]        [<ffffffff81027df9>] __task_rq_lock+0x8b/0xd3
-[   87.295727]        [<ffffffff81032fd1>] wake_up_new_task+0x41/0x108
-[   87.295727]        [<ffffffff81037714>] do_fork+0x265/0x33f
-[   87.295727]        [<ffffffff81007d02>] kernel_thread+0x6b/0x6d
-[   87.295727]        [<ffffffff81538bbd>] rest_init+0x21/0xd2
-[   87.295727]        [<ffffffff81b20b4f>] start_kernel+0x3bb/0x3c6
-[   87.295727]        [<ffffffff81b2029f>] x86_64_start_reservations+0xaf/0xb3
-[   87.295727]        [<ffffffff81b20393>] x86_64_start_kernel+0xf0/0xf7
-[   87.295727] 
-[   87.295727] -> #1 (&p->pi_lock){-.-.-.}:
-[   87.295727]        [<ffffffff810670e1>] check_prevs_add+0x8b/0x104
-[   87.295727]        [<ffffffff810674c9>] validate_chain+0x36f/0x3ab
-[   87.295727]        [<ffffffff81067b93>] __lock_acquire+0x369/0x3e2
-[   87.295727]        [<ffffffff81068137>] lock_acquire+0xfc/0x14c
-[   87.295727]        [<ffffffff81567a4a>] _raw_spin_lock_irqsave+0x44/0x57
-[   87.295727]        [<ffffffff81032de1>] try_to_wake_up+0x29/0x1aa
-[   87.295727]        [<ffffffff81032f8e>] wake_up_process+0x10/0x12
-[   87.295727]        [<ffffffff8108ff01>] rcu_cpu_kthread_timer+0x44/0x58
-[   87.295727]        [<ffffffff810452ce>] call_timer_fn+0xac/0x1e9
-[   87.295727]        [<ffffffff810455b5>] run_timer_softirq+0x1aa/0x1f2
-[   87.295727]        [<ffffffff8103e4cf>] __do_softirq+0x109/0x26a
-[   87.295727]        [<ffffffff8156f5cc>] call_softirq+0x1c/0x30
-[   87.295727]        [<ffffffff81003207>] do_softirq+0x44/0xf1
-[   87.295727]        [<ffffffff8103e901>] irq_exit+0x58/0xc8
-[   87.295727]        [<ffffffff81017f5a>] smp_apic_timer_interrupt+0x79/0x87
-[   87.295727]        [<ffffffff8156f153>] apic_timer_interrupt+0x13/0x20
-[   87.295727]        [<ffffffff81059935>] up+0x55/0x5d
-[   87.295727]        [<ffffffff81251dcd>] acpi_os_signal_semaphore+0x1c/0x27
-[   87.295727]        [<ffffffff8127459c>] acpi_ut_release_mutex+0x59/0x5d
-[   87.295727]        [<ffffffff8126bbb9>] acpi_ns_walk_namespace+0x94/0x17b
-[   87.295727]        [<ffffffff8125f202>] acpi_ev_install_space_handler+0x20f/0x225
-[   87.295727]        [<ffffffff8125f256>] acpi_ev_install_region_handlers+0x3e/0x77
-[   87.295727]        [<ffffffff81272d50>] acpi_enable_subsystem+0x64/0x8b
-[   87.295727]        [<ffffffff81b41721>] acpi_bus_init+0x18/0x12a
-[   87.295727]        [<ffffffff81b418a1>] acpi_init+0x6e/0xb4
-[   87.295727]        [<ffffffff8100020a>] do_one_initcall+0x7a/0x130
-[   87.295727]        [<ffffffff81b20c3b>] kernel_init+0xe1/0x15b
-[   87.295727]        [<ffffffff8156f4d4>] kernel_thread_helper+0x4/0x10
-[   87.295727] 
-[   87.295727] -> #0 (rcu_node_level_0){..-...}:
-[   87.295727]        [<ffffffff81066eb0>] check_prev_add+0x68/0x20e
-[   87.295727]        [<ffffffff810670e1>] check_prevs_add+0x8b/0x104
-[   87.295727]        [<ffffffff810674c9>] validate_chain+0x36f/0x3ab
-[   87.295727]        [<ffffffff81067b93>] __lock_acquire+0x369/0x3e2
-[   87.295727]        [<ffffffff81068137>] lock_acquire+0xfc/0x14c
-[   87.295727]        [<ffffffff81567951>] _raw_spin_lock+0x36/0x45
-[   87.295727]        [<ffffffff810904a8>] rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727]        [<ffffffff81090640>] __rcu_read_unlock+0x4f/0xd7
-[   87.295727]        [<ffffffff81027bb3>] rcu_read_unlock+0x21/0x23
-[   87.295727]        [<ffffffff8102cc14>] cpuacct_charge+0x6c/0x75
-[   87.295727]        [<ffffffff81030c3f>] update_curr+0x101/0x12e
-[   87.295727]        [<ffffffff81031149>] check_preempt_wakeup+0xf7/0x23b
-[   87.295727]        [<ffffffff8102ac93>] check_preempt_curr+0x2b/0x68
-[   87.295727]        [<ffffffff81031cb9>] ttwu_do_wakeup+0x76/0x128
-[   87.295727]        [<ffffffff81031dc2>] ttwu_do_activate.constprop.63+0x57/0x5c
-[   87.295727]        [<ffffffff81031e0f>] scheduler_ipi+0x48/0x5d
-[   87.295727]        [<ffffffff810177d5>] smp_reschedule_interrupt+0x16/0x18
-[   87.295727]        [<ffffffff8156f273>] reschedule_interrupt+0x13/0x20
-[   87.295727]        [<ffffffff810b6411>] rcu_read_unlock+0x21/0x23
-[   87.295727]        [<ffffffff810b70dc>] find_get_page+0xa9/0xb9
-[   87.295727]        [<ffffffff810b7840>] do_generic_file_read.constprop.13+0xae/0x46a
-[   87.295727]        [<ffffffff810b8640>] generic_file_aio_read+0x1cd/0x232
-[   87.295727]        [<ffffffff810f595d>] do_sync_read+0xba/0xfa
-[   87.295727]        [<ffffffff810f60d7>] vfs_read+0xde/0x129
-[   87.295727]        [<ffffffff810f6167>] sys_read+0x45/0x69
-[   87.295727]        [<ffffffff8156e73b>] system_call_fastpath+0x16/0x1b
-[   87.295727] 
-[   87.295727] other info that might help us debug this:
-[   87.295727] 
-[   87.295727] Chain exists of:
-[   87.295727]   rcu_node_level_0 --> &p->pi_lock --> &rq->lock
-[   87.295727] 
-[   87.295727]  Possible unsafe locking scenario:
-[   87.295727] 
-[   87.295727]        CPU0                    CPU1
-[   87.295727]        ----                    ----
-[   87.295727]   lock(&rq->lock);
-[   87.295727]                                lock(&p->pi_lock);
-[   87.295727]                                lock(&rq->lock);
-[   87.295727]   lock(rcu_node_level_0);
-[   87.295727] 
-[   87.295727]  *** DEADLOCK ***
-[   87.295727] 
-[   87.295727] 1 lock held by fsck/3150:
-[   87.295727]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff81031dfb>] scheduler_ipi+0x34/0x5d
-[   87.295727] 
-[   87.295727] stack backtrace:
-[   87.295727] Pid: 3150, comm: fsck Not tainted 2.6.39-rc5-mmotm0429 #1
-[   87.295727] Call Trace:
-[   87.295727]  <IRQ>  [<ffffffff815486ed>] print_circular_bug+0xc8/0xd9
-[   87.295727]  [<ffffffff81066eb0>] check_prev_add+0x68/0x20e
-[   87.295727]  [<ffffffff812d863a>] ? scsi_request_fn+0x30d/0x3de
-[   87.295727]  [<ffffffff810670e1>] check_prevs_add+0x8b/0x104
-[   87.295727]  [<ffffffff810674c9>] validate_chain+0x36f/0x3ab
-[   87.295727]  [<ffffffff81067b93>] __lock_acquire+0x369/0x3e2
-[   87.295727]  [<ffffffff810685f5>] ? trace_hardirqs_on_caller+0xfd/0x13b
-[   87.295727]  [<ffffffff81567fb0>] ? _raw_spin_unlock_irqrestore+0x7b/0x80
-[   87.295727]  [<ffffffff810904a8>] ? rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727]  [<ffffffff81068137>] lock_acquire+0xfc/0x14c
-[   87.295727]  [<ffffffff810904a8>] ? rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727]  [<ffffffff81567951>] _raw_spin_lock+0x36/0x45
-[   87.295727]  [<ffffffff810904a8>] ? rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727]  [<ffffffff810904a8>] rcu_read_unlock_special+0x8c/0x1d5
-[   87.295727]  [<ffffffff81067f37>] ? __lock_release+0x8c/0x9c
-[   87.295727]  [<ffffffff81090640>] __rcu_read_unlock+0x4f/0xd7
-[   87.295727]  [<ffffffff81027bb3>] rcu_read_unlock+0x21/0x23
-[   87.295727]  [<ffffffff8102cc14>] cpuacct_charge+0x6c/0x75
-[   87.295727]  [<ffffffff81030c3f>] update_curr+0x101/0x12e
-[   87.295727]  [<ffffffff81031149>] check_preempt_wakeup+0xf7/0x23b
-[   87.295727]  [<ffffffff8102ac93>] check_preempt_curr+0x2b/0x68
-[   87.295727]  [<ffffffff81031cb9>] ttwu_do_wakeup+0x76/0x128
-[   87.295727]  [<ffffffff81031dc2>] ttwu_do_activate.constprop.63+0x57/0x5c
-[   87.295727]  [<ffffffff81031e0f>] scheduler_ipi+0x48/0x5d
-[   87.295727]  [<ffffffff810177d5>] smp_reschedule_interrupt+0x16/0x18
-[   87.295727]  [<ffffffff8156f273>] reschedule_interrupt+0x13/0x20
-[   87.295727]  <EOI>  [<ffffffff8109041d>] ? rcu_read_unlock_special+0x1/0x1d5
-[   87.295727]  [<ffffffff81090640>] ? __rcu_read_unlock+0x4f/0xd7
-[   87.295727]  [<ffffffff810b6411>] rcu_read_unlock+0x21/0x23
-[   87.295727]  [<ffffffff810b70dc>] find_get_page+0xa9/0xb9
-[   87.295727]  [<ffffffff810b7840>] do_generic_file_read.constprop.13+0xae/0x46a
-[   87.295727]  [<ffffffff810b8640>] generic_file_aio_read+0x1cd/0x232
-[   87.295727]  [<ffffffff810f595d>] do_sync_read+0xba/0xfa
-[   87.295727]  [<ffffffff810f5cc8>] ? rw_verify_area+0x13e/0x161
-[   87.295727]  [<ffffffff810f60d7>] vfs_read+0xde/0x129
-[   87.295727]  [<ffffffff810f6167>] sys_read+0x45/0x69
-[   87.295727]  [<ffffffff8156e73b>] system_call_fastpath+0x16/0x1b
+> +/*
+> +* da9052-regulator.c: Regulator driver for DA9052
+> +*
 
+Indentation.
 
---==_Exmh_1304432140_4857P
-Content-Type: application/pgp-signature
+> +#define DA9052_REGULATOR_INIT(max, min) \
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+This ordering is rather counterintutive, normally you'd write a range as
+min, max.
 
-iD8DBQFNwA4McC3lWbTT17ARAvd1AJoDoOxKFqKlVHcMuxmhmYW0/qRxdgCfbPL5
-fSbEAq2M0+G7z3y7dzzDRSA=
-=6ZsM
------END PGP SIGNATURE-----
+> +struct regulator_init_data da9052_regulators_init[] = {
+> +       /* BUCKS */
 
---==_Exmh_1304432140_4857P--
+You're completely failing to understand how the regulator API works
+here.  Have you ever tested this code in a running system?  Please take
+a look at the API and how this struct is normally used.
 
+> +       if (min_uV < info->min_uV || min_uV > info->max_uV)
+> +                       return -EINVAL;
+> +       if (max_uV < info->min_uV || max_uV > info->max_uV)
+> +                       return -EINVAL;
+
+Coding style - these indents aren't anything like the standard kernel
+style.  This applies in several other points.
+
+> +       ret = da9052_reg_update(da9052, DA9052_BUCKCORE_REG + offset,
+> +                       (1 << info->volt_shift) - 1, *selector);
+> +       if (ret < 0)
+> +               return -EIO;
+
+Return the actual error you got.
+
+> +static int da9052_regulator_set_voltage(struct regulator_dev *rdev,
+> +                       int min_uV, int max_uV, unsigned int *selector)
+> +{
+
+> +       /* Enable regualtor bit */
+> +       if (info->supply_v_mask != 0) {
+> +               ret = da9052_reg_update(da9052, DA9052_SUPPLY_REG, 0,
+> +                                               info->supply_v_mask);
+> +               if (ret < 0)
+> +                       return -EIO;
+> +       }
+
+Why is set_voltage() enabling the regulator, or alternatively what is
+this doing?
+
+> +static int da9052_get_buckperi_voltage(struct regulator_dev *rdev)
+> +{
+> +       struct da9052_regulator_info *info = rdev_get_drvdata(rdev);
+> +       struct da9052 *da9052 = to_da9052(rdev);
+> +       int offset = rdev_get_id(rdev);
+> +       int ret;
+> +       int regval;
+> +       int volt_uV;
+> +
+> +       ret = da9052_reg_read(da9052, DA9052_BUCKCORE_REG + offset);
+> +
+> +       if (ret < 0)
+> +               return -EIO;
+> +
+> +       regval = ret & ((1 << info->volt_shift) - 1);
+> +
+> +       /* Convert regsister value into micro volt */
+> +       volt_uV = da9052_list_buckperi_voltage(rdev, regval);
+
+Just implement get_voltage_sel, this is essentialy an open coded version
+of that.
+
+> +failed:
+> +       device_for_each_child(da9052->dev, NULL, da9052_remove_subdev);
+> +       return;
+> +}
+> +EXPORT_SYMBOL(da9052_add_regulator_devices);
+
+This should be being done as part of your MFD.
