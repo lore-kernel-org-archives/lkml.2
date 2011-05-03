@@ -1,92 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab1ECXOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:14:50 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:53935 "EHLO smtp.polymtl.ca"
+	id S1754293Ab1ECXOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:14:46 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:40224 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754331Ab1ECXOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:14:47 -0400
-Message-Id: <20110503231023.968960757@efficios.com>
+	id S1753979Ab1ECXOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:14:41 -0400
+Message-Id: <20110503231424.151227450@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 19:10:23 -0400
+Date: Tue, 03 May 2011 19:10:24 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [RFC patch 00/32] TRACE_EVENT: cleanup for code-size reduction (v2)
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [RFC patch 01/32] TRACE_EVENT: gradual semicolon removal
+References: <20110503231023.968960757@efficios.com>
+Content-Disposition: inline; filename=trace-event-gradual-semicolon-removal.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:24 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Initiate the removal of the extra semicolons at the end of:
 
-I implemented the TRACE_EVENT macros as arrays of fields and arrays of
-events in LTTng, and realised that it could benefit Ftrace too by
-cutting down its code size. As I know that code size footprint is an
-issue Steven has been wanting to tackle for a while, I am sending this
-"semicolon removal" patchset, which is a prerequisite to be able to
-generate arrays of events.
+TRACE_EVENT(
+  ...
+);     <---- here,
 
-* Changelog since v1
-  - Removed all ifdefs around declarations (it is now _only_ a semicolon
-    removal patchset).
+TRACE_EVENT_FN(
+  ...
+);     <---- here,
 
-The main difference between the approaches Ftrace and LTTng have taken
-is that Ftrace creates a "ftrace_define_fields_##call" function for each
-event which calls trace_define_field for each field of each event. In
-LTTng, I did the following (code snippet from [1]):
+DEFINE_EVENT(
+  ...
+);     <---- here,
 
-struct lttng_event_field {
-        const char *name;
-        const struct lttng_type type;
-};
-struct lttng_event_desc {
-        const struct lttng_event_field *fields;
-        const char *name;
-        unsigned int nr_fields;
-};
-#undef DEFINE_EVENT
-#define DEFINE_EVENT(_template, _name, _proto, _args)                          \
-                {                                                              \
-                        .fields = __event_fields___##_template,                \
-                        .name = #_name,                                        \
-                        .nr_fields = ARRAY_SIZE(__event_fields___##_template), \
-                },
-#define TP_ID1(_token, _system) _token##_system
-#define TP_ID(_token, _system)  TP_ID1(_token, _system)
+DEFINE_EVENT_PRINT(
+  ...
+);     <---- and here.
 
-static const struct lttng_event_desc TP_ID(__event_desc___, TRACE_SYSTEM)[] = {
-#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-};
-And for creation of __event_fields___##_template, which allows to keep
-all fields in another array (which should be defined in a phase prior to
-the event array definition), I did:
+by removing the semicolon from the comment in tracepoint.h explaining the
+TRACE_EVENT() usage. It is now also mandated that all declarations done in the
+trace event headers should be surrounded by ifdefs checks: it is already
+necessary, but some users get away from this requirement for structure
+forward-declarations.
 
-#undef __field
-#define __field(_type, _item)                                   \
-        { .name = #_item, .type = { .atype = atype_integer, .name = #_type} },
-(similar for __field_ext, __array, __dynamic_array, __string)
+I am proposing to merge this patchset through the "tracing" tree for better
+coordination.
 
-#undef TP_STRUCT__entry
-#define TP_STRUCT__entry(args...) args  /* Only one used in this phase */
-#undef DECLARE_EVENT_CLASS
-#define DECLARE_EVENT_CLASS(_name, _proto, _args, _tstruct, _assign, _print) \
-        static const struct lttng_event_field __event_fields___##_name[] = { \
-                _tstruct \
-        };
-For the declaration of struct lttng_type, which contains the field type
-information in a union, see [2].
+Adding the missing semicolon within the DEFINE_EVENT(), DEFINE_EVENT_PRINT()
+and DEFINE_TRACE_FN() macros is required as a preliminary step to remove extra
+semicolons.  We currently are not seeing any impact of this missing semicolon
+because extra they appear all over the place in the code generated from
+TRACE_EVENT within ftrace stages. The side-effect of these extra semicolons are:
 
-Best regards,
+a) to pollute the preprocessor output, leaving extra ";" between trace event
+instances in trace points creation.
 
-Mathieu
+b) to render impossible creation of an array of events. Extra semicolons are
+not a matter as long as TRACE_EVENT creates statements, structure elements or
+functions, because extra semicolons are discarded by the compiler. However,
+when creating an array, the separator is the comma, and the semicolon causes a
+parse error.
 
-[1] http://git.lttng.org/?p=lttng-modules.git;a=blob;f=probes/lttng-events.h;h=a05c29d56771b89807ffef035b7cd6df34a0b97f;hb=HEAD
-[2] http://git.lttng.org/?p=lttng-modules.git;a=blob;f=probes/lttng-types.h;h=0192bffaf2f321f446f71a13901e2ab09fd69663;hb=HEAD
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+* So what is the motivation for removing these semicolons ?
+
+Currently, Ftrace is creating a "ftrace_define_fields_##call" function for each
+event to define the event fields, which consumes space. It also has the
+".fields" list head to keep a dynamically generated list of event fields.
+
+By allowing creation of arrays of events, we can do the following: turn the
+dynamically created list of event fields into a first-level const array listing
+event fields. We can use ARRAY_SIZE() on this array to know its size,
+statically. Then, in a following trace event stage, we can create another const
+array containing tuples of (pointers to the event-specific arrays, array size).
+
+So we get all the same information Ftrace currently gets with much less code
+overall, much less read-write data, and less dynamic initialization code.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/tracepoint.h |    4 ++--
+ include/trace/ftrace.h     |   10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+Index: linux-2.6-lttng/include/trace/ftrace.h
+===================================================================
+--- linux-2.6-lttng.orig/include/trace/ftrace.h
++++ linux-2.6-lttng/include/trace/ftrace.h
+@@ -34,8 +34,8 @@
+ 			     PARAMS(args),		       \
+ 			     PARAMS(tstruct),		       \
+ 			     PARAMS(assign),		       \
+-			     PARAMS(print));		       \
+-	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
++			     PARAMS(print))		       \
++	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args))
+ 
+ 
+ #undef __field
+@@ -69,7 +69,7 @@
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args)	\
+ 	static struct ftrace_event_call	__used		\
+-	__attribute__((__aligned__(4))) event_##name
++	__attribute__((__aligned__(4))) event_##name;
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+@@ -588,7 +588,7 @@ static struct ftrace_event_call __used e
+ 	.print_fmt		= print_fmt_##template,			\
+ };									\
+ static struct ftrace_event_call __used					\
+-__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
++__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
+@@ -602,7 +602,7 @@ static struct ftrace_event_call __used e
+ 	.print_fmt		= print_fmt_##call,			\
+ };									\
+ static struct ftrace_event_call __used					\
+-__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
++__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+ 
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+Index: linux-2.6-lttng/include/linux/tracepoint.h
+===================================================================
+--- linux-2.6-lttng.orig/include/linux/tracepoint.h
++++ linux-2.6-lttng/include/linux/tracepoint.h
+@@ -187,7 +187,7 @@ do_trace:								\
+ 		&__tracepoint_##name;
+ 
+ #define DEFINE_TRACE(name)						\
+-	DEFINE_TRACE_FN(name, NULL, NULL);
++	DEFINE_TRACE_FN(name, NULL, NULL)
+ 
+ #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)				\
+ 	EXPORT_SYMBOL_GPL(__tracepoint_##name)
+@@ -345,7 +345,7 @@ do_trace:								\
+  *		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
+  *		__entry->next_comm, __entry->next_pid, __entry->next_prio),
+  *
+- * );
++ * )
+  *
+  * This macro construct is thus used for the regular printk format
+  * tracing setup, it is used to construct a function pointer based
+
