@@ -1,33 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab1EEWek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 18:34:40 -0400
-Received: from [200.87.233.154] ([200.87.233.154]:46594 "EHLO mail.jheccem.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab1EEWei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 18:34:38 -0400
-X-Greylist: delayed 116547 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 18:34:37 EDT
-Date: Tue, 3 May 2011 09:29:56 +0200 (CEST)
-From: Loveth Jerry <admin@jheccem.com>
-Reply-To: loveth2002jerry@hotmail.com
-Message-ID: <10580630.8043.1304407796403.JavaMail.root@mail.jheccem.com>
-Subject: Hello;
+	id S1751362Ab1ECH6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:58:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51987 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1ECH6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 03:58:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
+Date: Tue, 3 May 2011 09:58:14 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, johnlinn@comcast.net,
+        nicolas pitre <nicolas.pitre@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        grant likely <grant.likely@secretlab.ca>,
+        john linn <john.linn@xilinx.com>
+References: <90477150.2231869.1304372815517.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net> <1319927287.2232106.1304373011082.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net> <20110502230118.GE28001@n2100.arm.linux.org.uk>
+In-Reply-To: <20110502230118.GE28001@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [200.87.233.154]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Win)/6.0.9_GA_2686)
-To: undisclosed-recipients:;
+Message-Id: <201105030958.14698.arnd@arndb.de>
+X-Provags-ID: V02:K0:0JzjNThohJuFqGtPtLs6zoCD6YvB6JzJtptemYGhFp2
+ c47GyO74kWd51umYZhJ17BYqD8hyiOmsyXaN1L7tf4i5h7VlBL
+ 68yXE0gV/wno84MVwnf2YeBfOViBbaMdhhGbtwOzf3fBpGjoQ6
+ NLFlzLJafUCyJtB3d9Vea5ESe01yaRV4+B4KwUlsIJgPjWkGoD
+ lN1PlSjBoaVagi/OFQHUA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 03 May 2011 01:01:18 Russell King - ARM Linux wrote:
+> It is preferable to use the same mapping, as it ensures that you're not
+> going to create incompatible aliases.
 
+Is aliasing a problem for MMIO mappings? I would think that you can
+ioremap registers anywhere and as often as you want because they are
+never cacheable.
 
-Hello, 
+> But, before we get too bogged down with this, please realise that it is
+> possible to setup early mappings from the device tree for things like the
+> SCU.  Maybe not using ioremap(), but I'm sure we can find some way to use
+> the iotable_init() stuff to setup some early mappings from DT for this
+> stuff.
 
-My name is Loveth Niame Jerry . I got your contact email while making some research for reliable foreigner on the Internet (Remember the distance or colour does not matter but our good heart and sincerity matters allot in life ) i will be waiting to hear from you so that i will tell you more about my self and send my picture to you.I wish you all the best for your day.Always stay blessed from my deepest heart. 
+Good point. It doesn't really matter how the entries get into the page
+table, whether you call it ioremap, iotable_init, create_mapping or
+ioremap_early. What matters is that we don't hardcode the physical
+address in the board code, because that limits the possible reuse
+on other device tree enabled targets.
 
-Yours respectfully, 
-Miss Loveth. 
-
+	Arnd
