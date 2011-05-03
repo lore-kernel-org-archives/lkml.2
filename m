@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1ECGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 02:48:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32924 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019Ab1ECGsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 02:48:24 -0400
-Date: Tue, 3 May 2011 08:48:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
-Message-ID: <20110503064813.GA20342@elte.hu>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-3-git-send-email-bp@amd64.org>
- <20110503064046.GD7751@elte.hu>
+	id S1753266Ab1ECHBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:01:37 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:22999 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab1ECHBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 03:01:35 -0400
+Message-ID: <4DBFA78F.9060001@snapgear.com>
+Date: Tue, 3 May 2011 16:58:23 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503064046.GD7751@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <arnd@arndb.de>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [PATCH v3 1/7] m68knommu: fix build error due to the lack of
+ find_next_bit_le()
+References: <1303910411-15793-1-git-send-email-akinobu.mita@gmail.com> <1303910411-15793-2-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1303910411-15793-2-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Akinobu,
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+On 27/04/11 23:20, Akinobu Mita wrote:
+> m68knommu can't build ext4, udf, and ocfs2 due to the lack of
+> find_next_bit_le().
+>
+> This implements find_next_bit_le() on m68knommu by duplicating the
+> generic find_next_bit_le() in lib/find_next_bit.c.
 
-> >  include/linux/perf_event.h |   22 +++++++++++++++-
-> >  kernel/events/Makefile     |    2 +-
-> >  kernel/events/core.c       |   29 ++++++++++++++++++---
-> >  kernel/events/persistent.c |   59 ++++++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 105 insertions(+), 7 deletions(-)
-> >  create mode 100644 kernel/events/persistent.c
-> 
-> I really like this new kernel/events/ subdirectory you created - we could move 
-> the other perf_events.c facilities there as well, and maybe split up the file a 
-> bit, it's 7.5 KLOC now which is a bit excessive.
-> 
-> We should probably do that before adding kernel/events/persistent.c - wanna do 
-> those changes? Initial commit should be a mostly-rename thing: 
-> kernel/perf_events.c could move into kernel/events/core.c or so - and then we 
-> could split the core up some more, into various facilities.
+Wouldn't the m68k specific implementation of this in
+arch/m68k/include/asm/bitops_mm.h be better?
 
-Looks like you have a time machine and after reading my feedback you have have 
-sneaked this exact change into patch 1/4! :-)
+(bitops_*.h is still on my list of files to clean up and
+merge for m68k mmu and non-mmu)
 
-( The alternative interpretation is that i should start reading series at the 
-  beginning - not in the most interesting looking (largest) places where i 
-  would stupidly ask for changes you've put into 1/4 already. )
+Regards
+Greg
 
-Thanks,
 
-	Ingo
+
+> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
+> Cc: Greg Ungerer<gerg@uclinux.org>
+> ---
+>
+> This patch should go into 2.6.39
+>
+>   arch/m68k/include/asm/bitops_no.h |   44 +++++++++++++++++++++++++++++++++++++
+>   1 files changed, 44 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/bitops_no.h b/arch/m68k/include/asm/bitops_no.h
+> index 7d3779f..97d1d0c 100644
+> --- a/arch/m68k/include/asm/bitops_no.h
+> +++ b/arch/m68k/include/asm/bitops_no.h
+> @@ -336,6 +336,50 @@ found_middle:
+>   	return result + ffz(__swab32(tmp));
+>   }
+>
+> +static inline unsigned long find_next_bit_le(const void *addr, unsigned
+> +		long size, unsigned long offset)
+> +{
+> +	const unsigned long *p = addr;
+> +	unsigned long result = offset&  ~(BITS_PER_LONG - 1);
+> +	unsigned long tmp;
+> +
+> +	if (offset>= size)
+> +		return size;
+> +	p += offset / BITS_PER_LONG;
+> +	size -= result;
+> +	offset&= (BITS_PER_LONG - 1UL);
+> +	if (offset) {
+> +		tmp = __swab32(*(p++));
+> +		tmp&= (~0UL<<  offset);
+> +		if (size<  BITS_PER_LONG)
+> +			goto found_first;
+> +		if (tmp)
+> +			goto found_middle;
+> +		size -= BITS_PER_LONG;
+> +		result += BITS_PER_LONG;
+> +	}
+> +
+> +	while (size&  ~(BITS_PER_LONG - 1)) {
+> +		tmp = *(p++);
+> +		if (tmp)
+> +			goto found_middle_swap;
+> +		result += BITS_PER_LONG;
+> +		size -= BITS_PER_LONG;
+> +	}
+> +	if (!size)
+> +		return result;
+> +	tmp = __swab32(*p);
+> +found_first:
+> +	tmp&= (~0UL>>  (BITS_PER_LONG - size));
+> +	if (tmp == 0UL)		/* Are any bits set? */
+> +		return result + size; /* Nope. */
+> +found_middle:
+> +	return result + __ffs(tmp);
+> +
+> +found_middle_swap:
+> +	return result + __ffs(__swab32(tmp));
+> +}
+> +
+>   #endif /* __KERNEL__ */
+>
+>   #include<asm-generic/bitops/fls.h>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
