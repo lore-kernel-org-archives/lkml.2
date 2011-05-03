@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1ECOru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:47:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:36096 "EHLO
+	id S1753332Ab1ECOr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:47:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35870 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1ECOrr (ORCPT
+	with ESMTP id S1752918Ab1ECOr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:47:47 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=3rvgeqzMqd0A:10 a=LOCHzroeiGwA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=YYF7fsvRAAAA:8 a=yQdBAQUQAAAA:8 a=n9Sqmae0AAAA:8 a=jiCpVfgDaWo11A7G3MoA:9 a=10F0IuSqJhIkLJn4RFMA:7 a=CjuIK1q_8ugA:10 a=oX6Vh0_dJjoA:10 a=IcxpeKGZWnEA:10 a=z0jh1eRXt18A:10 a=r89HwGZXoxIKSfge:21 a=Gl_qAOTNqTeyfkVX:21 a=mpMdnlmFKti1S5SNY1DT+A==:117
+	Tue, 3 May 2011 10:47:57 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=3rvgeqzMqd0A:10 a=l9BkGO6b3DQA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=YYF7fsvRAAAA:8 a=yQdBAQUQAAAA:8 a=n9Sqmae0AAAA:8 a=d64buo2ukrgjQjn_5TsA:9 a=b4gLoQeto10xy9hj_8QA:7 a=CjuIK1q_8ugA:10 a=oX6Vh0_dJjoA:10 a=IcxpeKGZWnEA:10 a=z0jh1eRXt18A:10 a=F8ikjTkB7mj9w00t:21 a=8_PI20C6cNODZtWP:21 a=mpMdnlmFKti1S5SNY1DT+A==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 65.28.92.85
-Date: Tue, 03 May 2011 09:47:45 -0500
+Date: Tue, 03 May 2011 09:47:55 -0500
 From: Larry Finger <Larry.Finger@lwfinger.net>
 To: John W Linville <linville@tuxdriver.com>
 Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
         chaoming_li@realsil.com.cn
-Subject: [PATCH 01/12] rtlwifi: rtl8192se: Merge def.h
-Message-ID: <4dc01591.kmODgHghjMuR/guK%Larry.Finger@lwfinger.net>
+Subject: [PATCH 02/12] rtlwifi: rtl8192se: Merge dynamic management
+ routines
+Message-ID: <4dc0159b.oGBzGIa5JQyv2K2A%Larry.Finger@lwfinger.net>
 User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,18 +28,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chaoming Li <chaoming_li@realsil.com.cn>
 
-Introduce routine def.h for rtl8192se.
+Merge routines dm.c and dm.h for RTL8192SE.
 
-Signed-off-by: Chaoming_Li <chaoming_li@realsil.com.cn>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Chaoming_Li <chaoming_li@realsil.com.cn>
 ---
 
 
-Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/def.h
+Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/dm.c
 ===================================================================
 --- /dev/null
-+++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/def.h
-@@ -0,0 +1,598 @@
++++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/dm.c
+@@ -0,0 +1,733 @@
 +/******************************************************************************
 + *
 + * Copyright(c) 2009-2010  Realtek Corporation.
@@ -67,573 +68,877 @@ Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/def.h
 + * Larry Finger <Larry.Finger@lwfinger.net>
 + *
 + *****************************************************************************/
-+#ifndef __REALTEK_92S_DEF_H__
-+#define __REALTEK_92S_DEF_H__
 +
-+#define RX_MPDU_QUEUE				0
-+#define RX_CMD_QUEUE				1
-+#define RX_MAX_QUEUE				2
++#include "../wifi.h"
++#include "../base.h"
++#include "reg.h"
++#include "def.h"
++#include "phy.h"
++#include "dm.h"
++#include "fw.h"
 +
-+#define DESC92S_RATE1M				0x00
-+#define DESC92S_RATE2M				0x01
-+#define DESC92S_RATE5_5M			0x02
-+#define DESC92S_RATE11M				0x03
-+#define DESC92S_RATE6M				0x04
-+#define DESC92S_RATE9M				0x05
-+#define DESC92S_RATE12M				0x06
-+#define DESC92S_RATE18M				0x07
-+#define DESC92S_RATE24M				0x08
-+#define DESC92S_RATE36M				0x09
-+#define DESC92S_RATE48M				0x0a
-+#define DESC92S_RATE54M				0x0b
-+#define DESC92S_RATEMCS0			0x0c
-+#define DESC92S_RATEMCS1			0x0d
-+#define DESC92S_RATEMCS2			0x0e
-+#define DESC92S_RATEMCS3			0x0f
-+#define DESC92S_RATEMCS4			0x10
-+#define DESC92S_RATEMCS5			0x11
-+#define DESC92S_RATEMCS6			0x12
-+#define DESC92S_RATEMCS7			0x13
-+#define DESC92S_RATEMCS8			0x14
-+#define DESC92S_RATEMCS9			0x15
-+#define DESC92S_RATEMCS10			0x16
-+#define DESC92S_RATEMCS11			0x17
-+#define DESC92S_RATEMCS12			0x18
-+#define DESC92S_RATEMCS13			0x19
-+#define DESC92S_RATEMCS14			0x1a
-+#define DESC92S_RATEMCS15			0x1b
-+#define DESC92S_RATEMCS15_SG			0x1c
-+#define DESC92S_RATEMCS32			0x20
-+
-+#define SHORT_SLOT_TIME				9
-+#define NON_SHORT_SLOT_TIME			20
-+
-+/* Rx smooth factor */
-+#define	RX_SMOOTH_FACTOR			20
-+
-+/* Queue Select Value in TxDesc */
-+#define QSLT_BK					0x2
-+#define QSLT_BE					0x0
-+#define QSLT_VI					0x5
-+#define QSLT_VO					0x6
-+#define QSLT_BEACON				0x10
-+#define QSLT_HIGH				0x11
-+#define QSLT_MGNT				0x12
-+#define QSLT_CMD				0x13
-+
-+#define	PHY_RSSI_SLID_WIN_MAX			100
-+#define	PHY_LINKQUALITY_SLID_WIN_MAX		20
-+#define	PHY_BEACON_RSSI_SLID_WIN_MAX		10
-+
-+/* Tx Desc */
-+#define TX_DESC_SIZE_RTL8192S			(16 * 4)
-+#define TX_CMDDESC_SIZE_RTL8192S		(16 * 4)
-+
-+/* Define a macro that takes a le32 word, converts it to host ordering,
-+ * right shifts by a specified count, creates a mask of the specified
-+ * bit count, and extracts that number of bits.
-+ */
-+
-+#define SHIFT_AND_MASK_LE(__pdesc, __shift, __mask)		\
-+	((le32_to_cpu(*(((__le32 *)(__pdesc)))) >> (__shift)) &	\
-+	BIT_LEN_MASK_32(__mask))
-+
-+/* Define a macro that clears a bit field in an le32 word and
-+ * sets the specified value into that bit field. The resulting
-+ * value remains in le32 ordering; however, it is properly converted
-+ * to host ordering for the clear and set operations before conversion
-+ * back to le32.
-+ */
-+
-+#define SET_BITS_OFFSET_LE(__pdesc, __shift, __len, __val)	\
-+	(*(__le32 *)(__pdesc) =					\
-+	(cpu_to_le32((le32_to_cpu(*((__le32 *)(__pdesc))) &	\
-+	(~(BIT_OFFSET_LEN_MASK_32((__shift), __len)))) |	\
-+	(((u32)(__val) & BIT_LEN_MASK_32(__len)) << (__shift)))));
-+
-+/* macros to read/write various fields in RX or TX descriptors */
-+
-+/* Dword 0 */
-+#define SET_TX_DESC_PKT_SIZE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 0, 16, __val)
-+#define SET_TX_DESC_OFFSET(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 16, 8, __val)
-+#define SET_TX_DESC_TYPE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 24, 2, __val)
-+#define SET_TX_DESC_LAST_SEG(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 26, 1, __val)
-+#define SET_TX_DESC_FIRST_SEG(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 27, 1, __val)
-+#define SET_TX_DESC_LINIP(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 28, 1, __val)
-+#define SET_TX_DESC_AMSDU(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 29, 1, __val)
-+#define SET_TX_DESC_GREEN_FIELD(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 30, 1, __val)
-+#define SET_TX_DESC_OWN(__pdesc, __val)				\
-+	SET_BITS_OFFSET_LE(__pdesc, 31, 1, __val)
-+
-+#define GET_TX_DESC_OWN(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc, 31, 1)
-+
-+/* Dword 1 */
-+#define SET_TX_DESC_MACID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 0, 5, __val)
-+#define SET_TX_DESC_MORE_DATA(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 5, 1, __val)
-+#define SET_TX_DESC_MORE_FRAG(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 6, 1, __val)
-+#define SET_TX_DESC_PIFS(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 7, 1, __val)
-+#define SET_TX_DESC_QUEUE_SEL(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 8, 5, __val)
-+#define SET_TX_DESC_ACK_POLICY(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 13, 2, __val)
-+#define SET_TX_DESC_NO_ACM(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 15, 1, __val)
-+#define SET_TX_DESC_NON_QOS(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 16, 1, __val)
-+#define SET_TX_DESC_KEY_ID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 17, 2, __val)
-+#define SET_TX_DESC_OUI(__pdesc, __val)				\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 19, 1, __val)
-+#define SET_TX_DESC_PKT_TYPE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 20, 1, __val)
-+#define SET_TX_DESC_EN_DESC_ID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 21, 1, __val)
-+#define SET_TX_DESC_SEC_TYPE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 22, 2, __val)
-+#define SET_TX_DESC_WDS(__pdesc, __val)				\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 24, 1, __val)
-+#define SET_TX_DESC_HTC(__pdesc, __val)				\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 25, 1, __val)
-+#define SET_TX_DESC_PKT_OFFSET(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 26, 5, __val)
-+#define SET_TX_DESC_HWPC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 27, 1, __val)
-+
-+/* Dword 2 */
-+#define SET_TX_DESC_DATA_RETRY_LIMIT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 0, 6, __val)
-+#define SET_TX_DESC_RETRY_LIMIT_ENABLE(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 6, 1, __val)
-+#define SET_TX_DESC_TSFL(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 7, 5, __val)
-+#define SET_TX_DESC_RTS_RETRY_COUNT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 12, 6, __val)
-+#define SET_TX_DESC_DATA_RETRY_COUNT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 18, 6, __val)
-+#define	SET_TX_DESC_RSVD_MACID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(((__pdesc) + 8), 24, 5, __val)
-+#define SET_TX_DESC_AGG_ENABLE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 29, 1, __val)
-+#define SET_TX_DESC_AGG_BREAK(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 30, 1, __val)
-+#define SET_TX_DESC_OWN_MAC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 31, 1, __val)
-+
-+/* Dword 3 */
-+#define SET_TX_DESC_NEXT_HEAP_PAGE(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 0, 8, __val)
-+#define SET_TX_DESC_TAIL_PAGE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 8, 8, __val)
-+#define SET_TX_DESC_SEQ(__pdesc, __val)				\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 16, 12, __val)
-+#define SET_TX_DESC_FRAG(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 28, 4, __val)
-+
-+/* Dword 4 */
-+#define SET_TX_DESC_RTS_RATE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 0, 6, __val)
-+#define SET_TX_DESC_DISABLE_RTS_FB(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 6, 1, __val)
-+#define SET_TX_DESC_RTS_RATE_FB_LIMIT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 7, 4, __val)
-+#define SET_TX_DESC_CTS_ENABLE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 11, 1, __val)
-+#define SET_TX_DESC_RTS_ENABLE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 12, 1, __val)
-+#define SET_TX_DESC_RA_BRSR_ID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 13, 3, __val)
-+#define SET_TX_DESC_TXHT(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 16, 1, __val)
-+#define SET_TX_DESC_TX_SHORT(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 17, 1, __val)
-+#define SET_TX_DESC_TX_BANDWIDTH(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 18, 1, __val)
-+#define SET_TX_DESC_TX_SUB_CARRIER(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 19, 2, __val)
-+#define SET_TX_DESC_TX_STBC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 21, 2, __val)
-+#define SET_TX_DESC_TX_REVERSE_DIRECTION(__pdesc, __val)	\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 23, 1, __val)
-+#define SET_TX_DESC_RTS_HT(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 24, 1, __val)
-+#define SET_TX_DESC_RTS_SHORT(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 25, 1, __val)
-+#define SET_TX_DESC_RTS_BANDWIDTH(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 26, 1, __val)
-+#define SET_TX_DESC_RTS_SUB_CARRIER(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 27, 2, __val)
-+#define SET_TX_DESC_RTS_STBC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 29, 2, __val)
-+#define SET_TX_DESC_USER_RATE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 31, 1, __val)
-+
-+/* Dword 5 */
-+#define SET_TX_DESC_PACKET_ID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 0, 9, __val)
-+#define SET_TX_DESC_TX_RATE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 9, 6, __val)
-+#define SET_TX_DESC_DISABLE_FB(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 15, 1, __val)
-+#define SET_TX_DESC_DATA_RATE_FB_LIMIT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 16, 5, __val)
-+#define SET_TX_DESC_TX_AGC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 21, 11, __val)
-+
-+/* Dword 6 */
-+#define SET_TX_DESC_IP_CHECK_SUM(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 24, 0, 16, __val)
-+#define SET_TX_DESC_TCP_CHECK_SUM(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 24, 16, 16, __val)
-+
-+/* Dword 7 */
-+#define SET_TX_DESC_TX_BUFFER_SIZE(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 28, 0, 16, __val)
-+#define SET_TX_DESC_IP_HEADER_OFFSET(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 28, 16, 8, __val)
-+#define SET_TX_DESC_TCP_ENABLE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 28, 31, 1, __val)
-+
-+/* Dword 8 */
-+#define SET_TX_DESC_TX_BUFFER_ADDRESS(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 32, 0, 32, __val)
-+#define GET_TX_DESC_TX_BUFFER_ADDRESS(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 32, 0, 32)
-+
-+/* Dword 9 */
-+#define SET_TX_DESC_NEXT_DESC_ADDRESS(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 36, 0, 32, __val)
-+
-+/* Because the PCI Tx descriptors are chaied at the
-+ * initialization and all the NextDescAddresses in
-+ * these descriptors cannot not be cleared (,or
-+ * driver/HW cannot find the next descriptor), the
-+ * offset 36 (NextDescAddresses) is reserved when
-+ * the desc is cleared. */
-+#define	TX_DESC_NEXT_DESC_OFFSET			36
-+#define CLEAR_PCI_TX_DESC_CONTENT(__pdesc, _size)		\
-+do {								\
-+	if (_size > TX_DESC_NEXT_DESC_OFFSET)			\
-+		memset(__pdesc, 0, TX_DESC_NEXT_DESC_OFFSET);	\
-+	else							\
-+		memset(__pdesc, 0, _size);			\
-+} while (0);
-+
-+/* Rx Desc */
-+#define RX_STATUS_DESC_SIZE				24
-+#define RX_DRV_INFO_SIZE_UNIT				8
-+
-+/* DWORD 0 */
-+#define SET_RX_STATUS_DESC_PKT_LEN(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 0, 14, __val)
-+#define SET_RX_STATUS_DESC_CRC32(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 14, 1, __val)
-+#define SET_RX_STATUS_DESC_ICV(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 15, 1, __val)
-+#define SET_RX_STATUS_DESC_DRVINFO_SIZE(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 16, 4, __val)
-+#define SET_RX_STATUS_DESC_SECURITY(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 20, 3, __val)
-+#define SET_RX_STATUS_DESC_QOS(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 23, 1, __val)
-+#define SET_RX_STATUS_DESC_SHIFT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 24, 2, __val)
-+#define SET_RX_STATUS_DESC_PHY_STATUS(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 26, 1, __val)
-+#define SET_RX_STATUS_DESC_SWDEC(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 27, 1, __val)
-+#define SET_RX_STATUS_DESC_LAST_SEG(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 28, 1, __val)
-+#define SET_RX_STATUS_DESC_FIRST_SEG(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc, 29, 1, __val)
-+#define SET_RX_STATUS_DESC_EOR(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 30, 1, __val)
-+#define SET_RX_STATUS_DESC_OWN(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc, 31, 1, __val)
-+
-+#define GET_RX_STATUS_DESC_PKT_LEN(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 0, 14)
-+#define GET_RX_STATUS_DESC_CRC32(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 14, 1)
-+#define GET_RX_STATUS_DESC_ICV(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc, 15, 1)
-+#define GET_RX_STATUS_DESC_DRVINFO_SIZE(__pdesc)		\
-+	SHIFT_AND_MASK_LE(__pdesc, 16, 4)
-+#define GET_RX_STATUS_DESC_SECURITY(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 20, 3)
-+#define GET_RX_STATUS_DESC_QOS(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc, 23, 1)
-+#define GET_RX_STATUS_DESC_SHIFT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 24, 2)
-+#define GET_RX_STATUS_DESC_PHY_STATUS(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 26, 1)
-+#define GET_RX_STATUS_DESC_SWDEC(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 27, 1)
-+#define GET_RX_STATUS_DESC_LAST_SEG(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 28, 1)
-+#define GET_RX_STATUS_DESC_FIRST_SEG(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc, 29, 1)
-+#define GET_RX_STATUS_DESC_EOR(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc, 30, 1)
-+#define GET_RX_STATUS_DESC_OWN(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc, 31, 1)
-+
-+/* DWORD 1 */
-+#define SET_RX_STATUS_DESC_MACID(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 0, 5, __val)
-+#define SET_RX_STATUS_DESC_TID(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 5, 4, __val)
-+#define SET_RX_STATUS_DESC_PAGGR(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 14, 1, __val)
-+#define SET_RX_STATUS_DESC_FAGGR(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 15, 1, __val)
-+#define SET_RX_STATUS_DESC_A1_FIT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 16, 4, __val)
-+#define SET_RX_STATUS_DESC_A2_FIT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 20, 4, __val)
-+#define SET_RX_STATUS_DESC_PAM(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 24, 1, __val)
-+#define SET_RX_STATUS_DESC_PWR(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 25, 1, __val)
-+#define SET_RX_STATUS_DESC_MOREDATA(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 26, 1, __val)
-+#define SET_RX_STATUS_DESC_MOREFRAG(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 27, 1, __val)
-+#define SET_RX_STATUS_DESC_TYPE(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 28, 2, __val)
-+#define SET_RX_STATUS_DESC_MC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 30, 1, __val)
-+#define SET_RX_STATUS_DESC_BC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 4, 31, 1, __val)
-+
-+#define GET_RX_STATUS_DEC_MACID(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 0, 5)
-+#define GET_RX_STATUS_DESC_TID(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 5, 4)
-+#define GET_RX_STATUS_DESC_PAGGR(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 14, 1)
-+#define GET_RX_STATUS_DESC_FAGGR(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 15, 1)
-+#define GET_RX_STATUS_DESC_A1_FIT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 16, 4)
-+#define GET_RX_STATUS_DESC_A2_FIT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 20, 4)
-+#define GET_RX_STATUS_DESC_PAM(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 24, 1)
-+#define GET_RX_STATUS_DESC_PWR(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 25, 1)
-+#define GET_RX_STATUS_DESC_MORE_DATA(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 26, 1)
-+#define GET_RX_STATUS_DESC_MORE_FRAG(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 27, 1)
-+#define GET_RX_STATUS_DESC_TYPE(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 28, 2)
-+#define GET_RX_STATUS_DESC_MC(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 30, 1)
-+#define GET_RX_STATUS_DESC_BC(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 4, 31, 1)
-+
-+/* DWORD 2 */
-+#define SET_RX_STATUS_DESC_SEQ(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 0, 12, __val)
-+#define SET_RX_STATUS_DESC_FRAG(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 12, 4, __val)
-+#define SET_RX_STATUS_DESC_NEXT_PKTLEN(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 16, 8, __val)
-+#define SET_RX_STATUS_DESC_NEXT_IND(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 8, 30, 1, __val)
-+
-+#define GET_RX_STATUS_DESC_SEQ(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 8, 0, 12)
-+#define GET_RX_STATUS_DESC_FRAG(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 8, 12, 4)
-+#define GET_RX_STATUS_DESC_NEXT_PKTLEN(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 8, 16, 8)
-+#define GET_RX_STATUS_DESC_NEXT_IND(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 8, 30, 1)
-+
-+/* DWORD 3 */
-+#define SET_RX_STATUS_DESC_RX_MCS(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 0, 6, __val)
-+#define SET_RX_STATUS_DESC_RX_HT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 6, 1, __val)
-+#define SET_RX_STATUS_DESC_AMSDU(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 7, 1, __val)
-+#define SET_RX_STATUS_DESC_SPLCP(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 8, 1, __val)
-+#define SET_RX_STATUS_DESC_BW(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 9, 1, __val)
-+#define SET_RX_STATUS_DESC_HTC(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 10, 1, __val)
-+#define SET_RX_STATUS_DESC_TCP_CHK_RPT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 11, 1, __val)
-+#define SET_RX_STATUS_DESC_IP_CHK_RPT(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 12, 1, __val)
-+#define SET_RX_STATUS_DESC_TCP_CHK_VALID(__pdesc, __val)	\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 13, 1, __val)
-+#define SET_RX_STATUS_DESC_HWPC_ERR(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 14, 1, __val)
-+#define SET_RX_STATUS_DESC_HWPC_IND(__pdesc, __val)		\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 15, 1, __val)
-+#define SET_RX_STATUS_DESC_IV0(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 12, 16, 16, __val)
-+
-+#define GET_RX_STATUS_DESC_RX_MCS(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 0, 6)
-+#define GET_RX_STATUS_DESC_RX_HT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 6, 1)
-+#define GET_RX_STATUS_DESC_AMSDU(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 7, 1)
-+#define GET_RX_STATUS_DESC_SPLCP(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 8, 1)
-+#define GET_RX_STATUS_DESC_BW(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 9, 1)
-+#define GET_RX_STATUS_DESC_HTC(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 10, 1)
-+#define GET_RX_STATUS_DESC_TCP_CHK_RPT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 11, 1)
-+#define GET_RX_STATUS_DESC_IP_CHK_RPT(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 12, 1)
-+#define GET_RX_STATUS_DESC_TCP_CHK_VALID(__pdesc)		\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 13, 1)
-+#define GET_RX_STATUS_DESC_HWPC_ERR(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 14, 1)
-+#define GET_RX_STATUS_DESC_HWPC_IND(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 15, 1)
-+#define GET_RX_STATUS_DESC_IV0(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 12, 16, 16)
-+
-+/* DWORD 4 */
-+#define SET_RX_STATUS_DESC_IV1(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 16, 0, 32, __val)
-+#define GET_RX_STATUS_DESC_IV1(__pdesc)				\
-+	SHIFT_AND_MASK_LE(__pdesc + 16, 0, 32)
-+
-+/* DWORD 5 */
-+#define SET_RX_STATUS_DESC_TSFL(__pdesc, __val)			\
-+	SET_BITS_OFFSET_LE(__pdesc + 20, 0, 32, __val)
-+#define GET_RX_STATUS_DESC_TSFL(__pdesc)			\
-+	SHIFT_AND_MASK_LE(__pdesc + 20, 0, 32)
-+
-+/* DWORD 6 */
-+#define SET_RX_STATUS__DESC_BUFF_ADDR(__pdesc, __val)	\
-+	SET_BITS_OFFSET_LE(__pdesc + 24, 0, 32, __val)
-+
-+#define RX_HAL_IS_CCK_RATE(_pdesc)\
-+	(GET_RX_STATUS_DESC_RX_MCS(_pdesc) == DESC92S_RATE1M ||	\
-+	 GET_RX_STATUS_DESC_RX_MCS(_pdesc) == DESC92S_RATE2M ||	\
-+	 GET_RX_STATUS_DESC_RX_MCS(_pdesc) == DESC92S_RATE5_5M ||\
-+	 GET_RX_STATUS_DESC_RX_MCS(_pdesc) == DESC92S_RATE11M)
-+
-+enum rf_optype {
-+	RF_OP_BY_SW_3WIRE = 0,
-+	RF_OP_BY_FW,
-+	RF_OP_MAX
++struct dig_t digtable;
++static const u32 edca_setting_dl[PEER_MAX] = {
++	0xa44f,		/* 0 UNKNOWN */
++	0x5ea44f,	/* 1 REALTEK_90 */
++	0x5ea44f,	/* 2 REALTEK_92SE */
++	0xa630,		/* 3 BROAD	*/
++	0xa44f,		/* 4 RAL */
++	0xa630,		/* 5 ATH */
++	0xa630,		/* 6 CISCO */
++	0xa42b,		/* 7 MARV */
 +};
 +
-+enum ic_inferiority {
-+	IC_INFERIORITY_A = 0,
-+	IC_INFERIORITY_B = 1,
++static const u32 edca_setting_dl_gmode[PEER_MAX] = {
++	0x4322,		/* 0 UNKNOWN */
++	0xa44f,		/* 1 REALTEK_90 */
++	0x5ea44f,	/* 2 REALTEK_92SE */
++	0xa42b,		/* 3 BROAD */
++	0x5e4322,	/* 4 RAL */
++	0x4322,		/* 5 ATH */
++	0xa430,		/* 6 CISCO */
++	0x5ea44f,	/* 7 MARV */
 +};
 +
-+enum fwcmd_iotype {
-+	/* For DIG DM */
-+	FW_CMD_DIG_ENABLE = 0,
-+	FW_CMD_DIG_DISABLE = 1,
-+	FW_CMD_DIG_HALT = 2,
-+	FW_CMD_DIG_RESUME = 3,
-+	/* For High Power DM */
-+	FW_CMD_HIGH_PWR_ENABLE = 4,
-+	FW_CMD_HIGH_PWR_DISABLE = 5,
-+	/* For Rate adaptive DM */
-+	FW_CMD_RA_RESET = 6,
-+	FW_CMD_RA_ACTIVE = 7,
-+	FW_CMD_RA_REFRESH_N = 8,
-+	FW_CMD_RA_REFRESH_BG = 9,
-+	FW_CMD_RA_INIT = 10,
-+	/* For FW supported IQK */
-+	FW_CMD_IQK_INIT = 11,
-+	/* Tx power tracking switch,
-+	 * MP driver only */
-+	FW_CMD_TXPWR_TRACK_ENABLE = 12,
-+	/* Tx power tracking switch,
-+	 * MP driver only */
-+	FW_CMD_TXPWR_TRACK_DISABLE = 13,
-+	/* Tx power tracking with thermal
-+	 * indication, for Normal driver */
-+	FW_CMD_TXPWR_TRACK_THERMAL = 14,
-+	FW_CMD_PAUSE_DM_BY_SCAN = 15,
-+	FW_CMD_RESUME_DM_BY_SCAN = 16,
-+	FW_CMD_RA_REFRESH_N_COMB = 17,
-+	FW_CMD_RA_REFRESH_BG_COMB = 18,
-+	FW_CMD_ANTENNA_SW_ENABLE = 19,
-+	FW_CMD_ANTENNA_SW_DISABLE = 20,
-+	/* Tx Status report for CCX from FW */
-+	FW_CMD_TX_FEEDBACK_CCX_ENABLE = 21,
-+	/* Indifate firmware that driver
-+	 * enters LPS, For PS-Poll issue */
-+	FW_CMD_LPS_ENTER = 22,
-+	/* Indicate firmware that driver
-+	 * leave LPS*/
-+	FW_CMD_LPS_LEAVE = 23,
-+	/* Set DIG mode to signal strength */
-+	FW_CMD_DIG_MODE_SS = 24,
-+	/* Set DIG mode to false alarm. */
-+	FW_CMD_DIG_MODE_FA = 25,
-+	FW_CMD_ADD_A2_ENTRY = 26,
-+	FW_CMD_CTRL_DM_BY_DRIVER = 27,
-+	FW_CMD_CTRL_DM_BY_DRIVER_NEW = 28,
-+	FW_CMD_PAPE_CONTROL = 29,
-+	FW_CMD_IQK_ENABLE = 30,
++static const u32 edca_setting_ul[PEER_MAX] = {
++	0x5e4322,	/* 0 UNKNOWN */
++	0xa44f,		/* 1 REALTEK_90 */
++	0x5ea44f,	/* 2 REALTEK_92SE */
++	0x5ea322,	/* 3 BROAD */
++	0x5ea422,	/* 4 RAL */
++	0x5ea322,	/* 5 ATH */
++	0x3ea44f,	/* 6 CISCO */
++	0x5ea44f,	/* 7 MARV */
 +};
 +
-+/*
-+ * Driver info contain PHY status
-+ * and other variabel size info
-+ * PHY Status content as below
-+ */
-+struct  rx_fwinfo {
-+	/* DWORD 0 */
-+	u8 gain_trsw[4];
-+	/* DWORD 1 */
-+	u8 pwdb_all;
-+	u8 cfosho[4];
-+	/* DWORD 2 */
-+	u8 cfotail[4];
-+	/* DWORD 3 */
-+	s8 rxevm[2];
-+	s8 rxsnr[4];
-+	/* DWORD 4 */
-+	u8 pdsnr[2];
-+	/* DWORD 5 */
-+	u8 csi_current[2];
-+	u8 csi_target[2];
-+	/* DWORD 6 */
-+	u8 sigevm;
-+	u8 max_ex_pwr;
-+	u8 ex_intf_flag:1;
-+	u8 sgi_en:1;
-+	u8 rxsc:2;
-+	u8 reserve:4;
++static void _rtl92s_dm_check_edca_turbo(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
++
++	static u64 last_txok_cnt;
++	static u64 last_rxok_cnt;
++	u64 cur_txok_cnt = 0;
++	u64 cur_rxok_cnt = 0;
++
++	u32 edca_be_ul = edca_setting_ul[mac->vendor];
++	u32 edca_be_dl = edca_setting_dl[mac->vendor];
++	u32 edca_gmode = edca_setting_dl_gmode[mac->vendor];
++
++	if (mac->link_state != MAC80211_LINKED) {
++		rtlpriv->dm.current_turbo_edca = false;
++		goto dm_checkedcaturbo_exit;
++	}
++
++	if ((!rtlpriv->dm.is_any_nonbepkts) &&
++	    (!rtlpriv->dm.disable_framebursting)) {
++		cur_txok_cnt = rtlpriv->stats.txbytesunicast - last_txok_cnt;
++		cur_rxok_cnt = rtlpriv->stats.rxbytesunicast - last_rxok_cnt;
++
++		if (rtlpriv->phy.rf_type == RF_1T2R) {
++			if (cur_txok_cnt > 4 * cur_rxok_cnt) {
++				/* Uplink TP is present. */
++				if (rtlpriv->dm.is_cur_rdlstate ||
++					!rtlpriv->dm.current_turbo_edca) {
++					rtl_write_dword(rtlpriv, EDCAPARA_BE,
++							edca_be_ul);
++					rtlpriv->dm.is_cur_rdlstate = false;
++				}
++			} else {/* Balance TP is present. */
++				if (!rtlpriv->dm.is_cur_rdlstate ||
++					!rtlpriv->dm.current_turbo_edca) {
++					if (mac->mode == WIRELESS_MODE_G ||
++					    mac->mode == WIRELESS_MODE_B)
++						rtl_write_dword(rtlpriv,
++								EDCAPARA_BE,
++								edca_gmode);
++					else
++						rtl_write_dword(rtlpriv,
++								EDCAPARA_BE,
++								edca_be_dl);
++					rtlpriv->dm.is_cur_rdlstate = true;
++				}
++			}
++			rtlpriv->dm.current_turbo_edca = true;
++		} else {
++			if (cur_rxok_cnt > 4 * cur_txok_cnt) {
++				if (!rtlpriv->dm.is_cur_rdlstate ||
++					!rtlpriv->dm.current_turbo_edca) {
++					if (mac->mode == WIRELESS_MODE_G ||
++					    mac->mode == WIRELESS_MODE_B)
++						rtl_write_dword(rtlpriv,
++								EDCAPARA_BE,
++								edca_gmode);
++					else
++						rtl_write_dword(rtlpriv,
++								EDCAPARA_BE,
++								edca_be_dl);
++					rtlpriv->dm.is_cur_rdlstate = true;
++				}
++			} else {
++				if (rtlpriv->dm.is_cur_rdlstate ||
++					!rtlpriv->dm.current_turbo_edca) {
++					rtl_write_dword(rtlpriv, EDCAPARA_BE,
++							edca_be_ul);
++					rtlpriv->dm.is_cur_rdlstate = false;
++				}
++			}
++			rtlpriv->dm.current_turbo_edca = true;
++		}
++	} else {
++		if (rtlpriv->dm.current_turbo_edca) {
++			u8 tmp = AC0_BE;
++			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
++						      (u8 *)(&tmp));
++			rtlpriv->dm.current_turbo_edca = false;
++		}
++	}
++
++dm_checkedcaturbo_exit:
++	rtlpriv->dm.is_any_nonbepkts = false;
++	last_txok_cnt = rtlpriv->stats.txbytesunicast;
++	last_rxok_cnt = rtlpriv->stats.rxbytesunicast;
++}
++
++static void _rtl92s_dm_txpowertracking_callback_thermalmeter(
++					struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_efuse *rtlefuse = rtl_efuse(rtl_priv(hw));
++	u8 thermalvalue = 0;
++
++	rtlpriv->dm.txpower_trackinginit = true;
++
++	thermalvalue = (u8)rtl_get_rfreg(hw, RF90_PATH_A, RF_T_METER, 0x1f);
++
++	RT_TRACE(rtlpriv, COMP_POWER_TRACKING, DBG_LOUD,
++		 ("Readback Thermal Meter = 0x%x pre thermal meter 0x%x "
++		  "eeprom_thermalmeter 0x%x\n", thermalvalue,
++		  rtlpriv->dm.thermalvalue, rtlefuse->eeprom_thermalmeter));
++
++	if (thermalvalue) {
++		rtlpriv->dm.thermalvalue = thermalvalue;
++		rtl92s_phy_set_fw_cmd(hw, FW_CMD_TXPWR_TRACK_THERMAL);
++	}
++
++	rtlpriv->dm.txpowercount = 0;
++}
++
++static void _rtl92s_dm_check_txpowertracking_thermalmeter(
++					struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_phy *rtlphy = &(rtlpriv->phy);
++	static u8 tm_trigger;
++	u8 tx_power_checkcnt = 5;
++
++	/* 2T2R TP issue */
++	if (rtlphy->rf_type == RF_2T2R)
++		return;
++
++	if (!rtlpriv->dm.txpower_tracking)
++		return;
++
++	if (rtlpriv->dm.txpowercount <= tx_power_checkcnt) {
++		rtlpriv->dm.txpowercount++;
++		return;
++	}
++
++	if (!tm_trigger) {
++		rtl_set_rfreg(hw, RF90_PATH_A, RF_T_METER,
++			      RFREG_OFFSET_MASK, 0x60);
++		tm_trigger = 1;
++	} else {
++		_rtl92s_dm_txpowertracking_callback_thermalmeter(hw);
++		tm_trigger = 0;
++	}
++}
++
++static void _rtl92s_dm_refresh_rateadaptive_mask(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
++	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
++	struct rate_adaptive *ra = &(rtlpriv->ra);
++
++	u32 low_rssi_thresh = 0;
++	u32 middle_rssi_thresh = 0;
++	u32 high_rssi_thresh = 0;
++	u8 rssi_level;
++	struct ieee80211_sta *sta = NULL;
++
++	if (is_hal_stop(rtlhal))
++		return;
++
++	if (!rtlpriv->dm.useramask)
++		return;
++
++	if (!rtlpriv->dm.inform_fw_driverctrldm) {
++		rtl92s_phy_set_fw_cmd(hw, FW_CMD_CTRL_DM_BY_DRIVER);
++		rtlpriv->dm.inform_fw_driverctrldm = true;
++	}
++
++	rcu_read_lock();
++	if (mac->opmode == NL80211_IFTYPE_STATION)
++		sta = get_sta(hw, mac->vif, mac->bssid);
++	if ((mac->link_state == MAC80211_LINKED) &&
++	    (mac->opmode == NL80211_IFTYPE_STATION)) {
++		switch (ra->pre_ratr_state) {
++		case DM_RATR_STA_HIGH:
++			high_rssi_thresh = 40;
++			middle_rssi_thresh = 30;
++			low_rssi_thresh = 20;
++			break;
++		case DM_RATR_STA_MIDDLE:
++			high_rssi_thresh = 44;
++			middle_rssi_thresh = 30;
++			low_rssi_thresh = 20;
++			break;
++		case DM_RATR_STA_LOW:
++			high_rssi_thresh = 44;
++			middle_rssi_thresh = 34;
++			low_rssi_thresh = 20;
++			break;
++		case DM_RATR_STA_ULTRALOW:
++			high_rssi_thresh = 44;
++			middle_rssi_thresh = 34;
++			low_rssi_thresh = 24;
++			break;
++		default:
++			high_rssi_thresh = 44;
++			middle_rssi_thresh = 34;
++			low_rssi_thresh = 24;
++			break;
++		}
++
++		if (rtlpriv->dm.undecorated_smoothed_pwdb >
++		    (long)high_rssi_thresh) {
++			ra->ratr_state = DM_RATR_STA_HIGH;
++			rssi_level = 1;
++		} else if (rtlpriv->dm.undecorated_smoothed_pwdb >
++			   (long)middle_rssi_thresh) {
++			ra->ratr_state = DM_RATR_STA_LOW;
++			rssi_level = 3;
++		} else if (rtlpriv->dm.undecorated_smoothed_pwdb >
++			   (long)low_rssi_thresh) {
++			ra->ratr_state = DM_RATR_STA_LOW;
++			rssi_level = 5;
++		} else {
++			ra->ratr_state = DM_RATR_STA_ULTRALOW;
++			rssi_level = 6;
++		}
++
++		if (ra->pre_ratr_state != ra->ratr_state) {
++			RT_TRACE(rtlpriv, COMP_RATE, DBG_LOUD, ("RSSI = %ld "
++				"RSSI_LEVEL = %d PreState = %d, CurState = %d\n",
++				rtlpriv->dm.undecorated_smoothed_pwdb,
++				ra->ratr_state,
++				ra->pre_ratr_state, ra->ratr_state));
++
++			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
++							   ra->ratr_state);
++			ra->pre_ratr_state = ra->ratr_state;
++		}
++	}
++	rcu_read_unlock();
++}
++
++static void _rtl92s_dm_switch_baseband_mrc(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
++	struct rtl_phy *rtlphy = &(rtlpriv->phy);
++	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
++	bool current_mrc;
++	bool enable_mrc = true;
++	long tmpentry_maxpwdb = 0;
++	u8 rssi_a = 0;
++	u8 rssi_b = 0;
++
++	if (is_hal_stop(rtlhal))
++		return;
++
++	if ((rtlphy->rf_type == RF_1T1R) || (rtlphy->rf_type == RF_2T2R))
++		return;
++
++	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_MRC, (u8 *)(&current_mrc));
++
++	if (mac->link_state >= MAC80211_LINKED) {
++		if (rtlpriv->dm.undecorated_smoothed_pwdb > tmpentry_maxpwdb) {
++			rssi_a = rtlpriv->stats.rx_rssi_percentage[RF90_PATH_A];
++			rssi_b = rtlpriv->stats.rx_rssi_percentage[RF90_PATH_B];
++		}
++	}
++
++	/* MRC settings would NOT affect TP on Wireless B mode. */
++	if (mac->mode != WIRELESS_MODE_B) {
++		if ((rssi_a == 0) && (rssi_b == 0)) {
++			enable_mrc = true;
++		} else if (rssi_b > 30) {
++			/* Turn on B-Path */
++			enable_mrc = true;
++		} else if (rssi_b < 5) {
++			/* Turn off B-path  */
++			enable_mrc = false;
++		/* Take care of RSSI differentiation. */
++		} else if (rssi_a > 15 && (rssi_a >= rssi_b)) {
++			if ((rssi_a - rssi_b) > 15)
++				/* Turn off B-path  */
++				enable_mrc = false;
++			else if ((rssi_a - rssi_b) < 10)
++				/* Turn on B-Path */
++				enable_mrc = true;
++			else
++				enable_mrc = current_mrc;
++		} else {
++			/* Turn on B-Path */
++			enable_mrc = true;
++		}
++	}
++
++	/* Update MRC settings if needed. */
++	if (enable_mrc != current_mrc)
++		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_MRC,
++					      (u8 *)&enable_mrc);
++
++}
++
++void rtl92s_dm_init_edca_turbo(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	rtlpriv->dm.current_turbo_edca = false;
++	rtlpriv->dm.is_any_nonbepkts = false;
++	rtlpriv->dm.is_cur_rdlstate = false;
++}
++
++static void _rtl92s_dm_init_rate_adaptive_mask(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rate_adaptive *ra = &(rtlpriv->ra);
++
++	ra->ratr_state = DM_RATR_STA_MAX;
++	ra->pre_ratr_state = DM_RATR_STA_MAX;
++
++	if (rtlpriv->dm.dm_type == DM_TYPE_BYDRIVER)
++		rtlpriv->dm.useramask = true;
++	else
++		rtlpriv->dm.useramask = false;
++
++	rtlpriv->dm.useramask = false;
++	rtlpriv->dm.inform_fw_driverctrldm = false;
++}
++
++static void _rtl92s_dm_init_txpowertracking_thermalmeter(
++				struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	rtlpriv->dm.txpower_tracking = true;
++	rtlpriv->dm.txpowercount = 0;
++	rtlpriv->dm.txpower_trackinginit = false;
++}
++
++static void _rtl92s_dm_false_alarm_counter_statistics(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct false_alarm_statistics *falsealm_cnt = &(rtlpriv->falsealm_cnt);
++	u32 ret_value;
++
++	ret_value = rtl_get_bbreg(hw, ROFDM_PHYCOUNTER1, MASKDWORD);
++	falsealm_cnt->cnt_parity_fail = ((ret_value & 0xffff0000) >> 16);
++
++	ret_value = rtl_get_bbreg(hw, ROFDM_PHYCOUNTER2, MASKDWORD);
++	falsealm_cnt->cnt_rate_illegal = (ret_value & 0xffff);
++	falsealm_cnt->cnt_crc8_fail = ((ret_value & 0xffff0000) >> 16);
++	ret_value = rtl_get_bbreg(hw, ROFDM_PHYCOUNTER3, MASKDWORD);
++	falsealm_cnt->cnt_mcs_fail = (ret_value & 0xffff);
++
++	falsealm_cnt->cnt_ofdm_fail = falsealm_cnt->cnt_parity_fail +
++		falsealm_cnt->cnt_rate_illegal + falsealm_cnt->cnt_crc8_fail +
++		falsealm_cnt->cnt_mcs_fail;
++
++	/* read CCK false alarm */
++	ret_value = rtl_get_bbreg(hw, 0xc64, MASKDWORD);
++	falsealm_cnt->cnt_cck_fail = (ret_value & 0xffff);
++	falsealm_cnt->cnt_all =	falsealm_cnt->cnt_ofdm_fail +
++		falsealm_cnt->cnt_cck_fail;
++}
++
++static void rtl92s_backoff_enable_flag(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct false_alarm_statistics *falsealm_cnt = &(rtlpriv->falsealm_cnt);
++
++	if (falsealm_cnt->cnt_all > digtable.fa_highthresh) {
++		if ((digtable.backoff_val - 6) <
++			digtable.backoffval_range_min)
++			digtable.backoff_val = digtable.backoffval_range_min;
++		else
++			digtable.backoff_val -= 6;
++	} else if (falsealm_cnt->cnt_all < digtable.fa_lowthresh) {
++		if ((digtable.backoff_val + 6) >
++			digtable.backoffval_range_max)
++			digtable.backoff_val =
++				 digtable.backoffval_range_max;
++		else
++			digtable.backoff_val += 6;
++	}
++}
++
++static void _rtl92s_dm_initial_gain_sta_beforeconnect(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct false_alarm_statistics *falsealm_cnt = &(rtlpriv->falsealm_cnt);
++	static u8 initialized, force_write;
++	u8 initial_gain = 0;
++
++	if ((digtable.pre_sta_connectstate == digtable.cur_sta_connectstate) ||
++		(digtable.cur_sta_connectstate == DIG_STA_BEFORE_CONNECT)) {
++		if (digtable.cur_sta_connectstate == DIG_STA_BEFORE_CONNECT) {
++			if (rtlpriv->psc.rfpwr_state != ERFON)
++				return;
++
++			if (digtable.backoff_enable_flag == true)
++				rtl92s_backoff_enable_flag(hw);
++			else
++				digtable.backoff_val = DM_DIG_BACKOFF;
++
++			if ((digtable.rssi_val + 10 - digtable.backoff_val) >
++				digtable.rx_gain_range_max)
++				digtable.cur_igvalue =
++						digtable.rx_gain_range_max;
++			else if ((digtable.rssi_val + 10 - digtable.backoff_val)
++				 < digtable.rx_gain_range_min)
++				digtable.cur_igvalue =
++						digtable.rx_gain_range_min;
++			else
++				digtable.cur_igvalue = digtable.rssi_val + 10 -
++						digtable.backoff_val;
++
++			if (falsealm_cnt->cnt_all > 10000)
++				digtable.cur_igvalue =
++					 (digtable.cur_igvalue > 0x33) ?
++					 digtable.cur_igvalue : 0x33;
++
++			if (falsealm_cnt->cnt_all > 16000)
++				digtable.cur_igvalue =
++						 digtable.rx_gain_range_max;
++		/* connected -> connected or disconnected -> disconnected  */
++		} else {
++			/* Firmware control DIG, do nothing in driver dm */
++			return;
++		}
++		/* disconnected -> connected or connected ->
++		 * disconnected or beforeconnect->(dis)connected */
++	} else {
++		/* Enable FW DIG */
++		digtable.dig_ext_port_stage = DIG_EXT_PORT_STAGE_MAX;
++		rtl92s_phy_set_fw_cmd(hw, FW_CMD_DIG_ENABLE);
++
++		digtable.backoff_val = DM_DIG_BACKOFF;
++		digtable.cur_igvalue = rtlpriv->phy.default_initialgain[0];
++		digtable.pre_igvalue = 0;
++		return;
++	}
++
++	/* Forced writing to prevent from fw-dig overwriting. */
++	if (digtable.pre_igvalue != rtl_get_bbreg(hw, ROFDM0_XAAGCCORE1,
++						  MASKBYTE0))
++		force_write = 1;
++
++	if ((digtable.pre_igvalue != digtable.cur_igvalue) ||
++	    !initialized || force_write) {
++		/* Disable FW DIG */
++		rtl92s_phy_set_fw_cmd(hw, FW_CMD_DIG_DISABLE);
++
++		initial_gain = (u8)digtable.cur_igvalue;
++
++		/* Set initial gain. */
++		rtl_set_bbreg(hw, ROFDM0_XAAGCCORE1, MASKBYTE0, initial_gain);
++		rtl_set_bbreg(hw, ROFDM0_XBAGCCORE1, MASKBYTE0, initial_gain);
++		digtable.pre_igvalue = digtable.cur_igvalue;
++		initialized = 1;
++		force_write = 0;
++	}
++}
++
++static void _rtl92s_dm_ctrl_initgain_bytwoport(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	if (rtlpriv->mac80211.act_scanning)
++		return;
++
++	/* Decide the current status and if modify initial gain or not */
++	if (rtlpriv->mac80211.link_state >= MAC80211_LINKED ||
++	    rtlpriv->mac80211.opmode == NL80211_IFTYPE_ADHOC)
++		digtable.cur_sta_connectstate = DIG_STA_CONNECT;
++	else
++		digtable.cur_sta_connectstate = DIG_STA_DISCONNECT;
++
++	digtable.rssi_val = rtlpriv->dm.undecorated_smoothed_pwdb;
++
++	/* Change dig mode to rssi */
++	if (digtable.cur_sta_connectstate != DIG_STA_DISCONNECT) {
++		if (digtable.dig_twoport_algorithm ==
++		    DIG_TWO_PORT_ALGO_FALSE_ALARM) {
++			digtable.dig_twoport_algorithm = DIG_TWO_PORT_ALGO_RSSI;
++			rtl92s_phy_set_fw_cmd(hw, FW_CMD_DIG_MODE_SS);
++		}
++	}
++
++	_rtl92s_dm_false_alarm_counter_statistics(hw);
++	_rtl92s_dm_initial_gain_sta_beforeconnect(hw);
++
++	digtable.pre_sta_connectstate = digtable.cur_sta_connectstate;
++}
++
++static void _rtl92s_dm_ctrl_initgain_byrssi(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_phy *rtlphy = &(rtlpriv->phy);
++
++	/* 2T2R TP issue */
++	if (rtlphy->rf_type == RF_2T2R)
++		return;
++
++	if (!rtlpriv->dm.dm_initialgain_enable)
++		return;
++
++	if (digtable.dig_enable_flag == false)
++		return;
++
++	_rtl92s_dm_ctrl_initgain_bytwoport(hw);
++}
++
++static void _rtl92s_dm_dynamic_txpower(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_phy *rtlphy = &(rtlpriv->phy);
++	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
++	long undecorated_smoothed_pwdb;
++	long txpwr_threshold_lv1, txpwr_threshold_lv2;
++
++	/* 2T2R TP issue */
++	if (rtlphy->rf_type == RF_2T2R)
++		return;
++
++	if (!rtlpriv->dm.dynamic_txpower_enable ||
++	    rtlpriv->dm.dm_flag & HAL_DM_HIPWR_DISABLE) {
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++		return;
++	}
++
++	if ((mac->link_state < MAC80211_LINKED) &&
++	    (rtlpriv->dm.entry_min_undecoratedsmoothed_pwdb == 0)) {
++		RT_TRACE(rtlpriv, COMP_POWER, DBG_TRACE,
++			 ("Not connected to any\n"));
++
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++
++		rtlpriv->dm.last_dtp_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++		return;
++	}
++
++	if (mac->link_state >= MAC80211_LINKED) {
++		if (mac->opmode == NL80211_IFTYPE_ADHOC) {
++			undecorated_smoothed_pwdb =
++			    rtlpriv->dm.entry_min_undecoratedsmoothed_pwdb;
++			RT_TRACE(rtlpriv, COMP_POWER, DBG_LOUD,
++				 ("AP Client PWDB = 0x%lx\n",
++				  undecorated_smoothed_pwdb));
++		} else {
++			undecorated_smoothed_pwdb =
++			    rtlpriv->dm.undecorated_smoothed_pwdb;
++			RT_TRACE(rtlpriv, COMP_POWER, DBG_LOUD,
++				 ("STA Default Port PWDB = 0x%lx\n",
++				  undecorated_smoothed_pwdb));
++		}
++	} else {
++		undecorated_smoothed_pwdb =
++		    rtlpriv->dm.entry_min_undecoratedsmoothed_pwdb;
++
++		RT_TRACE(rtlpriv, COMP_POWER, DBG_LOUD,
++			 ("AP Ext Port PWDB = 0x%lx\n",
++			  undecorated_smoothed_pwdb));
++	}
++
++	txpwr_threshold_lv2 = TX_POWER_NEAR_FIELD_THRESH_LVL2;
++	txpwr_threshold_lv1 = TX_POWER_NEAR_FIELD_THRESH_LVL1;
++
++	if (rtl_get_bbreg(hw, 0xc90, MASKBYTE0) == 1)
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++	else if (undecorated_smoothed_pwdb >= txpwr_threshold_lv2)
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL2;
++	else if ((undecorated_smoothed_pwdb < (txpwr_threshold_lv2 - 3)) &&
++		(undecorated_smoothed_pwdb >= txpwr_threshold_lv1))
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL1;
++	else if (undecorated_smoothed_pwdb < (txpwr_threshold_lv1 - 3))
++		rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++
++	if ((rtlpriv->dm.dynamic_txhighpower_lvl != rtlpriv->dm.last_dtp_lvl))
++		rtl92s_phy_set_txpower(hw, rtlphy->current_channel);
++
++	rtlpriv->dm.last_dtp_lvl = rtlpriv->dm.dynamic_txhighpower_lvl;
++}
++
++static void _rtl92s_dm_init_dig(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	/* Disable DIG scheme now.*/
++	digtable.dig_enable_flag = true;
++	digtable.backoff_enable_flag = true;
++
++	if ((rtlpriv->dm.dm_type == DM_TYPE_BYDRIVER) &&
++	    (hal_get_firmwareversion(rtlpriv) >= 0x3c))
++		digtable.dig_algorithm = DIG_ALGO_BY_TOW_PORT;
++	else
++		digtable.dig_algorithm =
++			 DIG_ALGO_BEFORE_CONNECT_BY_RSSI_AND_ALARM;
++
++	digtable.dig_twoport_algorithm = DIG_TWO_PORT_ALGO_RSSI;
++	digtable.dig_ext_port_stage = DIG_EXT_PORT_STAGE_MAX;
++	/* off=by real rssi value, on=by digtable.rssi_val for new dig */
++	digtable.dig_dbgmode = DM_DBG_OFF;
++	digtable.dig_slgorithm_switch = 0;
++
++	/* 2007/10/04 MH Define init gain threshol. */
++	digtable.dig_state = DM_STA_DIG_MAX;
++	digtable.dig_highpwrstate = DM_STA_DIG_MAX;
++
++	digtable.cur_sta_connectstate = DIG_STA_DISCONNECT;
++	digtable.pre_sta_connectstate = DIG_STA_DISCONNECT;
++	digtable.cur_ap_connectstate = DIG_AP_DISCONNECT;
++	digtable.pre_ap_connectstate = DIG_AP_DISCONNECT;
++
++	digtable.rssi_lowthresh = DM_DIG_THRESH_LOW;
++	digtable.rssi_highthresh = DM_DIG_THRESH_HIGH;
++
++	digtable.fa_lowthresh = DM_FALSEALARM_THRESH_LOW;
++	digtable.fa_highthresh = DM_FALSEALARM_THRESH_HIGH;
++
++	digtable.rssi_highpower_lowthresh = DM_DIG_HIGH_PWR_THRESH_LOW;
++	digtable.rssi_highpower_highthresh = DM_DIG_HIGH_PWR_THRESH_HIGH;
++
++	/* for dig debug rssi value */
++	digtable.rssi_val = 50;
++	digtable.backoff_val = DM_DIG_BACKOFF;
++	digtable.rx_gain_range_max = DM_DIG_MAX;
++
++	digtable.rx_gain_range_min = DM_DIG_MIN;
++
++	digtable.backoffval_range_max = DM_DIG_BACKOFF_MAX;
++	digtable.backoffval_range_min = DM_DIG_BACKOFF_MIN;
++}
++
++static void _rtl92s_dm_init_dynamic_txpower(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	if ((hal_get_firmwareversion(rtlpriv) >= 60) &&
++	    (rtlpriv->dm.dm_type == DM_TYPE_BYDRIVER))
++		rtlpriv->dm.dynamic_txpower_enable = true;
++	else
++		rtlpriv->dm.dynamic_txpower_enable = false;
++
++	rtlpriv->dm.last_dtp_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++	rtlpriv->dm.dynamic_txhighpower_lvl = TX_HIGHPWR_LEVEL_NORMAL;
++}
++
++void rtl92s_dm_init(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
++	rtlpriv->dm.dm_type = DM_TYPE_BYDRIVER;
++	rtlpriv->dm.undecorated_smoothed_pwdb = -1;
++
++	_rtl92s_dm_init_dynamic_txpower(hw);
++	rtl92s_dm_init_edca_turbo(hw);
++	_rtl92s_dm_init_rate_adaptive_mask(hw);
++	_rtl92s_dm_init_txpowertracking_thermalmeter(hw);
++	_rtl92s_dm_init_dig(hw);
++
++	rtl_write_dword(rtlpriv, WFM5, FW_CCA_CHK_ENABLE);
++}
++
++void rtl92s_dm_watchdog(struct ieee80211_hw *hw)
++{
++	_rtl92s_dm_check_edca_turbo(hw);
++	_rtl92s_dm_check_txpowertracking_thermalmeter(hw);
++	_rtl92s_dm_ctrl_initgain_byrssi(hw);
++	_rtl92s_dm_dynamic_txpower(hw);
++	_rtl92s_dm_refresh_rateadaptive_mask(hw);
++	_rtl92s_dm_switch_baseband_mrc(hw);
++}
++
+Index: wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/dm.h
+===================================================================
+--- /dev/null
++++ wireless-testing/drivers/net/wireless/rtlwifi/rtl8192se/dm.h
+@@ -0,0 +1,164 @@
++/******************************************************************************
++ *
++ * Copyright(c) 2009-2010  Realtek Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
++ *
++ * The full GNU General Public License is included in this distribution in the
++ * file called LICENSE.
++ *
++ * Contact Information:
++ * wlanfae <wlanfae@realtek.com>
++ * Realtek Corporation, No. 2, Innovation Road II, Hsinchu Science Park,
++ * Hsinchu 300, Taiwan.
++ *
++ * Larry Finger <Larry.Finger@lwfinger.net>
++ *
++ *****************************************************************************/
++#ifndef	__RTL_92S_DM_H__
++#define __RTL_92S_DM_H__
++
++struct dig_t {
++	u8 dig_enable_flag;
++	u8 dig_algorithm;
++	u8 dig_twoport_algorithm;
++	u8 dig_ext_port_stage;
++	u8 dig_dbgmode;
++	u8 dig_slgorithm_switch;
++
++	long rssi_lowthresh;
++	long rssi_highthresh;
++
++	u32 fa_lowthresh;
++	u32 fa_highthresh;
++
++	long rssi_highpower_lowthresh;
++	long rssi_highpower_highthresh;
++
++	u8 dig_state;
++	u8 dig_highpwrstate;
++	u8 cur_sta_connectstate;
++	u8 pre_sta_connectstate;
++	u8 cur_ap_connectstate;
++	u8 pre_ap_connectstate;
++
++	u8 cur_pd_thstate;
++	u8 pre_pd_thstate;
++	u8 cur_cs_ratiostate;
++	u8 pre_cs_ratiostate;
++
++	u32 pre_igvalue;
++	u32	cur_igvalue;
++
++	u8 backoff_enable_flag;
++	char backoff_val;
++	char backoffval_range_max;
++	char backoffval_range_min;
++	u8 rx_gain_range_max;
++	u8 rx_gain_range_min;
++
++	long rssi_val;
 +};
 +
-+struct phy_sts_cck_8192s_t {
-+	u8 adc_pwdb_x[4];
-+	u8 sq_rpt;
-+	u8 cck_agc_rpt;
++enum dm_dig_alg {
++	DIG_ALGO_BY_FALSE_ALARM = 0,
++	DIG_ALGO_BY_RSSI	= 1,
++	DIG_ALGO_BEFORE_CONNECT_BY_RSSI_AND_ALARM = 2,
++	DIG_ALGO_BY_TOW_PORT = 3,
++	DIG_ALGO_MAX
 +};
++
++enum dm_dig_two_port_alg {
++	DIG_TWO_PORT_ALGO_RSSI = 0,
++	DIG_TWO_PORT_ALGO_FALSE_ALARM = 1,
++};
++
++enum dm_dig_dbg {
++	DM_DBG_OFF = 0,
++	DM_DBG_ON = 1,
++	DM_DBG_MAX
++};
++
++enum dm_dig_sta {
++	DM_STA_DIG_OFF = 0,
++	DM_STA_DIG_ON,
++	DM_STA_DIG_MAX
++};
++
++enum dm_dig_connect {
++	DIG_STA_DISCONNECT = 0,
++	DIG_STA_CONNECT = 1,
++	DIG_STA_BEFORE_CONNECT = 2,
++	DIG_AP_DISCONNECT = 3,
++	DIG_AP_CONNECT = 4,
++	DIG_AP_ADD_STATION = 5,
++	DIG_CONNECT_MAX
++};
++
++enum dm_dig_ext_port_alg {
++	DIG_EXT_PORT_STAGE_0 = 0,
++	DIG_EXT_PORT_STAGE_1 = 1,
++	DIG_EXT_PORT_STAGE_2 = 2,
++	DIG_EXT_PORT_STAGE_3 = 3,
++	DIG_EXT_PORT_STAGE_MAX = 4,
++};
++
++enum dm_ratr_sta {
++	DM_RATR_STA_HIGH = 0,
++	DM_RATR_STA_MIDDLEHIGH = 1,
++	DM_RATR_STA_MIDDLE = 2,
++	DM_RATR_STA_MIDDLELOW = 3,
++	DM_RATR_STA_LOW = 4,
++	DM_RATR_STA_ULTRALOW = 5,
++	DM_RATR_STA_MAX
++};
++
++#define DM_TYPE_BYFW			0
++#define DM_TYPE_BYDRIVER		1
++
++#define	TX_HIGH_PWR_LEVEL_NORMAL	0
++#define	TX_HIGH_PWR_LEVEL_LEVEL1	1
++#define	TX_HIGH_PWR_LEVEL_LEVEL2	2
++
++#define	HAL_DM_DIG_DISABLE		BIT(0)	/* Disable Dig */
++#define	HAL_DM_HIPWR_DISABLE		BIT(1)	/* Disable High Power */
++
++#define	TX_HIGHPWR_LEVEL_NORMAL		0
++#define	TX_HIGHPWR_LEVEL_NORMAL1	1
++#define	TX_HIGHPWR_LEVEL_NORMAL2	2
++
++#define	TX_POWER_NEAR_FIELD_THRESH_LVL2	74
++#define	TX_POWER_NEAR_FIELD_THRESH_LVL1	67
++
++#define DM_DIG_THRESH_HIGH		40
++#define DM_DIG_THRESH_LOW		35
++#define	DM_FALSEALARM_THRESH_LOW	40
++#define	DM_FALSEALARM_THRESH_HIGH	1000
++#define	DM_DIG_HIGH_PWR_THRESH_HIGH	75
++#define	DM_DIG_HIGH_PWR_THRESH_LOW	70
++#define	DM_DIG_BACKOFF			12
++#define	DM_DIG_MAX			0x3e
++#define	DM_DIG_MIN			0x1c
++#define	DM_DIG_MIN_Netcore		0x12
++#define	DM_DIG_BACKOFF_MAX		12
++#define	DM_DIG_BACKOFF_MIN		-4
++
++extern struct dig_t digtable;
++
++void rtl92s_dm_watchdog(struct ieee80211_hw *hw);
++void rtl92s_dm_init(struct ieee80211_hw *hw);
++void rtl92s_dm_init_edca_turbo(struct ieee80211_hw *hw);
 +
 +#endif
 +
