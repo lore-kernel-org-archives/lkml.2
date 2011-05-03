@@ -1,60 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1ECLJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 07:09:30 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42335 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab1ECLJ3 (ORCPT
+	id S1752415Ab1ECLTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 07:19:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46623 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab1ECLTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 07:09:29 -0400
+	Tue, 3 May 2011 07:19:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aoAMLOwS/MI8gHMlGVE7vSVTKlg9SH13OeoLQUBaoEOs9cWFVJKLQJF5dZxIAzXefF
-         J0NPw+aE3BXh7YjI/kUS8pPxnm/7ngEmvtGJfMnpHZ6s5hl+BePVZ6YztqptC8w/ej0O
-         utFL1FW/xAWL1GRRBPQp3whqJycasf+MAgJro=
-MIME-Version: 1.0
-In-Reply-To: <20110503100042.GA1762@opensource.wolfsonmicro.com>
-References: <1304415149-19725-1-git-send-email-marek.belisko@open-nandra.com>
-	<20110503100042.GA1762@opensource.wolfsonmicro.com>
-Date: Tue, 3 May 2011 13:09:27 +0200
-Message-ID: <BANLkTimE_TEzManZb2McLnohqbc27hRZ=w@mail.gmail.com>
-Subject: Re: [PATCH] SOC: UDA134x: Enable POWER_OFF_ON_STANDBY define.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: tiwai@suse.de, perex@perex.cz, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:date:in-reply-to:references:content-type
+         :x-mailer:content-transfer-encoding:message-id:mime-version;
+        b=IQbndpdRTOD9x5U3AIYjfKhDCpl3xZHaB+nqNAJCi1JaMtJ8TkoqxoEOng1cQAdxKl
+         9W+vCSADmJoCeP1aNSZu/pu+yeBvrkdTgFOu4IFdurL7QOBEGScZafPpLI7DWqE4vg77
+         QWKjznKF8rtZsexfrLvsGD34vS4ZfFRRJ8c0o=
+Subject: Re: [PATCH 2/2] leds: Add ASIC3 LED support
+From: Philipp Zabel <philipp.zabel@gmail.com>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+Date: Tue, 03 May 2011 13:11:46 +0200
+In-Reply-To: <E1QGES4-0007ft-Ee@outmx08.plus.net>
+References: <E1QGES4-0007ft-Ee@outmx08.plus.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.0- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1304421107.15687.15.camel@flow>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 12:00 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, May 03, 2011 at 11:32:29AM +0200, Marek Belisko wrote:
->> Without this define we can't get any sound from codec so enable
->> it by default. This define unlock bias settings which control
->> power control for DAC and ADC (by default 0 0 which is off off).
->
-> If this is essential why is it optional in the first place?
-Not sure about background. Maybe whole define should be removed
-This change was introduced in commit:f0fba2ad
+Hi Paul,
 
->
+Am Samstag, den 30.04.2011, 17:59 +0000 schrieb Paul Parsons:
+> Add LED support for the HTC ASIC3. Underlying support is provided by the mfd/asic3 and leds/leds-asic3 drivers. An example configuration is provided by the pxa/hx4700 platform.
+> 
+> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+> ---
+> diff -uprN clean-2.6.39-rc5/drivers/leds/Kconfig linux-2.6.39-rc5/drivers/leds/Kconfig
+> --- clean-2.6.39-rc5/drivers/leds/Kconfig	2011-04-28 11:18:14.818578777 +0100
+> +++ linux-2.6.39-rc5/drivers/leds/Kconfig	2011-04-30 16:39:48.434871549 +0100
+> @@ -379,6 +379,16 @@ config LEDS_NETXBIG
+>  	  and 5Big Network v2 boards. The LEDs are wired to a CPLD and are
+>  	  controlled through a GPIO extension bus.
+>  
+> +config LEDS_ASIC3
+> +	bool "LED support for the HTC ASIC3"
+> +	depends on MFD_ASIC3
+> +	default y
+> +	help
+> +	  This option enables support for the LEDs on the HTC ASIC3. The HTC
+> +	  ASIC3 LED GPIOs are inputs, not outputs, thus the leds-gpio driver
+> +	  cannot be used. This driver supports hardware blinking with an on+off
+> +	  period from 62ms to 125s. Say Y to enable LEDs on the HP iPAQ hx4700.
+> +
+>  config LEDS_TRIGGERS
+>  	bool "LED Trigger support"
+>  	depends on LEDS_CLASS
+> diff -uprN clean-2.6.39-rc5/drivers/leds/Makefile linux-2.6.39-rc5/drivers/leds/Makefile
+> --- clean-2.6.39-rc5/drivers/leds/Makefile	2011-04-28 11:18:14.818578777 +0100
+> +++ linux-2.6.39-rc5/drivers/leds/Makefile	2011-04-30 15:44:30.288890098 +0100
+> @@ -42,6 +42,7 @@ obj-$(CONFIG_LEDS_DELL_NETBOOKS)	+= dell
+>  obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
+>  obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
+>  obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
+> +obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
+>  
+>  # LED SPI Drivers
+>  obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+> diff -uprN clean-2.6.39-rc5/drivers/leds/leds-asic3.c linux-2.6.39-rc5/drivers/leds/leds-asic3.c
+> --- clean-2.6.39-rc5/drivers/leds/leds-asic3.c	1970-01-01 01:00:00.000000000 +0100
+> +++ linux-2.6.39-rc5/drivers/leds/leds-asic3.c	2011-04-30 16:39:41.066821912 +0100
+> @@ -0,0 +1,167 @@
+> +/*
+> + *  Copyright (C) 2011 Paul Parsons <lost.distance@yahoo.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/leds.h>
+> +#include <linux/slab.h>
+> +
+> +#include <linux/mfd/asic3.h>
+> +#include <linux/mfd/core.h>
+> +
+> +/*
+> + *	The HTC ASIC3 LED GPIOs are inputs, not outputs.
+> + *	Hence we turn the LEDs on/off via the TimeBase register.
+> + */
 
-regards,
+About this, see the other patch I sent. This should work with the GPIOs
+configured as outputs.
 
-marek
+> +
+> +/*
+> + *	When TimeBase is 4 the clock resolution is about 32Hz.
+> + *	This driver supports hardware blinking with an on+off
+> + *	period from 62ms (2 clocks) to 125s (4000 clocks).
+> + */
+> +#define MS_TO_CLK(ms)	((((ms)*1024)+16000)/32000)     /* Round to nearest */
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+I'd just use DIV_ROUND_CLOSEST((ms)*1024, 32000) here.
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+> +#define CLK_TO_MS(clk)	(((clk)*32000)/1024)
+> +#define MAX_CLK		4000            /* Fits into 12-bit Time registers */
+> +#define MAX_MS		CLK_TO_MS(MAX_CLK)
+> +
+> +static const unsigned int led_n_base[ASIC3_NUM_LEDS] = {
+> +	[0] = ASIC3_LED_0_Base,
+> +	[1] = ASIC3_LED_1_Base,
+> +	[2] = ASIC3_LED_2_Base,
+> +};
+
+Could be moved into struct resource definitions in asic3.c.
+Get to them with platform_get_resource() in asic3_led_probe().
+After calculating the bus shift from the resource size, you have
+everything you need to get rid of the asic3_write_register() export.
+
+> +static void brightness_set(struct led_classdev *cdev,
+> +	enum led_brightness value)
+> +{
+> +	struct platform_device *pdev = to_platform_device(cdev->dev->parent);
+> +	const struct mfd_cell *cell = mfd_get_cell(pdev);
+> +	struct asic3 *asic = dev_get_drvdata(pdev->dev.parent);
+> +	u32 timebase;
+> +	unsigned int base;
+> +
+> +	timebase = (value == LED_OFF) ? 0 : (LED_EN|0x4);
+> +
+> +	base = led_n_base[cell->id];
+> +	asic3_write_register(asic, (base + ASIC3_LED_PeriodTime), 32);
+> +	asic3_write_register(asic, (base + ASIC3_LED_DutyTime), 32);
+> +	asic3_write_register(asic, (base + ASIC3_LED_AutoStopCount), 0);
+> +	asic3_write_register(asic, (base + ASIC3_LED_TimeBase), timebase);
+> +}
+> +
+> +static int blink_set(struct led_classdev *cdev,
+> +	unsigned long *delay_on,
+> +	unsigned long *delay_off)
+> +{
+> +	struct platform_device *pdev = to_platform_device(cdev->dev->parent);
+> +	const struct mfd_cell *cell = mfd_get_cell(pdev);
+> +	struct asic3 *asic = dev_get_drvdata(pdev->dev.parent);
+> +	u32 on;
+> +	u32 off;
+> +	unsigned int base;
+> +
+> +	if (*delay_on > MAX_MS || *delay_off > MAX_MS)
+> +		return -EINVAL;
+> +
+> +	if (*delay_on == 0 && *delay_off == 0) {
+> +		/* If both are zero then a sensible default should be chosen */
+> +		on = MS_TO_CLK(500);
+> +		off = MS_TO_CLK(500);
+> +	} else {
+> +		on = MS_TO_CLK(*delay_on);
+> +		off = MS_TO_CLK(*delay_off);
+> +		if ((on + off) > MAX_CLK)
+> +			return -EINVAL;
+> +	}
+> +
+> +	base = led_n_base[cell->id];
+> +	asic3_write_register(asic, (base + ASIC3_LED_PeriodTime), (on + off));
+> +	asic3_write_register(asic, (base + ASIC3_LED_DutyTime), on);
+> +	asic3_write_register(asic, (base + ASIC3_LED_AutoStopCount), 0);
+> +	asic3_write_register(asic, (base + ASIC3_LED_TimeBase), (LED_EN|0x4));
+> +
+> +	*delay_on = CLK_TO_MS(on);
+> +	*delay_off = CLK_TO_MS(off);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __devinit asic3_led_probe(struct platform_device *pdev)
+> +{
+> +	struct asic3_led *led = mfd_get_data(pdev);
+> +	int ret;
+> +
+> +	ret = mfd_cell_enable(pdev);
+> +	if (ret < 0)
+> +		goto ret0;
+> +
+> +	led->cdev = kzalloc(sizeof(struct led_classdev), GFP_KERNEL);
+> +	if (!led->cdev) {
+> +		ret = -ENOMEM;
+> +		goto ret1;
+> +	}
+> +
+> +	led->cdev->name = led->name;
+> +	led->cdev->default_trigger = led->default_trigger;
+> +	led->cdev->brightness_set = brightness_set;
+> +	led->cdev->blink_set = blink_set;
+> +
+> +	ret = led_classdev_register(&pdev->dev, led->cdev);
+> +	if (ret < 0)
+> +		goto ret2;
+> +
+> +	return 0;
+> +
+> +ret2:
+> +	kfree(led->cdev);
+> +ret1:
+> +	(void) mfd_cell_disable(pdev);
+> +ret0:
+> +	return ret;
+> +}
+> +
+> +static int __devexit asic3_led_remove(struct platform_device *pdev)
+> +{
+> +	struct asic3_led *led = mfd_get_data(pdev);
+> +
+> +	led_classdev_unregister(led->cdev);
+> +
+> +	kfree(led->cdev);
+> +
+> +	(void) mfd_cell_disable(pdev);
+> +
+> +	return 0;
+
+Why not just return mfd_cell_disable(pdev);?
+
+> +}
+> +
+> +static struct platform_driver asic3_led_driver = {
+> +	.probe		= asic3_led_probe,
+> +	.remove		= __devexit_p(asic3_led_remove),
+> +	.driver		= {
+> +		.name	= "leds-asic3",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +MODULE_ALIAS("platform:leds-asic3");
+> +
+> +static int __init asic3_led_init(void)
+> +{
+> +	return platform_driver_register(&asic3_led_driver);
+> +}
+> +
+> +static void __exit asic3_led_exit(void)
+> +{
+> +	platform_driver_unregister(&asic3_led_driver);
+> +}
+> +
+> +module_init(asic3_led_init);
+> +module_exit(asic3_led_exit);
+> +
+> +MODULE_AUTHOR("Paul Parsons <lost.distance@yahoo.com>");
+> +MODULE_DESCRIPTION("HTC ASIC3 LED driver");
+> +MODULE_LICENSE("GPL");
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+regards
+Philipp
+
