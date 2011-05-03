@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab1ECU0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:26:37 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47671 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754621Ab1ECU0g (ORCPT
+	id S1755025Ab1ECUdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:33:40 -0400
+Received: from mail-px0-f170.google.com ([209.85.212.170]:35729 "EHLO
+	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab1ECUdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:26:36 -0400
-Date: Tue, 3 May 2011 21:27:49 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/23] Intel SST driver update
-Message-ID: <20110503212749.1d72f9b9@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110503184032.GK1762@opensource.wolfsonmicro.com>
-References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
-	<20110503171538.GH2893@sirena.org.uk>
-	<20110503193612.22833754@lxorguk.ukuu.org.uk>
-	<20110503184032.GK1762@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 16:33:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=SQZYyZI5G646V8pyU32XjzvwpwnJWGdPtub8HgZZKBRxps9oCuwpkNCsQnIxsmLrPW
+         Qgxs1+bNyTy2xy2qlrBatC32CNi7/837YNe68cXjMZEMbFT2YFO+2xMh2jP2dHCxAAVg
+         7sxWmUjFX4mDuEbWtaTL4OWUW6PmU8g3eCJSA=
+Message-ID: <4DC0669E.4040100@lwfinger.net>
+Date: Tue, 03 May 2011 15:33:34 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
+CC: Walter Goldens <goldenstranger@yahoo.com>,
+        John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn
+Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
+References: <776913.88107.qm@web161609.mail.bf1.yahoo.com> <4DC0312A.4040303@lwfinger.net> <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com>
+In-Reply-To: <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sure, I was just asking if there was a plan to work on this properly -
-> the normal expectation in staging is that we'll see in place refactoring
-> and this series clearly isn't that.  You seem a little defensive here...
+On 05/03/2011 03:19 PM, Gábor Stefanik wrote:
+> On Tue, May 3, 2011 at 6:45 PM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
+>> On 05/03/2011 10:59 AM, Walter Goldens wrote:
+>>>
+>>>> This set of patches introduces a driver for the RTL8192SE PCI devices.
+>>>
+>>> Any estimates on the *SU driver? :)
+>>
+>> Now that rtl8192se is submitted, I will start work on the driver for the
+>> RTL8192DE devices. After that will be the RTL8191SU. It has lower priority
+>> because r8712u from staging handles those devices. It is not based on
+>> mac80211, but it works.
+>
+> Again, may I remind you that the preferred behavior in the Linux world
+> is release-early, release-often? :-)
 
-There I disagree (on both points). We have a collection of drivers in
-staging some of which are in the 'refactor and move' category (eg SEP)
-others of which are in the 'until the nice one is done' category - eg
-much of the wireless stuff, rim4 and a few other drivers.
+That I know, but "code first" still applies. If the comparison between rtl8192ce 
+and rtl8192cu has any validity for the rtl8192s varieties, roughly half of this 
+driver will be shared. In addition, we do have all the USB plumbing in place, 
+but we are still talking about a few thousand lines of code. At last contact, 
+Realtek has no interest in this project, thus I will be on my own.
 
-> > It might as well therefore be maintained in tree as out. That seems to
-> > serve Linux users rather better.
-> 
-> Of course, as do most of us, I was mostly making sure that there was a
-> plan here.
+Larry
 
-Yes there is a plan. SST essentially gets updated to fix stuff that needs
-to work (eg runtime PM for Moorestown) but isn't the future. My favourite
-sst patch is going to be the one which reads 'added 0 lines, removed
-bazillions' because at that point it ceases to be my problem ;)
 
-Alan
