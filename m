@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389Ab1ECEYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 00:24:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49422 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab1ECEYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 00:24:20 -0400
-Date: Tue, 3 May 2011 14:24:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the rcu tree with the net tree
-Message-Id: <20110503142419.2b7d5e23.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752065Ab1ECF13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 01:27:29 -0400
+Received: from a.relay.invitel.net ([62.77.203.3]:59889 "EHLO
+	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab1ECF1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 01:27:20 -0400
+Date: Tue, 03 May 2011 07:17:42 +0200
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
+In-reply-to: <20110502221406.GA15043@ponder.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
+        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
+        Paul Mundt <lethal@linux-sh.org>
+Reply-to: hs@denx.de
+Message-id: <4DBF8FF6.8030100@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1300782452-528-1-git-send-email-hs@denx.de>
+ <20110502221406.GA15043@ponder.secretlab.ca>
+User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hello Grant,
 
-Today's linux-next merge of the rcu tree got a conflict in
-net/core/filter.c between commit 0a14842f5a3c ("net: filter: Just In Time
-compiler for x86-64") from the net tree and commit 10cde158c259
-("net,rcu: convert call_rcu(sk_filter_release_rcu) to kfree_rcu") from
-the rcu tree.
+Grant Likely wrote:
+> On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
+>> cc: Wolfram Sang <w.sang@pengutronix.de>
+>> cc: Grant Likely <grant.likely@secretlab.ca>
+>> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> cc: linux-fbdev@vger.kernel.org
+>> cc: devicetree-discuss@ozlabs.org
+>> cc: Ben Dooks <ben@simtec.co.uk>
+>> cc: Vincent Sanders <vince@simtec.co.uk>
+>> cc: Samuel Ortiz <sameo@linux.intel.com>
+>> cc: linux-kernel@vger.kernel.org
+>> cc: Randy Dunlap <rdunlap@xenotime.net>
+>> cc: Wolfgang Denk <wd@denx.de>
+>> cc: Paul Mundt <lethal@linux-sh.org>
+>>
+>> changes since v5:
+>> - repost complete patchseries, as Paul Mundt suggested
+>> - rebased against current head
+>> - add Acked-by from Samuel Ortiz (MFD parts)
+>>   http://www.spinics.net/lists/linux-fbdev/msg02550.html
+>>   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+>>
+>>   and Benjamin Herrenschmidt (DTS parts)
+>>   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+>> - removed patch 
+>>   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
+>>   therefore added
+>>   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
+> 
+> Refresh my memory, why was the mpc5200_defconfig updated dropped?
 
-The former adds another operation into sk_filter_release_rcu(), so I have
-effectively reverted the rcu tree change for now (by applying the patch
-below as a merge fixup).
+Because it is a board based on the tqm5200 board port ... no other
+reason.
+
+bye,
+Heiko
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 3 May 2011 14:06:50 +1000
-Subject: [PATCH] Revert "net,rcu: convert call_rcu(sk_filter_release_rcu) to
- kfree_rcu"
-
-This reverts commit 10cde158c2591422a2b32a2f560f406b8e69bee6.
----
- include/net/sock.h |    4 +++-
- net/core/filter.c  |   13 +++++++++++++
- 2 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 1a2f255..f2046e4 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1180,6 +1180,8 @@ extern void sk_common_release(struct sock *sk);
- /* Initialise core socket variables */
- extern void sock_init_data(struct socket *sock, struct sock *sk);
- 
-+extern void sk_filter_release_rcu(struct rcu_head *rcu);
-+
- /**
-  *	sk_filter_release - release a socket filter
-  *	@fp: filter to remove
-@@ -1190,7 +1192,7 @@ extern void sock_init_data(struct socket *sock, struct sock *sk);
- static inline void sk_filter_release(struct sk_filter *fp)
- {
- 	if (atomic_dec_and_test(&fp->refcnt))
--		kfree_rcu(fp, rcu);
-+		call_rcu(&fp->rcu, sk_filter_release_rcu);
- }
- 
- static inline void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 66d403d..0eb8c44 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -572,6 +572,19 @@ int sk_chk_filter(struct sock_filter *filter, int flen)
- EXPORT_SYMBOL(sk_chk_filter);
- 
- /**
-+ * 	sk_filter_release_rcu - Release a socket filter by rcu_head
-+ *	@rcu: rcu_head that contains the sk_filter to free
-+ */
-+void sk_filter_release_rcu(struct rcu_head *rcu)
-+{
-+	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
-+
-+	bpf_jit_free(fp);
-+	kfree(fp);
-+}
-+EXPORT_SYMBOL(sk_filter_release_rcu);
-+
-+/**
-  *	sk_attach_filter - attach a socket filter
-  *	@fprog: the filter program
-  *	@sk: the socket to use
--- 
-1.7.4.4
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
