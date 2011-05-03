@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab1ECS3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:29:37 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:30823 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1ECS3g (ORCPT
+	id S1754447Ab1ECScG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 14:32:06 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60312 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1ECScF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:29:36 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "root@docs.homelinux.org" <root@docs.homelinux.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Error in Hyper-V modules hv_vmbus
-Thread-Topic: Error in Hyper-V modules hv_vmbus
-Thread-Index: AQHMB0SgETUemc5uTUuEnNLkft8sE5R22q3wgAGFHACAAsCCUIAAicEA//+SaUCAADRasA==
-Date: Tue, 3 May 2011 18:29:34 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A26D8@TK5EX14MBXC114.redmond.corp.microsoft.com>
-References: <4DBC1F2F.5050205@docs.homelinux.org>
- <6E21E5352C11B742B20C142EB499E0481DF19C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <4DBD53F6.6070603@docs.homelinux.org>
- <6E21E5352C11B742B20C142EB499E0481DF83C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <bbdd3ea71462ef4f7d152a67e52cafb1@docs.homelinux.org>
- <6E21E5352C11B742B20C142EB499E0481DF899@TK5EX14MBXC124.redmond.corp.microsoft.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481DF899@TK5EX14MBXC124.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 3 May 2011 14:32:05 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: <linux-kernel@vger.kernel.org>, Vladimir Davydov <vdavydov@parallels.com>
+Subject: [PATCH] sched: balance_tasks: remove unused this_best_prio arg
+Date: Tue, 3 May 2011 22:31:07 +0400
+Message-ID: <1304447467-29200-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p43ITtET027029
-
-> > -----Original Message-----
-> > From: root@docs.homelinux.org [mailto:root@docs.homelinux.org]
-> > Sent: Tuesday, May 03, 2011 10:52 AM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org
-> > Subject: RE: Error in Hyper-V modules hv_vmbus
-> >
-> >  On Tue, 3 May 2011 13:42:43 +0000, KY Srinivasan wrote:
-> > >> -----Original Message-----
-> > >> From: root [mailto:root@docs.homelinux.org]
-> > >> Sent: Sunday, May 01, 2011 8:37 AM
-> > >> To: KY Srinivasan
-> > >> Cc: linux-kernel@vger.kernel.org
-> > >> Subject: Re: Error in Hyper-V modules hv_vmbus
-> > >>
-> > >> Windows Server Core 2008 R2 with SP2
-> > >
-> > > This is a known problem and a fix has been submitted - the patch is
-> > > yet to be applied though. Once the hv patches that are in the queue
-> > > are applied, this problem will be fixed. In the interim, if you want
-> > > an immediate fix, I could send you the patch that will apply against
-> > > the tree you have.
-> > >
-> > > Regards,
-> > >
-> > > K. Y
-> > >>
-> > >> Regards
-> > >> Juan Dos Santos
-> >
-> >  Could You send me the patch? So I can test it, I am using the kernel
-> > source from
-> > http://www.kernel.org/pub/linux/kernel/v2.6/testing/linux-2.6.39-rc5.t
-> > ar.bz2,  is the patch compatible with this kernel source?
-> 
-> This is a very old version of the hyper-V driver code compared to what is in
-> Greg's tree and looking at the code It does not look like the problem you are
-> seeing is the problem my patch fixes. We will do some additional testing and
-> get back to you. It would be very useful if you can post the dmesg or stack
-> trace that can shed additional light on the problem.
-
-Juan,
-
-I just fixed a few issues in Ubuntu 10.10 that might be similar.
-
-I will spin up a debian system and see if I can reproduce the problem and submit a patch
-To fix it.
-
-Hank.
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ kernel/sched_fair.c |   16 ++++++----------
+ 1 files changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 6fa833a..0653229 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2102,7 +2102,7 @@ static unsigned long
+ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 	      unsigned long max_load_move, struct sched_domain *sd,
+ 	      enum cpu_idle_type idle, int *all_pinned,
+-	      int *this_best_prio, struct cfs_rq *busiest_cfs_rq)
++	      struct cfs_rq *busiest_cfs_rq)
+ {
+ 	int loops = 0, pulled = 0;
+ 	long rem_load_move = max_load_move;
+@@ -2140,9 +2140,6 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		 */
+ 		if (rem_load_move <= 0)
+ 			break;
+-
+-		if (p->prio < *this_best_prio)
+-			*this_best_prio = p->prio;
+ 	}
+ out:
+ 	/*
+@@ -2202,7 +2199,7 @@ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+ 		  struct sched_domain *sd, enum cpu_idle_type idle,
+-		  int *all_pinned, int *this_best_prio)
++		  int *all_pinned)
+ {
+ 	long rem_load_move = max_load_move;
+ 	int busiest_cpu = cpu_of(busiest);
+@@ -2227,7 +2224,7 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		rem_load = div_u64(rem_load, busiest_h_load + 1);
+ 
+ 		moved_load = balance_tasks(this_rq, this_cpu, busiest,
+-				rem_load, sd, idle, all_pinned, this_best_prio,
++				rem_load, sd, idle, all_pinned,
+ 				busiest_cfs_rq);
+ 
+ 		if (!moved_load)
+@@ -2253,11 +2250,11 @@ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+ 		  struct sched_domain *sd, enum cpu_idle_type idle,
+-		  int *all_pinned, int *this_best_prio)
++		  int *all_pinned)
+ {
+ 	return balance_tasks(this_rq, this_cpu, busiest,
+ 			max_load_move, sd, idle, all_pinned,
+-			this_best_prio, &busiest->cfs);
++			&busiest->cfs);
+ }
+ #endif
+ 
+@@ -2274,12 +2271,11 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		      int *all_pinned)
+ {
+ 	unsigned long total_load_moved = 0, load_moved;
+-	int this_best_prio = this_rq->curr->prio;
+ 
+ 	do {
+ 		load_moved = load_balance_fair(this_rq, this_cpu, busiest,
+ 				max_load_move - total_load_moved,
+-				sd, idle, all_pinned, &this_best_prio);
++				sd, idle, all_pinned);
+ 
+ 		total_load_moved += load_moved;
+ 
+-- 
+1.7.0.4
+
