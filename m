@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1ECROU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:14:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44564 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab1ECROT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:14:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when tasks are frozen
-Date: Tue, 3 May 2011 19:14:53 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <201105030044.51661.rjw@sisk.pl> <15997.1304437643@localhost> <1304438196.1788.19.camel@Joe-Laptop>
-In-Reply-To: <1304438196.1788.19.camel@Joe-Laptop>
+	id S1754204Ab1ECRPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:15:15 -0400
+Received: from 236.121.91-79.rev.gaoland.net ([79.91.121.236]:58714 "EHLO
+	mx.synack.fr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753988Ab1ECRPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:15:13 -0400
+From: Samir Bellabes <sam@synack.fr>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Patrick McHardy <kaber@trash.net>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        Grzegorz Nosek <root@localdomain.pl>
+Subject: Re: [RFC v3 00/10] snet: Security for NETwork syscalls
+References: <1304432663-1575-1-git-send-email-sam@synack.fr>
+	<4DC0330C.60208@schaufler-ca.com>
+Date: Tue, 03 May 2011 19:15:10 +0200
+In-Reply-To: <4DC0330C.60208@schaufler-ca.com> (Casey Schaufler's message of
+	"Tue, 03 May 2011 09:53:32 -0700")
+Message-ID: <874o5b3dup.fsf@synack.fr>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105031914.53972.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 03, 2011, Joe Perches wrote:
-> On Tue, 2011-05-03 at 11:47 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > On Tue, 03 May 2011 13:02:08 +0200, "Rafael J. Wysocki" said:
-> > > It's useful, but I'd rather do
-> > >  		dev_info(device, "firmware: %s will not be loaded\n", name);
-> > That works too.  :)
-> 
-> A higher KERN_<LEVEL> like dev_alert or dev_err might be better.
+Casey Schaufler <casey@schaufler-ca.com> writes:
 
-Hmm, fair enough.  I'll use dev_err() in the final version.
+> On 5/3/2011 7:24 AM, Samir Bellabes wrote:
+>> Hello lsm and netdev people,
+>> This set of patches is the version 3 of snet, which I would like to submit as a
+>> RFC.
+>>
+>> snet is a linux security module. It provides a mecanism defering syscall
+>> security hooks and decision (verdict) to userspace.
+>
+> As you have submitted this as a Request For Comments I will make one.
+>
+> I first saw this approach in 1987, on Unix, from a company called
+> SecureWare (long completely assimilated into HP). The potential for
+> deadlock, where the system prevents the decision making application
+> from accessing the information it needs to grant itself access is
+> great. The performance impact of making security checks in user
+> space is appalling. The exposure for attack, especially regarding
+> denial of service, is enormous. I do not recommend this approach.
+>
+> There are cases where user space access control assistance could
+> be appropriate, in particular controls based on the data involved.
+> Even those controls must be very carefully crafted to avoid
+> impacting the correct function of the system in the unhappily
+> likely event of the access control enforcing applications being
+> unavailable or incapable of keeping up with demand.
+>
 
-Thanks,
-Rafael
+As everything may be exposed to denial of service attack..
+I have some thoughts. snet is not a tool for securing the kernel code,
+there is only one way to do so, it's to fix bug and to add code feature
+to protect memory (cf grsecurity). snet is a tool to manage the
+behaviour of users and applications, regarding network connections. 
+
+the risk of deadlock is uneffective, as every sleeps occurs in process
+context, so application can sleep without trouble.
+there are 2 ways to go out of sleep :
+ - receiving the verdict
+ - timeouting
+
+so deadlock are more "latency".
+You win a admin tool, you loose some latency. I'm ok with that, as this
+feature as its own public.
+
+and of course, I'm not pretending to add a new idea. I'm sure some
+mecanism like this already exist before 1987. I'm just the man who put
+the code in order to be discuss on the lists, which was never been done
+so far. 
+
+there are some request from public distro:
+http://brainstorm.ubuntu.com/idea/23333/
