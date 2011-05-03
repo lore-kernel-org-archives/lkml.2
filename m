@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab1ECIRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 04:17:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35830 "EHLO mx3.mail.elte.hu"
+	id S1751473Ab1ECIWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 04:22:53 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38530 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1ECIRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 04:17:36 -0400
-Date: Tue, 3 May 2011 10:17:14 +0200
+	id S1751074Ab1ECIWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 04:22:51 -0400
+Date: Tue, 3 May 2011 10:22:34 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Borislav Petkov <bp@amd64.org>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -16,19 +16,17 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         Tony Luck <tony.luck@intel.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
- for now
-Message-ID: <20110503081714.GA6999@elte.hu>
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
+Message-ID: <20110503082234.GB6999@elte.hu>
 References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-5-git-send-email-bp@amd64.org>
- <20110503064505.GF7751@elte.hu>
- <20110503072302.GC18979@aftab>
+ <1304357691-14354-3-git-send-email-bp@amd64.org>
+ <20110503064046.GD7751@elte.hu>
+ <20110503071215.GA18979@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110503072302.GC18979@aftab>
+In-Reply-To: <20110503071215.GA18979@aftab>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -44,45 +42,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Borislav Petkov <bp@amd64.org> wrote:
 
-> On Tue, May 03, 2011 at 02:45:05AM -0400, Ingo Molnar wrote:
-> > 
-> > * Borislav Petkov <bp@amd64.org> wrote:
-> > 
-> > > From: Borislav Petkov <borislav.petkov@amd.com>
-> > > 
-> > > This is new functionality and it affects all of x86 so we want to be
-> > > very conservative about it and have it off by default for now, in case
-> > > something goes awry. You can always enable it by supplying "ras" on the
-> > > kernel command line.
-> > > 
-> > > Also, depending on whether it is enabled or not, we emit the tracepoint
-> > > from a different place in the code to pick up additional decoded info.
-> > > 
-> > > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > > ---
-> > >  Documentation/kernel-parameters.txt |    2 ++
-> > >  arch/x86/include/asm/mce.h          |    1 +
-> > >  arch/x86/kernel/cpu/mcheck/mce.c    |   32 ++++++++++++++++++++++++++++++--
-> > >  drivers/edac/mce_amd.c              |    5 +++++
-> > >  4 files changed, 38 insertions(+), 2 deletions(-)
-> > 
-> > the boot flag is fine - but please keep it enabled by default if MCE support is 
-> > enabled in the .config, we do not chicken out when it comes to testing new 
-> > code! :-)
+> > we could move the other perf_events.c facilities there as well, and maybe 
+> > split up the file a bit, it's 7.5 KLOC now which is a bit excessive.
 > 
-> Ok, the problem I see with it is that people without a RAS daemon
-> running will have the mechanism collecting MCEs in the background, using
-> up resources (4 pages per CPU is the buffer) and not doing anything (in
-> the best case that is, when we're not broken otherwise).
+> Right, so I left perf_event.c as a whole on purpose (only renamed) because it 
+> makes more sense IMHO for someone who actually wrote it to split it in 
+> logical parts (^hint hint^). I mean, I could do it too but it'll take me much 
+> more time :).
 
-Well, i'd put it behind a new Kconfig option which is default enabled if MCE 
-support is enabled. That way people can still disable it both in the .config 
-and on the boot command line as well.
+Well you are now writing new events code as well so spending that time might be 
+a good investment in terms of getting persistent.c right as well.
 
-> Do we want to have that on all x86 turned on by default? Or maybe invert the 
-> flag semantics so that people can disable it on boot?
-
-Boot flagsshould have feature=on/off kind of obvious semantics.
+Could you send a Git pull request against perf/core that does the obvious file 
+movement and renaming? We can do that first step straight away and get the ball 
+rolling.
 
 Thanks,
 
