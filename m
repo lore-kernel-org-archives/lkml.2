@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175Ab1ECHXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 03:23:36 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42461 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab1ECHXe (ORCPT
+	id S1751165Ab1ECHYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:24:51 -0400
+Received: from a.relay.invitel.net ([62.77.203.3]:46287 "EHLO
+	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab1ECHYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 03:23:34 -0400
-Date: Tue, 3 May 2011 09:23:02 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
- for now
-Message-ID: <20110503072302.GC18979@aftab>
-References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-5-git-send-email-bp@amd64.org>
- <20110503064505.GF7751@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503064505.GF7751@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 May 2011 03:24:50 -0400
+Date: Tue, 03 May 2011 09:24:46 +0200
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
+In-reply-to: <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
+        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
+        Paul Mundt <lethal@linux-sh.org>
+Reply-to: hs@denx.de
+Message-id: <4DBFADBE.5040603@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1300782452-528-1-git-send-email-hs@denx.de>
+ <20110502221406.GA15043@ponder.secretlab.ca> <4DBF8FF6.8030100@denx.de>
+ <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com>
+User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 02:45:05AM -0400, Ingo Molnar wrote:
+Hello Grant,
+
+Grant Likely wrote:
+> On Mon, May 2, 2011 at 11:17 PM, Heiko Schocher <hs@denx.de> wrote:
+>> Hello Grant,
+>>
+>> Grant Likely wrote:
+>>> On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
+>>>> cc: Wolfram Sang <w.sang@pengutronix.de>
+>>>> cc: Grant Likely <grant.likely@secretlab.ca>
+>>>> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> cc: linux-fbdev@vger.kernel.org
+>>>> cc: devicetree-discuss@ozlabs.org
+>>>> cc: Ben Dooks <ben@simtec.co.uk>
+>>>> cc: Vincent Sanders <vince@simtec.co.uk>
+>>>> cc: Samuel Ortiz <sameo@linux.intel.com>
+>>>> cc: linux-kernel@vger.kernel.org
+>>>> cc: Randy Dunlap <rdunlap@xenotime.net>
+>>>> cc: Wolfgang Denk <wd@denx.de>
+>>>> cc: Paul Mundt <lethal@linux-sh.org>
+>>>>
+>>>> changes since v5:
+>>>> - repost complete patchseries, as Paul Mundt suggested
+>>>> - rebased against current head
+>>>> - add Acked-by from Samuel Ortiz (MFD parts)
+>>>>   http://www.spinics.net/lists/linux-fbdev/msg02550.html
+>>>>   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+>>>>
+>>>>   and Benjamin Herrenschmidt (DTS parts)
+>>>>   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+>>>> - removed patch
+>>>>   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
+>>>>   therefore added
+>>>>   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
+>>> Refresh my memory, why was the mpc5200_defconfig updated dropped?
+>> Because it is a board based on the tqm5200 board port ... no other
+>> reason.
 > 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > This is new functionality and it affects all of x86 so we want to be
-> > very conservative about it and have it off by default for now, in case
-> > something goes awry. You can always enable it by supplying "ras" on the
-> > kernel command line.
-> > 
-> > Also, depending on whether it is enabled or not, we emit the tracepoint
-> > from a different place in the code to pick up additional decoded info.
-> > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > ---
-> >  Documentation/kernel-parameters.txt |    2 ++
-> >  arch/x86/include/asm/mce.h          |    1 +
-> >  arch/x86/kernel/cpu/mcheck/mce.c    |   32 ++++++++++++++++++++++++++++++--
-> >  drivers/edac/mce_amd.c              |    5 +++++
-> >  4 files changed, 38 insertions(+), 2 deletions(-)
-> 
-> the boot flag is fine - but please keep it enabled by default if MCE support is 
-> enabled in the .config, we do not chicken out when it comes to testing new 
-> code! :-)
+> Please send a patch to also update the mpc5200_defconfig.
 
-Ok, the problem I see with it is that people without a RAS daemon
-running will have the mechanism collecting MCEs in the background, using
-up resources (4 pages per CPU is the buffer) and not doing anything (in
-the best case that is, when we're not broken otherwise).
+Ok. Done, just one more question:
 
-Do we want to have that on all x86 turned on by default? Or maybe invert
-the flag semantics so that people can disable it on boot?
+Why you didn;t pick up the patches:
 
-Thanks.
+- powerpc, 5200: add support for charon board
+  (Got an Acked-by from Wolfram Sang)
+- powerpc, video: add SM501 support for charon board.
 
+Are there any issues with them, I should fix?
+
+bye,
+Heiko
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
