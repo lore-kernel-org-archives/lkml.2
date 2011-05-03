@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1ECJNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 05:13:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43794 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab1ECJM7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 05:12:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fpOpCgwEZumtZzxndYvScfrDcY+JEqKqCbYitqVFW5f5aqXZy9sruE1KXjJD26rG2v
-         oDLB5gfB/HV0zAtA/j/XtU/B3XMfwWqA79k1gixPHyVer8MNChnyilqv5iCPYdLlKifU
-         FcgwXzvGbuWKh3eXWZLfbC4g/aS40+A8hJu/8=
+	id S1751613Ab1ECJNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:13:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49961 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab1ECJNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 05:13:44 -0400
+Date: Tue, 3 May 2011 10:13:20 +0100
+From: Mel Gorman <mgorman@novell.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
+        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110503091320.GA4542@novell.com>
+References: <20110428150827.GY4658@suse.de>
+ <1304006499.2598.5.camel@mulgrave.site>
+ <1304009438.2598.9.camel@mulgrave.site>
+ <1304009778.2598.10.camel@mulgrave.site>
+ <20110428171826.GZ4658@suse.de>
+ <1304015436.2598.19.camel@mulgrave.site>
+ <20110428192104.GA4658@suse.de>
+ <1304020767.2598.21.camel@mulgrave.site>
+ <1304025145.2598.24.camel@mulgrave.site>
+ <1304030629.2598.42.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=CmYOisOqMejU2qVGnB4c6Z7yHsA@mail.gmail.com>
-References: <1303910411-15793-1-git-send-email-akinobu.mita@gmail.com>
-	<1303910411-15793-2-git-send-email-akinobu.mita@gmail.com>
-	<4DBFA78F.9060001@snapgear.com>
-	<BANLkTi=CmYOisOqMejU2qVGnB4c6Z7yHsA@mail.gmail.com>
-Date: Tue, 3 May 2011 11:12:58 +0200
-X-Google-Sender-Auth: yYv_gqCOZ77DqWMS8UtybtJCkDk
-Message-ID: <BANLkTinkEHjrBW1GJSJhBnbgxXm5Vtw7BQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/7] m68knommu: fix build error due to the lack of find_next_bit_le()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Greg Ungerer <gerg@snapgear.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org, arnd@arndb.de,
-        Greg Ungerer <gerg@uclinux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1304030629.2598.42.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 11:11, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2011/5/3, Greg Ungerer <gerg@snapgear.com>:
->> Hi Akinobu,
->>
->> On 27/04/11 23:20, Akinobu Mita wrote:
->>> m68knommu can't build ext4, udf, and ocfs2 due to the lack of
->>> find_next_bit_le().
->>>
->>> This implements find_next_bit_le() on m68knommu by duplicating the
->>> generic find_next_bit_le() in lib/find_next_bit.c.
->>
->> Wouldn't the m68k specific implementation of this in
->> arch/m68k/include/asm/bitops_mm.h be better?
->
-> find_next_bit_le() in bitops_mm.h has a bug
-> (Please see https://lkml.org/lkml/2011/4/3/43) and it is not fixed
-> in mainline yet. So I decided to use generic one for the safety.
+On Thu, Apr 28, 2011 at 05:43:48PM -0500, James Bottomley wrote:
+> On Thu, 2011-04-28 at 16:12 -0500, James Bottomley wrote:
+> > On Thu, 2011-04-28 at 14:59 -0500, James Bottomley wrote:
+> > > Actually, talking to Chris, I think I can get the system up using
+> > > init=/bin/bash without systemd, so I can try the no cgroup config.
+> > 
+> > OK, so a non-PREEMPT non-CGROUP kernel has survived three back to back
+> > runs of untar without locking or getting kswapd pegged, so I'm pretty
+> > certain this is cgroups related.  The next steps are to turn cgroups
+> > back on but try disabling the memory and IO controllers.
+> 
+> I tried non-PREEMPT CGROUP but disabled GROUP_MEM_RES_CTLR.
+> 
+> The results are curious:  the tar does complete (I've done three back to
+> back).  However, I did get one soft lockup in kswapd (below).  But the
+> system recovers instead of halting I/O and hanging like it did
+> previously.
+> 
+> The soft lockup is in shrink_slab, so perhaps it's a combination of slab
+> shrinker and cgroup memory controller issues?
+> 
 
-Yeah, I still have to create a for-2.6.40 branch and add it there.
+So, kswapd is still looping in reclaim and spending a lot of time in
+shrink_slab but it must not be the shrinker itself or that debug patch
+would have triggered. It's curious that cgroups are involved with
+systemd considering that one would expect those groups to be fairly
+small. I still don't have a new theory but will get hold of a Fedora 15
+install CD and see can I reproduce it locally.
 
-Gr{oetje,eeting}s,
+One last thing, what is the value of /proc/sys/vm/zone_reclaim_mode? Two
+of the reporting machines could be NUMA and if that proc file reads as
+1, I'd be interested in hearing the results of a test with it set to 0.
+Thanks.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
