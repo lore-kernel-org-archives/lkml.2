@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165Ab1ECHYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 03:24:51 -0400
-Received: from a.relay.invitel.net ([62.77.203.3]:46287 "EHLO
-	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1ECHYu (ORCPT
+	id S1751284Ab1ECH1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:27:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63812 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab1ECH1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 03:24:50 -0400
-Date: Tue, 03 May 2011 09:24:46 +0200
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
-In-reply-to: <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
-        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Reply-to: hs@denx.de
-Message-id: <4DBFADBE.5040603@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-References: <1291451028-22532-1-git-send-email-hs@denx.de>
- <1300782452-528-1-git-send-email-hs@denx.de>
- <20110502221406.GA15043@ponder.secretlab.ca> <4DBF8FF6.8030100@denx.de>
- <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com>
-User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
+	Tue, 3 May 2011 03:27:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=lBQ5rz5SRB8NMj1Fo5fTcVHjxItu3t0p/hz5dm2LXGJovBWi7TfIr7z0vjoORrTlVg
+         q8zOnkHZYPcJK95V5UlrUxt3Ipjiw1skl4K2LMXLSrB9OyPR/uRCs/5CnkJW2ZB0GKFf
+         p3tePJtHiRq7yuSbxJ3oVXS7owYdX2ZbC8TYI=
+Date: Tue, 3 May 2011 09:27:34 +0200
+From: Stefan Seyfried <stefan.seyfried@googlemail.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: linux-bluetooth@vger.kernel.org, Keith Packard <keithp@keithp.com>,
+        Vinicius Gomes <vinicius.gomes@openbossa.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
+ b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
+Message-ID: <20110503092734.1c153fc3@susi.home.s3e.de>
+In-Reply-To: <20110423163759.GB2323@joana>
+References: <yun1v1fj024.fsf@aiko.keithp.com>
+	<alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
+	<alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
+	<yunaag0tjzb.fsf@aiko.keithp.com>
+	<20110409000857.GB25581@piper>
+	<20110411173409.1567679c@lxorguk.ukuu.org.uk>
+	<BANLkTinK-cA67X6Knp-h5SKpjpDpwaMgZg@mail.gmail.com>
+	<yunaafjs28n.fsf@aiko.keithp.com>
+	<20110421225953.GA2323@joana>
+	<yun62q7i21o.fsf@aiko.keithp.com>
+	<20110423163759.GB2323@joana>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Grant,
+On Sat, 23 Apr 2011 13:37:59 -0300
+"Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
 
-Grant Likely wrote:
-> On Mon, May 2, 2011 at 11:17 PM, Heiko Schocher <hs@denx.de> wrote:
->> Hello Grant,
->>
->> Grant Likely wrote:
->>> On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
->>>> cc: Wolfram Sang <w.sang@pengutronix.de>
->>>> cc: Grant Likely <grant.likely@secretlab.ca>
->>>> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>> cc: linux-fbdev@vger.kernel.org
->>>> cc: devicetree-discuss@ozlabs.org
->>>> cc: Ben Dooks <ben@simtec.co.uk>
->>>> cc: Vincent Sanders <vince@simtec.co.uk>
->>>> cc: Samuel Ortiz <sameo@linux.intel.com>
->>>> cc: linux-kernel@vger.kernel.org
->>>> cc: Randy Dunlap <rdunlap@xenotime.net>
->>>> cc: Wolfgang Denk <wd@denx.de>
->>>> cc: Paul Mundt <lethal@linux-sh.org>
->>>>
->>>> changes since v5:
->>>> - repost complete patchseries, as Paul Mundt suggested
->>>> - rebased against current head
->>>> - add Acked-by from Samuel Ortiz (MFD parts)
->>>>   http://www.spinics.net/lists/linux-fbdev/msg02550.html
->>>>   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
->>>>
->>>>   and Benjamin Herrenschmidt (DTS parts)
->>>>   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
->>>> - removed patch
->>>>   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
->>>>   therefore added
->>>>   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
->>> Refresh my memory, why was the mpc5200_defconfig updated dropped?
->> Because it is a board based on the tqm5200 board port ... no other
->> reason.
+> * Keith Packard <keithp@keithp.com> [2011-04-21 17:04:51 -0700]:
 > 
-> Please send a patch to also update the mpc5200_defconfig.
+> > 
+> > On Thu, 21 Apr 2011 19:59:53 -0300, "Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
+> > 
+> > > Patch is on the way to mainline. It's currently on wireless-2.6. Next steps
+> > > are net-2.6 -> linux-2.6.
+> > 
+> > I didn't see it on linux-kernel, so I was a bit worried. I'd love to
+> > test it in place of the kludge that Vinicius sent me.
+> 
+> I usually don't cc linux-kernel in my pull-requests, maybe I should.
 
-Ok. Done, just one more question:
-
-Why you didn;t pick up the patches:
-
-- powerpc, 5200: add support for charon board
-  (Got an Acked-by from Wolfram Sang)
-- powerpc, video: add SM501 support for charon board.
-
-Are there any issues with them, I should fix?
-
-bye,
-Heiko
+Did this hit mainline already? I seem to suffer from this still with -rc5
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Stefan Seyfried
+
+"Dispatch war rocket Ajax to bring back his body!"
