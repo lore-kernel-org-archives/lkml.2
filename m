@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab1ECUm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:42:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41427 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1ECUm0 (ORCPT
+	id S1755185Ab1ECUpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:45:24 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:48834 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab1ECUpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:42:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=OOgyRNES8jtXiEuwl/B0jva7SYkXgXBH11Z7IW7O+DqbZgasIDgiqrqI+Qj1B5kLAh
-         Qec8ibG6i+z/vDbZYVxpoftcIaggV5xTZTLtRo16MG2DfzYxbdqYJQHQ38AMM+5N8y26
-         1s1xXq3ZJMhc0mMt+ZzpH8jcWKkdjzwEEw+aM=
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tim Abbott <tabbott@ksplice.com>, Anders Kaseorg <andersk@ksplice.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] module: Use binary search in lookup_symbol()
-Date: Tue,  3 May 2011 22:42:10 +0200
-Message-Id: <1304455330-2728-1-git-send-email-abogani@kernel.org>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 3 May 2011 16:45:23 -0400
+Date: Tue, 3 May 2011 22:44:41 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
+        akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
+        rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH V2] xen/balloon: Memory hotplug support for Xen balloon driver
+Message-ID: <20110503204441.GC15775@router-fw-old.local.net-space.pl>
+References: <20110502220148.GI4623@router-fw-old.local.net-space.pl> <1304440353.30823.73.camel@nimitz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304440353.30823.73.camel@nimitz>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This work was supported by a hardware donation from the CE Linux Forum.
+On Tue, May 03, 2011 at 09:32:33AM -0700, Dave Hansen wrote:
+> On Tue, 2011-05-03 at 00:01 +0200, Daniel Kiper wrote:
+> > @@ -448,6 +575,14 @@ static int __init balloon_init(void)
+> >         balloon_stats.retry_count = 1;
+> >         balloon_stats.max_retry_count = RETRY_UNLIMITED;
+> >
+> > +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
+> > +       balloon_stats.hotplug_pages = 0;
+> > +       balloon_stats.balloon_hotplug = 0;
+> > +
+> > +       register_online_page_callback(&xen_online_page);
+> > +       register_memory_notifier(&xen_memory_nb);
+> > +#endif 
+>
+> This is 100% static, apparently.  XEN_BALLOON can't be a module, so I
+> still don't see the point of having the un/register stuff.  
 
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- kernel/module.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+You are right to some extent. However, xen_online_page() is registered
+as page onlining function only on Xen hypervisor. On bare metal
+generic_online_page() is only valid page onlining function.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 6a34337..a1f841e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2055,10 +2055,8 @@ static const struct kernel_symbol *lookup_symbol(const char *name,
- 	const struct kernel_symbol *stop)
- {
- 	const struct kernel_symbol *ks = start;
--	for (; ks < stop; ks++)
--		if (strcmp(ks->name, name) == 0)
--			return ks;
--	return NULL;
-+	return bsearch(ks->name, start, stop - start,
-+			sizeof(struct kernel_symbol), cmp_name);
- }
- 
- static int is_exported(const char *name, unsigned long value,
--- 
-1.7.4.1
+Additionally, I think this callback mechanism enable other balloon
+implementations (KVM, VMware, ...) to easily integrate with memory
+hotplug. If it comes true (I am going to propose relevant solution
+maybe with more generic balloon driver for Linux Kernel somewhen;
+I have some ideas, however, I must focus on more important issues
+for me now) proper page onlining function (for Xen, KVM, ...) should
+be registered at boot time or module load/unload (after hypervisor
+detection). That is why I am insisting on run time solution.
+It is an investment into the future.
 
+Daniel
