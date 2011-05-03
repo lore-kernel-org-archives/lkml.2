@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1ECQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:58:44 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53803 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab1ECQ6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:58:43 -0400
-Date: Tue, 3 May 2011 17:58:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/23] intel_sst: MSIC codec power optimisation
-Message-ID: <20110503165838.GF2893@sirena.org.uk>
-References: <20110503162919.24853.58699.stgit@bob.linux.org.uk> <20110503163200.24853.6842.stgit@bob.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503163200.24853.6842.stgit@bob.linux.org.uk>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1754071Ab1ECRAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:00:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40892 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753923Ab1ECRAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:00:23 -0400
+Subject: Re: 2.6.39-rc5+ BUG at scsi_run_queue+0x24/0xe3
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4DC0330F.6050906@sandia.gov>
+References: <4DC0330F.6050906@sandia.gov>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 12:00:18 -0500
+Message-ID: <1304442019.10982.7.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 05:32:01PM +0100, Alan Cox wrote:
+On Tue, 2011-05-03 at 10:53 -0600, Jim Schutt wrote:
+> Please let me know if what further information you need, or if there is
+> anything I can do, to help resolve this.
 
-> From: Vinod Koul <vinod.koul@intel.com>
-> 
-> This patch adds power optimization for the msic codec and ensure
-> codec is completely powered off when codec is idle.
+I think this is the fix (already in rc-fixes):
 
-Once you move over to proper CODEC drivers the core will take care of
-this stuff for you.
+James
+
+---
+>From 3e85ea868dbd60a84240be5c1eebc36841b9c568 Mon Sep 17 00:00:00 2001
+From: James Bottomley <James.Bottomley@suse.de>
+Date: Sun, 1 May 2011 09:42:07 -0500
+Subject: [PATCH] [SCSI] fix oops in scsi_run_queue()
+
+The recent commit closing the race window in device teardown:
+
+commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b
+Author: James Bottomley <James.Bottomley@suse.de>
+Date:   Fri Apr 22 10:39:59 2011 -0500
+
+    [SCSI] put stricter guards on queue dead checks
+
+is causing a potential NULL deref in scsi_run_queue() because the
+q->queuedata may already be NULL by the time this function is called.
+Since we shouldn't be running a queue that is being torn down, simply
+add a NULL check in scsi_run_queue() to forestall this.
+
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index e9901b8..03979f4 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -404,6 +404,10 @@ static void scsi_run_queue(struct request_queue *q)
+ 	LIST_HEAD(starved_list);
+ 	unsigned long flags;
+ 
++	/* if the device is dead, sdev will be NULL, so no queue to run */
++	if (!sdev)
++		return;
++
+ 	if (scsi_target(sdev)->single_lun)
+ 		scsi_single_lun_run(sdev);
+ 
+
+
