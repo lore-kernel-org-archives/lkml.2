@@ -1,60 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab1ECX5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:57:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26843 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab1ECX5U (ORCPT
+	id S1754869Ab1ECX6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:58:19 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45294 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab1ECX6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:57:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=gnTYkZZfaSThXrSSSMXXHobn6PoKbASMScsdHs0rZAY3ImbpSjGfwVs028wT50v031
-         evvRgstRPX1OwEQzhPUg==
-Date: Tue, 3 May 2011 16:57:15 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ben Hutchings <ben@decadent.org.uk>
-cc: James Bottomley <James.Bottomley@suse.de>,
-        Michael Schmitz <schmitzmic@googlemail.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Pekka Enberg <penberg@kernel.org>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
-Subject: Re: [Stable-review] [36/55] [PARISC] slub: fix panic with
- DISCONTIGMEM
-In-Reply-To: <20110503231721.GI2268@decadent.org.uk>
-Message-ID: <alpine.DEB.2.00.1105031655370.19613@chino.kir.corp.google.com>
-References: <20110429185656.051229285@clark.kroah.org> <1304366677.2833.170.camel@localhost> <alpine.DEB.2.00.1105031544240.27795@chino.kir.corp.google.com> <20110503231721.GI2268@decadent.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 3 May 2011 19:58:17 -0400
+Message-ID: <4DC09688.7090509@canonical.com>
+Date: Tue, 03 May 2011 16:58:00 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Casey Schaufler <casey@schaufler-ca.com>
+CC: Roberto Sassu <roberto.sassu@polito.it>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        viro@zeniv.linux.org.uk, apparmor@lists.ubuntu.com
+Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
+References: <201104291139.37489.roberto.sassu@polito.it> <4DBADD4C.9040507@schaufler-ca.com> <201105021053.54031.roberto.sassu@polito.it> <4DC088A8.4000300@schaufler-ca.com>
+In-Reply-To: <4DC088A8.4000300@schaufler-ca.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Ben Hutchings wrote:
-
-> > SLUB relies heavily on N_NORMAL_MEMORY, so these two patches fix that 
-> > allocator but the problem is actually not just isolated to that subsystem; 
-> > it fixes an issue with anything that uses N_NORMAL_MEMORY.
-> > 
-> > The former patch sets the nodes correctly for parisc and Michael's patch 
-> > sets the nodes correctly for m68k, so it's the same fix for two different 
-> > previously-broken architectures.
+On 05/03/2011 03:58 PM, Casey Schaufler wrote:
+> On 5/2/2011 1:53 AM, Roberto Sassu wrote:
+>> On Friday, April 29, 2011 05:46:20 PM Casey Schaufler wrote:
+>>> On 4/29/2011 2:39 AM, Roberto Sassu wrote:
+>>>> Sorry for resending, it was rejected by the mailing lists due to
+>>>> the html formatting.
+>>>>
+>>>>
+>>>> On Thursday, April 28, 2011 07:37:29 PM Casey Schaufler wrote:
+>>>>> On 4/28/2011 5:35 AM, Roberto Sassu wrote:
+>>>>>> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
+>>>>>>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>>>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+>>>>>>>>> File descriptor labeling issue
+>>>>>>>>>
+>>>>>>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
+>>>>>>>>> opening process and use it in LSM hooks security_file_permission(),
+>>>>>>>>> security_file_fcntl() and others to verify if the 'current' process has the
+>>>>>>>>> rights to perform the requested operation.
+>>>>>>>>>
+>>>>>>>>> Using the credentials of the 'current' process may be not appropriate in
+>>>>>>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
+>>>>>>>>> and made shared among user processes. For instance, in a system with
+>>>>>>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
+>>>>>>>>> obtains a file descriptor to access the correspondent inode in the lower
+>>>>>>>>> filesystem, labeled with the A's label.
+>>>>>>>>>
+>>>>>>>>> If the process B accesses the same encrypted file, it needs the 'use'
+>>>>>>>>> permission on the A's label other than permissions for the lower inode.
+>>>>>>>>> However, if B is the first accessing process, A needs the 'use' permission
+>>>>>>>>> on the B's label.
+>>>>>>>> I am having trouble understanding the argument. I will pose my
+>>>>>>>> question in Smack terms, as I can speak most definitively in them.
+>>>>>>>>
+>>>>>>>> A process running with a Smack label "A" creates a file, and that
+>>>>>>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
+>>>>>>>> this ought not change. If eCryptfs in encrypting the label it needs
+>>>>>>>> to do so in such a way as to be able to decrypt it prior to
+>>>>>>>> presentation to the vfs layer, where it will be used in an access
+>>>>>>>> check. When the process running with a Smack label "B" comes along
+>>>>>>>> the vfs code will check the fetched and possibly decrypted "A"
+>>>>>>>> against "B" and, unless there is an explicit Smack rule in place
+>>>>>>>> granting "B" access to "A", fail.
+>>>>>>>>
+>>>>>>>> What is the problem? What is eCryptfs doing that prevents this
+>>>>>>>> from working?
+>>>>>>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
+>>>>>>> only one lower file per eCryptfs inode. Imagine that there are 5
+>>>>>>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
+>>>>>>> to be open in the lower filesystem and all eCryptfs file operations will
+>>>>>>> be multiplexed through it.
+>>>>>>>
+>>>>>>> To make things more complicated, if the eCryptfs file is opened for
+>>>>>>> writing, the lower file must be opened for reading and writing. This is
+>>>>>>> because a write operation requires eCryptfs to vfs_read() from the lower
+>>>>>>> filesystem, decrypt that data and then vfs_write() the new data.
+>>>>>>>
+>>>>>>> If the lower file can't be opened O_RDWR by the calling process, the
+>>>>>>> request is handed off to a kernel thread to open the lower file on
+>>>>>>> behalf of the calling process. It is definitely ugly.
+>>>>>>>
+>>>>>>> Roberto, I hope I correctly described the situation that you're trying
+>>>>>>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
+>>>>>>> files to lower files?
+>>>>>>>
+>>>>>>> Instead of having just one lower file attached to the eCryptfs inode, we
+>>>>>>> could have a list of opened files. There would be one for each eCryptfs
+>>>>>>> file that was opened. ecryptfs_writepage() would have to pick, in a
+>>>>>>> somewhat random fashion, one of the lower files to use. Of course, we
+>>>>>>> would still need to solve the problem of opening the lower file O_RDWR
+>>>>>>> when the calling process is only allowed write access (I may have just
+>>>>>>> answered my own question of why the 1:1 mapping technique won't solve
+>>>>>>> this problem).
+>>>>>>>
+>>>>>> Hi Tyler
+>>>>>>
+>>>>>> i think the 1:1 mapping isn't necessary at least from the security perspective.
+>>>>>> Since eCryptfs is a stacked filesystem access control is performed on
+>>>>>> both the upper and the lower layer.
+>>>>>> ECryptfs relies on the lower filesystem for the management of extended
+>>>>>> attributes, so this means that the security label of both the upper and
+>>>>>> the lower inodes is the same (however this is not the current behavior
+>>>>>> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
+>>>>> Where does this assignment occur?
+>>>>>
+>>>> Hi Casey
+>>>>
+>>>> The assignment happens at the inode's initialization time and depends on
+>>>> the behavior configured for a specific filesystem.
+>>>> The SELinux reference policy actually configures static labeling for inodes
+>>>> in the eCryptfs filesystem while for example allows ext4 inodes to be
+>>>> initialized using extended attributes.
+>>> So how about changing eCryptfs (Goodness, but I hate camelCase) to
+>>> properly support extended attributes? That would seem a better
+>>> approach than mucking up the entire LSM. You still have to deal
+>>> with the SELinux policy, but I don't see you getting away without
+>>> doing something with that in any case.
+>>>
+>> Hi Casey
+>>
+>> i think having separate extended attributes in eCryptfs does not
+>> address the issue i reported in the cover letter.
+>> The reason is, in my opinion, the incorrect labeling of file descriptors
+>> which causes in SELinux more permissions than those really needed
+>> must be added in the policy. This does not depends on the inode's
+>> security context but on the credentials provided to dentry_open().
 > 
-> So if I understand you correctly, the Kconfig condition for SLUB is
-> now wrong - only architectures that use DISCONTIGMEM's fake-NUMA and
-> don't set the node states to N_NORMAL_MEMORY will break it.  And
-> there's no good way to test for that in Kconfig.
+> The problem is that you seem to think that eCryptfs needs
+> access to the file. If eCryptfs is kernel code being invoked
+> through the VFS you should be providing the user's credentials.
 > 
+I have to agree with Casey, Generally looping back through the vfs should
+be using the user's credentials.  This doesn't even stop you opening the
+lower file with a different set of permissions (eg.  rw while the upper
+is opened with r).
 
-Right, I haven't seen a kernel panic from a kernel that still breaks after 
-those two patches (the one for parisc and the one for m68k) were merged in 
-the slub allocator.  James, if you have such a panic on parisc, please 
-post it.
+>>
+>>>>>> In my view, for this reason the access control checks can be performed
+>>>>>> only at the upper layer, letting eCryptfs full privileges to access inodes
+>>>>>> in the lower filesystem.
+>>>>> On this point I most strongly disagree.
+>>>>>
+>>>>> The behavior of a filesystem and the data that it uses to determine
+>>>>> that behavior is wrought with complex interactions which may include
+>>>>> but are not limited to caching, read-aheads, garbage collection,
+>>>>> and various side effects of access control. If eCryptfs needs to go
+>>>>> mucking about with the data used by the underlying filesystem it is
+>>>>> not stacking properly. A stacked filesystem has no business whatever
+>>>>> changing the data of the underlying filesystem.
+>>>>>
+>>>> Ok, probably i have to go more in deep to explain how access control is
+>>>> performed on eCryptfs. I'm talking for the SELinux's case, so SELinux experts
+>>>> can correct me if i'm wrong.
+>>>>
+>>>> First, i want to use extended attributes to initialize an eCryptfs inode, so
+>>>> both the upper and the lower inodes have the same security context
+>>>> because eCryptfs calls the *xattr() methods of the underlying filesystem.
+>>> OK, you could create your own xattr functions that do whatever credential
+>>> mucking they need to and then call the underlying file system's version.
+>>> It is possible that the work the NFS people have been doing for xattr
+>>> support (I haven't seen much on this lately, is it still active? Anyone?)
+>>> would prove instructive.
+>>>
+>>>> Then, the process A accesses the eCryptfs inode 'I'. On the upper layer access
+>>>> control is performed using the credentials of the 'current' process and the
+>>>> security context of I.
+>>>>
+>>>> If the process is allowed to access the upper inode, eCryptfs opens the lower
+>>>> inode, presenting its own credentials with the type 'kernel_t'.
+>>> So eCryptfs provides its own process context. When you say "open" do you
+>>> mean open(2) or something else? A little precision goes a long way in these
+>>> discussions.
+>>>
+>> ECryptfs provides its own credentials when calling the function dentry_open()
+>> to obtain a file descriptor to be shared among user processes.
+> 
+> This is your problem. The problem is that you are not
+> using the credential of the user process to access the
+> file, you are using your own. Sharing a "file descriptor"
+> may seem like an optimization, but as you see it has
+> does not work.
+> 
+and I would add may behave differently dependent on the LSM
 
-Thanks!
+>>>> Then, SELinux
+>>>> checks if 'kernel_t' can access the inode with the security context of 'I'.
+>>> Why doesn't eCryptfs provide the credentials of 'I'? In the kernel you
+>>> can do what you will.
+>> No, eCryptfs provides (in the following patch) the 'initial' credentials which
+>> are obtained through the function prepare_kernel_cred() which give root
+>> privileges. These credentials are used in the hook security_dentry_open()
+>> to verify if eCryptfs is allowed to access the inode 'I' in the underlying
+>> filesystem.
+> 
+> But you shouldn't care if eCryptfs can access the file. You should
+> only care if the user process can access the file. You're kernel code,
+> you can do what you will.
+> 
+Agreed, the decision should be based off whether the user can access the file.
