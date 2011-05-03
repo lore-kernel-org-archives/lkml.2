@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab1ECXSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:18:49 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:49243 "EHLO smtp.polymtl.ca"
+	id S1754594Ab1ECXVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:21:31 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:36029 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754281Ab1ECXOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:14:52 -0400
-Message-Id: <20110503231426.737770568@efficios.com>
+	id S1754259Ab1ECXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:14:46 -0400
+Message-Id: <20110503231426.905017132@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 19:10:39 -0400
+Date: Tue, 03 May 2011 19:10:40 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
-        Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [RFC patch 16/32] trace event scsi remove semicolons
+        Li Zefan <lizf@cn.fujitsu.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: [RFC patch 17/32] trace event signal remove semicolons
 References: <20110503231023.968960757@efficios.com>
-Content-Disposition: inline; filename=trace-event-scsi-remove-semicolons.patch
+Content-Disposition: inline; filename=trace-event-signal-remove-semicolons.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:27 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,63 +32,61 @@ CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
-CC: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-CC: James Bottomley <James.Bottomley@suse.de>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Masami Hiramatsu <mhiramat@redhat.com>
+CC: Roland McGrath <roland@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>
 ---
- include/trace/events/scsi.h |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ include/trace/events/signal.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/scsi.h
+Index: linux-2.6-lttng/include/trace/events/signal.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/scsi.h
-+++ linux-2.6-lttng/include/trace/events/scsi.h
-@@ -238,7 +243,7 @@ TRACE_EVENT(scsi_dispatch_cmd_start,
- 		  show_opcode_name(__entry->opcode),
- 		  __parse_cdb(__get_dynamic_array(cmnd), __entry->cmd_len),
- 		  __print_hex(__get_dynamic_array(cmnd), __entry->cmd_len))
+--- linux-2.6-lttng.orig/include/trace/events/signal.h
++++ linux-2.6-lttng/include/trace/events/signal.h
+@@ -59,7 +59,7 @@ TRACE_EVENT(signal_generate,
+ 	TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
+ 		  __entry->sig, __entry->errno, __entry->code,
+ 		  __entry->comm, __entry->pid)
 -);
 +)
  
- TRACE_EVENT(scsi_dispatch_cmd_error,
- 
-@@ -283,7 +288,7 @@ TRACE_EVENT(scsi_dispatch_cmd_error,
- 		  __parse_cdb(__get_dynamic_array(cmnd), __entry->cmd_len),
- 		  __print_hex(__get_dynamic_array(cmnd), __entry->cmd_len),
- 		  __entry->rtn)
+ /**
+  * signal_deliver - called when a signal is delivered
+@@ -99,7 +99,7 @@ TRACE_EVENT(signal_deliver,
+ 	TP_printk("sig=%d errno=%d code=%d sa_handler=%lx sa_flags=%lx",
+ 		  __entry->sig, __entry->errno, __entry->code,
+ 		  __entry->sa_handler, __entry->sa_flags)
 -);
 +)
  
- DECLARE_EVENT_CLASS(scsi_cmd_done_timeout_template,
+ DECLARE_EVENT_CLASS(signal_queue_overflow,
  
-@@ -332,15 +337,15 @@ DECLARE_EVENT_CLASS(scsi_cmd_done_timeou
- 		  show_hostbyte_name(((__entry->result) >> 16) & 0xff),
- 		  show_msgbyte_name(((__entry->result) >> 8) & 0xff),
- 		  show_statusbyte_name(__entry->result & 0xff))
+@@ -122,7 +122,7 @@ DECLARE_EVENT_CLASS(signal_queue_overflo
+ 
+ 	TP_printk("sig=%d group=%d errno=%d code=%d",
+ 		  __entry->sig, __entry->group, __entry->errno, __entry->code)
 -);
 +)
  
- DEFINE_EVENT(scsi_cmd_done_timeout_template, scsi_dispatch_cmd_done,
- 	     TP_PROTO(struct scsi_cmnd *cmd),
--	     TP_ARGS(cmd));
-+	     TP_ARGS(cmd))
+ /**
+  * signal_overflow_fail - called when signal queue is overflow
+@@ -140,7 +140,7 @@ DEFINE_EVENT(signal_queue_overflow, sign
+ 	TP_PROTO(int sig, int group, struct siginfo *info),
  
- DEFINE_EVENT(scsi_cmd_done_timeout_template, scsi_dispatch_cmd_timeout,
- 	     TP_PROTO(struct scsi_cmnd *cmd),
--	     TP_ARGS(cmd));
-+	     TP_ARGS(cmd))
- 
- TRACE_EVENT(scsi_eh_wakeup,
- 
-@@ -357,7 +362,7 @@ TRACE_EVENT(scsi_eh_wakeup,
- 	),
- 
- 	TP_printk("host_no=%u", __entry->host_no)
+ 	TP_ARGS(sig, group, info)
 -);
 +)
  
- #endif /*  _TRACE_SCSI_H */
+ /**
+  * signal_lose_info - called when siginfo is lost
+@@ -158,7 +158,7 @@ DEFINE_EVENT(signal_queue_overflow, sign
+ 	TP_PROTO(int sig, int group, struct siginfo *info),
+ 
+ 	TP_ARGS(sig, group, info)
+-);
++)
+ 
+ #endif /* _TRACE_SIGNAL_H */
  
 
