@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1ECPs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 11:48:56 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36533 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab1ECPsz (ORCPT
+	id S1753049Ab1ECPzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 11:55:42 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:55802 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab1ECPzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 11:48:55 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when tasks are frozen
-In-Reply-To: Your message of "Tue, 03 May 2011 13:02:08 +0200."
-             <201105031302.08910.rjw@sisk.pl>
-From: Valdis.Kletnieks@vt.edu
-References: <201105030044.51661.rjw@sisk.pl> <50363.1304379012@localhost>
-            <201105031302.08910.rjw@sisk.pl>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304437643_4857P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 03 May 2011 11:47:23 -0400
-Message-ID: <15997.1304437643@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4DC0238E.008C,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 3 May 2011 11:55:40 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-iio <linux-iio@vger.kernel.org>
+Subject: Re: [lm-sensors] [RFC 5/5] hwmon: add support for Technologic Systems TS-5500 A-D converter
+In-reply-to: <20110430033938.GA14397@ericsson.com>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1304115712-5299-6-git-send-email-vivien.didelot@savoirfairelinux.com> <20110430033938.GA14397@ericsson.com>
+Date: Tue, 03 May 2011 11:55:34 -0400
+Message-Id: <1304434162-sup-3877@sfl>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304437643_4857P
-Content-Type: text/plain; charset=us-ascii
+Hi Guenter,
 
-On Tue, 03 May 2011 13:02:08 +0200, "Rafael J. Wysocki" said:
-
-> Although the WARN_ON output will probably not make it to the user's screen
-> immediately, the resume will continue without the delay, because error code
-> will be returned as soon as the WARN_ON triggers.
+Excerpts from Guenter Roeck's message of 2011-04-29 23:39:38 -0400:
+> Hi Vivien,
 > 
-> The user will likely notice the device not working after the resume and will
-> look at dmesg output. :-)
-
-Good point. I obviously didn't have enough caffeine to think it through. ;)
-
-> > 2) What percent of the time the WARN_ON output will itself make the user
-> > think the resume has died rather than just being slow, causing them to power
-> > cycle and hope for a clean boot?
-> > 
-> > Maybe something like this instead?
-> > 
-> > 	if (WARN_ON(usermodehelper_is_disable()))) {
-> > 		printk(KERN_WARNING "Resume continuing, but firmware for %s not loaded", device);
+> The headline and file name are a bit misleading, since the driver is really
+> for MAX197 on a TS-5500 board.
 > 
-> It's useful, but I'd rather do
+> You should split the driver into two parts, a generic driver
+> for the MAX197 and a platform driver (residing somewhere in arch/
+> or possibly drivers/platform/) to instantiate it.
 > 
->  		dev_info(device, "firmware: %s will not be loaded\n", name);
+> There should be a platform data include file, probably in
+> include/linux/platform_data/.
+> 
+> .ioaddr in platform data should not be necessary. The driver's probe
+> function should get the values using platform_get_resource().
+> 
+> Having said that, from reading the code it looks like the chip is not really
+> used for hardware monitoring, but for generic ADC functionality. A quick look
+> into the TS-5500 user manual confirms this. So this should not be a hwmon
+> driver in the first place, but a generic ADC driver. Given the ADC conversion rate
+> of the MAX197, the hwmon ABI is not optimal anyway. You should move this driver
+> into the iio subsystem, probably to drivers/staging/iio/adc. Copying the iio
+> mailing list for input.
+> 
+> Thanks,
+> Guenter
 
-That works too.  :)
+I've took a closer look to the manual and that's right, in fact the
+driver doesn't talk to the MAX197 directly. The board uses a CPLD to
+abstract the interface to the MAX197. So all the MAX197 logic is hidden
+by the CPLD.  Therefore, the driver files should probably not have
+function and structure names with a "max197_" prefix. I'll make the code
+a bit clearer. What do you think?
 
-> OK, updated patch is appended.
+Ok for iio subsystem, several ADC drivers are in drivers/hwmon/ but
+drivers/staging/iio/adc seems to be the good place now.
 
-Looks good to me.
-
-
---==_Exmh_1304437643_4857P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNwCOLcC3lWbTT17ARAjk0AKC8fce+ePFBOa8hpxhovv9JinmnNQCg8Rm1
-00z5bsBXrsmW5EnP7AquHF8=
-=5lay
------END PGP SIGNATURE-----
-
---==_Exmh_1304437643_4857P--
-
+Regards,
+Vivien.
