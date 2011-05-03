@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1ECQ3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:29:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58658 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751873Ab1ECQ3L (ORCPT
+	id S1753007Ab1ECP2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 11:28:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25496 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab1ECP2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:29:11 -0400
+	Tue, 3 May 2011 11:28:06 -0400
+Date: Tue, 3 May 2011 11:27:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/2] xen/mmu: Add workaround "x86-64, mm: Put early page
+ table high"
+Message-ID: <20110503152745.GB8868@dumpdata.com>
+References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
+ <1304356942-17656-2-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1105031351190.10886@kaball-desktop>
 MIME-Version: 1.0
-In-Reply-To: <web-516990066@zbackend1.aha.ru>
-References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com>
- <web-516990066@zbackend1.aha.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 May 2011 08:22:49 -0700
-Message-ID: <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-To: werner <w.landgraf@ru.ru>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf3079ba82b8f48704a260b783
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105031351190.10886@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DC01EFF.0043:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3079ba82b8f48704a260b783
-Content-Type: text/plain; charset=KOI8-R
+On Tue, May 03, 2011 at 02:20:25PM +0100, Stefano Stabellini wrote:
+> On Mon, 2 May 2011, Konrad Rzeszutek Wilk wrote:
+> > As a consequence of the commit:
+> > 
+> > commit 4b239f458c229de044d6905c2b0f9fe16ed9e01e
+> > Author: Yinghai Lu <yinghai@kernel.org>
+> > Date:   Fri Dec 17 16:58:28 2010 -0800
+> > 
+> >     x86-64, mm: Put early page table high
+> > 
+> > it causes the Linux kernel to crash under Xen:
+> > 
+> > mapping kernel into physical memory
+> > Xen: setup ISA identity maps
+> > about to get started...
+> > (XEN) mm.c:2466:d0 Bad type (saw 7400000000000001 != exp 1000000000000000) for mfn b1d89 (pfn bacf7)
+> > (XEN) mm.c:3027:d0 Error while pinning mfn b1d89
+> > (XEN) traps.c:481:d0 Unhandled invalid opcode fault/trap [#6] on VCPU 0 [ec=0000]
+> > (XEN) domain_crash_sync called from entry.S
+> > (XEN) Domain 0 (vcpu#0) crashed on cpu#0:
 
-2011/5/3 werner <w.landgraf@ru.ru>:
-> Pls watch the config enclosed.
->
-> IDE on , X86_EXTENDED_PLATFORM off (also X_86 elan)
->
-> From the previous two suggestions, MTD on (appearently don't makes
-> problems), but of MISC-FILESYSTEMS what appearently causes the error message
-> during boot and perhaps also that sync don't work, I switched on the half
-> and off the other half, to circle the problem.
+.. snip..
+> 
+> 
+> Unless I am missing something there is no guarantee that somebody else
+> won't use memory in the pgt_buf_end-pgt_buf_top range when the range is
+> still RO before mark_rw_past_pgt() is called again.  If so this code
+> works by coincidence, that is the reason why I didn't try to reuse the
+> pagetable_setup_done or the pagetable_setup_start hooks.
 
-Ok, can you try the attached patch, to see if the logfs oops goes
-away. Perhaps  more importantly, does the sync problem also go away?
+It looks that during sequence of events after the initial pagetable is created
+and when we get to the post-allocator nobody is touching those pages.
+(also one of them - the 0-4GB pagetable has been .. made RW). But if you do find it
+dying/crashing, please tell so that we can revert it and use the generic work-around
+or revert Yinghai's patch.
+ 
+> In any case this code looks very ugly and fragile, do we really want to
+> add a workaround as bad as this one rather than reverting the original
+> commit? I think it creates a bad precedent.
 
-> No problem with unzip / zip / moving big files etc, , so that this problem
-> cames from X86_EXTENDED_PLATTFORM.
+This is the second one. We had the swapper_pg_dir/initial_page_table dance in x86_32
+where we mark it RO, then RW (after a cr3 load) then RO and then back to RW.
+(Details escape me, but it was some form of that)
 
-Ok, that is very interesting.
+But I wonder how many workarounds the generic code has because of us?
 
-> Tell me what to try out now
-
-So at this point you have two problems, and I really would like to
-just doubly verify both of them. First off, the attached patch for the
-logfs oops and (hopefully) the sync hanging issue.
-
-But secondly, I want you to double--check that whole CONFIG_X86_ELAN
-thing - I'd like you to test two kernels that are otherwise totally
-identical in their configurations, except one has
-CONFIG_X86_EXTENDED_PLATTFORM on and CONFIG_X86_ELAN, and the other
-does not.  Just to make sure that with all the changes to the config
-file, that is really the _only_ difference, and that yes, that's the
-one that brings up the "crash at unzip" problem.
-
-I'm adding Ingo Molnar, Thomas Gleixner Peter Anvin to the cc, because
-if this whole problem really is because of the x86 CPU configuration,
-they may have better ideas than I do.
-
-Ingo/Thomas/Peter: see the whole long and confused thread on lkml. But
-it all boils down to Werner using a very full kernel config where not
-only is almost everything compiled in (which showed the logfs problem
-even though Werner didn't even have a logfs filesystem), but he also
-had a very generic x86 kernel. Too generic.
-
-He had CONFIG_X86_EXTENDED_PLATTFORM and CONFIG_X86_ELAN on, and that
-has apparently worked for him (and a lot of other people - he does a
-distribution) up until 2.6.38. But as of 2.6.39-rc1 it causes some
-really odd problems under IO (his test-case is "unzip", but that's
-probably fairly random). The problem seems to show up as a bogus IO
-list for SATA, causing a big WARN_ON() or oops and then a dead machine
-due to IO problems.
-
-I wonder what CONFIG_X86_ELAN has to do with anything, but from all
-the config testing werner has done, it really looks like that's the
-smoking gun here.
-
-Why does M686 work, but X86_ELAN causes odd problems in 2.6.39-rc?
-Allocator issues? Maybe related to the lockless slub paths?
-
-So I obviously agree that X86_ELAN is a crazy choice for a generic
-kernel, but it _used_ to work, and this is a regression.
-
-                       Linus
-
---20cf3079ba82b8f48704a260b783
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gn8yqkis2
-
-IGZzL2xvZ2ZzL3N1cGVyLmMgfCAgICA4ICsrKystLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDQgaW5z
-ZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9sb2dmcy9zdXBlci5j
-IGIvZnMvbG9nZnMvc3VwZXIuYwppbmRleCAzMzQzNWU0YjE0ZDIuLmNlMDNhMTgyYzc3MSAxMDA2
-NDQKLS0tIGEvZnMvbG9nZnMvc3VwZXIuYworKysgYi9mcy9sb2dmcy9zdXBlci5jCkBAIC00ODAs
-MTAgKzQ4MCw2IEBAIHN0YXRpYyBpbnQgbG9nZnNfcmVhZF9zYihzdHJ1Y3Qgc3VwZXJfYmxvY2sg
-KnNiLCBpbnQgcmVhZF9vbmx5KQogCQkJIXJlYWRfb25seSkKIAkJcmV0dXJuIC1FSU87CiAKLQlt
-dXRleF9pbml0KCZzdXBlci0+c19kaXJvcF9tdXRleCk7Ci0JbXV0ZXhfaW5pdCgmc3VwZXItPnNf
-b2JqZWN0X2FsaWFzX211dGV4KTsKLQlJTklUX0xJU1RfSEVBRCgmc3VwZXItPnNfZnJlZWluZ19s
-aXN0KTsKLQogCXJldCA9IGxvZ2ZzX2luaXRfcncoc2IpOwogCWlmIChyZXQpCiAJCXJldHVybiBy
-ZXQ7CkBAIC02MDEsNiArNTk3LDEwIEBAIHN0YXRpYyBzdHJ1Y3QgZGVudHJ5ICpsb2dmc19tb3Vu
-dChzdHJ1Y3QgZmlsZV9zeXN0ZW1fdHlwZSAqdHlwZSwgaW50IGZsYWdzLAogCWlmICghc3VwZXIp
-CiAJCXJldHVybiBFUlJfUFRSKC1FTk9NRU0pOwogCisJbXV0ZXhfaW5pdCgmc3VwZXItPnNfZGly
-b3BfbXV0ZXgpOworCW11dGV4X2luaXQoJnN1cGVyLT5zX29iamVjdF9hbGlhc19tdXRleCk7CisJ
-SU5JVF9MSVNUX0hFQUQoJnN1cGVyLT5zX2ZyZWVpbmdfbGlzdCk7CisKIAlpZiAoIWRldm5hbWUp
-CiAJCWVyciA9IGxvZ2ZzX2dldF9zYl9iZGV2KHN1cGVyLCB0eXBlLCBkZXZuYW1lKTsKIAllbHNl
-IGlmIChzdHJuY21wKGRldm5hbWUsICJtdGQiLCAzKSkK
---20cf3079ba82b8f48704a260b783--
+I think we need to setup some form of meeting with the x86 maintainers
+to figure out some better way of handling this.
