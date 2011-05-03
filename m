@@ -1,46 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab1ECDnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 23:43:14 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49936
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753338Ab1ECDnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 23:43:11 -0400
-Date: Mon, 02 May 2011 20:42:38 -0700 (PDT)
-Message-Id: <20110502.204238.193708379.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, joe@perches.com
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110503131548.63dd3568.sfr@canb.auug.org.au>
-References: <20110503131548.63dd3568.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754270Ab1ECDvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 23:51:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41083 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566Ab1ECDvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 23:51:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,307,1301900400"; 
+   d="scan'208";a="741410579"
+Date: Tue, 3 May 2011 11:51:12 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC][PATCH] mm: cut down __GFP_NORETRY page allocation
+ failures
+Message-ID: <20110503035112.GA10906@localhost>
+References: <20110426063421.GC19717@localhost>
+ <BANLkTi=xDozFNBXNdGDLK6EwWrfHyBifQw@mail.gmail.com>
+ <20110426092029.GA27053@localhost>
+ <20110426124743.e58d9746.akpm@linux-foundation.org>
+ <20110428133644.GA12400@localhost>
+ <20110429022824.GA8061@localhost>
+ <20110430141741.GA4511@localhost>
+ <20110501163542.GA3204@barrios-desktop>
+ <20110502102945.GA7688@localhost>
+ <BANLkTinXnhh5V0eH71=6PxZWpQxvti7QVw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinXnhh5V0eH71=6PxZWpQxvti7QVw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 3 May 2011 13:15:48 +1000
+Hi Minchan,
 
-> Hi all,
+On Tue, May 03, 2011 at 08:49:20AM +0800, Minchan Kim wrote:
+> Hi Wu, Sorry for slow response.
+> I guess you know why I am slow. :)
+
+Yeah, never mind :)
+
+> Unfortunately, my patch doesn't consider order-0 pages, as you mentioned below.
+> I read your mail which states it doesn't help although it considers
+> order-0 pages and drain.
+> Actually, I tried to look into that but in my poor system(core2duo, 2G
+> ram), nr_alloc_fail never happens. :(
+
+I'm running a 4-core 8-thread CPU with 3G ram.
+
+Did you run with this patch?
+
+[PATCH] mm: readahead page allocations are OK to fail
+https://lkml.org/lkml/2011/4/26/129
+
+It's very good at generating lots of __GFP_NORETRY order-0 page
+allocation requests.
+
+> I will try it in other desktop but I am not sure I can reproduce it.
 > 
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/net/tg3.c between commit 6fdbab9d93e0 ("tg3: Fix failure to
-> enable WoL by default when possible") from the net-current tree and
-> commit 63c3a66fe6c8 ("tg3: Convert u32 flag,flg2,flg3 uses to bitmap")
-> from the net tree.
+> >
+> > root@fat /home/wfg# ./test-dd-sparse.sh
+> > start time: 246
+> > total time: 531
+> > nr_alloc_fail 14097
+> > allocstall 1578332
+> > LOC:     542698     538947     536986     567118     552114     539605     541201     537623   Local timer interrupts
+> > RES:       3368       1908       1474       1476       2809       1602       1500       1509   Rescheduling interrupts
+> > CAL:     223844     224198     224268     224436     223952     224056     223700     223743   Function call interrupts
+> > TLB:        381         27         22         19         96        404        111         67   TLB shootdowns
+> >
+> > root@fat /home/wfg# getdelays -dip `pidof dd`
+> > print delayacct stats ON
+> > printing IO accounting
+> > PID     5202
+> >
+> >
+> > CPU             count     real total  virtual total    delay total
+> >                 1132     3635447328     3627947550   276722091605
+> > IO              count    delay total  delay average
+> >                    2      187809974             62ms
+> > SWAP            count    delay total  delay average
+> >                    0              0              0ms
+> > RECLAIM         count    delay total  delay average
+> >                 1334    35304580824             26ms
+> > dd: read=278528, write=0, cancelled_write=0
+> >
+> > I guess your patch is mainly fixing the high order allocations while
+> > my workload is mainly order 0 readahead page allocations. There are
+> > 1000 forks, however the "start time: 246" seems to indicate that the
+> > order-1 reclaim latency is not improved.
 > 
-> Context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> Maybe, 8K * 1000 isn't big footprint so I think reclaim doesn't happen.
 
-Do you automatically generate these emails? :-)
+It's mainly a guess. In an earlier experiment of simply increasing
+nr_to_reclaim to high_wmark_pages() without any other constraints, it
+does manage to reduce start time to about 25 seconds.
 
-I CC:'d you on an email earlier about this conflict, in an effort to
-let you know I anticipated it and you therefore didn't need to notify
-us this time.
+> > I'll try modifying your patch and see how it works out. The obvious
+> > change is to apply it to the order-0 case. Hope this won't create much
+> > more isolated pages.
+> >
+> > Attached is your patch rebased to 2.6.39-rc3, after resolving some
+> > merge conflicts and fixing a trivial NULL pointer bug.
+> 
+> Thanks!
+> I would like to see detail with it in my system if I can reproduce it.
+
+OK.
+
+> >> > no cond_resched():
+> >>
+> >> What's this?
+> >
+> > I tried a modified patch that also removes the cond_resched() call in
+> > __alloc_pages_direct_reclaim(), between try_to_free_pages() and
+> > get_page_from_freelist(). It seems not helping noticeably.
+> >
+> > It looks safe to remove that cond_resched() as we already have such
+> > calls in shrink_page_list().
+> 
+> I tried similar thing but Andrew have a concern about it.
+> https://lkml.org/lkml/2011/3/24/138
+
+Yeah cond_resched() is at least not the root cause of our problems..
+
+> >> > +                     if (total_scanned > 2 * sc->nr_to_reclaim)
+> >> > +                             goto out;
+> >>
+> >> If there are lots of dirty pages in LRU?
+> >> If there are lots of unevictable pages in LRU?
+> >> If there are lots of mapped page in LRU but may_unmap = 0 cases?
+> >> I means it's rather risky early conclusion.
+> >
+> > That test means to avoid scanning too much on __GFP_NORETRY direct
+> > reclaims. My assumption for __GFP_NORETRY is, it should fail fast when
+> > the LRU pages seem hard to reclaim. And the problem in the 1000 dd
+> > case is, it's all easy to reclaim LRU pages but __GFP_NORETRY still
+> > fails from time to time, with lots of IPIs that may hurt large
+> > machines a lot.
+> 
+> I don't have  enough time and a environment to test it.
+> So I can't make sure of it but my concern is a latency.
+> If you solve latency problem considering CPU scaling, I won't oppose it. :)
+
+OK, let's head for that direction :)
+
+Thanks,
+Fengguang
