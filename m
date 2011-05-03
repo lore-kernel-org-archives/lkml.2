@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1ECRdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:33:51 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:37182 "EHLO imr4.ericy.com"
+	id S1753664Ab1ECRd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:33:28 -0400
+Received: from kroah.org ([198.145.64.141]:56683 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab1ECRds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:33:48 -0400
-Subject: Re: [lm-sensors] [RFC 5/5] hwmon: add support for Technologic
- Systems TS-5500 A-D converter
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-iio <linux-iio@vger.kernel.org>
-In-Reply-To: <1304434162-sup-3877@sfl>
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	 <1304115712-5299-6-git-send-email-vivien.didelot@savoirfairelinux.com>
-	 <20110430033938.GA14397@ericsson.com>  <1304434162-sup-3877@sfl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 3 May 2011 10:33:06 -0700
-Message-ID: <1304443986.31666.359.camel@groeck-laptop>
+	id S1751873Ab1ECRd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:33:27 -0400
+Date: Tue, 3 May 2011 10:33:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        hjanssen@microsoft.com, haiyangz@microsoft.com
+Subject: Re: [PATCH] staging: hv: make HYPERV_UTILS depend on NLS to prevent
+ a build error
+Message-ID: <20110503173309.GA25014@kroah.com>
+References: <4DB60932.6090000@verizon.net>
+ <20110426000024.GB11787@suse.de>
+ <4DB61786.2030307@verizon.net>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB61786.2030307@verizon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 11:55 -0400, Vivien Didelot wrote:
-> Hi Guenter,
+On Mon, Apr 25, 2011 at 08:53:26PM -0400, Peter Foley wrote:
+> On 4/25/2011 8:00 PM, Greg KH wrote:
+> > On Mon, Apr 25, 2011 at 07:52:18PM -0400, Peter Foley wrote:
+> >> This patch adds a dependency on NLS to HYPERV_UTILS to avoid a build error.
+> > 
+> > What is the build error?
+> > 
+> > thanks,
+> > 
+> > greg k-h
 > 
-> Excerpts from Guenter Roeck's message of 2011-04-29 23:39:38 -0400:
-> > Hi Vivien,
-> > 
-> > The headline and file name are a bit misleading, since the driver is really
-> > for MAX197 on a TS-5500 board.
-> > 
-> > You should split the driver into two parts, a generic driver
-> > for the MAX197 and a platform driver (residing somewhere in arch/
-> > or possibly drivers/platform/) to instantiate it.
-> > 
-> > There should be a platform data include file, probably in
-> > include/linux/platform_data/.
-> > 
-> > .ioaddr in platform data should not be necessary. The driver's probe
-> > function should get the values using platform_get_resource().
-> > 
-> > Having said that, from reading the code it looks like the chip is not really
-> > used for hardware monitoring, but for generic ADC functionality. A quick look
-> > into the TS-5500 user manual confirms this. So this should not be a hwmon
-> > driver in the first place, but a generic ADC driver. Given the ADC conversion rate
-> > of the MAX197, the hwmon ABI is not optimal anyway. You should move this driver
-> > into the iio subsystem, probably to drivers/staging/iio/adc. Copying the iio
-> > mailing list for input.
-> > 
-> > Thanks,
-> > Guenter
 > 
-> I've took a closer look to the manual and that's right, in fact the
-> driver doesn't talk to the MAX197 directly. The board uses a CPLD to
-> abstract the interface to the MAX197. So all the MAX197 logic is hidden
-> by the CPLD.  Therefore, the driver files should probably not have
-> function and structure names with a "max197_" prefix. I'll make the code
-> a bit clearer. What do you think?
+> When CONFIG_HYPERV_UTILS=y and CONFIG_NLS=n
+> the build fails with this error:
 > 
-The original driver for the chip on http://mcrapet.free.fr/ has a
-platform dependent and a platform independent part. Other than coding
-style issues, that approach seems to be cleaner to me.
+>  Building modules, stage 2.
+>   MODPOST 3 modules
+> ERROR: "utf8s_to_utf16s" [drivers/staging/hv/hv_utils.ko] undefined!
+> make[3]: *** [__modpost] Error 1
+> make[2]: *** [modules] Error 2
+> make[2]: *** Waiting for unfinished jobs....
+> Kernel: arch/x86/boot/bzImage is ready  (#2)
+> make[1]: *** [sub-make] Error 2
+> make: *** [all] Error 2
 
-Thanks,
-Guenter
+Ah, ok, we need this for that function, that's what I wanted to know,
+I'll put it in the changelog entry.  Please do that the next time.
 
+thanks,
 
+greg k-h
