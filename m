@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab1ECSlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:41:46 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29608 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317Ab1ECSlp convert rfc822-to-8bit (ORCPT
+	id S1754550Ab1ECSm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 14:42:27 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:42197 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317Ab1ECSm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:41:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=r3OW9PJF6e5c0mKUcYIaDdAQ+F2wCU1ugoACs4AWsRog93mr7b/xUnHJIlzVI/YsE+
-         aYfc8w6qICzolPqtOgUA==
+	Tue, 3 May 2011 14:42:26 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "root@docs.homelinux.org" <root@docs.homelinux.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Error in Hyper-V modules hv_vmbus
+Thread-Topic: Error in Hyper-V modules hv_vmbus
+Thread-Index: AQHMB0SgETUemc5uTUuEnNLkft8sE5R22q3wgAGFHACAAsCCUIAAicEA//+SaUCAADRasIAABCGQ
+Date: Tue, 3 May 2011 18:42:25 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A27AF@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <4DBC1F2F.5050205@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF19C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <4DBD53F6.6070603@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF83C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <bbdd3ea71462ef4f7d152a67e52cafb1@docs.homelinux.org>
+ <6E21E5352C11B742B20C142EB499E0481DF899@TK5EX14MBXC124.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1304414973.27863.2.camel@e102144-lin.cambridge.arm.com>
-References: <1304284213-11950-5-git-send-email-ccross@android.com>
-	<1304288854-11011-1-git-send-email-ccross@android.com>
-	<1304414973.27863.2.camel@e102144-lin.cambridge.arm.com>
-Date: Tue, 3 May 2011 11:41:41 -0700
-X-Google-Sender-Auth: WXNh_bdbH_KkD3Ae0N5GgQCn87E
-Message-ID: <BANLkTi=a26_A7yAAfkQd5NSxbR+reQCZ1g@mail.gmail.com>
-Subject: Re: [PATCHv2 4/4] ARM: tegra: irq: Add tegra_eoi
-From: Colin Cross <ccross@android.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: lakml <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra <linux-tegra@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p43IgaHo027093
 
-On Tue, May 3, 2011 at 2:29 AM, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Colin,
->
-> On Sun, 2011-05-01 at 23:27 +0100, Colin Cross wrote:
->> Implement irq_eoi to allow the GIC irq chip flow controller to
->> be changed to fasteoi.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> ---
->> v2: Add tegra_eoi without removing tegra_ack, patch can now be
->>     merged safely before Will Deacon's gic fasteoi patch
->>
->>  arch/arm/mach-tegra/irq.c |    9 +++++++++
->>  1 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
->> index da17491..4956c3c 100644
->> --- a/arch/arm/mach-tegra/irq.c
->> +++ b/arch/arm/mach-tegra/irq.c
->> @@ -95,6 +95,14 @@ static void tegra_ack(struct irq_data *d)
->>         tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
->>  }
->>
->> +static void tegra_eoi(struct irq_data *d)
->> +{
->> +       if (d->irq < FIRST_LEGACY_IRQ)
->> +               return;
->> +
->> +       tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
->> +}
->> +
->>  static int tegra_retrigger(struct irq_data *d)
->>  {
->>         if (d->irq < FIRST_LEGACY_IRQ)
->> @@ -116,6 +124,7 @@ void __init tegra_init_irq(void)
->>         }
->>
->>         gic_arch_extn.irq_ack = tegra_ack;
->> +       gic_arch_extn.irq_eoi = tegra_eoi;
->>         gic_arch_extn.irq_mask = tegra_mask;
->>         gic_arch_extn.irq_unmask = tegra_unmask;
->>         gic_arch_extn.irq_retrigger = tegra_retrigger;
->> --
->> 1.7.4.1
->
-> Just the job!
->
-> Acked-by: Will Deacon <will.deacon@arm.com>
->
-> Thanks,
->
-> Will
->
->
 
-What is your plan for merging the fasteoi patches?  If you are
-planning to put them in 2.6.40, can you pull these patches into your
-tree?  I don't have any other Tegra changes planned for 2.6.40, so
-they shouldn't cause conflicts later.
+> 
+> > > -----Original Message-----
+> > > From: root@docs.homelinux.org [mailto:root@docs.homelinux.org]
+> > > Sent: Tuesday, May 03, 2011 10:52 AM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Subject: RE: Error in Hyper-V modules hv_vmbus
+> > >
+> > >  On Tue, 3 May 2011 13:42:43 +0000, KY Srinivasan wrote:
+> > > >> -----Original Message-----
+> > > >> From: root [mailto:root@docs.homelinux.org]
+> > > >> Sent: Sunday, May 01, 2011 8:37 AM
+> > > >> To: KY Srinivasan
+> > > >> Cc: linux-kernel@vger.kernel.org
+> > > >> Subject: Re: Error in Hyper-V modules hv_vmbus
+> > > >>
+> > > >> Windows Server Core 2008 R2 with SP2
+> > > >
+> > > > This is a known problem and a fix has been submitted - the patch
+> > > > is yet to be applied though. Once the hv patches that are in the
+> > > > queue are applied, this problem will be fixed. In the interim, if
+> > > > you want an immediate fix, I could send you the patch that will
+> > > > apply against the tree you have.
+> > > >
+> > > > Regards,
+> > > >
+> > > > K. Y
+> > > >>
+> > > >> Regards
+> > > >> Juan Dos Santos
+> > >
+> > >  Could You send me the patch? So I can test it, I am using the
+> > > kernel source from
+> > > http://www.kernel.org/pub/linux/kernel/v2.6/testing/linux-2.6.39-rc5
+> > > .t ar.bz2,  is the patch compatible with this kernel source?
+> >
+> > This is a very old version of the hyper-V driver code compared to what
+> > is in Greg's tree and looking at the code It does not look like the
+> > problem you are seeing is the problem my patch fixes. We will do some
+> > additional testing and get back to you. It would be very useful if you
+> > can post the dmesg or stack trace that can shed additional light on the
+> problem.
+
+Juan,
+ 
+I just fixed a few issues in Ubuntu 10.10 that might be similar.
+ 
+I will spin up a debian system and see if I can reproduce the problem and
+submit a patch To fix it.
+
+Hank.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
