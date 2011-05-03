@@ -1,77 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1ECOKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:10:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34192 "EHLO mx2.suse.de"
+	id S1752969Ab1ECOLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:11:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34218 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab1ECOKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:10:45 -0400
-Date: Tue, 3 May 2011 16:10:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
-Message-ID: <20110503141044.GA25351@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752830Ab1ECOLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 10:11:14 -0400
+Subject: Re: memcg: fix fatal livelock in kswapd
+From: James Bottomley <James.Bottomley@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Ying Han <yinghan@google.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20110503063817.GD10278@cmpxchg.org>
+References: <1304366849.15370.27.camel@mulgrave.site>
+	 <20110502224838.GB10278@cmpxchg.org>
+	 <BANLkTikDyL9-XLpwyLwUQNuUfkBwbUBcZg@mail.gmail.com>
+	 <1304380698.15370.36.camel@mulgrave.site>
+	 <20110503063817.GD10278@cmpxchg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 09:11:04 -0500
+Message-ID: <1304431865.2576.3.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-the patch bellow probably got lost in the huge "parisc crashes with slub"
-thread triggered by my earlier clean up in this area so I am resending
-it standalone.
+On Tue, 2011-05-03 at 08:38 +0200, Johannes Weiner wrote:
+> On Mon, May 02, 2011 at 06:58:18PM -0500, James Bottomley wrote:
+> > On Mon, 2011-05-02 at 16:14 -0700, Ying Han wrote:
+> > > On Mon, May 2, 2011 at 3:48 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > > > I am very much for removing this hack.  There is still more scan
+> > > > pressure applied to memcgs in excess of their soft limit even if the
+> > > > extra scan is happening at a sane priority level.  And the fact that
+> > > > global reclaim operates completely unaware of memcgs is a different
+> > > > story.
+> > > >
+> > > > However, this code came into place with v2.6.31-8387-g4e41695.  Why is
+> > > > it only now showing up?
+> > > >
+> > > > You also wrote in that thread that this happens on a standard F15
+> > > > installation.  On the F15 I am running here, systemd does not
+> > > > configure memcgs, however.  Did you manually configure memcgs and set
+> > > > soft limits?  Because I wonder how it ended up in soft limit reclaim
+> > > > in the first place.
+> > 
+> > It doesn't ... it's standard FC15 ... the mere fact of having memcg
+> > compiled into the kernel is enough to do it (conversely disabling it at
+> > compile time fixes the problem).
+> 
+> Does this mean you have not set one up yourself, or does it mean that
+> you have checked no other software is setting up a soft-limited memcg?
+
+Right, I've done nothing other than install and boot.  As far as I can
+tell from /sys/fs/cgroup/memory, nothing is defined other than the
+standard limits.
+
+> Right now, I still don't see how we could enter the problematic path
+> without one memcg exceeding its soft limit.
+
+Yes, that's what we all think too.  The limit is way above my memory
+size, though.
+
+> So if you have not done this yet, can you check the cgroup fs for
+> memcgs, their memory.soft_limit_in_bytes and .usage_in_bytes right
+> before you would run the workload that reproduces the problem?
+
+Sure ... I've got the entire contents at the bottom.
+
+> > > curious as well. if we have workload to reproduce it, i would like to try
+> > 
+> > Well, the only one I can suggest is the one that produces it (large
+> > untar).  There seems to be something magical about the memory size (mine
+> > is 2G) because adding more also seems to make the problem go away.
+> 
+> I'll try to reproduce this on my F15 as well.
+
+It's an SMP kernel (The core i5 Lenovo laptop has two cores with two
+threads).  Turning on PREEMPT makes the hang go away, but still causes
+kswapd to loop.
+
+James
+
 ---
->From 2e79c7e73a39a09389a84a8f37eb2a2f2f2859f5 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Tue, 19 Apr 2011 11:11:41 +0200
-Subject: [PATCH] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
 
-IA64 needs some trickery for Register Backing Store so we have to
-export expand_stack_upwards for it even though the architecture expands
-its stack downwards normally.
-We have defined VM_GROWSUP which is defined only for the above
-configuration so let's use it everywhere rather than hardcoded
-CONFIG_STACK_GROWSUP || CONFIG_IA64
+]# for f in *; do echo -e "$f\t"; cat $f;done
+cgroup.clone_children
+0
+cgroup.event_control
+cat: cgroup.event_control: Invalid argument
+cgroup.procs
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+49
+50
+51
+52
+53
+54
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+335
+339
+352
+370
+371
+408
+409
+415
+427
+431
+443
+613
+614
+679
+690
+704
+732
+758
+759
+775
+799
+800
+825
+840
+849
+851
+865
+866
+890
+948
+964
+997
+1000
+1037
+memory.failcnt
+0
+memory.force_empty
+cat: memory.force_empty: Invalid argument
+memory.limit_in_bytes
+9223372036854775807
+memory.max_usage_in_bytes
+0
+memory.move_charge_at_immigrate
+0
+memory.oom_control
+oom_kill_disable 0
+under_oom 0
+memory.soft_limit_in_bytes
+9223372036854775807
+memory.stat
+cache 68370432
+rss 34246656
+mapped_file 6008832
+pgpgin 132627
+pgpgout 107574
+inactive_anon 6766592
+active_anon 34226176
+inactive_file 45350912
+active_file 16228352
+unevictable 0
+hierarchical_memory_limit 9223372036854775807
+total_cache 68370432
+total_rss 34246656
+total_mapped_file 6008832
+total_pgpgin 132627
+total_pgpgout 107574
+total_inactive_anon 6766592
+total_active_anon 34226176
+total_inactive_file 45350912
+total_active_file 16228352
+total_unevictable 0
+memory.swappiness
+60
+memory.usage_in_bytes
+102617088
+memory.use_hierarchy
+0
+notify_on_release
+0
+release_agent
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/mmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+tasks
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+49
+50
+51
+52
+53
+54
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+335
+339
+352
+370
+371
+408
+409
+415
+427
+431
+443
+613
+614
+679
+690
+704
+732
+758
+759
+775
+799
+800
+825
+840
+849
+851
+865
+866
+890
+891
+948
+964
+997
+1000
+1051
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 29c68b0..3ff9edf 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1726,7 +1726,7 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
- 	return 0;
- }
- 
--#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
-+#if VM_GROWSUP
- /*
-  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
-  * vma is the last one with address > vma->vm_end.  Have to extend vma.
-@@ -1777,7 +1777,7 @@ int expand_stack_upwards(struct vm_area_struct *vma, unsigned long address)
- 	khugepaged_enter_vma_merge(vma);
- 	return error;
- }
--#endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-+#endif /* VM_GROWSUP */
- 
- /*
-  * vma is the first one with address < vma->vm_start.  Have to extend vma.
--- 
-1.7.4.4
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
