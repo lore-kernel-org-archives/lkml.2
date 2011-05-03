@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1ECIwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 04:52:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35127 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab1ECIwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 04:52:30 -0400
-Message-ID: <4DBFC24B.7090805@suse.cz>
-Date: Tue, 03 May 2011 10:52:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1751775Ab1ECIzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 04:55:48 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:28006
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751509Ab1ECIzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 04:55:46 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2cK1432N98dKzz1202hzz8275chz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LKM3GU-01-4Q0-02
+X-M-MSG: 
+Date: Tue, 3 May 2011 10:55:40 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Nicolas Kaiser <nikai@nikai.net>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] s390: oprofile: fix error checks in
+ oprofile_hwsampler_init()
+Message-ID: <20110503085540.GX31407@erda.amd.com>
+References: <20110502154805.71664123@absol.kitzblitz>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: davej@redhat.com, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org
-Subject: Re: [PATCH] kbuild: Fix passing -Wno-* options to gcc 4.4+
-References: <20110502111337.GA15769@sepie.suse.cz>	<1304338381-3772-1-git-send-email-mmarek@suse.cz> <20110503104440.700ea26f.sfr@canb.auug.org.au>
-In-Reply-To: <20110503104440.700ea26f.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110502154805.71664123@absol.kitzblitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.5.2011 02:44, Stephen Rothwell wrote:
-> HI Michal,
->
-> On Mon,  2 May 2011 14:13:01 +0200 Michal Marek<mmarek@suse.cz>  wrote:
->>
->> Starting with 4.4, gcc will happily accept -Wno-<anything>  in the
->> cc-option test and complain later when compiling a file that has some
->> other warning. This rather unexpected behavior is intentional as per
->> http://gcc.gnu.org/PR28322, so work around it by testing for support of
->> the opposite option (without the no-). Introduce a new Makefile function
->> cc-disable-warning that does this and update two uses of cc-option in
->> the toplevel Makefile.
->>
->> Reported-by: Stephen Rothwell<sfr@canb.auug.org.au>
->> Signed-off-by: Michal Marek<mmarek@suse.cz>
->
-> This fixed things for me, thanks.
->
-> Tested-by: Stephen Rothwell<sfr@canb.auug.org.au>
+On 02.05.11 09:48:05, Nicolas Kaiser wrote:
+> Checking 'oprofile_min_interval < 0' and
+> 'oprofile_max_interval < 0' doesn't work because
+> 'oprofile_min_interval' and 'oprofile_max_interval' are unsigned.
 
-Thanks for spotting the warnings and for testing. I pushed this to 
-kbuild-2.6.git#kbuild.
+max/min_interval are through all the code always unsigned. I don't
+know how min/max_sampl_rate in struct hws_qsi_info_block is spec'ed,
+but there it is unsigned too.
 
-Michal
+So the best would be to return qsi.min/max_sampl_rate in
+hwsampler_query_min/max_interval() directly with no error codes as
+unsigned longs and to change the code in oprofile_hwsampler_init() to
+check for null. Both functions hwsampler_query_min/max_interval()
+could be moved to hwsampler.h as static inline functions. This makes
+the code also easier.
+
+This patch does not handle the null value case and the data truncation
+by casting from unsigned to singed is not fixed.
+
+-Robert
+
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+> Untested.
+> 
+>  arch/s390/oprofile/init.c |   12 ++++++++----
+>  1 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
+> index c63d7e5..09c3088 100644
+> --- a/arch/s390/oprofile/init.c
+> +++ b/arch/s390/oprofile/init.c
+> @@ -138,22 +138,26 @@ static int oprofile_create_hwsampling_files(struct super_block *sb,
+>  
+>  static int oprofile_hwsampler_init(struct oprofile_operations *ops)
+>  {
+> +	long retval;
+> +
+>  	if (hwsampler_setup())
+>  		return -ENODEV;
+>  
+>  	/*
+>  	 * create hwsampler files only if hwsampler_setup() succeeds.
+>  	 */
+> -	oprofile_min_interval = hwsampler_query_min_interval();
+> -	if (oprofile_min_interval < 0) {
+> +	retval = hwsampler_query_min_interval();
+> +	if (retval < 0) {
+>  		oprofile_min_interval = 0;
+>  		return -ENODEV;
+>  	}
+> -	oprofile_max_interval = hwsampler_query_max_interval();
+> -	if (oprofile_max_interval < 0) {
+> +	oprofile_min_interval = retval;
+> +	retval = hwsampler_query_max_interval();
+> +	if (retval < 0) {
+>  		oprofile_max_interval = 0;
+>  		return -ENODEV;
+>  	}
+> +	oprofile_max_interval = retval;
+>  
+>  	if (oprofile_timer_init(ops))
+>  		return -ENODEV;
+> -- 
+> 1.7.3.4
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
