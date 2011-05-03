@@ -1,48 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1ECOYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:24:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38135 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1ECOYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:24:08 -0400
-Date: Tue, 3 May 2011 15:24:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC patch 29/32] trace event asoc remove semicolons
-Message-ID: <20110503142407.GC2893@sirena.org.uk>
-References: <20110502211123.163877033@efficios.com> <20110502213216.050459585@efficios.com> <20110503132138.GL1762@opensource.wolfsonmicro.com> <20110503140647.GA29665@Krystal> <20110503141436.GB2893@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503141436.GB2893@sirena.org.uk>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1753222Ab1ECOcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:32:41 -0400
+Received: from 236.121.91-79.rev.gaoland.net ([79.91.121.236]:46270 "EHLO
+	mx.synack.fr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab1ECObd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 10:31:33 -0400
+From: Samir Bellabes <sam@synack.fr>
+To: linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, jamal <hadi@cyberus.ca>,
+        Patrick McHardy <kaber@trash.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Grzegorz Nosek <root@localdomain.pl>, Samir Bellabes <sam@synack.fr>
+Subject: [RFC v3 00/10] snet: Security for NETwork syscalls
+Date: Tue,  3 May 2011 16:24:13 +0200
+Message-Id: <1304432663-1575-1-git-send-email-sam@synack.fr>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 03:14:37PM +0100, Mark Brown wrote:
-> On Tue, May 03, 2011 at 10:06:47AM -0400, Mathieu Desnoyers wrote:
+Hello lsm and netdev people,
+This set of patches is the version 3 of snet, which I would like to submit as a
+RFC.
 
-> > Yes, this change is related, because these declarations will cause harm.
-> > The structure declaration cannot be put within an array declaration,
-> > because then they won't be simply "ignored": they will try to declare
-> > structures within an array, which is not valid. This is why I did this
-> > change in the same patch.
+snet is a linux security module. It provides a mecanism defering syscall
+security hooks and decision (verdict) to userspace. 
 
-> This might make a bit more sense if we'd seen the earlier or possibly
-> later patches...  According to the patch description all you're doing
-> here is removing the semicolons.
+snet has some subsystems :
+    - snet_core     : init and exit the system
+    - snet_hooks    : LSM hooks
+    - snet_netlink  : kernel-user communication (genetlink)
+    - snet_event    : manages the list of protected syscalls
+    - snet_verdict  : provides a waitqueue for syscalls and manage verdicts
+    - snet_ticket   : provides a granted-access ticket mecanism
 
-OK, now I see patch 1 I understand why you're doing this.  It should
-still be at least called out in the patch description if not actually
-split out into a separate patch (which would be ideal) - one of the
-things that really stands out in reviews is unrelated changes.
+I believe that snet will help to get over the classical configuration
+complexity of others security modules, by providing interactivity to users.
+I also think that monolithic strategy is broken with snet, as we can provide
+security for others syscall's categories:
+ - sfs  : security for filesystem,
+ - stask: security for task,
+ - smem : security for memory
+ ..
+
+In this way, and by putting abstraction on how this subsystems can talk to each
+others, we may use the security combinaison we want: choose to run sfs,
+stask, but not snet nor smem. Better, developpers may investigated how to build
+another security subsystem for tasks, and use others existing (smem, snet..)
+which they don't want to modify
+
+I think that interactivity is very usefull for users, as they may be notify when
+something is wrong and take decision, and from userspace, the decision may be
+defered to another box. In this way, snet also have a advantage for mobile
+devices as the policy decision will be push to a distant server, mobile device
+will then wait for verdicts and as policy strategies are centralized.
+
+Interactivity is *not* only clicking a Yes/No question, as said, we
+can centralised previous locals LSM security subsytems, and make the
+network aware of events occuring on it.
+
+Finally, and a important point: snet integration respects the LSM framework idea
+of using LSM hooks.
+
+New feature from the previous version:
+ * Building a ticket mecanism for each task_struct using pointer void *security
+   Use the pointer (void*) security related to task_struct to provides
+   granted-acces tickets: if two identical requests are coming, ask the user
+   for the first one, store the result in a ticket and for the second request,
+   just look in the tickets owned by the task-struct
+ * send data buffer of sendmsg to userspace
+   this may provide a way to look inside the data (as a anti-virus do)
+
+roadmap:
+ * find a way to send data buffer of sendmsg to userspace (using netfilter)
+ * adding other security systems
+   we can think about adding fork(), exec(), open(), close()..
+
+I'm Ccing netfilter-devel, as snet may be seen as a way to do filtering.
+
+Last devel patchs were:
+ * using kmem_cache instead of kmalloc
+ * remove attend to send buffer socker to userspace
+
+Samir Bellabes (10):
+  lsm: add security_socket_closed()
+  Revert "lsm: Remove the socket_post_accept() hook"
+  snet: introduce snet_core
+  snet: introduce snet_event
+  snet: introduce snet_hooks
+  snet: introduce snet_netlink
+  snet: introduce snet_verdict
+  snet: introduce snet_ticket
+  snet: introduce snet_utils
+  snet: introduce security/snet, Makefile and Kconfig changes
+
+ include/linux/security.h            |   23 ++
+ include/linux/snet.h                |  117 ++++++
+ net/socket.c                        |    3 +
+ security/Kconfig                    |    6 +
+ security/Makefile                   |    2 +
+ security/capability.c               |   10 +
+ security/security.c                 |   10 +
+ security/snet/Kconfig               |   11 +
+ security/snet/Makefile              |   14 +
+ security/snet/snet_core.c           |   82 ++++
+ security/snet/snet_event.c          |  201 ++++++++++
+ security/snet/snet_event.h          |   21 +
+ security/snet/snet_hooks.c          |  722 +++++++++++++++++++++++++++++++++++
+ security/snet/snet_hooks.h          |   10 +
+ security/snet/snet_netlink.c        |  442 +++++++++++++++++++++
+ security/snet/snet_netlink.h        |   17 +
+ security/snet/snet_netlink_helper.c |  220 +++++++++++
+ security/snet/snet_netlink_helper.h |    7 +
+ security/snet/snet_ticket.c         |  195 ++++++++++
+ security/snet/snet_ticket.h         |   37 ++
+ security/snet/snet_ticket_helper.c  |  127 ++++++
+ security/snet/snet_ticket_helper.h  |    8 +
+ security/snet/snet_utils.c          |   38 ++
+ security/snet/snet_utils.h          |    9 +
+ security/snet/snet_verdict.c        |  203 ++++++++++
+ security/snet/snet_verdict.h        |   23 ++
+ 26 files changed, 2558 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/snet.h
+ create mode 100644 security/snet/Kconfig
+ create mode 100644 security/snet/Makefile
+ create mode 100644 security/snet/snet_core.c
+ create mode 100644 security/snet/snet_event.c
+ create mode 100644 security/snet/snet_event.h
+ create mode 100644 security/snet/snet_hooks.c
+ create mode 100644 security/snet/snet_hooks.h
+ create mode 100644 security/snet/snet_netlink.c
+ create mode 100644 security/snet/snet_netlink.h
+ create mode 100644 security/snet/snet_netlink_helper.c
+ create mode 100644 security/snet/snet_netlink_helper.h
+ create mode 100644 security/snet/snet_ticket.c
+ create mode 100644 security/snet/snet_ticket.h
+ create mode 100644 security/snet/snet_ticket_helper.c
+ create mode 100644 security/snet/snet_ticket_helper.h
+ create mode 100644 security/snet/snet_utils.c
+ create mode 100644 security/snet/snet_utils.h
+ create mode 100644 security/snet/snet_verdict.c
+ create mode 100644 security/snet/snet_verdict.h
+
+-- 
+1.7.4.1
+
