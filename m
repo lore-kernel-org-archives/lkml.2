@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab1ECJ3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 05:29:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48595 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750898Ab1ECJ3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 05:29:54 -0400
-Subject: Re: [PATCHv2 4/4] ARM: tegra: irq: Add tegra_eoi
-From: Will Deacon <will.deacon@arm.com>
-To: Colin Cross <ccross@android.com>
-Cc: lakml <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra <linux-tegra@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-In-Reply-To: <1304288854-11011-1-git-send-email-ccross@android.com>
-References: <1304284213-11950-5-git-send-email-ccross@android.com>
-	 <1304288854-11011-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 10:29:33 +0100
-Message-ID: <1304414973.27863.2.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752008Ab1ECJay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab1ECJax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 05:30:53 -0400
+Date: Tue, 3 May 2011 11:30:43 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Jens Axboe <jaxboe@fusionio.com>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in 
+ blkdev_issue_discard()
+In-Reply-To: <4DBEDA78.7020502@fusionio.com>
+Message-ID: <alpine.LFD.2.00.1105031128390.4250@dhcp-27-109.brq.redhat.com>
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com> <4DBEDA78.7020502@fusionio.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin,
+On Mon, 2 May 2011, Jens Axboe wrote:
 
-On Sun, 2011-05-01 at 23:27 +0100, Colin Cross wrote:
-> Implement irq_eoi to allow the GIC irq chip flow controller to
-> be changed to fasteoi.
+> On 2011-05-02 08:17, Lukas Czerner wrote:
+> > Currently we are waiting for every submitted REQ_DISCARD bio separately,
+> > but it can have unwanted consequences of repeatedly flushing the queue,
+> > so we rather submit bios in batches and wait for the entire batch, hence
+> > narrowing the window of other ios going in.
+> > 
+> > Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+> > is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+> > always set !BIO_UPTODATE in the case of error and remove the check for
+> > bb, since we are the only user of this function and we always set this.
+> > 
+> > Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+> > bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+> > not needed anymore.
+> > 
+> > I have done simple dd testing with surprising results. The script I have
+> > used is:
+> > 
+> > for i in $(seq 10); do
+> >         echo $i
+> >         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+> >         sleep 5
+> > done
+> > /usr/bin/time -f %e ./blkdiscard /dev/sdc1
+> > 
+> > Running time of BLKDISCARD on the whole device:
+> > with patch              without patch
+> > 0.95                    15.58
+> > 
+> > So we can see that in this artificial test the kernel with the patch
+> > applied is approx 16x faster in discarding the device.
 > 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
-> v2: Add tegra_eoi without removing tegra_ack, patch can now be
->     merged safely before Will Deacon's gic fasteoi patch
+> Good results. It'd be more efficient to add the vectored discard support
+> and use it for this too though, and it would get rid of the need to wait
+> on the batches since there'd be just one discard bio for the ranges.
 > 
->  arch/arm/mach-tegra/irq.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
-> index da17491..4956c3c 100644
-> --- a/arch/arm/mach-tegra/irq.c
-> +++ b/arch/arm/mach-tegra/irq.c
-> @@ -95,6 +95,14 @@ static void tegra_ack(struct irq_data *d)
->         tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
->  }
-> 
-> +static void tegra_eoi(struct irq_data *d)
-> +{
-> +       if (d->irq < FIRST_LEGACY_IRQ)
-> +               return;
-> +
-> +       tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
-> +}
-> +
->  static int tegra_retrigger(struct irq_data *d)
->  {
->         if (d->irq < FIRST_LEGACY_IRQ)
-> @@ -116,6 +124,7 @@ void __init tegra_init_irq(void)
->         }
-> 
->         gic_arch_extn.irq_ack = tegra_ack;
-> +       gic_arch_extn.irq_eoi = tegra_eoi;
->         gic_arch_extn.irq_mask = tegra_mask;
->         gic_arch_extn.irq_unmask = tegra_unmask;
->         gic_arch_extn.irq_retrigger = tegra_retrigger;
-> --
-> 1.7.4.1
 
-Just the job!
+I know that you and Christoph were working on adding support for
+vectored discard, but I do not know what is the status of it ?
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Thanks,
-
-Will
-
+Thanks!
+-Lukas
