@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1ECLXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 07:23:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37254 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752019Ab1ECLXw (ORCPT
+	id S1752584Ab1ECLkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 07:40:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64777 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752448Ab1ECLkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 07:23:52 -0400
-Date: Tue, 3 May 2011 12:23:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: tiwai@suse.de, perex@perex.cz, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [PATCH] SOC: UDA134x: Enable POWER_OFF_ON_STANDBY define.
-Message-ID: <20110503112350.GG1762@opensource.wolfsonmicro.com>
-References: <1304415149-19725-1-git-send-email-marek.belisko@open-nandra.com>
- <20110503100042.GA1762@opensource.wolfsonmicro.com>
- <BANLkTimE_TEzManZb2McLnohqbc27hRZ=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimE_TEzManZb2McLnohqbc27hRZ=w@mail.gmail.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 May 2011 07:40:40 -0400
+Subject: Re: [PATCH 0/6] hw_breakpoint: Let the user choose not to build it
+ (and perf too)
+From: Will Deacon <will.deacon@arm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H . Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
+References: <1303923602-2923-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 12:40:07 +0100
+Message-ID: <1304422807.27863.6.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 01:09:27PM +0200, Belisko Marek wrote:
-> On Tue, May 3, 2011 at 12:00 PM, Mark Brown
+On Wed, 2011-04-27 at 17:59 +0100, Frederic Weisbecker wrote:
+> Hi,
 
-> > If this is essential why is it optional in the first place?
+Hi Frederic,
 
-> Not sure about background. Maybe whole define should be removed
+> Until now, x86 and superh32 had to always build hw_breakpoint and perf.
+> And powerpc and arm were always building hw_breakpoints when perf
+> was enabled.
+> 
+> After this patchset, one can simply disable hw_breakpoints if he
+> selected CONFIG_EXPERT. Afterward the user is free to select perf
+> or not. Except on SH unfortunately because that would require a
+> bit of change in ptrace to support singlestep failures.
 
-That's exactly what I'm suggesting.
+For the ARM bits:
 
-> This change was introduced in commit:f0fba2ad
+Acked-by: Will Deacon <will.deacon@arm.com>
 
-*Always* include a plain text description of the commit for those of us
-who haven't memorised the entire git history.  In this case I suspect
-you need to do a bit more digging, that commit will just have done some
-code motion here.
+Cheers,
+
+Will
+
