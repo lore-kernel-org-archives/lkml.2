@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1ECUOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:14:42 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:48759 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab1ECUOl (ORCPT
+	id S1754880Ab1ECUS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:18:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56827 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754666Ab1ECUS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:14:41 -0400
-Date: Tue, 3 May 2011 22:13:34 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH V2 2/2] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
-Message-ID: <20110503201334.GB15775@router-fw-old.local.net-space.pl>
-References: <20110502214921.GH4623@router-fw-old.local.net-space.pl> <1304439952.30823.68.camel@nimitz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304439952.30823.68.camel@nimitz>
-User-Agent: Mutt/1.3.28i
+	Tue, 3 May 2011 16:18:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110503190822.GA20520@elte.hu>
+References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com>
+ <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
+ <20110503190822.GA20520@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 May 2011 13:17:36 -0700
+Message-ID: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+Subject: Re: 2.6.39-rc5-git2 boot crashs
+To: Ingo Molnar <mingo@elte.hu>
+Cc: werner <w.landgraf@ru.ru>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=KOI8-R
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 09:25:52AM -0700, Dave Hansen wrote:
-> On Mon, 2011-05-02 at 23:49 +0200, Daniel Kiper wrote:
-> > +int register_online_page_callback(online_page_callback_t callback)
-> > +{
-> > +       int rc = -EPERM;
-> > +
-> > +       lock_memory_hotplug();
-> > +
-> > +       if (online_page_callback == generic_online_page) {
-> > +               online_page_callback = callback;
-> > +               rc = 0;
-> > +       }
-> > +
-> > +       unlock_memory_hotplug();
-> > +
-> > +       return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(register_online_page_callback);
-> 
-> -EPERM is a bit uninformative here.  How about -EEXIST, plus a printk?
+On Tue, May 3, 2011 at 12:08 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> I have no smart ideas straight away - just an observation: i keep testing
+> CONFIG_X86_ELAN=y on real hardware, and it's enabled in about 4% of my configs:
 
-EEXIST means File exists (POSIX.1). It could be misleading. That is why
-I decided to use EPERM. I could not find any better choice. I think another
-choice is EINVAL (not the best one in my opinion). Additionally, I am not
-sure it should have printk. I think it is role of caller to notify (or not)
-about possible errors.
+So how often do you do more than just boot?
 
-> I also don't seen the real use behind having a "register" that can only
-> take a single callback.  At worst, it should be
-> "set_online_page_callback()" so it's more apparent that there can only
-> be one of these.
+Because this problem doesn't happen at boot-time, the "bad IO" issue
+seems to happen only after some real filesystem work (ie the "unzip a
+140MB file" etc). In one of the logs, the SATA driver issue ended up
+happening four hours after boot (but I think Werner could trigger it
+in minutes by doing heavy FS work).
 
-OK.
+That's why I'd suspect some subtle race or other and/or memory
+allocation re-use.
 
-> > +int unregister_online_page_callback(online_page_callback_t callback)
-> > +{
-> > +       int rc = -EPERM;
-> > +
-> > +       lock_memory_hotplug();
-> > +
-> > +       if (online_page_callback == callback) {
-> > +               online_page_callback = generic_online_page;
-> > +               rc = 0;
-> > +       }
-> > +
-> > +       unlock_memory_hotplug();
-> > +
-> > +       return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(unregister_online_page_callback); 
-> 
-> Again, -EPERM is a bad code here. -EEXIST, perhaps?  It also deserves a
-> WARN_ON() or a printk on failure here.  
+The subject line "boot crashs" is misleading, because that's the
+unrelated logfs thing that I have a tentative patch for.
 
-Please look above.
+That said, I don't really see why ELAN would be so special.
 
-> Your changelog doesn't mention, but what ever happened to doing
-> something dirt-simple like this?  I have a short memory.
+Werner: can you test without X86_EXTENDED_PLATFORM, but then picking
+the i486 config instead? That should approximate the ELAN
+configuration pretty closely, at least in things like compiler flags..
 
-Andrew Morton complained about (ab)use of notifiers. He suggested
-to use callback machanism (I could not find any better solution
-in Linux Kernel). He convinced me.
-
-Daniel
+                   Linus
