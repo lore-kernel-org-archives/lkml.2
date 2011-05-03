@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab1ECVwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:52:04 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36106 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750698Ab1ECVwC (ORCPT
+	id S1751120Ab1ECVyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:54:15 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34556 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab1ECVyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:52:02 -0400
-Date: Tue, 3 May 2011 22:53:16 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
-Message-ID: <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110503213925.GA7453@opensource.wolfsonmicro.com>
-References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
-	<20110503163128.24853.15446.stgit@bob.linux.org.uk>
-	<20110503174254.GA6545@kroah.com>
-	<20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
-	<20110503213925.GA7453@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 May 2011 17:54:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=StDRvZFgzzthXHETtfr0VT9pnL3R71etQLUpyDwjJ/68MTPUTz99YpGD4QUzQav5j4
+         7NQmlBOspM2tGRVXdA1+kQps2DHripnkOYJ/1FmOHVhXPmqvpMFNE5pIStXeh5j8m6eW
+         1eqMVnVGm+XdRZkDlfsgVLzTyvBgJjEBd4Gek=
+MIME-Version: 1.0
+Date: Tue, 3 May 2011 18:54:13 -0300
+Message-ID: <BANLkTik4bW7nRMFXKW-UpfrSsaimEQ=zWg@mail.gmail.com>
+Subject: regulators: kzalloc doubt
+From: Thiago Farina <tfransosi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        linux list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> To recap the previous discussion: staging is just not in the slightest
-> bit viable for ASoC stuff, code that does anything non-trivial is going
+Hi guys,
 
-Yes I know that - and its active development of a nice clean driver going
-on upstream so doesn't belong there anyway. The ASoC driver should
-probably have its own copy of the bits of the staging driver that it
-needs however.
+What is the preferred way to use kzalloc? I have seen two ways under
+drivers/regulator/.
 
-I can fix this collision up easily enough and if doing it not via the
-rules is best fine by me. I think it might be wiser however if the ASoC
-driver took its own copy of the bits it actually needed.
+1-
 
-Alan
+struct my_regulator_info *info = NULL;
+
+info = kzalloc(sizeof(struct my_regulator_info), GFP_KERNEL);
+
+2-
+
+struct my_regulator_info *info;
+
+info = kzalloc(sizeof(*info), GFP_KERNEL);
