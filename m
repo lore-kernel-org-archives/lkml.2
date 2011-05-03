@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1ECNh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:37:28 -0400
-Received: from muse.oxfordinspire.co.uk ([93.93.128.48]:60046 "EHLO
-	muse.oxfordinspire.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab1ECNh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:37:26 -0400
-X-Greylist: delayed 1685 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 09:37:26 EDT
-Message-ID: <4DBFFE64.6000306@exotica.org.uk>
-Date: Tue, 03 May 2011 14:08:52 +0100
-From: Jools Wills <buzz@exotica.org.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1751942Ab1ECNNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab1ECNNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 09:13:51 -0400
+Date: Tue, 3 May 2011 10:13:17 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, avi@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 2/2] KVM: make guest mode entry to be rcu quiescent state
+Message-ID: <20110503131317.GA4244@amt.cnet>
+References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
+ <1303984323-3203-3-git-send-email-gleb@redhat.com>
 MIME-Version: 1.0
-To: Walter Goldens <goldenstranger@yahoo.com>
-CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Roland Dreier <roland@kernel.org>, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38: rt2800usb: driver is crashing the kernel
-References: <484421.61252.qm@web161619.mail.bf1.yahoo.com>
-In-Reply-To: <484421.61252.qm@web161619.mail.bf1.yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Spam-Score: -2.9 (--)
-X-Spam-Report: Spam detection software, running on the system "muse.oxfordinspire.co.uk", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- the administrator of that system for details.
- Content preview:  in case it is useful: I am currently using the vendor driver
-    on a device I have (O2 Joggler). The rt2800usb driver didn't work well and
-    the staging rt2870sta driver didn't seem to work with wireless N and users
-    reported to me that it drops the connection and is unreliable. The vendor
-    driver does seem to work best. [...] 
- Content analysis details:   (-2.9 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
- -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303984323-3203-3-git-send-email-gleb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in case it is useful:
+Hi Gleb,
 
-I am currently using the vendor driver on a device I have (O2 Joggler).
-The rt2800usb driver didn't work well and the staging rt2870sta driver
-didn't seem to work with wireless N and users reported to me that it
-drops the connection and is unreliable. The vendor driver does seem to
-work best.
+Thats a neat idea.
 
-I made a debian package (using dkms) of the vendor driver on my joggler
-ppa. tested working wiht 2.6.37/2.6.38
+On Thu, Apr 28, 2011 at 12:52:03PM +0300, Gleb Natapov wrote:
+> KVM does not hold any references to rcu protected data when it switches
+> CPU into a guest mode. In fact switching to a guest mode is very similar
+> to exiting to userspase from rcu point of view. In addition CPU may stay
+> in a guest mode for quite a long time (up to one time slice). Lets treat
+> guest mode as quiescent state, just like we do with user-mode execution.
+> 
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> ---
+>  include/linux/kvm_host.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 0bc3d37..a347bce 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -593,6 +593,7 @@ static inline void kvm_guest_enter(void)
+>  {
+>  	account_system_vtime(current);
+>  	current->flags |= PF_VCPU;
+> +	rcu_note_context_switch(smp_processor_id());
+>  }
+>  
+>  static inline void kvm_guest_exit(void)
+> -- 
+> 1.7.2.3
 
-https://launchpad.net/~jools/+archive/joggler
+Please have it in x86's vcpu_enter_guest, then its more explicit
+(uncertain about the context of kvm_guest_enter call in other arches).
 
-note it doesn't automatically install the newer firmware so that will
-need to be done manually.
 
-Best Regards
-
-Jools
