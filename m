@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1ECMqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 08:46:46 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46631 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1ECMqp (ORCPT
+	id S1751262Ab1ECMvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 08:51:55 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40196 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab1ECMvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 08:46:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=UoN5ecci8BORkI8QFaW/ickWzcVhnw0OzUB9Z3Nu6m/84B4Lqk+7IlFVkVnqIbjInf
-         n8hrbT82o9qiVUJHTUnYGI1JbfDFj9nAmOGfeQrwK+QQJFdC5J1B8JHh6hqt2QsjXzz1
-         7gKSj5ryFq5Am3b+M+7jakUxlJFBkXJz3ROcA=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: tiwai@suse.de, perex@perex.cz
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] SOC: UDA134x: Remove POWER_OFF_ON_STANDBY define.
-Date: Tue,  3 May 2011 14:46:32 +0200
-Message-Id: <1304426792-23540-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 3 May 2011 08:51:54 -0400
+Date: Tue, 3 May 2011 14:51:19 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Rename perf_event.c
+Message-ID: <20110503125119.GC20241@aftab>
+References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+ <1304357691-14354-3-git-send-email-bp@amd64.org>
+ <20110503064046.GD7751@elte.hu>
+ <20110503071215.GA18979@aftab>
+ <20110503082234.GB6999@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503082234.GB6999@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define POWER_OFF_ON_STANDBY cause trobles when trying to get some
-sound from codec because code for bias setup was not compiled
-(define wasn't defined). This define was removed in commit:
-cc3202f5 but again introduced by commit: f0fba2ad1 which then
-completely break codec functionality so remove it again.
+On Tue, May 03, 2011 at 04:22:34AM -0400, Ingo Molnar wrote:
+> Could you send a Git pull request against perf/core that does the
+> obvious file movement and renaming? We can do that first step straight
+> away and get the ball rolling.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- sound/soc/codecs/uda134x.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Sure, here we go:
 
-diff --git a/sound/soc/codecs/uda134x.c b/sound/soc/codecs/uda134x.c
-index 48ffd40..a7b8f30 100644
---- a/sound/soc/codecs/uda134x.c
-+++ b/sound/soc/codecs/uda134x.c
-@@ -601,9 +601,7 @@ static struct snd_soc_codec_driver soc_codec_dev_uda134x = {
- 	.reg_cache_step = 1,
- 	.read = uda134x_read_reg_cache,
- 	.write = uda134x_write,
--#ifdef POWER_OFF_ON_STANDBY
- 	.set_bias_level = uda134x_set_bias_level,
--#endif
- };
- 
- static int __devinit uda134x_codec_probe(struct platform_device *pdev)
+The following changes since commit ac0a3260f37b8616da8d33488ec94b94e6ae5b31:
+
+  Merge branch 'tip/perf/core' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace into perf/core (2011-05-01 19:11:42 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git perf-event-rename
+
+Borislav Petkov (1):
+      perf: Start the restructuring
+
+ kernel/Makefile                        |    5 +++--
+ kernel/events/Makefile                 |    5 +++++
+ kernel/{perf_event.c => events/core.c} |    0
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+ create mode 100644 kernel/events/Makefile
+ rename kernel/{perf_event.c => events/core.c} (100%)
+
 -- 
-1.7.4.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
