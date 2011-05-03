@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab1ECWDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 18:03:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40864 "EHLO mail.zytor.com"
+	id S1752749Ab1ECWIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 18:08:32 -0400
+Received: from kroah.org ([198.145.64.141]:34299 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1ECWDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 18:03:00 -0400
-Message-ID: <4DC07B4F.4040509@zytor.com>
-Date: Tue, 03 May 2011 15:01:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1750924Ab1ECWIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 18:08:31 -0400
+Date: Tue, 3 May 2011 15:02:33 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
+Message-ID: <20110503220233.GB14080@kroah.com>
+References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
+ <20110503163128.24853.15446.stgit@bob.linux.org.uk>
+ <20110503174254.GA6545@kroah.com>
+ <20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
+ <20110503213925.GA7453@opensource.wolfsonmicro.com>
+ <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, werner <w.landgraf@ru.ru>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <4DC06386.8090206@zytor.com> <20110503205051.GA28647@elte.hu> <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
-In-Reply-To: <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 02:45 PM, Linus Torvalds wrote:
-> On Tue, May 3, 2011 at 1:50 PM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> the ELAN .config option influences the following details:
->>
->>  - sets X86_L1_CACHE_SHIFT to 4 (16 bytes) instead of the typical 6 (64 bytes)
->>  - sets X86_ALIGNMENT_16
->>  - sets the -march=i486 compiler flag
+On Tue, May 03, 2011 at 10:53:16PM +0100, Alan Cox wrote:
+> > To recap the previous discussion: staging is just not in the slightest
+> > bit viable for ASoC stuff, code that does anything non-trivial is going
 > 
-> It also does this to the config diff:
+> Yes I know that - and its active development of a nice clean driver going
+> on upstream so doesn't belong there anyway. The ASoC driver should
+> probably have its own copy of the bits of the staging driver that it
+> needs however.
 > 
->   306,307c328,332
->   < CONFIG_X86_ALIGNMENT_16=y
->   < CONFIG_X86_MINIMUM_CPU_FAMILY=4
->   ---
->   > CONFIG_X86_USE_PPRO_CHECKSUM=y
->   > CONFIG_X86_TSC=y
->   > CONFIG_X86_CMPXCHG64=y
->   > CONFIG_X86_CMOV=y
->   > CONFIG_X86_MINIMUM_CPU_FAMILY=5
-> 
-> because of all the indirect changes it causes.
-> 
-> Now, Werner is actually _running_ on an AMD Opteron (or whatever
-> family 15 is), I think. And his kernel is SMP-enabled. And that whole
-> thin looks really really iffy.
-> 
-> How/why do we even allow that combination of SMP and (for example)
-> arch/x86/lib/atomic64_386_32.S to be picked?
-> 
-> I don't think he actually runs SMP, but the fact that we even allow
-> that combination looks really odd/iffy. Am I missing something?
-> 
+> I can fix this collision up easily enough and if doing it not via the
+> rules is best fine by me. I think it might be wiser however if the ASoC
+> driver took its own copy of the bits it actually needed.
 
-We would end up in those paths before alternatives are run, but
-alternatives should be run before we start the second processor.
+That sounds like a good idea.
 
-	-hpa
+Mark, can you try to let me know if you are patching staging code?  If
+you want to "own" a driver in the staging tree, that's fine, just let me
+konw and I'll funnel patches to you for it (we do that for other staging
+drivers).
+
+It's just that for times like this, when I have no idea that someone
+else modified it in linux-next, and then patches fail to apply, that it
+gets messy.
+
+thanks,
+
+greg k-h
