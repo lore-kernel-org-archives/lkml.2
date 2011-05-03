@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1ECUqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:46:53 -0400
-Received: from kroah.org ([198.145.64.141]:58265 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab1ECUqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:46:52 -0400
-Date: Tue, 3 May 2011 13:46:41 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: various vmbus review comments
-Message-ID: <20110503204641.GA11132@kroah.com>
+	id S1755189Ab1ECUsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:48:12 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:51703 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754124Ab1ECUsL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 16:48:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201105032218.29592.arnd@arndb.de>
+References: <1304004712-8487-1-git-send-email-omar.ramirez@ti.com>
+	<201105032218.29592.arnd@arndb.de>
+Date: Tue, 3 May 2011 15:48:07 -0500
+Message-ID: <BANLkTin7vsfjF+86UrGb7ph0B8TpiXiF0A@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] staging tidspbridge: iommu migration
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, devel <devel@driverdev.osuosl.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just took a quick look at the vmbus code, and have the following
-comments:
-	- why is count_hv_channel() even a function?
-	- your .h files need to be consolidated and renamed.  You will
-	  need a single hyperv.h file for include/linux/ that will
-	  contain some of what the vmbus*.h files have in it, but not
-	  all.  Please merge things together to have:
-	  	- include/linux/hyperv.h
-		   What is needed to build the drivers that attach to
-		   the bus
-		- drivers/staging/hv/hyperv.h
-		   The local .h file will have the vmbus*.h remaining
-		   stuff that is only needed by the hv_vmbus.ko module
-		   to be build.
-	- the instances of hv_driver structures need to be static and
-	  not programatically defined, like all other USB and PCI
-	  drivers are handled.
-	- module reference counting.  Are you sure you got it all right
-	  for the individual modules that attach to the bus?  I don't
-	  see any reference counting happening, is that correct?
-	- fix the sparse warnings.
-	- fix the use of volatile in the ring buffer code.  It should
-	  not be needed and if you are relying on it, then the code is
-	  wrong.
-	- fix the namespace on the ringbuffer code to show that it
-	  really is only for the hyperv bus code internally.
+Hi Arnd,
 
-That should be enough for at least one more set of patches for you all
-to work on :)
+On Tue, May 3, 2011 at 3:18 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 28 April 2011 17:31:46 Omar Ramirez Luna wrote:
+>> Rework and rebase of the previous set of patches for iommu migration[1].
+>>
+>> Reorganized the patches to avoid several iterations to change the same code.
+>>
+>> Patches were tested with an OMAP3630 board, with both, basic samples and
+>> gst-dsp; these are dependant on patch:
+>>         "OMAP: iovmm: fix SW flags passed by user"[2].
+>
+> The code removal in this series looks good, but the move from
+> one proprietary iommu API to another proprietary iommu API
+> seems pointless.
+>
+> It would be much more helpful if you could convert the tidspbridge
+> code to the dma-mapping API, or to the generic iommu API
+> and provide these interfaces from the omap code.
 
-thanks,
+Yes, I thought removing a bunch of lines from staging might be good.
+I'll check what can be done to use generic iommu or dma-mapping.
 
-greg k-h
+Thanks,
+
+Omar
