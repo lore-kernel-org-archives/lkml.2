@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750936Ab1ECHLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 03:11:06 -0400
-Received: from narfation.org ([79.140.41.39]:52540 "EHLO v3-1039.vlinux.de"
+	id S1751071Ab1ECHIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:08:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44560 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab1ECHLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 03:11:05 -0400
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 03:11:05 EDT
-From: Sven Eckelmann <sven@narfation.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH tip/core/rcu 5/7] batman,rcu: convert call_rcu(softif_neigh_free_rcu) to kfree_rcu
-Date: Tue, 3 May 2011 09:02:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-2-686; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-References: <20110502161321.GA6537@linux.vnet.ibm.com> <1304352824-6563-5-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1304352824-6563-5-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1750740Ab1ECHIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 03:08:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,307,1301900400"; 
+   d="scan'208";a="637055152"
+Message-ID: <4DBFA9F5.40608@intel.com>
+Date: Tue, 03 May 2011 00:08:37 -0700
+From: Joseph Cihula <joseph.cihula@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2456045.IMDECmqdMY";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
+To: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+CC: "Wei, Gang" <gang.wei@intel.com>, Chris Wright <chrisw@sous-sol.org>
+Subject: [PATCH] intel_iommu: fix VT-d PMR disable for TXT on S3 resume
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105030902.55733.sven@narfation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2456045.IMDECmqdMY
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+This patch is a follow on to https://lkml.org/lkml/2011/3/21/239, which
+was merged as commit 51a63e67da6056c13b5b597dcc9e1b3bd7ceaa55.
 
-On Monday 02 May 2011 18:13:42 Paul E. McKenney wrote:
-> The RCU callback softif_neigh_free_rcu() just calls kfree(), so we can
-> use kfree_rcu() instead of call_rcu().
->=20
-[...]
-> The RCU callback neigh_node_free_rcu() just calls kfree(), so we can use
-> kfree_rcu() instead of call_rcu().
-[...]
-> The RCU callback gw_node_free_rcu() just calls kfree(), so we can use
-> kfree_rcu() instead of call_rcu().
+This patch adds support for S3, as pointed out by Chris Wright.
 
-Thanks, I am fine with Patch 3/7, 4/7, 5/7.
+Signed-off-by:  Joseph Cihula <joseph.cihula@intel.com>
 
-Acked-by: Sven Eckelmann <sven@narfation.org>
+ drivers/pci/intel-iommu.c |   31 +++++++++++++++++++++++++------
+ 1 files changed, 25 insertions(+), 6 deletions(-)
 
---nextPart2456045.IMDECmqdMY
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+index d552d2c..6eeaebf 100644
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -142,6 +142,12 @@ static void __init check_tylersburg_isoch(void);
+ static int rwbf_quirk;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ /*
++ * set to 1 to panic kernel if can't successfully enable VT-d
++ * (used when kernel is launched w/ TXT)
++ */
++static int force_on = 0;
++
++/*
+  * 0: Present
+  * 1-11: Reserved
+  * 12-63: Context Ptr (12 - (haw-1))
+@@ -2217,7 +2223,7 @@ static int __init
+iommu_prepare_static_identity_mapping(int hw)
+ 	return 0;
+ }
 
-iQIcBAABCgAGBQJNv6icAAoJEF2HCgfBJntGDLYP/0EwYgGQPUZJmEWdNJEgTKJW
-TFcI95LcGzXKkwGkszMXPRvucorZUemYdiu3ylAzy4VGHslCTBQ4GfybXsDhUREV
-H+eOzwJ8Yrt5NHUtg6RHyP1Vn8wYsSWA+i1aV1cfsmwpAqRScdPu8WG0+uVYKLNn
-zk45HQTvVzjZMpmSCEMwxn8mGxh6GNGKzbRlQaNFzDckiOVJjqeyh6XxUv4uTfnO
-DxORUoZvL/FmNsMrfGb1DH6DeCRVHlGrmXeaN/44qWvT0PYKVv14WIRJtMPcQQil
-+7koqG2bvbtF9meRvVgaDVVhPEQ4bwzEzocUULnB9ucr3dyqk9hNkk/QwJ7Wa8A7
-6n4i2Fc4dDvvD+7jqhbZ+4SWzX3cGCMUHv21IJCN+sf/nkwgY5CBR8UM17pFJqAk
-WQSZtcQTTqrVwnbnjju3PIPVCpr72BNAReXi+V+CdGuXO2kWZPEHIrH1HCvJ5qVa
-zFWeUaMo61YpkTeJuLW20kuSDTx7WWr9dzR/0KrhUXrsowhaV4R/YAFft9xjNjE/
-OWMQRLRro3+DSSeNvn12DFe9a8EtcWS5g+e/Snsg0MkkvZ7kTKqlruIQO/VNQKLV
-fRatHU2IKOej7YFBpR2FoWUiWQuW4gEQ6hbGYUaq0O6IY5y6/+R79893R53TLMyZ
-00MlRxgOYI4bunz9A8KY
-=zh0v
------END PGP SIGNATURE-----
+-static int __init init_dmars(int force_on)
++static int __init init_dmars(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	struct dmar_rmrr_unit *rmrr;
+@@ -3117,7 +3123,17 @@ static int init_iommu_hw(void)
+ 		if (iommu->qi)
+ 			dmar_reenable_qi(iommu);
 
---nextPart2456045.IMDECmqdMY--
+-	for_each_active_iommu(iommu, drhd) {
++	for_each_iommu(iommu, drhd) {
++		if (drhd->ignored) {
++			/*
++			 * we always have to disable PMRs or DMA may fail on
++			 * this device
++			 */
++			if (force_on)
++				iommu_disable_protect_mem_regions(iommu);
++			continue;
++		}
++	
+ 		iommu_flush_write_buffer(iommu);
+
+ 		iommu_set_root_entry(iommu);
+@@ -3126,7 +3142,8 @@ static int init_iommu_hw(void)
+ 					   DMA_CCMD_GLOBAL_INVL);
+ 		iommu->flush.flush_iotlb(iommu, 0, 0, 0,
+ 					 DMA_TLB_GLOBAL_FLUSH);
+-		iommu_enable_translation(iommu);
++		if (iommu_enable_translation(iommu))
++			return 1;
+ 		iommu_disable_protect_mem_regions(iommu);
+ 	}
+
+@@ -3193,7 +3210,10 @@ static void iommu_resume(void)
+ 	unsigned long flag;
+
+ 	if (init_iommu_hw()) {
+-		WARN(1, "IOMMU setup failed, DMAR can not resume!\n");
++		if (force_on)
++			panic("tboot: IOMMU setup failed, DMAR can not resume!\n");
++		else
++			WARN(1, "IOMMU setup failed, DMAR can not resume!\n");
+ 		return;
+ 	}
+
+@@ -3270,7 +3290,6 @@ static struct notifier_block device_nb = {
+ int __init intel_iommu_init(void)
+ {
+ 	int ret = 0;
+-	int force_on = 0;
+
+ 	/* VT-d is required for a TXT/tboot launch, so enforce that */
+ 	force_on = tboot_force_iommu();
+@@ -3308,7 +3327,7 @@ int __init intel_iommu_init(void)
+
+ 	init_no_remapping_devices();
+
+-	ret = init_dmars(force_on);
++	ret = init_dmars();
+ 	if (ret) {
+ 		if (force_on)
+ 			panic("tboot: Failed to initialize DMARs\n");
