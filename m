@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab1ECSto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:49:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59605 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab1ECStm convert rfc822-to-8bit (ORCPT
+	id S1754578Ab1ECSvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 14:51:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60193 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab1ECSvi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:49:42 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 2/2] usbnet: Convert dbg to dev_dbg and neatening
-Date: Tue, 3 May 2011 20:51:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <cover.1304445019.git.joe@perches.com> <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
-In-Reply-To: <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
+	Tue, 3 May 2011 14:51:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NpHlNB+sdzgXGdHcV/G05QKJs6h3py+iNVxFiV+WCIncdnfLMO+LDiks+a4q30PoZU
+         Hb8VHJ7cc/NbYXwp9uPuNCmbUzh8AE8gX4ibtvfFp63numIQ0i0V0GgrvRyqj7dpp71Q
+         akbHBNqsWxLcU/4eW0mXNjRXpiMA5vxPGl3lU=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+In-Reply-To: <20110503130123.GA23498@redhat.com>
+References: <BANLkTikAun3_-WyKE0RJiXei=QGXQ1g+JQ@mail.gmail.com>
+	<20110503130123.GA23498@redhat.com>
+Date: Tue, 3 May 2011 20:51:37 +0200
+Message-ID: <BANLkTi=oqFwfm2q12FyVR0xSOKABG-PtPA@mail.gmail.com>
+Subject: Re: Hard LOCKUP, maybe acpi related (present in 2.6.32 to 2.6.37,
+ fixed in 2.6.38)
+From: =?ISO-8859-1?Q?Sebastian_F=E4rber?= <faerber@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201105032051.17025.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 3. Mai 2011, 20:17:58 schrieb Joe Perches:
-> Use the more standard logging form.
-> Add a bit more tidying style.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+>
+> It looks like you are using the old nmi watchdog which may have given you
+> false positives.  Can you turn on the new nmi watchdog (for 2.6.36 or
+> later)?
+>
+> CONFIG_LOCKUP_DETECTOR=y
+> CONFIG_HARDLOCKUP_DETECTOR=y
+>
+> and see if that gives a more meaningful backtrace?
 
-Please do not mix changes like that. Either only coding style or only
-other cleanups.
+I've recompiled 2.6.36.4 and 2.6.37.6 with both options enabled and
+removed "nmi_watchdog=1" from the
+kernel cmdline.
+I'll get back to you if i get another lockup, could take a few days
+unfortunatly.
+Thanks for your help!
 
-	Regards
-		Oliver
-
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+Regards,
+Sebastian
