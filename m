@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1ECNVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 09:21:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1ECNVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 09:21:36 -0400
-Date: Tue, 3 May 2011 16:21:23 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, avi@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 2/2] KVM: make guest mode entry to be rcu quiescent
- state
-Message-ID: <20110503132123.GV2265@redhat.com>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-3-git-send-email-gleb@redhat.com>
- <20110503131317.GA4244@amt.cnet>
+	id S1752272Ab1ECNVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 09:21:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52418 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752011Ab1ECNVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 09:21:41 -0400
+Date: Tue, 3 May 2011 14:21:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC patch 29/32] trace event asoc remove semicolons
+Message-ID: <20110503132138.GL1762@opensource.wolfsonmicro.com>
+References: <20110502211123.163877033@efficios.com>
+ <20110502213216.050459585@efficios.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110503131317.GA4244@amt.cnet>
+In-Reply-To: <20110502213216.050459585@efficios.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 10:13:17AM -0300, Marcelo Tosatti wrote:
-> Hi Gleb,
-> 
-> Thats a neat idea.
-> 
-> On Thu, Apr 28, 2011 at 12:52:03PM +0300, Gleb Natapov wrote:
-> > KVM does not hold any references to rcu protected data when it switches
-> > CPU into a guest mode. In fact switching to a guest mode is very similar
-> > to exiting to userspase from rcu point of view. In addition CPU may stay
-> > in a guest mode for quite a long time (up to one time slice). Lets treat
-> > guest mode as quiescent state, just like we do with user-mode execution.
-> > 
-> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > ---
-> >  include/linux/kvm_host.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index 0bc3d37..a347bce 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -593,6 +593,7 @@ static inline void kvm_guest_enter(void)
-> >  {
-> >  	account_system_vtime(current);
-> >  	current->flags |= PF_VCPU;
-> > +	rcu_note_context_switch(smp_processor_id());
-> >  }
-> >  
-> >  static inline void kvm_guest_exit(void)
-> > -- 
-> > 1.7.2.3
-> 
-> Please have it in x86's vcpu_enter_guest, then its more explicit
-> (uncertain about the context of kvm_guest_enter call in other arches).
-> 
-I checked all of them and kvm_guest_enter() is always called with local
-irq disabled. Paul confirmed that rcu_note_context_switch() can be
-called in such context.
+On Mon, May 02, 2011 at 05:11:52PM -0400, Mathieu Desnoyers wrote:
+> Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
+> of events, thus saving space for trace event probes.
 
---
-			Gleb.
+Can I apply this in my tree or does this depend on some earlier patch I
+don't have?
+
+> +#ifndef _TRACE_ASOC_DEF_
+> +#define _TRACE_ASOC_DEF_
+> +
+>  struct snd_soc_jack;
+>  struct snd_soc_codec;
+>  struct snd_soc_card;
+>  struct snd_soc_dapm_widget;
+>  
+> +#endif /* _TRACE_ASOC_DEF_ */
+
+This is an unrelated change and should be split out.  Frankly I'm not
+that this is an improvement anyway, the struct declarations aren't going
+to do any harm...
