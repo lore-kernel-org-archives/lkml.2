@@ -1,199 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab1ECXTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:19:36 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:44076 "EHLO smtp.polymtl.ca"
+	id S1755417Ab1ECXRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:17:14 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:55774 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754567Ab1ECXOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:14:51 -0400
-Message-Id: <20110503231428.912997744@efficios.com>
+	id S1755281Ab1ECXPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:15:03 -0400
+Message-Id: <20110503231429.079545919@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 19:10:52 -0400
+Date: Tue, 03 May 2011 19:10:53 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@slimlogic.co.uk
-Subject: [RFC patch 29/32] trace event asoc: semicolon removal
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [RFC patch 30/32] trace event compaction remove semicolons
 References: <20110503231023.968960757@efficios.com>
-Content-Disposition: inline; filename=trace-event-asoc-remove-semicolons.patch
+Content-Disposition: inline; filename=trace-event-compaction-remove-semicolons.patch
 X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:29 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
-of events, thus saving space for trace event probes. This is done by removing
-the semicolons at the end of the DECLARE_EVENT_CLASS(), DEFINE_EVENT() and
-TRACE_EVENT() declarations.
+of events, thus saving space for trace event probes.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: lrg@slimlogic.co.uk
+CC: Mel Gorman <mel@csn.ul.ie>
 ---
- include/trace/events/asoc.h |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ include/trace/events/compaction.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/asoc.h
+Index: linux-2.6-lttng/include/trace/events/compaction.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/asoc.h
-+++ linux-2.6-lttng/include/trace/events/asoc.h
-@@ -39,7 +39,7 @@ DECLARE_EVENT_CLASS(snd_soc_reg,
- 	TP_printk("codec=%s.%d reg=%x val=%x", __get_str(name),
- 		  (int)__entry->id, (unsigned int)__entry->reg,
- 		  (unsigned int)__entry->val)
+--- linux-2.6-lttng.orig/include/trace/events/compaction.h
++++ linux-2.6-lttng/include/trace/events/compaction.h
+@@ -28,7 +28,7 @@ DECLARE_EVENT_CLASS(mm_compaction_isolat
+ 	TP_printk("nr_scanned=%lu nr_taken=%lu",
+ 		__entry->nr_scanned,
+ 		__entry->nr_taken)
 -);
 +)
  
- DEFINE_EVENT(snd_soc_reg, snd_soc_reg_write,
+ DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_migratepages,
  
-@@ -48,7 +48,7 @@ DEFINE_EVENT(snd_soc_reg, snd_soc_reg_wr
+@@ -36,14 +36,14 @@ DEFINE_EVENT(mm_compaction_isolate_templ
+ 		unsigned long nr_taken),
  
- 	TP_ARGS(codec, reg, val)
- 
+ 	TP_ARGS(nr_scanned, nr_taken)
 -);
 +)
  
- DEFINE_EVENT(snd_soc_reg, snd_soc_reg_read,
+ DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_freepages,
+ 	TP_PROTO(unsigned long nr_scanned,
+ 		unsigned long nr_taken),
  
-@@ -57,7 +57,7 @@ DEFINE_EVENT(snd_soc_reg, snd_soc_reg_re
- 
- 	TP_ARGS(codec, reg, val)
- 
+ 	TP_ARGS(nr_scanned, nr_taken)
 -);
 +)
  
- DECLARE_EVENT_CLASS(snd_soc_card,
+ TRACE_EVENT(mm_compaction_migratepages,
  
-@@ -76,7 +76,7 @@ DECLARE_EVENT_CLASS(snd_soc_card,
- 	),
- 
- 	TP_printk("card=%s val=%d", __get_str(name), (int)__entry->val)
+@@ -65,7 +65,7 @@ TRACE_EVENT(mm_compaction_migratepages,
+ 	TP_printk("nr_migrated=%lu nr_failed=%lu",
+ 		__entry->nr_migrated,
+ 		__entry->nr_failed)
 -);
 +)
  
- DEFINE_EVENT(snd_soc_card, snd_soc_bias_level_start,
  
-@@ -84,7 +84,7 @@ DEFINE_EVENT(snd_soc_card, snd_soc_bias_
- 
- 	TP_ARGS(card, val)
- 
--);
-+)
- 
- DEFINE_EVENT(snd_soc_card, snd_soc_bias_level_done,
- 
-@@ -92,7 +92,7 @@ DEFINE_EVENT(snd_soc_card, snd_soc_bias_
- 
- 	TP_ARGS(card, val)
- 
--);
-+)
- 
- DECLARE_EVENT_CLASS(snd_soc_dapm_basic,
- 
-@@ -109,7 +109,7 @@ DECLARE_EVENT_CLASS(snd_soc_dapm_basic,
- 	),
- 
- 	TP_printk("card=%s", __get_str(name))
--);
-+)
- 
- DEFINE_EVENT(snd_soc_dapm_basic, snd_soc_dapm_start,
- 
-@@ -117,7 +117,7 @@ DEFINE_EVENT(snd_soc_dapm_basic, snd_soc
- 
- 	TP_ARGS(card)
- 
--);
-+)
- 
- DEFINE_EVENT(snd_soc_dapm_basic, snd_soc_dapm_done,
- 
-@@ -125,7 +125,7 @@ DEFINE_EVENT(snd_soc_dapm_basic, snd_soc
- 
- 	TP_ARGS(card)
- 
--);
-+)
- 
- DECLARE_EVENT_CLASS(snd_soc_dapm_widget,
- 
-@@ -145,7 +145,7 @@ DECLARE_EVENT_CLASS(snd_soc_dapm_widget,
- 
- 	TP_printk("widget=%s val=%d", __get_str(name),
- 		  (int)__entry->val)
--);
-+)
- 
- DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_power,
- 
-@@ -153,7 +153,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
- 
- 	TP_ARGS(w, val)
- 
--);
-+)
- 
- DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_event_start,
- 
-@@ -161,7 +161,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
- 
- 	TP_ARGS(w, val)
- 
--);
-+)
- 
- DEFINE_EVENT(snd_soc_dapm_widget, snd_soc_dapm_widget_event_done,
- 
-@@ -169,7 +169,7 @@ DEFINE_EVENT(snd_soc_dapm_widget, snd_so
- 
- 	TP_ARGS(w, val)
- 
--);
-+)
- 
- TRACE_EVENT(snd_soc_jack_irq,
- 
-@@ -186,7 +186,7 @@ TRACE_EVENT(snd_soc_jack_irq,
- 	),
- 
- 	TP_printk("%s", __get_str(name))
--);
-+)
- 
- TRACE_EVENT(snd_soc_jack_report,
- 
-@@ -208,7 +208,7 @@ TRACE_EVENT(snd_soc_jack_report,
- 
- 	TP_printk("jack=%s %x/%x", __get_str(name), (int)__entry->val,
- 		  (int)__entry->mask)
--);
-+)
- 
- TRACE_EVENT(snd_soc_jack_notify,
- 
-@@ -227,7 +227,7 @@ TRACE_EVENT(snd_soc_jack_notify,
- 	),
- 
- 	TP_printk("jack=%s %x", __get_str(name), (int)__entry->val)
--);
-+)
- 
- TRACE_EVENT(snd_soc_cache_sync,
- 
-@@ -252,7 +252,7 @@ TRACE_EVENT(snd_soc_cache_sync,
- 
- 	TP_printk("codec=%s.%d type=%s status=%s", __get_str(name),
- 		  (int)__entry->id, __get_str(type), __get_str(status))
--);
-+)
- 
- #endif /* _TRACE_ASOC_H */
- 
+ #endif /* _TRACE_COMPACTION_H */
 
