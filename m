@@ -1,209 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab1ECXTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 19:19:54 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:41670 "EHLO smtp.polymtl.ca"
+	id S1755105Ab1ECXSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 19:18:49 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:49243 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480Ab1ECXOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 19:14:50 -0400
-Message-Id: <20110503231426.570016401@efficios.com>
+	id S1754281Ab1ECXOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 19:14:52 -0400
+Message-Id: <20110503231426.737770568@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 19:10:38 -0400
+Date: Tue, 03 May 2011 19:10:39 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC patch 15/32] trace event sched remove trailing semicolon
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+        Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [RFC patch 16/32] trace event scsi remove semicolons
 References: <20110503231023.968960757@efficios.com>
-Content-Disposition: inline; filename=trace-event-sched-remove-semicolons.patch
-X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:26 +0000
+Content-Disposition: inline; filename=trace-event-scsi-remove-semicolons.patch
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Tue,  3 May 2011 23:14:27 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
-of events, thus saving space for trace event probes. Remove the trailing
-semicolons at the end of TRACE_EVENT() and DEFINE_EVENT() in scheduler
-instrumentation.
+of events, thus saving space for trace event probes.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+CC: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+CC: James Bottomley <James.Bottomley@suse.de>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- include/trace/events/sched.h |   38 +++++++++++++++++++-------------------
- 1 file changed, 19 insertions(+), 19 deletions(-)
+ include/trace/events/scsi.h |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/sched.h
+Index: linux-2.6-lttng/include/trace/events/scsi.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/sched.h
-+++ linux-2.6-lttng/include/trace/events/sched.h
-@@ -27,7 +27,7 @@ TRACE_EVENT(sched_kthread_stop,
+--- linux-2.6-lttng.orig/include/trace/events/scsi.h
++++ linux-2.6-lttng/include/trace/events/scsi.h
+@@ -238,7 +243,7 @@ TRACE_EVENT(scsi_dispatch_cmd_start,
+ 		  show_opcode_name(__entry->opcode),
+ 		  __parse_cdb(__get_dynamic_array(cmnd), __entry->cmd_len),
+ 		  __print_hex(__get_dynamic_array(cmnd), __entry->cmd_len))
+-);
++)
+ 
+ TRACE_EVENT(scsi_dispatch_cmd_error,
+ 
+@@ -283,7 +288,7 @@ TRACE_EVENT(scsi_dispatch_cmd_error,
+ 		  __parse_cdb(__get_dynamic_array(cmnd), __entry->cmd_len),
+ 		  __print_hex(__get_dynamic_array(cmnd), __entry->cmd_len),
+ 		  __entry->rtn)
+-);
++)
+ 
+ DECLARE_EVENT_CLASS(scsi_cmd_done_timeout_template,
+ 
+@@ -332,15 +337,15 @@ DECLARE_EVENT_CLASS(scsi_cmd_done_timeou
+ 		  show_hostbyte_name(((__entry->result) >> 16) & 0xff),
+ 		  show_msgbyte_name(((__entry->result) >> 8) & 0xff),
+ 		  show_statusbyte_name(__entry->result & 0xff))
+-);
++)
+ 
+ DEFINE_EVENT(scsi_cmd_done_timeout_template, scsi_dispatch_cmd_done,
+ 	     TP_PROTO(struct scsi_cmnd *cmd),
+-	     TP_ARGS(cmd));
++	     TP_ARGS(cmd))
+ 
+ DEFINE_EVENT(scsi_cmd_done_timeout_template, scsi_dispatch_cmd_timeout,
+ 	     TP_PROTO(struct scsi_cmnd *cmd),
+-	     TP_ARGS(cmd));
++	     TP_ARGS(cmd))
+ 
+ TRACE_EVENT(scsi_eh_wakeup,
+ 
+@@ -357,7 +362,7 @@ TRACE_EVENT(scsi_eh_wakeup,
  	),
  
- 	TP_printk("comm=%s pid=%d", __entry->comm, __entry->pid)
+ 	TP_printk("host_no=%u", __entry->host_no)
 -);
 +)
  
- /*
-  * Tracepoint for the return value of the kthread stopping:
-@@ -47,7 +47,7 @@ TRACE_EVENT(sched_kthread_stop_ret,
- 	),
- 
- 	TP_printk("ret=%d", __entry->ret)
--);
-+)
- 
- /*
-  * Tracepoint for waking up a task:
-@@ -77,18 +77,18 @@ DECLARE_EVENT_CLASS(sched_wakeup_templat
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
- 		  __entry->comm, __entry->pid, __entry->prio,
- 		  __entry->success, __entry->target_cpu)
--);
-+)
- 
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup,
- 	     TP_PROTO(struct task_struct *p, int success),
--	     TP_ARGS(p, success));
-+	     TP_ARGS(p, success))
- 
- /*
-  * Tracepoint for waking up a new task:
-  */
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
- 	     TP_PROTO(struct task_struct *p, int success),
--	     TP_ARGS(p, success));
-+	     TP_ARGS(p, success))
- 
- #ifdef CREATE_TRACE_POINTS
- static inline long __trace_sched_switch_state(struct task_struct *p)
-@@ -145,7 +145,7 @@ TRACE_EVENT(sched_switch,
- 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
- 				{ 128, "W" }) : "R",
- 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
--);
-+)
- 
- /*
-  * Tracepoint for a task being migrated:
-@@ -175,7 +175,7 @@ TRACE_EVENT(sched_migrate_task,
- 	TP_printk("comm=%s pid=%d prio=%d orig_cpu=%d dest_cpu=%d",
- 		  __entry->comm, __entry->pid, __entry->prio,
- 		  __entry->orig_cpu, __entry->dest_cpu)
--);
-+)
- 
- DECLARE_EVENT_CLASS(sched_process_template,
- 
-@@ -197,14 +197,14 @@ DECLARE_EVENT_CLASS(sched_process_templa
- 
- 	TP_printk("comm=%s pid=%d prio=%d",
- 		  __entry->comm, __entry->pid, __entry->prio)
--);
-+)
- 
- /*
-  * Tracepoint for freeing a task:
-  */
- DEFINE_EVENT(sched_process_template, sched_process_free,
- 	     TP_PROTO(struct task_struct *p),
--	     TP_ARGS(p));
-+	     TP_ARGS(p))
- 	     
- 
- /*
-@@ -212,14 +212,14 @@ DEFINE_EVENT(sched_process_template, sch
-  */
- DEFINE_EVENT(sched_process_template, sched_process_exit,
- 	     TP_PROTO(struct task_struct *p),
--	     TP_ARGS(p));
-+	     TP_ARGS(p))
- 
- /*
-  * Tracepoint for waiting on task to unschedule:
-  */
- DEFINE_EVENT(sched_process_template, sched_wait_task,
- 	TP_PROTO(struct task_struct *p),
--	TP_ARGS(p));
-+	TP_ARGS(p))
- 
- /*
-  * Tracepoint for a waiting task:
-@@ -244,7 +244,7 @@ TRACE_EVENT(sched_process_wait,
- 
- 	TP_printk("comm=%s pid=%d prio=%d",
- 		  __entry->comm, __entry->pid, __entry->prio)
--);
-+)
- 
- /*
-  * Tracepoint for do_fork:
-@@ -272,7 +272,7 @@ TRACE_EVENT(sched_process_fork,
- 	TP_printk("comm=%s pid=%d child_comm=%s child_pid=%d",
- 		__entry->parent_comm, __entry->parent_pid,
- 		__entry->child_comm, __entry->child_pid)
--);
-+)
- 
- /*
-  * XXX the below sched_stat tracepoints only apply to SCHED_OTHER/BATCH/IDLE
-@@ -302,7 +302,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
- 			__entry->comm, __entry->pid,
- 			(unsigned long long)__entry->delay)
--);
-+)
- 
- 
- /*
-@@ -311,7 +311,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
-  */
- DEFINE_EVENT(sched_stat_template, sched_stat_wait,
- 	     TP_PROTO(struct task_struct *tsk, u64 delay),
--	     TP_ARGS(tsk, delay));
-+	     TP_ARGS(tsk, delay))
- 
- /*
-  * Tracepoint for accounting sleep time (time the task is not runnable,
-@@ -319,7 +319,7 @@ DEFINE_EVENT(sched_stat_template, sched_
-  */
- DEFINE_EVENT(sched_stat_template, sched_stat_sleep,
- 	     TP_PROTO(struct task_struct *tsk, u64 delay),
--	     TP_ARGS(tsk, delay));
-+	     TP_ARGS(tsk, delay))
- 
- /*
-  * Tracepoint for accounting iowait time (time the task is not runnable
-@@ -327,7 +327,7 @@ DEFINE_EVENT(sched_stat_template, sched_
-  */
- DEFINE_EVENT(sched_stat_template, sched_stat_iowait,
- 	     TP_PROTO(struct task_struct *tsk, u64 delay),
--	     TP_ARGS(tsk, delay));
-+	     TP_ARGS(tsk, delay))
- 
- /*
-  * Tracepoint for accounting runtime (time the task is executing
-@@ -360,7 +360,7 @@ TRACE_EVENT(sched_stat_runtime,
- 			__entry->comm, __entry->pid,
- 			(unsigned long long)__entry->runtime,
- 			(unsigned long long)__entry->vruntime)
--);
-+)
- 
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-@@ -389,7 +389,7 @@ TRACE_EVENT(sched_pi_setprio,
- 	TP_printk("comm=%s pid=%d oldprio=%d newprio=%d",
- 			__entry->comm, __entry->pid,
- 			__entry->oldprio, __entry->newprio)
--);
-+)
- 
- #endif /* _TRACE_SCHED_H */
+ #endif /*  _TRACE_SCSI_H */
  
 
