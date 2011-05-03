@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1ECQyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:54:55 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45625 "EHLO
+	id S1754365Ab1ECRxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:53:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36881 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab1ECQxD (ORCPT
+	with ESMTP id S1753884Ab1ECRxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:53:03 -0400
-X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 12:52:53 EDT
+	Tue, 3 May 2011 13:53:04 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 06/23] intel_sst: parameter tuning ioctl
+Subject: [PATCH 07/23] intel_sst: DMIC routing
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 03 May 2011 17:32:49 +0100
-Message-ID: <20110503163248.24853.15491.stgit@bob.linux.org.uk>
+Date: Tue, 03 May 2011 17:33:01 +0100
+Message-ID: <20110503163300.24853.62800.stgit@bob.linux.org.uk>
 In-Reply-To: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
 References: <20110503162919.24853.58699.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,160 +22,407 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinod Koul <vinod.koul@intel.com>
+From: Sitanshu Nanavati <sitanshu.nanavati@intel.com>
 
-This patch adds new IOCTL for application interface.
+This patch adds support for configuring and routing the
+DMICs (assigned HW route to DMICs)
 
-Using parameter tuning IOCTL, application can fine
-tune the audio firmware for it's requirement.
-
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Sitanshu Nanavati <sitanshu.nanavati@intel.com>
 Signed-off-by: Ramesh Babu K V <ramesh.babu@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- .../staging/intel_sst/intel_sst_app_interface.c    |   37 ++++++++++++++++++++
- drivers/staging/intel_sst/intel_sst_common.h       |    4 +-
- drivers/staging/intel_sst/intel_sst_fw_ipc.h       |    1 +
- drivers/staging/intel_sst/intel_sst_ioctl.h        |    8 ++++
- drivers/staging/intel_sst/intel_sst_ipc.c          |   18 ++++++++++
- 5 files changed, 66 insertions(+), 2 deletions(-)
+ drivers/staging/intel_sst/intel_sst.h             |    4 
+ drivers/staging/intel_sst/intel_sst_stream.c      |    2 
+ drivers/staging/intel_sst/intelmid.h              |   11 +
+ drivers/staging/intel_sst/intelmid_ctrl.c         |  198 +++++++++++++++++++++
+ drivers/staging/intel_sst/intelmid_msic_control.c |   58 ++++++
+ 5 files changed, 270 insertions(+), 3 deletions(-)
 
 
-diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
-index d7454e2..b8c7ddb 100644
---- a/drivers/staging/intel_sst/intel_sst_app_interface.c
-+++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
-@@ -961,6 +961,34 @@ free_mem:
+diff --git a/drivers/staging/intel_sst/intel_sst.h b/drivers/staging/intel_sst/intel_sst.h
+index ea6cd97..c0d3156 100644
+--- a/drivers/staging/intel_sst/intel_sst.h
++++ b/drivers/staging/intel_sst/intel_sst.h
+@@ -33,6 +33,7 @@
+ 
+ #define SST_CARD_NAMES "intel_mid_card"
+ 
++#define MFLD_MAX_HW_CH 4
+ /* control list Pmic & Lpe */
+ /* Input controls */
+ enum port_status {
+@@ -108,6 +109,9 @@ struct snd_pmic_ops {
+ 	int (*power_down_pmic_pb) (unsigned int device);
+ 	int (*power_down_pmic_cp) (unsigned int device);
+ 	int (*power_down_pmic) (void);
++	unsigned int hw_dmic_map[MFLD_MAX_HW_CH];
++	unsigned int available_dmics;
++	int (*set_hw_dmic_route) (u8 index);
+ };
+ 
+ struct intel_sst_pcm_control {
+diff --git a/drivers/staging/intel_sst/intel_sst_stream.c b/drivers/staging/intel_sst/intel_sst_stream.c
+index dd9c530..be4565e 100644
+--- a/drivers/staging/intel_sst/intel_sst_stream.c
++++ b/drivers/staging/intel_sst/intel_sst_stream.c
+@@ -48,7 +48,7 @@
+  */
+ int sst_check_device_type(u32 device, u32 num_chan, u32 *pcm_slot)
+ {
+-	if (device > MAX_NUM_STREAMS_MFLD) {
++	if (device >= MAX_NUM_STREAMS_MFLD) {
+ 		pr_debug("device type invalid %d\n", device);
+ 		return -EINVAL;
+ 	}
+diff --git a/drivers/staging/intel_sst/intelmid.h b/drivers/staging/intel_sst/intelmid.h
+index 4ed4a94..7b3dbf6 100644
+--- a/drivers/staging/intel_sst/intelmid.h
++++ b/drivers/staging/intel_sst/intelmid.h
+@@ -28,6 +28,7 @@
+ #define __INTELMID_H
+ 
+ #include <linux/time.h>
++#include <sound/jack.h>
+ 
+ #define DRIVER_NAME_MFLD "msic_audio"
+ #define DRIVER_NAME_MRST "pmic_audio"
+@@ -43,7 +44,7 @@
+ #define MAX_BUFFER		(800*1024) /* for PCM */
+ #define MIN_BUFFER		(800*1024)
+ #define MAX_PERIODS		(1024*2)
+-#define MIN_PERIODS		1
++#define MIN_PERIODS		2
+ #define MAX_PERIOD_BYTES MAX_BUFFER
+ #define MIN_PERIOD_BYTES 32
+ /*#define MIN_PERIOD_BYTES 160*/
+@@ -57,7 +58,7 @@
+ #define FIFO_SIZE		0 /* fifo not being used */
+ #define INTEL_MAD		"Intel MAD"
+ #define MAX_CTRL_MRST		7
+-#define MAX_CTRL_MFLD		3
++#define MAX_CTRL_MFLD		7
+ #define MAX_CTRL		7
+ #define MAX_VENDORS		4
+ /* TODO +6 db */
+@@ -167,6 +168,12 @@ enum _widget_ctrl {
+ enum _widget_ctrl_mfld {
+ 	LINEOUT_SEL_MFLD = 3,
+ };
++enum hw_chs {
++	HW_CH0 = 0,
++	HW_CH1,
++	HW_CH2,
++	HW_CH3
++};
+ 
+ void period_elapsed(void *mad_substream);
+ int snd_intelmad_alloc_stream(struct snd_pcm_substream *substream);
+diff --git a/drivers/staging/intel_sst/intelmid_ctrl.c b/drivers/staging/intel_sst/intelmid_ctrl.c
+index 3036928..dbe29c3 100644
+--- a/drivers/staging/intel_sst/intelmid_ctrl.c
++++ b/drivers/staging/intel_sst/intelmid_ctrl.c
+@@ -35,6 +35,22 @@
+ #include "intelmid_snd_control.h"
+ #include "intelmid.h"
+ 
++#define HW_CH_BASE 4
++
++
++#define HW_CH_0	"Hw1"
++#define HW_CH_1	"Hw2"
++#define HW_CH_2	"Hw3"
++#define HW_CH_3	"Hw4"
++
++static char *router_dmics[] = {	"DMIC1",
++				"DMIC2",
++				"DMIC3",
++				"DMIC4",
++				"DMIC5",
++				"DMIC6"
++				};
++
+ static char *out_names_mrst[] = {"Headphones",
+ 				"Internal speakers"};
+ static char *in_names_mrst[] = {"AMIC",
+@@ -574,6 +590,152 @@ static int snd_intelmad_device_set(struct snd_kcontrol *kcontrol,
+ 	return ret_val;
+ }
+ 
++static int snd_intelmad_device_dmic_get(struct snd_kcontrol *kcontrol,
++					struct snd_ctl_elem_value *uval)
++{
++	struct snd_intelmad *intelmaddata;
++	struct snd_pmic_ops *scard_ops;
++
++	WARN_ON(!uval);
++	WARN_ON(!kcontrol);
++
++	intelmaddata = kcontrol->private_data;
++	scard_ops = intelmaddata->sstdrv_ops->scard_ops;
++
++	if (scard_ops->input_dev_id != DMIC) {
++		pr_debug("input dev = 0x%x\n", scard_ops->input_dev_id);
++		return 0;
++	}
++
++	if (intelmaddata->cpu_id == CPU_CHIP_PENWELL)
++		uval->value.enumerated.item[0] = kcontrol->private_value;
++	else
++		pr_debug(" CPU id = 0x%xis invalid.\n",
++			intelmaddata->cpu_id);
++	return 0;
++}
++
++void msic_set_bit(u8 index, unsigned int *available_dmics)
++{
++	*available_dmics |= (1 << index);
++}
++
++void msic_clear_bit(u8 index, unsigned int *available_dmics)
++{
++	*available_dmics &= ~(1 << index);
++}
++
++int msic_is_set_bit(u8 index, unsigned int *available_dmics)
++{
++	int ret_val;
++
++	ret_val = (*available_dmics & (1 << index));
++	return ret_val;
++}
++
++static int snd_intelmad_device_dmic_set(struct snd_kcontrol *kcontrol,
++					struct snd_ctl_elem_value *uval)
++{
++	struct snd_intelmad *intelmaddata;
++	struct snd_pmic_ops *scard_ops;
++	int i, dmic_index;
++	unsigned int available_dmics;
++	int jump_count;
++	int max_dmics = ARRAY_SIZE(router_dmics);
++
++	WARN_ON(!uval);
++	WARN_ON(!kcontrol);
++
++	intelmaddata = kcontrol->private_data;
++	WARN_ON(!intelmaddata->sstdrv_ops);
++
++	scard_ops = intelmaddata->sstdrv_ops->scard_ops;
++	WARN_ON(!scard_ops);
++
++	if (scard_ops->input_dev_id != DMIC) {
++		pr_debug("input dev = 0x%x\n", scard_ops->input_dev_id);
++		return 0;
++	}
++
++	available_dmics = scard_ops->available_dmics;
++
++	if (kcontrol->private_value > uval->value.enumerated.item[0]) {
++		pr_debug("jump count -1.\n");
++		jump_count = -1;
++	} else {
++		pr_debug("jump count 1.\n");
++		jump_count = 1;
++	}
++
++	dmic_index =  uval->value.enumerated.item[0];
++	pr_debug("set function. dmic_index = %d, avl_dmic = 0x%x\n",
++			 dmic_index, available_dmics);
++	for (i = 0; i < max_dmics; i++) {
++		pr_debug("set function. loop index = 0x%x.  dmic_index = 0x%x\n",
++			 i, dmic_index);
++		if (!msic_is_set_bit(dmic_index, &available_dmics)) {
++			msic_clear_bit(kcontrol->private_value,
++						&available_dmics);
++			msic_set_bit(dmic_index, &available_dmics);
++			kcontrol->private_value = dmic_index;
++			scard_ops->available_dmics = available_dmics;
++			scard_ops->hw_dmic_map[kcontrol->id.numid-HW_CH_BASE] =
++				kcontrol->private_value;
++			scard_ops->set_hw_dmic_route
++				(kcontrol->id.numid-HW_CH_BASE);
++			return 0;
++		}
++
++		dmic_index += jump_count;
++
++		if (dmic_index > (max_dmics - 1) && jump_count == 1) {
++			pr_debug("Resettingthe dmic index to 0.\n");
++			dmic_index = 0;
++		} else if (dmic_index == -1 && jump_count == -1) {
++			pr_debug("Resetting the dmic index to 5.\n");
++			dmic_index = max_dmics - 1;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static int snd_intelmad_device_dmic_info_mfld(struct snd_kcontrol *kcontrol,
++					struct snd_ctl_elem_info *uinfo)
++{
++	struct snd_intelmad *intelmaddata;
++	struct snd_pmic_ops *scard_ops;
++
++	uinfo->count                  = MONO_CNTL;
++	uinfo->type                   = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
++	uinfo->value.enumerated.items = ARRAY_SIZE(router_dmics);
++
++	intelmaddata = kcontrol->private_data;
++	WARN_ON(!intelmaddata->sstdrv_ops);
++
++	scard_ops = intelmaddata->sstdrv_ops->scard_ops;
++	WARN_ON(!scard_ops);
++
++	if (uinfo->value.enumerated.item >= uinfo->value.enumerated.items)
++		uinfo->value.enumerated.item =
++			uinfo->value.enumerated.items - 1;
++
++	strncpy(uinfo->value.enumerated.name,
++	router_dmics[uinfo->value.enumerated.item],
++	sizeof(uinfo->value.enumerated.name)-1);
++
++
++	msic_set_bit(kcontrol->private_value, &scard_ops->available_dmics);
++	pr_debug("info function. avl_dmic = 0x%x",
++		scard_ops->available_dmics);
++
++	scard_ops->hw_dmic_map[kcontrol->id.numid-HW_CH_BASE] =
++		kcontrol->private_value;
++
++	return 0;
++}
++
++
+ struct snd_kcontrol_new snd_intelmad_controls_mrst[MAX_CTRL] __devinitdata = {
+ {
+ 	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
+@@ -669,5 +831,41 @@ snd_intelmad_controls_mfld[MAX_CTRL_MFLD] __devinitdata = {
+ 	.put		=	snd_intelmad_device_set,
+ 	.private_value	=	0,
+ },
++{
++	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
++	.name		=	HW_CH_0,
++	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
++	.info		=	snd_intelmad_device_dmic_info_mfld,
++	.get		=	snd_intelmad_device_dmic_get,
++	.put		=	snd_intelmad_device_dmic_set,
++	.private_value	=	0
++},
++{
++	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
++	.name		=	HW_CH_1,
++	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
++	.info		=	snd_intelmad_device_dmic_info_mfld,
++	.get		=	snd_intelmad_device_dmic_get,
++	.put		=	snd_intelmad_device_dmic_set,
++	.private_value	=	1
++},
++{
++	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
++	.name		=	HW_CH_2,
++	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
++	.info		=	snd_intelmad_device_dmic_info_mfld,
++	.get		=	snd_intelmad_device_dmic_get,
++	.put		=	snd_intelmad_device_dmic_set,
++	.private_value	=	2
++},
++{
++	.iface		=	SNDRV_CTL_ELEM_IFACE_MIXER,
++	.name		=	HW_CH_3,
++	.access		=	SNDRV_CTL_ELEM_ACCESS_READWRITE,
++	.info		=	snd_intelmad_device_dmic_info_mfld,
++	.get		=	snd_intelmad_device_dmic_get,
++	.put		=	snd_intelmad_device_dmic_set,
++	.private_value	=	3
++}
+ };
+ 
+diff --git a/drivers/staging/intel_sst/intelmid_msic_control.c b/drivers/staging/intel_sst/intelmid_msic_control.c
+index 10073c5..976091b 100644
+--- a/drivers/staging/intel_sst/intelmid_msic_control.c
++++ b/drivers/staging/intel_sst/intelmid_msic_control.c
+@@ -29,8 +29,14 @@
+ #include <linux/pci.h>
+ #include <linux/file.h>
+ #include <linux/delay.h>
++#include <sound/control.h>
+ #include "intel_sst.h"
++#include <linux/input.h>
+ #include "intelmid_snd_control.h"
++#include "intelmid.h"
++
++#define AUDIOMUX12  0x24c
++#define AUDIOMUX34  0x24d
+ 
+ static int msic_init_card(void)
+ {
+@@ -680,6 +686,57 @@ static int msic_set_selected_input_dev(u8 value)
  	return retval;
  }
  
-+
-+int sst_ioctl_tuning_params(unsigned long arg)
++static int msic_set_hw_dmic_route(u8 hw_ch_index)
 +{
-+	struct snd_sst_tuning_params params;
-+	struct ipc_post *msg;
++	struct sc_reg_access sc_access_router;
++	int    retval = -EINVAL;
 +
-+	if (copy_from_user(&params, (void __user *)arg, sizeof(params)))
-+		return -EFAULT;
-+	if (params.size > SST_MAILBOX_SIZE)
-+		return -ENOMEM;
-+	pr_debug("Parameter %d, Stream %d, Size %d\n", params.type,
-+			params.str_id, params.size);
-+	if (sst_create_large_msg(&msg))
-+		return -ENOMEM;
-+
-+	sst_fill_header(&msg->header, IPC_IA_TUNING_PARAMS, 1, params.str_id);
-+	msg->header.part.data = sizeof(u32) + sizeof(params) + params.size;
-+	memcpy(msg->mailbox_data, &msg->header.full, sizeof(u32));
-+	memcpy(msg->mailbox_data + sizeof(u32), &params, sizeof(params));
-+	if (copy_from_user(msg->mailbox_data + sizeof(params),
-+			(void __user *)(unsigned long)params.addr,
-+			params.size)) {
-+		kfree(msg->mailbox_data);
-+		kfree(msg);
-+		return -EFAULT;
-+	}
-+	return sst_send_algo_ipc(&msg);
-+}
- /**
-  * intel_sst_ioctl - receives the device ioctl's
-  * @file_ptr:pointer to file
-@@ -1412,6 +1440,15 @@ free_iobufs:
- 		}
- 		retval = intel_sst_ioctl_dsp(cmd, arg);
- 		break;
-+
-+	case _IOC_NR(SNDRV_SST_TUNING_PARAMS):
-+		if (minor != AM_MODULE) {
-+			retval = -EBADRQC;
-+			break;
-+		}
-+		retval = sst_ioctl_tuning_params(arg);
++	switch (hw_ch_index) {
++	case HW_CH0:
++		sc_access_router.reg_addr = AUDIOMUX12;
++		sc_access_router.value    = snd_msic_ops.hw_dmic_map[0];
++		sc_access_router.mask     = (MASK2 | MASK1 | MASK0);
++		pr_debug("hw_ch0.  value = 0x%x\n",
++				sc_access_router.value);
++		retval = sst_sc_reg_access(&sc_access_router,
++				PMIC_READ_MODIFY, 1);
 +		break;
 +
- 	default:
- 		retval = -EINVAL;
- 	}
-diff --git a/drivers/staging/intel_sst/intel_sst_common.h b/drivers/staging/intel_sst/intel_sst_common.h
-index 9aff1a3..e37b377 100644
---- a/drivers/staging/intel_sst/intel_sst_common.h
-+++ b/drivers/staging/intel_sst/intel_sst_common.h
-@@ -28,8 +28,8 @@
-  *  Common private declarations for SST
-  */
- 
--#define SST_DRIVER_VERSION "1.2.14"
--#define SST_VERSION_NUM 0x1214
-+#define SST_DRIVER_VERSION "1.2.15"
-+#define SST_VERSION_NUM 0x1215
- 
- /* driver names */
- #define SST_DRV_NAME "intel_sst_driver"
-diff --git a/drivers/staging/intel_sst/intel_sst_fw_ipc.h b/drivers/staging/intel_sst/intel_sst_fw_ipc.h
-index 8628a8a..5d0cc56 100644
---- a/drivers/staging/intel_sst/intel_sst_fw_ipc.h
-+++ b/drivers/staging/intel_sst/intel_sst_fw_ipc.h
-@@ -71,6 +71,7 @@
- #define IPC_IA_DECODE_FRAMES 0x18
- 
- #define IPC_IA_ALG_PARAMS 0x1A
-+#define IPC_IA_TUNING_PARAMS 0x1B
- 
- /* I2L Stream config/control msgs */
- #define IPC_IA_ALLOC_STREAM 0x20 /* Allocate a stream ID */
-diff --git a/drivers/staging/intel_sst/intel_sst_ioctl.h b/drivers/staging/intel_sst/intel_sst_ioctl.h
-index bebc395..5da5ee0 100644
---- a/drivers/staging/intel_sst/intel_sst_ioctl.h
-+++ b/drivers/staging/intel_sst/intel_sst_ioctl.h
-@@ -400,6 +400,13 @@ struct snd_sst_dbufs  {
- 	struct snd_sst_buffs *obufs;
- };
- 
-+struct snd_sst_tuning_params {
-+	__u8 type;
-+	__u8 str_id;
-+	__u8 size;
-+	__u8 rsvd;
-+	__aligned_u64 addr;
-+} __attribute__ ((packed));
- /*IOCTL defined here */
- /*SST MMF IOCTLS only */
- #define SNDRV_SST_STREAM_SET_PARAMS _IOR('L', 0x00, \
-@@ -428,5 +435,6 @@ struct snd_sst_dbufs  {
- /*DSP Ioctls on /dev/intel_sst_ctrl only*/
- #define SNDRV_SST_SET_ALGO	_IOW('L', 0x30,  struct snd_ppp_params *)
- #define SNDRV_SST_GET_ALGO	_IOWR('L', 0x31,  struct snd_ppp_params *)
-+#define SNDRV_SST_TUNING_PARAMS	_IOW('L', 0x32,  struct snd_sst_tuning_params *)
- 
- #endif /* __INTEL_SST_IOCTL_H__ */
-diff --git a/drivers/staging/intel_sst/intel_sst_ipc.c b/drivers/staging/intel_sst/intel_sst_ipc.c
-index 878b19d..5c3444f 100644
---- a/drivers/staging/intel_sst/intel_sst_ipc.c
-+++ b/drivers/staging/intel_sst/intel_sst_ipc.c
-@@ -416,6 +416,24 @@ void sst_process_reply(struct work_struct *work)
- 		}
- 		break;
- 	}
++	case HW_CH1:
++		sc_access_router.reg_addr = AUDIOMUX12;
++		sc_access_router.value    = (snd_msic_ops.hw_dmic_map[1]) << 4;
++		sc_access_router.mask     = (MASK6 | MASK5 | MASK4);
++		pr_debug("### hw_ch1.  value = 0x%x\n",
++				sc_access_router.value);
++		retval = sst_sc_reg_access(&sc_access_router,
++				PMIC_READ_MODIFY, 1);
++		break;
 +
-+	case IPC_IA_TUNING_PARAMS: {
-+		pr_debug("sst:IPC_TUNING_PARAMS resp: %x\n", msg->header.full);
-+		pr_debug("data value %x\n", msg->header.part.data);
-+		if (msg->header.part.large) {
-+			pr_debug("alg set failed\n");
-+			sst_drv_ctx->ppp_params_blk.ret_code =
-+							-msg->header.part.data;
-+		} else {
-+			pr_debug("alg set success\n");
-+			sst_drv_ctx->ppp_params_blk.ret_code = 0;
-+		}
-+		if (sst_drv_ctx->ppp_params_blk.on == true) {
-+			sst_drv_ctx->ppp_params_blk.condition = true;
-+			wake_up(&sst_drv_ctx->wait_queue);
-+		}
++	case HW_CH2:
++		sc_access_router.reg_addr = AUDIOMUX34;
++		sc_access_router.value    = snd_msic_ops.hw_dmic_map[2];
++		sc_access_router.mask     = (MASK2 | MASK1 | MASK0);
++		pr_debug("hw_ch2.  value = 0x%x\n",
++				sc_access_router.value);
++		retval = sst_sc_reg_access(&sc_access_router,
++				PMIC_READ_MODIFY, 1);
++		break;
++
++	case HW_CH3:
++		sc_access_router.reg_addr = AUDIOMUX34;
++		sc_access_router.value    = (snd_msic_ops.hw_dmic_map[3]) << 4;
++		sc_access_router.mask     = (MASK6 | MASK5 | MASK4);
++		pr_debug("hw_ch3.  value = 0x%x\n",
++				sc_access_router.value);
++		retval = sst_sc_reg_access(&sc_access_router,
++				PMIC_READ_MODIFY, 1);
++		break;
 +	}
 +
- 	case IPC_IA_GET_FW_INFO: {
- 		struct snd_sst_fw_info *fw_info =
- 			(struct snd_sst_fw_info *)msg->mailbox;
++	return retval;
++}
++
++
+ static int msic_set_pcm_voice_params(void)
+ {
+ 	return 0;
+@@ -724,6 +781,7 @@ struct snd_pmic_ops snd_msic_ops = {
+ 	.set_input_dev	=	msic_set_selected_input_dev,
+ 	.set_output_dev =	msic_set_selected_output_dev,
+ 	.set_lineout_dev =	msic_set_selected_lineout_dev,
++	.set_hw_dmic_route =    msic_set_hw_dmic_route,
+ 	.set_mute	=	msic_set_mute,
+ 	.get_mute	=	msic_get_mute,
+ 	.set_vol	=	msic_set_vol,
 
