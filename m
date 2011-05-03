@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1ECP5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 11:57:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134Ab1ECP5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 11:57:01 -0400
-Date: Tue, 3 May 2011 12:42:41 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, avi@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 2/2] KVM: make guest mode entry to be rcu quiescent state
-Message-ID: <20110503154240.GA6898@amt.cnet>
-References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
- <1303984323-3203-3-git-send-email-gleb@redhat.com>
- <20110503131317.GA4244@amt.cnet>
- <20110503132123.GV2265@redhat.com>
- <20110503132952.GA5022@amt.cnet>
- <20110503133901.GW2265@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503133901.GW2265@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753336Ab1ECPs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 11:48:56 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36533 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab1ECPsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 11:48:55 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH] PM: Print a warning if firmware is requested when tasks are frozen
+In-Reply-To: Your message of "Tue, 03 May 2011 13:02:08 +0200."
+             <201105031302.08910.rjw@sisk.pl>
+From: Valdis.Kletnieks@vt.edu
+References: <201105030044.51661.rjw@sisk.pl> <50363.1304379012@localhost>
+            <201105031302.08910.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304437643_4857P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 03 May 2011 11:47:23 -0400
+Message-ID: <15997.1304437643@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4DC0238E.008C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 04:39:01PM +0300, Gleb Natapov wrote:
-> > > > On Thu, Apr 28, 2011 at 12:52:03PM +0300, Gleb Natapov wrote:
-> > > > > KVM does not hold any references to rcu protected data when it switches
-> > > > > CPU into a guest mode. In fact switching to a guest mode is very similar
-> > > > > to exiting to userspase from rcu point of view. In addition CPU may stay
-> > > > > in a guest mode for quite a long time (up to one time slice). Lets treat
-> > > > > guest mode as quiescent state, just like we do with user-mode execution.
-> > > > > 
-> > > > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > > > > ---
-> > > > >  include/linux/kvm_host.h |    1 +
-> > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > > > > index 0bc3d37..a347bce 100644
-> > > > > --- a/include/linux/kvm_host.h
-> > > > > +++ b/include/linux/kvm_host.h
-> > > > > @@ -593,6 +593,7 @@ static inline void kvm_guest_enter(void)
-> > > > >  {
-> > > > >  	account_system_vtime(current);
-> > > > >  	current->flags |= PF_VCPU;
-> > > > > +	rcu_note_context_switch(smp_processor_id());
-> > > > >  }
-> > > > >  
-> > > > >  static inline void kvm_guest_exit(void)
-> > > > > -- 
-> > > > > 1.7.2.3
-> > > > 
-> > > > Please have it in x86's vcpu_enter_guest, then its more explicit
-> > > > (uncertain about the context of kvm_guest_enter call in other arches).
-> > > > 
-> > > I checked all of them and kvm_guest_enter() is always called with local
-> > > irq disabled. Paul confirmed that rcu_note_context_switch() can be
-> > > called in such context.
-> > 
-> > OK then. Perhaps have an assert to verify interrupts are disabled?
-> Yes. Can add BUG_ON(preemptible()).
+--==_Exmh_1304437643_4857P
+Content-Type: text/plain; charset=us-ascii
 
-Also please add a comment to explain whats going on. The commit message
-above seems appropriate.
+On Tue, 03 May 2011 13:02:08 +0200, "Rafael J. Wysocki" said:
+
+> Although the WARN_ON output will probably not make it to the user's screen
+> immediately, the resume will continue without the delay, because error code
+> will be returned as soon as the WARN_ON triggers.
+> 
+> The user will likely notice the device not working after the resume and will
+> look at dmesg output. :-)
+
+Good point. I obviously didn't have enough caffeine to think it through. ;)
+
+> > 2) What percent of the time the WARN_ON output will itself make the user
+> > think the resume has died rather than just being slow, causing them to power
+> > cycle and hope for a clean boot?
+> > 
+> > Maybe something like this instead?
+> > 
+> > 	if (WARN_ON(usermodehelper_is_disable()))) {
+> > 		printk(KERN_WARNING "Resume continuing, but firmware for %s not loaded", device);
+> 
+> It's useful, but I'd rather do
+> 
+>  		dev_info(device, "firmware: %s will not be loaded\n", name);
+
+That works too.  :)
+
+> OK, updated patch is appended.
+
+Looks good to me.
+
+
+--==_Exmh_1304437643_4857P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNwCOLcC3lWbTT17ARAjk0AKC8fce+ePFBOa8hpxhovv9JinmnNQCg8Rm1
+00z5bsBXrsmW5EnP7AquHF8=
+=5lay
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304437643_4857P--
 
