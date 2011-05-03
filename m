@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1ECAos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 May 2011 20:44:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34780 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756914Ab1ECAor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 May 2011 20:44:47 -0400
-Date: Tue, 3 May 2011 10:44:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: davej@redhat.com, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org
-Subject: Re: [PATCH] kbuild: Fix passing -Wno-* options to gcc 4.4+
-Message-Id: <20110503104440.700ea26f.sfr@canb.auug.org.au>
-In-Reply-To: <1304338381-3772-1-git-send-email-mmarek@suse.cz>
-References: <20110502111337.GA15769@sepie.suse.cz>
-	<1304338381-3772-1-git-send-email-mmarek@suse.cz>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__3_May_2011_10_44_40_+1000_rup0Feo8wgP5DhCo"
+	id S1758678Ab1ECAqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 May 2011 20:46:07 -0400
+Received: from mail-px0-f170.google.com ([209.85.212.170]:60458 "EHLO
+	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1ECAqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 May 2011 20:46:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=DB4nlMWhfVr4bPFe/Gg3dMTfss28C58SEbD+JjR5SKvpQUhTczm8saxzcviPMh0UB3
+         MIUNxCA0qn3AGVOmANZN1zOhhRHNXHo9NAubtvIeldcqw3q+2MPCmzp7KmbaWoeSDbbj
+         ZYruBSO2RjCi25MLfyk3b2NdWqfh3E8eE2ZDU=
+Date: Tue, 3 May 2011 08:45:46 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: greg@kroah.com, joe@perches.com, akpm@linux-foundation.org,
+        trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Oops 2/2]The frame size of xxx bytes is larger than 1024 bytes
+Message-ID: <20110503004543.GA2266@gmail.com>
+Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>, greg@kroah.com,
+	joe@perches.com, akpm@linux-foundation.org, trivial@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110430062222.GB4274@gmail.com>
+ <20110502093244.7594a929.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502093244.7594a929.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_May_2011_10_44_40_+1000_rup0Feo8wgP5DhCo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 02, 2011 at 09:32:44AM -0700, Randy Dunlap wrote:
+> On Sat, 30 Apr 2011 14:22:24 +0800 Harry Wei wrote:
+> 
+> > Hi us,
+> > 	A warning disturbs me for a long time.
+> > It shows like following.
+> > 
+> > [...]
+> > Warning: the frame size of xxx bytes is larger than 1024 bytes.
+> > [...]
+> > 
+> > See http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=report_bug1.png for details.
+> > 	Of course, i wanna fix it. But i have no ways.
+> > Can anyone do me a favor?
+> 
+> Hi Harry,
+> 
+> It looks like drivers/staging/rt28[67]0/ has all been removed, so no need to fix
+> these warnings.  However, there are other frame size warnings still in the kernel
+> tree if you want to fix them.
+Hmmm..., it's true. I will try my best to do them.
+> 
+> Also it would be better just to insert the warnings in your email instead of
+> posting a photo of them.
+Okay, i will ;)
 
-HI Michal,
 
-On Mon,  2 May 2011 14:13:01 +0200 Michal Marek <mmarek@suse.cz> wrote:
->
-> Starting with 4.4, gcc will happily accept -Wno-<anything> in the
-> cc-option test and complain later when compiling a file that has some
-> other warning. This rather unexpected behavior is intentional as per
-> http://gcc.gnu.org/PR28322, so work around it by testing for support of
-> the opposite option (without the no-). Introduce a new Makefile function
-> cc-disable-warning that does this and update two uses of cc-option in
-> the toplevel Makefile.
->=20
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+Thanks.
+Harry Wei.
 
-This fixed things for me, thanks.
 
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__3_May_2011_10_44_40_+1000_rup0Feo8wgP5DhCo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNv0/4AAoJEDMEi1NhKgbsucgH/1hKMuGZowgV6qv7nC2xhN8d
-RBZPFiDQYwmtiycCPZK+E249sibmGb+SsLSBYlAp9R0A5r7RknNCIqZkxUhdBieK
-jTPEE32Vg0ITMBX/1ul3+yY7NVLw4mZ9rmTlPFAXsgZ2sx/JGZQakFOzfRDU1HD0
-0pWDeSHOiBL1581VKtYRF+ytASP6wMIa2AWEfwdtg2DhxUEOzlte25ojREOJASx0
-JABaH5T/a3CViMzwTFUYgcmez5mdN3l3kouSyzqFT0fCJ02m5p02OKXG/2yG5Lj5
-qFJfuliKvMTM+G+FMpKH88Bts7oo0Fa0Mq6MilWl4vS0NZpBJqtG9ER8iZyD7GY=
-=9MYQ
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_May_2011_10_44_40_+1000_rup0Feo8wgP5DhCo--
