@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab1ECIvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 04:51:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42228 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751521Ab1ECIvT (ORCPT
+	id S1751806Ab1ECIwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 04:52:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56784 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1ECIws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 04:51:19 -0400
+	Tue, 3 May 2011 04:52:48 -0400
 Date: Tue, 3 May 2011 09:52:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: suman <vijayendra.suman@gmail.com>
-Cc: kraxel@goldbach.in-berlin.de, linux-kernel@vger.kernel.org,
-        sankar.r@samsung.com
-Subject: Re: Vesafb - need double framebuffer
-Message-ID: <20110503095220.0325028e@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTi=7N=vrj1S8-=wvVieTss-SnBfXew@mail.gmail.com>
-References: <BANLkTi=7N=vrj1S8-=wvVieTss-SnBfXew@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, johnlinn@comcast.net,
+        nicolas pitre <nicolas.pitre@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        grant likely <grant.likely@secretlab.ca>,
+        john linn <john.linn@xilinx.com>
+Subject: Re: [RFC PATCH 4/4] ARM: Xilinx: Adding Xilinx board support
+Message-ID: <20110503085220.GL28001@n2100.arm.linux.org.uk>
+References: <90477150.2231869.1304372815517.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net> <1319927287.2232106.1304373011082.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net> <20110502230118.GE28001@n2100.arm.linux.org.uk> <201105030958.14698.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105030958.14698.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I am trying to develop a qt UI for this i need to have another
-> framebuffer /dev/fb1, how can i add one more fb, should i use
-> framebuffer_alloc function to allocate a new frame buffer. Do you have
-> any patch for providing two frame buffers in case of vesafb driver. I
-> have tried on net and i failed to find any suitable patch for the
+On Tue, May 03, 2011 at 09:58:14AM +0200, Arnd Bergmann wrote:
+> On Tuesday 03 May 2011 01:01:18 Russell King - ARM Linux wrote:
+> > It is preferable to use the same mapping, as it ensures that you're not
+> > going to create incompatible aliases.
+> 
+> Is aliasing a problem for MMIO mappings? I would think that you can
+> ioremap registers anywhere and as often as you want because they are
+> never cacheable.
 
-VESA only supports the BIOS initialized framebuffer on a PC - you need a
-frame buffer or KMS capable interface specific to whatever chipset you
-are using that can initialize the chipset from boot.
+Provided the type and sharability is identical then there is no problem.
+I wasn't referring to multiple ioremap()s of the same region - that
+should be fine as the same attributes will be used.  If you mix ioremap()
+and iotable_init() then you _could_ have problems if you don't use
+MT_DEVICE in the iotable.
 
+What I'm basically saying is that mixing the methods of creating these
+mappings makes it much easier to get tripped up over these issues.
