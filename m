@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab1ECG7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 02:59:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59811 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1ECG7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 02:59:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OK+0WPs6ZqskpQ7oFR5+A7kguGrEeB1CQNM9u1wiTb+3DJ+uKD1/am8rK+p5h8dYnE
-         BCXb2KlW6o428Whmb56V1KANzaIH3HX+SVB7CP1rML9gZAPYz4lBXUdNmt68ykjMABHq
-         tVc7upt1aE13Um2sWdLmJyeb+qnnmm7VmNEtA=
-Message-ID: <4DBFA7E1.5090501@gmail.com>
-Date: Tue, 03 May 2011 10:59:45 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1750936Ab1ECHLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 03:11:06 -0400
+Received: from narfation.org ([79.140.41.39]:52540 "EHLO v3-1039.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab1ECHLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 03:11:05 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 03:11:05 EDT
+From: Sven Eckelmann <sven@narfation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 5/7] batman,rcu: convert call_rcu(softif_neigh_free_rcu) to kfree_rcu
+Date: Tue, 3 May 2011 09:02:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38-2-686; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+References: <20110502161321.GA6537@linux.vnet.ibm.com> <1304352824-6563-5-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1304352824-6563-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/2] x86, x2apic: minimize IPI register writes using cluster
- groups v4
-References: <20110502113445.751391656@openvz.org> <20110502114024.222582172@openvz.org> <20110502132232.GA3873@elte.hu> <4DBEB96A.8000309@openvz.org> <4DBEBE72.3040702@gmail.com> <20110502150552.GA21974@elte.hu> <4DBECAB4.7020809@gmail.com> <20110503063130.GC7751@elte.hu>
-In-Reply-To: <20110503063130.GC7751@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart2456045.IMDECmqdMY";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha512
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105030902.55733.sven@narfation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 10:31 AM, Ingo Molnar wrote:
-> 
-> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> 
->> On 05/02/2011 07:05 PM, Ingo Molnar wrote:
->> ...
->>>>
->>>>   Ingo, would it be fine to make apic->init() either _before_ this series or 
->>>> on top of them (because if I introduce it inside this particular patch it 
->>>> would contain some unrelated code snippets such as .init = NULL for all apics 
->>>> declaration).
->>>
->>> Of course it should be a separate patch - even this patch looks a bit large - 
->>> any way to split it up further?
->>
->>   Well, for this particular path the only minimum is used, so i fear there is no
->> way to split it, probably I could drop some 'cleanup' bits from it and make it
->> a separate one. Gimme some time.
-> 
-> Well, first try to do *all* preparatory and cleanup changes that have low 
-> regression risk.
+--nextPart2456045.IMDECmqdMY
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-OK
+On Monday 02 May 2011 18:13:42 Paul E. McKenney wrote:
+> The RCU callback softif_neigh_free_rcu() just calls kfree(), so we can
+> use kfree_rcu() instead of call_rcu().
+>=20
+[...]
+> The RCU callback neigh_node_free_rcu() just calls kfree(), so we can use
+> kfree_rcu() instead of call_rcu().
+[...]
+> The RCU callback gw_node_free_rcu() just calls kfree(), so we can use
+> kfree_rcu() instead of call_rcu().
 
-> 
-> *Then* keep the most dangerous part to the end of it - so that it's easily 
-> reverted, should the need arise. Preferably the dangerous part should be much 
-> smaller than:
-> 
->  3 files changed, 136 insertions(+), 46 deletions(-)
-> 
-> And no, it is not at all true that there is 'no way' to split the patch up any 
-> further: you could certainly add the data structures, init methods and such 
-> support code (which is low regression risk) in a separate patch than the 
-> changes that modify the existing x2apic_send_IPI_mask_allbutself() function and 
-> such.
+Thanks, I am fine with Patch 3/7, 4/7, 5/7.
 
-OK
+Acked-by: Sven Eckelmann <sven@narfation.org>
 
-> 
-> Also, the loop body in the new __x2apic_send_IPI_mask() function could 
-> certainly be split out into a helper inline, making the code flow clearer.
+--nextPart2456045.IMDECmqdMY
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-OK, will try so, thanks Ingo!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> Thanks,
-> 
-> 	Ingo
+iQIcBAABCgAGBQJNv6icAAoJEF2HCgfBJntGDLYP/0EwYgGQPUZJmEWdNJEgTKJW
+TFcI95LcGzXKkwGkszMXPRvucorZUemYdiu3ylAzy4VGHslCTBQ4GfybXsDhUREV
+H+eOzwJ8Yrt5NHUtg6RHyP1Vn8wYsSWA+i1aV1cfsmwpAqRScdPu8WG0+uVYKLNn
+zk45HQTvVzjZMpmSCEMwxn8mGxh6GNGKzbRlQaNFzDckiOVJjqeyh6XxUv4uTfnO
+DxORUoZvL/FmNsMrfGb1DH6DeCRVHlGrmXeaN/44qWvT0PYKVv14WIRJtMPcQQil
++7koqG2bvbtF9meRvVgaDVVhPEQ4bwzEzocUULnB9ucr3dyqk9hNkk/QwJ7Wa8A7
+6n4i2Fc4dDvvD+7jqhbZ+4SWzX3cGCMUHv21IJCN+sf/nkwgY5CBR8UM17pFJqAk
+WQSZtcQTTqrVwnbnjju3PIPVCpr72BNAReXi+V+CdGuXO2kWZPEHIrH1HCvJ5qVa
+zFWeUaMo61YpkTeJuLW20kuSDTx7WWr9dzR/0KrhUXrsowhaV4R/YAFft9xjNjE/
+OWMQRLRro3+DSSeNvn12DFe9a8EtcWS5g+e/Snsg0MkkvZ7kTKqlruIQO/VNQKLV
+fRatHU2IKOej7YFBpR2FoWUiWQuW4gEQ6hbGYUaq0O6IY5y6/+R79893R53TLMyZ
+00MlRxgOYI4bunz9A8KY
+=zh0v
+-----END PGP SIGNATURE-----
 
-
--- 
-Thanks,
-  Cyrill
+--nextPart2456045.IMDECmqdMY--
