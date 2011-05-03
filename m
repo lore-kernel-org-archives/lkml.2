@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab1ECSF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 14:05:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56153 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab1ECSF1 (ORCPT
+	id S1754353Ab1ECSMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 14:12:13 -0400
+Received: from nd215.dnsexit.com ([64.182.102.215]:37552 "EHLO
+	box7.911domain.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753884Ab1ECSMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 14:05:27 -0400
-Date: Tue, 3 May 2011 14:05:26 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: merging discard request in the block layer
-Message-ID: <20110503180526.GA2127@infradead.org>
-References: <20110322194755.GA20122@infradead.org>
- <4D88FE5E.1010204@fusionio.com>
+	Tue, 3 May 2011 14:12:12 -0400
+X-Complaints-To: abuse@dnsExit.com
+X-SPAM: Please report Spam to abuse@dnsExit.com
+        By service at http://www.dnsExit.com/Direct.sv?cmd=mailRelay
+        Accounts will be suspended immediately if convicted Spam
+Message-ID: <4DC04546.50901@verizon.net>
+Date: Tue, 3 May 2011 14:11:18 -0400
+From: Peter Foley <pefoley2@verizon.net>
+Reply-To: <pefoley2@verizon.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D88FE5E.1010204@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Greg KH <greg@kroah.com>
+CC: <linux-kernel@vger.kernel.org>, <hjanssen@microsoft.com>,
+        <haiyangz@microsoft.com>
+Subject: Re: [PATCH] staging: hv: make HYPERV_UTILS depend on NLS to prevent
+ a build error
+References: <4DB60932.6090000@verizon.net> <20110503175703.GA19082@kroah.com>
+In-Reply-To: <20110503175703.GA19082@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally maged to debug this a bit further and can have found a cure
-for the null pointer derefences I got on recent kernels.
+On 5/3/2011 1:57 PM, Greg KH wrote:
+> On Mon, Apr 25, 2011 at 07:52:18PM -0400, Peter Foley wrote:
+>> This patch adds a dependency on NLS to HYPERV_UTILS to avoid a build error.
+>>
+>> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+>> ---
+>>  drivers/staging/hv/Kconfig |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+>> index d41f380..76f0756 100644
+>> --- a/drivers/staging/hv/Kconfig
+>> +++ b/drivers/staging/hv/Kconfig
+>> @@ -31,7 +31,7 @@ config HYPERV_NET
+>>   config HYPERV_UTILS
+>>  	tristate "Microsoft Hyper-V Utilities driver"
+>> -	depends on CONNECTOR
+>> +	depends on CONNECTOR && NLS
+> 
+> This patch doesn't apply at all, and I can't figure out why.  Did your
+> email client somehow mess it up?
+> 
+> Care to resend it, with the proper information in the Changelog entry
+> (i.e. what build error this is fixing) so I can apply it?
+> 
+> thanks,
+> 
+> greg k-h
 
-The problem is that bio_has_data thinks discard requests have a payload
-and thus tries to poke into it's pages when trying to merge requests.
-Taking the REQ_DISCARD check in to bio_has_data fixes that.  I've also
-tried to special case discard requests in bio_cur_bytes, but that
-doesn't fix the botched requests messages yet.  I suspect the merging
-code might need some additions to update the bio_size for discard
-requests that it currently skips.
+Ok, I'll resend it.
+I seem to have a problem with my email client corrupting patches.
+I'm going to try a different one which will hopefully fix the problem.
 
-Index: xfs/block/blk-core.c
-===================================================================
---- xfs.orig/block/blk-core.c	2011-05-03 19:45:51.980219652 +0200
-+++ xfs/block/blk-core.c	2011-05-03 19:47:51.756237436 +0200
-@@ -1645,7 +1645,7 @@ void submit_bio(int rw, struct bio *bio)
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
- 	 */
--	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
-+	if (bio_has_data(bio)) {
- 		if (rw & WRITE) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
-Index: xfs/include/linux/bio.h
-===================================================================
---- xfs.orig/include/linux/bio.h	2011-05-03 19:43:28.537663414 +0200
-+++ xfs/include/linux/bio.h	2011-05-03 19:48:18.632758500 +0200
-@@ -69,7 +69,7 @@
- 
- static inline unsigned int bio_cur_bytes(struct bio *bio)
- {
--	if (bio->bi_vcnt)
-+	if (bio->bi_vcnt && !(bio->bi_rw & REQ_DISCARD))
- 		return bio_iovec(bio)->bv_len;
- 	else /* dataless requests such as discard */
- 		return bio->bi_size;
-@@ -368,7 +368,7 @@ static inline char *__bio_kmap_irq(struc
-  */
- static inline int bio_has_data(struct bio *bio)
- {
--	return bio && bio->bi_io_vec != NULL;
-+	return bio && bio->bi_io_vec != NULL && !(bio->bi_rw & REQ_DISCARD);
- }
- 
- /*
+Thanks,
+
+Peter
