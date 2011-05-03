@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab1ECUVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:21:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40947 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab1ECUVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:21:14 -0400
-Message-ID: <4DC06386.8090206@zytor.com>
-Date: Tue, 03 May 2011 13:20:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1755121Ab1ECUVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:21:48 -0400
+Received: from eazy.amigager.de ([213.239.192.238]:49998 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756Ab1ECUVr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 16:21:47 -0400
+Date: Tue, 3 May 2011 22:22:08 +0200
+From: Tino Keitel <tino.keitel@tikei.de>
+To: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: unable to handle kernel paging request when inserting FAT32
+ formatted flash media
+Message-ID: <20110503202208.GA5666@mac.home>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+References: <20110502064945.GA12197@mac.home>
+ <20110502065529.GA12397@mac.home>
+ <87y62pf9xg.fsf@devron.myhome.or.jp>
+ <87r58hf866.fsf@devron.myhome.or.jp>
+ <20110502170122.GA14096@eazy.amigager.de>
+ <87k4e9ey9k.fsf@devron.myhome.or.jp>
+ <20110502203327.GA19507@mac.home>
+ <87bozkg3ng.fsf@devron.myhome.or.jp>
+ <8762psfwew.fsf@devron.myhome.or.jp>
+ <871v0gfw9z.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, werner <w.landgraf@ru.ru>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
-In-Reply-To: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871v0gfw9z.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 01:17 PM, Linus Torvalds wrote:
-> 
-> That said, I don't really see why ELAN would be so special.
-> 
+On Tue, May 03, 2011 at 09:44:08 +0900, OGAWA Hirofumi wrote:
 
-ELAN used to have a nonstandard A20 enabling sequence, until someone
-found out that changes to the mainline sequence had made ELAN work as a
-side effect.
+[...]
 
-At this point, it's just a CPU selection thing, so it makes very little
-sense.
+> BTW, rebuilding from scratch make something difference?
 
-	-hpa
+Hi,
+
+I upgraded to current git (5933f2ae353a93b1d3b501bc63c925531849bbc7),
+and did a git clean -dfx. The rebuilt kernel now does not Oops anymore,
+with both the CF and the SD card. Could this be a glitch in the
+Makefile dependencies?
+
+Regards,
+Tino
