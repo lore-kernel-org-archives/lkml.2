@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab1ECP7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 11:59:15 -0400
-Received: from nm28-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.149]:32792 "HELO
-	nm28-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753317Ab1ECP7N (ORCPT
+	id S1753407Ab1ECQEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 12:04:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59964 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab1ECQEA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 11:59:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 975680.74925.bm@omp1034.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=TOh5/kvVU8LtsD3OJP0BvUZr2sR7Z9hIpavqR0HVkWqiP77ncGDKDTXQsBWrs9EO4gUCnsyRZqbEqOL+1ZAF+Te6yp975WGqMX2ksHbib6H+6ioejJcDgOit0wxqiyb3rvZt2MSaqETFX+aGRiAq0TgyhLPSDhYefuoqekus6w4=;
-Message-ID: <776913.88107.qm@web161609.mail.bf1.yahoo.com>
-X-YMail-OSG: 6lR79ogVM1kk6GCBofZA.qTKUcN8gj9YLYkzCPR4cG2BDoU
- 8VSMgPePvJE1egBPUpLKYHxLx8vEL5P6w56N.ryQXctTkVAiWmFABr3EjimC
- FFDi_R23mzSZ98NoNY1d5yNUGSDveCYTDheUCAdJFNT1CBmIFk0LfjPHd4xt
- FjWidDZp9WJbzjts4StKf1EcoItuPue06ok.Oa29u0kZYIbk97L5e_IsuPj4
- spVZiGaSkDlvg_FiyM47nuSptg5ebEPprLgHDgQ3fKyta0m_b4eyXL9t1Ytn
- mIuo4h7dS7qEEKRPlxFqNGQKZjIXDjDgpKjeARmch3aQBb6y4uDZ22ufRwC0
- AndhTmeZzWZbKWy.QakEGSrThdO.JGpFKq3HKfFvM8kDfim4oVYLtPfobtA-
- -
-X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.110.299900
-Date: Tue, 3 May 2011 08:59:11 -0700 (PDT)
-From: Walter Goldens <goldenstranger@yahoo.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-To: John W Linville <linville@tuxdriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        chaoming_li@realsil.com.cn
-In-Reply-To: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net>
+	Tue, 3 May 2011 12:04:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=bcc:mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=tdG0p8b82q2z7vuEn/7G6q9aWOotYkQRtT5XLeB7JpHKyjw/0m8otmjyMWScEr15g8
+         vb+DJG9bseAT73+B+mwfJlE/8oznLTeoQUaBc5LbcC0hdkJfF8UtJklNWkaY1hjFVKZ0
+         cLuIvrFZLnNHj0IBsujgTnkZC0MRGqNhDFA1I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Tue, 3 May 2011 09:03:52 -0700
+Message-ID: <BANLkTikkcgfy6CHmMchHsM0nD4RiDbnhHw@mail.gmail.com>
+Subject: 
+From: ken leo <kenleocompany01@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-13
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Gera diena
 
-> This set of patches introduces a driver for the RTL8192SE PCI devices.
+Mes siûlome paskolas atskiroms bendrovëms ir pigûs
+3% norma, asmeniniø ir investicijas, mes siûlome paskola
+$ 5,000.00 iki $ 100,000,000.00 doleriø mus gráþti prie mûsø su tikslios sumos
+jums reikia.
+Praðome uþpildyti ir gràþinti ðià formà norëdami tæsti.
 
-Any estimates on the *SU driver? :)
+Vardas, pavardë: _
+Kredito paskirtis: _
+Amþius: _
+Lytis: _
+Adresas: _
+Ðalis: _
+Ámonës pavadinimas: _
+Pareigos: _
+Telefonas: _
+reikalinga suma, kaip paskola: _
+Trukmë: _
+
+Jei esate interested.contact su mumis þemiau
+E-mail: Brucefastfunds09@gmail.com
