@@ -1,80 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1ECON2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 10:13:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34354 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009Ab1ECONH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 10:13:07 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mel Gorman <mgorman@novell.com>
-Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
-        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <20110503091320.GA4542@novell.com>
-References: <20110428150827.GY4658@suse.de>
-	 <1304006499.2598.5.camel@mulgrave.site>
-	 <1304009438.2598.9.camel@mulgrave.site>
-	 <1304009778.2598.10.camel@mulgrave.site> <20110428171826.GZ4658@suse.de>
-	 <1304015436.2598.19.camel@mulgrave.site> <20110428192104.GA4658@suse.de>
-	 <1304020767.2598.21.camel@mulgrave.site>
-	 <1304025145.2598.24.camel@mulgrave.site>
-	 <1304030629.2598.42.camel@mulgrave.site> <20110503091320.GA4542@novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 09:13:02 -0500
-Message-ID: <1304431982.2576.5.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753031Ab1ECONJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 10:13:09 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48480 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1ECONE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 10:13:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:in-reply-to:mime-version:content-type:message-id
+         :content-transfer-encoding:cc:from:subject:date:to:x-mailer;
+        b=M9qUvHCIyN20TY6+EWn5q5Y7PGHiQDIk6NfgFEfzdkByFIspCxw85zICpEsYrMF4UM
+         9OL1BZ2b8RFFhngq0EH522R3DDsMfnDDg47JORIpjr7lDXNM1OcMr3QCH23X/dgqWTPz
+         FGzz3oQM1kWdDsShzBCH4PbpVralijvI2Wiac=
+References: <62821D7C-1637-4F7E-A53A-F52AEB2A6C87@gmail.com> <4DBA8AFE.6080807@cam.ac.uk>
+In-Reply-To: <4DBA8AFE.6080807@cam.ac.uk>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <A89A87E2-E4C4-4DD7-9E51-9FD38D93DC0E@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Yves.Lapointe@analog.com, Adrian.Flanagan@analog.com,
+        Susan.Pratt@analog.com
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: Re: ad714x driver help and possible bug
+Date: Tue, 3 May 2011 10:13:10 -0400
+To: Jonathan Cameron <jic23@cam.ac.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-input@vger.kernel.org
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 10:13 +0100, Mel Gorman wrote:
-> On Thu, Apr 28, 2011 at 05:43:48PM -0500, James Bottomley wrote:
-> > On Thu, 2011-04-28 at 16:12 -0500, James Bottomley wrote:
-> > > On Thu, 2011-04-28 at 14:59 -0500, James Bottomley wrote:
-> > > > Actually, talking to Chris, I think I can get the system up using
-> > > > init=/bin/bash without systemd, so I can try the no cgroup config.
-> > > 
-> > > OK, so a non-PREEMPT non-CGROUP kernel has survived three back to back
-> > > runs of untar without locking or getting kswapd pegged, so I'm pretty
-> > > certain this is cgroups related.  The next steps are to turn cgroups
-> > > back on but try disabling the memory and IO controllers.
-> > 
-> > I tried non-PREEMPT CGROUP but disabled GROUP_MEM_RES_CTLR.
-> > 
-> > The results are curious:  the tar does complete (I've done three back to
-> > back).  However, I did get one soft lockup in kswapd (below).  But the
-> > system recovers instead of halting I/O and hanging like it did
-> > previously.
-> > 
-> > The soft lockup is in shrink_slab, so perhaps it's a combination of slab
-> > shrinker and cgroup memory controller issues?
-> > 
+
+On Apr 29, 2011, at 5:55, Jonathan Cameron wrote:
+
+> Cc'd input, and analog devices driver list...
 > 
-> So, kswapd is still looping in reclaim and spending a lot of time in
-> shrink_slab but it must not be the shrinker itself or that debug patch
-> would have triggered. It's curious that cgroups are involved with
-> systemd considering that one would expect those groups to be fairly
-> small. I still don't have a new theory but will get hold of a Fedora 15
-> install CD and see can I reproduce it locally.
+> On 04/28/11 19:17, Jean-Francois Dagenais wrote:
+>> Hi all,
+>> 
+>> I am having trouble getting the ad714x (i2c) driver to work in my
+>> test setup. I am using the VGA i2c bus to talk to the ad7147 I have.
+>> I used INTA of a PCI ethernet slot in my PC. I enabled the PCI device
+>> without the driver module loaded.  I then give the interrupt number
+>> to ad714x through the struct i2c_board_info. I actually tried the
+>> same setup on two PCs, one intel graphics, the other nvidia to
+>> eliminate the i2c master as a possible cause of my problem.
+>> 
+>> The device is successfully loaded and I can see the interrupts going.
+>> The eventN device created under /dev/input never spit out anything
+>> and so I added printks in the threaded ISR handler to see what is
+>> going on.
+>> 
+>> I only have a wheel with 8 stages. In ad714x_wheel_state_machine() I
+>> see that upon the first interrupt, the state goes from IDLE to
+>> JITTER. After this the JITTER case checks that c_state == mask (with
+>> mask being 0xff in our case). This condition is never met and the
+>> driver stays indefinitely in this state. After lifting my finger from
+>> the wheel, the chip settles down to scanning every so many
+>> milliseconds.
+>> 
+>> The STAGE_COMPLETE_INT_STATUS is always 0 when my finger is off, but
+>> varies a lot while my finger is on (while interrupt frequency is
+>> high). Looking at the value of STAGE_COMPLETE_INT_STATUS in binary
+>> reveals that the set bits are always in groups, e.g. 0x0007 or 0x001C
+>> or 0x0081(I imagine a roll-over of our start_stage-end_stage (0-7)).
+>> There seems to be a timing aspect here. I added a spin counter in the
+>> threaded ISR to delay reading the 3 registers and that seemed to make
+>> the c_state change a little.
+>> 
+>> I modified the code that reads the 3 registers right after the
+>> mutex_lock in ad714x_interrupt_thread so that the
+>> STAGE_COMPLETE_INT_STATUS is read before the other two (LOW and HIGH
+>> regs). The result was surprising. The COMPLETE reg did read 0xff now
+>> and the JITTER case went past the "if(c_state == mask)" but later
+>> crashed (divide by 0) in ad714x_wheel_cal_abs_pos() called from the
+>> JITTER case.
+>> 
+>> 
+>> Here's the initial configuration I give the driver:
+>> 
+>> static struct ad714x_wheel_plat wheel_platform_data = {
+>> 	.start_stage = 0, // int start_stage;
+>> 	.end_stage = 7, // int end_stage;
+>> 	.max_coord = 128,  // int max_coord;
+>> };
+>> 
+>> static struct ad714x_platform_data wheel_dev_platform_data = {
+>> 	.slider_num = 0,
+>> 	.wheel_num = 1,
+>> 	.touchpad_num = 0,
+>> 	.button_num = 0,
+>> 	.slider = 0,
+>> 	.wheel = &wheel_platform_data, // struct ad714x_wheel_plat *wheel;
+>> 	.touchpad = 0, // struct ad714x_touchpad_plat *touchpad;
+>> 	.button = 0, // struct ad714x_button_plat *button;
+>> 	.stage_cfg_reg =  { /* unsigned short stage_cfg_reg[STAGE_NUM][STAGE_CFGREG_NUM] */
+>> 		{0xfffe, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xfffb, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xffef, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xffbf, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xfeff, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xfbff, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xefff, 0x3fff, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 		{0xffff, 0x3ffe, 0, 0x2626, 0x3e8, 0x3e8, 0x1388, 0x1388 },
+>> 
+>> 		{0xffff, 0x3fff, 0, 0x0606, 0x01f4, 0x01f4, 0x0320, 0x0320},
+>> 		{0xffff, 0x3fff, 0, 0x0606, 0x01f4, 0x01f4, 0x0320, 0x0320},
+>> 		{0xffff, 0x3fff, 0, 0x0606, 0x01f4, 0x01f4, 0x0320, 0x0320},
+>> 		{0xffff, 0x3fff, 0, 0x0606, 0x01f4, 0x01f4, 0x0320, 0x0320},
+>> 	},
+>> 	.sys_cfg_reg = {0x027e, 0x00ff, 0x3233, 0x0819, 0x0832, 0x0000, 0x00ff, 0}, /* unsigned short sys_cfg_reg[SYS_CFGREG_NUM] */
+>> 	//.sys_cfg_reg = {0x2b2, 0xfff, 0x3233, 0x819, 0x832, 0xcff, 0xcff, 0x0}, /* unsigned short sys_cfg_reg[SYS_CFGREG_NUM] */
+>> };
+>> 
+> 
+>> 
+>> I also had to change the request_threaded_irq flags to specify
+>> IRQF_ONESHOT so the kernel keeps the interrupt masked while we are
+>> running ad714x_interrupt_thread(). Otherwise we were getting storms
+>> of interrupts each time only one was requested. I am wondering if
+>> this should be pulled back to the mainline kernel?
+>> 
+>> Thanks for pointers and clues!
+>> 
+> 
+here's the printk I added to ad714x_wheel_state_machine()
 
-I've got a ftrace output of kswapd ... it's 500k compressed, so I'll
-send under separate cover.
+	mask = ((1 << (hw->end_stage + 1)) - 1) - ((1 << hw->start_stage) - 1);
 
-> One last thing, what is the value of /proc/sys/vm/zone_reclaim_mode? Two
-> of the reporting machines could be NUMA and if that proc file reads as
-> 1, I'd be interested in hearing the results of a test with it set to 0.
-> Thanks.
+	h_state = ad714x->h_state & mask;
+	c_state = ad714x->c_state & mask;
+	dev_dbg(ad714x->dev, "interrupt state:%d mask:0x%x l:0x%x h:0x%x c:0x%x\n", 
+		sw->state, 
+		(u32)mask, 
+		(u32)ad714x->l_state, 
+		(u32)ad714x->h_state, 
+		(u32)ad714x->c_state);
 
-It's zero, I'm afraid
+Here what it looks like upon loading a module which does the i2c_new_device of the AD7147:
 
-James
+<7>[58302.186886] my-pci-stub 0000:01:04.0: claimed by my platform module PCI stub
+<6>[58302.186903] my-pci-stub 0000:01:04.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+<6>[58302.189815] ad714x_captouch 9-002c: found AD7147(A) captouch, rev:1
+<6>[58302.427237] input: Unspecified device as /devices/virtual/input/input8
+
+[ pause here while my hand goes from my mouse and keyboard to the wheel on the AD7147 ]
+
+<7>[58311.646183] ad714x_captouch 9-002c: interrupt state:0 mask:0xff l:0x0 h:0x18 c:0x1c
+<7>[58311.646192] ad714x_captouch 9-002c: case IDLE in if
+<7>[58311.655436] ad714x_captouch 9-002c: wheel 0 touched
+<7>[58311.663087] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x7
+<7>[58311.674562] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x81
+<7>[58311.686803] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x81
+<7>[58311.699147] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x81
+<7>[58311.711430] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x81
+<7>[58311.723585] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x18 c:0x81
+<7>[58311.736017] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.748298] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.760581] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.772800] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.785176] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.797473] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x81
+<7>[58311.809651] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x10 c:0x81
+
+[ here I lift my finger ]
+
+<7>[58311.822059] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.834345] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.846582] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.858800] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.871212] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.883517] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.895802] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.908099] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.920381] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58311.932585] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+
+[...]
+
+<7>[58313.432218] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+<7>[58314.157343] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x81
+
+[... after 2 seconds or so, the rhythm slows down to 2 interrupts per second or so ]
+
+<7>[58314.169629] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x80
+
+<7>[58314.976518] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x80
+
+<7>[58315.783342] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x0 c:0x80
+
+
+There is a clue in what I did next. I added a wait time in the isr thread function like so:
+
+static irqreturn_t ad714x_interrupt_thread(int irq, void *data)
+{
+	struct ad714x_chip *ad714x = data;
+	volatile int i;
+
+	mutex_lock(&ad714x->mutex);
+
+	i=0xffffff;
+	while(i)
+		--i;
+
+	ad714x->read(ad714x->dev, STG_LOW_INT_STA_REG, &ad714x->l_state);
+	ad714x->read(ad714x->dev, STG_HIGH_INT_STA_REG, &ad714x->h_state);
+	ad714x->read(ad714x->dev, STG_COM_INT_STA_REG, &ad714x->c_state);
+[ ... ]
+
+this changes the above trace to these values:
+
+while touching the wheel:
+<7>[63085.414268] ad714x_captouch 9-002c: interrupt state:0 mask:0xff l:0x0 h:0x70 c:0x60
+<7>[63085.414277] ad714x_captouch 9-002c: case IDLE in if
+<7>[63085.423519] ad714x_captouch 9-002c: wheel 0 touched
+<7>[63085.578931] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x70 c:0x18
+<7>[63085.736079] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x70 c:0x3
+<7>[63085.832304] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x70 c:0x60
+<7>[63086.938334] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x30 c:0x60
+<7>[63087.030835] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x60
+<7>[63087.122909] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x60
+<7>[63087.215014] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x60
+<7>[63087.307071] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x60
+<7>[63087.399367] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x60
+<7>[63087.739386] ad714x_captouch 9-002c: interrupt state:1 mask:0xff l:0x0 h:0x38 c:0x83
+
+Again, notice the state going from 0 (IDLE) to 1(JITTER), and never entering the "if" in the JITTER case (needs mask == c_state).  The HIGH register varies a lot while I move my finger around, but the COMPLETE looks like its always going and being cleared. I mentioned before that reading the COMPLETE status reg before the LOW and HIGH produces completely different results.
+
+I am suspecting the register configuration we use is off somehow, I will review them thoroughly. Aside from this we are running out of leads here, anyone has input on this?
+
+Thanks in advance!
+JFD
+
 
 
