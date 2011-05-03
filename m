@@ -1,292 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1ECQTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:19:15 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:33153 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab1ECQTM convert rfc822-to-8bit (ORCPT
+	id S1753753Ab1ECQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 12:26:28 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45949 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab1ECQ0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:19:12 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 5/5] TPS65911: Comparator: Add comparator driver
-Date: Tue, 3 May 2011 11:19:07 -0500
-Message-Id: <2F3D4669-91BC-400F-8A0F-D854DBB9C756@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com, lrg@ti.com,
-        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Tue, 3 May 2011 12:26:25 -0400
+Subject: Re: [PATCH V2 2/2] mm: Extend memory hotplug API to allow memory
+ hotplug in virtual machines
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
+        rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20110502214921.GH4623@router-fw-old.local.net-space.pl>
+References: <20110502214921.GH4623@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 03 May 2011 09:25:52 -0700
+Message-ID: <1304439952.30823.68.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds functionality to the tps65911 chip driver.
+On Mon, 2011-05-02 at 23:49 +0200, Daniel Kiper wrote:
+> +int register_online_page_callback(online_page_callback_t callback)
+> +{
+> +       int rc = -EPERM;
+> +
+> +       lock_memory_hotplug();
+> +
+> +       if (online_page_callback == generic_online_page) {
+> +               online_page_callback = callback;
+> +               rc = 0;
+> +       }
+> +
+> +       unlock_memory_hotplug();
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(register_online_page_callback);
 
-Two of the comparators are configurable by software and measures
-VCCS voltage to detect high or low voltage scenarios.
+-EPERM is a bit uninformative here.  How about -EEXIST, plus a printk?
 
-Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
----
- drivers/mfd/Kconfig               |    7 ++
- drivers/mfd/Makefile              |    1 +
- drivers/mfd/tps65911-comparator.c |  196 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h      |    4 +
- 4 files changed, 208 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/tps65911-comparator.c
+I also don't seen the real use behind having a "register" that can only
+take a single callback.  At worst, it should be
+"set_online_page_callback()" so it's more apparent that there can only
+be one of these.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 65930a7..7d09045 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -679,6 +679,13 @@ config MFD_TPS65910
- 	  if you say yes here you get support for the TPS65910 series of
- 	  Power Management chips.
- 
-+config PS65911_COMPARATOR
-+	tristate "TPS65911 Comparator"
-+	depends on MFD_TPS65910
-+	help
-+	  if you say yes here you get support for the TPS65910 comparator
-+	  module.
-+
- endif # MFD_SUPPORT
- 
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c771eed..7ae4e2a 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -89,3 +89,4 @@ obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
- obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
- obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o tps65910-irq.o
-+obj-$(CONFIG_TPS65911_COMP) += tps65911-comparator.o
-diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
-new file mode 100644
-index 0000000..cd2d5f8
---- /dev/null
-+++ b/drivers/mfd/tps65911-comparator.c
-@@ -0,0 +1,196 @@
-+/*
-+ * tps65910.c  --  TI TPS6591x
-+ *
-+ * Copyright 2010 Texas Instruments Inc.
-+ *
-+ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/debugfs.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/tps65910.h>
-+
-+#define COMP					0
-+#define COMP1					1
-+#define COMP2					2
-+
-+/* Comparator 1 voltage selection table in milivolts */
-+static const u16 COMP1_VSEL_TABLE[] = {
-+	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
-+	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
-+	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
-+	3500,
-+};
-+
-+/* Comparator 2 voltage selection table in milivolts */
-+static const u16 COMP2_VSEL_TABLE[] = {
-+	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
-+	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
-+	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
-+	3500,
-+};
-+
-+struct comparator {
-+	const char *name;
-+	int reg;
-+	int uV_max;
-+	const u16 *vsel_table;
-+};
-+
-+static struct comparator tps_comparators[] = {
-+	{
-+		.name = "COMP1",
-+		.reg = TPS65911_VMBCH,
-+		.uV_max = 3500,
-+		.vsel_table = COMP1_VSEL_TABLE,
-+	},
-+	{
-+		.name = "COMP2",
-+		.reg = TPS65911_VMBCH2,
-+		.uV_max = 3500,
-+		.vsel_table = COMP2_VSEL_TABLE,
-+	},
-+};
-+
-+static int comp_threshold_set(struct tps65910 *tps65910, int id, int voltage)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int curr_voltage = 0;
-+	int ret;
-+	u8 index = 0, val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	while (curr_voltage < tps_comp.uV_max) {
-+		curr_voltage = tps_comp.vsel_table[index];
-+		if (curr_voltage >= voltage)
-+			break;
-+		else if (curr_voltage < voltage)
-+			index ++;
-+	}
-+
-+	if (curr_voltage > tps_comp.uV_max)
-+		return -EINVAL;
-+	
-+	val = index << 1;
-+	ret = tps65910->write(tps65910, tps_comp.reg, 1, &val);
-+
-+	return ret;
-+}
-+
-+static int comp_threshold_get(struct tps65910 *tps65910, int id)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int ret;
-+	u8 val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	ret = tps65910->read(tps65910, tps_comp.reg, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	val >>= 1;
-+	return tps_comp.vsel_table[val];
-+}
-+
-+static ssize_t comp_threshold_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(dev->parent);
-+	struct attribute comp_attr = attr->attr;
-+	int id, uVolt;
-+
-+	if (!strcmp(comp_attr.name, "comp1_threshold"))
-+		id = COMP1;
-+	else if (!strcmp(comp_attr.name, "comp2_threshold"))
-+		id = COMP2;
-+	else
-+		return -EINVAL;
-+
-+	uVolt = comp_threshold_get(tps65910, id);
-+
-+	return sprintf(buf, "%d\n", uVolt);
-+}
-+
-+static DEVICE_ATTR(comp1_threshold, S_IRUGO, comp_threshold_show, NULL);
-+static DEVICE_ATTR(comp2_threshold, S_IRUGO, comp_threshold_show, NULL);
-+
-+static __devinit int tps65911_comparator_probe(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65910_platform_data *pdata = dev_get_platdata(tps65910->dev);
-+	int ret;
-+
-+	ret = comp_threshold_set(tps65910, COMP1,  pdata->vmbch_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP1 threshold\n");
-+		return ret;
-+	}
-+
-+	ret = comp_threshold_set(tps65910, COMP2, pdata->vmbch2_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP2 theshold\n");
-+		return ret;
-+	}
-+
-+	/* Create sysfs entry */
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp1_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP1 sysfs file\n");
-+
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp2_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP2 sysfs file\n");
-+
-+	return ret;
-+}
-+
-+static __devexit int tps65911_comparator_remove(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910;
-+
-+	tps65910 = dev_get_drvdata(pdev->dev.parent);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tps65911_comparator_driver = {
-+	.driver = {
-+		.name = "tps65911-comparator",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps65911_comparator_probe,
-+	.remove = __devexit_p(tps65911_comparator_remove),
-+};
-+
-+static int __init tps65911_comparator_init(void)
-+{
-+	return platform_driver_register(&tps65911_comparator_driver);
-+}
-+subsys_initcall(tps65911_comparator_init);
-+
-+static void __exit tps65911_comparator_exit(void)
-+{
-+	platform_driver_unregister(&tps65911_comparator_driver);
-+}
-+module_exit(tps65911_comparator_exit);
-+
-+MODULE_AUTHOR("Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>");
-+MODULE_DESCRIPTION("TPS65911 comparator driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:tps65911-comparator");
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 5f77006..8bb85b9 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -121,6 +121,8 @@
- #define TPS65911_LDO6					0x35
- #define TPS65911_LDO4					0x36
- #define TPS65911_LDO3					0x37
-+#define TPS65911_VMBCH					0x6A
-+#define TPS65911_VMBCH2					0x6B
- 
- /*
-  * List of register bitfields for component TPS65910
-@@ -746,6 +748,8 @@ struct tps65910_board {
- 	int gpio_base;
- 	int irq;
- 	int irq_base;
-+	int vmbch_threshold;
-+	int vmbch2_threshold;
- 	struct regulator_init_data *tps65910_pmic_init_data;
- };
- 
--- 
-1.7.1
+> +int unregister_online_page_callback(online_page_callback_t callback)
+> +{
+> +       int rc = -EPERM;
+> +
+> +       lock_memory_hotplug();
+> +
+> +       if (online_page_callback == callback) {
+> +               online_page_callback = generic_online_page;
+> +               rc = 0;
+> +       }
+> +
+> +       unlock_memory_hotplug();
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(unregister_online_page_callback); 
+
+Again, -EPERM is a bad code here. -EEXIST, perhaps?  It also deserves a
+WARN_ON() or a printk on failure here.  
+
+Your changelog doesn't mention, but what ever happened to doing
+something dirt-simple like this?  I have a short memory.
+
+> void arch_free_hotplug_page(struct page *page)
+> {
+>       if (xen_need_to_inflate_balloon())
+>               put_page_in_balloon(page);
+>       else
+>               __free_page(page);
+> }
+
+-- Dave
 
