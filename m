@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab1ECF13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 01:27:29 -0400
-Received: from a.relay.invitel.net ([62.77.203.3]:59889 "EHLO
+	id S1751764Ab1ECF1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 01:27:16 -0400
+Received: from a.relay.invitel.net ([62.77.203.3]:59848 "EHLO
 	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab1ECF1U (ORCPT
+	with ESMTP id S1751419Ab1ECF1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 01:27:20 -0400
-Date: Tue, 03 May 2011 07:17:42 +0200
+	Tue, 3 May 2011 01:27:14 -0400
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 01:27:14 EDT
+Date: Tue, 03 May 2011 07:27:11 +0200
 From: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
-In-reply-to: <20110502221406.GA15043@ponder.secretlab.ca>
+Subject: Re: [PATCH v6 3/6] video, sm501: add edid and commandline support
+In-reply-to: <BANLkTik3L28mmL=LGZ_0nV7vSOX9Miw3ow@mail.gmail.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -20,14 +21,16 @@ Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
         Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
         Paul Mundt <lethal@linux-sh.org>
 Reply-to: hs@denx.de
-Message-id: <4DBF8FF6.8030100@denx.de>
+Message-id: <4DBF922F.8040703@denx.de>
 Organization: DENX Software Engineering
 MIME-version: 1.0
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7BIT
 References: <1291451028-22532-1-git-send-email-hs@denx.de>
  <1300782452-528-1-git-send-email-hs@denx.de>
- <20110502221406.GA15043@ponder.secretlab.ca>
+ <1300782452-528-4-git-send-email-hs@denx.de>
+ <20110502222716.GB15187@ponder.secretlab.ca>
+ <BANLkTik3L28mmL=LGZ_0nV7vSOX9Miw3ow@mail.gmail.com>
 User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,38 +39,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hello Grant,
 
 Grant Likely wrote:
-> On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
->> cc: Wolfram Sang <w.sang@pengutronix.de>
->> cc: Grant Likely <grant.likely@secretlab.ca>
->> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> cc: linux-fbdev@vger.kernel.org
->> cc: devicetree-discuss@ozlabs.org
->> cc: Ben Dooks <ben@simtec.co.uk>
->> cc: Vincent Sanders <vince@simtec.co.uk>
->> cc: Samuel Ortiz <sameo@linux.intel.com>
->> cc: linux-kernel@vger.kernel.org
->> cc: Randy Dunlap <rdunlap@xenotime.net>
->> cc: Wolfgang Denk <wd@denx.de>
->> cc: Paul Mundt <lethal@linux-sh.org>
->>
->> changes since v5:
->> - repost complete patchseries, as Paul Mundt suggested
->> - rebased against current head
->> - add Acked-by from Samuel Ortiz (MFD parts)
->>   http://www.spinics.net/lists/linux-fbdev/msg02550.html
->>   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
->>
->>   and Benjamin Herrenschmidt (DTS parts)
->>   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
->> - removed patch 
->>   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
->>   therefore added
->>   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
+> On Mon, May 2, 2011 at 4:27 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Tue, Mar 22, 2011 at 09:27:29AM +0100, Heiko Schocher wrote:
+>>> - add commandline options:
+>>>   sm501fb.mode:
+>>>     Specify resolution as "<xres>x<yres>[-<bpp>][@<refresh>]"
+>>>   sm501fb.bpp:
+>>>     Specify bit-per-pixel if not specified mode
+>>>
+>>> - Add support for encoding display mode information
+>>>   in the device tree using verbatim EDID block.
+>>>
+>>>   If the "edid" entry in the "smi,sm501" node is present,
+>>>   the driver will build mode database using EDID data
+>>>   and allow setting the display modes from this database.
+>>>
+>>> Signed-off-by: Heiko Schocher <hs@denx.de>
+>> Merged, thanks.
 > 
-> Refresh my memory, why was the mpc5200_defconfig updated dropped?
+> This patch causes the following build warning:
 
-Because it is a board based on the tqm5200 board port ... no other
-reason.
+Hups ... when I posted the patch, it compiled clean ...
+
+>   MODPOST vmlinux.o
+> WARNING: vmlinux.o(.text+0x1d5572): Section mismatch in reference from
+> the function sm501fb_init_fb() to the variable
+> .devinit.data:sm501_default_mode
+> The function sm501fb_init_fb() references
+> the variable __devinitdata sm501_default_mode.
+> This is often because sm501fb_init_fb lacks a __devinitdata
+> annotation or the annotation of sm501_default_mode is wrong.
+> 
+> WARNING: vmlinux.o(.text+0x1d557a): Section mismatch in reference from
+> the function sm501fb_init_fb() to the variable
+> .devinit.data:sm501_default_mode
+> The function sm501fb_init_fb() references
+> the variable __devinitdata sm501_default_mode.
+> This is often because sm501fb_init_fb lacks a __devinitdata
+> annotation or the annotation of sm501_default_mode is wrong.
+> 
+> I've dropped the __devinitdata declaration in what I committed; can
+> you investigate and post a fixup patch?
+
+Of course, I look ASAP at it, thanks!
+(Dummy question: where can I find your tree?)
 
 bye,
 Heiko
