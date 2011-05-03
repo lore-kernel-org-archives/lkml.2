@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1ECRak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:30:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53103 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab1ECRai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:30:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jan Kara <jack@suse.cz>
-Subject: Re: Allow setting of number of raw devices as a module parameter
-Date: Tue, 3 May 2011 19:30:30 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1304029469-19672-1-git-send-email-jack@suse.cz> <201105031255.06410.arnd@arndb.de> <20110503162620.GD6009@quack.suse.cz>
-In-Reply-To: <20110503162620.GD6009@quack.suse.cz>
+	id S1753927Ab1ECRdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:33:51 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:37182 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab1ECRds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:33:48 -0400
+Subject: Re: [lm-sensors] [RFC 5/5] hwmon: add support for Technologic
+ Systems TS-5500 A-D converter
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-iio <linux-iio@vger.kernel.org>
+In-Reply-To: <1304434162-sup-3877@sfl>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <1304115712-5299-6-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20110430033938.GA14397@ericsson.com>  <1304434162-sup-3877@sfl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 3 May 2011 10:33:06 -0700
+Message-ID: <1304443986.31666.359.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105031930.30457.arnd@arndb.de>
-X-Provags-ID: V02:K0:EZS//8ZT7nWWnCuLE++f4eVNOYb+f4q8/Ec9PJOIGMa
- /zTMuX4oCQ1ib1N77/QbS0CxDZq3MgkM2KL95MulvVU+Xab93p
- vNbhkOanLi1aGmTkPZUbRqsrvVIJJTiyfEUpPHfDfyvzVXr6ur
- 3Ph5hKi3nfNVK+j1skRHRWKnU06HfZtmhCq+1OuV5wmhXjFJnA
- Si1c6jmHVIhbHWZfTiE7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 May 2011, Jan Kara wrote:
->   Yes, but in that case, I find vmalloc() the smaller pain given how obscure
-> the driver is. Alan seems to have agreed as well so if you don't object
-> Greg can merge the patch as is (modulo the changelog improvement from Greg)...
+On Tue, 2011-05-03 at 11:55 -0400, Vivien Didelot wrote:
+> Hi Guenter,
+> 
+> Excerpts from Guenter Roeck's message of 2011-04-29 23:39:38 -0400:
+> > Hi Vivien,
+> > 
+> > The headline and file name are a bit misleading, since the driver is really
+> > for MAX197 on a TS-5500 board.
+> > 
+> > You should split the driver into two parts, a generic driver
+> > for the MAX197 and a platform driver (residing somewhere in arch/
+> > or possibly drivers/platform/) to instantiate it.
+> > 
+> > There should be a platform data include file, probably in
+> > include/linux/platform_data/.
+> > 
+> > .ioaddr in platform data should not be necessary. The driver's probe
+> > function should get the values using platform_get_resource().
+> > 
+> > Having said that, from reading the code it looks like the chip is not really
+> > used for hardware monitoring, but for generic ADC functionality. A quick look
+> > into the TS-5500 user manual confirms this. So this should not be a hwmon
+> > driver in the first place, but a generic ADC driver. Given the ADC conversion rate
+> > of the MAX197, the hwmon ABI is not optimal anyway. You should move this driver
+> > into the iio subsystem, probably to drivers/staging/iio/adc. Copying the iio
+> > mailing list for input.
+> > 
+> > Thanks,
+> > Guenter
+> 
+> I've took a closer look to the manual and that's right, in fact the
+> driver doesn't talk to the MAX197 directly. The board uses a CPLD to
+> abstract the interface to the MAX197. So all the MAX197 logic is hidden
+> by the CPLD.  Therefore, the driver files should probably not have
+> function and structure names with a "max197_" prefix. I'll make the code
+> a bit clearer. What do you think?
+> 
+The original driver for the chip on http://mcrapet.free.fr/ has a
+platform dependent and a platform independent part. Other than coding
+style issues, that approach seems to be cleaner to me.
 
-Yes, that's probably the best then.
+Thanks,
+Guenter
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-	Arnd
