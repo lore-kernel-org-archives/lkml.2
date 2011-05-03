@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1ECUjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 16:39:14 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60620 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab1ECUjN convert rfc822-to-8bit (ORCPT
+	id S1755178Ab1ECUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 16:42:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41427 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab1ECUm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 16:39:13 -0400
+	Tue, 3 May 2011 16:42:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LW4hhz3Aa+xp2AWzovPPjv3TOsuIPG5EhyRzRvXSsbFLVHORUrEP7bwq8NzYZrqWC4
-         HbX540ruW7FgNcoMiWb2yq9BMDMhieRNEY4LpHEqstcz/g5PkJhcqdLu2O0ic4Y70Y5y
-         VuB2dX7o6Hd/cUpVLEI5VTLQaaKLPvmGlGnrI=
-MIME-Version: 1.0
-In-Reply-To: <4DC0669E.4040100@lwfinger.net>
-References: <776913.88107.qm@web161609.mail.bf1.yahoo.com> <4DC0312A.4040303@lwfinger.net>
- <BANLkTinw+jv8zBi29EKs2K2=tAJMYCEdgQ@mail.gmail.com> <4DC0669E.4040100@lwfinger.net>
-From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Date: Tue, 3 May 2011 22:38:52 +0200
-Message-ID: <BANLkTikxS_2wJEpijmYQy3nPy2-9pykxdA@mail.gmail.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Walter Goldens <goldenstranger@yahoo.com>,
-        John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=OOgyRNES8jtXiEuwl/B0jva7SYkXgXBH11Z7IW7O+DqbZgasIDgiqrqI+Qj1B5kLAh
+         Qec8ibG6i+z/vDbZYVxpoftcIaggV5xTZTLtRo16MG2DfzYxbdqYJQHQ38AMM+5N8y26
+         1s1xXq3ZJMhc0mMt+ZzpH8jcWKkdjzwEEw+aM=
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tim Abbott <tabbott@ksplice.com>, Anders Kaseorg <andersk@ksplice.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [PATCH] module: Use binary search in lookup_symbol()
+Date: Tue,  3 May 2011 22:42:10 +0200
+Message-Id: <1304455330-2728-1-git-send-email-abogani@kernel.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/3 Larry Finger <Larry.Finger@lwfinger.net>:
-> On 05/03/2011 03:19 PM, Gábor Stefanik wrote:
->>
->> On Tue, May 3, 2011 at 6:45 PM, Larry Finger<Larry.Finger@lwfinger.net>
->>  wrote:
->>>
->>> On 05/03/2011 10:59 AM, Walter Goldens wrote:
->>>>
->>>>> This set of patches introduces a driver for the RTL8192SE PCI devices.
->>>>
->>>> Any estimates on the *SU driver? :)
->>>
->>> Now that rtl8192se is submitted, I will start work on the driver for the
->>> RTL8192DE devices. After that will be the RTL8191SU. It has lower
->>> priority
->>> because r8712u from staging handles those devices. It is not based on
->>> mac80211, but it works.
->>
->> Again, may I remind you that the preferred behavior in the Linux world
->> is release-early, release-often? :-)
->
-> That I know, but "code first" still applies. If the comparison between
-> rtl8192ce and rtl8192cu has any validity for the rtl8192s varieties, roughly
-> half of this driver will be shared. In addition, we do have all the USB
-> plumbing in place, but we are still talking about a few thousand lines of
-> code. At last contact, Realtek has no interest in this project, thus I will
-> be on my own.
->
-> Larry
+This work was supported by a hardware donation from the CE Linux Forum.
 
-I do not mean immediately submitting everything for inclusion -
-however, a publicly accessible Git tree would be nice. A non-rtlwifi,
-badly coded but functional and GPL-compatible driver is still better
-than having to use ndiswrapper/load a binary blob.
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+---
+ kernel/module.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/kernel/module.c b/kernel/module.c
+index 6a34337..a1f841e 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2055,10 +2055,8 @@ static const struct kernel_symbol *lookup_symbol(const char *name,
+ 	const struct kernel_symbol *stop)
+ {
+ 	const struct kernel_symbol *ks = start;
+-	for (; ks < stop; ks++)
+-		if (strcmp(ks->name, name) == 0)
+-			return ks;
+-	return NULL;
++	return bsearch(ks->name, start, stop - start,
++			sizeof(struct kernel_symbol), cmp_name);
+ }
+ 
+ static int is_exported(const char *name, unsigned long value,
 -- 
-Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
+1.7.4.1
+
