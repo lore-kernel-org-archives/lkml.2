@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab1ECGpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 02:45:24 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47005 "EHLO mx2.mail.elte.hu"
+	id S1753159Ab1ECGs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 02:48:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:32924 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1ECGpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 02:45:22 -0400
-Date: Tue, 3 May 2011 08:45:05 +0200
+	id S1752019Ab1ECGsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 02:48:24 -0400
+Date: Tue, 3 May 2011 08:48:13 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Borislav Petkov <bp@amd64.org>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -18,15 +18,15 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
- for now
-Message-ID: <20110503064505.GF7751@elte.hu>
+Subject: Re: [PATCH 2/4] perf: Add persistent event facilities
+Message-ID: <20110503064813.GA20342@elte.hu>
 References: <1304357691-14354-1-git-send-email-bp@amd64.org>
- <1304357691-14354-5-git-send-email-bp@amd64.org>
+ <1304357691-14354-3-git-send-email-bp@amd64.org>
+ <20110503064046.GD7751@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304357691-14354-5-git-send-email-bp@amd64.org>
+In-Reply-To: <20110503064046.GD7751@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,29 +40,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Borislav Petkov <bp@amd64.org> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> From: Borislav Petkov <borislav.petkov@amd.com>
+> >  include/linux/perf_event.h |   22 +++++++++++++++-
+> >  kernel/events/Makefile     |    2 +-
+> >  kernel/events/core.c       |   29 ++++++++++++++++++---
+> >  kernel/events/persistent.c |   59 ++++++++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 105 insertions(+), 7 deletions(-)
+> >  create mode 100644 kernel/events/persistent.c
 > 
-> This is new functionality and it affects all of x86 so we want to be
-> very conservative about it and have it off by default for now, in case
-> something goes awry. You can always enable it by supplying "ras" on the
-> kernel command line.
+> I really like this new kernel/events/ subdirectory you created - we could move 
+> the other perf_events.c facilities there as well, and maybe split up the file a 
+> bit, it's 7.5 KLOC now which is a bit excessive.
 > 
-> Also, depending on whether it is enabled or not, we emit the tracepoint
-> from a different place in the code to pick up additional decoded info.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  Documentation/kernel-parameters.txt |    2 ++
->  arch/x86/include/asm/mce.h          |    1 +
->  arch/x86/kernel/cpu/mcheck/mce.c    |   32 ++++++++++++++++++++++++++++++--
->  drivers/edac/mce_amd.c              |    5 +++++
->  4 files changed, 38 insertions(+), 2 deletions(-)
+> We should probably do that before adding kernel/events/persistent.c - wanna do 
+> those changes? Initial commit should be a mostly-rename thing: 
+> kernel/perf_events.c could move into kernel/events/core.c or so - and then we 
+> could split the core up some more, into various facilities.
 
-the boot flag is fine - but please keep it enabled by default if MCE support is 
-enabled in the .config, we do not chicken out when it comes to testing new 
-code! :-)
+Looks like you have a time machine and after reading my feedback you have have 
+sneaked this exact change into patch 1/4! :-)
+
+( The alternative interpretation is that i should start reading series at the 
+  beginning - not in the most interesting looking (largest) places where i 
+  would stupidly ask for changes you've put into 1/4 already. )
 
 Thanks,
 
