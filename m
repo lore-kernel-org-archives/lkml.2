@@ -1,156 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1EGGeJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 02:34:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50587 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab1EGGct (ORCPT
+	id S1751950Ab1ECJ3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 05:29:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48595 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750898Ab1ECJ3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 02:32:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=cRXvd0PCK6NcNyA1Dxz/kFvSkyPV+U8fwlVBuV71kdOQwodREZ1EQpGE3qrETy15p
-	d4wiHQ+MjLU7OA45RtigA==
-Message-Id: <20110503092905.782248242@google.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 03 May 2011 02:29:01 -0700
-From: Paul Turner <pjt@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: [patch 15/15] sched: add documentation for bandwidth control
-References: <20110503092846.022272244@google.com>
-Content-Disposition: inline; filename=sched-bwc-documentation.patch
+	Tue, 3 May 2011 05:29:54 -0400
+Subject: Re: [PATCHv2 4/4] ARM: tegra: irq: Add tegra_eoi
+From: Will Deacon <will.deacon@arm.com>
+To: Colin Cross <ccross@android.com>
+Cc: lakml <linux-arm-kernel@lists.infradead.org>,
+        linux-tegra <linux-tegra@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <1304288854-11011-1-git-send-email-ccross@android.com>
+References: <1304284213-11950-5-git-send-email-ccross@android.com>
+	 <1304288854-11011-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 10:29:33 +0100
+Message-ID: <1304414973.27863.2.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Hi Colin,
 
-Basic description of usage and effect for CFS Bandwidth Control.
+On Sun, 2011-05-01 at 23:27 +0100, Colin Cross wrote:
+> Implement irq_eoi to allow the GIC irq chip flow controller to
+> be changed to fasteoi.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+> v2: Add tegra_eoi without removing tegra_ack, patch can now be
+>     merged safely before Will Deacon's gic fasteoi patch
+> 
+>  arch/arm/mach-tegra/irq.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
+> index da17491..4956c3c 100644
+> --- a/arch/arm/mach-tegra/irq.c
+> +++ b/arch/arm/mach-tegra/irq.c
+> @@ -95,6 +95,14 @@ static void tegra_ack(struct irq_data *d)
+>         tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
+>  }
+> 
+> +static void tegra_eoi(struct irq_data *d)
+> +{
+> +       if (d->irq < FIRST_LEGACY_IRQ)
+> +               return;
+> +
+> +       tegra_irq_write_mask(d->irq, ICTLR_CPU_IEP_FIR_CLR);
+> +}
+> +
+>  static int tegra_retrigger(struct irq_data *d)
+>  {
+>         if (d->irq < FIRST_LEGACY_IRQ)
+> @@ -116,6 +124,7 @@ void __init tegra_init_irq(void)
+>         }
+> 
+>         gic_arch_extn.irq_ack = tegra_ack;
+> +       gic_arch_extn.irq_eoi = tegra_eoi;
+>         gic_arch_extn.irq_mask = tegra_mask;
+>         gic_arch_extn.irq_unmask = tegra_unmask;
+>         gic_arch_extn.irq_retrigger = tegra_retrigger;
+> --
+> 1.7.4.1
 
-Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-Signed-off-by: Paul Turner <pjt@google.com>
----
- Documentation/scheduler/sched-bwc.txt |   98
- ++++++++++++++++++++++++++++++++++
- Documentation/scheduler/sched-bwc.txt |  104 ++++++++++++++++++++++++++++++++++
- 1 file changed, 104 insertions(+)
+Just the job!
 
-Index: tip/Documentation/scheduler/sched-bwc.txt
-===================================================================
---- /dev/null
-+++ tip/Documentation/scheduler/sched-bwc.txt
-@@ -0,0 +1,104 @@
-+CFS Bandwidth Control (aka CPU hard limits)
-+===========================================
-+
-+[ This document talks about CPU bandwidth control of CFS groups only.
-+  The bandwidth control of RT groups is explained in
-+  Documentation/scheduler/sched-rt-group.txt ]
-+
-+CFS bandwidth control is a group scheduler extension that can be used to
-+control the maximum CPU bandwidth obtained by a CPU cgroup.
-+
-+Bandwidth allowed for a group is specified using quota and period. Within
-+a given "period" (microseconds), a group is allowed to consume up to "quota"
-+microseconds of CPU time, which is the upper limit or the hard limit. When the
-+CPU bandwidth consumption of a group exceeds the hard limit, the tasks in the
-+group are throttled and are not allowed to run until the end of the period at
-+which time the group's quota is replenished.
-+
-+Runtime available to the group is tracked globally. At the beginning of
-+every period, group's global runtime pool is replenished with "quota"
-+microseconds worth of runtime. The runtime consumption happens locally at each
-+CPU by fetching runtimes in "slices" from the global pool.
-+
-+Interface
-+---------
-+Quota and period can be set via cgroup files.
-+
-+cpu.cfs_quota_us: the enforcement interval (microseconds)
-+cpu.cfs_period_us: the maximum allowed bandwidth (microseconds)
-+
-+Within a period of cpu.cfs_period_us, the group as a whole will not be allowed
-+to consume more than cpu_cfs_quota_us worth of runtime.
-+
-+The default value of cpu.cfs_period_us is 500ms and the default value
-+for cpu.cfs_quota_us is -1.
-+
-+A group with cpu.cfs_quota_us as -1 indicates that the group has infinite
-+bandwidth, which means that it is not bandwidth controlled.
-+
-+Writing any negative value to cpu.cfs_quota_us will turn the group into
-+an infinite bandwidth group. Reading cpu.cfs_quota_us for an infinite
-+bandwidth group will always return -1.
-+
-+System wide settings
-+--------------------
-+The amount of runtime obtained from global pool every time a CPU wants the
-+group quota locally is controlled by a sysctl parameter
-+sched_cfs_bandwidth_slice_us. The current default is 5ms. This can be changed
-+by writing to /proc/sys/kernel/sched_cfs_bandwidth_slice_us.
-+
-+A quota hierarchy is defined to be consistent if the sum of child reservations
-+does not exceed the bandwidth allocated to its parent.  An entity with no
-+explicit bandwidth reservation (e.g. no limit) is considered to inherit its
-+parent's limits.  This behavior may be managed using
-+/proc/sys/kernel/sched_cfs_bandwidth_consistent
-+
-+Statistics
-+----------
-+cpu.stat file lists three different stats related to CPU bandwidth control.
-+
-+nr_periods: Number of enforcement intervals that have elapsed.
-+nr_throttled: Number of times the group has been throttled/limited.
-+throttled_time: The total time duration (in nanoseconds) for which the group
-+remained throttled.
-+
-+These files are read-only.
-+
-+Hierarchy considerations
-+------------------------
-+Each group's bandwidth (quota and period) can be set independent of its
-+parent or child groups. There are two ways in which a group can get
-+throttled:
-+
-+- it consumed its quota within the period
-+- it has quota left but the parent's quota is exhausted.
-+
-+In the 2nd case, even though the child has quota left, it will not be
-+able to run since the parent itself is throttled. Similarly groups that are
-+not bandwidth constrained might end up being throttled if any parent
-+in their hierarchy is throttled.
-+
-+Examples
-+--------
-+1. Limit a group to 1 CPU worth of runtime.
-+
-+	If period is 500ms and quota is also 500ms, the group will get
-+	1 CPU worth of runtime every 500ms.
-+
-+	# echo 500000 > cpu.cfs_quota_us /* quota = 500ms */
-+	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
-+
-+2. Limit a group to 2 CPUs worth of runtime on a multi-CPU machine.
-+
-+	With 500ms period and 1000ms quota, the group can get 2 CPUs worth of
-+	runtime every 500ms.
-+
-+	# echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
-+	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
-+
-+3. Limit a group to 20% of 1 CPU.
-+
-+	With 500ms period, 100ms quota will be equivalent to 20% of 1 CPU.
-+
-+	# echo 100000 > cpu.cfs_quota_us /* quota = 100ms */
-+	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
+Acked-by: Will Deacon <will.deacon@arm.com>
 
+Thanks,
+
+Will
 
