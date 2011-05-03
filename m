@@ -1,128 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1ECVgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 17:36:33 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43693 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab1ECVgc convert rfc822-to-8bit (ORCPT
+	id S1755425Ab1ECVgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 17:36:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55156 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755372Ab1ECVgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 17:36:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca> <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 3 May 2011 15:36:12 -0600
-X-Google-Sender-Auth: 3zNvQLdea_zOsL6Hh1hhXMaqHvs
-Message-ID: <BANLkTik-qMKqbsdwsgA=0waiMH2f63FBzg@mail.gmail.com>
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different controllers
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        cbouatmailru@gmail.com, arnd@arndb.de, nico@fluxnic.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 May 2011 17:36:41 -0400
+Date: Tue, 3 May 2011 14:36:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lasse Collin <lasse.collin@tukaani.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] XZ decompressor: Fix decoding of empty LZMA2 streams
+Message-Id: <20110503143620.c6b4d272.akpm@linux-foundation.org>
+In-Reply-To: <201105011938.42851.lasse.collin@tukaani.org>
+References: <201105011938.42851.lasse.collin@tukaani.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 3:13 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Oops, forgot to cc tglx...
->
-> On Tue, May 3, 2011 at 3:09 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> While on the topic of a generic mmio gpio driver, I've been thinking a
->> lot about things that Alan, Anton, and others have been doing, and I
->> took a good look at the irq_chip_generic work[1] that tglx (cc'd) put
->> together.
->>
->> There are two things that stood out.  Alan pointed out (IIRC) that a
->> generic gpio driver should not require each bank to be encapsulated in
->> a separate struct platform_device, and after mulling over it a while I
->> agree.  It was also pointed out by Anton that often GPIO controllers
->> are embedded into other devices register addresses intertwined with
->> other gpio banks, or even other functions.
->>
->> In parallel, tglx posted the irq_chip_generic patch[1] which has to
->> deal with pretty much the same set of issues.  I took a close look at
->> how he handled it for interrupt controllers, and I think it is
->> entirely appropriate to use the same pattern for creating a
->> gpio_mmio_generic library.
->>
->> [1] http://comments.gmane.org/gmane.linux.ports.arm.kernel/113697
->>
->> So, the direction I would like to go is to split the basic_mmio_gpio
->> drivers into two parts;
->>  - a platform_driver, and
->>  - a gpio_mmio_generic library.
->>
->> The platform driver would be responsible for parsing pdata and/or
->> device tree node data, but would call into the gpio_mmio_generic
->> library for actually registering the gpio banks.
->>
->> I envision the gpio_mmio_generic library would look something like
->> this:
->>
->> First, a structure for storing the register offsets froma  base
->> address:
->>
->> struct gpio_mmio_regs {
->> };
+On Sun, 1 May 2011 19:38:42 +0300
+Lasse Collin <lasse.collin@tukaani.org> wrote:
 
-Gah, I'm doing real well this afternoon.  Ignore the above structure.
-I intended to delete it from the email.
+> From: Lasse Collin <lasse.collin@tukaani.org>
+> 
+> The old code considered valid empty LZMA2 streams to be corrupt.
+> Note that a typical empty .xz file has no LZMA2 data at all,
+> and thus most .xz files having no uncompressed data are handled
+> correctly even without this fix.
+> 
+> Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
 
->>
->> Next, a structure for each generic mmio gpio instance:
->>
->> struct gpio_mmio_generic {
->>        spinlock_t      lock;
->>
->>        /* initialized by user */
->>        unsigned long   reg_data;
->>        unsigned long   reg_set;
->>        unsigned long   reg_clr;
->>        unsigned long   reg_dir;
+The patch didn't have the cc:stable tag, but appears to be needed in
+2.6.38.x and perhaps earlier, yes?
 
-And these are intended to be register offsets from the base address;
-however, since the caller is responsible for ioremapping anyway, this
-could just as easily be direct pointers to the registers.
+It's commit 646032e3b05b32d3f20cb108a030593d9d792eb5 in mainline.
 
->>
->>        void __iomem    *reg_base;
->>
->>        /* Runtime register value caches; may be initialized by user */
->>        u32             data_cache;
->>        u32             dir_cache;
->>
->>        /* Embedded gpio_chip.  Helpers functions set up accessors, but user
->>         * can override before calling gpio_mmio_generic_add() */
->>        struct gpio_chip chip;
->> };
->>
->> And then some helpers for initializing/adding/removing the embedded gpio_chip:
->>
->> void gpio_mmio_generic_setup(struct gpio_mmio_generic *gmg, int register_width);
->> int gpio_mmio_generic_add(struct gpio_mmio_generic *gmg);
->> void gpio_mmio_generic_remove(struct gpio_mmio_generic *gmg);
->>
->> gpio_mmio_generic_setup() sets up the common callback ops in the
->> embedded gpio_chip, but the decisions it makes could be overridden by
->> the user before calling gpio_mmio_generic_add().
->>
->> I've not had time to prototype this yet, but I wanted to get it
->> written down and out onto the list for feedback since I probably won't
->> have any chance to get to it until after UDS.  Bonus points to anyone
->> who wants to take the initiative to hack it together before I get to
->> it.  Extra bonus points to anyone who also converts some of the other
->> gpio controllers to use it.  :-D
->
-> And triple bonus points to anyone who thinks this is stupid and comes
-> up with a better approach.  :-)
->
-> g.
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+> 
+>  lib/xz/xz_dec_lzma2.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff -uprN linux-2.6.39-rc5-git5.orig/lib/xz/xz_dec_lzma2.c linux-2.6.39-rc5-git5/lib/xz/xz_dec_lzma2.c
+> --- linux-2.6.39-rc5-git5.orig/lib/xz/xz_dec_lzma2.c	2011-05-01 17:56:38.000000000 +0300
+> +++ linux-2.6.39-rc5-git5/lib/xz/xz_dec_lzma2.c	2011-05-01 18:06:03.000000000 +0300
+> @@ -969,6 +969,9 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+>  			 */
+>  			tmp = b->in[b->in_pos++];
+>  
+> +			if (tmp == 0x00)
+> +				return XZ_STREAM_END;
+> +
+>  			if (tmp >= 0xE0 || tmp == 0x01) {
+>  				s->lzma2.need_props = true;
+>  				s->lzma2.need_dict_reset = false;
+> @@ -1001,9 +1004,6 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+>  						lzma_reset(s);
+>  				}
+>  			} else {
+> -				if (tmp == 0x00)
+> -					return XZ_STREAM_END;
+> -
+>  				if (tmp > 0x02)
+>  					return XZ_DATA_ERROR;
+>  
