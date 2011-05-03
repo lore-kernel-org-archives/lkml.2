@@ -1,108 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab1ECRhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 13:37:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57063 "EHLO mx1.suse.de"
+	id S1754064Ab1ECRiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 13:38:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44624 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab1ECRhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 13:37:36 -0400
-Subject: Re: 2.6.39-rc5+ BUG at scsi_run_queue+0x24/0xe3
-From: James Bottomley <James.Bottomley@suse.de>
-To: Jim Schutt <jaschut@sandia.gov>
-Cc: linux-kernel@vger.kernel.org, linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <4DC03B0A.50209@sandia.gov>
-References: <4DC0330F.6050906@sandia.gov>
-	 <1304442019.10982.7.camel@mulgrave.site>  <4DC03B0A.50209@sandia.gov>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 17:37:30 +0000
-Message-ID: <1304444251.10982.9.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1752856Ab1ECRiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 13:38:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [Update x3][PATCH 7/9] PM / Runtime: Generic clock manipulation rountines for runtime PM (v6)
+Date: Tue, 3 May 2011 19:38:14 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Colin Cross <ccross@google.com>, Kevin Hilman <khilman@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
+References: <201104130205.26988.rjw@sisk.pl> <201104300004.02601.rjw@sisk.pl> <4DC034CA.6000505@codeaurora.org>
+In-Reply-To: <4DC034CA.6000505@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105031938.14953.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 11:27 -0600, Jim Schutt wrote:
-> James Bottomley wrote:
-> > On Tue, 2011-05-03 at 10:53 -0600, Jim Schutt wrote:
-> >> Please let me know if what further information you need, or if there is
-> >> anything I can do, to help resolve this.
-> > 
-> > I think this is the fix (already in rc-fixes):
-> > 
-> > James
-> > 
-> > ---
-> > From 3e85ea868dbd60a84240be5c1eebc36841b9c568 Mon Sep 17 00:00:00 2001
-> > From: James Bottomley <James.Bottomley@suse.de>
-> > Date: Sun, 1 May 2011 09:42:07 -0500
-> > Subject: [PATCH] [SCSI] fix oops in scsi_run_queue()
-> > 
-> > The recent commit closing the race window in device teardown:
-> > 
-> > commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b
-> > Author: James Bottomley <James.Bottomley@suse.de>
-> > Date:   Fri Apr 22 10:39:59 2011 -0500
-> > 
-> >     [SCSI] put stricter guards on queue dead checks
-> > 
-> > is causing a potential NULL deref in scsi_run_queue() because the
-> > q->queuedata may already be NULL by the time this function is called.
-> > Since we shouldn't be running a queue that is being torn down, simply
-> > add a NULL check in scsi_run_queue() to forestall this.
-> > 
-> > Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-> > 
-> > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> > index e9901b8..03979f4 100644
-> > --- a/drivers/scsi/scsi_lib.c
-> > +++ b/drivers/scsi/scsi_lib.c
-> > @@ -404,6 +404,10 @@ static void scsi_run_queue(struct request_queue *q)
-> >  	LIST_HEAD(starved_list);
-> >  	unsigned long flags;
-> >  
-> > +	/* if the device is dead, sdev will be NULL, so no queue to run */
-> > +	if (!sdev)
-> > +		return;
+On Tuesday, May 03, 2011, Stephen Boyd wrote:
+> On 04/29/2011 03:04 PM, Rafael J. Wysocki wrote:
 > > +
-> >  	if (scsi_target(sdev)->single_lun)
-> >  		scsi_single_lun_run(sdev);
-> >  
+> > +/**
+> > + * enable_clock - Enable a device clock.
+> > + * @dev: Device whose clock is to be enabled.
+> > + * @con_id: Connection ID of the clock.
+> > + */
+> > +static void enable_clock(struct device *dev, const char *con_id)
+> > +{
+> > +	struct clk *clk;
+> > +
+> > +	clk = clk_get(dev, con_id);
+> > +	if (!IS_ERR(clk)) {
+> > +		clk_enable(clk);
+> > +		clk_put(clk);
+> > +		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
+> > +	}
+> > +}
 > 
-> Hmmm, with the above added, I still get BUGs.  Here's an
-> example:
+> This doesn't make much sense to me. You're getting a clock and then
+> enabling it and then putting the clock? How can you be so sure that
+> clk_put() won't one day do some kind of lower power mode on the clock
+> when clk_put() is called on it? I don't think anyone does anything
+> today, but I don't think its safe to assume that clk_put() won't try to
+> forcibly shut off the clock once all clk_get() callers have clk_put().
 > 
-> [   17.142931] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> [   17.143002] IP: [<ffffffffa01cf8c5>] scsi_run_queue+0x24/0xec [scsi_mod]
+> Perhaps we should document the meaning of clk_enable() followed by
+> clk_put() somewhere instead?
 
-Ooh, compiler optimisation, I think; try this instead
+That's coming from some existing ARM shmobile code.
 
-James
+There are two alternatives, one not to do any clock management at all
+when CONFIG_PM_RUNTIME is unset, the other to remove the "put" from
+enable_clock(), but then disable_clock() would need to do "put" twice.
+I didn't think any of them was better than the current code.
+
+> > +
+> > +/**
+> > + * disable_clock - Disable a device clock.
+> > + * @dev: Device whose clock is to be disabled.
+> > + * @con_id: Connection ID of the clock.
+> > + */
+> > +static void disable_clock(struct device *dev, const char *con_id)
+> > +{
+> > +	struct clk *clk;
+> > +
+> > +	clk = clk_get(dev, con_id);
+> > +	if (!IS_ERR(clk)) {
+> > +		clk_disable(clk);
+> > +		clk_put(clk);
+> > +		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
+> > +	}
+> > +}
+> 
+> This might not be as bad, but it looks like a similar problem.
+> 
+> > -
+> > -static int platform_bus_notify(struct notifier_block *nb,
+> > -			       unsigned long action, void *data)
+> > -{
+> > -	struct device *dev = data;
+> > -	struct clk *clk;
+> > -
+> > -	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
+> > -
+> > -	switch (action) {
+> > -	case BUS_NOTIFY_BIND_DRIVER:
+> > -		clk = clk_get(dev, NULL);
+> > -		if (!IS_ERR(clk)) {
+> > -			clk_enable(clk);
+> > -			clk_put(clk);
+> > -			dev_info(dev, "runtime pm disabled, clock forced on\n");
+> > -		}
+> > -		break;
+> > -	case BUS_NOTIFY_UNBOUND_DRIVER:
+> > -		clk = clk_get(dev, NULL);
+> > -		if (!IS_ERR(clk)) {
+> > -			clk_disable(clk);
+> > -			clk_put(clk);
+> > -			dev_info(dev, "runtime pm disabled, clock forced off\n");
+> > -		}
+> 
+> Ah ok I see that it's coming from here.
+
+Yes, it is.
+
+> BTW, whatever is in linux-next is failing to compile:
+> 
+> drivers/base/power/clock_ops.c:391: error: 'con_id' undeclared (first
+> use in this function)
+> drivers/base/power/clock_ops.c:391: error: (Each undeclared identifier
+> is reported only once
+> drivers/base/power/clock_ops.c:391: error: for each function it appears in.)
+
+I guess that's with CONFIG_PM_RUNTIME unset, right?
+
+Sorry about that, the appended patch should fix the issue.
+
+Thanks,
+Rafael
+
 
 ---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Fix build issue in clock_ops.c for CONFIG_PM_RUNTIME unset
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index e9901b8..0bac91e 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -400,10 +400,15 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
- static void scsi_run_queue(struct request_queue *q)
+Fix a build issue in drivers/base/power/clock_ops.c occuring when
+CONFIG_PM_RUNTIME is not set.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/clock_ops.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/drivers/base/power/clock_ops.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/clock_ops.c
++++ linux-2.6/drivers/base/power/clock_ops.c
+@@ -380,6 +380,7 @@ static int pm_runtime_clk_notify(struct
  {
- 	struct scsi_device *sdev = q->queuedata;
--	struct Scsi_Host *shost = sdev->host;
-+	struct Scsi_Host *shost;
- 	LIST_HEAD(starved_list);
- 	unsigned long flags;
+ 	struct pm_clk_notifier_block *clknb;
+ 	struct device *dev = data;
++	char *con_id;
  
-+	/* if the device is dead, sdev will be NULL, so no queue to run */
-+	if (!sdev)
-+		return;
-+
-+	shost = sdev->host;
- 	if (scsi_target(sdev)->single_lun)
- 		scsi_single_lun_run(sdev);
+ 	dev_dbg(dev, "%s() %ld\n", __func__, action);
  
-
-
-
