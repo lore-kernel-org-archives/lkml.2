@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab1ECFnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 01:43:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58342 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab1ECFm7 convert rfc822-to-8bit (ORCPT
+	id S1752337Ab1ECFoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 01:44:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34966 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab1ECFoR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 01:42:59 -0400
+	Tue, 3 May 2011 01:44:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <4DBF8FF6.8030100@denx.de>
+In-Reply-To: <4DBF922F.8040703@denx.de>
 References: <1291451028-22532-1-git-send-email-hs@denx.de> <1300782452-528-1-git-send-email-hs@denx.de>
- <20110502221406.GA15043@ponder.secretlab.ca> <4DBF8FF6.8030100@denx.de>
+ <1300782452-528-4-git-send-email-hs@denx.de> <20110502222716.GB15187@ponder.secretlab.ca>
+ <BANLkTik3L28mmL=LGZ_0nV7vSOX9Miw3ow@mail.gmail.com> <4DBF922F.8040703@denx.de>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 2 May 2011 23:42:39 -0600
-X-Google-Sender-Auth: h0C1GmHMME8-nVbdgp4Tm8MsO4I
-Message-ID: <BANLkTimacM29RHExZounuziF+7jARQxdTg@mail.gmail.com>
-Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
+Date: Mon, 2 May 2011 23:43:57 -0600
+X-Google-Sender-Auth: s_G_Cq1k7X75lIMRRTh6Yy4vxPs
+Message-ID: <BANLkTinH+dsW3MMxs_WfyxeE--HAQzhzLQ@mail.gmail.com>
+Subject: Re: [PATCH v6 3/6] video, sm501: add edid and commandline support
 To: hs@denx.de
 Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -30,43 +31,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 2, 2011 at 11:17 PM, Heiko Schocher <hs@denx.de> wrote:
+On Mon, May 2, 2011 at 11:27 PM, Heiko Schocher <hs@denx.de> wrote:
 > Hello Grant,
 >
 > Grant Likely wrote:
->> On Tue, Mar 22, 2011 at 09:27:26AM +0100, Heiko Schocher wrote:
->>> cc: Wolfram Sang <w.sang@pengutronix.de>
->>> cc: Grant Likely <grant.likely@secretlab.ca>
->>> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> cc: linux-fbdev@vger.kernel.org
->>> cc: devicetree-discuss@ozlabs.org
->>> cc: Ben Dooks <ben@simtec.co.uk>
->>> cc: Vincent Sanders <vince@simtec.co.uk>
->>> cc: Samuel Ortiz <sameo@linux.intel.com>
->>> cc: linux-kernel@vger.kernel.org
->>> cc: Randy Dunlap <rdunlap@xenotime.net>
->>> cc: Wolfgang Denk <wd@denx.de>
->>> cc: Paul Mundt <lethal@linux-sh.org>
->>>
->>> changes since v5:
->>> - repost complete patchseries, as Paul Mundt suggested
->>> - rebased against current head
->>> - add Acked-by from Samuel Ortiz (MFD parts)
->>>   http://www.spinics.net/lists/linux-fbdev/msg02550.html
->>>   http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
->>>
->>>   and Benjamin Herrenschmidt (DTS parts)
->>>   http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
->>> - removed patch
->>>   "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
->>>   therefore added
->>>   "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
+>> On Mon, May 2, 2011 at 4:27 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>> On Tue, Mar 22, 2011 at 09:27:29AM +0100, Heiko Schocher wrote:
+>>>> - add commandline options:
+>>>>   sm501fb.mode:
+>>>>     Specify resolution as "<xres>x<yres>[-<bpp>][@<refresh>]"
+>>>>   sm501fb.bpp:
+>>>>     Specify bit-per-pixel if not specified mode
+>>>>
+>>>> - Add support for encoding display mode information
+>>>>   in the device tree using verbatim EDID block.
+>>>>
+>>>>   If the "edid" entry in the "smi,sm501" node is present,
+>>>>   the driver will build mode database using EDID data
+>>>>   and allow setting the display modes from this database.
+>>>>
+>>>> Signed-off-by: Heiko Schocher <hs@denx.de>
+>>> Merged, thanks.
 >>
->> Refresh my memory, why was the mpc5200_defconfig updated dropped?
+>> This patch causes the following build warning:
 >
-> Because it is a board based on the tqm5200 board port ... no other
-> reason.
+> Hups ... when I posted the patch, it compiled clean ...
+>
+>>   MODPOST vmlinux.o
+>> WARNING: vmlinux.o(.text+0x1d5572): Section mismatch in reference from
+>> the function sm501fb_init_fb() to the variable
+>> .devinit.data:sm501_default_mode
+>> The function sm501fb_init_fb() references
+>> the variable __devinitdata sm501_default_mode.
+>> This is often because sm501fb_init_fb lacks a __devinitdata
+>> annotation or the annotation of sm501_default_mode is wrong.
+>>
+>> WARNING: vmlinux.o(.text+0x1d557a): Section mismatch in reference from
+>> the function sm501fb_init_fb() to the variable
+>> .devinit.data:sm501_default_mode
+>> The function sm501fb_init_fb() references
+>> the variable __devinitdata sm501_default_mode.
+>> This is often because sm501fb_init_fb lacks a __devinitdata
+>> annotation or the annotation of sm501_default_mode is wrong.
+>>
+>> I've dropped the __devinitdata declaration in what I committed; can
+>> you investigate and post a fixup patch?
+>
+> Of course, I look ASAP at it, thanks!
+> (Dummy question: where can I find your tree?)
 
-Please send a patch to also update the mpc5200_defconfig.
+git://git.secretlab.ca/git/linux-2.6 powerpc/next
 
 g.
+
+>
+> bye,
+> Heiko
+> --
+> DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+> HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
