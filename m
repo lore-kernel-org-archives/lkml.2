@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1ECQTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 12:19:10 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:33148 "EHLO slimlogic.co.uk"
+	id S1753796Ab1ECQTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 12:19:15 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:33153 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668Ab1ECQTH convert rfc822-to-8bit (ORCPT
+	id S1753772Ab1ECQTM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 12:19:07 -0400
+	Tue, 3 May 2011 12:19:12 -0400
 From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 4/5] TPS65911: Add support for added GPIO lines
-Date: Tue, 3 May 2011 11:19:02 -0500
-Message-Id: <00CDA57D-5DEC-4992-8F50-828C797C87C4@slimlogic.co.uk>
+Subject: [PATCH 5/5] TPS65911: Comparator: Add comparator driver
+Date: Tue, 3 May 2011 11:19:07 -0500
+Message-Id: <2F3D4669-91BC-400F-8A0F-D854DBB9C756@slimlogic.co.uk>
 Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com, lrg@ti.com,
         Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
 To: linux-kernel@vger.kernel.org
@@ -22,192 +22,271 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO 1 to 8 are added for TPS65911 chip version. The gpio driver
-now handles more than one gpio lines.
+This driver adds functionality to the tps65911 chip driver.
 
-Subsequent versions of the chip family can add new GPIO lines with
-minimal driver changes.
+Two of the comparators are configurable by software and measures
+VCCS voltage to detect high or low voltage scenarios.
 
 Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
 ---
- drivers/mfd/tps65910-gpio.c  |   26 +++++++-----
- include/linux/mfd/tps65910.h |   90 ++++++-----------------------------------
- 2 files changed, 30 insertions(+), 86 deletions(-)
+ drivers/mfd/Kconfig               |    7 ++
+ drivers/mfd/Makefile              |    1 +
+ drivers/mfd/tps65911-comparator.c |  196 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65910.h      |    4 +
+ 4 files changed, 208 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/tps65911-comparator.c
 
-diff --git a/drivers/mfd/tps65910-gpio.c b/drivers/mfd/tps65910-gpio.c
-index f3ae376..6ef78c8 100644
---- a/drivers/mfd/tps65910-gpio.c
-+++ b/drivers/mfd/tps65910-gpio.c
-@@ -25,9 +25,9 @@ static int tps65910_gpio_get(struct gpio_chip *gc, unsigned offset)
- 	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
- 	uint8_t val;
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 65930a7..7d09045 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -679,6 +679,13 @@ config MFD_TPS65910
+ 	  if you say yes here you get support for the TPS65910 series of
+ 	  Power Management chips.
  
--	tps65910->read(tps65910, TPS65910_GPIO0, 1, &val);
-+	tps65910->read(tps65910, TPS65910_GPIO0 + offset, 1, &val);
++config PS65911_COMPARATOR
++	tristate "TPS65911 Comparator"
++	depends on MFD_TPS65910
++	help
++	  if you say yes here you get support for the TPS65910 comparator
++	  module.
++
+ endif # MFD_SUPPORT
  
--	if (val & GPIO0_GPIO_STS_MASK)
-+	if (val & GPIO_STS_MASK)
- 		return 1;
- 
- 	return 0;
-@@ -39,11 +39,11 @@ static void tps65910_gpio_set(struct gpio_chip *gc, unsigned offset,
- 	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
- 
- 	if (value)
--		tps65910_set_bits(tps65910, TPS65910_GPIO0,
--					GPIO0_GPIO_SET_MASK);
-+		tps65910_set_bits(tps65910, TPS65910_GPIO0 + offset,
-+						GPIO_SET_MASK);
- 	else
--		tps65910_clear_bits(tps65910, TPS65910_GPIO0,
--					GPIO0_GPIO_SET_MASK);
-+		tps65910_clear_bits(tps65910, TPS65910_GPIO0 + offset,
-+						GPIO_SET_MASK);
- }
- 
- static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
-@@ -54,15 +54,16 @@ static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
- 	/* Set the initial value */
- 	tps65910_gpio_set(gc, 0, value);
- 
--	return tps65910_set_bits(tps65910, TPS65910_GPIO0, GPIO0_GPIO_CFG_MASK);
-+	return tps65910_set_bits(tps65910, TPS65910_GPIO0 + offset,
-+						GPIO_CFG_MASK);
- }
- 
- static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
- {
- 	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
- 
--	return tps65910_clear_bits(tps65910, TPS65910_GPIO0,
--					GPIO0_GPIO_CFG_MASK);
-+	return tps65910_clear_bits(tps65910, TPS65910_GPIO0 + offset,
-+						GPIO_CFG_MASK);
- }
- 
- void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
-@@ -76,7 +77,12 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
- 	tps65910->gpio.label		= tps65910->i2c_client->name;
- 	tps65910->gpio.dev		= tps65910->dev;
- 	tps65910->gpio.base		= gpio_base;
--	tps65910->gpio.ngpio		= 1;
-+	if (tps65910_chip_id(tps65910) == TPS65910)
-+		tps65910->gpio.ngpio		= 6;
-+	else if (tps65910_chip_id(tps65910) == TPS65911)
-+		tps65910->gpio.ngpio		= 9;
+ menu "Multimedia Capabilities Port drivers"
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index c771eed..7ae4e2a 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -89,3 +89,4 @@ obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
+ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+ obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
+ obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o tps65910-irq.o
++obj-$(CONFIG_TPS65911_COMP) += tps65911-comparator.o
+diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
+new file mode 100644
+index 0000000..cd2d5f8
+--- /dev/null
++++ b/drivers/mfd/tps65911-comparator.c
+@@ -0,0 +1,196 @@
++/*
++ * tps65910.c  --  TI TPS6591x
++ *
++ * Copyright 2010 Texas Instruments Inc.
++ *
++ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/debugfs.h>
++#include <linux/gpio.h>
++#include <linux/mfd/tps65910.h>
++
++#define COMP					0
++#define COMP1					1
++#define COMP2					2
++
++/* Comparator 1 voltage selection table in milivolts */
++static const u16 COMP1_VSEL_TABLE[] = {
++	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
++	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
++	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
++	3500,
++};
++
++/* Comparator 2 voltage selection table in milivolts */
++static const u16 COMP2_VSEL_TABLE[] = {
++	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
++	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
++	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
++	3500,
++};
++
++struct comparator {
++	const char *name;
++	int reg;
++	int uV_max;
++	const u16 *vsel_table;
++};
++
++static struct comparator tps_comparators[] = {
++	{
++		.name = "COMP1",
++		.reg = TPS65911_VMBCH,
++		.uV_max = 3500,
++		.vsel_table = COMP1_VSEL_TABLE,
++	},
++	{
++		.name = "COMP2",
++		.reg = TPS65911_VMBCH2,
++		.uV_max = 3500,
++		.vsel_table = COMP2_VSEL_TABLE,
++	},
++};
++
++static int comp_threshold_set(struct tps65910 *tps65910, int id, int voltage)
++{
++	struct comparator tps_comp = tps_comparators[id];
++	int curr_voltage = 0;
++	int ret;
++	u8 index = 0, val;
++
++	if (id == COMP)
++		return 0;
++
++	while (curr_voltage < tps_comp.uV_max) {
++		curr_voltage = tps_comp.vsel_table[index];
++		if (curr_voltage >= voltage)
++			break;
++		else if (curr_voltage < voltage)
++			index ++;
++	}
++
++	if (curr_voltage > tps_comp.uV_max)
++		return -EINVAL;
++	
++	val = index << 1;
++	ret = tps65910->write(tps65910, tps_comp.reg, 1, &val);
++
++	return ret;
++}
++
++static int comp_threshold_get(struct tps65910 *tps65910, int id)
++{
++	struct comparator tps_comp = tps_comparators[id];
++	int ret;
++	u8 val;
++
++	if (id == COMP)
++		return 0;
++
++	ret = tps65910->read(tps65910, tps_comp.reg, 1, &val);
++	if (ret < 0)
++		return ret;
++
++	val >>= 1;
++	return tps_comp.vsel_table[val];
++}
++
++static ssize_t comp_threshold_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct tps65910 *tps65910 = dev_get_drvdata(dev->parent);
++	struct attribute comp_attr = attr->attr;
++	int id, uVolt;
++
++	if (!strcmp(comp_attr.name, "comp1_threshold"))
++		id = COMP1;
++	else if (!strcmp(comp_attr.name, "comp2_threshold"))
++		id = COMP2;
 +	else
-+		return;
- 	tps65910->gpio.can_sleep	= 1;
- 
- 	tps65910->gpio.direction_input	= tps65910_gpio_input;
++		return -EINVAL;
++
++	uVolt = comp_threshold_get(tps65910, id);
++
++	return sprintf(buf, "%d\n", uVolt);
++}
++
++static DEVICE_ATTR(comp1_threshold, S_IRUGO, comp_threshold_show, NULL);
++static DEVICE_ATTR(comp2_threshold, S_IRUGO, comp_threshold_show, NULL);
++
++static __devinit int tps65911_comparator_probe(struct platform_device *pdev)
++{
++	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
++	struct tps65910_platform_data *pdata = dev_get_platdata(tps65910->dev);
++	int ret;
++
++	ret = comp_threshold_set(tps65910, COMP1,  pdata->vmbch_threshold);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "cannot set COMP1 threshold\n");
++		return ret;
++	}
++
++	ret = comp_threshold_set(tps65910, COMP2, pdata->vmbch2_threshold);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "cannot set COMP2 theshold\n");
++		return ret;
++	}
++
++	/* Create sysfs entry */
++	ret = device_create_file(&pdev->dev, &dev_attr_comp1_threshold);
++	if (ret < 0)
++		dev_err(&pdev->dev, "failed to add COMP1 sysfs file\n");
++
++	ret = device_create_file(&pdev->dev, &dev_attr_comp2_threshold);
++	if (ret < 0)
++		dev_err(&pdev->dev, "failed to add COMP2 sysfs file\n");
++
++	return ret;
++}
++
++static __devexit int tps65911_comparator_remove(struct platform_device *pdev)
++{
++	struct tps65910 *tps65910;
++
++	tps65910 = dev_get_drvdata(pdev->dev.parent);
++
++	return 0;
++}
++
++static struct platform_driver tps65911_comparator_driver = {
++	.driver = {
++		.name = "tps65911-comparator",
++		.owner = THIS_MODULE,
++	},
++	.probe = tps65911_comparator_probe,
++	.remove = __devexit_p(tps65911_comparator_remove),
++};
++
++static int __init tps65911_comparator_init(void)
++{
++	return platform_driver_register(&tps65911_comparator_driver);
++}
++subsys_initcall(tps65911_comparator_init);
++
++static void __exit tps65911_comparator_exit(void)
++{
++	platform_driver_unregister(&tps65911_comparator_driver);
++}
++module_exit(tps65911_comparator_exit);
++
++MODULE_AUTHOR("Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>");
++MODULE_DESCRIPTION("TPS65911 comparator driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:tps65911-comparator");
 diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 32bb7b8..5f77006 100644
+index 5f77006..8bb85b9 100644
 --- a/include/linux/mfd/tps65910.h
 +++ b/include/linux/mfd/tps65910.h
-@@ -101,6 +101,9 @@
- #define TPS65910_GPIO3					0x63
- #define TPS65910_GPIO4					0x64
- #define TPS65910_GPIO5					0x65
-+#define TPS65910_GPIO6					0x66
-+#define TPS65910_GPIO7					0x67
-+#define TPS65910_GPIO8					0x68
- #define TPS65910_JTAGVERNUM				0x80
- #define TPS65910_MAX_REGISTER				0x80
+@@ -121,6 +121,8 @@
+ #define TPS65911_LDO6					0x35
+ #define TPS65911_LDO4					0x36
+ #define TPS65911_LDO3					0x37
++#define TPS65911_VMBCH					0x6A
++#define TPS65911_VMBCH2					0x6B
  
-@@ -650,82 +653,17 @@
- #define INT_MSK3_GPIO4_R_IT_MSK_SHIFT			0
+ /*
+  * List of register bitfields for component TPS65910
+@@ -746,6 +748,8 @@ struct tps65910_board {
+ 	int gpio_base;
+ 	int irq;
+ 	int irq_base;
++	int vmbch_threshold;
++	int vmbch2_threshold;
+ 	struct regulator_init_data *tps65910_pmic_init_data;
+ };
  
- 
--/*Register GPIO0  (0x80) register.RegisterDescription */
--#define GPIO0_GPIO_DEB_MASK				0x10
--#define GPIO0_GPIO_DEB_SHIFT				4
--#define GPIO0_GPIO_PUEN_MASK				0x08
--#define GPIO0_GPIO_PUEN_SHIFT				3
--#define GPIO0_GPIO_CFG_MASK				0x04
--#define GPIO0_GPIO_CFG_SHIFT				2
--#define GPIO0_GPIO_STS_MASK				0x02
--#define GPIO0_GPIO_STS_SHIFT				1
--#define GPIO0_GPIO_SET_MASK				0x01
--#define GPIO0_GPIO_SET_SHIFT				0
--
--
--/*Register GPIO1  (0x80) register.RegisterDescription */
--#define GPIO1_GPIO_DEB_MASK				0x10
--#define GPIO1_GPIO_DEB_SHIFT				4
--#define GPIO1_GPIO_PUEN_MASK				0x08
--#define GPIO1_GPIO_PUEN_SHIFT				3
--#define GPIO1_GPIO_CFG_MASK				0x04
--#define GPIO1_GPIO_CFG_SHIFT				2
--#define GPIO1_GPIO_STS_MASK				0x02
--#define GPIO1_GPIO_STS_SHIFT				1
--#define GPIO1_GPIO_SET_MASK				0x01
--#define GPIO1_GPIO_SET_SHIFT				0
--
--
--/*Register GPIO2  (0x80) register.RegisterDescription */
--#define GPIO2_GPIO_DEB_MASK				0x10
--#define GPIO2_GPIO_DEB_SHIFT				4
--#define GPIO2_GPIO_PUEN_MASK			 	0x08
--#define GPIO2_GPIO_PUEN_SHIFT				3
--#define GPIO2_GPIO_CFG_MASK				0x04
--#define GPIO2_GPIO_CFG_SHIFT				2
--#define GPIO2_GPIO_STS_MASK				0x02
--#define GPIO2_GPIO_STS_SHIFT				1
--#define GPIO2_GPIO_SET_MASK				0x01
--#define GPIO2_GPIO_SET_SHIFT				0
--
--
--/*Register GPIO3  (0x80) register.RegisterDescription */
--#define GPIO3_GPIO_DEB_MASK				0x10
--#define GPIO3_GPIO_DEB_SHIFT				4
--#define GPIO3_GPIO_PUEN_MASK				0x08
--#define GPIO3_GPIO_PUEN_SHIFT				3
--#define GPIO3_GPIO_CFG_MASK				0x04
--#define GPIO3_GPIO_CFG_SHIFT				2
--#define GPIO3_GPIO_STS_MASK			 	0x02
--#define GPIO3_GPIO_STS_SHIFT				1
--#define GPIO3_GPIO_SET_MASK				0x01
--#define GPIO3_GPIO_SET_SHIFT				0
--
--
--/*Register GPIO4  (0x80) register.RegisterDescription */
--#define GPIO4_GPIO_DEB_MASK				0x10
--#define GPIO4_GPIO_DEB_SHIFT				4
--#define GPIO4_GPIO_PUEN_MASK				0x08
--#define GPIO4_GPIO_PUEN_SHIFT				3
--#define GPIO4_GPIO_CFG_MASK				0x04
--#define GPIO4_GPIO_CFG_SHIFT				2
--#define GPIO4_GPIO_STS_MASK				0x02
--#define GPIO4_GPIO_STS_SHIFT				1
--#define GPIO4_GPIO_SET_MASK				0x01
--#define GPIO4_GPIO_SET_SHIFT				0
--
--
--/*Register GPIO5  (0x80) register.RegisterDescription */
--#define GPIO5_GPIO_DEB_MASK				0x10
--#define GPIO5_GPIO_DEB_SHIFT				4
--#define GPIO5_GPIO_PUEN_MASK				0x08
--#define GPIO5_GPIO_PUEN_SHIFT				3
--#define GPIO5_GPIO_CFG_MASK				0x04
--#define GPIO5_GPIO_CFG_SHIFT				2
--#define GPIO5_GPIO_STS_MASK				0x02
--#define GPIO5_GPIO_STS_SHIFT				1
--#define GPIO5_GPIO_SET_MASK				0x01
--#define GPIO5_GPIO_SET_SHIFT				0
-+/*Register GPIO  (0x80) register.RegisterDescription */
-+#define GPIO_DEB_MASK                           0x10
-+#define GPIO_DEB_SHIFT                          4
-+#define GPIO_PUEN_MASK                          0x08
-+#define GPIO_PUEN_SHIFT                         3
-+#define GPIO_CFG_MASK                           0x04
-+#define GPIO_CFG_SHIFT                          2
-+#define GPIO_STS_MASK                           0x02
-+#define GPIO_STS_SHIFT                          1
-+#define GPIO_SET_MASK                           0x01
-+#define GPIO_SET_SHIFT                          0
- 
- 
- /*Register JTAGVERNUM  (0x80) register.RegisterDescription */
 -- 
 1.7.1
 
