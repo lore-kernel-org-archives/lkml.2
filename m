@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1ECKaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 06:30:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64105 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab1ECKaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 06:30:04 -0400
-Message-ID: <4DBFD919.3090409@redhat.com>
-Date: Tue, 03 May 2011 07:29:45 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: Hans Verkuil <hverkuil@xs4all.nl>, Hans de Goede <hdegoede@redhat.com>,
-        Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
-References: <201104252323.20420.linux@rainbow-software.org> <4DB6B28D.5090607@redhat.com> <f2291b622da20d240c4ebe0ae72beb8c.squirrel@webmail.xs4all.nl> <201104262240.40497.linux@rainbow-software.org>
-In-Reply-To: <201104262240.40497.linux@rainbow-software.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752294Ab1ECK2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 06:28:41 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44084 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752179Ab1ECK2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 06:28:40 -0400
+Date: Tue, 3 May 2011 11:29:51 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jimmy Chen (=?big5?B?s6+lw7lG?=) <jimmy.chen@moxa.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <wim@iguana.be>
+Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
+ driver
+Message-ID: <20110503112951.1f6b7533@lxorguk.ukuu.org.uk>
+In-Reply-To: <ECB3782BB8F03341905DD923270296115F720B@mhqms01.moxa.com>
+References: <20110503103704.69aba5b2@lxorguk.ukuu.org.uk>
+	<ECB3782BB8F03341905DD923270296115F720B@mhqms01.moxa.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=big5
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-04-2011 17:40, Ondrej Zary escreveu:
-> On Tuesday 26 April 2011 14:33:20 Hans Verkuil wrote:
+On Tue, 3 May 2011 18:25:50 +0800
+Jimmy Chen (³¯¥Ã¹F) <jimmy.chen@moxa.com> wrote:
 
-> After digging in the code for hours, I'm giving this up. It's not worth it.
+> From: Jimmy Chen <jimmy.chen@moxa.com>
 > 
-> The ISOC_MODE_YUV422 mode works as V4L2_PIX_FMT_YVYU with VLC and 
-> mplayer+libv4lconvert, reducing the loop (and dropping strech_*) in 
-> usbvision_parse_lines_422() to:
->  scratch_get(usbvision, frame->data + (frame->v4l2_linesize * frame->curline),
->  2 * frame->frmwidth);
+> -Add real function for watchdog driver
+> -Follow advices from Alan Cox
 > 
-> The ISOC_MODE_YUV420 is some weird custom format with 64-byte lines of YYUV. 
-> usbvision_parse_lines_420() is real mess with that scratch_* crap everywhere.
-> 
-> ISOC_MODE_COMPRESS: There are callbacks to usbvision_request_intra() and also 
-> usbvision_adjust_compression(). This is not going to work outside the kernel.
-> 
-> 
-> So I can redo the conversion removal patch to keep the RGB formats and also 
-> provide another one to remove the testpattern (it oopses too). But I'm not 
-> going to do any major changes in the driver.
+> Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
 
-While in a perfect world, this should be moved to userspace, I'm ok on keeping
-it there, but the OOPS/Panic conditions should be fixed.
-
-Could you please work on a patch fixing the broken stuff, without removing the
-conversions?
-
-Thanks,
-Mauro
- 
-
+Acked-by: Alan Cox <alan@linux.intel.com>
