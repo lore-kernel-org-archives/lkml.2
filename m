@@ -1,300 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab1EDJYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 05:24:40 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:27298
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751768Ab1EDJYi (ORCPT
+	id S1752441Ab1EDJ0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 05:26:51 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:39109 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab1EDJ0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 05:24:38 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz936eKc8kzz1202hzz84d07h8275bhz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Wed, 4 May 2011 14:53:58 +0530
-Subject: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
-Thread-Topic: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
-Thread-Index: AcwKPP96vOzYUG7HTeOW8cOPsdfbJw==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8D9@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 4 May 2011 05:26:51 -0400
+Date: Wed, 4 May 2011 05:26:43 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+cc: jim.cromie@gmail.com
+Subject: [PATCH] PC8736X: Correct dev_dbg() message showing major number.
+Message-ID: <alpine.DEB.2.00.1105040522250.4503@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p449Opxa030950
 
-Hi,
 
-LED Driver for Dialog Semiconductor DA9052 PMICs.
+Currently, the debugging info is incorrect, as a successful call to
+either register_chrdev_region() or alloc_chrdev_region() returns
+simply zero, which appears to be what the following code would print.
+Skip the checking, just print the value of "major", which should be
+correct.
 
-Changes made since last submission:
-. used 'flags' field of led_platform_data to pass the led index
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 
-Signed-off-by: Dajun Chen <dchen@diasemi.com>
 ---
 
-diff -Naur linux-next-20110421.orig/drivers/leds/Kconfig linux-next-20110421/drivers/leds/Kconfig
---- linux-next-20110421.orig/drivers/leds/Kconfig	2011-04-26 09:32:34.000000000 +0500
-+++ linux-next-20110421/drivers/leds/Kconfig	2011-04-26 10:02:16.000000000 +0500
-@@ -284,6 +284,14 @@
- 	  This option enables support for on-chip LED drivers found
- 	  on Dialog Semiconductor DA9030/DA9034 PMICs.
+  here's the current code in context, so you can see what i mean:
 
-+config LEDS_DA9052
-+	tristate "Dialog DA9052 LEDS"
-+	depends on LEDS_CLASS
-+	depends on PMIC_DA9052
-+	help
-+	  This option enables support for on-chip LED drivers found
-+	  on Dialog Semiconductor DA9052 PMICs
-+
- config LEDS_DAC124S085
- 	tristate "LED Support for DAC124S085 SPI DAC"
- 	depends on LEDS_CLASS
-diff -Naur linux-next-20110421.orig/drivers/leds/leds-da9052.c linux-next-20110421/drivers/leds/leds-da9052.c
---- linux-next-20110421.orig/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
-+++ linux-next-20110421/drivers/leds/leds-da9052.c	2011-04-26 09:57:59.000000000 +0500
-@@ -0,0 +1,214 @@
-+/*
-+ * LED Driver for Dialog DA9052
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/leds.h>
-+#include <linux/workqueue.h>
-+#include <linux/slab.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+#include <linux/mfd/da9052/gpio.h>
-+
-+struct da9052_led {
-+	struct led_classdev cdev;
-+	struct work_struct work;
-+	struct da9052 *da9052;
-+	u8 led_index;
-+	u8 id;
-+	int brightness;
-+};
-+
-+u8 led_reg[] = {
-+		DA9052_LED_CONT_4_REG,
-+		DA9052_LED_CONT_5_REG,
-+};
-+
-+static int da9052_set_led_brightness(struct da9052_led *led)
-+{
-+	int error;
-+
-+	error = da9052_reg_write(led->da9052, led_reg[led->led_index],
-+				led->brightness | DA9052_LED_CONT_DIM);
-+	if (error < 0)
-+		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", error);
-+	return error;
-+}
-+
-+static void da9052_led_work(struct work_struct *work)
-+{
-+	struct da9052_led *led = container_of(work,
-+				 struct da9052_led, work);
-+
-+	da9052_set_led_brightness(led);
-+}
-+
-+static void da9052_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
-+{
-+	struct da9052_led *led;
-+
-+	led = container_of(led_cdev, struct da9052_led, cdev);
-+	led->brightness = value;
-+	schedule_work(&led->work);
-+}
-+
-+
-+static int da9052_configure_leds_gpio(struct da9052_led *led)
-+{
-+	int error;
-+	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
-+			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
-+
-+	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-+				DA9052_GPIO_MASK_LOWER_NIBBLE,
-+				register_value);
-+
-+	if (error < 0) {
-+		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
-+		return error;
-+	}
-+
-+	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-+				DA9052_GPIO_MASK_UPPER_NIBBLE,
-+				register_value << DA9052_GPIO_NIBBLE_SHIFT
-+				);
-+	if (error < 0)
-+		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
-+
-+	return error;
-+}
-+
-+static int __devinit da9052_led_probe(struct platform_device *pdev)
-+{
-+	struct da9052_pdata *pdata;
-+	struct da9052 *da9052;
-+	struct led_platform_data *pled;
-+	struct da9052_led *led;
-+	int error, i;
-+
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		error = -ENODEV;
-+		goto err_mem;
-+	}
-+
-+	pled = pdata->pled;
-+
-+	if (pled == NULL) {
-+		dev_err(&pdev->dev, "Failed no platform data for LED\n");
-+		return -ENOMEM;
-+	}
-+
-+	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < pled->num_leds; i++) {
-+		led[i].cdev.name = pled->leds[i].name;
-+		led[i].cdev.brightness_set = da9052_led_set;
-+		led[i].cdev.brightness = LED_OFF;
-+		led[i].brightness = 0;
-+		led[i].led_index = pled->leds[i].flags;
-+		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
-+		INIT_WORK(&led[i].work, da9052_led_work);
-+
-+		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
-+		if (error) {
-+			dev_err(&pdev->dev, "Failed to register led %d\n", led[i].led_index);
-+			goto err_register;
-+		}
-+
-+		error = da9052_set_led_brightness(&led[i]);
-+		if (error) {
-+			dev_err(&pdev->dev, "Unable to init led %d\n", led[i].led_index);
-+			continue;
-+		}
-+	}
-+	error = da9052_configure_leds_gpio(led);
-+	if (error) {
-+		dev_err(&pdev->dev, "Failed to configure GPIO Led,%d\n", error);
-+		goto err_register;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
-+
-+	return 0;
-+
-+err_register:
-+	for (i = i - 1; i >= 0; i--) {
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+err_mem:
-+	kfree(led);
-+	return error;
-+}
-+
-+static int __devexit da9052_led_remove(struct platform_device *pdev)
-+{
-+	struct da9052_led *led = platform_get_drvdata(pdev);
-+	struct da9052_pdata *pdata;
-+	struct da9052 *da9052;
-+	struct led_platform_data *pled;
-+	int i;
-+
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+	pled = pdata->pled;
-+
-+	for (i = 0; i < pled->num_leds; i++) {
-+		led[i].brightness = 0;
-+		da9052_set_led_brightness(&led[i]);
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+
-+	kfree(led);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_led_driver = {
-+	.driver = {
-+		.name	= "da9052-leds",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= da9052_led_probe,
-+	.remove		= __devexit_p(da9052_led_remove),
-+};
-+
-+static int __init da9052_led_init(void)
-+{
-+	return platform_driver_register(&da9052_led_driver);
-+}
-+module_init(da9052_led_init);
-+
-+static void __exit da9052_led_exit(void)
-+{
-+	platform_driver_unregister(&da9052_led_driver);
-+}
-+module_exit(da9052_led_exit);
-+
-+MODULE_AUTHOR("Dajun Chen <dchen@diasemi.com>	");
-+MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL v2");
-diff -Naur linux-next-20110421.orig/drivers/leds/Makefile linux-next-20110421/drivers/leds/Makefile
---- linux-next-20110421.orig/drivers/leds/Makefile	2011-04-26 09:32:34.000000000 +0500
-+++ linux-next-20110421/drivers/leds/Makefile	2011-04-26 10:01:02.000000000 +0500
-@@ -31,6 +31,7 @@
- obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
- obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
- obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
-+obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
- obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
- obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
- obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
+        if (major) {
+                devid = MKDEV(major, 0);
+                rc = register_chrdev_region(devid, PC8736X_GPIO_CT, DEVNAME);
+        } else {
+                rc = alloc_chrdev_region(&devid, 0, PC8736X_GPIO_CT, DEVNAME);
+                major = MAJOR(devid);
+        }
 
-Regards,
-Ashish
+        if (rc < 0) {
+                dev_err(&pdev->dev, "register-chrdev failed: %d\n", rc);
+                goto undo_request_region;
+        }
+        dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/drivers/char/pc8736x_gpio.c b/drivers/char/pc8736x_gpio.c
+index b304ec0..a23d6bf 100644
+--- a/drivers/char/pc8736x_gpio.c
++++ b/drivers/char/pc8736x_gpio.c
+@@ -314,10 +314,7 @@ static int __init pc8736x_gpio_init(void)
+ 		dev_err(&pdev->dev, "register-chrdev failed: %d\n", rc);
+ 		goto undo_request_region;
+ 	}
+-	if (!major) {
+-		major = rc;
+-		dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
+-	}
++	dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
+
+ 	pc8736x_init_shadow();
+
+
+-- 
+
+========================================================================
+Robert P. J. Day                                 Ottawa, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
