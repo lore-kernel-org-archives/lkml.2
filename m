@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1EDSTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:19:25 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:52832 "EHLO
+	id S1755366Ab1EDST5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:19:57 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:52851 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab1EDSTY (ORCPT
+	with ESMTP id S1754983Ab1EDST4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:19:24 -0400
-Date: Wed, 4 May 2011 20:19:15 +0200
+	Wed, 4 May 2011 14:19:56 -0400
+Date: Wed, 4 May 2011 20:19:49 +0200
 From: Daniel Kiper <dkiper@net-space.pl>
 To: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xensource.com
-Subject: [PATCH 7/8] arch/x86/xen/xen-ops: Cleanup code/data sections definitions
-Message-ID: <20110504181915.GH29218@router-fw-old.local.net-space.pl>
+Subject: [PATCH 8/8] drivers/xen/sys-hypervisor: Cleanup code/data sections definitions
+Message-ID: <20110504181949.GI29218@router-fw-old.local.net-space.pl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,21 +26,21 @@ accordingly to include/linux/init.h.
 
 Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
 ---
- arch/x86/xen/xen-ops.h |    2 +-
+ drivers/xen/sys-hypervisor.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 3112f55..97dfdc8 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -74,7 +74,7 @@ static inline void xen_hvm_smp_init(void) {}
+diff --git a/drivers/xen/sys-hypervisor.c b/drivers/xen/sys-hypervisor.c
+index 60f1827..1e0fe01 100644
+--- a/drivers/xen/sys-hypervisor.c
++++ b/drivers/xen/sys-hypervisor.c
+@@ -215,7 +215,7 @@ static struct attribute_group xen_compilation_group = {
+ 	.attrs = xen_compile_attrs,
+ };
  
- #ifdef CONFIG_PARAVIRT_SPINLOCKS
- void __init xen_init_spinlocks(void);
--__cpuinit void xen_init_lock_cpu(int cpu);
-+void __cpuinit xen_init_lock_cpu(int cpu);
- void xen_uninit_lock_cpu(int cpu);
- #else
- static inline void xen_init_spinlocks(void)
+-int __init static xen_compilation_init(void)
++static int __init xen_compilation_init(void)
+ {
+ 	return sysfs_create_group(hypervisor_kobj, &xen_compilation_group);
+ }
 -- 
 1.5.6.5
