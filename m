@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab1EDMvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 08:51:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60733 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab1EDMvP convert rfc822-to-8bit (ORCPT
+	id S1754118Ab1EDMwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 08:52:18 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:23028 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab1EDMwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 08:51:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=H1TCdIbtSfX07rtNLsVa2/2q7n0H7yptgoZc6Fy2pQfi6qUBEfRDi24C2yTW5TL7LV
-         PT7ABKFrbsvJI0SFkSshNpunUeTRRyRVg+b+U/dIumd9PrJNn3gHvgtE36WRd0aSME1f
-         bpBznMvTsAo9EQ/Dhe9MyASDYlMGYV8qn+/7Q=
-MIME-Version: 1.0
-In-Reply-To: <20110504112746.GE8007@htj.dyndns.org>
-References: <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com>
-	<web-516990066@zbackend1.aha.ru>
-	<BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
-	<20110503190822.GA20520@elte.hu>
-	<BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
-	<20110504083559.GB25724@elte.hu>
-	<alpine.LFD.2.02.1105041124080.3005@ionos>
-	<20110504101932.GA3392@elte.hu>
-	<alpine.LFD.2.02.1105041233280.3005@ionos>
-	<BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
-	<20110504112746.GE8007@htj.dyndns.org>
-Date: Wed, 4 May 2011 15:51:14 +0300
-X-Google-Sender-Auth: Oqnbf0_NO7x65VeJc61WrdpzF5s
-Message-ID: <BANLkTikKZhqkcrG8aqUD0tJxZE5zVu0pMg@mail.gmail.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-From: Pekka Enberg <penberg@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 May 2011 08:52:17 -0400
+Date: Wed, 4 May 2011 07:52:12 -0500
+From: scameron@beardog.cce.hp.com
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to ensure	commands don't get lost.
+Message-ID: <20110504125212.GC5997@beardog.cce.hp.com>
+References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com> <4DC13566.5070203@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC13566.5070203@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Wed, May 04, 2011 at 01:15:50PM +0200, Tomas Henzl wrote:
+> On 05/03/2011 09:58 PM, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> >
+> > Apparently we've been doin it rong for a decade, but only lately do we
+> > run into problems.
+> >
+> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > ---
+> >  drivers/scsi/hpsa.h |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
+> > index 621a153..98c97ca 100644
+> > --- a/drivers/scsi/hpsa.h
+> > +++ b/drivers/scsi/hpsa.h
+> > @@ -212,6 +212,7 @@ static void SA5_submit_command(struct ctlr_info *h,
+> >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
+> >  		c->Header.Tag.lower);
+> >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
+> > +	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
+> >   
+> Hi,
+> a small nit -
+> the (void) ^ is I think not needed for gcc and isn't present in the cciss.h patch
 
-On Wed, May 4, 2011 at 2:27 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hmmm... if it's a race caused by preemtion enabled where it shouldn't
-> be, it's most likely the wrong type of this_cpu_cmpxchg_double() being
-> used in SLUB?  ie. __this_cpu_cmpxchg_double() where it should have
-> been this_cpu_cmpxchg_double()?  Christoph?
+I just put it there to make it clear that it ignoring the return of readl is 
+done intentionally, not accidentally.  If this goes against some coding convention,
+whatever, I'm not super attached to the (void), but I did put it there on purpose,
+and would have done it in cciss as well, had I thought of it at the time.
 
-There's no __this_cpu_cmpxchg_double() usage in mm/slub.c so I don't
-think it's that simple.
+-- steve
+
+> 
+> Tomas
+> 
+> >  	h->commands_outstanding++;
+> >  	if (h->commands_outstanding > h->max_outstanding)
+> >  		h->max_outstanding = h->commands_outstanding;
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >   
