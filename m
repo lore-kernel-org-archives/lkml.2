@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1EDP60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:58:26 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:39625 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab1EDP6Z (ORCPT
+	id S1754416Ab1EDQA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:00:57 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:48143 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab1EDQAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:58:25 -0400
-X-Auth-Info: PworYMZwxzgf18GaZmpj6Pj4x6KZzSj502Iv9rjHnnM=
-Message-ID: <4DC17831.3070801@grandegger.com>
-Date: Wed, 04 May 2011 18:00:49 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 4 May 2011 12:00:54 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: "jdossantos@docs.homelinux.org" <jdossantos@docs.homelinux.org>
+CC: KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Error in Hyper-V modules hv_vmbus
+Thread-Topic: Error in Hyper-V modules hv_vmbus
+Thread-Index: AQHMCkBpETUemc5uTUuEnNLkft8sE5R8045Q
+Date: Wed, 4 May 2011 16:00:52 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A3FF3@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <0e67fbb5ce27bd8d1210f0b7b8d5069c@docs.homelinux.org>
+In-Reply-To: <0e67fbb5ce27bd8d1210f0b7b8d5069c@docs.homelinux.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.75]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <201105041511.54095.arnd@arndb.de> <4DC163D7.9010309@grandegger.com> <201105041648.37199.arnd@arndb.de>
-In-Reply-To: <201105041648.37199.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p44G1BQh032734
 
-On 05/04/2011 04:48 PM, Arnd Bergmann wrote:
-> On Wednesday 04 May 2011, Wolfgang Grandegger wrote:
->> On 05/04/2011 03:11 PM, Arnd Bergmann wrote:
+
+
+
+> -----Original Message-----
+> From: jdossantos@docs.homelinux.org
+> [mailto:jdossantos@docs.homelinux.org]
+> Sent: Wednesday, May 04, 2011 2:48 AM
+> To: Hank Janssen
+> Cc: KY Srinivasan; linux-kernel@vger.kernel.org
+> Subject: Re: Error in Hyper-V modules hv_vmbus
+> > Hank.
 > 
->>> Wolfgang, I'm a bit worried by the API being split between sockets and sysfs.
->>> The problem is that once the sysfs API is established, users will start
->>> relying on it, and you can no longer migrate away from it, even when
->>> a later version of the Socket CAN also supports setting through a different
->>> interface. What is the current interface to set mail box IDs in software?
->>
->> Note that this CAN controller is *very* special. It cannot handle all
->> CAN id's due to a lack or resources. The PRUSS firmware is able to
->> manage just up to 8 different CAN identifiers out of the usual 4096
->> (12-bit) or even more for the extended CAN ids using 29 bits. 
+>  Here is my step by step protocol:
+
+Thanks for the detailed setup. I will be trying it with this.
+
+>  lsmod | grep hv_
+>  hv_timesource           1055  0 [permanent]
+>  hv_vmbus               48554  1
 > 
-> So for other controllers, they can simply access every ID within
-> the range (12 or 29 bits), but there is no need to configure?
+>  In the logs and with lsmod i see the timesource module running, but
+> the
+>  time is not in sync with the windows host.
+>  Shutdown function also dosn't work, seems that nothing of the
+>  integrated components are working..hv_netvsc,hv_blkvsc,hv_storvsc are
+>  not
+>  loaded?! But modinfo provides information:
 
-Yes, 11 or 29 bits, to be correct.
+Timesource makes sure that the clock does not drift and uses Hyper-V for
+Its stable time source. 
 
-> What are these IDs for? Do they identify a local port, a remote address,
-> a connection, or something else?
+The setting of the clock equal to the host is provided by the hv_utils.ko
+Module. This module also provides heartbeat, shutdown and KVP functionality.
 
-It's a message identifier, which is used for bus arbitration and which
-other CAN nodes can listen to. See also:
+ 
+>  After that I enabled the synthetic network card, but also here..it
+>  doesn't work and I don't see any hv_netvsc
+>  module loaded, so I tried to load it "by hand" with modprobe
+>  hv_netvsc..but I get a modprobe timeout and nothing happens..
 
-http://lxr.linux.no/#linux+v2.6.38/Documentation/networking/can.txt#L146
-http://en.wikipedia.org/wiki/Controller_area_network
+I should know more in the next day or so when I get a VM up and running.
 
->> There is
->> no other CAN controller with such rather serious limitations and
->> therefore there exists also no appropriate interface. I think using
->> sysfs is OK for such device-specific parameters, at least for the time
->> being.
-> 
-> It sounds like it's not very scalable, especially since the implementation
-> is done completely in firmware. Imagine a new firmware version suddenly
-> supporting 256 ids instead of 8 -- you'd then have to create 256 sysfs
-> files to be compatible if I understand you correctly.
+It works fine on Ubuntu, I submitted a few patches to them a few weeks ago
+To fix some other problems (these patches are already in mainline)
 
-Well, than an array of CAN identifiers per file would indeed be more
-appropriate.
+Hank.
 
->>> How hard would it be to implement that feature in Socket CAN?
->>
->> CAN controllers usually provide some kind of hardware CAN id filtering,
->> but in a very hardware dependent way. A generic interface may be able to
->> handle the PRUSS restrictions as well. CAN devices are usually
->> configured through the netlink interface. e.g.
->>
->>   $ ip link set can0 up type can bitrate 125000
->>
->> and such a common interface would be netlink based as well.
-> 
-> Agreed.
-> 
->>> Is that something that Subhasish or someone else could to as a prerequisite
->>> to merging the driver?
->>
->> Any ideas on how to handle hardware filtering in a generic way are
->> welcome. I will try to come up with a proposal sooner than later.
-> 
-> It sounds to me like the best solution would be change the firmware
-> to lift that restriction and simply allow all IDs, in case it's not
-> actually a hardware limitation (which sounds unlikely).
-
-Yes, that would be best but they told us, that it's not possible with
-the available hardware resources. Subhasish?
-
-> If that's not possible, maybe it's possible to define a generic
-> filtering interface using netlink, and then either do it completely
-> in the kernel, or using the hardware support.
-
-Well, I hesitate to implement an interface especially for such an exotic
-device. Fine if it could be handled by a generic CAN hardware filter
-interface, which is especially useful for normal CAN controllers.
-
-Wolfgang.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
