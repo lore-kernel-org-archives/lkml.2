@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1EDSsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:48:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38043 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab1EDSsM (ORCPT
+	id S1754942Ab1EDSsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:48:19 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:44033 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab1EDSsQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:48:12 -0400
-Date: Wed, 4 May 2011 14:48:03 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        Chris Mason <chris.mason@oracle.com>, Jeff Layton <jlayton@redhat.com>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] mm: Wait for writeback when grabbing pages to
- begin a write
-Message-ID: <20110504184803.GB23246@infradead.org>
-References: <20110406232938.GF1110@tux1.beaverton.ibm.com>
- <20110407165700.GB7363@quack.suse.cz>
- <20110408203135.GH1110@tux1.beaverton.ibm.com>
- <20110411124229.47bc28f6@corrin.poochiereds.net>
- <1302543595-sup-4352@think>
- <1302569212.2580.13.camel@mingming-laptop>
- <20110412005719.GA23077@infradead.org>
- <1302742128.2586.274.camel@mingming-laptop>
- <20110422000226.GA22189@tux1.beaverton.ibm.com>
- <20110504174227.GH20579@tux1.beaverton.ibm.com>
+	Wed, 4 May 2011 14:48:16 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Add the necessary dependencies to
+ hyperv	Kconfig
+Thread-Topic: [PATCH 1/1] Staging: hv: Add the necessary dependencies to
+ hyperv	Kconfig
+Thread-Index: AQHMCotVUFFyEri7NUqyHWEhFI9/K5R9Abgw
+Date: Wed, 4 May 2011 18:48:15 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DFE27@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1304535105-26892-1-git-send-email-kys@microsoft.com>
+ <0D753D10438DA54287A00B027084269764D295CE91@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <0D753D10438DA54287A00B027084269764D295CE91@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504174227.GH20579@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 10:42:27AM -0700, Darrick J. Wong wrote:
-> When grabbing a page for a buffered IO write, the mm should wait for writeback
-> on the page to complete so that the page does not become writable during the IO
-> operation.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> 
->  mm/filemap.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index c641edf..c22675f 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2287,8 +2287,10 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
->  		gfp_notmask = __GFP_FS;
->  repeat:
->  	page = find_lock_page(mapping, index);
-> -	if (page)
-> +	if (page) {
-> +		wait_on_page_writeback(page);
->  		return page;
-> +	}
 
-		goto found;
 
->  
->  	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
->  	if (!page)
-> @@ -2301,6 +2303,7 @@ repeat:
->  			goto repeat;
->  		return NULL;
->  	}
+> -----Original Message-----
+> From: H Hartley Sweeten [mailto:hartleys@visionengravers.com]
+> Sent: Wednesday, May 04, 2011 2:44 PM
+> To: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Cc: Haiyang Zhang
+> Subject: RE: [PATCH 1/1] Staging: hv: Add the necessary dependencies to hyperv
+> Kconfig
+> 
+> On Wednesday, May 04, 2011 11:52 AM, K. Y. Srinivasan wrote:
+> >
+> > The vmbus driver dependes on ACPI and PCI subsystems. Change
+> > Kconfig to reflect this.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/staging/hv/Kconfig |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+> > index 76f0756..5e0c9f6 100644
+> > --- a/drivers/staging/hv/Kconfig
+> > +++ b/drivers/staging/hv/Kconfig
+> > @@ -1,6 +1,6 @@
+> >  config HYPERV
+> >  	tristate "Microsoft Hyper-V client drivers"
+> > -	depends on X86 && m
+> > +	depends on X86 && ACPI && PCI && m
+> >  	default n
+> >  	help
+> > 	  Select this option to run Linux as a Hyper-V client operating
+> 
+> ACPI itself depends on PCI.  It also depends on IA64 || X86.  Will the
+> vmbus driver work with IA64?  If so the depends on could just be:
+> 
+> 	depends on ACPI && m
 
-found:
-> +	wait_on_page_writeback(page);
->  	return page;
->  }
->  EXPORT_SYMBOL(grab_cache_page_write_begin);
+Good point; vmbus will not work on IA64 though. So, minimally we would want 
+X86 && ACPI. I will resend this with this change.
+
+Regards,
+
+K. Y
+> 
+> Also, default n is redudant since n is the default anyway.
+> 
+> Regards,
+> Hartley
+
