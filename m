@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1EDVHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:07:52 -0400
-Received: from kroah.org ([198.145.64.141]:39015 "EHLO coco.kroah.org"
+	id S1756093Ab1EDVIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:08:00 -0400
+Received: from kroah.org ([198.145.64.141]:39017 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab1EDVHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:07:50 -0400
-Date: Wed, 4 May 2011 14:01:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] STAGING fixes for .39 - try 2
-Message-ID: <20110504210139.GA2922@kroah.com>
+	id S1754365Ab1EDVHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 17:07:51 -0400
+Date: Wed, 4 May 2011 14:05:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for .39
+Message-ID: <20110504210517.GA3146@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -20,64 +21,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of minor staging driver fixes for your .39-rc tree, again.
-One more fix has been added since I sent this to you for the .39-rc5 tree, so
-that pull request would generate a different diff than this one.
+Here's some more small fixes for your .39 tree.
 
-All of these fix errors that have been reported by people.  There is one
-usbip bugfix for a runtime issue as well.
+Nothing major, just some small fixes for things that have been reported.
+
+The omap regulator patch was unfortunately named, but it does fix a
+problem that has been seen with that hardware that is needed to get it
+to work properly.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
 
-All of these patches have been in the mm and -next trees for a while.
+All of these have been in the linux-next tree for a while.
 
-These patches will be sent to the linux driver project list for all to
-see.
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
 thanks,
 
 greg k-h
 
---------------
+------------
 
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    3 ---
- drivers/staging/gma500/Kconfig                     |    2 +-
- drivers/staging/intel_sst/intelmid_v1_control.c    |    1 +
- drivers/staging/intel_sst/intelmid_v2_control.c    |    1 +
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c         |    1 +
- drivers/staging/rts_pstor/debug.h                  |    2 +-
- drivers/staging/rts_pstor/ms.c                     |    1 +
- drivers/staging/rts_pstor/rtsx_chip.c              |    5 +++--
- drivers/staging/rts_pstor/rtsx_scsi.c              |    1 +
- drivers/staging/rts_pstor/sd.c                     |    4 ++--
- drivers/staging/rts_pstor/trace.h                  |    2 +-
- drivers/staging/rts_pstor/xd.c                     |    1 +
- drivers/staging/solo6x10/Kconfig                   |    1 +
- drivers/staging/usbip/vhci_hcd.c                   |    9 ++++-----
- drivers/staging/usbip/vhci_sysfs.c                 |    7 ++++---
- drivers/staging/wlan-ng/cfg80211.c                 |    2 +-
- 17 files changed, 24 insertions(+), 23 deletions(-)
+ drivers/mfd/omap-usb-host.c      |    9 +++------
+ drivers/staging/usbip/vhci_hcd.c |    2 +-
+ drivers/usb/host/ehci-omap.c     |   20 ++++++++++++++++++++
+ drivers/usb/host/isp1760-hcd.c   |    1 +
+ drivers/usb/host/xhci-hub.c      |   19 +++++++++++++++++--
+ drivers/usb/musb/musb_gadget.c   |    6 ++----
+ drivers/usb/musb/omap2430.c      |    2 +-
+ 7 files changed, 45 insertions(+), 14 deletions(-)
 
 ---------------
 
-Harry Wei (1):
-      staging: Remove a warning for drivers/staging/wlan-ng/cfg80211.c
+Alan Stern (1):
+      USB: fix regression in usbip by setting has_tt flag
 
-Jeff Mahoney (5):
-      staging: olpc: Add <linux/delay.h>
-      staging: gma500: Depend on X86
-      staging: rts_pstor: Add <linux/vmalloc.h>
-      staging: rts_pstor: use #ifdef instead of #if
-      staging: ft1000: Remove unnecessary EXPORT_SYMBOLs
+Andiry Xu (1):
+      xHCI: Clear PLC in xhci_bus_resume()
 
-Max Vozeler (1):
-      staging: usbip: vhci: fix oops on subsequent attach
+Arvid Brodin (1):
+      usb/isp1760: Report correct urb status after unlink
 
-Peter Foley (1):
-      staging: solo6x10: add select SND_PCM to fix build error
+Axel Lin (1):
+      mfd: Fix usbhs_enable error handling
 
-Randy Dunlap (1):
-      staging: intel_sst: intelmid needs delay.h
+Jarkko Nikula (2):
+      usb: musb: omap2430: Fix retention idle on musb peripheral only boards
+      usb: musb: gadget: Fix out-of-sync runtime pm calls
+
+Keshava Munegowda (1):
+      omap:usb: add regulator support for EHCI
 
