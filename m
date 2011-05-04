@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab1EDSNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:13:53 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:49500 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab1EDSNu convert rfc822-to-8bit (ORCPT
+	id S1754582Ab1EDRHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 13:07:14 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:42207 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab1EDRHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:13:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cYOJce8VpG868iJ0yzmRyAszW2Fl48ey7hvbXiW1SagCtjGsRA/MsLC5sr2D1GrN6v
-         lY33gIN+ZbD4ljGMpWkvClkczjGlXLdRGW1Dtor7c1IGCIIYb1PQCYhK740p+hMGXtpC
-         Ui6Z6P0EW941i+Z0I0Bn1ZACrUf7hqyjuNYuQ=
-MIME-Version: 1.0
-In-Reply-To: <1304458235-28473-1-git-send-email-sven@narfation.org>
-References: <1304458235-28473-1-git-send-email-sven@narfation.org>
-From: Matt Turner <mattst88@gmail.com>
-Date: Wed, 4 May 2011 14:13:29 -0400
-Message-ID: <BANLkTinWa9E1_iLWyqAF+G8Qag=YK2T98A@mail.gmail.com>
-Subject: Re: [PATCH] atomic: add *_dec_not_zero
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        linux-alpha@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-cris-kernel@axis.com,
-        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 May 2011 13:07:13 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] dmaengine: at_hdmac: set residue as total len in atc_tx_status
+Date: Wed,  4 May 2011 20:14:12 +0200
+Message-Id: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 5:30 PM, Sven Eckelmann <sven@narfation.org> wrote:
-> diff --git a/arch/alpha/include/asm/atomic.h b/arch/alpha/include/asm/atomic.h
-> index e756d04..7e9434e 100644
-> --- a/arch/alpha/include/asm/atomic.h
-> +++ b/arch/alpha/include/asm/atomic.h
-> @@ -200,6 +200,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
->  }
->
->  #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
-> +#define atomic_dec_not_zero(v) atomic_add_unless((v), -1, 0)
->
->  /**
->  * atomic64_add_unless - add unless the number is a given value
-> @@ -226,6 +227,7 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
->  }
->
->  #define atomic64_inc_not_zero(v) atomic64_add_unless((v), 1, 0)
-> +#define atomic64_dec_not_zero(v) atomic64_add_unless((v), -1, 0)
->
->  #define atomic_add_negative(a, v) (atomic_add_return((a), (v)) < 0)
->  #define atomic64_add_negative(a, v) (atomic64_add_return((a), (v)) < 0)
-> diff --git a/arch/alpha/include/asm/local.h b/arch/alpha/include/asm/local.h
-> index b9e3e33..09fb327 100644
-> --- a/arch/alpha/include/asm/local.h
-> +++ b/arch/alpha/include/asm/local.h
-> @@ -79,6 +79,7 @@ static __inline__ long local_sub_return(long i, local_t * l)
->        c != (u);                                               \
->  })
->  #define local_inc_not_zero(l) local_add_unless((l), 1, 0)
-> +#define local_dec_not_zero(l) local_add_unless((l), -1, 0)
->
->  #define local_add_negative(a, l) (local_add_return((a), (l)) < 0)
->
+If transfer status is !=DMA_SUCCESS, return total transfer len as residue,
+instead of zero.
 
-Acked-by: Matt Turner <mattst88@gmail.com> [alpha]
+Idea from dw_dmac patch by Viresh Kumar.
+
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index f52c9e3..ba0b5ec 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1026,7 +1026,12 @@ atc_tx_status(struct dma_chan *chan,
+ 
+ 	spin_unlock_bh(&atchan->lock);
+ 
+-	dma_set_tx_state(txstate, last_complete, last_used, 0);
++	if (ret != DMA_SUCCESS)
++		dma_set_tx_state(txstate, last_complete, last_used,
++			atc_first_active(atchan)->len);
++	else
++		dma_set_tx_state(txstate, last_complete, last_used, 0);
++
+ 	dev_vdbg(chan2dev(chan), "tx_status: %d (d%d, u%d)\n",
+ 		 cookie, last_complete ? last_complete : 0,
+ 		 last_used ? last_used : 0);
+-- 
+1.7.3
+
