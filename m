@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1EDTI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:08:59 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:46309 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1EDTI6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:08:58 -0400
-Date: Wed, 4 May 2011 21:08:42 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: [hid-picolcd] Avoid compile warning/error triggered by
- copy_from_user()
-Message-ID: <20110504210842.50edc842@neptune.home>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755242Ab1EDTKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:10:09 -0400
+Received: from trent.utfs.org ([194.246.123.103]:45188 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753941Ab1EDTKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 15:10:07 -0400
+Date: Wed, 4 May 2011 12:10:04 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        minchan.kim@gmail.com
+Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
+In-Reply-To: <20110504111211.GF9114@dastard>
+Message-ID: <alpine.DEB.2.01.1105041205340.18728@trent.utfs.org>
+References: <20110429201701.GA13166@x4.trippels.de> <alpine.DEB.2.01.1104291710340.18728@trent.utfs.org> <20110501080149.GD13542@dastard> <alpine.DEB.2.01.1105012135260.18728@trent.utfs.org> <20110502121958.GA2978@dastard> <alpine.DEB.2.01.1105021247410.18728@trent.utfs.org>
+ <20110503005114.GE2978@dastard> <alpine.DEB.2.01.1105031345090.18728@trent.utfs.org> <alpine.DEB.2.01.1105031740460.18728@trent.utfs.org> <20110504073615.GD9114@dastard> <20110504111211.GF9114@dastard>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y compilation of PicoLCD
-driver fails on copy_from_user(), without it a warning is generated:
+On Wed, 4 May 2011 at 21:12, Dave Chinner wrote:
+>> Ok, that will be helpful. Also helpful is that I've (FINALLY!)
+>> reproduced this myself, and i think i can now reproduce it at will
+>> on a highmem i686 machine. I'll look into it more later tonight....
 
-  CC [M]  drivers/hid/hid-picolcd.o
-In file included from /usr/src/linux-2.6/arch/x86/include/asm/uaccess.h:571,
-                 from /usr/src/linux-2.6/arch/x86/include/asm/sections.h:5,
-                 from /usr/src/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
-                 from /usr/src/linux-2.6/include/linux/irq.h:359,
-                 from /usr/src/linux-2.6/arch/x86/include/asm/hardirq.h:5,
-                 from /usr/src/linux-2.6/include/linux/hardirq.h:7,
-                 from /usr/src/linux-2.6/include/linux/interrupt.h:12,
-                 from /usr/src/linux-2.6/include/linux/usb.h:15,
-                 from /usr/src/linux-2.6/drivers/hid/hid-picolcd.c:25:
-In function 'copy_from_user',
-    inlined from 'picolcd_debug_eeprom_write' at drivers/hid/hid-picolcd.c:1592:
-arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
+I've tried to reproduce it on an SMP i686 with 1024MB RAM, but there was 
+no OOM there.
 
-gcc-4.4.5 is not able to track size calculation when it is stored into
-a variable, thus tell copy_from_user() maximum size via
-min(*max-size*, *effective-size*) explicitly and inline how much to copy
-at most.
+> And here's a patch for you to try. It fixes the problem on my test
+> machine.....
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
---
+Excellent! After one run with that patch, the machine does not go OOM any 
+more when running du(1) over this XFS filesystem.
 
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index b2f56a1..9d8710f 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -1585,11 +1585,11 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
- 	memset(raw_data, 0, sizeof(raw_data));
- 	raw_data[0] = *off & 0xff;
- 	raw_data[1] = (*off >> 8) & 0xff;
--	raw_data[2] = s < 20 ? s : 20;
-+	raw_data[2] = min((size_t)20, s);
- 	if (*off + raw_data[2] > 0xff)
- 		raw_data[2] = 0x100 - *off;
- 
--	if (copy_from_user(raw_data+3, u, raw_data[2]))
-+	if (copy_from_user(raw_data+3, u, min((u8)20, raw_data[2])))
- 		return -EFAULT;
- 	resp = picolcd_send_and_wait(data->hdev, REPORT_EE_WRITE, raw_data,
- 			sizeof(raw_data));
+I've run du(1) login with my oom-debug script to gather sysrq-w and 
+slabinfo, see https://trent.utfs.org/p/bits/2.6.39-rc4/oom/trace/16-* for 
+the details.
+
+I'll poke it a bit more over the day, but your patch (one line only! Wow!) 
+seems to help.
+
+Thanks so much,
+Christian.
+-- 
+BOFH excuse #160:
+
+non-redundant fan failure
