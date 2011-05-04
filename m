@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1EDPiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:38:18 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58363 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab1EDPiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:38:17 -0400
-Date: Wed, 4 May 2011 08:38:07 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] iosched: remove redundant sprintf
-Message-ID: <20110504153807.GA30153@outflux.net>
+	id S1755064Ab1EDPit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:38:49 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59673 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab1EDPir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 11:38:47 -0400
+Date: Wed, 4 May 2011 10:38:19 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Bob Copeland <me@bobcopeland.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: ath5k regression associating with APs in 2.6.38
+Message-ID: <20110504153819.GA4551@thinkpad-t410>
+Mail-Followup-To: Jiri Slaby <jirislaby@gmail.com>,
+	Nick Kossifidis <mickflemm@gmail.com>,
+	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
+	Bob Copeland <me@bobcopeland.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-wireless@vger.kernel.org, ath5k-devel@lists.ath5k.org,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the anticipatory scheduler was dropped, there was no need to
-special-case the request_module string. As such, drop the redundant
-sprintf and stack variable.
+I've been investigating some reports of a regression in associating with
+APs with AR2413 in 2.6.38. Association repeatedly fails with some
+"direct probe to x timed out" messages (see syslog excerpt below),
+although it will generally associate eventually, after many tries.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- block/elevator.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Bisection identifies 8aec7af (ath5k: Support synth-only channel change
+for AR2413/AR5413) as offending commit. Prior to this commit there are
+no direct probe messages at all in the logs. I've also found that
+forcing fast to false at the top of ath5k_hw_reset() fixes the issue.
+I'm not sure what the connection is between this commit and the
+timeouts. Any suggestions?
 
-diff --git a/block/elevator.c b/block/elevator.c
-index 45ca1e3..2a0b653 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -155,13 +155,8 @@ static struct elevator_type *elevator_get(const char *name)
- 
- 	e = elevator_find(name);
- 	if (!e) {
--		char elv[ELV_NAME_MAX + strlen("-iosched")];
--
- 		spin_unlock(&elv_list_lock);
--
--		snprintf(elv, sizeof(elv), "%s-iosched", name);
--
--		request_module("%s", elv);
-+		request_module("%s-iosched", name);
- 		spin_lock(&elv_list_lock);
- 		e = elevator_find(name);
- 	}
--- 
-1.7.4.1
+Thanks,
+Seth
 
--- 
-Kees Cook
-Ubuntu Security Team
+
+May  4 09:32:15 AcerAspire5100 wpa_supplicant[757]: Trying to associate with c0:3f:0e:b9:f3:b2 (SSID='aureola' freq=2452 MHz)
+May  4 09:32:15 AcerAspire5100 kernel: [  120.063271] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
+May  4 09:32:16 AcerAspire5100 kernel: [  120.260074] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
+May  4 09:32:16 AcerAspire5100 kernel: [  120.460084] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
+May  4 09:32:16 AcerAspire5100 kernel: [  120.660082] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
+May  4 09:32:25 AcerAspire5100 wpa_supplicant[757]: Authentication with c0:3f:0e:b9:f3:b2 timed out.
+
