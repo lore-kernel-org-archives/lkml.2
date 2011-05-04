@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab1EDHDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 03:03:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37794 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab1EDHDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 03:03:41 -0400
-Date: Wed, 4 May 2011 09:03:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        linux-alpha@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-cris-kernel@axis.com,
-        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] atomic: add *_dec_not_zero
-Message-ID: <20110504070312.GD20828@elte.hu>
-References: <1304458235-28473-1-git-send-email-sven@narfation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753204Ab1EDHHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 03:07:10 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:47371 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753073Ab1EDHHI (ORCPT
+	<rfc822;groupwise-jlee@novell.com:6:1>);
+	Wed, 4 May 2011 03:07:08 -0400
+Message-Id: <4DC187B7020000230002C237@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Wed, 04 May 2011 01:07:03 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <tiwai@suse.de>
+Cc: <chris@chris-wilson.co.uk>, <melchior.franz@gmail.com>,
+        <dri-devel@lists.freedesktop.org>, <carlos@strangeworlds.co.uk>,
+        <jlee@suse.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: i915/kms/backlight-combo mode problem (was: Re: Linux
+ 2.6.39-rc5)
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
+ <201104301032.05271@rk-nord.at> <s5hiptwavar.wl%tiwai@suse.de>
+ <201104301334.53928@rk-nord.at> <s5hiptttick.wl%tiwai@suse.de>
+In-Reply-To: <s5hiptttick.wl%tiwai@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <1304458235-28473-1-git-send-email-sven@narfation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Melchior, 
 
-* Sven Eckelmann <sven@narfation.org> wrote:
+於 一，2011-05-02 於 14:08 +0200，Takashi Iwai 提到：
+> At Sat, 30 Apr 2011 13:34:51 +0200,
+> Melchior FRANZ wrote:
+> > 
+> > Dropping Linus from the CC.
+> > 
+> > 
+> > * Takashi Iwai -- Saturday 30 April 2011:
+> > * * At Sat, 30 Apr 2011 10:32:04 +0200, Melchior FRANZ wrote:
+> > > > Yes, backlight adjustment generally works on this notebook, but only
+> > > > with "acpi_osi=Linux" on the command line.
+> > > 
+> > > acpi_osi quirk should be better added statically, then.
+> > 
+> > No, I guess the problem here is that acer_wmi doesn't support this
+> > machine yet. I told the ACER WMI maintainer and sent a DSDT image,
+> > but this message was thoroughly ignored.
+> > 
+> > 
+> >   $ dmesg|grep -i acer
+> >   [    0.000000] DMI: Acer TM5735/BA51_MV, BIOS V1.04 09/23/2010
+> >   [   71.850534] acer_wmi: Acer Laptop ACPI-WMI Extras
+> >   [   72.350278] acer_wmi: Unable to detect available WMID devices
+> >   
+> >   Machine: Acer Travelmate 5735Z-452G32Mnss
+> 
+> Hm, but the backlight control is done via the standard ACPI, no?
+> If so, the fact that acer_wmi doesn't work sounds irrelevant.
+> 
+> BTW, did you try my previous patch?
+> 
+> 
+> Takashi
 
-> Introduce an *_dec_not_zero operation.  Make this a special case of
-> *_add_unless because batman-adv uses atomic_dec_not_zero in different
-> places like re-broadcast queue or aggregation queue management. There
-> are other non-final patches which may also want to use this macro.
+Yes, please try Takashi's previous patch. 
 
->  arch/x86/include/asm/atomic.h      |    1 +
->  arch/x86/include/asm/atomic64_64.h |    1 +
+I am tracing bko#34142, but this issue does not related to your
+backlight control, because there have _BCM, _BQC declare in your DSDT,
+your machine MUST SUPPORTED by standard acpi backlight interface.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+Even the acer-wmi can probed on your machine, it cann't help anything
+for your backlight control.
 
-Thanks,
 
-	Ingo
+Thank's a lot!
+Joey Lee
+
