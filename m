@@ -1,106 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab1EDV6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:58:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26108 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab1EDV6R (ORCPT
+	id S1756092Ab1EDV62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:58:28 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48967 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab1EDV6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:58:17 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Colin Cross <ccross@android.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: omap4: Pass core and wakeup mux tables to omap4_mux_init
-Date: Wed,  4 May 2011 14:57:57 -0700
-Message-Id: <1304546278-28965-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.4.1
-X-System-Of-Record: true
+	Wed, 4 May 2011 17:58:25 -0400
+From: Tom Lendacky <tahm@linux.vnet.ibm.com>
+Organization: IBM Linux Performance
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Date: Wed, 4 May 2011 16:58:18 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.35.12-90.fc14.i686.PAE; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+References: <cover.1304541918.git.mst@redhat.com>  <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+In-Reply-To: <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105041658.19917.tahm@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP4 contains two separate instances of the padconf registers,
-one in the core system config and one in the wakeup system config.
-Pass in two tables to apply the correct values to each instance.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- arch/arm/mach-omap2/board-4430sdp.c    |    2 +-
- arch/arm/mach-omap2/board-omap4panda.c |    2 +-
- arch/arm/mach-omap2/mux.h              |    6 ++++--
- arch/arm/mach-omap2/mux44xx.c          |    5 +++--
- 4 files changed, 9 insertions(+), 6 deletions(-)
+On Wednesday, May 04, 2011 03:51:47 PM Michael S. Tsirkin wrote:
+> Use the new avail_event feature to reduce the number
+> of exits from the guest.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/virtio/virtio_ring.c |   39
+> ++++++++++++++++++++++++++++++++++++++- 1 files changed, 38 insertions(+),
+> 1 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index 3a3ed75..262dfe6 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -82,6 +82,15 @@ struct vring_virtqueue
+>  	/* Host supports indirect buffers */
+>  	bool indirect;
+> 
+> +	/* Host publishes avail event idx */
+> +	bool event;
+> +
+> +	/* Is kicked_avail below valid? */
+> +	bool kicked_avail_valid;
+> +
+> +	/* avail idx value we already kicked. */
+> +	u16 kicked_avail;
+> +
+>  	/* Number of free buffers */
+>  	unsigned int num_free;
+>  	/* Head of free buffer list. */
+> @@ -228,6 +237,12 @@ add_head:
+>  	 * new available array entries. */
+>  	virtio_wmb();
+>  	vq->vring.avail->idx++;
+> +	/* If the driver never bothers to kick in a very long while,
+> +	 * avail index might wrap around. If that happens, invalidate
+> +	 * kicked_avail index we stored. TODO: make sure all drivers
+> +	 * kick at least once in 2^16 and remove this. */
+> +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
+> +		vq->kicked_avail_valid = true;
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index 56702c5..41c109a 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -784,7 +784,7 @@ static void __init omap_4430sdp_init(void)
- 
- 	if (omap_rev() == OMAP4430_REV_ES1_0)
- 		package = OMAP_PACKAGE_CBL;
--	omap4_mux_init(board_mux, package);
-+	omap4_mux_init(board_mux, NULL, package);
- 
- 	omap_board_config = sdp4430_config;
- 	omap_board_config_size = ARRAY_SIZE(sdp4430_config);
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index f3a7b10..f70850e 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -720,7 +720,7 @@ static void __init omap4_panda_init(void)
- 
- 	if (omap_rev() == OMAP4430_REV_ES1_0)
- 		package = OMAP_PACKAGE_CBL;
--	omap4_mux_init(board_mux, package);
-+	omap4_mux_init(board_mux, NULL, package);
- 
- 	if (wl12xx_set_platform_data(&omap_panda_wlan_data))
- 		pr_err("error setting wl12xx data\n");
-diff --git a/arch/arm/mach-omap2/mux.h b/arch/arm/mach-omap2/mux.h
-index 137f321..2132308 100644
---- a/arch/arm/mach-omap2/mux.h
-+++ b/arch/arm/mach-omap2/mux.h
-@@ -323,10 +323,12 @@ int omap3_mux_init(struct omap_board_mux *board_mux, int flags);
- 
- /**
-  * omap4_mux_init() - initialize mux system with board specific set
-- * @board_mux:		Board specific mux table
-+ * @board_subset:	Board specific mux table
-+ * @board_wkup_subset:	Board specific mux table for wakeup instance
-  * @flags:		OMAP package type used for the board
-  */
--int omap4_mux_init(struct omap_board_mux *board_mux, int flags);
-+int omap4_mux_init(struct omap_board_mux *board_subset,
-+	struct omap_board_mux *board_wkup_subset, int flags);
- 
- /**
-  * omap_mux_init - private mux init function, do not call
-diff --git a/arch/arm/mach-omap2/mux44xx.c b/arch/arm/mach-omap2/mux44xx.c
-index 9a66445..f5a74da 100644
---- a/arch/arm/mach-omap2/mux44xx.c
-+++ b/arch/arm/mach-omap2/mux44xx.c
-@@ -1309,7 +1309,8 @@ static struct omap_ball __initdata omap4_wkup_cbl_cbs_ball[] = {
- #define omap4_wkup_cbl_cbs_ball  NULL
- #endif
- 
--int __init omap4_mux_init(struct omap_board_mux *board_subset, int flags)
-+int __init omap4_mux_init(struct omap_board_mux *board_subset,
-+	struct omap_board_mux *board_wkup_subset, int flags)
- {
- 	struct omap_ball *package_balls_core;
- 	struct omap_ball *package_balls_wkup = omap4_wkup_cbl_cbs_ball;
-@@ -1347,7 +1348,7 @@ int __init omap4_mux_init(struct omap_board_mux *board_subset, int flags)
- 			    OMAP_MUX_GPIO_IN_MODE3,
- 			    OMAP4_CTRL_MODULE_PAD_WKUP_MUX_PBASE,
- 			    OMAP4_CTRL_MODULE_PAD_WKUP_MUX_SIZE,
--			    omap4_wkup_muxmodes, NULL, board_subset,
-+			    omap4_wkup_muxmodes, NULL, board_wkup_subset,
- 			    package_balls_wkup);
- 
- 	return ret;
--- 
-1.7.4.1
+vq->kicked_avail_valid should be set to false here.
 
+Tom
+
+> 
+>  	pr_debug("Added buffer head %i to %p\n", head, vq);
+>  	END_USE(vq);
+> @@ -236,6 +251,23 @@ add_head:
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_add_buf_gfp);
+> 
+> +
+> +static bool vring_notify(struct vring_virtqueue *vq)
+> +{
+> +	u16 old, new;
+> +	bool v;
+> +	if (!vq->event)
+> +		return !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY);
+> +
+> +	v = vq->kicked_avail_valid;
+> +	old = vq->kicked_avail;
+> +	new = vq->kicked_avail = vq->vring.avail->idx;
+> +	vq->kicked_avail_valid = true;
+> +	if (unlikely(!v))
+> +		return true;
+> +	return vring_need_event(vring_avail_event(&vq->vring), new, old);
+> +}
+> +
+>  void virtqueue_kick(struct virtqueue *_vq)
+>  {
+>  	struct vring_virtqueue *vq = to_vvq(_vq);
+> @@ -244,7 +276,7 @@ void virtqueue_kick(struct virtqueue *_vq)
+>  	/* Need to update avail index before checking if we should notify */
+>  	virtio_mb();
+> 
+> -	if (!(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY))
+> +	if (vring_notify(vq))
+>  		/* Prod other side to tell it about changes. */
+>  		vq->notify(&vq->vq);
+> 
+> @@ -437,6 +469,8 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>  	vq->vq.name = name;
+>  	vq->notify = notify;
+>  	vq->broken = false;
+> +	vq->kicked_avail_valid = false;
+> +	vq->kicked_avail = 0;
+>  	vq->last_used_idx = 0;
+>  	list_add_tail(&vq->vq.list, &vdev->vqs);
+>  #ifdef DEBUG
+> @@ -444,6 +478,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>  #endif
+> 
+>  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+> +	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_AVAIL_EVENT_IDX);
+> 
+>  	/* No callback?  Tell other side not to bother us. */
+>  	if (!callback)
+> @@ -482,6 +517,8 @@ void vring_transport_features(struct virtio_device
+> *vdev) break;
+>  		case VIRTIO_RING_F_USED_EVENT_IDX:
+>  			break;
+> +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
+> +			break;
+>  		default:
+>  			/* We don't understand this bit. */
+>  			clear_bit(i, vdev->features);
