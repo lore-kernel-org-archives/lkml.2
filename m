@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751131Ab1EDHTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 03:19:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47754 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab1EDHTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 03:19:36 -0400
-Date: Wed, 4 May 2011 09:19:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        werner <w.landgraf@ru.ru>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110504071929.GB3589@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-	werner <w.landgraf@ru.ru>, Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <web-516671337@zbackend1.aha.ru>
- <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com>
- <web-516990066@zbackend1.aha.ru>
- <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
- <20110503190822.GA20520@elte.hu>
- <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <4DC06386.8090206@zytor.com>
- <20110503205051.GA28647@elte.hu>
- <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
+	id S1751074Ab1EDHbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 03:31:34 -0400
+Received: from christianhoffmann.info ([88.175.101.52]:48596 "EHLO
+	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab1EDHbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 03:31:33 -0400
+Message-ID: <4DC100D0.1030302@christianhoffmann.info>
+Date: Wed, 04 May 2011 09:31:28 +0200
+From: Christian Hoffmann <email@christianhoffmann.info>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <BANLkTin0QqwmOw2xYic0MVgvm4Rk13-yHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: john stultz <johnstul@us.ibm.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Long timeout when booting >= 2.6.38
+References: <4DBEFCBA.3070501@christianhoffmann.info>	 <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>	 <1304372955.3226.15.camel@work-vm>	 <4DBF2FB4.8000304@christianhoffmann.info> <1304470839.3037.12.camel@work-vm>
+In-Reply-To: <1304470839.3037.12.camel@work-vm>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 02:45:10PM -0700, Linus Torvalds wrote:
-> Now, Werner is actually _running_ on an AMD Opteron (or whatever
-> family 15 is), I think.
+On 05/04/2011 03:00 AM, john stultz wrote:
+> On Tue, 2011-05-03 at 00:27 +0200, Christian Hoffmann wrote:
+>>>
+>>> Can you reproduce the hang booting with "clocksource=hpet" and
+>>> "clocksource=acpi_pm" ?
+>>
+>> Both hang also.
+>
+> Sorry, one more clarifying point here:
+>
+> When you used either clocksource=hpet/clocksource=acpi_pm did the
+> behavior of the system seem different after booting? In other words:
+> does running time waiting a few seconds and then running time again show
+> the expected passage of time?  Were any following hangs seen, or was it
+> only the first one at boot?
 
-http://marc.info/?l=linux-kernel&m=130438580705332 says it's a AMD
-Athlon(tm) 64 X2 Dual Core Processor 4800+, i.e. a good old K8 desktop.
-The X86_ELAN Kconfig option, however, says:
+Hi,
 
-config X86_ELAN
-	bool "AMD Elan"
-	depends on X86_32
-	depends on X86_EXTENDED_PLATFORM
-	---help---
-	  Select this for an AMD Elan processor.
+with hpet no problems seen. No further hangs either.
 
-	  Do not use this option for K6/Athlon/Opteron processors!
+In fact, switching to acpi_pm doesn't seem to work:
 
-	  If unsure, choose "PC-compatible" instead.
+$ dmesg | grep clock
 
-so if the sentence before last used to mean anything, this could be a
-problem. Quick search about it gives http://lkml.org/lkml/2004/1/12/239
-which introduces that different compiler arch for ELAN: -march=i486,
-which could conflict with the generic selection?
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ 
+root=/dev/mapper/vg-root ro quiet splash vt.handoff=7 clocksource=acpi_pm
+[    0.000000] Kernel command line: 
+BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ root=/dev/mapper/vg-root ro 
+quiet splash vt.handoff=7 clocksource=acpi_pm
+[    0.000000] hpet clockevent registered
+[    1.413835] Switching to clocksource hpet
+[    1.420762] Override clocksource acpi_pm is not HRT compatible. 
+Cannot switch while in HRT/NOHZ mode
+[  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
+[  147.940147] Switching to clocksource tsc
 
-Hmm.
 
--- 
-Regards/Gruss,
-    Boris.
+Regards,
+Chris
