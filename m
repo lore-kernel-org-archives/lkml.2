@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab1EDUSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:18:05 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:42656 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1EDUSC (ORCPT
+	id S1755469Ab1EDUTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:19:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41433 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1EDUTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:18:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=MnVfeccd1xoagIa8zZX9ESORnnTJhJZzUOZob753X/T7Ghaa
-	DfuV/SJv+FP+KLi4g7YQzmPi+ZYcaFJ/v6YZsv7QQ3VM7CRAs/P/pBiXimgqULz3
-	Qvqa7sakSrPcO8IiECqbimZbq2iO62gstGg545ODBQiCNIcusYt2yfGdVW8=
-Date: Wed, 4 May 2011 13:18:34 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for 2.6.39-rc7
-Message-ID: <Pine.LNX.4.64.1105041316490.748@cobra.newdream.net>
+	Wed, 4 May 2011 16:19:24 -0400
+Subject: [PATCH] irq: add irq_alloc_desc_between() helper
+To: tglx@linutronix.de, linux-kernel@vger.kernel.org, miltonm@bga.com
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 04 May 2011 14:19:22 -0600
+Message-ID: <20110504201839.7701.18840.stgit@ponder>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Written in response to conversation on IRC about needing to specify an upper
+limit on the virq value returned for some MSI interrupt controllers.  Compiled
+only; untested
 
-Please pull the following Ceph fixes from
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ include/linux/irq.h  |    9 ++++++++-
+ kernel/irq/irqdesc.c |    5 ++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 09a3080..bcb712b 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -544,10 +544,17 @@ static inline struct msi_desc *irq_data_get_msi(struct irq_data *d)
+ 	return d->msi_desc;
+ }
+ 
+-int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node);
++int irq_alloc_descs_between(int irq, unsigned int from, unsigned int cnt,
++			    unsigned int max, int node);
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
+ 
++static inline int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt,
++				  int node)
++{
++	return irq_alloc_descs_between(irq, from, cnt, 0, node);
++}
++
+ static inline int irq_alloc_desc(int node)
+ {
+ 	return irq_alloc_descs(-1, 0, 1, node);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 2c039c9..c1ddabd 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -322,7 +322,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+  * Returns the first irq number or error code
+  */
+ int __ref
+-irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
++irq_alloc_descs_between(int irq, unsigned int from, unsigned int cnt, unsigned int max, int node)
+ {
+ 	int start, ret;
+ 
+@@ -337,6 +337,9 @@ irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
+ 	if (irq >=0 && start != irq)
+ 		goto err;
+ 
++	if (max && start + cnt >= max)
++		goto err;
++
+ 	if (start + cnt > nr_irqs) {
+ 		ret = irq_expand_nr_irqs(start + cnt);
+ 		if (ret)
 
-There are some error paths that weren't handling ENOMEM properly, and a 
-few more locking fixes that are fallout from Dave's inode_lock->i_lock 
-changes.
-
-Thanks!
-sage
-
-
-Henry C Chang (2):
-      libceph: fix ceph_msg_new error path
-      ceph: handle ceph_osdc_new_request failure in ceph_writepages_start
-
-Sage Weil (3):
-      ceph: use ihold() when i_lock is held
-      libceph: fix ceph_osdc_alloc_request error checks
-      ceph: do not call __mark_dirty_inode under i_lock
-
- drivers/block/rbd.c   |    4 ++--
- fs/ceph/addr.c        |    7 +++++++
- fs/ceph/caps.c        |   14 +++++++-------
- fs/ceph/file.c        |    5 ++++-
- fs/ceph/inode.c       |    6 +++++-
- fs/ceph/super.h       |    2 +-
- fs/ceph/xattr.c       |   12 ++++++++----
- net/ceph/messenger.c  |   26 +++++++++++++-------------
- net/ceph/osd_client.c |    4 ++--
- 9 files changed, 49 insertions(+), 31 deletions(-)
