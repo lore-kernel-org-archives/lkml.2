@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1EDLhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 07:37:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48204 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1EDLhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 07:37:37 -0400
-Message-ID: <4DC13A1B.8020004@ru.mvista.com>
-Date: Wed, 04 May 2011 15:35:55 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1753872Ab1EDLij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 07:38:39 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:39201 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753246Ab1EDLii convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 07:38:38 -0400
+From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+To: Borislav Petkov <bp@amd64.org>, "Moore, Eric" <Eric.Moore@lsi.com>
+CC: Borislav Petkov <borislav.petkov@amd.com>, Support <support@lsi.com>,
+        DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>
+Date: Wed, 4 May 2011 17:10:03 +0530
+Subject: RE: [PATCH] mptsas: Fix annoying warning
+Thread-Topic: [PATCH] mptsas: Fix annoying warning
+Thread-Index: AcwI2HYdrssNjL7JTbC8cfHC57kJxgBd26jQ
+Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70157F09DC3@inbmail01.lsi.com>
+References: <1304347778-12129-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1304347778-12129-1-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Oliver Neukum <oneukum@suse.de>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usbnet: Convert dbg to dev_dbg and neatening
-References: <cover.1304445019.git.joe@perches.com> <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
-In-Reply-To: <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Please consider this patch as an ACKed.
 
-On 03-05-2011 22:17, Joe Perches wrote:
+~ Kashyap
 
-> Use the more standard logging form.
-> Add a bit more tidying style.
-
-    Style changes look rather doubtful to me...
-
-> Signed-off-by: Joe Perches<joe@perches.com>
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@amd64.org]
+> Sent: Monday, May 02, 2011 8:20 PM
+> To: Moore, Eric
+> Cc: Borislav Petkov; Support; DL-MPT Fusion Linux; linux-
+> scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] mptsas: Fix annoying warning
+> 
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Shut up
+> 
+> drivers/message/fusion/mptsas.c: In function 'mptsas_event_process':
+> drivers/message/fusion/mptsas.c:5015: warning: unused variable
+> 'log_info'
+> 
+> for configs with CONFIG_SCSI_MPT2SAS_LOGGING unset.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 > ---
->   drivers/net/usb/usbnet.c |   23 +++++++++++------------
->   1 files changed, 11 insertions(+), 12 deletions(-)
+>  drivers/message/fusion/mptsas.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/message/fusion/mptsas.c
+> b/drivers/message/fusion/mptsas.c
+> index 66f9412..7596aec 100644
+> --- a/drivers/message/fusion/mptsas.c
+> +++ b/drivers/message/fusion/mptsas.c
+> @@ -5012,7 +5012,6 @@ mptsas_event_process(MPT_ADAPTER *ioc,
+> EventNotificationReply_t *reply)
+>  			(ioc_stat & MPI_IOCSTATUS_FLAG_LOG_INFO_AVAILABLE)) {
+>  			VirtTarget *vtarget = NULL;
+>  			u8		id, channel;
+> -			u32	 log_info = le32_to_cpu(reply->IOCLogInfo);
+> 
+>  			id = sas_event_data->TargetID;
+>  			channel = sas_event_data->Bus;
+> @@ -5023,7 +5022,8 @@ mptsas_event_process(MPT_ADAPTER *ioc,
+> EventNotificationReply_t *reply)
+>  				    "LogInfo (0x%x) available for "
+>  				   "INTERNAL_DEVICE_RESET"
+>  				   "fw_id %d fw_channel %d\n", ioc->name,
+> -				   log_info, id, channel));
+> +				   le32_to_cpu(reply->IOCLogInfo),
+> +				   id, channel));
+>  				if (vtarget->raidVolume) {
+>  					devtprintk(ioc, printk(MYIOC_s_DEBUG_FMT
+>  					"Skipping Raid Volume for inDMD\n",
+> --
+> 1.7.4.rc2
 
-> diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-> index 28aecbb..b803085 100644
-> --- a/drivers/net/usb/usbnet.c
-> +++ b/drivers/net/usb/usbnet.c
-> @@ -192,8 +192,8 @@ static int init_status(struct usbnet *dev, struct usb_interface *intf)
->   		return 0;
->
->   	pipe = usb_rcvintpipe(dev->udev,
-> -			      dev->status->desc.bEndpointAddress
-> -			& USB_ENDPOINT_NUMBER_MASK);
-> +			      (dev->status->desc.bEndpointAddress
-> +			& USB_ENDPOINT_NUMBER_MASK));
-
-    Why add parens?
-
-> @@ -1345,8 +1346,9 @@ usbnet_probe(struct usb_interface *udev, const struct usb_device_id *prod)
->   	dev->intf = udev;
->   	dev->driver_info = info;
->   	dev->driver_name = name;
-> -	dev->msg_enable = netif_msg_init(msg_level, NETIF_MSG_DRV
-> -					 | NETIF_MSG_PROBE | NETIF_MSG_LINK);
-> +	dev->msg_enable = netif_msg_init(msg_level, (NETIF_MSG_DRV |
-> +						     NETIF_MSG_PROBE |
-> +						     NETIF_MSG_LINK));
-
-    Why add parens?
-
-> @@ -1466,8 +1468,7 @@ EXPORT_SYMBOL_GPL(usbnet_probe);
->
->   /*-------------------------------------------------------------------------*/
->
-> -/*
-> - * suspend the whole driver as soon as the first interface is suspended
-> +/* suspend the whole driver as soon as the first interface is suspended
-
-    Why? This already corresponded to the preferred multi-line comment style...
-
->    * resume only when the last interface is resumed
->    */
->
-> @@ -1485,16 +1486,14 @@ int usbnet_suspend(struct usb_interface *intf, pm_message_t message)
->   			set_bit(EVENT_DEV_ASLEEP,&dev->flags);
->   			spin_unlock_irq(&dev->txq.lock);
->   		}
-> -		/*
-> -		 * accelerate emptying of the rx and queues, to avoid
-> +		/* accelerate emptying of the rx and queues, to avoid
-
-    Why?
-
->   		 * having everything error out.
->   		 */
->   		netif_device_detach(dev->net);
->   		usbnet_terminate_urbs(dev);
->   		usb_kill_urb(dev->interrupt);
->
-> -		/*
-> -		 * reattach so runtime management can use and
-> +		/* reattach so runtime management can use and
-
-    Why?
-
-WBR, Sergei
