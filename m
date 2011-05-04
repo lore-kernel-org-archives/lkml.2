@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab1EDHsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 03:48:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62280 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab1EDHsN (ORCPT
+	id S1751712Ab1EDHse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 03:48:34 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:47378 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1EDHsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 03:48:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Bi5u6XAaDsYILINi4hC2BguA9hKern5Z9oqmttxDvwJeFyLHKHoKFuLGYY+RMFuKxF
-         ZnTxZWGnu65aM9v4Yc5GXk18WC8EQ8zNzxJdSqhNWGPFY8XGjwTAgPtWIJ3g484tnUMj
-         E/EyHVPv27G3vwfsmYZspmFteX9YzuwzoVVZA=
-MIME-Version: 1.0
-In-Reply-To: <430965.32751.qm@web29011.mail.ird.yahoo.com>
-References: <1304421107.15687.15.camel@flow>
-	<430965.32751.qm@web29011.mail.ird.yahoo.com>
-Date: Wed, 4 May 2011 09:48:13 +0200
-Message-ID: <BANLkTimjDV+--w6LM9F3tbtvLvqW=e-sTw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] leds: Add ASIC3 LED support
-From: Philipp Zabel <philipp.zabel@gmail.com>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 4 May 2011 03:48:32 -0400
+Subject: [PATCH V4 0/8] macvtap/vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 00:48:22 -0700
+Message-ID: <1304495302.20660.60.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 10:25 PM, Paul Parsons <lost.distance@yahoo.com> wrote:
-> Hi Philipp,
->
-> --- On Tue, 3/5/11, Philipp Zabel <philipp.zabel@gmail.com> wrote:
->
->> About this, see the other patch I sent. This should work
->> with the GPIOs
->> configured as outputs.
-> See my response on the other thread.
+This patchset add supports for TX zero-copy between guest and host
+kernel through vhost. It significantly reduces CPU utilization on the
+local host on which the guest is located (It reduced 30-50% CPU usage
+for vhost thread for single stream test). The patchset is based on
+previous submission and comments from the community regarding when/how
+to handle guest kernel buffers to be released. This is the simplest
+approach I can think of after comparing with several other solutions.
 
-Will do.
+This patchset has integrated V3 review comments from the community:
 
->> Could be moved into struct resource definitions in
->> asic3.c.
->> Get to them with platform_get_resource() in
->> asic3_led_probe().
->> After calculating the bus shift from the resource size, you
->> have
->> everything you need to get rid of the
->> asic3_write_register() export.
-> I understand, but my feeling is that implementing a more generic mechanism will add complexity for little obvious gain. If the LED driver ever needs to be more generic then this can be revisited.
+1. Add more comments on how to use device ZEROCOPY flag;
 
-Fair enough. Looks like your feeling is right - de-inlining and
-exporting asic3_read/write_register costs only ~300 bytes. iomem
-resources + ioremap + bus shift calculation in leds-asic3.o are
-probably bigger than that.
+2. Change device ZEROCOPY to available bit 31
 
-regards
-Philipp
+3. Fix skb header linear allocation when virtio_net GSO is not enabled
+
+This patchset includes:
+
+1/8: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
+
+2/8: Add a new device flag, NETIF_F_ZEROCOPY for lower level device
+support zero-copy;
+
+3/8: Add a new struct skb_ubuf_info in skb_share_info for userspace
+buffers release callback when lower device DMA has done for that skb,
+which is the last reference count gone;
+
+4/8: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+add vhost_zerocopy_signal_used to notify guest to release TX skb
+buffers.
+
+5/8: Add macvtap zero-copy in lower device when sending packet is
+greater than 256 bytes to make sure there is enough room for expanding
+skb head.
+
+6/8: Add Chelsio 10Gb NIC to zero-copy feature flag
+
+7/8: Add Intel 10Gb NIC zero-copy feature flag
+
+8/8: Add Emulex 10Gb NIC zero-copy feature flag
+
+The patchset is built against most recent linux 2.6.39-rc5. It has
+passed netperf/netserver multiple streams stress test on above NICs.
+
+Single TCP_STREAM 120 secs test results over ixgbe 10Gb NIC results:
+
+Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
+4K      7408.57         92.1%           22.6%           1229
+4K(Orig)4913.17         118.1%          84.1%           2086    
+8K      9129.90         89.3%           23.3%           1141
+8K(Orig)7094.55         115.9%          84.7%           2157
+16K     9178.81         89.1%           23.3%           1139
+16K(Orig)8927.1         118.7%          83.4%           2262
+64K     9171.43         88.4%           24.9%           1253
+64K(Orig)9085.85        115.9%          82.4%           2229
+
+For message size less or equal than 2K, there is a known KVM guest TX
+overrun issue. With this zero-copy patch, the issue becomes more severe,
+guest io_exits has tripled than before, so the performance is not good.
+Once the TX overrun problem has been addressed, I will retest the small
+message size performance.
+
+Thanks
+Shirley
+
+
