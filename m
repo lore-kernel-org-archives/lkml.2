@@ -1,110 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab1EDABB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:01:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53610 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1EDAA7 (ORCPT
+	id S1754835Ab1EDAGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 20:06:20 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:35327 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab1EDAGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:00:59 -0400
-Date: Tue, 3 May 2011 18:00:55 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
-        nico@fluxnic.net, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different
- controllers
-Message-ID: <20110504000055.GA4008@ponder.secretlab.ca>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca>
- <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
- <20110503215211.GA8491@oksana.dev.rtsoft.ru>
- <20110503220408.GA6978@pulham.picochip.com>
- <20110503223415.GA14024@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503223415.GA14024@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 May 2011 20:06:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=PlpN7Q/yuq79ajdsD8p3OHbG6dBM1cGY6c7NHCTSHwLlcJv/7QaSlYO296Ib/cS10
+	NpSsx+r2tVo/jZxYZl8lQ==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] trace: Check for waiting readers before calling wakeup()
+Date: Tue,  3 May 2011 17:05:20 -0700
+Message-Id: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 02:34:15AM +0400, Anton Vorontsov wrote:
-> On Tue, May 03, 2011 at 11:04:08PM +0100, Jamie Iles wrote:
-> [...]
-> > The advantage that Grant's proposal has though is that the user can 
-> > override the gpio_chip callbacks.  When I tried porting over some 
-> > existing ARM platforms, one of the blocking issues was that lots of 
-> > platforms had some annoying small detail that was slightly different 
-> > (such as doing muxing in the _get() callback or needing a to_irq 
-> > callback).
-> > 
-> > If we make bgpio_chip public and return that from bgpio_probe 
-> > unregistered then the calling code can override some of the methods then 
-> > register the gpio_chip.
-> 
-> Oh, that makes sense, right.
-> 
-> > As a slight aside, if we don't want a platform_device per bank for 
-> > devices with multiple banks then I don't think the named resource 
-> > approach will work (at least I can't see a particularly nice mechanism).  
-> > Any ideas?
-> 
-> I think Grant misunderstood Alan's words. If a PCI device registers
-> platform devices to represent each of PCI device's banks -- that is not
-> good. It's waste of devices, complicates sysfs/device heirarchy and so
-> on. And that's why bgpio_probe() thing started, to not create platform
-> devices when you already have one.
+In using syscall tracing by concurrent processes, the wakeup() that is
+called in the event commit function causes contention on the spin lock
+of the waitqueue. I enabled sys_enter_getuid and sys_exit_getuid
+tracepoints, and by running getuid_microbench from autotest in parallel
+I found that the contention causes exponential latency increase in the
+tracing path.
 
-Actually, I did understand what Alan was suggesting.  If I gave the
-impression that existing platform devices should be consolidated into
-single devices, regardless of whether or not they were related, then
-that was not my intent.
+The autotest binary getuid_microbench calls getuid() in a tight loop for
+the given number of iterations and measures the average time required to
+complete a single invocation of syscall.
 
-*however*, for devices that do implement a multi-function register
-block, I do think it is better to have a single driver perform a
-single ioremap and then register the N interfaces that use it against
-a single device.  I certainly don't see this as a hard and fast rule,
-but it is definitely my preference.
+The patch checks if there are any readers waiting in the waitqueue
+before the queue is locked. This reduces any contention and the
+latencies associated with it when there are no readers in the queue.
 
-> 
-> But personally I think it's OK for platforms (arch/ code) to register
-> each bank as a separate device. In some cases, that describes hardware
-> even better. And that makes life easier for device-tree stuff as well.
+In the following example, the script enables the sys_enter_getuid and
+sys_exit_getuid tracepoints and runs the getuid_microbench in parallel
+with the given number of processes. The output clearly shows the latency
+increase caused by contentions.
 
->From the device tree use-case, I personally still prefer a binding
-that provides a single 'reg' entry for the register block and explicit
-offsets in the binding to specify where/how the gpio registers are
-layed out.  It just fits better with existing binding practices.
+$ ~/getuid.sh 1
+1000000 calls in 0.720974253 s (720.974253 ns/call)
 
-Also, if you're talking about a gpio device with, say, 128 gpios on an
-soc, then the natural binding probably will be to have a single device
-tree node covering all 4 banks because that is the way the
-documentation lays out the device.  Perhaps something like this
-(completely off the top of my head):
+$ ~/getuid.sh 2
+1000000 calls in 1.166457554 s (1166.457554 ns/call)
+1000000 calls in 1.168933765 s (1168.933765 ns/call)
 
-gpio@fedc0000 {
-	compatible = "acme,super-soc-gpio", "mmio-gpio";
-	reg = <0xfedc0000 0x100>;
-	gpio-controller;
-	#gpio-cells = <1>;
+$ ~/getuid.sh 3
+1000000 calls in 1.783827516 s (1783.827516 ns/call)
+1000000 calls in 1.795553270 s (1795.553270 ns/call)
+1000000 calls in 1.796493376 s (1796.493376 ns/call)
 
-	mmgpio-regoffset-data = <0x00 0x04 0x08 0x0c>;
-	mmgpio-regoffset-dir  = <0x20 0x24 0x28 0x2c>;
-	mmgpio-regoffset-set  = <0x10 0x14 0x18 0x1c>;
-	mmgpio-regoffset-clr  = <0x30 0x34 0x38 0x3c>;
-};
+$ ~/getuid.sh 4
+1000000 calls in 4.483041796 s (4483.041796 ns/call)
+1000000 calls in 4.484165388 s (4484.165388 ns/call)
+1000000 calls in 4.484850762 s (4484.850762 ns/call)
+1000000 calls in 4.485643576 s (4485.643576 ns/call)
 
-... where an array of regoffset values allows for multiple banks.
-Although this might be completely insane and it would be better to
-make the kernel key directly off the 'acme,super-soc-gpio' value.
+$ ~/getuid.sh 5
+1000000 calls in 6.497521653 s (6497.521653 ns/call)
+1000000 calls in 6.502000236 s (6502.000236 ns/call)
+1000000 calls in 6.501709115 s (6501.709115 ns/call)
+1000000 calls in 6.502124100 s (6502.124100 ns/call)
+1000000 calls in 6.502936358 s (6502.936358 ns/call)
 
-> And if you really don't want this behaviour for your platform, you can
-> create your own driver that would use "bgpio library", and would
-> register several banks for a single device (as in PCI case).
+After the patch, the latencies scale well and are exactly as expected.
+$ ~/getuid.sh 1
+1000000 calls in 0.626811320 s (626.811320 ns/call)
 
-Exactly.
+$ ~/getuid.sh 2
+1000000 calls in 0.616566144 s (616.566144 ns/call)
+1000000 calls in 0.622712754 s (622.712754 ns/call)
 
-g.
+$ ~/getuid.sh 3
+1000000 calls in 0.602886676 s (602.886676 ns/call)
+1000000 calls in 0.612168691 s (612.168691 ns/call)
+1000000 calls in 0.623516009 s (623.516009 ns/call)
+
+$ ~/getuid.sh 4
+1000000 calls in 0.614037455 s (614.037455 ns/call)
+1000000 calls in 0.615070842 s (615.070842 ns/call)
+1000000 calls in 0.615051941 s (615.051941 ns/call)
+1000000 calls in 0.621556902 s (621.556902 ns/call)
+
+$ ~/getuid.sh 5
+1000000 calls in 0.605297117 s (605.297117 ns/call)
+1000000 calls in 0.609545095 s (609.545095 ns/call)
+1000000 calls in 0.610305369 s (610.305369 ns/call)
+1000000 calls in 0.614056014 s (614.056014 ns/call)
+1000000 calls in 0.622048279 s (622.048279 ns/call)
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/trace/trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 06f4458..e03ee24 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -353,7 +353,7 @@ void trace_wake_up(void)
+ {
+ 	int cpu;
+ 
+-	if (trace_flags & TRACE_ITER_BLOCK)
++	if (trace_flags & TRACE_ITER_BLOCK || !waitqueue_active(&trace_wait))
+ 		return;
+ 	/*
+ 	 * The runqueue_is_locked() can fail, but this is the best we
+-- 
+1.7.3.1
+
